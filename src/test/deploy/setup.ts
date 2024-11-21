@@ -16,11 +16,14 @@ import {
 } from '../abis/DeployDopplerFactoryABI';
 import { randomBytes } from 'crypto';
 import { DopplerAddressProvider } from '../../AddressProvider';
+import { DopplerConfigBuilder } from '../../utils';
+import { DopplerPool } from '../../entities';
 
 interface TestEnvironment {
   sdk: DopplerSDK;
   clients: Clients;
   addressProvider: DopplerAddressProvider;
+  pool: DopplerPool;
 }
 
 export async function setupTestEnvironment(): Promise<TestEnvironment> {
@@ -96,9 +99,34 @@ export async function setupTestEnvironment(): Promise<TestEnvironment> {
     }
   );
 
+  const block = await publicClient.getBlock();
+  const configParams = {
+    name: 'Test Token',
+    symbol: 'TEST',
+    totalSupply: parseEther('1000'),
+    numTokensToSell: parseEther('1000'),
+    blockTimestamp: Number(block.timestamp),
+    startTimeOffset: 1,
+    duration: 3,
+    epochLength: 1600,
+    priceRange: {
+      startPrice: 0.1,
+      endPrice: 0.0001,
+    },
+    tickSpacing: 8,
+    fee: 300,
+    minProceeds: parseEther('100'),
+    maxProceeds: parseEther('600'),
+  };
+
+  const config = DopplerConfigBuilder.buildConfig(configParams, addressProvider);
+  const { pool } = await sdk.deployer.deploy(config);
+
+
   return {
     sdk,
     clients: { public: publicClient, wallet: walletClient, test: testClient },
     addressProvider,
+    pool
   };
 }

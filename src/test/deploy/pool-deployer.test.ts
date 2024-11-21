@@ -44,6 +44,11 @@ describe('Doppler Pool Deployment', () => {
       addressProvider
     );
 
+    const startingTime = configParams.blockTimestamp;
+    await clients.test.setNextBlockTimestamp({ timestamp: BigInt(startingTime + 1) });
+    await clients.test.mine({ blocks: 1 });
+
+
     const { pool } = await sdk.deployer.deploy(config);
     expect(pool.doppler.address).toBeDefined();
     expect(pool.doppler.deploymentTx).toBeDefined();
