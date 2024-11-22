@@ -17,9 +17,12 @@ const flags = BigInt(
   (1 << 12) | // AFTER_INITIALIZE_FLAG
   (1 << 11) | // BEFORE_ADD_LIQUIDITY_FLAG
   (1 << 7) | // BEFORE_SWAP_FLAG
-    (1 << 6) // AFTER_SWAP_FLAG
+  (1 << 6) // AFTER_SWAP_FLAG
 );
 
+/**
+ * Parameters for the mine function.
+ */
 export interface MineParams {
   poolManager: Address;
   numTokensToSell: bigint;
@@ -39,6 +42,13 @@ export interface MineParams {
   numPDSlugs: bigint;
 }
 
+/**
+ * Computes the CREATE2 address for a contract deployment.
+ * @param salt The salt value.
+ * @param initCodeHash The hash of the contract's initialization code.
+ * @param deployer The address of the deployer.
+ * @returns The computed CREATE2 address.
+ */
 function computeCreate2Address(
   salt: Hash,
   initCodeHash: Hash,
@@ -51,6 +61,13 @@ function computeCreate2Address(
   return getAddress(`0x${keccak256(encoded).slice(-40)}`);
 }
 
+/**
+ * Mines a new contract by finding a suitable salt value.
+ * @param tokenFactory The address of the token factory.
+ * @param hookFactory The address of the hook factory.
+ * @param params The parameters for the mine function.
+ * @returns A tuple containing the salt, hook address, and token address.
+ */
 export function mine(
   tokenFactory: Address,
   hookFactory: Address,

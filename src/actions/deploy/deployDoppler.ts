@@ -20,12 +20,17 @@ import {
 } from '../../fetch/doppler/DopplerState';
 import { fetchPoolState } from '../../fetch/doppler/PoolState';
 
-// this maps onto the tick range, startingTick -> endingTick
+/**
+ * Represents a price range with start and end prices.
+ */
 export interface PriceRange {
   startPrice: number;
   endPrice: number;
 }
 
+/**
+ * Parameters for configuring the Doppler deployment.
+ */
 export interface DopplerConfigParams {
   // Token details
   name: string;
@@ -50,6 +55,13 @@ export interface DopplerConfigParams {
   numPdSlugs?: number; // uses a default if not set
 }
 
+/**
+ * Deploys a Doppler contract with the given configuration.
+ * @param clients The clients for interacting with the blockchain.
+ * @param addressProvider The address provider for Doppler addresses.
+ * @param config The deployment configuration.
+ * @returns The deployed Doppler instance.
+ */
 export async function deployDoppler(
   clients: Clients,
   addressProvider: DopplerAddressProvider,

@@ -4,6 +4,14 @@ import { DopplerAddressProvider } from '../../AddressProvider';
 import { CustomRouterABI } from '../../abis/CustomRouter';
 import { Doppler } from '../../entities/Doppler/Doppler';
 
+/**
+ * Buys an asset with an exact input amount.
+ * @param doppler The Doppler instance.
+ * @param addressProvider The address provider for Doppler addresses.
+ * @param amountIn The exact input amount.
+ * @param client The client for interacting with the blockchain.
+ * @returns A promise that resolves to the transaction hash.
+ */
 export async function buyAssetExactIn(
   doppler: Doppler,
   addressProvider: DopplerAddressProvider,
@@ -65,6 +73,14 @@ export async function buyAssetExactIn(
   });
 }
 
+/**
+ * Buys an asset with an exact output amount.
+ * @param doppler The Doppler instance.
+ * @param addressProvider The address provider for Doppler addresses.
+ * @param amountOut The exact output amount.
+ * @param client The client for interacting with the blockchain.
+ * @returns A promise that resolves to the transaction hash.
+ */
 export async function buyAssetExactOut(
   doppler: Doppler,
   addressProvider: DopplerAddressProvider,

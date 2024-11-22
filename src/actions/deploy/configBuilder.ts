@@ -6,18 +6,27 @@ import { DopplerAddressProvider } from '../../AddressProvider';
 import { parseEther } from 'viem';
 import { DopplerConfigParams } from './deployDoppler';
 
-// this maps onto the tick range, startingTick -> endingTick
+/**
+ * Represents a price range with start and end prices.
+ */
 export interface PriceRange {
   startPrice: number;
   endPrice: number;
 }
 
+/**
+ * A builder class for creating Doppler configuration.
+ */
 export class DopplerConfigBuilder {
   private static readonly MAX_TICK_SPACING = 30;
   private static readonly DEFAULT_PD_SLUGS = 5;
 
   /**
-   * Validates and builds pool configuration from user-friendly parameters
+   * Validates and builds pool configuration from user-friendly parameters.
+   * @param params The Doppler configuration parameters.
+   * @param chainId The chain ID.
+   * @param addressProvider The address provider for Doppler addresses.
+   * @returns The deployment configuration.
    */
   public static buildConfig(
     params: DopplerConfigParams,
@@ -138,7 +147,12 @@ export class DopplerConfigBuilder {
     };
   }
 
-  // Converts price range to tick range, ensuring alignment with tick spacing
+  /**
+   * Converts price range to tick range, ensuring alignment with tick spacing.
+   * @param priceRange The price range.
+   * @param tickSpacing The tick spacing.
+   * @returns The start and end ticks.
+   */
   private static computeTicks(
     priceRange: PriceRange,
     tickSpacing: number
