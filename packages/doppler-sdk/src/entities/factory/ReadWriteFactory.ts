@@ -3,7 +3,6 @@ import {
   ReadWriteAdapter,
   Drift,
   ContractWriteOptions,
-  OnMinedParam,
 } from '@delvtech/drift';
 import { ReadFactory, AirlockABI } from './ReadFactory';
 import { Address, Hex } from 'viem';

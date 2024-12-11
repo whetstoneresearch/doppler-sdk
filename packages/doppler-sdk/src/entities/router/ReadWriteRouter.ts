@@ -1,5 +1,5 @@
 import { ReadWriteContract, ReadWriteAdapter, Drift } from '@delvtech/drift';
-import { customRouterAbi } from '@/abis';
+import { customRouterAbi } from './../../abis';
 import { Address, Hex } from 'viem';
 import { PoolKey } from '@/types';
 
