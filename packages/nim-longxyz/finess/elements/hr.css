@@ -1,0 +1,6 @@
+:where(hr) {
+  border: none;
+  border-block-start-style: solid;
+  border-block-start-color: color-mix(in oklch, 7% currentColor, transparent);
+  border-block-start-width: var(--border-width-1);
+}

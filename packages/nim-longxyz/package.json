@@ -1,0 +1,30 @@
+{
+  "name": "nim-longxyz",
+  "type": "module",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/react": "^4.1.1",
+    "@astrojs/solid-js": "^5.0.0",
+    "@astrojs/vercel": "^8.0.1",
+    "@csstools/postcss-global-data": "^3.0.0",
+    "@privy-io/react-auth": "^1.98.1",
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
+    "@vitejs/plugin-basic-ssl": "^1.2.0",
+    "astro": "^5.0.9",
+    "autoprefixer": "^10.4.20",
+    "postcss-csso": "^6.0.1",
+    "postcss-preset-env": "^10.1.2",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "solid-js": "^1.9.3",
+    "viem": "^2.21.55",
+    "wagmi": "^2.14.3"
+  }
+}

@@ -1,0 +1,42 @@
+.toastr {
+  display: grid;
+  gap: var(--gap-1);
+  position: fixed;
+  inset-block-start: 1cap;
+  inset-inline: 0;
+  max-inline-size: var(--inline-size-3);
+  margin-inline: auto;
+
+  & output {
+    position: relative;
+    grid-template-columns: auto 1fr;
+    padding: var(--padding-1);
+    background-color: var(--color-surface-1);
+    border: var(--border-width-1) solid var(--color-accent-3);
+
+    &[data-status='error'] {
+      border-color: var(--color-negative-3);
+    }
+
+    &[data-status='success'] {
+      border-color: var(--color-positive-3);
+    }
+
+    &[data-icon='true'] {
+      display: grid;
+      align-items: center;
+      gap: 1ch;
+    }
+  }
+
+  & output button.close {
+    padding: 0.5cap;
+    position: absolute;
+    inset-inline-end: var(--padding-block-1);
+    inset-block-start: var(--padding-block-1);
+  }
+}
+
+.icon {
+  block-size: var(--line-height-1);
+}

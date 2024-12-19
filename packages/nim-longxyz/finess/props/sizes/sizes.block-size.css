@@ -1,0 +1,7 @@
+:where(body) {
+  --block-size-1: 7rex;
+  --block-size-2: 12rex;
+  --block-size-3: 25rex;
+  --block-size-4: 40rex;
+  --block-size-5: 65rex;
+}

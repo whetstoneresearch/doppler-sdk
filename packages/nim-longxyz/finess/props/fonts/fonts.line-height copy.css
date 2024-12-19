@@ -1,0 +1,66 @@
+/* 
+ * Mutate per elements.
+ */
+:root {
+  --font-line-height-coefficient: var(--global-font-multiplier);
+}
+
+/* 
+ * Preserve consistant line height through different 
+ * screen ratios. Prevent over spacing on landscape.
+ */
+:root {
+  --font-line-height-ratio: 1;
+
+  @media (--portrait) {
+    --font-line-height-ratio: 5 / 3;
+  }
+}
+
+:root {
+  --font-line-height-0: calc(
+    var(--font-line-height-coefficient) *
+      clamp(
+        var(--_lh-0),
+        calc(2vh * var(--font-line-height-ratio)),
+        calc(var(--_lh-0) * 1.35)
+      )
+  );
+
+  --font-line-height-1: calc(
+    var(--font-line-height-coefficient) *
+      clamp(
+        var(--_lh-1),
+        calc(4vh * var(--font-line-height-ratio)),
+        calc(var(--_lh-1) * 1.35)
+      )
+  );
+
+  --font-line-height-2: calc(
+    var(--font-line-height-coefficient) *
+      clamp(
+        var(--_lh-2),
+        calc(6vh * var(--font-line-height-ratio)),
+        calc(var(--_lh-2) * 1.35)
+      )
+  );
+
+  --font-line-height-3: calc(
+    var(--font-line-height-coefficient) *
+      clamp(
+        var(--_lh-3),
+        calc(9vh * var(--font-line-height-ratio)),
+        calc(var(--_lh-3) * 1.35)
+      )
+  );
+
+  --line-height-0: var(--font-line-height-0);
+  --line-height-1: var(--font-line-height-1);
+  --line-height-2: var(--font-line-height-2);
+  --line-height-3: var(--font-line-height-3);
+
+  --lh-0: var(--font-line-height-0);
+  --lh-1: var(--font-line-height-1);
+  --lh-2: var(--font-line-height-2);
+  --lh-3: var(--font-line-height-3);
+}

@@ -1,0 +1,23 @@
+:root {
+  --gap: 0.365em;
+  --row-gap: calc(var(--gap) + 0.15vh);
+  --column-gap: calc(var(--gap) + 0.65vw);
+
+  --gap-1: var(--row-gap-1) var(--column-gap-1);
+  --gap-2: var(--row-gap-2) var(--column-gap-2);
+  --gap-3: var(--row-gap-3) var(--column-gap-3);
+  --gap-4: var(--row-gap-4) var(--column-gap-4);
+  --gap-5: var(--row-gap-5) var(--column-gap-5);
+
+  --row-gap-1: calc(var(--row-gap) * 1);
+  --row-gap-2: calc(var(--row-gap) * 1.85);
+  --row-gap-3: calc(var(--row-gap) * 4.125);
+  --row-gap-4: calc(var(--row-gap) * 6.865);
+  --row-gap-5: calc(var(--row-gap) * 9);
+
+  --column-gap-1: calc(var(--column-gap) * 1);
+  --column-gap-2: calc(var(--column-gap) * 1.85);
+  --column-gap-3: calc(var(--column-gap) * 4.125);
+  --column-gap-4: calc(var(--column-gap) * 6.865);
+  --column-gap-5: calc(var(--column-gap) * 9);
+}

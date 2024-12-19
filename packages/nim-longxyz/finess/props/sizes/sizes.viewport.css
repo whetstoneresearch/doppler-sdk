@@ -1,0 +1,6 @@
+:where(body) {
+  --size-viewport-sm: 501px;
+  --size-viewport-md: 1201px;
+  --size-viewport-lg: 1401px;
+  --size-viewport-xl: 1921px;
+}

@@ -1,0 +1,71 @@
+@import './../icons.css';
+
+:where(details) {
+  border-block: var(--border-width-1) solid var(--color-surface-3);
+  border-radius: var(--border-radius-1);
+
+  &:where(> *) {
+    padding-inline: var(--padding-inline-1);
+  }
+
+  &:where([open]) summary {
+    border-block-end: var(--border-width-1) solid var(--color-surface-3);
+
+    &::after {
+      transform: scaleY(-1);
+      -webkit-transform: scaleY(-1);
+    }
+  }
+
+  &:where(:has(+ &)) {
+    border-block-end-color: transparent;
+  }
+}
+
+:where(details > summary) {
+  position: relative;
+  cursor: pointer;
+
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+
+  &:focus-visible {
+    outline-offset: var(--border-width-2);
+    outline-radius: 0px;
+    outline-color: var(--color-accent-5);
+  }
+
+  /* hide native marker */
+
+  &::-webkit-details-marker {
+    display: none;
+  }
+
+  &::marker {
+    display: none;
+  }
+
+  &::-moz-list-bullet {
+    list-style-type: none;
+  }
+
+  /* add custom marker */
+
+  &::after {
+    content: '';
+    width: 32px;
+    height: 32px;
+    display: inline-block;
+    margin-inline-start: auto;
+    mask: var(--icon-chevron-block-end-32px);
+    background-color: currentColor;
+    /* 32px / 2 (half) / 2 (scale) */
+    margin-block-start: -6px;
+    position: relative;
+    top: 4px;
+
+    scale: 0.5;
+    transition: transform 235ms ease-out;
+  }
+}

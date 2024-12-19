@@ -1,0 +1,168 @@
+@import './../media/media.prefers.css';
+@import './utils.css';
+
+:root {
+  --color-neutral: darkslateblue;
+  --color-on-neutral: white;
+
+  @media (--light) {
+    --color-neutral: lightsteelblue;
+    --color-on-neutral: black;
+  }
+}
+
+:root {
+  --color-neutral-start: var(--color-neutral);
+  --color-neutral-end: color-mix(
+    in oklab,
+    10% var(--color-neutral-start),
+    var(--color-surface-1)
+  );
+  --color-neutral-contrast: 55;
+  --color-neutral-contrast-calc: calc(var(--color-neutral-contrast) / 100 * 1%);
+
+  @media (--contrast) {
+    --color-neutral-contrast: 100;
+  }
+
+  @media (--contrast-reduced) {
+    --color-neutral-contrast: 25;
+  }
+
+  /* color neutral */
+
+  --color-neutral-1: var(--color-neutral-start);
+
+  --color-neutral-2: color-mix(
+    in oklch shorter hue,
+    var(--color-neutral-1),
+    calc(50 * var(--color-neutral-contrast-calc)) var(--color-neutral-end)
+  );
+
+  --color-neutral-3: color-mix(
+    in oklch shorter hue,
+    var(--color-neutral-1),
+    calc(100 * var(--color-neutral-contrast-calc)) var(--color-neutral-end)
+  );
+
+  --color-neutral-4: color-mix(
+    in oklch shorter hue,
+    var(--color-neutral-1),
+    calc(150 * var(--color-neutral-contrast-calc)) var(--color-neutral-end)
+  );
+
+  --color-neutral-5: color-mix(
+    in oklch shorter hue,
+    var(--color-neutral-1),
+    calc(200 * var(--color-neutral-contrast-calc)) var(--color-neutral-end)
+  );
+
+  /* color on neutral */
+
+  --color-on-neutral-1: color-mix(
+    in oklch shorter hue,
+    var(--color-neutral-start),
+    calc(var(--color-neutral-contrast-calc) * 350) var(--color-on-neutral)
+  );
+
+  --color-on-neutral-2: color-mix(
+    in oklch shorter hue,
+    var(--color-on-neutral-start),
+    calc(var(--color-neutral-contrast-calc) * 215) var(--color-on-neutral)
+  );
+}
+
+:root {
+  --color-neutral: darkslateblue;
+  --color-neutral-mix: var(--color-on-surface-1);
+  --color-neutral-contrast: 50;
+
+  @media (--light) {
+    --color-neutral: lightsteelblue;
+    --color-neutral-contrast: 50;
+  }
+
+  /* mix mode and contrast */
+  --kolor-neutral-mode: in oklch shorter hue;
+  --kolor-neutral-contrast: calc(var(--color-neutral-contrast) / 100 * 1%);
+  --kolor-on-neutral-contrast: calc(var(--color-neutral-contrast) / 100 * 1%);
+
+  /* lightest and darkest colors */
+  --kolor-neutral-start: color-mix(
+    in oklab,
+    var(--color-neutral),
+    1% var(--color-neutral-mix)
+  );
+  --kolor-neutral-end: color-mix(
+    in oklab,
+    10% var(--color-neutral),
+    var(--color-neutral-mix)
+  );
+
+  /* system contrasts */
+  @media (--contrast) {
+    --kolor-neutral-contrast: calc(
+      var(--color-neutral-contrast) / 100 * 1% * 1.85
+    );
+    --kolor-on-neutral-contrast: calc(
+      var(--color-neutral-contrast) / 100 * 1% * 1.85
+    );
+  }
+
+  @media (--contrast-reduced) {
+    --kolor-neutral-contrast: calc(
+      var(--color-neutral-contrast) / 100 * 1% * 0.35
+    );
+    --kolor-on-neutral-contrast: calc(
+      var(--color-neutral-contrast) / 100 * 1% * 0.35
+    );
+  }
+
+  /* color neutral */
+
+  --color-neutral-0: var(--kolor-neutral-start);
+
+  --color-neutral-1: color-mix(
+    var(--kolor-neutral-mode),
+    var(--kolor-neutral-start),
+    var(--kolor-neutral-contrast) var(--kolor-neutral-end)
+  );
+
+  --color-neutral-2: color-mix(
+    var(--kolor-neutral-mode),
+    var(--color-neutral-1),
+    calc(20 * var(--kolor-neutral-contrast)) var(--kolor-neutral-end)
+  );
+
+  --color-neutral-3: color-mix(
+    var(--kolor-neutral-mode),
+    var(--color-neutral-1),
+    calc(40 * var(--kolor-neutral-contrast)) var(--kolor-neutral-end)
+  );
+
+  --color-neutral-4: color-mix(
+    var(--kolor-neutral-mode),
+    var(--color-neutral-1),
+    calc(60 * var(--kolor-neutral-contrast)) var(--kolor-neutral-end)
+  );
+
+  --color-neutral-5: color-mix(
+    var(--kolor-neutral-mode),
+    var(--color-neutral-1),
+    calc(100 * var(--kolor-neutral-contrast)) var(--kolor-neutral-end)
+  );
+
+  /* color on neutral */
+
+  --color-on-neutral-1: color-mix(
+    var(--kolor-neutral-mode),
+    var(--kolor-neutral-start),
+    calc(var(--kolor-on-neutral-contrast) * 250) var(--kolor-neutral-end)
+  );
+
+  --color-on-neutral-2: color-mix(
+    var(--kolor-neutral-mode),
+    var(--kolor-neutral-start),
+    calc(var(--kolor-on-neutral-contrast) * 150) var(--kolor-neutral-end)
+  );
+}

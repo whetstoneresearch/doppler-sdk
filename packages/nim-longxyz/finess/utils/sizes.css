@@ -1,0 +1,11 @@
+.is-max-content {
+  inline-size: max-content;
+}
+
+.is-min-content {
+  inline-size: min-content;
+}
+
+.is-auto {
+  inline-size: auto;
+}

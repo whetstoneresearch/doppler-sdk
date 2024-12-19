@@ -1,0 +1,41 @@
+@import './utils/display.css';
+@import './utils/margins.css';
+@import './utils/paddings.css';
+@import './utils/gaps.css';
+@import './utils/sizes.css';
+
+/* reader only */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* truncate */
+
+.truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* text */
+
+.ta-center {
+  text-align: center;
+}
+
+.ta-start {
+  text-align: start;
+}
+
+.ta-end {
+  text-align: end;
+}

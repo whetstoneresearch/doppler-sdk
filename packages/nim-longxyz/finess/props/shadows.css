@@ -1,0 +1,19 @@
+:root {
+  --box-shadow-1: 0 0.15em 0.35em -1px var(--shadows-color);
+  --box-shadow-2: 0 0.25em 0.5em -1px var(--shadows-color);
+  --box-shadow-3: 0 0.5em 1em -1px var(--shadows-color);
+
+  --shadows-color: black;
+
+  @media (--light) {
+    --shadows-color: #d6d6d6;
+  }
+}
+
+html[data-prefers-color-scheme='dark'] {
+  --shadows-color: black;
+}
+
+html[data-prefers-color-scheme='light'] {
+  --shadows-color: #d6d6d6;
+}

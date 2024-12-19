@@ -1,0 +1,14 @@
+:root {
+  --border-width: 0.0625em;
+  --border-width-1: var(--border-width);
+  --border-width-2: calc(var(--border-width) * 3.15);
+  --border-width-3: calc(var(--border-width) * 3.65);
+
+  --border-inline-width-1: var(--border-width-1);
+  --border-inline-width-2: var(--border-width-2);
+  --border-inline-width-3: var(--border-width-3);
+
+  --border-block-width-1: var(--border-width-1);
+  --border-block-width-2: var(--border-width-2);
+  --border-block-width-3: var(--border-width-3);
+}

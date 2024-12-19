@@ -1,0 +1,23 @@
+:root {
+  --padding: 0.365em;
+  --padding-block: calc(var(--padding) + 0.15vh);
+  --padding-inline: calc(var(--padding) + 0.85vw);
+
+  --padding-1: var(--padding-block-1) var(--padding-inline-1);
+  --padding-2: var(--padding-block-2) var(--padding-inline-2);
+  --padding-3: var(--padding-block-3) var(--padding-inline-3);
+  --padding-4: var(--padding-block-4) var(--padding-inline-4);
+  --padding-5: var(--padding-block-5) var(--padding-inline-5);
+
+  --padding-block-1: calc(var(--padding-block) * 1);
+  --padding-block-2: calc(var(--padding-block) * 1.85);
+  --padding-block-3: calc(var(--padding-block) * 4.125);
+  --padding-block-4: calc(var(--padding-block) * 6.865);
+  --padding-block-5: calc(var(--padding-block) * 9);
+
+  --padding-inline-1: calc(var(--padding-inline) * 1);
+  --padding-inline-2: calc(var(--padding-inline) * 1.85);
+  --padding-inline-3: calc(var(--padding-inline) * 4.125);
+  --padding-inline-4: calc(var(--padding-inline) * 6.865);
+  --padding-inline-5: calc(var(--padding-inline) * 9);
+}

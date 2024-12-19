@@ -1,0 +1,60 @@
+---
+import AuthContext from './components/AuthContext'
+import HeaderMain from './components/HeaderMain/HeaderMain.astro'
+import FooterMain from './components/FooterMain/FooterMain.astro'
+import './global.css'
+import Toastr from './components/Toastr'
+
+interface Props {
+  title?: string
+}
+
+const props = Astro.props
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="/favicon.svg"
+    />
+    <meta
+      name="viewport"
+      content="width=device-width"
+    />
+    <meta
+      name="generator"
+      content={Astro.generator}
+    />
+    <slot name="meta" />
+    <script
+      is:inline
+      type="module"
+      src="/analytics.js"
+    ></script>
+    <meta
+      content="text/html; charset=UTF-8"
+      name="Content-Type"
+    />
+    <title>{props.title || 'Nim meme maker'}</title>
+  </head>
+  <body>
+    <HeaderMain />
+    <main>
+      <slot />
+    </main>
+    <FooterMain />
+
+    <AuthContext client:only="react" />
+    <Toastr client:idle />
+  </body>
+</html>
+
+<style>
+  main {
+    max-inline-size: var(--inline-size-4);
+    margin-inline: auto;
+  }
+</style>

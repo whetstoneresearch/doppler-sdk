@@ -1,0 +1,75 @@
+@import './../media/media.prefers.css';
+@import './utils.css';
+
+:root {
+  --color-positive: darkgreen;
+  --color-on-positive: white;
+
+  @media (--light) {
+    --color-positive: lightgreen;
+    --color-on-positive: black;
+  }
+}
+
+:root {
+  --color-positive-start: var(--color-positive);
+  --color-positive-end: color-mix(
+    in oklab,
+    10% var(--color-positive-start),
+    var(--color-surface-1)
+  );
+  --color-positive-contrast: 55;
+  --color-positive-contrast-calc: calc(
+    var(--color-positive-contrast) / 100 * 1%
+  );
+
+  @media (--contrast) {
+    --color-positive-contrast: 100;
+  }
+
+  @media (--contrast-reduced) {
+    --color-positive-contrast: 25;
+  }
+
+  /* color positive */
+
+  --color-positive-1: var(--color-positive-start);
+
+  --color-positive-2: color-mix(
+    in oklch shorter hue,
+    var(--color-positive-1),
+    calc(50 * var(--color-positive-contrast-calc)) var(--color-positive-end)
+  );
+
+  --color-positive-3: color-mix(
+    in oklch shorter hue,
+    var(--color-positive-1),
+    calc(100 * var(--color-positive-contrast-calc)) var(--color-positive-end)
+  );
+
+  --color-positive-4: color-mix(
+    in oklch shorter hue,
+    var(--color-positive-1),
+    calc(150 * var(--color-positive-contrast-calc)) var(--color-positive-end)
+  );
+
+  --color-positive-5: color-mix(
+    in oklch shorter hue,
+    var(--color-positive-1),
+    calc(200 * var(--color-positive-contrast-calc)) var(--color-positive-end)
+  );
+
+  /* color on positive */
+
+  --color-on-positive-1: color-mix(
+    in oklch shorter hue,
+    var(--color-positive-start),
+    calc(var(--color-positive-contrast-calc) * 350) var(--color-on-positive)
+  );
+
+  --color-on-positive-2: color-mix(
+    in oklch shorter hue,
+    var(--color-on-positive-start),
+    calc(var(--color-positive-contrast-calc) * 215) var(--color-on-positive)
+  );
+}

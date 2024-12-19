@@ -1,0 +1,75 @@
+@import './../media/media.css';
+
+/* 
+ * Mutate per elements.
+ */
+:root {
+  --font-letter-spacing-coefficient: var(--global-font-multiplier);
+}
+
+/* 
+ * Preserve consistant letter spacing through different 
+ * screen ratios. Prevent over spacing on portrait.
+ */
+:root {
+  --font-letter-spacing-ratio: 1;
+
+  @media (--landscape) {
+    --font-letter-spacing-ratio: 5 / 3;
+  }
+}
+
+:root {
+  /* private props */
+  --_ls-0: -0.05em;
+  --_ls-1: 0.025em;
+  --_ls-2: 0.075em;
+  --_ls-3: 0.35em;
+  /* << */
+
+  --font-letter-spacing-0: calc(
+    var(--font-letter-spacing-coefficient) *
+      clamp(
+        var(--_ls-0),
+        calc(2vw * var(--font-letter-spacing-ratio)),
+        calc(var(--_ls-0) + var(--_ls-0) * -1.15)
+      )
+  );
+
+  --font-letter-spacing-1: calc(
+    var(--font-letter-spacing-coefficient) *
+      clamp(
+        var(--_ls-1),
+        calc(2vw * var(--font-letter-spacing-ratio)),
+        calc(var(--_ls-1) * 1.35)
+      )
+  );
+
+  --font-letter-spacing-2: calc(
+    var(--font-letter-spacing-coefficient) *
+      clamp(
+        var(--_ls-2),
+        calc(6vw * var(--font-letter-spacing-ratio)),
+        calc(var(--_ls-2) * 1.85)
+      )
+  );
+
+  --font-letter-spacing-3: calc(
+    var(--font-letter-spacing-coefficient) *
+      clamp(
+        var(--_ls-3),
+        calc(9vw * var(--font-letter-spacing-ratio)),
+        calc(var(--_ls-3) * 1.85)
+      )
+  );
+
+  --letter-spacing-0: var(--font-letter-spacing-0);
+  --letter-spacing-1: var(--font-letter-spacing-1);
+  --letter-spacing-2: var(--font-letter-spacing-2);
+  --letter-spacing-3: var(--font-letter-spacing-3);
+
+  --ls-0: var(--font-letter-spacing-0);
+  --ls-1: var(--font-letter-spacing-1);
+  --ls-2: var(--font-letter-spacing-2);
+  --ls-3: var(--font-letter-spacing-3);
+}

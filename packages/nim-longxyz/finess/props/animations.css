@@ -1,0 +1,15 @@
+:root {
+  --animation-duration-1: 20ms;
+  --animation-duration-2: 60ms;
+  --animation-duration-3: 120ms;
+
+  --transition-duration-1: var(--animation-duration-1);
+  --transition-duration-2: var(--animation-duration-2);
+  --transition-duration-3: var(--animation-duration-3);
+
+  @media (--motion) {
+    --animation-duration-1: 80ms;
+    --animation-duration-2: 180ms;
+    --animation-duration-3: 260ms;
+  }
+}

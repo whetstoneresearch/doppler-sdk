@@ -1,0 +1,90 @@
+@import './../media/media.prefers.css';
+@import './utils.css';
+
+:root {
+  --color-surface: #121210;
+  --color-on-surface: #f4f4f4;
+
+  @media (--light) {
+    --color-surface: #f4f4f4;
+    --color-on-surface: #121210;
+  }
+
+  /* system colors */
+  /* the following doesn't use the browser's preferences but the operating system's */
+  /* concequently, it doesn't change properly when emulating from the browser */
+  /* @supports (color: Canvas) and (color: CanvasText) {
+    --color-surface: Canvas;
+    --color-on-surface: CanvasText;
+  } */
+}
+
+:root {
+  --color-surface-start: var(--color-surface);
+  --color-surface-contrast: 55;
+  --color-surface-contrast-calc: calc(var(--color-surface-contrast) / 100 * 1%);
+
+  --color-surface-end: color-mix(
+    in oklab,
+    10% var(--color-surface-start),
+    #f4f4f4
+  );
+
+  @media (--light) {
+    --color-surface-end: color-mix(
+      in oklab,
+      10% var(--color-surface-start),
+      #121210
+    );
+  }
+
+  @media (--contrast) {
+    --color-surface-contrast: 100;
+  }
+
+  @media (--contrast-reduced) {
+    --color-surface-contrast: 25;
+  }
+
+  /* color surface */
+
+  --color-surface-1: var(--color-surface-start);
+
+  --color-surface-2: color-mix(
+    in oklch shorter hue,
+    var(--color-surface-1),
+    calc(20 * var(--color-surface-contrast-calc)) var(--color-surface-end)
+  );
+
+  --color-surface-3: color-mix(
+    in oklch shorter hue,
+    var(--color-surface-1),
+    calc(80 * var(--color-surface-contrast-calc)) var(--color-surface-end)
+  );
+
+  --color-surface-4: color-mix(
+    in oklch shorter hue,
+    var(--color-surface-1),
+    calc(150 * var(--color-surface-contrast-calc)) var(--color-surface-end)
+  );
+
+  --color-surface-5: color-mix(
+    in oklch shorter hue,
+    var(--color-surface-1),
+    calc(200 * var(--color-surface-contrast-calc)) var(--color-surface-end)
+  );
+
+  /* color on surface */
+
+  --color-on-surface-1: color-mix(
+    in oklch shorter hue,
+    var(--color-surface-start),
+    calc(var(--color-surface-contrast-calc) * 350) var(--color-on-surface)
+  );
+
+  --color-on-surface-2: color-mix(
+    in oklch shorter hue,
+    var(--color-surface-start),
+    calc(var(--color-surface-contrast-calc) * 115) var(--color-on-surface)
+  );
+}

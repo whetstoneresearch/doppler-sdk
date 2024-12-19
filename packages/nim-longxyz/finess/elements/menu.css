@@ -1,0 +1,11 @@
+@layer menu {
+  menu:is([role='menu'], [role='list']) {
+    list-style: none;
+    padding-inline-start: 0;
+
+    &[aria-orientation='horizontal'] {
+      display: flex;
+      column-gap: var(--column-gap-1);
+    }
+  }
+}

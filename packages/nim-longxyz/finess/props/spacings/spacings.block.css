@@ -1,0 +1,61 @@
+@import './../media/media.css';
+
+/* 
+ * Mutate per elements.
+ */
+:root {
+  --space-block-multiplier: var(--space-multiplier);
+}
+
+/* 
+ * Preserve consistant spacings through different 
+ * screen ratios. Prevent over spacing on landscape.
+ */
+:root {
+  --space-block-ratio: 1;
+  --space-block-ratio-max: 1 * var(--space-block-ratio);
+
+  @media (--portrait) {
+    --space-block-ratio: 5 / 4;
+  }
+
+  @media (--breakpoint-md-n-above) {
+    --space-block-ratio-max: 1.65 * var(--space-block-ratio);
+  }
+
+  @media (--breakpoint-lg-n-above) {
+    --space-block-ratio-max: 1.85 * var(--space-block-ratio);
+  }
+}
+
+:root {
+  --space-block-1: clamp(
+    var(--space-base-block-1),
+    calc(2vh * var(--space-block-ratio)),
+    calc(var(--space-base-block-1) * var(--space-block-ratio-max))
+  );
+
+  --space-block-2: clamp(
+    var(--space-base-block-2),
+    calc(4vh * var(--space-block-ratio)),
+    calc(var(--space-base-block-2) * var(--space-block-ratio-max))
+  );
+
+  --space-block-3: clamp(
+    var(--space-base-block-3),
+    calc(7vh * var(--space-block-ratio)),
+    calc(var(--space-base-block-3) * var(--space-block-ratio-max))
+  );
+
+  --space-block-4: clamp(
+    var(--space-base-block-4),
+    calc(20vh * var(--space-block-ratio)),
+    calc(var(--space-base-block-4) * var(--space-block-ratio-max))
+  );
+
+  --space-block-5: clamp(
+    var(--space-base-block-5),
+    calc(40vh * var(--space-block-ratio)),
+    calc(var(--space-base-block-5) * var(--space-block-ratio-max))
+  );
+}

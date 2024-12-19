@@ -1,0 +1,81 @@
+@import './../media/media.prefers.css';
+@import './utils.css';
+
+:root {
+  --color-accent: lightblue;
+  --color-on-accent: black;
+
+  @media (--light) {
+    --color-accent: midnightblue;
+    --color-on-accent: white;
+  }
+
+  /* system colors */
+  /* the following can make Arc crash when navigating. To test with other browsers */
+  /* plus, probably not supported enough to be broadly used yet */
+  /* @supports (color: AccentColor) and (color: AccentColorText) {
+    --color-accent: AccentColor;
+    --color-on-accent: AccentColorText;
+  } */
+}
+
+:root {
+  --color-accent-start: var(--color-accent);
+  --color-accent-end: color-mix(
+    in oklab,
+    10% var(--color-accent-start),
+    var(--color-surface-1)
+  );
+  --color-accent-contrast: 55;
+  --color-accent-contrast-calc: calc(var(--color-accent-contrast) / 100 * 1%);
+
+  @media (--contrast) {
+    --color-accent-contrast: 100;
+  }
+
+  @media (--contrast-reduced) {
+    --color-accent-contrast: 25;
+  }
+
+  /* color accent */
+
+  --color-accent-1: var(--color-accent-start);
+
+  --color-accent-2: color-mix(
+    in oklch shorter hue,
+    var(--color-accent-1),
+    calc(50 * var(--color-accent-contrast-calc)) var(--color-accent-end)
+  );
+
+  --color-accent-3: color-mix(
+    in oklch shorter hue,
+    var(--color-accent-1),
+    calc(100 * var(--color-accent-contrast-calc)) var(--color-accent-end)
+  );
+
+  --color-accent-4: color-mix(
+    in oklch shorter hue,
+    var(--color-accent-1),
+    calc(150 * var(--color-accent-contrast-calc)) var(--color-accent-end)
+  );
+
+  --color-accent-5: color-mix(
+    in oklch shorter hue,
+    var(--color-accent-1),
+    calc(200 * var(--color-accent-contrast-calc)) var(--color-accent-end)
+  );
+
+  /* color on accent */
+
+  --color-on-accent-1: color-mix(
+    in oklch shorter hue,
+    var(--color-accent-start),
+    calc(var(--color-accent-contrast-calc) * 350) var(--color-on-accent)
+  );
+
+  --color-on-accent-2: color-mix(
+    in oklch shorter hue,
+    var(--color-on-accent-start),
+    calc(var(--color-accent-contrast-calc) * 215) var(--color-on-accent)
+  );
+}

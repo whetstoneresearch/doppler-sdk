@@ -1,0 +1,22 @@
+:where(kbd) {
+  font-family: var(--font-family-mono);
+  background-color: var(--color-surface-4);
+  padding-inline: calc(var(--padding-inline-1) * 0.5);
+  padding-block: calc(var(--space-block-1) * 0.5);
+  border-radius: var(--border-radius-1);
+  line-height: var(--line-height-0);
+
+  mix-blend-mode: screen;
+
+  @media (--light) {
+    mix-blend-mode: multiply;
+  }
+}
+
+html[data-prefers-color-scheme='dark'] :where(kbd) {
+  mix-blend-mode: screen;
+}
+
+html[data-prefers-color-scheme='light'] :where(kbd) {
+  mix-blend-mode: multiply;
+}

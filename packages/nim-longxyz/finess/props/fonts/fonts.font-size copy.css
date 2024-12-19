@@ -1,0 +1,78 @@
+@import './../media/media.css';
+
+/*
+ * Mutate globally.
+ */
+:root {
+  --global-font-size-coefficient: 1;
+}
+
+/*
+ * Mutate globally.
+ */
+:root {
+  --font-size-coefficient: var(--global-font-size-coefficient);
+}
+
+/* 
+ * Preserve consistant font size through different 
+ * screen ratios. Prevent over size on landscape.
+ */
+:root {
+  --font-size-ratio: 1;
+
+  @media (--landscape) {
+    --font-size-ratio: 5 / 3;
+  }
+}
+
+:root {
+  --font-size: 0.85rem;
+  /* private props */
+  --_fs-0: var(--font-size);
+  --_fs-1: calc(var(--font-size) * 1.165);
+  --_fs-2: calc(var(--font-size) * 1.65);
+  --_fs-3: calc(var(--font-size) * 2.85);
+  /* << */
+
+  --font-size-0: calc(
+    var(--font-size-coefficient) *
+      clamp(
+        var(--_fs-0),
+        calc(2vw * var(--font-size-ratio)),
+        calc(var(--_fs-0) * 1.15)
+      )
+  );
+
+  --font-size-1: calc(
+    var(--font-size-coefficient) *
+      clamp(
+        var(--_fs-1),
+        calc(4vw * var(--font-size-ratio)),
+        calc(var(--_fs-1) * 1.15)
+      )
+  );
+
+  --font-size-2: calc(
+    var(--font-size-coefficient) *
+      clamp(
+        var(--_fs-2),
+        calc(6vw * var(--font-size-ratio)),
+        calc(var(--_fs-2) * 1.15)
+      )
+  );
+
+  --font-size-3: calc(
+    var(--font-size-coefficient) *
+      clamp(
+        var(--_fs-3),
+        calc(9vw * var(--font-size-ratio)),
+        calc(var(--_fs-3) * 1.15)
+      )
+  );
+
+  --fs-0: var(--font-size-0);
+  --fs-1: var(--font-size-1);
+  --fs-2: var(--font-size-2);
+  --fs-3: var(--font-size-3);
+}

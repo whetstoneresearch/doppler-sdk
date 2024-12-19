@@ -1,0 +1,8 @@
+:root {
+  --line-height: 0.85em;
+
+  --line-height-0: calc(var(--line-height) + (0.035vw + 0.085vh));
+  --line-height-1: calc(var(--line-height) + (0.5vw + 0.85vh));
+  --line-height-2: calc(var(--line-height) + (1vw + 2vh));
+  --line-height-3: calc(var(--line-height) + (1.85vw + 3.65vh));
+}

@@ -1,0 +1,28 @@
+:where(a[href], button.link) {
+  color: color-mix(in oklab, var(--color-accent), 5% currentColor);
+
+  text-decoration-color: currentColor;
+  text-decoration-thickness: 0.1em;
+  text-underline-offset: 0.165em;
+
+  transition: scale ease-out var(--transition-duration-1);
+
+  /* reset button styles */
+  padding: unset;
+  background-color: unset;
+  border: unset;
+  font-weight: normal;
+
+  &:where(:hover),
+  &:where(:focus) {
+    border-radius: var(--border-radius-1);
+    color: color-mix(in oklab, var(--color-accent), 50% currentColor);
+    scale: 1.0165;
+  }
+
+  &:where(:focus-visible) {
+    outline-offset: var(--border-width-2) var(--border-width-3);
+    outline-radius: 0px;
+    outline-color: var(--color-accent-5);
+  }
+}

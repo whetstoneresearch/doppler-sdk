@@ -1,0 +1,25 @@
+@custom-media --breakpoint-sm-only (0px <= width <= 500px);
+@custom-media --breakpoint-sm-n-above (width >= 501px);
+@custom-media --breakpoint-sm-n-below (width < 500px);
+
+@custom-media --breakpoint-md-only (501px <= width <= 800px);
+@custom-media --breakpoint-md-n-above (width >= 921px);
+@custom-media --breakpoint-md-n-below (width < 921px);
+
+@custom-media --breakpoint-lg-only (801px <= width <= 1400px);
+@custom-media --breakpoint-lg-n-above (width >= 1401px);
+@custom-media --breakpoint-lg-n-above (width < 1400px);
+
+@custom-media --breakpoint-xl-only (1401px <= width <= 1920px);
+@custom-media --breakpoint-xl-n-above (width >= 1921px);
+@custom-media --breakpoint-xl-n-below (width < 1920px);
+
+/* breakpoints per device type */
+
+@custom-media --breakpoint-mobile-only (0px <= width <= 430px);
+@custom-media --breakpoint-mobile-n-above (width >= 431px);
+@custom-media --breakpoint-mobile-n-below (width < 430px);
+
+@custom-media --breakpoint-tablet-only (700px <= width <= 980px);
+@custom-media --breakpoint-tablet-n-above (width >= 981px);
+@custom-media --breakpoint-tablet-n-below (width < 980px);

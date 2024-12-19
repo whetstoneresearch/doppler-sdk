@@ -1,0 +1,63 @@
+@import './../media/media.css';
+
+/* 
+ * Mutate per elements.
+ */
+:root {
+  --space-inline-multiplier: var(--space-multiplier);
+}
+
+/* 
+ * Preserve consistant spacings through different 
+ * screen ratios. Prevent over spacing on landscape.
+ */
+:root {
+  --space-inline-ratio: 1;
+
+  @media (--landscape) {
+    --space-inline-ratio: 5 / 3;
+  }
+}
+
+:root {
+  --space-inline-1: calc(
+    var(--space-inline-multiplier) *
+      clamp(
+        var(--space-base-inline-1),
+        calc(2vw * var(--space-inline-ratio)),
+        calc(var(--space-base-inline-1) * 1.65)
+      )
+  );
+  --space-inline-2: calc(
+    var(--space-inline-multiplier) *
+      clamp(
+        var(--space-base-inline-2),
+        calc(4vw * var(--space-inline-ratio)),
+        calc(var(--space-base-inline-2) * 1.65)
+      )
+  );
+  --space-inline-3: calc(
+    var(--space-inline-multiplier) *
+      clamp(
+        var(--space-base-inline-3),
+        calc(7vw * var(--space-inline-ratio)),
+        calc(var(--space-base-inline-3) * 1.65)
+      )
+  );
+  --space-inline-4: calc(
+    var(--space-inline-multiplier) *
+      clamp(
+        var(--space-base-inline-4),
+        calc(20vw * var(--space-inline-ratio)),
+        calc(var(--space-base-inline-4) * 1.65)
+      )
+  );
+  --space-inline-5: calc(
+    var(--space-inline-multiplier) *
+      clamp(
+        var(--space-base-inline-5),
+        calc(40vw * var(--space-inline-ratio)),
+        calc(var(--space-base-inline-5) * 1.65)
+      )
+  );
+}

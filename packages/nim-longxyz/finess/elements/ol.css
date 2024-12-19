@@ -1,0 +1,16 @@
+@layer ol {
+  :where(ol[role='list']) {
+    list-style: none;
+    padding-inline-start: 0;
+  }
+
+  :where(ol[role='list'] li ) {
+    list-style: none;
+  }
+
+
+  :where(ol[aria-orientation='horizontal']) {
+    display: flex;
+    column-gap: var(--column-gap-1);
+  }
+}

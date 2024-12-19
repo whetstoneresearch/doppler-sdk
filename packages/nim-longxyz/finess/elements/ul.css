@@ -1,0 +1,15 @@
+@layer ul {
+  :where(ul[role='list']) {
+    list-style: none;
+    padding-inline-start: 0;
+  }
+
+  :where(ul[role='list'] li ) {
+    list-style: none;
+  }
+
+  :where(ul[aria-orientation='horizontal']) {
+    display: flex;
+    column-gap: var(--column-gap-1);
+  }
+}

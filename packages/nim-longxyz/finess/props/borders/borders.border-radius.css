@@ -1,0 +1,31 @@
+:root {
+  --border-radius-1: 0.165em;
+  --border-radius-2: 0.35em;
+  --border-radius-3: 0.85em;
+  --border-radius-4: 1.35em;
+  --border-radius-round: 1e5px;
+
+  --border-start-start-radius-1: 0.165em;
+  --border-start-start-radius-2: 0.35em;
+  --border-start-start-radius-3: 0.85em;
+  --border-start-start-radius-4: 1.35em;
+  --border-start-start-radius-round: 1e5px;
+
+  --border-start-end-radius-1: 0.165em;
+  --border-start-end-radius-2: 0.35em;
+  --border-start-end-radius-3: 0.85em;
+  --border-start-end-radius-4: 1.35em;
+  --border-start-end-radius-round: 1e5px;
+
+  --border-end-start-radius-1: 0.165em;
+  --border-end-start-radius-2: 0.35em;
+  --border-end-start-radius-3: 0.85em;
+  --border-end-start-radius-4: 1.35em;
+  --border-end-start-radius-round: 1e5px;
+
+  --border-end-end-radius-1: 0.165em;
+  --border-end-end-radius-2: 0.35em;
+  --border-end-end-radius-3: 0.85em;
+  --border-end-end-radius-4: 1.35em;
+  --border-end-end-radius-round: 1e5px;
+}

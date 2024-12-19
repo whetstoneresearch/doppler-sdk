@@ -1,0 +1,13 @@
+:root {
+  --z-index-1: 1;
+  --z-index-2: 2;
+  --z-index-3: 3;
+  --z-index-4: 4;
+  --z-index-max: 2147483647;
+
+  --z-index--1: -1;
+  --z-index--2: -2;
+  --z-index--3: -3;
+  --z-index--4: -4;
+  --z-index--min: -2147483647;
+}

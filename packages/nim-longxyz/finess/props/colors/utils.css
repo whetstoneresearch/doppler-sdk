@@ -1,0 +1,7 @@
+@custom-media --hdr-light (prefers-color-scheme: light) and (dynamic-range: high),
+  (prefers-color-scheme: light) and (color-gamut: p3);
+
+@custom-media --light-contrast-reduced (--light) and (--contrast-reduced);
+
+@custom-media --light-contrast (--light) and (--contrast);
+

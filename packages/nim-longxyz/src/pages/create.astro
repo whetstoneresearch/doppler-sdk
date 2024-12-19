@@ -1,0 +1,23 @@
+---
+import FormCreateToken from '../components/FormCreateToken'
+import FieldsetCreateToken1 from '../components/FormCreateToken/FieldsetCreateToken1'
+import FieldsetCreateToken2 from '../components/FormCreateToken/FieldsetCreateToken2'
+import FieldsetCreateToken3 from '../components/FormCreateToken/FieldsetCreateToken3'
+import DialogXeno from '../components/DialogXeno'
+import Html from '../Html.astro'
+---
+
+<Html title="Launch your token">
+  <h1 class="ta-center mbs-3">Launch your token</h1>
+  <FormCreateToken client:idle>
+    <FieldsetCreateToken1 client:idle />
+    <FieldsetCreateToken2 client:idle />
+    <FieldsetCreateToken3 client:idle />
+
+    <footer class="mi-auto mbs-3">
+      <button type="submit">Launch token</button>
+    </footer>
+  </FormCreateToken>
+
+  <DialogXeno client:load />
+</Html>

@@ -1,0 +1,75 @@
+@import './../media/media.prefers.css';
+@import './utils.css';
+
+:root {
+  --color-negative: darkred;
+  --color-on-negative: white;
+
+  @media (--light) {
+    --color-negative: lightcoral;
+    --color-on-negative: black;
+  }
+}
+
+:root {
+  --color-negative-start: var(--color-negative);
+  --color-negative-end: color-mix(
+    in oklab,
+    10% var(--color-negative-start),
+    var(--color-surface-1)
+  );
+  --color-negative-contrast: 55;
+  --color-negative-contrast-calc: calc(
+    var(--color-negative-contrast) / 100 * 1%
+  );
+
+  @media (--contrast) {
+    --color-negative-contrast: 100;
+  }
+
+  @media (--contrast-reduced) {
+    --color-negative-contrast: 25;
+  }
+
+  /* color negative */
+
+  --color-negative-1: var(--color-negative-start);
+
+  --color-negative-2: color-mix(
+    in oklch shorter hue,
+    var(--color-negative-1),
+    calc(50 * var(--color-negative-contrast-calc)) var(--color-negative-end)
+  );
+
+  --color-negative-3: color-mix(
+    in oklch shorter hue,
+    var(--color-negative-1),
+    calc(100 * var(--color-negative-contrast-calc)) var(--color-negative-end)
+  );
+
+  --color-negative-4: color-mix(
+    in oklch shorter hue,
+    var(--color-negative-1),
+    calc(150 * var(--color-negative-contrast-calc)) var(--color-negative-end)
+  );
+
+  --color-negative-5: color-mix(
+    in oklch shorter hue,
+    var(--color-negative-1),
+    calc(200 * var(--color-negative-contrast-calc)) var(--color-negative-end)
+  );
+
+  /* color on negative */
+
+  --color-on-negative-1: color-mix(
+    in oklch shorter hue,
+    var(--color-negative-start),
+    calc(var(--color-negative-contrast-calc) * 350) var(--color-on-negative)
+  );
+
+  --color-on-negative-2: color-mix(
+    in oklch shorter hue,
+    var(--color-on-negative-start),
+    calc(var(--color-negative-contrast-calc) * 215) var(--color-on-negative)
+  );
+}

@@ -1,0 +1,77 @@
+/* gap */
+
+.g-0 {
+  gap: 0;
+}
+
+.g-1 {
+  gap: var(--gap-1);
+}
+
+.g-2 {
+  gap: var(--gap-2);
+}
+
+.g-3 {
+  gap: var(--gap-3);
+}
+
+.g-4 {
+  gap: var(--gap-4);
+}
+
+.g-5 {
+  gap: var(--gap-5);
+}
+
+/* column gap */
+
+.cg-0 {
+  column-gap: 0;
+}
+
+.cg-1 {
+  column-gap: var(--column-gap-1);
+}
+
+.cg-2 {
+  column-gap: var(--column-gap-2);
+}
+
+.cg-3 {
+  column-gap: var(--column-gap-3);
+}
+
+.cg-4 {
+  column-gap: var(--column-gap-4);
+}
+
+.cg-5 {
+  column-gap: var(--column-gap-5);
+}
+
+/* row gap */
+
+.rg-0 {
+  row-gap: 0;
+}
+
+.rg-1 {
+  row-gap: var(--row-gap-1);
+}
+
+.rg-2 {
+  row-gap: var(--row-gap-2);
+}
+
+.rg-3 {
+  row-gap: var(--row-gap-3);
+}
+
+.rg-4 {
+  row-gap: var(--row-gap-4);
+}
+
+.rg-5 {
+  row-gap: var(--row-gap-5);
+}

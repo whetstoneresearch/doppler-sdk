@@ -1,0 +1,45 @@
+@layer input {
+  :where(input[type='text'], input[type='number'], input[type='date']) {
+    border-radius: var(--border-radius-2);
+    padding-inline: var(--padding-inline-1);
+    border: var(--border-width-1) solid var(--color-surface-3);
+
+    transition: scale ease-out var(--transition-duration-2),
+      border-color ease-out var(--transition-duration-1),
+      outline ease-out var(--transition-duration-1);
+
+    &:not(:focus) {
+      cursor: pointer;
+    }
+
+    &:hover,
+    &:focus {
+      scale: 1.0165;
+      border-color: var(--color-on-surface-2);
+    }
+
+    &:focus-visible {
+      outline-offset: var(--border-width-2);
+      outline-radius: 0px;
+      outline-color: var(--color-on-surface-1);
+    }
+  }
+
+  :where(input[type='number']) {
+    appearance: unset;
+
+    &::-webkit-inner-spin-button,
+    &::-webkit-outer-spin-button {
+      display: none;
+    }
+  }
+
+  :where(input[type='date']) {
+    appearance: unset;
+
+    &::-webkit-inner-spin-button,
+    &::-webkit-calendar-picker-indicator {
+      display: none;
+    }
+  }
+}

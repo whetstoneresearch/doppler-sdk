@@ -1,0 +1,29 @@
+#main-footer {
+  display: grid;
+  grid-template-columns: 1fr 3fr 1fr;
+  max-inline-size: var(--inline-size-5);
+  margin-inline: auto;
+  padding: 1em;
+  margin-block-start: 5cap;
+  color: var(--color-on-surface-2);
+
+  @media (--breakpoint-sm-only) {
+    grid-template-columns: 1fr;
+  }
+
+  & div {
+    margin-inline: auto;
+
+    & img {
+      margin-inline: auto;
+    }
+  }
+
+  & a {
+    color: var(--color-on-surface-2);
+
+    &:is(:hover, :focus) {
+      color: var(--color-accent-1);
+    }
+  }
+}

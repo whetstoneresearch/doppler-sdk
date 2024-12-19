@@ -1,0 +1,12 @@
+/* finess */
+html,
+body {
+  font-family: var(--font-family-sans);
+  font-size: var(--font-space-1);
+  font-weight: var(--font-weight-1);
+  font-size: var(--font-size-1);
+  line-height: var(--line-height-1);
+  color: var(--color-on-surface-1);
+  background-color: var(--color-surface-1);
+  accent-color: var(--color-accent);
+}

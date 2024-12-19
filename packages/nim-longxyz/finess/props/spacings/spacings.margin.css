@@ -1,0 +1,23 @@
+:root {
+  --margin: 0.365em;
+  --margin-block: calc(var(--margin) + 0.15vh);
+  --margin-inline: calc(var(--margin) + 0.65vw);
+
+  --margin-1: var(--margin-block-1) var(--margin-inline-1);
+  --margin-2: var(--margin-block-2) var(--margin-inline-2);
+  --margin-3: var(--margin-block-3) var(--margin-inline-3);
+  --margin-4: var(--margin-block-4) var(--margin-inline-4);
+  --margin-5: var(--margin-block-5) var(--margin-inline-5);
+
+  --margin-block-1: calc(var(--margin-block) * 1);
+  --margin-block-2: calc(var(--margin-block) * 1.85);
+  --margin-block-3: calc(var(--margin-block) * 4.125);
+  --margin-block-4: calc(var(--margin-block) * 6.865);
+  --margin-block-5: calc(var(--margin-block) * 9);
+
+  --margin-inline-1: calc(var(--margin-inline) * 1);
+  --margin-inline-2: calc(var(--margin-inline) * 1.85);
+  --margin-inline-3: calc(var(--margin-inline) * 4.125);
+  --margin-inline-4: calc(var(--margin-inline) * 6.865);
+  --margin-inline-5: calc(var(--margin-inline) * 9);
+}

@@ -1,0 +1,46 @@
+:where(:is(h1, h2, h3, h4, h4, h5, h6)) {
+  margin-block: var(--margin-block-1);
+  font-size: var(--font-size-1);
+  line-height: var(--line-height-1);
+  color: var(--color-on-surface-1);
+}
+
+:where(h1) {
+  font-size: calc(var(--font-size-1) * 2);
+}
+
+:where(h2) {
+  font-size: calc(var(--font-size-1) * 1.5);
+}
+
+:where(h3) {
+  font-size: calc(var(--font-size-1) * 1.17);
+}
+
+:where(:is(h5, h6)) {
+  font-size: var(--font-size-0);
+}
+
+:where(h6) {
+  color: var(--color-on-surface-2);
+}
+
+:where(del) {
+  color: var(--color-on-negative-1);
+  background-color: var(--color-negative-1);
+}
+
+:where(abbr) {
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-decoration-color: currentColor;
+  text-decoration-thickness: 0.1em;
+  text-underline-offset: 0.165em;
+  cursor: default;
+}
+
+:where(ins) {
+  color: var(--color-on-positive-1);
+  background-color: var(--color-positive-1);
+  text-decoration: none;
+}

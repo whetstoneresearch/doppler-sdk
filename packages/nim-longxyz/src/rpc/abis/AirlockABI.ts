@@ -1,0 +1,208 @@
+export const AirlockABI = [
+  {
+    type: "constructor",
+    inputs: [{ name: "owner_", type: "address", internalType: "address" }],
+    stateMutability: "nonpayable",
+  },
+  { type: "receive", stateMutability: "payable" },
+  {
+    type: "function",
+    name: "create",
+    inputs: [
+      { name: "initialSupply", type: "uint256", internalType: "uint256" },
+      { name: "numTokensToSell", type: "uint256", internalType: "uint256" },
+      { name: "numeraire", type: "address", internalType: "address" },
+      {
+        name: "tokenFactory",
+        type: "address",
+        internalType: "contract ITokenFactory",
+      },
+      { name: "tokenFactoryData", type: "bytes", internalType: "bytes" },
+      {
+        name: "governanceFactory",
+        type: "address",
+        internalType: "contract IGovernanceFactory",
+      },
+      { name: "governanceFactoryData", type: "bytes", internalType: "bytes" },
+      {
+        name: "poolInitializer",
+        type: "address",
+        internalType: "contract IPoolInitializer",
+      },
+      { name: "poolInitializerData", type: "bytes", internalType: "bytes" },
+      {
+        name: "liquidityMigrator",
+        type: "address",
+        internalType: "contract ILiquidityMigrator",
+      },
+      { name: "liquidityMigratorData", type: "bytes", internalType: "bytes" },
+      { name: "salt", type: "bytes32", internalType: "bytes32" },
+    ],
+    outputs: [
+      { name: "asset", type: "address", internalType: "address" },
+      { name: "pool", type: "address", internalType: "address" },
+      { name: "governance", type: "address", internalType: "address" },
+      { name: "timelock", type: "address", internalType: "address" },
+      { name: "migrationPool", type: "address", internalType: "address" },
+    ],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "getAssetData",
+    inputs: [{ name: "asset", type: "address", internalType: "address" }],
+    outputs: [
+      { name: "numeraire", type: "address", internalType: "address" },
+      { name: "timelock", type: "address", internalType: "address" },
+      { name: "governance", type: "address", internalType: "address" },
+      {
+        name: "liquidityMigrator",
+        type: "address",
+        internalType: "contract ILiquidityMigrator",
+      },
+      {
+        name: "poolInitializer",
+        type: "address",
+        internalType: "contract IPoolInitializer",
+      },
+      { name: "pool", type: "address", internalType: "address" },
+      { name: "migrationPool", type: "address", internalType: "address" },
+    ],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "getModuleState",
+    inputs: [{ name: "module", type: "address", internalType: "address" }],
+    outputs: [
+      { name: "state", type: "uint8", internalType: "enum ModuleState" },
+    ],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "migrate",
+    inputs: [{ name: "asset", type: "address", internalType: "address" }],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "owner",
+    inputs: [],
+    outputs: [{ name: "", type: "address", internalType: "address" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "renounceOwnership",
+    inputs: [],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "setModuleState",
+    inputs: [
+      { name: "modules", type: "address[]", internalType: "address[]" },
+      { name: "states", type: "uint8[]", internalType: "enum ModuleState[]" },
+    ],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "transferOwnership",
+    inputs: [{ name: "newOwner", type: "address", internalType: "address" }],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "event",
+    name: "Create",
+    inputs: [
+      {
+        name: "asset",
+        type: "address",
+        indexed: false,
+        internalType: "address",
+      },
+      {
+        name: "numeraire",
+        type: "address",
+        indexed: true,
+        internalType: "address",
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: "event",
+    name: "Migrate",
+    inputs: [
+      {
+        name: "asset",
+        type: "address",
+        indexed: false,
+        internalType: "address",
+      },
+      {
+        name: "pool",
+        type: "address",
+        indexed: false,
+        internalType: "address",
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: "event",
+    name: "OwnershipTransferred",
+    inputs: [
+      {
+        name: "previousOwner",
+        type: "address",
+        indexed: true,
+        internalType: "address",
+      },
+      {
+        name: "newOwner",
+        type: "address",
+        indexed: true,
+        internalType: "address",
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: "event",
+    name: "SetModuleState",
+    inputs: [
+      {
+        name: "module",
+        type: "address",
+        indexed: false,
+        internalType: "address",
+      },
+      {
+        name: "state",
+        type: "uint8",
+        indexed: false,
+        internalType: "enum ModuleState",
+      },
+    ],
+    anonymous: false,
+  },
+  { type: "error", name: "ArrayLengthsMismatch", inputs: [] },
+  {
+    type: "error",
+    name: "OwnableInvalidOwner",
+    inputs: [{ name: "owner", type: "address", internalType: "address" }],
+  },
+  {
+    type: "error",
+    name: "OwnableUnauthorizedAccount",
+    inputs: [{ name: "account", type: "address", internalType: "address" }],
+  },
+  { type: "error", name: "WrongModuleState", inputs: [] },
+] as const;

@@ -1,0 +1,27 @@
+@import './spacings.block.css';
+@import './spacings.gap.css';
+@import './spacings.inline.css';
+@import './spacings.margin.css';
+@import './spacings.padding.css';
+
+:root {
+  --global-space-multiplier: 1;
+}
+
+:root {
+  --space-multiplier: var(--global-space-multiplier);
+}
+
+:root {
+  --space-base-inline-1: calc(0.35ch * var(--space-multiplier));
+  --space-base-inline-2: calc(0.85ch * var(--space-multiplier));
+  --space-base-inline-3: calc(1.65ch * var(--space-multiplier));
+  --space-base-inline-4: calc(3.15ch * var(--space-multiplier));
+  --space-base-inline-5: calc(5.65ch * var(--space-multiplier));
+
+  --space-base-block-1: calc(0.35ex * var(--space-multiplier));
+  --space-base-block-2: calc(0.85ex * var(--space-multiplier));
+  --space-base-block-3: calc(1.65ex * var(--space-multiplier));
+  --space-base-block-4: calc(3.15ex * var(--space-multiplier));
+  --space-base-block-5: calc(5.65ex * var(--space-multiplier));
+}

@@ -1,0 +1,44 @@
+@layer button {
+  :where(button, .button) {
+    border-radius: var(--border-radius-2);
+    padding-inline: var(--padding-inline-1);
+    border: var(--border-width-1) solid var(--color-surface-3);
+    cursor: pointer;
+
+    font-weight: var(--font-weight-2);
+    line-height: var(--line-height-1);
+
+    transition: scale ease-out var(--transition-duration-2),
+      border-color ease-out var(--transition-duration-1),
+      outline ease-out var(--transition-duration-1);
+
+    &:hover,
+    &:focus {
+      scale: 1.0165;
+      border-color: var(--color-on-surface-2);
+    }
+
+    &:focus-visible:not(:active),
+    &:active {
+      outline-offset: var(--border-width-2);
+      outline-radius: 0px;
+      outline-color: var(--color-on-surface-1);
+    }
+
+    /* reset from reset */
+    & svg {
+      display: inline-block;
+    }
+
+    &:has(svg) {
+      display: flex;
+      align-items: center;
+      column-gap: 0.5cap;
+    }
+  }
+
+  :where(button, .button)[type='submit'] {
+    background-color: var(--color-accent-1);
+    border-color: var(--color-accent-2);
+  }
+}

@@ -1,0 +1,21 @@
+.dialog {
+  padding: 0;
+  border-color: var(--color-negative-4);
+
+  & > pre {
+    background-color: var(--color-negative-5);
+    padding: var(--padding-block-2) var(--padding-inline-1);
+    text-wrap-mode: wrap;
+    word-break: break-all;
+  }
+
+  & > :is(header, footer) {
+    background-color: var(--color-negative-4);
+    padding: var(--padding-1);
+  }
+
+  & > footer {
+    display: flex;
+    justify-content: end;
+  }
+}
