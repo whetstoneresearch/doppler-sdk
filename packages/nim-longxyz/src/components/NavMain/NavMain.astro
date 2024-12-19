@@ -1,0 +1,57 @@
+---
+const url = Astro.url
+
+function current(path: string = '/') {
+  return url.pathname === path
+}
+---
+
+<nav>
+  <ul
+    role="list"
+    aria-orientation="horizontal"
+  >
+    <li>
+      <a
+        href="/"
+        aria-current={current('/')}
+      >
+        Tokens
+      </a>
+    </li>
+    <li>
+      <a
+        href="/create"
+        aria-current={current('/create')}
+      >
+        Launch Tokens
+      </a>
+    </li>
+    <li>
+      <a
+        href="/guide"
+        aria-current={current('/guide')}
+      >
+        How it works
+      </a>
+    </li>
+  </ul>
+</nav>
+
+<style>
+  ul {
+    margin-inline: auto;
+    inline-size: fit-content;
+    column-gap: var(--column-gap-3);
+    margin-block: var(--margin-block-3);
+
+    & a {
+      color: var(--color-on-surface-1);
+      text-decoration: none;
+
+      &[aria-current='true'] {
+        font-weight: var(--font-weight-2);
+      }
+    }
+  }
+</style>
