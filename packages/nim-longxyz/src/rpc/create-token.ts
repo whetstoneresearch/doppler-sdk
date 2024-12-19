@@ -9,7 +9,7 @@ import {
 import type { Hex } from 'viem'
 import { AirlockABI } from './abis/AirlockABI'
 import { MigratorABI } from './abis/MigratorABI'
-import { addresses } from './addresses'
+import { addresses } from './utils/addresses'
 import { unichainSepolia } from 'wagmi/chains'
 import { readContract } from 'viem/actions'
 import { wallet } from '~/stores/wallet'

@@ -8,7 +8,9 @@ import UlTokens from '~/components/UlTokens'
     <h1>The First Meme Fair Launch Platform on Tron</h1>
     <button type="submit">Launch token</button>
   </header>
-  <UlTokens />
+
+  <hgroup><h2>Recently launched tokens</h2></hgroup>
+  <UlTokens client:load />
 </Html>
 
 <style>
@@ -20,6 +22,9 @@ import UlTokens from '~/components/UlTokens'
     text-align: center;
     gap: var(--gap-2);
     padding-block: var(--padding-block-4);
+
+    max-inline-size: var(--inline-size-5);
+    margin-inline: auto;
 
     &::before,
     &::after {
@@ -66,5 +71,12 @@ import UlTokens from '~/components/UlTokens'
   header button {
     font-size: var(--font-size-2);
     inline-size: fit-content;
+  }
+
+  hgroup {
+    margin-block: var(--margin-block-4);
+
+    max-inline-size: var(--inline-size-5);
+    margin-inline: auto;
   }
 </style>
