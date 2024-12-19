@@ -1,1 +1,70 @@
-<h1>Hello World</h1>
+---
+import Html from '~/Html.astro'
+import UlTokens from '~/components/UlTokens'
+---
+
+<Html title="Long.xyz token launcher">
+  <header>
+    <h1>The First Meme Fair Launch Platform on Tron</h1>
+    <button type="submit">Launch token</button>
+  </header>
+  <UlTokens />
+</Html>
+
+<style>
+  header {
+    z-index: 0;
+    position: relative;
+    display: grid;
+    justify-items: center;
+    text-align: center;
+    gap: var(--gap-2);
+    padding-block: var(--padding-block-4);
+
+    &::before,
+    &::after {
+      position: absolute;
+      content: '';
+      inset: 0;
+      pointer-events: none;
+    }
+
+    &::after {
+      z-index: var(--z-index--1);
+
+      mask-image: linear-gradient(to right, transparent, black, transparent);
+      background: radial-gradient(
+        262.01% 50% at 50% 50%,
+        rgba(24, 168, 247, 0.5) 0%,
+        rgba(24, 168, 247, 0) 100%
+      );
+    }
+
+    &::before {
+      background-image: url('/header-background.svg');
+      opacity: 0.65;
+      fill: radial-gradient(
+        44.09% 123.15% at 50% 50%,
+        rgba(246, 246, 246, 0) 0%,
+        rgba(246, 246, 246, 0.4) 100%
+      );
+      mix-blend-mode: soft-light;
+
+      mask-image: linear-gradient(to right, transparent, black, transparent);
+      background: radial-gradient(
+        262.01% 50% at 50% 50%,
+        rgba(24, 168, 247, 0.5) 0%,
+        rgba(24, 168, 247, 0) 100%
+      );
+    }
+  }
+
+  h1 {
+    padding-inline: var(--padding-inline-3);
+  }
+
+  header button {
+    font-size: var(--font-size-2);
+    inline-size: fit-content;
+  }
+</style>
