@@ -5,7 +5,11 @@ import { useReadContract, useAccount, useWalletClient } from "wagmi";
 import { MigratorABI } from "../abis/MigratorABI";
 import { CreateParams, ReadWriteFactory } from "doppler-v3-sdk";
 import { getDrift } from "../utils/drift";
-import { Button } from "../components/ui/button";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const TICK_SPACING = 60;
 
@@ -196,13 +200,14 @@ function DeployDoppler() {
   };
 
   return (
-    <div className="deploy-doppler">
-      <h3 className="page-title">Deploy Market</h3>
-      <form onSubmit={handleDeploy} className="deploy-form">
-        <div className="form-group">
-          <label htmlFor="tokenName">Token Name</label>
-          <input
-            type="text"
+    <div className="p-6">
+      <h3 className="text-2xl font-semibold tracking-tight mb-6">
+        Deploy Market
+      </h3>
+      <form onSubmit={handleDeploy} className="space-y-6 max-w-2xl mx-auto">
+        <div className="space-y-2">
+          <Label htmlFor="tokenName">Token Name</Label>
+          <Input
             id="tokenName"
             value={tokenName}
             onChange={(e) => setTokenName(e.target.value)}
@@ -211,10 +216,9 @@ function DeployDoppler() {
           />
         </div>
 
-        <div className="form-group">
-          <label htmlFor="tokenSymbol">Token Symbol</label>
-          <input
-            type="text"
+        <div className="space-y-2">
+          <Label htmlFor="tokenSymbol">Token Symbol</Label>
+          <Input
             id="tokenSymbol"
             value={tokenSymbol}
             onChange={(e) => setTokenSymbol(e.target.value)}
@@ -223,14 +227,13 @@ function DeployDoppler() {
           />
         </div>
 
-        <div className="form-group">
-          <label htmlFor="initialSupply">
-            Initial Supply (in tokens)
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="initialSupply">Initial Supply (in tokens)</Label>
             <Button
               type="button"
-              variant="outline"
+              variant="ghost"
               size="sm"
-              className="ml-2"
               onClick={() => {
                 setInitialSupply("1000000000");
                 setNumTokensToSell("1000000000");
@@ -238,8 +241,8 @@ function DeployDoppler() {
             >
               use default
             </Button>
-          </label>
-          <input
+          </div>
+          <Input
             type="number"
             id="initialSupply"
             value={initialSupply}
@@ -250,9 +253,9 @@ function DeployDoppler() {
           />
         </div>
 
-        <div className="form-group">
-          <label htmlFor="numTokensToSell">Number of Tokens to Sell</label>
-          <input
+        <div className="space-y-2">
+          <Label htmlFor="numTokensToSell">Number of Tokens to Sell</Label>
+          <Input
             type="number"
             id="numTokensToSell"
             value={numTokensToSell}
@@ -261,82 +264,85 @@ function DeployDoppler() {
             placeholder="Enter number of tokens to sell"
             min="0"
           />
-
-          <div className="form-group">
-            <label className="advanced-toggle">
-              <input
-                type="checkbox"
-                checked={showAdvanced}
-                onChange={(e) => setShowAdvanced(e.target.checked)}
-              />
-              Show Advanced Options
-            </label>
-          </div>
-
-          {showAdvanced && (
-            <>
-              <div className="form-group">
-                <label htmlFor="startTick">
-                  Start Tick (will be rounded to nearest {TICK_SPACING})
-                </label>
-                <input
-                  type="number"
-                  id="startTick"
-                  value={startTick}
-                  onChange={handleStartTickChange}
-                  onBlur={handleStartTickBlur}
-                  required
-                  placeholder={`Enter start tick (multiple of ${TICK_SPACING})`}
-                />
-                {startTick && Number(startTick) % TICK_SPACING !== 0 && (
-                  <span className="error-message">
-                    Start tick must be divisible by {TICK_SPACING}
-                  </span>
-                )}
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="endTick">
-                  End Tick (will be rounded to nearest {TICK_SPACING})
-                </label>
-                <input
-                  type="number"
-                  id="endTick"
-                  value={endTick}
-                  onChange={handleEndTickChange}
-                  onBlur={handleEndTickBlur}
-                  required
-                  placeholder={`Enter end tick (multiple of ${TICK_SPACING})`}
-                />
-                {endTick && Number(endTick) % TICK_SPACING !== 0 && (
-                  <span className="error-message">
-                    End tick must be divisible by {TICK_SPACING}
-                  </span>
-                )}
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="targetTick">
-                  End Tick (will be rounded to nearest {TICK_SPACING})
-                </label>
-                <input
-                  type="number"
-                  id="targetTick"
-                  value={targetTick}
-                  onChange={handleTargetTickChange}
-                  onBlur={handleTargetTickBlur}
-                  required
-                  placeholder={`Enter target tick (multiple of ${TICK_SPACING})`}
-                />
-                {targetTick && Number(targetTick) % TICK_SPACING !== 0 && (
-                  <span className="error-message">
-                    Target tick must be divisible by {TICK_SPACING}
-                  </span>
-                )}
-              </div>
-            </>
-          )}
         </div>
+
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="showAdvanced"
+            checked={showAdvanced}
+            onCheckedChange={(checked) => setShowAdvanced(checked as boolean)}
+          />
+          <Label
+            htmlFor="showAdvanced"
+            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+          >
+            Show Advanced Options
+          </Label>
+        </div>
+
+        {showAdvanced && (
+          <div className="space-y-4 border rounded-lg p-4 bg-muted/50">
+            <div className="space-y-2">
+              <Label htmlFor="startTick">
+                Start Tick (will be rounded to nearest {TICK_SPACING})
+              </Label>
+              <Input
+                type="number"
+                id="startTick"
+                value={startTick}
+                onChange={handleStartTickChange}
+                onBlur={handleStartTickBlur}
+                required
+                placeholder={`Enter start tick (multiple of ${TICK_SPACING})`}
+              />
+              {startTick && Number(startTick) % TICK_SPACING !== 0 && (
+                <p className="text-sm text-destructive">
+                  Start tick must be divisible by {TICK_SPACING}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="endTick">
+                End Tick (will be rounded to nearest {TICK_SPACING})
+              </Label>
+              <Input
+                type="number"
+                id="endTick"
+                value={endTick}
+                onChange={handleEndTickChange}
+                onBlur={handleEndTickBlur}
+                required
+                placeholder={`Enter end tick (multiple of ${TICK_SPACING})`}
+              />
+              {endTick && Number(endTick) % TICK_SPACING !== 0 && (
+                <p className="text-sm text-destructive">
+                  End tick must be divisible by {TICK_SPACING}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="targetTick">
+                Target Tick (will be rounded to nearest {TICK_SPACING})
+              </Label>
+              <Input
+                type="number"
+                id="targetTick"
+                value={targetTick}
+                onChange={handleTargetTickChange}
+                onBlur={handleTargetTickBlur}
+                required
+                placeholder={`Enter target tick (multiple of ${TICK_SPACING})`}
+              />
+              {targetTick && Number(targetTick) % TICK_SPACING !== 0 && (
+                <p className="text-sm text-destructive">
+                  Target tick must be divisible by {TICK_SPACING}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
 
         <Button
           type="submit"
