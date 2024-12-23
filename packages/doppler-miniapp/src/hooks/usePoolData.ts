@@ -13,7 +13,8 @@ import { useAssetData } from "./useMarketDetails";
 import { useTokenData } from "./useToken";
 
 interface PoolData {
-  poolBalance: bigint;
+  assetBalance: bigint;
+  numeraireBalance: bigint;
   initializerState: PoolState;
   slot0: Slot0;
   positions: Position[];
@@ -46,8 +47,10 @@ const fetchPositionData = async (
   const pool = new ReadUniswapV3Pool(assetData.pool, drift);
   const initializer = new ReadUniswapV3Initializer(initializerAddress, drift);
   const asset = new ReadDerc20(assetAddress, drift);
+  const numeraire = new ReadDerc20(assetData.numeraire, drift);
 
-  const poolBalance = await asset.getBalanceOf(assetData.pool);
+  const assetBalance = await asset.getBalanceOf(assetData.pool);
+  const numeraireBalance = await numeraire.getBalanceOf(assetData.pool);
   const initializerState = await initializer.getState(assetData.pool);
   const slot0 = await pool.getSlot0();
   const mintEvents = await pool.getMintEvents({
@@ -65,7 +68,8 @@ const fetchPositionData = async (
   }));
 
   return {
-    poolBalance,
+    assetBalance,
+    numeraireBalance,
     initializerState,
     slot0,
     positions,

@@ -21,7 +21,11 @@ function App() {
   });
 
   const handleConnect = () => {
-    connect({ connector: connectors[0] });
+    try {
+      connect({ connector: connectors[0] });
+    } catch (error) {
+      console.error("Error connecting to wallet", error);
+    }
   };
 
   const handleDisconnect = () => {

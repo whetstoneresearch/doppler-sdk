@@ -4,6 +4,7 @@ import { Address, formatEther } from "viem";
 import LiquidityChart from "../components/LiquidityChart";
 import TokenName from "../components/TokenName";
 import { usePoolData } from "../hooks/usePoolData";
+import { getDrift } from "../utils/drift";
 
 function ViewDoppler() {
   const { id } = useParams();
@@ -20,6 +21,11 @@ function ViewDoppler() {
   );
 
   const { asset, numeraire, assetData, poolData } = data;
+
+  const handleMigrate = async () => {
+    const drift = getDrift(walletClient);
+    const readWriteFactory = new ReadWriteFactory(airlock, drift);
+  };
 
   return (
     <div className="view-doppler">
@@ -60,7 +66,7 @@ function ViewDoppler() {
                 <span>
                   {(
                     Number(formatEther(asset?.totalSupply ?? 0n)) -
-                    Number(formatEther(poolData?.poolBalance ?? 0n))
+                    Number(formatEther(poolData?.assetBalance ?? 0n))
                   ).toFixed(0)}
                 </span>
               </div>
@@ -81,6 +87,7 @@ function ViewDoppler() {
             >
               Trade
             </a>
+            <button onClick={handleMigrate}>Migrate</button>
           </>
         )}
       </div>
