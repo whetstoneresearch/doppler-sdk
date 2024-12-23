@@ -1,36 +1,41 @@
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
+import pepeIcon from "../assets/icons/pepe.svg";
+import ethIcon from "../assets/icons/eth.svg";
 
 interface TokenNameProps {
   name?: string;
   symbol?: string;
   isLoading?: boolean;
+  className?: string;
+  showSymbol?: boolean;
 }
 
-function TokenName({ name, symbol, isLoading }: TokenNameProps) {
+function TokenName({
+  name,
+  symbol,
+  isLoading,
+  showSymbol = true,
+}: TokenNameProps) {
   if (isLoading) {
     return (
-      <AspectRatio ratio={3 / 1} className="w-32">
-        <Skeleton className="h-full" />
-      </AspectRatio>
+      <span className="flex items-center gap-1">
+        <Skeleton className="h-4 w-4 rounded-full" />
+        <Skeleton className="h-4 w-20" />
+      </span>
     );
   }
 
-  if (!name || !symbol) {
-    return null;
-  }
-
   return (
-    <AspectRatio ratio={3 / 1} className="w-32 bg-muted rounded-md">
-      <div className="flex flex-col justify-center items-center h-full">
-        <span className="text-sm font-medium truncate" title={name}>
-          {name}
-        </span>
-        <span className="text-xs text-muted-foreground" title={symbol}>
-          {symbol}
-        </span>
-      </div>
-    </AspectRatio>
+    <span className="flex items-center gap-1">
+      {name === "Wrapped Ether" ? (
+        <img src={ethIcon} alt="eth" className="token-icon h-4 w-4" />
+      ) : (
+        <img src={pepeIcon} alt="pepe" className="token-icon h-4 w-4" />
+      )}
+      {name} {showSymbol && `(${symbol})`}
+    </span>
   );
 }
 

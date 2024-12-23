@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 
 const TICK_SPACING = 60;
@@ -266,18 +267,18 @@ function DeployDoppler() {
           />
         </div>
 
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id="showAdvanced"
-            checked={showAdvanced}
-            onCheckedChange={(checked) => setShowAdvanced(checked as boolean)}
-          />
+        <div className="flex items-center justify-between">
           <Label
-            htmlFor="showAdvanced"
-            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            htmlFor="advanced-mode"
+            className="text-sm font-medium leading-none"
           >
-            Show Advanced Options
+            Advanced Mode
           </Label>
+          <Switch
+            id="advanced-mode"
+            checked={showAdvanced}
+            onCheckedChange={setShowAdvanced}
+          />
         </div>
 
         {showAdvanced && (

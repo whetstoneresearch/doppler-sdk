@@ -63,6 +63,7 @@ function HomePage() {
                         <TokenName
                           name={poolData.numeraire.name}
                           symbol={poolData.numeraire.symbol}
+                          isLoading={isPoolsLoading}
                         />
                       </div>
                       <div className="text-sm text-muted-foreground">
