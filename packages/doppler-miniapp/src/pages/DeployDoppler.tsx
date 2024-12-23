@@ -5,6 +5,7 @@ import { useReadContract, useAccount, useWalletClient } from "wagmi";
 import { MigratorABI } from "../abis/MigratorABI";
 import { CreateParams, ReadWriteFactory } from "doppler-v3-sdk";
 import { getDrift } from "../utils/drift";
+import { Button } from "../components/ui/button";
 
 const TICK_SPACING = 60;
 
@@ -225,16 +226,18 @@ function DeployDoppler() {
         <div className="form-group">
           <label htmlFor="initialSupply">
             Initial Supply (in tokens)
-            <button
+            <Button
               type="button"
-              className="inline-default-button"
+              variant="outline"
+              size="sm"
+              className="ml-2"
               onClick={() => {
                 setInitialSupply("1000000000");
                 setNumTokensToSell("1000000000");
               }}
             >
               use default
-            </button>
+            </Button>
           </label>
           <input
             type="number"
@@ -335,9 +338,9 @@ function DeployDoppler() {
           )}
         </div>
 
-        <button
+        <Button
           type="submit"
-          className="deploy-button"
+          className="w-full"
           disabled={
             isDeploying ||
             !initialSupply ||
@@ -352,7 +355,7 @@ function DeployDoppler() {
           }
         >
           {isDeploying ? "Deploying..." : "Deploy Doppler"}
-        </button>
+        </Button>
       </form>
     </div>
   );

@@ -1,8 +1,8 @@
 import { Link } from "react-router-dom";
 import { addresses } from "../addresses";
 import { formatEther } from "viem";
-import TokenName from "../components/TokenName";
-import { usePoolCreationDatas } from "../hooks/usePoolCreationData";
+import TokenName from "@/components/TokenName";
+import { usePoolCreationDatas } from "@/hooks/usePoolCreationData";
 
 function HomePage() {
   const {
