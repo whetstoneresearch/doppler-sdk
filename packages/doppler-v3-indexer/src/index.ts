@@ -1,7 +1,20 @@
 import { ponder } from "ponder:registry";
 import { assets } from "../ponder.schema";
 import { AirlockABI } from "../abis/AirlockABI";
-import { modules } from "../ponder.schema";
+import { Hex } from "viem";
+
+type AssetData = {
+  numeraire: Hex;
+  timelock: Hex;
+  governance: Hex;
+  liquidityMigrator: Hex;
+  poolInitializer: Hex;
+  pool: Hex;
+  migrationPool: Hex;
+  numTokensToSell: bigint;
+  totalSupply: bigint;
+  integrator: Hex;
+};
 
 ponder.on("Airlock:Create", async ({ event, context }) => {
   const { client } = context;
@@ -26,6 +39,7 @@ ponder.on("Airlock:Create", async ({ event, context }) => {
     poolInitializer: assetData[1],
     createdAt: new Date(Number(event.block.timestamp)),
     migratedAt: null,
+    v2Pool: assetData[6],
   });
 });
 
@@ -38,12 +52,12 @@ ponder.on("Airlock:Migrate", async ({ event, context }) => {
   });
 });
 
-// ponder.on("Airlock:SetModuleState", async ({ event, context }) => {
-//   const { modules } = context.db;
+ponder.on("Airlock:SetModuleState", async ({ event, context }) => {
+  const { modules } = context.db;
 
-//   await context.db.insert(modules).values({
-//     id: event.args.module,
-//     state: event.args.state,
-//     lastUpdated: new Date(Number(event.block.timestamp)),
-//   });
-// });
+  await context.db.insert(modules).values({
+    id: event.args.module,
+    state: event.args.state,
+    lastUpdated: new Date(Number(event.block.timestamp)),
+  });
+});
