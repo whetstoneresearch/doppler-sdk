@@ -1,14 +1,18 @@
 import { Navigate, useParams } from "react-router-dom";
 import { addresses } from "../addresses";
 import { Address, formatEther } from "viem";
+import { useReadContract, useAccount, useWalletClient } from "wagmi";
 import LiquidityChart from "../components/LiquidityChart";
 import TokenName from "../components/TokenName";
 import { usePoolData } from "../hooks/usePoolData";
+import { ReadWriteFactory } from "doppler-v3-sdk";
 import { getDrift } from "../utils/drift";
 
 function ViewDoppler() {
   const { id } = useParams();
   const { airlock, v3Initializer } = addresses;
+  const account = useAccount();
+  const { data: walletClient } = useWalletClient(account);
 
   if (!id || !/^0x[a-fA-F0-9]{40}$/.test(id)) {
     return <Navigate to="/" />;
@@ -25,7 +29,20 @@ function ViewDoppler() {
   const handleMigrate = async () => {
     const drift = getDrift(walletClient);
     const readWriteFactory = new ReadWriteFactory(airlock, drift);
+
+    const migration = await readWriteFactory.airlock.simulateWrite("migrate", {
+      asset: id as Address,
+    });
+    console.log(migration);
+    // await readWriteFactory.migrate(id as Address);
   };
+
+  const { initializerState, slot0 } = poolData ?? {};
+
+  const migrationEnabled =
+    initializerState?.targetTick &&
+    slot0?.tick &&
+    initializerState.targetTick > slot0.tick;
 
   return (
     <div className="view-doppler">
@@ -87,7 +104,9 @@ function ViewDoppler() {
             >
               Trade
             </a>
-            <button onClick={handleMigrate}>Migrate</button>
+            {migrationEnabled && (
+              <button onClick={handleMigrate}>Migrate</button>
+            )}
           </>
         )}
       </div>
