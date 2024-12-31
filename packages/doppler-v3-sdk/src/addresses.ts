@@ -4,10 +4,10 @@ import { DopplerAddresses } from './types';
 export const DOPPLER_ADDRESSES: { [chainId: number]: DopplerAddresses } = {
   // unichain sepolia
   1301: {
-    airlock: '0x576D00aA95110A6bc9914491015757549b3b974e' as Address,
-    tokenFactory: '0x547C314Aa1E82978aC3a1AA83Ce7a12BBbD94204' as Address,
-    v3Initializer: '0xC3504da42F605F3cA5A5bED34F3b79F1b33494e5' as Address,
-    governanceFactory: '0xfb614B2B4C2C20fAfedE1F901e9DeDe764eB7e35' as Address,
-    liquidityMigrator: '0x35638289d125358852272A4da494b736E581d9bb' as Address,
+    airlock: '0x2f29F5B6BCFDda207682b632711Df8614AA08e43' as Address,
+    tokenFactory: '0x958cbF326758561F87F7e722DE8A95E20420eC1f' as Address,
+    v3Initializer: '0x506CA58dF7b744F0ee8Ee5621ebc9e882b933184' as Address,
+    governanceFactory: '0x409017562C626C0eD51d41E2931C34190934A689' as Address,
+    liquidityMigrator: '0xa2EAf97FB9EF2A0dA09d4531B4725b0C388B043d' as Address,
   },
 };
