@@ -1,0 +1,120 @@
+export const UniswapV3InitializerABI = [
+  {
+    type: "constructor",
+    inputs: [
+      { name: "airlock_", type: "address", internalType: "address" },
+      {
+        name: "factory_",
+        type: "address",
+        internalType: "contract IUniswapV3Factory",
+      },
+    ],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "airlock",
+    inputs: [],
+    outputs: [{ name: "", type: "address", internalType: "address" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "exitLiquidity",
+    inputs: [{ name: "pool", type: "address", internalType: "address" }],
+    outputs: [
+      { name: "sqrtPriceX96", type: "uint160", internalType: "uint160" },
+      { name: "token0", type: "address", internalType: "address" },
+      { name: "fees0", type: "uint128", internalType: "uint128" },
+      { name: "balance0", type: "uint128", internalType: "uint128" },
+      { name: "token1", type: "address", internalType: "address" },
+      { name: "fees1", type: "uint128", internalType: "uint128" },
+      { name: "balance1", type: "uint128", internalType: "uint128" },
+    ],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "factory",
+    inputs: [],
+    outputs: [
+      { name: "", type: "address", internalType: "contract IUniswapV3Factory" },
+    ],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "getState",
+    inputs: [{ name: "pool", type: "address", internalType: "address" }],
+    outputs: [
+      { name: "asset", type: "address", internalType: "address" },
+      { name: "numeraire", type: "address", internalType: "address" },
+      { name: "tickLower", type: "int24", internalType: "int24" },
+      { name: "tickUpper", type: "int24", internalType: "int24" },
+      { name: "numPositions", type: "uint16", internalType: "uint16" },
+      { name: "isInitialized", type: "bool", internalType: "bool" },
+      { name: "isExited", type: "bool", internalType: "bool" },
+      { name: "maxShareToBeSold", type: "uint256", internalType: "uint256" },
+      { name: "maxShareToBond", type: "uint256", internalType: "uint256" },
+    ],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "initialize",
+    inputs: [
+      { name: "asset", type: "address", internalType: "address" },
+      { name: "numeraire", type: "address", internalType: "address" },
+      { name: "", type: "uint256", internalType: "uint256" },
+      { name: "", type: "bytes32", internalType: "bytes32" },
+      { name: "data", type: "bytes", internalType: "bytes" },
+    ],
+    outputs: [{ name: "pool", type: "address", internalType: "address" }],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "uniswapV3MintCallback",
+    inputs: [
+      { name: "amount0Owed", type: "uint256", internalType: "uint256" },
+      { name: "amount1Owed", type: "uint256", internalType: "uint256" },
+      { name: "data", type: "bytes", internalType: "bytes" },
+    ],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "error",
+    name: "CannotMigrateInsufficientTick",
+    inputs: [
+      { name: "targetTick", type: "int24", internalType: "int24" },
+      { name: "currentTick", type: "int24", internalType: "int24" },
+    ],
+  },
+  { type: "error", name: "CannotMintZeroLiquidity", inputs: [] },
+  {
+    type: "error",
+    name: "InvalidFee",
+    inputs: [{ name: "fee", type: "uint24", internalType: "uint24" }],
+  },
+  {
+    type: "error",
+    name: "InvalidTickRange",
+    inputs: [
+      { name: "tick", type: "int24", internalType: "int24" },
+      { name: "tickSpacing", type: "int24", internalType: "int24" },
+    ],
+  },
+  {
+    type: "error",
+    name: "InvalidTickRangeMisordered",
+    inputs: [
+      { name: "tickLower", type: "int24", internalType: "int24" },
+      { name: "tickUpper", type: "int24", internalType: "int24" },
+    ],
+  },
+  { type: "error", name: "OnlyPool", inputs: [] },
+  { type: "error", name: "PoolAlreadyExited", inputs: [] },
+  { type: "error", name: "PoolAlreadyInitialized", inputs: [] },
+  { type: "error", name: "SenderNotAirlock", inputs: [] },
+] as const;

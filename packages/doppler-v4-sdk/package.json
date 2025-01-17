@@ -1,16 +1,28 @@
-{ "name": "doppler-v4-sdk",
+{
+  "name": "doppler-v4-sdk",
   "author": "Whetstone Research",
-  "module": "dist/doppler-v4-kit.esm.js",
   "version": "0.1.0",
   "license": "MIT",
-  "main": "src/index.ts",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
   "typings": "dist/index.d.ts",
   "packageManager": "yarn@1.22.18",
   "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "start": "tsc watch ./src/**",
     "test": "vitest",
-    "build": "tsc",
+    "build": "tsup src/index.ts --format cjs,esm --dts",
     "test:watch": "vitest watch",
     "test:coverage": "vitest run --coverage",
     "size": "size-limit",
@@ -37,8 +49,9 @@
     "@delvtech/drift-viem": "^0.1.0-beta.30",
     "@types/node": "^22.9.4",
     "@uniswap/sdk-core": "^5.9.0",
-    "@uniswap/v4-sdk": "^1.10.4",
-    "ethers": "^5.7.2",
+    "ethers": "^5.0.8",
+    "@uniswap/v4-sdk": "^1.15.1",
+    "tsup": "^8.3.5",
     "turbo": "^2.3.2"
   }
 }

@@ -7,6 +7,8 @@ export const derc20Abi = [
       { name: 'initialSupply', type: 'uint256', internalType: 'uint256' },
       { name: 'recipient', type: 'address', internalType: 'address' },
       { name: 'owner_', type: 'address', internalType: 'address' },
+      { name: 'yearlyMintCap_', type: 'uint256', internalType: 'uint256' },
+      { name: 'vestingDuration_', type: 'uint256', internalType: 'uint256' },
       { name: 'recipients_', type: 'address[]', internalType: 'address[]' },
       { name: 'amounts_', type: 'uint256[]', internalType: 'uint256[]' },
     ],
@@ -33,13 +35,6 @@ export const derc20Abi = [
       { name: 'owner', type: 'address', internalType: 'address' },
       { name: 'spender', type: 'address', internalType: 'address' },
     ],
-    outputs: [{ name: '', type: 'uint256', internalType: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'amounts',
-    inputs: [{ name: '', type: 'uint256', internalType: 'uint256' }],
     outputs: [{ name: '', type: 'uint256', internalType: 'uint256' }],
     stateMutability: 'view',
   },
@@ -85,6 +80,20 @@ export const derc20Abi = [
     name: 'clock',
     inputs: [],
     outputs: [{ name: '', type: 'uint48', internalType: 'uint48' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'currentAnnualMint',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256', internalType: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'currentYearStart',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256', internalType: 'uint256' }],
     stateMutability: 'view',
   },
   {
@@ -152,6 +161,16 @@ export const derc20Abi = [
       { name: 'timepoint', type: 'uint256', internalType: 'uint256' },
     ],
     outputs: [{ name: '', type: 'uint256', internalType: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'getVestingDataOf',
+    inputs: [{ name: 'account', type: 'address', internalType: 'address' }],
+    outputs: [
+      { name: 'totalAmount', type: 'uint256', internalType: 'uint256' },
+      { name: 'releasedAmount', type: 'uint256', internalType: 'uint256' },
+    ],
     stateMutability: 'view',
   },
   {
@@ -244,10 +263,10 @@ export const derc20Abi = [
   },
   {
     type: 'function',
-    name: 'recipients',
-    inputs: [{ name: '', type: 'uint256', internalType: 'uint256' }],
-    outputs: [{ name: '', type: 'address', internalType: 'address' }],
-    stateMutability: 'view',
+    name: 'release',
+    inputs: [{ name: 'amount', type: 'uint256', internalType: 'uint256' }],
+    outputs: [],
+    stateMutability: 'nonpayable',
   },
   {
     type: 'function',
@@ -304,6 +323,20 @@ export const derc20Abi = [
     inputs: [],
     outputs: [],
     stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'vestingDuration',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256', internalType: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'vestingStart',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256', internalType: 'uint256' }],
+    stateMutability: 'view',
   },
   {
     type: 'function',
@@ -503,6 +536,7 @@ export const derc20Abi = [
     ],
   },
   { type: 'error', name: 'ERC6372InconsistentClock', inputs: [] },
+  { type: 'error', name: 'ExceedsYearlyMintCap', inputs: [] },
   {
     type: 'error',
     name: 'InvalidAccountNonce',
@@ -512,6 +546,22 @@ export const derc20Abi = [
     ],
   },
   { type: 'error', name: 'InvalidShortString', inputs: [] },
+  {
+    type: 'error',
+    name: 'MaxPreMintPerAddressExceeded',
+    inputs: [
+      { name: 'amount', type: 'uint256', internalType: 'uint256' },
+      { name: 'limit', type: 'uint256', internalType: 'uint256' },
+    ],
+  },
+  {
+    type: 'error',
+    name: 'MaxTotalPreMintExceeded',
+    inputs: [
+      { name: 'amount', type: 'uint256', internalType: 'uint256' },
+      { name: 'limit', type: 'uint256', internalType: 'uint256' },
+    ],
+  },
   { type: 'error', name: 'MintingNotStartedYet', inputs: [] },
   {
     type: 'error',
@@ -524,6 +574,7 @@ export const derc20Abi = [
     inputs: [{ name: 'account', type: 'address', internalType: 'address' }],
   },
   { type: 'error', name: 'PoolLocked', inputs: [] },
+  { type: 'error', name: 'ReleaseAmountInvalid', inputs: [] },
   {
     type: 'error',
     name: 'SafeCastOverflowedUintDowncast',
@@ -542,215 +593,6 @@ export const derc20Abi = [
     name: 'VotesExpiredSignature',
     inputs: [{ name: 'expiry', type: 'uint256', internalType: 'uint256' }],
   },
-] as const;
-
-export const airlockAbi = [
-  {
-    type: 'constructor',
-    inputs: [{ name: 'owner_', type: 'address', internalType: 'address' }],
-    stateMutability: 'nonpayable',
-  },
-  { type: 'receive', stateMutability: 'payable' },
-  {
-    type: 'function',
-    name: 'create',
-    inputs: [
-      { name: 'initialSupply', type: 'uint256', internalType: 'uint256' },
-      { name: 'numTokensToSell', type: 'uint256', internalType: 'uint256' },
-      { name: 'numeraire', type: 'address', internalType: 'address' },
-      {
-        name: 'tokenFactory',
-        type: 'address',
-        internalType: 'contract ITokenFactory',
-      },
-      { name: 'tokenFactoryData', type: 'bytes', internalType: 'bytes' },
-      {
-        name: 'governanceFactory',
-        type: 'address',
-        internalType: 'contract IGovernanceFactory',
-      },
-      { name: 'governanceFactoryData', type: 'bytes', internalType: 'bytes' },
-      {
-        name: 'poolInitializer',
-        type: 'address',
-        internalType: 'contract IPoolInitializer',
-      },
-      { name: 'poolInitializerData', type: 'bytes', internalType: 'bytes' },
-      {
-        name: 'liquidityMigrator',
-        type: 'address',
-        internalType: 'contract ILiquidityMigrator',
-      },
-      { name: 'liquidityMigratorData', type: 'bytes', internalType: 'bytes' },
-      { name: 'salt', type: 'bytes32', internalType: 'bytes32' },
-    ],
-    outputs: [
-      { name: 'asset', type: 'address', internalType: 'address' },
-      { name: 'pool', type: 'address', internalType: 'address' },
-      { name: 'governance', type: 'address', internalType: 'address' },
-      { name: 'timelock', type: 'address', internalType: 'address' },
-      { name: 'migrationPool', type: 'address', internalType: 'address' },
-    ],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    name: 'getAssetData',
-    inputs: [{ name: 'asset', type: 'address', internalType: 'address' }],
-    outputs: [
-      { name: 'numeraire', type: 'address', internalType: 'address' },
-      { name: 'timelock', type: 'address', internalType: 'address' },
-      { name: 'governance', type: 'address', internalType: 'address' },
-      {
-        name: 'liquidityMigrator',
-        type: 'address',
-        internalType: 'contract ILiquidityMigrator',
-      },
-      {
-        name: 'poolInitializer',
-        type: 'address',
-        internalType: 'contract IPoolInitializer',
-      },
-      { name: 'pool', type: 'address', internalType: 'address' },
-      { name: 'migrationPool', type: 'address', internalType: 'address' },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'getModuleState',
-    inputs: [{ name: 'module', type: 'address', internalType: 'address' }],
-    outputs: [
-      { name: 'state', type: 'uint8', internalType: 'enum ModuleState' },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'migrate',
-    inputs: [{ name: 'asset', type: 'address', internalType: 'address' }],
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    name: 'owner',
-    inputs: [],
-    outputs: [{ name: '', type: 'address', internalType: 'address' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'renounceOwnership',
-    inputs: [],
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    name: 'setModuleState',
-    inputs: [
-      { name: 'modules', type: 'address[]', internalType: 'address[]' },
-      { name: 'states', type: 'uint8[]', internalType: 'enum ModuleState[]' },
-    ],
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    name: 'transferOwnership',
-    inputs: [{ name: 'newOwner', type: 'address', internalType: 'address' }],
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'event',
-    name: 'Create',
-    inputs: [
-      {
-        name: 'asset',
-        type: 'address',
-        indexed: false,
-        internalType: 'address',
-      },
-      {
-        name: 'numeraire',
-        type: 'address',
-        indexed: true,
-        internalType: 'address',
-      },
-    ],
-    anonymous: false,
-  },
-  {
-    type: 'event',
-    name: 'Migrate',
-    inputs: [
-      {
-        name: 'asset',
-        type: 'address',
-        indexed: false,
-        internalType: 'address',
-      },
-      {
-        name: 'pool',
-        type: 'address',
-        indexed: false,
-        internalType: 'address',
-      },
-    ],
-    anonymous: false,
-  },
-  {
-    type: 'event',
-    name: 'OwnershipTransferred',
-    inputs: [
-      {
-        name: 'previousOwner',
-        type: 'address',
-        indexed: true,
-        internalType: 'address',
-      },
-      {
-        name: 'newOwner',
-        type: 'address',
-        indexed: true,
-        internalType: 'address',
-      },
-    ],
-    anonymous: false,
-  },
-  {
-    type: 'event',
-    name: 'SetModuleState',
-    inputs: [
-      {
-        name: 'module',
-        type: 'address',
-        indexed: false,
-        internalType: 'address',
-      },
-      {
-        name: 'state',
-        type: 'uint8',
-        indexed: false,
-        internalType: 'enum ModuleState',
-      },
-    ],
-    anonymous: false,
-  },
-  { type: 'error', name: 'ArrayLengthsMismatch', inputs: [] },
-  {
-    type: 'error',
-    name: 'OwnableInvalidOwner',
-    inputs: [{ name: 'owner', type: 'address', internalType: 'address' }],
-  },
-  {
-    type: 'error',
-    name: 'OwnableUnauthorizedAccount',
-    inputs: [{ name: 'account', type: 'address', internalType: 'address' }],
-  },
-  { type: 'error', name: 'WrongModuleState', inputs: [] },
 ] as const;
 
 export const uniswapV3PoolAbi = [
@@ -1393,5 +1235,559 @@ export const uniswapV3PoolAbi = [
     outputs: [{ internalType: 'address', name: '', type: 'address' }],
     stateMutability: 'view',
     type: 'function',
+  },
+] as const;
+
+export const airlockAbi = [
+  {
+    type: 'constructor',
+    inputs: [{ name: 'owner_', type: 'address', internalType: 'address' }],
+    stateMutability: 'nonpayable',
+  },
+  { type: 'receive', stateMutability: 'payable' },
+  {
+    type: 'function',
+    name: 'collectIntegratorFees',
+    inputs: [
+      { name: 'to', type: 'address', internalType: 'address' },
+      { name: 'token', type: 'address', internalType: 'address' },
+      { name: 'amount', type: 'uint256', internalType: 'uint256' },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'collectProtocolFees',
+    inputs: [
+      { name: 'to', type: 'address', internalType: 'address' },
+      { name: 'token', type: 'address', internalType: 'address' },
+      { name: 'amount', type: 'uint256', internalType: 'uint256' },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'create',
+    inputs: [
+      {
+        name: 'createData',
+        type: 'tuple',
+        internalType: 'struct CreateParams',
+        components: [
+          { name: 'initialSupply', type: 'uint256', internalType: 'uint256' },
+          { name: 'numTokensToSell', type: 'uint256', internalType: 'uint256' },
+          { name: 'numeraire', type: 'address', internalType: 'address' },
+          {
+            name: 'tokenFactory',
+            type: 'address',
+            internalType: 'contract ITokenFactory',
+          },
+          { name: 'tokenFactoryData', type: 'bytes', internalType: 'bytes' },
+          {
+            name: 'governanceFactory',
+            type: 'address',
+            internalType: 'contract IGovernanceFactory',
+          },
+          {
+            name: 'governanceFactoryData',
+            type: 'bytes',
+            internalType: 'bytes',
+          },
+          {
+            name: 'poolInitializer',
+            type: 'address',
+            internalType: 'contract IPoolInitializer',
+          },
+          { name: 'poolInitializerData', type: 'bytes', internalType: 'bytes' },
+          {
+            name: 'liquidityMigrator',
+            type: 'address',
+            internalType: 'contract ILiquidityMigrator',
+          },
+          {
+            name: 'liquidityMigratorData',
+            type: 'bytes',
+            internalType: 'bytes',
+          },
+          { name: 'integrator', type: 'address', internalType: 'address' },
+          { name: 'salt', type: 'bytes32', internalType: 'bytes32' },
+        ],
+      },
+    ],
+    outputs: [
+      { name: 'asset', type: 'address', internalType: 'address' },
+      { name: 'pool', type: 'address', internalType: 'address' },
+      { name: 'governance', type: 'address', internalType: 'address' },
+      { name: 'timelock', type: 'address', internalType: 'address' },
+      { name: 'migrationPool', type: 'address', internalType: 'address' },
+    ],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'getAssetData',
+    inputs: [{ name: 'asset', type: 'address', internalType: 'address' }],
+    outputs: [
+      { name: 'numeraire', type: 'address', internalType: 'address' },
+      { name: 'timelock', type: 'address', internalType: 'address' },
+      { name: 'governance', type: 'address', internalType: 'address' },
+      {
+        name: 'liquidityMigrator',
+        type: 'address',
+        internalType: 'contract ILiquidityMigrator',
+      },
+      {
+        name: 'poolInitializer',
+        type: 'address',
+        internalType: 'contract IPoolInitializer',
+      },
+      { name: 'pool', type: 'address', internalType: 'address' },
+      { name: 'migrationPool', type: 'address', internalType: 'address' },
+      { name: 'numTokensToSell', type: 'uint256', internalType: 'uint256' },
+      { name: 'totalSupply', type: 'uint256', internalType: 'uint256' },
+      { name: 'integrator', type: 'address', internalType: 'address' },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'getModuleState',
+    inputs: [{ name: 'module', type: 'address', internalType: 'address' }],
+    outputs: [
+      { name: 'state', type: 'uint8', internalType: 'enum ModuleState' },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'integratorFees',
+    inputs: [
+      { name: 'integrator', type: 'address', internalType: 'address' },
+      { name: 'token', type: 'address', internalType: 'address' },
+    ],
+    outputs: [{ name: 'amount', type: 'uint256', internalType: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'migrate',
+    inputs: [{ name: 'asset', type: 'address', internalType: 'address' }],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'owner',
+    inputs: [],
+    outputs: [{ name: '', type: 'address', internalType: 'address' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'protocolFees',
+    inputs: [{ name: 'token', type: 'address', internalType: 'address' }],
+    outputs: [{ name: 'amount', type: 'uint256', internalType: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'renounceOwnership',
+    inputs: [],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'setModuleState',
+    inputs: [
+      { name: 'modules', type: 'address[]', internalType: 'address[]' },
+      { name: 'states', type: 'uint8[]', internalType: 'enum ModuleState[]' },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'transferOwnership',
+    inputs: [{ name: 'newOwner', type: 'address', internalType: 'address' }],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'event',
+    name: 'Collect',
+    inputs: [
+      { name: 'to', type: 'address', indexed: true, internalType: 'address' },
+      {
+        name: 'token',
+        type: 'address',
+        indexed: true,
+        internalType: 'address',
+      },
+      {
+        name: 'amount',
+        type: 'uint256',
+        indexed: false,
+        internalType: 'uint256',
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'Create',
+    inputs: [
+      {
+        name: 'asset',
+        type: 'address',
+        indexed: false,
+        internalType: 'address',
+      },
+      {
+        name: 'numeraire',
+        type: 'address',
+        indexed: true,
+        internalType: 'address',
+      },
+      {
+        name: 'initializer',
+        type: 'address',
+        indexed: false,
+        internalType: 'address',
+      },
+      {
+        name: 'poolOrHook',
+        type: 'address',
+        indexed: false,
+        internalType: 'address',
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'Migrate',
+    inputs: [
+      {
+        name: 'asset',
+        type: 'address',
+        indexed: true,
+        internalType: 'address',
+      },
+      { name: 'pool', type: 'address', indexed: true, internalType: 'address' },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'OwnershipTransferred',
+    inputs: [
+      {
+        name: 'previousOwner',
+        type: 'address',
+        indexed: true,
+        internalType: 'address',
+      },
+      {
+        name: 'newOwner',
+        type: 'address',
+        indexed: true,
+        internalType: 'address',
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'SetModuleState',
+    inputs: [
+      {
+        name: 'module',
+        type: 'address',
+        indexed: true,
+        internalType: 'address',
+      },
+      {
+        name: 'state',
+        type: 'uint8',
+        indexed: true,
+        internalType: 'enum ModuleState',
+      },
+    ],
+    anonymous: false,
+  },
+  { type: 'error', name: 'ArrayLengthsMismatch', inputs: [] },
+  {
+    type: 'error',
+    name: 'OwnableInvalidOwner',
+    inputs: [{ name: 'owner', type: 'address', internalType: 'address' }],
+  },
+  {
+    type: 'error',
+    name: 'OwnableUnauthorizedAccount',
+    inputs: [{ name: 'account', type: 'address', internalType: 'address' }],
+  },
+  {
+    type: 'error',
+    name: 'WrongModuleState',
+    inputs: [
+      { name: 'module', type: 'address', internalType: 'address' },
+      { name: 'expected', type: 'uint8', internalType: 'enum ModuleState' },
+      { name: 'actual', type: 'uint8', internalType: 'enum ModuleState' },
+    ],
+  },
+] as const;
+
+export const uniswapV3InitializerAbi = [
+  {
+    type: 'constructor',
+    inputs: [
+      { name: 'airlock_', type: 'address', internalType: 'address' },
+      {
+        name: 'factory_',
+        type: 'address',
+        internalType: 'contract IUniswapV3Factory',
+      },
+    ],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'airlock',
+    inputs: [],
+    outputs: [{ name: '', type: 'address', internalType: 'address' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'exitLiquidity',
+    inputs: [{ name: 'pool', type: 'address', internalType: 'address' }],
+    outputs: [
+      { name: 'sqrtPriceX96', type: 'uint160', internalType: 'uint160' },
+      { name: 'token0', type: 'address', internalType: 'address' },
+      { name: 'fees0', type: 'uint128', internalType: 'uint128' },
+      { name: 'balance0', type: 'uint128', internalType: 'uint128' },
+      { name: 'token1', type: 'address', internalType: 'address' },
+      { name: 'fees1', type: 'uint128', internalType: 'uint128' },
+      { name: 'balance1', type: 'uint128', internalType: 'uint128' },
+    ],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'factory',
+    inputs: [],
+    outputs: [
+      { name: '', type: 'address', internalType: 'contract IUniswapV3Factory' },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'getState',
+    inputs: [{ name: 'pool', type: 'address', internalType: 'address' }],
+    outputs: [
+      { name: 'asset', type: 'address', internalType: 'address' },
+      { name: 'numeraire', type: 'address', internalType: 'address' },
+      { name: 'tickLower', type: 'int24', internalType: 'int24' },
+      { name: 'tickUpper', type: 'int24', internalType: 'int24' },
+      { name: 'numPositions', type: 'uint16', internalType: 'uint16' },
+      { name: 'isInitialized', type: 'bool', internalType: 'bool' },
+      { name: 'isExited', type: 'bool', internalType: 'bool' },
+      { name: 'maxShareToBeSold', type: 'uint256', internalType: 'uint256' },
+      { name: 'maxShareToBond', type: 'uint256', internalType: 'uint256' },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'initialize',
+    inputs: [
+      { name: 'asset', type: 'address', internalType: 'address' },
+      { name: 'numeraire', type: 'address', internalType: 'address' },
+      { name: '', type: 'uint256', internalType: 'uint256' },
+      { name: '', type: 'bytes32', internalType: 'bytes32' },
+      { name: 'data', type: 'bytes', internalType: 'bytes' },
+    ],
+    outputs: [{ name: 'pool', type: 'address', internalType: 'address' }],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'uniswapV3MintCallback',
+    inputs: [
+      { name: 'amount0Owed', type: 'uint256', internalType: 'uint256' },
+      { name: 'amount1Owed', type: 'uint256', internalType: 'uint256' },
+      { name: 'data', type: 'bytes', internalType: 'bytes' },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'error',
+    name: 'CannotMigrateInsufficientTick',
+    inputs: [
+      { name: 'targetTick', type: 'int24', internalType: 'int24' },
+      { name: 'currentTick', type: 'int24', internalType: 'int24' },
+    ],
+  },
+  { type: 'error', name: 'CannotMintZeroLiquidity', inputs: [] },
+  {
+    type: 'error',
+    name: 'InvalidFee',
+    inputs: [{ name: 'fee', type: 'uint24', internalType: 'uint24' }],
+  },
+  {
+    type: 'error',
+    name: 'InvalidTickRange',
+    inputs: [
+      { name: 'tick', type: 'int24', internalType: 'int24' },
+      { name: 'tickSpacing', type: 'int24', internalType: 'int24' },
+    ],
+  },
+  {
+    type: 'error',
+    name: 'InvalidTickRangeMisordered',
+    inputs: [
+      { name: 'tickLower', type: 'int24', internalType: 'int24' },
+      { name: 'tickUpper', type: 'int24', internalType: 'int24' },
+    ],
+  },
+  { type: 'error', name: 'OnlyPool', inputs: [] },
+  { type: 'error', name: 'PoolAlreadyExited', inputs: [] },
+  { type: 'error', name: 'PoolAlreadyInitialized', inputs: [] },
+  { type: 'error', name: 'SenderNotAirlock', inputs: [] },
+] as const;
+
+export const onchainRouterAbi = [
+  {
+    type: 'constructor',
+    inputs: [
+      { name: '_v2Factory', type: 'address', internalType: 'address' },
+      { name: '_v3Factory', type: 'address', internalType: 'address' },
+      { name: '_weth', type: 'address', internalType: 'address' },
+    ],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'WETH',
+    inputs: [],
+    outputs: [{ name: '', type: 'address', internalType: 'address' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'addNewFeeTier',
+    inputs: [{ name: 'feeTier', type: 'uint24', internalType: 'uint24' }],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'feeTiers',
+    inputs: [{ name: '', type: 'uint256', internalType: 'uint256' }],
+    outputs: [{ name: '', type: 'uint24', internalType: 'uint24' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'routeExactInput',
+    inputs: [
+      {
+        name: 'params',
+        type: 'tuple',
+        internalType: 'struct SwapParams',
+        components: [
+          { name: 'tokenIn', type: 'address', internalType: 'address' },
+          { name: 'tokenOut', type: 'address', internalType: 'address' },
+          { name: 'amountSpecified', type: 'uint256', internalType: 'uint256' },
+        ],
+      },
+    ],
+    outputs: [
+      {
+        name: 'bestQuote',
+        type: 'tuple',
+        internalType: 'struct Quote',
+        components: [
+          {
+            name: 'path',
+            type: 'tuple[]',
+            internalType: 'struct Pool[]',
+            components: [
+              { name: 'tokenIn', type: 'address', internalType: 'address' },
+              { name: 'tokenOut', type: 'address', internalType: 'address' },
+              { name: 'fee', type: 'uint24', internalType: 'uint24' },
+              { name: 'pool', type: 'address', internalType: 'address' },
+              { name: 'version', type: 'bool', internalType: 'bool' },
+            ],
+          },
+          { name: 'amountIn', type: 'uint256', internalType: 'uint256' },
+          { name: 'amountOut', type: 'uint256', internalType: 'uint256' },
+        ],
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'routeExactOutput',
+    inputs: [
+      {
+        name: 'params',
+        type: 'tuple',
+        internalType: 'struct SwapParams',
+        components: [
+          { name: 'tokenIn', type: 'address', internalType: 'address' },
+          { name: 'tokenOut', type: 'address', internalType: 'address' },
+          { name: 'amountSpecified', type: 'uint256', internalType: 'uint256' },
+        ],
+      },
+    ],
+    outputs: [
+      {
+        name: 'bestQuote',
+        type: 'tuple',
+        internalType: 'struct Quote',
+        components: [
+          {
+            name: 'path',
+            type: 'tuple[]',
+            internalType: 'struct Pool[]',
+            components: [
+              { name: 'tokenIn', type: 'address', internalType: 'address' },
+              { name: 'tokenOut', type: 'address', internalType: 'address' },
+              { name: 'fee', type: 'uint24', internalType: 'uint24' },
+              { name: 'pool', type: 'address', internalType: 'address' },
+              { name: 'version', type: 'bool', internalType: 'bool' },
+            ],
+          },
+          { name: 'amountIn', type: 'uint256', internalType: 'uint256' },
+          { name: 'amountOut', type: 'uint256', internalType: 'uint256' },
+        ],
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'v2Factory',
+    inputs: [],
+    outputs: [
+      { name: '', type: 'address', internalType: 'contract IUniswapV2Factory' },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'v3Factory',
+    inputs: [],
+    outputs: [
+      { name: '', type: 'address', internalType: 'contract IUniswapV3Factory' },
+    ],
+    stateMutability: 'view',
   },
 ] as const;

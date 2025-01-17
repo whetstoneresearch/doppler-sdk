@@ -1,21 +1,55 @@
 import { useQuery } from "@tanstack/react-query";
 import { Address } from "viem";
-import { ReadUniswapV3Pool } from "doppler-v3-sdk";
-import { getDrift } from "../utils/drift";
 import {
-  fetchDopplerAssetData,
-  useDopplerAssetData,
-} from "./useDopplerAssetData";
-import { MarketDetails } from "../types";
-import { fetchDerc20TokenData, useTokenData } from "./useToken";
+  AssetData,
+  ReadUniswapV3Pool,
+  Slot0,
+  ReadUniswapV3Initializer,
+  PoolState,
+  ReadDerc20,
+} from "doppler-v3-sdk";
+import { getDrift } from "../utils/drift";
+import { useAssetData } from "./useMarketDetails";
+import { useTokenData } from "./useToken";
 
-const fetchPositionData = async (marketDetails: MarketDetails) => {
+interface PoolData {
+  poolBalance: bigint;
+  initializerState: PoolState;
+  slot0: Slot0;
+  positions: Position[];
+}
+
+interface Position {
+  tickLower: number;
+  tickUpper: number;
+  liquidity: bigint;
+}
+
+const fetchPositionData = async (
+  assetData?: AssetData,
+  assetAddress?: Address,
+  initializerAddress?: Address
+): Promise<PoolData> => {
+  if (!assetData) {
+    throw "Asset data not found";
+  }
+
+  if (!initializerAddress) {
+    throw "Initializer address not found";
+  }
+
+  if (!assetAddress) {
+    throw "Asset address not found";
+  }
+
   const drift = getDrift();
-  const { assetData } = marketDetails;
   const pool = new ReadUniswapV3Pool(assetData.pool, drift);
+  const initializer = new ReadUniswapV3Initializer(initializerAddress, drift);
+  const asset = new ReadDerc20(assetAddress, drift);
 
+  const poolBalance = await asset.getBalanceOf(assetData.pool);
+  const initializerState = await initializer.getState(assetData.pool);
   const slot0 = await pool.getSlot0();
-
   const mintEvents = await pool.getMintEvents({
     fromBlock: 0n,
     toBlock: "latest",
@@ -24,79 +58,66 @@ const fetchPositionData = async (marketDetails: MarketDetails) => {
     },
   });
 
-  const positions = mintEvents.map((event) => ({
+  const positions: Position[] = mintEvents.map((event) => ({
     tickLower: event.args?.tickLower ?? 0,
     tickUpper: event.args?.tickUpper ?? 0,
     liquidity: event.args?.amount ?? 0n,
   }));
 
   return {
-    marketDetails,
+    poolBalance,
+    initializerState,
     slot0,
     positions,
   };
 };
 
-export function usePoolData(airlock: Address, assetAddress: Address) {
-  const {
-    data: assetData,
-    isLoading: assetDataLoading,
-    error: assetDataError,
-  } = useQuery({
-    queryKey: ["doppler-asset-data", assetAddress],
-    queryFn: async () => {
-      return fetchDopplerAssetData(airlock, assetAddress);
-    },
-  });
+export function usePoolData(
+  airlock: Address | undefined,
+  initializerAddress: Address | undefined,
+  assetAddress: Address | undefined
+) {
+  const assetDataQuery = useAssetData(airlock, assetAddress);
+  const numeraireQuery = useTokenData(assetDataQuery.data?.numeraire);
+  const assetQuery = useTokenData(assetAddress);
 
-  const {
-    data: asset,
-    isLoading: assetLoading,
-    error: assetError,
-  } = useQuery({
-    queryKey: ["token-data", assetAddress],
+  const poolDataQuery = useQuery({
+    queryKey: ["pool-data", assetDataQuery.data?.pool],
     queryFn: async () => {
-      return fetchDerc20TokenData(assetAddress);
-    },
-  });
-
-  const {
-    data: numeraire,
-    isLoading: numeraireLoading,
-    error: numeraireError,
-  } = useQuery({
-    queryKey: ["token-data", assetData?.numeraire],
-    queryFn: async () => {
-      return fetchDerc20TokenData(assetData?.numeraire as Address);
-    },
-    enabled: !!assetData,
-  });
-
-  const {
-    data: poolData,
-    isLoading: poolDataLoading,
-    error: poolDataError,
-  } = useQuery({
-    queryKey: ["pools", assetData?.pool],
-    queryFn: async () => {
-      if (!assetData || !asset || !numeraire) {
+      if (!assetDataQuery.data) {
         throw new Error("Market details not found");
       }
 
-      const poolDatas = await fetchPositionData({
-        assetData,
-        asset,
-        numeraire,
-      });
+      const poolDatas = await fetchPositionData(
+        assetDataQuery.data,
+        assetAddress,
+        initializerAddress
+      );
+
       return poolDatas;
     },
-    enabled: !!assetData && !!asset && !!numeraire,
+    enabled:
+      Boolean(assetDataQuery.data) &&
+      Boolean(numeraireQuery.data) &&
+      Boolean(assetQuery.data),
   });
 
   return {
     isLoading:
-      poolDataLoading || assetDataLoading || assetLoading || numeraireLoading,
-    error: poolDataError || assetDataError || assetError || numeraireError,
-    data: poolData,
+      assetDataQuery.isLoading ||
+      assetQuery.isLoading ||
+      numeraireQuery.isLoading ||
+      poolDataQuery.isLoading,
+    error:
+      assetDataQuery.error ||
+      assetQuery.error ||
+      numeraireQuery.error ||
+      poolDataQuery.error,
+    data: {
+      assetData: assetDataQuery.data,
+      numeraire: numeraireQuery.data,
+      asset: assetQuery.data,
+      poolData: poolDataQuery.data,
+    },
   };
 }

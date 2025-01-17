@@ -1,10 +1,32 @@
-export const AirlockABI = [
+export const airlockAbi = [
   {
     type: "constructor",
     inputs: [{ name: "owner_", type: "address", internalType: "address" }],
     stateMutability: "nonpayable",
   },
   { type: "receive", stateMutability: "payable" },
+  {
+    type: "function",
+    name: "collectIntegratorFees",
+    inputs: [
+      { name: "to", type: "address", internalType: "address" },
+      { name: "token", type: "address", internalType: "address" },
+      { name: "amount", type: "uint256", internalType: "uint256" },
+    ],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "collectProtocolFees",
+    inputs: [
+      { name: "to", type: "address", internalType: "address" },
+      { name: "token", type: "address", internalType: "address" },
+      { name: "amount", type: "uint256", internalType: "uint256" },
+    ],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
   {
     type: "function",
     name: "create",
@@ -36,6 +58,7 @@ export const AirlockABI = [
         internalType: "contract ILiquidityMigrator",
       },
       { name: "liquidityMigratorData", type: "bytes", internalType: "bytes" },
+      { name: "integrator", type: "address", internalType: "address" },
       { name: "salt", type: "bytes32", internalType: "bytes32" },
     ],
     outputs: [
@@ -67,6 +90,9 @@ export const AirlockABI = [
       },
       { name: "pool", type: "address", internalType: "address" },
       { name: "migrationPool", type: "address", internalType: "address" },
+      { name: "numTokensToSell", type: "uint256", internalType: "uint256" },
+      { name: "totalSupply", type: "uint256", internalType: "uint256" },
+      { name: "integrator", type: "address", internalType: "address" },
     ],
     stateMutability: "view",
   },
@@ -81,6 +107,16 @@ export const AirlockABI = [
   },
   {
     type: "function",
+    name: "integratorFees",
+    inputs: [
+      { name: "integrator", type: "address", internalType: "address" },
+      { name: "token", type: "address", internalType: "address" },
+    ],
+    outputs: [{ name: "amount", type: "uint256", internalType: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
     name: "migrate",
     inputs: [{ name: "asset", type: "address", internalType: "address" }],
     outputs: [],
@@ -91,6 +127,13 @@ export const AirlockABI = [
     name: "owner",
     inputs: [],
     outputs: [{ name: "", type: "address", internalType: "address" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "protocolFees",
+    inputs: [{ name: "token", type: "address", internalType: "address" }],
+    outputs: [{ name: "amount", type: "uint256", internalType: "uint256" }],
     stateMutability: "view",
   },
   {
@@ -119,6 +162,26 @@ export const AirlockABI = [
   },
   {
     type: "event",
+    name: "Collect",
+    inputs: [
+      { name: "to", type: "address", indexed: true, internalType: "address" },
+      {
+        name: "token",
+        type: "address",
+        indexed: true,
+        internalType: "address",
+      },
+      {
+        name: "amount",
+        type: "uint256",
+        indexed: false,
+        internalType: "uint256",
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: "event",
     name: "Create",
     inputs: [
       {
@@ -133,6 +196,18 @@ export const AirlockABI = [
         indexed: true,
         internalType: "address",
       },
+      {
+        name: "initializer",
+        type: "address",
+        indexed: false,
+        internalType: "address",
+      },
+      {
+        name: "poolOrHook",
+        type: "address",
+        indexed: false,
+        internalType: "address",
+      },
     ],
     anonymous: false,
   },
@@ -143,15 +218,10 @@ export const AirlockABI = [
       {
         name: "asset",
         type: "address",
-        indexed: false,
+        indexed: true,
         internalType: "address",
       },
-      {
-        name: "pool",
-        type: "address",
-        indexed: false,
-        internalType: "address",
-      },
+      { name: "pool", type: "address", indexed: true, internalType: "address" },
     ],
     anonymous: false,
   },
@@ -181,13 +251,13 @@ export const AirlockABI = [
       {
         name: "module",
         type: "address",
-        indexed: false,
+        indexed: true,
         internalType: "address",
       },
       {
         name: "state",
         type: "uint8",
-        indexed: false,
+        indexed: true,
         internalType: "enum ModuleState",
       },
     ],
@@ -204,5 +274,13 @@ export const AirlockABI = [
     name: "OwnableUnauthorizedAccount",
     inputs: [{ name: "account", type: "address", internalType: "address" }],
   },
-  { type: "error", name: "WrongModuleState", inputs: [] },
+  {
+    type: "error",
+    name: "WrongModuleState",
+    inputs: [
+      { name: "module", type: "address", internalType: "address" },
+      { name: "expected", type: "uint8", internalType: "enum ModuleState" },
+      { name: "actual", type: "uint8", internalType: "enum ModuleState" },
+    ],
+  },
 ] as const;

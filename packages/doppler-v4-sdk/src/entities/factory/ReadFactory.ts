@@ -1,8 +1,7 @@
-import { ReadContract, ReadAdapter, Drift, EventFilter } from '@delvtech/drift';
+import { ReadContract, ReadAdapter, Drift } from '@delvtech/drift';
 import { Address } from 'viem';
 import { airlockAbi } from '@/abis';
-import { PoolKey } from '@uniswap/v4-sdk';
-
+import { AssetData } from '@/types';
 export type AirlockABI = typeof airlockAbi;
 
 export enum ModuleState {
@@ -23,34 +22,29 @@ export class ReadFactory {
     });
   }
 
-  async getModuleState(address: Address): Promise<ModuleState> {
+  async getModuleState(module: Address): Promise<ModuleState> {
     return this.airlock.read('getModuleState', {
-      0: address,
+      module,
     });
   }
 
-  async getTokenData(token: Address): Promise<{
-    poolKey: PoolKey;
-    timelock: Address;
-    governance: Address;
-    migrator: Address;
-  }> {
-    return this.airlock.read('getTokenData', {
-      token,
+  async getAssetData(asset: Address): Promise<AssetData> {
+    return this.airlock.read('getAssetData', {
+      asset,
     });
   }
 
-  async getCreateEvents(): Promise<EventFilter<AirlockABI, 'Create'>> {
-    return this.airlock.getEvents('Create');
-  }
+  // async getCreateEvents(): Promise<EventFilter<AirlockABI, 'Create'>> {
+  //   return this.airlock.getEvents('Create');
+  // }
 
-  async getMigrateEvents(): Promise<EventFilter<AirlockABI, 'Migrate'>> {
-    return this.airlock.getEvents('Migrate');
-  }
+  // async getMigrateEvents(): Promise<EventFilter<AirlockABI, 'Migrate'>> {
+  //   return this.airlock.getEvents('Migrate');
+  // }
 
-  async getSetModuleStateEvents(): Promise<
-    EventFilter<AirlockABI, 'SetModuleState'>
-  > {
-    return this.airlock.getEvents('SetModuleState');
-  }
+  // async getSetModuleStateEvents(): Promise<
+  //   EventFilter<AirlockABI, 'SetModuleState'>
+  // > {
+  //   return this.airlock.getEvents('SetModuleState');
+  // }
 }

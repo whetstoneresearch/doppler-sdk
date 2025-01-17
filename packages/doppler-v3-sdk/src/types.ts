@@ -6,15 +6,13 @@ export interface Clients {
   testClient?: TestClient;
 }
 
-export interface DopplerAddresses {
+export interface DopplerV3Addresses {
   airlock: Address;
   tokenFactory: Address;
-  dopplerFactory: Address;
   governanceFactory: Address;
-  migrator: Address;
-  poolManager: Address;
-  stateView: Address;
-  customRouter: Address;
+  liquidityMigrator: Address;
+  v3Initializer: Address;
+  onchainRouter: Address;
 }
 
 export interface TokenConfig {
@@ -98,5 +96,5 @@ export interface DopplerDeploymentConfig {
 export interface DeployerParams {
   publicClient: PublicClient;
   walletClient: WalletClient;
-  addresses?: DopplerAddresses;
+  addresses?: DopplerV3Addresses;
 }

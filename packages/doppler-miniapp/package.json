@@ -12,13 +12,13 @@
   "dependencies": {
     "@tanstack/react-query": "5.45.1",
     "@worldcoin/minikit-react": "^1.4.0",
+    "doppler-v3-sdk": "^0.1.02",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.0.2",
     "recharts": "^2.15.0",
     "viem": "latest",
-    "wagmi": "latest",
-    "doppler-v3-sdk": "../doppler-v3-sdk"
+    "wagmi": "latest"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.8.0",
@@ -26,9 +26,14 @@
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.2.1",
     "@wagmi/cli": "latest",
+    "autoprefixer": "^10.4.20",
     "buffer": "^6.0.3",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
     "typescript": "^5.4.5",
     "vite": "^5.2.11",
-    "vite-plugin-svgr": "^4.3.0"
-  }
+    "vite-plugin-svgr": "^4.3.0",
+    "@types/bun": "latest"
+  },
+  "module": "index.ts"
 }

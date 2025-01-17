@@ -2,42 +2,54 @@ import { useQuery } from "@tanstack/react-query";
 import { Address } from "viem";
 import { ReadDerc20 } from "doppler-v3-sdk";
 import { getDrift } from "../utils/drift";
-import { QueryOptions, TokenData } from "../types";
+import { TokenData } from "../types";
 
 export const fetchDerc20TokenData = async (
-  tokenAddress: Address
+  address: Address | undefined
 ): Promise<TokenData> => {
-  const drift = getDrift();
-  const token = new ReadDerc20(tokenAddress, drift);
+  if (!address) {
+    throw "Token address is undefined";
+  }
 
-  const [name, symbol, decimals, totalSupply] = await Promise.all([
-    token.getName(),
-    token.getSymbol(),
-    token.getDecimals(),
-    token.getTotalSupply(),
-  ]);
+  try {
+    const drift = getDrift();
+    const token = new ReadDerc20(address, drift);
 
-  return {
-    token,
-    name,
-    symbol,
-    decimals,
-    totalSupply,
-  };
+    const [name, symbol, decimals, totalSupply] = await Promise.all([
+      token.getName(),
+      token.getSymbol(),
+      token.getDecimals(),
+      token.getTotalSupply(),
+    ]);
+
+    if (!name || !symbol || !decimals || !totalSupply) {
+      throw `Failed to fetch token data for ${address}: Token data not found`;
+    }
+
+    return {
+      token,
+      name,
+      symbol,
+      decimals,
+      totalSupply,
+    };
+  } catch (error) {
+    throw `Failed to fetch token data for ${address}: ${error}`;
+  }
 };
 
-export function useTokenData(tokenAddress: Address, options?: QueryOptions) {
+export function useTokenData(address: Address | undefined) {
   const tokenDataQuery = useQuery({
-    queryKey: ["token-data", tokenAddress],
+    queryKey: ["token-data", address],
     queryFn: async () => {
-      return fetchDerc20TokenData(tokenAddress);
+      return fetchDerc20TokenData(address);
     },
-    ...options,
+    enabled: Boolean(address),
   });
 
-  return {
-    isLoading: tokenDataQuery.isLoading,
-    error: tokenDataQuery.error,
-    data: tokenDataQuery.data,
-  };
+  if (tokenDataQuery.error) {
+    throw tokenDataQuery.error;
+  }
+
+  return tokenDataQuery;
 }

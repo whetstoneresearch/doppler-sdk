@@ -14,11 +14,11 @@ import {
   DeployDopplerFactoryABI,
   DeployDopplerFactoryDeployedBytecode,
 } from '../abis/DeployDopplerFactoryABI';
-import { Clients, DopplerAddresses } from '../../types';
+import { Clients, DopplerV4Addresses } from '../../types';
 
 interface TestEnvironment {
   clients: Clients;
-  addresses: DopplerAddresses;
+  addresses: DopplerV4Addresses;
 }
 
 export async function setupTestEnvironment(): Promise<TestEnvironment> {
@@ -57,7 +57,7 @@ export async function setupTestEnvironment(): Promise<TestEnvironment> {
   const deployContractsHash = await walletClient.writeContract({
     abi: DeployDopplerFactoryABI,
     address: deploymentFactoryAddress,
-    functionName: 'run',
+    functionName: 'deploy',
     account: walletClient.account,
   });
 
@@ -65,23 +65,41 @@ export async function setupTestEnvironment(): Promise<TestEnvironment> {
     hash: deployContractsHash,
   });
 
-  const contractAddresses = await publicClient.readContract({
+  const {
+    airlock,
+    tokenFactory,
+    dopplerDeployer,
+    uniswapV4Initializer,
+    uniswapV3Initializer,
+    governanceFactory,
+    uniswapV2LiquidityMigrator,
+    customRouter2,
+    manager,
+    quoter,
+    stateView,
+    uniRouter,
+  } = await publicClient.readContract({
     abi: DeployDopplerFactoryABI,
     address: deploymentFactoryAddress,
-    functionName: 'getDeploymentAddresses',
+    functionName: 'getAddrs',
   });
 
   // Deploy your contracts here and get their addresses
   // You'll need to deploy: poolManager, airlock, tokenFactory, etc.
+  // TODO: Fix this
   const addresses = {
-    airlock: contractAddresses[0] as Address,
-    tokenFactory: contractAddresses[1] as Address,
-    dopplerFactory: contractAddresses[2] as Address,
-    governanceFactory: contractAddresses[3] as Address,
-    migrator: contractAddresses[4] as Address,
-    poolManager: contractAddresses[5] as Address,
-    stateView: contractAddresses[6] as Address,
-    customRouter: contractAddresses[7] as Address,
+    airlock,
+    tokenFactory,
+    dopplerDeployer,
+    v4Initializer: uniswapV4Initializer,
+    v3Initializer: uniswapV3Initializer,
+    governanceFactory,
+    migrator: uniswapV2LiquidityMigrator,
+    customRouter: customRouter2,
+    poolManager: manager,
+    quoter,
+    stateView,
+    uniRouter,
   };
 
   return {

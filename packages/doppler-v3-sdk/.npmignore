@@ -1,0 +1,8 @@
+src/
+test/
+coverage/
+.github/
+.git/
+.gitignore
+.env
+*.log

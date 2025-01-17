@@ -11,6 +11,10 @@ function HomePage() {
     error: poolDataError,
   } = usePoolCreationDatas(addresses.airlock);
 
+  if (poolDataError) {
+    throw poolDataError;
+  }
+
   return (
     <div className="home-page">
       <div className="doppler-actions">

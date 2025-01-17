@@ -1,16 +1,14 @@
 import { Address } from 'viem';
-import { DopplerAddresses } from './types';
+import { DopplerV3Addresses } from './types';
 
-export const DOPPLER_ADDRESSES: { [chainId: number]: DopplerAddresses } = {
+export const DOPPLER_V3_ADDRESSES: { [chainId: number]: DopplerV3Addresses } = {
   // unichain sepolia
   1301: {
-    airlock: '0x9d4454b023096f34b160d6b654540c56a1f81688' as Address,
-    tokenFactory: '0x5eb3bc0a489c5a8288765d2336659ebca68fcd00' as Address,
-    dopplerFactory: '0x4c5859f0f772848b2d91f1d83e2fe57935348029' as Address,
-    governanceFactory: '0x36c02da8a0983159322a80ffe9f24b1acff8b570' as Address,
-    migrator: '0x809d550fca64d94bd9f66e60752a544199cfac3d' as Address,
-    poolManager: '0xc81462fec8b23319f288047f8a03a57682a35c1a' as Address,
-    stateView: '0xde04c804dc75e90d8a64e5589092a1d6692efa45' as Address,
-    customRouter: '0x8f86403a4de0bb5791fa46b8e795c547942fe4cf' as Address,
+    airlock: '0x3d067F7091c9743De932CcD808Ee3D01C51F881F' as Address,
+    tokenFactory: '0x8993Cbb0b951ca1472DC09112B9a726aC088b50f' as Address,
+    v3Initializer: '0x5Cf5D175bC74319d4AF42f3026aF6446901559a7' as Address,
+    governanceFactory: '0xD7Bd7A6C5847536486C262c9a47C2903ec41d978' as Address,
+    liquidityMigrator: '0x106dA038525f8D5DA14e8E9094CF2235221659fB' as Address,
+    onchainRouter: '0x9Ec3227C59D3a9052930c9C310f65EC2D42fFbd2' as Address,
   },
 };

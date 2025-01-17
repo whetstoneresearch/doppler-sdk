@@ -1,4 +1,4 @@
-export const uniswapV3PoolAbi = [
+export const UniswapV3PoolABI = [
   { inputs: [], stateMutability: "nonpayable", type: "constructor" },
   {
     anonymous: false,

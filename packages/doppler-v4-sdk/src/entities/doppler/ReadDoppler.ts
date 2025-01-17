@@ -1,4 +1,4 @@
-import { ReadContract, ReadAdapter, Drift, EventFilter } from '@delvtech/drift';
+import { ReadContract, ReadAdapter, Drift } from '@delvtech/drift';
 import { Address } from 'abitype';
 import { dopplerAbi, stateViewAbi } from '@/abis';
 import { encodePacked, Hex, keccak256 } from 'viem';
@@ -109,55 +109,7 @@ export class ReadDoppler {
     return this.doppler.read('earlyExit');
   }
 
-  async getNumTokensToSell(): Promise<bigint> {
-    return this.doppler.read('numTokensToSell');
-  }
-
-  async getMinimumProceeds(): Promise<bigint> {
-    return this.doppler.read('minimumProceeds');
-  }
-
-  async getMaximumProceeds(): Promise<bigint> {
-    return this.doppler.read('maximumProceeds');
-  }
-
-  async getStartingTime(): Promise<bigint> {
-    return this.doppler.read('startingTime');
-  }
-
-  async getEndingTime(): Promise<bigint> {
-    return this.doppler.read('endingTime');
-  }
-
-  async getStartingTick(): Promise<number> {
-    return this.doppler.read('startingTick');
-  }
-
-  async getEndingTick(): Promise<number> {
-    return this.doppler.read('endingTick');
-  }
-
-  async getEpochLength(): Promise<bigint> {
-    return this.doppler.read('epochLength');
-  }
-
-  async getGamma(): Promise<number> {
-    return this.doppler.read('gamma');
-  }
-
-  async getIsToken0(): Promise<boolean> {
-    return this.doppler.read('isToken0');
-  }
-
-  async getNumPDSlugs(): Promise<bigint> {
-    return this.doppler.read('numPDSlugs');
-  }
-
-  async getTotalEpochs(): Promise<bigint> {
-    return this.doppler.read('totalEpochs');
-  }
-
-  async getSwapEvents(): Promise<EventFilter<DopplerABI, 'DopplerSwap'>> {
-    return this.doppler.getEvents('DopplerSwap');
-  }
+  // async getSwapEvents(): Promise<EventFilter<DopplerABI, 'DopplerSwap'>> {
+  //   return this.doppler.getEvents('DopplerSwap');
+  // }
 }

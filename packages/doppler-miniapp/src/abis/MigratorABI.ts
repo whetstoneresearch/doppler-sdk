@@ -9,14 +9,13 @@ export const MigratorABI = [
         internalType: "contract IUniswapV2Factory",
       },
       {
-        name: "router_",
+        name: "router",
         type: "address",
         internalType: "contract IUniswapV2Router02",
       },
     ],
     stateMutability: "nonpayable",
   },
-  { type: "receive", stateMutability: "payable" },
   {
     type: "function",
     name: "airlock",
@@ -58,27 +57,13 @@ export const MigratorABI = [
     type: "function",
     name: "migrate",
     inputs: [
+      { name: "sqrtPriceX96", type: "uint160", internalType: "uint160" },
       { name: "token0", type: "address", internalType: "address" },
       { name: "token1", type: "address", internalType: "address" },
-      { name: "price", type: "uint256", internalType: "uint256" },
       { name: "recipient", type: "address", internalType: "address" },
-      { name: "", type: "bytes", internalType: "bytes" },
     ],
-    outputs: [],
+    outputs: [{ name: "liquidity", type: "uint256", internalType: "uint256" }],
     stateMutability: "payable",
-  },
-  {
-    type: "function",
-    name: "router",
-    inputs: [],
-    outputs: [
-      {
-        name: "",
-        type: "address",
-        internalType: "contract IUniswapV2Router02",
-      },
-    ],
-    stateMutability: "view",
   },
   {
     type: "function",
@@ -87,6 +72,5 @@ export const MigratorABI = [
     outputs: [{ name: "", type: "address", internalType: "contract WETH" }],
     stateMutability: "view",
   },
-  { type: "error", name: "NotAirlock", inputs: [] },
-  { type: "error", name: "SenderNotRouter", inputs: [] },
+  { type: "error", name: "SenderNotAirlock", inputs: [] },
 ] as const;

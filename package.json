@@ -11,10 +11,8 @@
   ],
   "resolutions": {
     "typescript": "^5.5.4",
-    "viem": "2.21.55"
-  },
-  "scripts": {
-    "build": "bun build ./packages/doppler-v3-sdk && bun build ./packages/doppler-v4-sdk"
+    "viem": "2.21.55",
+    "ethers": "^5.0.8"
   }
 }
 

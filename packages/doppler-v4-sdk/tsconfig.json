@@ -1,18 +1,29 @@
 {
   // see https://www.typescriptlang.org/tsconfig to better understand tsconfigs
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "coverage"],
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "coverage"
+  ],
   "compilerOptions": {
-    "types": ["node"],
+    "types": [
+      "node"
+    ],
     "target": "ES2020",
     "module": "ESNext",
     "importHelpers": true,
     "declaration": true,
+    "declarationMap": true,
     "sourceMap": true,
     "outDir": "./dist",
     "rootDir": "./src",
-    "paths":{
-      "@/*": ["./src/*"]
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
     },
     "strict": true,
     "strictNullChecks": true,

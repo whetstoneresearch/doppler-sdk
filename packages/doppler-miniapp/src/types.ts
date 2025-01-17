@@ -6,15 +6,16 @@ import { AssetData, ReadDerc20 } from "doppler-v3-sdk";
 
 export type QueryOptions =
   | UseSuspenseQueryOptions
-  | (UseQueryOptions & {
+  | UseQueryOptions
+  | {
       enabled?: boolean;
-    });
+    };
 
-export type MarketDetails = {
+export interface MarketDetails {
   assetData: AssetData;
   asset: TokenData;
   numeraire: TokenData;
-};
+}
 
 export interface TokenData {
   token: ReadDerc20;
@@ -22,5 +23,4 @@ export interface TokenData {
   symbol: string;
   decimals: number;
   totalSupply?: bigint;
-  poolBalance?: bigint;
 }

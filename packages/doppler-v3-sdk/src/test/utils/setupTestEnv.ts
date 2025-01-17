@@ -14,11 +14,11 @@ import {
   DeployDopplerFactoryABI,
   DeployDopplerFactoryDeployedBytecode,
 } from '../abis/DeployDopplerFactoryABI';
-import { Clients, DopplerAddresses } from '../../types';
+import { Clients, DopplerV3Addresses } from '../../types';
 
 interface TestEnvironment {
   clients: Clients;
-  addresses: DopplerAddresses;
+  addresses: DopplerV3Addresses;
 }
 
 export async function setupTestEnvironment(): Promise<TestEnvironment> {
@@ -73,15 +73,17 @@ export async function setupTestEnvironment(): Promise<TestEnvironment> {
 
   // Deploy your contracts here and get their addresses
   // You'll need to deploy: poolManager, airlock, tokenFactory, etc.
+  // NOTE: THIS DOES NOT WORK RIGHT NOW. ADDRESSES ARE NOT CORRECT.
+  // NEITHER IS THE DEPLOYER FACTORY ABI
+  // WILL UPDATE WHEN I CAN
   const addresses = {
     airlock: contractAddresses[0] as Address,
     tokenFactory: contractAddresses[1] as Address,
-    dopplerFactory: contractAddresses[2] as Address,
     governanceFactory: contractAddresses[3] as Address,
-    migrator: contractAddresses[4] as Address,
+    liquidityMigrator: contractAddresses[4] as Address,
     poolManager: contractAddresses[5] as Address,
-    stateView: contractAddresses[6] as Address,
-    customRouter: contractAddresses[7] as Address,
+    v3Initializer: contractAddresses[6] as Address,
+    onchainRouter: contractAddresses[7] as Address,
   };
 
   return {

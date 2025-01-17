@@ -6,15 +6,19 @@ export interface Clients {
   testClient?: TestClient;
 }
 
-export interface DopplerAddresses {
+export interface DopplerV4Addresses {
   airlock: Address;
   tokenFactory: Address;
-  dopplerFactory: Address;
+  v4Initializer: Address;
+  v3Initializer?: Address;
   governanceFactory: Address;
   migrator: Address;
-  poolManager: Address;
   stateView: Address;
+  quoter: Address;
   customRouter: Address;
+  poolManager: Address;
+  dopplerDeployer: Address;
+  uniRouter: Address;
 }
 
 export interface TokenConfig {
@@ -81,6 +85,17 @@ export interface DopplerPreDeploymentConfig {
   numPdSlugs?: number; // uses a default if not set
 }
 
+export interface AssetData {
+  numeraire: Address;
+  poolInitializer: Address;
+  timelock: Address;
+  governance: Address;
+  liquidityMigrator: Address;
+  migrationPool: Address;
+  integrator: Address;
+  totalSupply: bigint;
+}
+
 export interface PoolConfig {
   tickSpacing: number;
   fee: number; // In bips (e.g., 3000 for 0.3%)
@@ -98,5 +113,5 @@ export interface DopplerDeploymentConfig {
 export interface DeployerParams {
   publicClient: PublicClient;
   walletClient: WalletClient;
-  addresses?: DopplerAddresses;
+  addresses?: DopplerV4Addresses;
 }
