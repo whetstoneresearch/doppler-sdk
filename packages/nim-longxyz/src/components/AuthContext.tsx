@@ -1,15 +1,11 @@
 /** @jsxImportSource react */
-import { PrivyProvider, usePrivy, useWallets } from '@privy-io/react-auth'
+import { PrivyProvider, usePrivy } from '@privy-io/react-auth'
 import { setPrivy } from './../stores/privy'
-import { setWallet } from '~/stores/wallet'
 
 export default function AuthContext() {
   function PrivySetter({ children }: any) {
     const privy = usePrivy()
     setPrivy(privy)
-
-    const wallet = useWallets()
-    setWallet(wallet)
 
     return <>{children}</>
   }

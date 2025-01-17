@@ -1,9 +1,9 @@
 ---
-import './global.css'
+import SpeedInsights from '@vercel/speed-insights/astro'
 import AuthContext from './components/AuthContext'
 import HeaderMain from './components/HeaderMain/HeaderMain.astro'
 import FooterMain from './components/FooterMain/FooterMain.astro'
-import NavMain from './components/NavMain/NavMain.astro'
+import './global.css'
 import Toastr from './components/Toastr'
 
 interface Props {
@@ -43,7 +43,6 @@ const props = Astro.props
   </head>
   <body>
     <HeaderMain />
-    <NavMain />
     <main>
       <slot />
     </main>
@@ -51,13 +50,13 @@ const props = Astro.props
 
     <AuthContext client:only="react" />
     <Toastr client:idle />
+    <SpeedInsights />
   </body>
 </html>
 
 <style>
   main {
-    max-inline-size: var(--inline-size-6);
-    inline-size: calc(100% - var(--padding-inline-2));
+    max-inline-size: var(--inline-size-4);
     margin-inline: auto;
   }
 </style>

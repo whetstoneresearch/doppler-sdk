@@ -18,7 +18,6 @@ export default function (props: Props) {
         type="text"
         id={`token_name`}
         name={`token_name`}
-        value={state.name.value}
         onInput={e => {
           const { value } = e.target as HTMLInputElement
           setState('name', { ...state.name, value })
@@ -43,7 +42,6 @@ export default function (props: Props) {
         type="text"
         id={`token_symbol`}
         name={`token_symbol`}
-        value={state.symbol.value}
         onInput={e => {
           const { value } = e.target as HTMLInputElement
           setState('symbol', { ...state.symbol, value })

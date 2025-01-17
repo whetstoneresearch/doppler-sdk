@@ -1,7 +1,5 @@
 #form-create {
   display: grid;
-  max-inline-size: var(--inline-size-4);
-  margin-inline: auto;
 
   & :where(fieldset) {
     inline-size: calc(100% - 4em);

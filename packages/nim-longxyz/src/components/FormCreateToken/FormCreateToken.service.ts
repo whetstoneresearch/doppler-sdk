@@ -28,12 +28,12 @@ const formCreateStore = createStore<FromCreateToken>({
   name: {
     errors: [],
     touched: false,
-    value: 'NAME',
+    value: '',
   },
   symbol: {
     errors: [],
     touched: false,
-    value: 'SYM',
+    value: '',
   },
   get hasErrors() {
     return this.name.errors.length > 0 || this.symbol.errors.length > 0

@@ -1,12 +1,5 @@
 {
   "extends": "astro/tsconfigs/strict",
-  "include": [
-    ".astro/types.d.ts",
-    "**/*"
-  ],
-  "exclude": [
-    "dist"
-  ],
   "compilerOptions": {
     "jsx": "preserve",
     "jsxImportSource": "solid-js",
@@ -16,5 +9,11 @@
         "src/*"
       ]
     }
-  }
+  },
+  "exclude": [
+    "node_modules",
+    "dist",
+    "doppler-sdk",
+    "doppler-sdk-v4"
+  ]
 }
