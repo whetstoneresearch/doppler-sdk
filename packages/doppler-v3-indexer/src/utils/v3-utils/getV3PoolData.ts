@@ -1,8 +1,8 @@
 import { Address } from "viem";
 import { Context } from "ponder:registry";
 import { UniswapV3InitializerABI, UniswapV3PoolABI } from "@app/abis";
-import { v3Pool } from "ponder:schema";
 import { addresses } from "@app/types/addresses";
+import { computeV3Price } from "./computeV3Price";
 
 type PoolState = {
   asset: Address;
@@ -25,6 +25,7 @@ export type V3PoolData = {
   liquidity: bigint;
   token0: Address;
   token1: Address;
+  price: bigint;
   poolState: PoolState;
 };
 
@@ -72,6 +73,13 @@ export const getV3PoolData = async ({
     tick: slot0.result?.[1] ?? 0,
   };
 
+  const price = await computeV3Price({
+    sqrtPriceX96: slot0Data.sqrtPrice,
+    baseToken: poolState.asset,
+    context,
+    poolAddress: address,
+  });
+
   const liquidityResult = liquidity?.result ?? 0n;
 
   const token0Result = token0?.result ?? "0x";
@@ -83,6 +91,7 @@ export const getV3PoolData = async ({
     token0: token0Result,
     token1: token1Result,
     poolState,
+    price,
   };
 };
 

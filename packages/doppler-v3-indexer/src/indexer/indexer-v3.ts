@@ -13,17 +13,12 @@ ponder.on("UniswapV3Initializer:Create", async ({ event, context }) => {
     return;
   }
 
-  const { slot0Data, liquidity } = await getV3PoolData({
+  const { slot0Data, liquidity, price } = await getV3PoolData({
     address: poolOrHook,
     context,
   });
 
-  const price = await computeV3Price({
-    sqrtPriceX96: slot0Data.sqrtPrice,
-    baseToken: assetId,
-    context,
-    poolAddress: poolOrHook,
-  });
+  console.log("numeraire", numeraire);
 
   await context.db
     .insert(v3Pool)
@@ -56,16 +51,9 @@ ponder.on("UniswapV3Pool:Mint", async ({ event, context }) => {
   const pool = event.log.address;
   const { tickLower, tickUpper, amount, owner } = event.args;
 
-  const { slot0Data, liquidity, poolState } = await getV3PoolData({
+  const { slot0Data, liquidity, poolState, price } = await getV3PoolData({
     address: pool,
     context,
-  });
-
-  const price = await computeV3Price({
-    sqrtPriceX96: slot0Data.sqrtPrice,
-    baseToken: poolState.asset,
-    context,
-    poolAddress: pool,
   });
 
   await context.db
@@ -104,16 +92,9 @@ ponder.on("UniswapV3Pool:Burn", async ({ event, context }) => {
   const pool = event.log.address;
   const { tickLower, tickUpper, owner, amount } = event.args;
 
-  const { slot0Data, liquidity, poolState } = await getV3PoolData({
+  const { slot0Data, liquidity, poolState, price } = await getV3PoolData({
     address: pool,
     context,
-  });
-
-  const price = await computeV3Price({
-    sqrtPriceX96: slot0Data.sqrtPrice,
-    baseToken: poolState.asset,
-    context,
-    poolAddress: pool,
   });
 
   await context.db
@@ -153,16 +134,9 @@ ponder.on("UniswapV3Pool:Swap", async ({ event, context }) => {
   const { db } = context;
   const pool = event.log.address;
 
-  const { slot0Data, liquidity, poolState } = await getV3PoolData({
+  const { slot0Data, liquidity, poolState, price } = await getV3PoolData({
     address: pool,
     context,
-  });
-
-  const price = await computeV3Price({
-    sqrtPriceX96: slot0Data.sqrtPrice,
-    baseToken: poolState.asset,
-    context,
-    poolAddress: pool,
   });
 
   await db
@@ -174,7 +148,7 @@ ponder.on("UniswapV3Pool:Swap", async ({ event, context }) => {
       createdAt: event.block.timestamp,
       baseToken: poolState.asset,
       quoteToken: poolState.numeraire,
-      price: price,
+      price,
       asset: poolState.asset,
     })
     .onConflictDoUpdate((row) => ({
