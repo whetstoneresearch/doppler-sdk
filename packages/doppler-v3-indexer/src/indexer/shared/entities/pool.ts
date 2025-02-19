@@ -45,8 +45,8 @@ export const insertPoolIfNotExists = async ({
   let dollarLiquidity;
   if (ethPrice) {
     dollarLiquidity = await computeDollarLiquidity({
-      assetBalance: reserve0,
-      quoteBalance: reserve1,
+      assetBalance: reserve1,
+      quoteBalance: reserve0,
       price,
       ethPrice,
     });
