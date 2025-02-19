@@ -30,7 +30,7 @@ ponder.on("Airlock:Migrate", async ({ event, context }) => {
 });
 
 ponder.on("DERC20:Transfer", async ({ event, context }) => {
-  const { db, client } = context;
+  const { db, client, network } = context;
   const { address } = event.log;
   const { timestamp } = event.block;
   const { from, to } = event.args;
@@ -46,6 +46,7 @@ ponder.on("DERC20:Transfer", async ({ event, context }) => {
     .insert(user)
     .values({
       address: to.toLowerCase() as `0x${string}`,
+      chainId: BigInt(network.chainId),
       createdAt: timestamp,
       lastSeenAt: timestamp,
     })
@@ -57,6 +58,7 @@ ponder.on("DERC20:Transfer", async ({ event, context }) => {
     .insert(user)
     .values({
       address: from.toLowerCase() as `0x${string}`,
+      chainId: BigInt(network.chainId),
       createdAt: timestamp,
       lastSeenAt: timestamp,
     })

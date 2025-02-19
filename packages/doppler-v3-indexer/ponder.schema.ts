@@ -7,9 +7,11 @@ export const user = onchainTable(
     address: t.hex().primaryKey(),
     createdAt: t.bigint().notNull(),
     lastSeenAt: t.bigint().notNull(),
+    chainId: t.bigint().notNull(),
   }),
   (table) => ({
     addressIdx: index().on(table.address),
+    chainIdIdx: index().on(table.chainId),
   })
 );
 
@@ -278,12 +280,6 @@ export const v2Pool = onchainTable("v2_pool", (t) => ({
   isToken0: t.boolean().notNull(),
 }));
 
-export const poolConfig = onchainTable("pool_config", (t) => ({
-  pool: t.hex().notNull().primaryKey(),
-  tickLower: t.integer().notNull(),
-  tickUpper: t.integer().notNull(),
-}));
-
 export const userAsset = onchainTable(
   "user_asset",
   (t) => ({
@@ -328,10 +324,6 @@ export const poolRelations = relations(pool, ({ one, many }) => ({
   dailyVolume: one(dailyVolume, {
     fields: [pool.address],
     references: [dailyVolume.pool],
-  }),
-  poolConfig: one(poolConfig, {
-    fields: [pool.address],
-    references: [poolConfig.pool],
   }),
   hourBuckets: many(hourBucket),
   hourBucketUsds: many(hourBucketUsd),

@@ -10,12 +10,10 @@ import {
   PoolManagerABI,
   UniswapV2PairABI,
 } from "./src/abis";
-import { CHAIN_IDS, configs, Network } from "./addresses";
+import { CHAIN_IDS, configs } from "./addresses";
 import { UniswapV2FactoryABI } from "@app/abis/UniswapV2Factory";
 
-// have this read from environment variable
-const network: Network = "unichain";
-const { v2, v3, v4, shared, oracleStartBlock, startBlock } = configs[network];
+const { unichainSepolia, unichain, mainnet } = configs;
 
 export default createConfig({
   database: {
@@ -27,7 +25,7 @@ export default createConfig({
   },
   networks: {
     unichainSepolia: {
-      chainId: CHAIN_IDS[network],
+      chainId: CHAIN_IDS.unichainSepolia,
       transport: http(process.env.PONDER_RPC_URL_1301),
     },
     mainnet: {
@@ -35,81 +33,159 @@ export default createConfig({
       transport: http(process.env.PONDER_RPC_URL_1),
     },
     unichain: {
-      chainId: CHAIN_IDS[network],
+      chainId: CHAIN_IDS.unichain,
       transport: http(process.env.PONDER_RPC_URL_130),
     },
   },
   blocks: {
     ChainlinkEthPriceFeed: {
       network: "mainnet",
-      startBlock: oracleStartBlock,
+      startBlock: mainnet.oracleStartBlock,
       interval: (60 * 5) / 12, // every 5 minutes
     },
   },
   contracts: {
     Airlock: {
       abi: AirlockABI,
-      network,
-      address: shared.airlock,
-      startBlock,
+      network: {
+        unichainSepolia: {
+          startBlock: unichainSepolia.startBlock,
+          address: unichainSepolia.shared.airlock,
+        },
+        unichain: {
+          startBlock: unichain.startBlock,
+          address: unichain.shared.airlock,
+        },
+      },
     },
     UniswapV3Initializer: {
       abi: UniswapV3InitializerABI,
-      network,
-      address: v3.v3Initializer,
-      startBlock,
+      network: {
+        unichainSepolia: {
+          startBlock: unichainSepolia.startBlock,
+          address: unichainSepolia.v3.v3Initializer,
+        },
+        unichain: {
+          startBlock: unichain.startBlock,
+          address: unichain.v3.v3Initializer,
+        },
+      },
     },
     UniswapV4Initializer: {
       abi: UniswapV4InitializerABI,
-      network,
-      address: v4.v4Initializer,
-      startBlock,
+      network: {
+        unichainSepolia: {
+          startBlock: unichainSepolia.startBlock,
+          address: unichainSepolia.v4.v4Initializer,
+        },
+        unichain: {
+          startBlock: unichain.startBlock,
+          address: unichain.v4.v4Initializer,
+        },
+      },
     },
     DERC20: {
       abi: DERC20ABI,
-      network,
-      address: factory({
-        address: v3.v3Initializer,
-        event: getAbiItem({ abi: UniswapV3InitializerABI, name: "Create" }),
-        parameter: "asset",
-      }),
-      startBlock,
+      network: {
+        unichainSepolia: {
+          startBlock: unichainSepolia.startBlock,
+          address: factory({
+            address: unichainSepolia.v3.v3Initializer,
+            event: getAbiItem({ abi: UniswapV3InitializerABI, name: "Create" }),
+            parameter: "asset",
+          }),
+        },
+        unichain: {
+          startBlock: unichain.startBlock,
+          address: factory({
+            address: unichain.v3.v3Initializer,
+            event: getAbiItem({ abi: UniswapV3InitializerABI, name: "Create" }),
+            parameter: "asset",
+          }),
+        },
+      },
     },
     UniswapV3Pool: {
       abi: UniswapV3PoolABI,
-      network,
-      address: factory({
-        address: v3.v3Initializer,
-        event: getAbiItem({ abi: UniswapV3InitializerABI, name: "Create" }),
-        parameter: "poolOrHook",
-      }),
-      startBlock,
+      network: {
+        unichainSepolia: {
+          startBlock: unichainSepolia.startBlock,
+          address: factory({
+            address: unichainSepolia.v3.v3Initializer,
+            event: getAbiItem({ abi: UniswapV3InitializerABI, name: "Create" }),
+            parameter: "poolOrHook",
+          }),
+        },
+        unichain: {
+          startBlock: unichain.startBlock,
+          address: factory({
+            address: unichain.v3.v3Initializer,
+            event: getAbiItem({ abi: UniswapV3InitializerABI, name: "Create" }),
+            parameter: "poolOrHook",
+          }),
+        },
+      },
     },
     UniswapV2Pair: {
       abi: UniswapV2PairABI,
-      network,
-      address: factory({
-        address: v2.factory,
-        event: getAbiItem({ abi: UniswapV2FactoryABI, name: "PairCreated" }),
-        parameter: "pair",
-      }),
-      startBlock,
+      network: {
+        unichainSepolia: {
+          startBlock: unichainSepolia.startBlock,
+          address: factory({
+            address: unichainSepolia.v2.factory,
+            event: getAbiItem({
+              abi: UniswapV2FactoryABI,
+              name: "PairCreated",
+            }),
+            parameter: "pair",
+          }),
+        },
+        unichain: {
+          startBlock: unichain.startBlock,
+          address: factory({
+            address: unichain.v2.factory,
+            event: getAbiItem({
+              abi: UniswapV2FactoryABI,
+              name: "PairCreated",
+            }),
+            parameter: "pair",
+          }),
+        },
+      },
     },
     PoolManager: {
       abi: PoolManagerABI,
-      network,
-      address: v4.poolManager,
-      startBlock,
+      network: {
+        unichainSepolia: {
+          startBlock: unichainSepolia.startBlock,
+          address: unichainSepolia.v4.poolManager,
+        },
+        unichain: {
+          startBlock: unichain.startBlock,
+          address: unichain.v4.poolManager,
+        },
+      },
     },
     UniswapV4Pool: {
       abi: DopplerABI,
-      network,
-      address: factory({
-        address: v4.v4Initializer,
-        event: getAbiItem({ abi: UniswapV4InitializerABI, name: "Create" }),
-        parameter: "poolOrHook",
-      }),
-      startBlock,
+      network: {
+        unichainSepolia: {
+          startBlock: unichainSepolia.startBlock,
+          address: factory({
+            address: unichainSepolia.v4.v4Initializer,
+            event: getAbiItem({ abi: UniswapV4InitializerABI, name: "Create" }),
+            parameter: "poolOrHook",
+          }),
+        },
+        unichain: {
+          startBlock: unichain.startBlock,
+          address: factory({
+            address: unichain.v4.v4Initializer,
+            event: getAbiItem({ abi: UniswapV4InitializerABI, name: "Create" }),
+            parameter: "poolOrHook",
+          }),
+        },
+      },
     },
   },
 });

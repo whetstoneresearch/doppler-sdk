@@ -1,9 +1,6 @@
 import { ponder } from "ponder:registry";
 import { getV3PoolData } from "@app/utils/v3-utils";
-import {
-  computeGraduationThresholdDelta,
-  insertPoolConfigIfNotExists,
-} from "@app/utils/v3-utils/computeGraduationThreshold";
+import { computeGraduationThresholdDelta } from "@app/utils/v3-utils/computeGraduationThreshold";
 import {
   insertPositionIfNotExists,
   updatePosition,
@@ -33,11 +30,6 @@ ponder.on("UniswapV3Initializer:Create", async ({ event, context }) => {
     context,
     isDerc20: true,
     poolAddress: poolOrHook,
-  });
-
-  await insertPoolConfigIfNotExists({
-    poolAddress: poolOrHook,
-    context,
   });
 
   const ethPrice = await fetchEthPrice(event.block.timestamp, context);

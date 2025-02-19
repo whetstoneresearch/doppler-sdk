@@ -1,6 +1,5 @@
 import { UniswapV3InitializerABI } from "@app/abis";
 import { SqrtPriceMath, TickMath } from "@uniswap/v3-sdk";
-import { poolConfig } from "ponder.schema";
 import JSBI from "jsbi";
 import { Context } from "ponder:registry";
 import { Address } from "viem";
@@ -89,56 +88,4 @@ export const computeGraduationThresholdDelta = async ({
     : await getAmount0Delta({ tickLower, tickUpper, liquidity, roundUp: true });
 
   return delta;
-};
-
-export const getPoolConfig = async ({
-  poolAddress,
-  context,
-}: {
-  poolAddress: Address;
-  context: Context;
-}): Promise<{ tickLower: number; tickUpper: number }> => {
-  const { network } = context;
-  const { v3Initializer } = configs[network.name].v3;
-
-  let cfg;
-
-  const dbCfgData = await context.db.find(poolConfig, {
-    pool: poolAddress,
-  });
-
-  if (dbCfgData) {
-    cfg = { tickLower: dbCfgData.tickLower, tickUpper: dbCfgData.tickUpper };
-  } else {
-    const cfgData = await context.client.readContract({
-      abi: UniswapV3InitializerABI,
-      address: v3Initializer,
-      functionName: "getState",
-      args: [poolAddress],
-    });
-
-    cfg = {
-      tickLower: cfgData[2],
-      tickUpper: cfgData[3],
-    };
-  }
-
-  return cfg;
-};
-
-export const insertPoolConfigIfNotExists = async ({
-  poolAddress,
-  context,
-}: {
-  poolAddress: Address;
-  context: Context;
-}) => {
-  const cfg = await getPoolConfig({ poolAddress, context });
-
-  await context.db
-    .insert(poolConfig)
-    .values({ ...cfg, pool: poolAddress })
-    .onConflictDoNothing();
-
-  return cfg;
 };
