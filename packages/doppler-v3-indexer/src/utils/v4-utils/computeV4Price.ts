@@ -19,9 +19,6 @@ export const computeV4Price = async ({
   const ratioX192 = sqrtPriceX96 * sqrtPriceX96;
   const baseTokenDecimalScale = 10 ** baseTokenDecimals;
 
-  console.log("baseTokenDecimalScale", baseTokenDecimalScale);
-  console.log("ratioX192", ratioX192);
-
   const price = isToken0
     ? (ratioX192 * BigInt(baseTokenDecimalScale)) / Q192
     : (Q192 * BigInt(baseTokenDecimalScale)) / ratioX192;
