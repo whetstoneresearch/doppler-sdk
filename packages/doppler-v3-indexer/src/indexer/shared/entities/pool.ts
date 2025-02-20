@@ -42,17 +42,17 @@ export const insertPoolIfNotExists = async ({
 
   const ethPrice = await fetchEthPrice(timestamp, context);
 
+  const isToken0 = token0.toLowerCase() === poolState.asset.toLowerCase();
+
   let dollarLiquidity;
   if (ethPrice) {
     dollarLiquidity = await computeDollarLiquidity({
-      assetBalance: reserve1,
-      quoteBalance: reserve0,
+      assetBalance: isToken0 ? reserve0 : reserve1,
+      quoteBalance: isToken0 ? reserve1 : reserve0,
       price,
       ethPrice,
     });
   }
-
-  const isToken0 = token0.toLowerCase() === poolState.asset.toLowerCase();
 
   return await db.insert(pool).values({
     ...poolData,
