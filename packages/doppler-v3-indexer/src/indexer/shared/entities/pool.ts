@@ -44,6 +44,8 @@ export const insertPoolIfNotExists = async ({
 
   const isToken0 = token0.toLowerCase() === poolState.asset.toLowerCase();
 
+  console.log("isToken0", isToken0);
+
   let dollarLiquidity;
   if (ethPrice) {
     dollarLiquidity = await computeDollarLiquidity({

@@ -79,8 +79,8 @@ ponder.on("UniswapV3Pool:Mint", async ({ event, context }) => {
 
   const { reserve0, reserve1 } = await getV3PoolReserves({
     address,
-    token0: poolEntity.baseToken,
-    token1: poolEntity.quoteToken,
+    token0: poolEntity.isToken0 ? poolEntity.baseToken : poolEntity.quoteToken,
+    token1: poolEntity.isToken0 ? poolEntity.quoteToken : poolEntity.baseToken,
     context,
   });
 
