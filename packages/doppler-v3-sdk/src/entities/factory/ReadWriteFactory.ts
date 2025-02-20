@@ -175,6 +175,32 @@ export interface DefaultConfigs {
   defaultGovernanceConfig?: GovernanceConfig;
 }
 
+export const defaultV3PoolConfig: V3PoolConfig = {
+  startTick: DEFAULT_START_TICK,
+  endTick: DEFAULT_END_TICK,
+  numPositions: DEFAULT_NUM_POSITIONS,
+  maxShareToBeSold: DEFAULT_MAX_SHARE_TO_BE_SOLD,
+  fee: DEFAULT_FEE,
+};
+
+export const defaultVestingConfig: VestingConfig = {
+  yearlyMintRate: DEFAULT_YEARLY_MINT_RATE_WAD,
+  vestingDuration: DEFAULT_VESTING_DURATION,
+  recipients: [],
+  amounts: [],
+};
+
+export const defaultSaleConfig: SaleConfig = {
+  initialSupply: DEFAULT_INITIAL_SUPPLY_WAD,
+  numTokensToSell: DEFAULT_NUM_TOKENS_TO_SELL_WAD,
+};
+
+export const defaultGovernanceConfig: GovernanceConfig = {
+  initialVotingDelay: DEFAULT_INITIAL_VOTING_DELAY,
+  initialVotingPeriod: DEFAULT_INITIAL_VOTING_PERIOD,
+  initialProposalThreshold: DEFAULT_INITIAL_PROPOSAL_THRESHOLD,
+};
+
 /**
  * Factory class for creating and managing Doppler V3 pools with read/write capabilities
  */
@@ -193,36 +219,21 @@ export class ReadWriteFactory extends ReadFactory {
   constructor(
     address: Address,
     drift: Drift<ReadWriteAdapter> = createDrift(),
-    defaultConfigs?: DefaultConfigs
+    configs?: DefaultConfigs
   ) {
     super(address, drift);
 
     // Initialize default configurations with fallback values
-    this.defaultV3PoolConfig = defaultConfigs?.defaultV3PoolConfig ?? {
-      startTick: DEFAULT_START_TICK,
-      endTick: DEFAULT_END_TICK,
-      numPositions: DEFAULT_NUM_POSITIONS,
-      maxShareToBeSold: DEFAULT_MAX_SHARE_TO_BE_SOLD,
-      fee: DEFAULT_FEE,
-    };
+    this.defaultV3PoolConfig =
+      configs?.defaultV3PoolConfig ?? defaultV3PoolConfig;
 
-    this.defaultVestingConfig = defaultConfigs?.defaultVestingConfig ?? {
-      yearlyMintRate: DEFAULT_YEARLY_MINT_RATE_WAD,
-      vestingDuration: DEFAULT_VESTING_DURATION,
-      recipients: [],
-      amounts: [],
-    };
+    this.defaultVestingConfig =
+      configs?.defaultVestingConfig ?? defaultVestingConfig;
 
-    this.defaultSaleConfig = defaultConfigs?.defaultSaleConfig ?? {
-      initialSupply: DEFAULT_INITIAL_SUPPLY_WAD,
-      numTokensToSell: DEFAULT_NUM_TOKENS_TO_SELL_WAD,
-    };
+    this.defaultSaleConfig = configs?.defaultSaleConfig ?? defaultSaleConfig;
 
-    this.defaultGovernanceConfig = defaultConfigs?.defaultGovernanceConfig ?? {
-      initialVotingDelay: DEFAULT_INITIAL_VOTING_DELAY,
-      initialVotingPeriod: DEFAULT_INITIAL_VOTING_PERIOD,
-      initialProposalThreshold: DEFAULT_INITIAL_PROPOSAL_THRESHOLD,
-    };
+    this.defaultGovernanceConfig =
+      configs?.defaultGovernanceConfig ?? defaultGovernanceConfig;
   }
 
   /**
