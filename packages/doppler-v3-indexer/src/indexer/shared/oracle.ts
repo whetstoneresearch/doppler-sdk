@@ -7,17 +7,17 @@ export const fetchEthPrice = async (
   context: Context
 ): Promise<bigint | null> => {
   const { db } = context;
-  const price = await db.sql.query.ethPrice.findFirst({
+  const priceObj = await db.sql.query.ethPrice.findFirst({
     where: and(
       gte(ethPrice.timestamp, timestamp - 10n * 60n),
       lte(ethPrice.timestamp, timestamp)
     ),
   });
 
-  if (!price) {
+  if (!priceObj) {
     console.error("No price found for timestamp", timestamp);
     return null;
   }
 
-  return price.price;
+  return priceObj.price;
 };
