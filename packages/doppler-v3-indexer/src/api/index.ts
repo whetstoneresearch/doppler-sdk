@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { client, graphql, ilike, or } from "ponder";
+import { client, desc, graphql, ilike, or } from "ponder";
 import { db } from "ponder:api";
 import schema, { token } from "ponder:schema";
 import { replaceBigInts } from "ponder";
@@ -21,7 +21,9 @@ app.get("/search/:query", async (c) => {
         ilike(token.symbol, `%${query}%`),
         ilike(token.address, `%${query}%`)
       )
-    );
+    )
+    .orderBy(desc(token.holderCount))
+    .limit(15);
 
   return c.json(replaceBigInts(results, (v) => String(v)));
 });
