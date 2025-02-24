@@ -20,14 +20,20 @@ export const insertV2PoolIfNotExists = async ({
 }): Promise<typeof v2Pool.$inferSelect> => {
   const { db, network } = context;
 
+  const assetAddr = assetAddress.toLowerCase() as `0x${string}`;
+  const poolAddr = poolAddress.toLowerCase() as `0x${string}`;
+
   const asset = await insertAssetIfNotExists({
     assetAddress,
     timestamp,
     context,
   });
 
+  const migrationPoolAddr = asset.migrationPool.toLowerCase() as `0x${string}`;
+  const numeraireAddr = asset.numeraire.toLowerCase() as `0x${string}`;
+
   const pairData = await getPairData({
-    address: asset.migrationPool,
+    address: migrationPoolAddr,
     context,
   });
 
@@ -52,10 +58,10 @@ export const insertV2PoolIfNotExists = async ({
   }
 
   return await db.insert(v2Pool).values({
-    address: asset.migrationPool,
+    address: migrationPoolAddr,
     chainId: BigInt(network.chainId),
-    baseToken: asset.address,
-    quoteToken: asset.numeraire,
+    baseToken: assetAddr,
+    quoteToken: numeraireAddr,
     reserveBaseToken: isToken0 ? reserve0 : reserve1,
     reserveQuoteToken: isToken0 ? reserve1 : reserve0,
     price: dollarPrice,
@@ -79,9 +85,11 @@ export const updateV2Pool = async ({
 }): Promise<typeof v2Pool.$inferSelect> => {
   const { db } = context;
 
+  const address = poolAddress.toLowerCase() as `0x${string}`;
+
   return await db
     .update(v2Pool, {
-      address: poolAddress,
+      address,
     })
     .set(update);
 };

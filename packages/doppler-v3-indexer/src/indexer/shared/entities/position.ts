@@ -20,8 +20,10 @@ export const insertPositionIfNotExists = async ({
   context: Context;
 }): Promise<typeof position.$inferSelect> => {
   const { db, network } = context;
+  const poolAddr = poolAddress.toLowerCase() as `0x${string}`;
+
   const existingPosition = await db.find(position, {
-    pool: poolAddress,
+    pool: poolAddr,
     tickLower: tickLower,
     tickUpper: tickUpper,
     chainId: BigInt(network.chainId),
@@ -32,8 +34,8 @@ export const insertPositionIfNotExists = async ({
   }
 
   return await db.insert(position).values({
-    owner,
-    pool: poolAddress,
+    owner: owner.toLowerCase() as `0x${string}`,
+    pool: poolAddr,
     tickLower,
     tickUpper,
     liquidity,
@@ -56,10 +58,11 @@ export const updatePosition = async ({
   update: Partial<typeof position.$inferInsert>;
 }) => {
   const { db, network } = context;
+  const poolAddr = poolAddress.toLowerCase() as `0x${string}`;
 
   await db
     .update(position, {
-      pool: poolAddress,
+      pool: poolAddr,
       tickLower,
       tickUpper,
       chainId: BigInt(network.chainId),

@@ -15,8 +15,10 @@ export const insertPoolIfNotExists = async ({
   context: Context;
 }): Promise<typeof pool.$inferSelect> => {
   const { db, network } = context;
+  const address = poolAddress.toLowerCase() as `0x${string}`;
+
   const existingPool = await db.find(pool, {
-    address: poolAddress,
+    address,
     chainId: BigInt(network.chainId),
   });
 
@@ -25,7 +27,7 @@ export const insertPoolIfNotExists = async ({
   }
 
   const poolData = await getV3PoolData({
-    address: poolAddress,
+    address,
     context,
   });
 
@@ -44,6 +46,9 @@ export const insertPoolIfNotExists = async ({
 
   const isToken0 = token0.toLowerCase() === poolState.asset.toLowerCase();
 
+  const assetAddr = poolState.asset.toLowerCase() as `0x${string}`;
+  const numeraireAddr = poolState.numeraire.toLowerCase() as `0x${string}`;
+
   let dollarLiquidity;
   if (ethPrice) {
     dollarLiquidity = await computeDollarLiquidity({
@@ -57,18 +62,18 @@ export const insertPoolIfNotExists = async ({
   return await db.insert(pool).values({
     ...poolData,
     ...slot0Data,
-    address: poolAddress,
+    address,
     liquidity: liquidity,
     createdAt: timestamp,
-    asset: poolState.asset,
-    baseToken: poolState.asset,
-    quoteToken: poolState.numeraire,
+    asset: assetAddr,
+    baseToken: assetAddr,
+    quoteToken: numeraireAddr,
     price,
     type: "v3",
     chainId: BigInt(network.chainId),
     fee,
     dollarLiquidity: dollarLiquidity ?? 0n,
-    dailyVolume: poolAddress,
+    dailyVolume: address,
     graduationThreshold: 0n,
     graduationBalance: 0n,
     totalFee0: 0n,
@@ -88,10 +93,11 @@ export const updatePool = async ({
   update?: Partial<typeof pool.$inferInsert>;
 }) => {
   const { db, network } = context;
+  const address = poolAddress.toLowerCase() as `0x${string}`;
 
   await db
     .update(pool, {
-      address: poolAddress,
+      address,
       chainId: BigInt(network.chainId),
     })
     .set({

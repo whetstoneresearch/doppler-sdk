@@ -13,8 +13,10 @@ export const insertAssetIfNotExists = async ({
   context: Context;
 }) => {
   const { db, network } = context;
+  const address = assetAddress.toLowerCase() as `0x${string}`;
+
   const existingAsset = await db.find(asset, {
-    address: assetAddress,
+    address,
   });
 
   if (existingAsset) {
@@ -24,15 +26,16 @@ export const insertAssetIfNotExists = async ({
   const chainId = BigInt(network.chainId);
   const assetData = await getAssetData(assetAddress, context);
 
-  const id = assetAddress.toLowerCase() as `0x${string}`;
+  const poolAddress = assetData.pool.toLowerCase() as `0x${string}`;
+
 
   const isToken0 =
     assetAddress.toLowerCase() < assetData.numeraire.toLowerCase();
 
   return await db.insert(asset).values({
     ...assetData,
-    poolAddress: assetData.pool,
-    address: id,
+    poolAddress,
+    address,
     chainId,
     isToken0,
     createdAt: timestamp,
@@ -51,10 +54,11 @@ export const updateAsset = async ({
   update?: Partial<typeof asset.$inferInsert>;
 }) => {
   const { db } = context;
+  const address = assetAddress.toLowerCase() as `0x${string}`;
 
   await db
     .update(asset, {
-      address: assetAddress,
+      address,
     })
     .set({
       ...update,

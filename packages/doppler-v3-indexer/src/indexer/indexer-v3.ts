@@ -18,14 +18,14 @@ ponder.on("UniswapV3Initializer:Create", async ({ event, context }) => {
   const { poolOrHook, asset: assetId, numeraire } = event.args;
 
   await insertTokenIfNotExists({
-    address: numeraire,
+    tokenAddress: numeraire,
     timestamp: event.block.timestamp,
     context,
     isDerc20: false,
   });
 
   await insertTokenIfNotExists({
-    address: assetId,
+    tokenAddress: assetId,
     timestamp: event.block.timestamp,
     context,
     isDerc20: true,
@@ -113,16 +113,16 @@ ponder.on("UniswapV3Pool:Mint", async ({ event, context }) => {
     context,
     update: dollarLiquidity
       ? {
-          graduationThreshold:
-            poolEntity.graduationThreshold + graduationThresholdDelta,
-          liquidity: poolEntity.liquidity + amount,
-          dollarLiquidity: dollarLiquidity,
-        }
+        graduationThreshold:
+          poolEntity.graduationThreshold + graduationThresholdDelta,
+        liquidity: poolEntity.liquidity + amount,
+        dollarLiquidity: dollarLiquidity,
+      }
       : {
-          graduationThreshold:
-            poolEntity.graduationThreshold + graduationThresholdDelta,
-          liquidity: poolEntity.liquidity + amount,
-        },
+        graduationThreshold:
+          poolEntity.graduationThreshold + graduationThresholdDelta,
+        liquidity: poolEntity.liquidity + amount,
+      },
   });
 
   const positionEntity = await insertPositionIfNotExists({
@@ -193,16 +193,16 @@ ponder.on("UniswapV3Pool:Burn", async ({ event, context }) => {
     context,
     update: dollarLiquidity
       ? {
-          liquidity: liquidity - amount,
-          dollarLiquidity: dollarLiquidity,
-          graduationThreshold:
-            poolEntity.graduationThreshold - graduationThresholdDelta,
-        }
+        liquidity: liquidity - amount,
+        dollarLiquidity: dollarLiquidity,
+        graduationThreshold:
+          poolEntity.graduationThreshold - graduationThresholdDelta,
+      }
       : {
-          liquidity: liquidity - amount,
-          graduationThreshold:
-            poolEntity.graduationThreshold - graduationThresholdDelta,
-        },
+        liquidity: liquidity - amount,
+        graduationThreshold:
+          poolEntity.graduationThreshold - graduationThresholdDelta,
+      },
   });
 
   const positionEntity = await insertPositionIfNotExists({

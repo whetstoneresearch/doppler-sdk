@@ -36,7 +36,7 @@ ponder.on("DERC20:Transfer", async ({ event, context }) => {
   const { from, to } = event.args;
 
   const tokenData = await insertTokenIfNotExists({
-    address,
+    tokenAddress: address,
     timestamp,
     context,
     isDerc20: true,
