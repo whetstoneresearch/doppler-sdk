@@ -249,6 +249,7 @@ export const pool = onchainTable(
     type: t.text().notNull(),
     dollarLiquidity: t.bigint().notNull(),
     dailyVolume: t.hex().notNull(),
+    volumeUsd: t.bigint().notNull(),
     totalFee0: t.bigint().notNull(),
     totalFee1: t.bigint().notNull(),
     graduationThreshold: t.bigint().notNull(),

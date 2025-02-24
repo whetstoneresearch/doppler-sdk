@@ -73,6 +73,7 @@ export const insertPoolIfNotExists = async ({
     graduationBalance: 0n,
     totalFee0: 0n,
     totalFee1: 0n,
+    volumeUsd: 0n,
     isToken0,
   });
 };

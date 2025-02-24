@@ -16,13 +16,8 @@ import {
   secondsInHour,
   CHAINLINK_ETH_DECIMALS,
 } from "@app/utils/constants";
-import { fetchEthPrice } from "./oracle";
 import { configs } from "addresses";
-
-interface Checkpoint {
-  timestamp: string;
-  volumeUsd: string;
-}
+import { updatePool } from "./entities/pool";
 
 export const insertOrUpdateBuckets = async ({
   poolAddress,
@@ -371,20 +366,18 @@ export const insertOrUpdateDailyVolume = async ({
   const { db, network } = context;
 
   let volumeUsd;
-  let volumeNumeraire;
   if (
     tokenIn.toLowerCase() ===
     (configs[network.name].shared.weth.toLowerCase() as `0x${string}`)
   ) {
     volumeUsd = (amountIn * ethPrice) / CHAINLINK_ETH_DECIMALS;
-    volumeNumeraire = amountIn;
   } else {
     const uintAmountOut = amountOut > 0n ? amountOut : -amountOut;
     volumeUsd = (uintAmountOut * ethPrice) / CHAINLINK_ETH_DECIMALS;
-    volumeNumeraire = uintAmountOut;
   }
 
-  return await db
+  let computedVolumeUsd;
+  const volume = await db
     .insert(dailyVolume)
     .values({
       pool: poolAddress.toLowerCase() as `0x${string}`,
@@ -412,10 +405,22 @@ export const insertOrUpdateDailyVolume = async ({
         BigInt(0)
       );
 
+      computedVolumeUsd = totalVolumeUsd;
+
       return {
         volumeUsd: totalVolumeUsd,
         checkpoints: updatedCheckpoints,
         lastUpdated: timestamp,
       };
     });
+
+  await updatePool({
+    poolAddress,
+    context,
+    update: {
+      volumeUsd: computedVolumeUsd,
+    },
+  });
+
+  return volume;
 };
