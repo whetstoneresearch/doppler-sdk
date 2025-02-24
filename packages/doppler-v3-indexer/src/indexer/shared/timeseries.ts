@@ -414,13 +414,15 @@ export const insertOrUpdateDailyVolume = async ({
       };
     });
 
-  await updatePool({
-    poolAddress,
-    context,
-    update: {
-      volumeUsd: computedVolumeUsd,
-    },
-  });
+  if (computedVolumeUsd && computedVolumeUsd > 0n) {
+    await updatePool({
+      poolAddress,
+      context,
+      update: {
+        volumeUsd: computedVolumeUsd,
+      },
+    });
+  }
 
   return volume;
 };
