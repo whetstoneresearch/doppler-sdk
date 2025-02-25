@@ -131,3 +131,24 @@ export const insertTokenIfNotExists = async ({
       }));
   }
 };
+
+export const updateToken = async ({
+  tokenAddress,
+  context,
+  update,
+}: {
+  tokenAddress: Address;
+  context: Context;
+  update: Partial<typeof token.$inferInsert>;
+}): Promise<typeof token.$inferSelect> => {
+  const { db } = context;
+
+  const address = tokenAddress.toLowerCase() as `0x${string}`;
+
+  return await db
+    .update(token, {
+      address,
+    })
+    .set(update);
+};
+

@@ -48,6 +48,7 @@ ponder.on("UniswapV2Pair:Swap", async ({ event, context }) => {
   const { numeraire, poolAddress } = assetData;
 
   const tokenIn = amount0In > 0 ? token0 : token1;
+  const tokenOut = amount0In > 0 ? token1 : token0;
 
   const assetBalance = isToken0 ? reserve0 : reserve1;
   const quoteBalance = isToken0 ? reserve1 : reserve0;
@@ -78,6 +79,7 @@ ponder.on("UniswapV2Pair:Swap", async ({ event, context }) => {
         timestamp,
         context,
         tokenIn,
+        tokenOut,
         ethPrice,
       }),
     ]);
