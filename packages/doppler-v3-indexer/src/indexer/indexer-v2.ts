@@ -3,12 +3,13 @@ import { asset, pool, v2Pool } from "ponder.schema";
 import {
   insertOrUpdateBuckets,
   insertOrUpdateDailyVolume,
+  get24HourPriceChange,
 } from "./shared/timeseries";
 import { computeV2Price } from "@app/utils/v2-utils/computeV2Price";
 import { getPairData } from "@app/utils/v2-utils/getPairData";
 import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
 import { fetchEthPrice } from "./shared/oracle";
-import { updateV2Pool } from "./shared/entities";
+import { insertPoolIfNotExists, updatePool, updateV2Pool } from "./shared/entities";
 import { CHAINLINK_ETH_DECIMALS } from "@app/utils/constants";
 
 ponder.on("UniswapV2Pair:Swap", async ({ event, context }) => {
@@ -37,6 +38,12 @@ ponder.on("UniswapV2Pair:Swap", async ({ event, context }) => {
     return;
   }
 
+  const poolEntity = await insertPoolIfNotExists({
+    poolAddress: v2PoolData.parentPool,
+    timestamp,
+    context,
+  });
+
   // Calculate swap amounts
   const amountIn = amount0In > 0 ? amount0In : amount1In;
   const amountOut = amount0Out > 0 ? amount0Out : amount1Out;
@@ -59,6 +66,7 @@ ponder.on("UniswapV2Pair:Swap", async ({ event, context }) => {
   const ethPrice = await fetchEthPrice(timestamp, context);
 
   let dollarLiquidity;
+  let dayChange;
   if (ethPrice) {
     await Promise.all([
       insertOrUpdateBuckets({
@@ -79,6 +87,15 @@ ponder.on("UniswapV2Pair:Swap", async ({ event, context }) => {
       }),
     ]);
 
+    dayChange = await get24HourPriceChange({
+      poolAddress,
+      currentPrice: price,
+      ethPrice,
+      currentTimestamp: timestamp,
+      createdAt: poolEntity.createdAt,
+      context,
+    });
+
     dollarLiquidity = await computeDollarLiquidity({
       assetBalance,
       quoteBalance,
@@ -92,16 +109,10 @@ ponder.on("UniswapV2Pair:Swap", async ({ event, context }) => {
     });
   }
 
-  // Prepare and execute final update
-  const update = dollarLiquidity ? { price, dollarLiquidity } : { price };
-  await db
-    .update(pool, { address: poolAddress, chainId: BigInt(network.chainId) })
-    .set(update);
+  await updatePool({
+    poolAddress: address,
+    context,
+    update: { price, dollarLiquidity, dayChange: dayChange?.priceChange ?? 0 },
+  });
 });
 
-// ponder.on("UniswapV2Pair:Mint", async ({ event, context }) => {
-//   const { db, network } = context;
-//   const address = event.log.address;
-//   const { amount0, amount1 } = event.args;
-
-// }

@@ -277,6 +277,7 @@ export const v2Pool = onchainTable("v2_pool", (t) => ({
   totalFeeBaseToken: t.bigint().notNull(),
   totalFeeQuoteToken: t.bigint().notNull(),
   price: t.bigint().notNull(),
+  parentPool: t.hex().notNull(),
   v3Pool: t.hex().notNull(),
   migratedAt: t.bigint(),
   migrated: t.boolean().notNull(),
