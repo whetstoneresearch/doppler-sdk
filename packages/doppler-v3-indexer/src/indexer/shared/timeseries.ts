@@ -38,13 +38,6 @@ export const insertOrUpdateBuckets = async ({
   }
 
   await Promise.all([
-    insertOrUpdateHourBucket({
-      poolAddress,
-      price,
-      timestamp,
-      context,
-    }),
-
     insertOrUpdateHourBucketUsd({
       poolAddress,
       price,
@@ -83,223 +76,6 @@ export const insertOrUpdateBuckets = async ({
     //   context,
     // }),
   ]);
-};
-
-const insertOrUpdateThirtyMinuteBucket = async ({
-  poolAddress,
-  price,
-  timestamp,
-  context,
-}: {
-  poolAddress: Address;
-  price: bigint;
-  timestamp: bigint;
-  context: Context;
-}) => {
-  const { db, network } = context;
-  const thirtyMinuteId =
-    Math.floor(Number(timestamp) / secondsIn30Minutes) * secondsIn30Minutes;
-
-  try {
-    await db
-      .insert(thirtyMinuteBucket)
-      .values({
-        thirtyMinuteId,
-        pool: poolAddress.toLowerCase() as `0x${string}`,
-        open: price,
-        close: price,
-        low: price,
-        high: price,
-        average: price,
-        count: 1,
-        chainId: BigInt(network.chainId),
-      })
-      .onConflictDoUpdate((row) => ({
-        close: price,
-        low: row.low < price ? row.low : price,
-        high: row.high > price ? row.high : price,
-        average:
-          (row.average * BigInt(row.count) + price) / BigInt(row.count + 1),
-        count: row.count + 1,
-      }));
-  } catch (e) {
-    console.error("error inserting thirty minute bucket", e);
-  }
-};
-
-const insertOrUpdateThirtyMinuteBucketUsd = async ({
-  poolAddress,
-  price,
-  timestamp,
-  ethPrice,
-  context,
-}: {
-  poolAddress: Address;
-  price: bigint;
-  timestamp: bigint;
-  ethPrice: bigint;
-  context: Context;
-}) => {
-  const { db, network } = context;
-  const thirtyMinuteId =
-    Math.floor(Number(timestamp) / secondsIn30Minutes) * secondsIn30Minutes;
-
-  const usdPrice = (price * ethPrice) / CHAINLINK_ETH_DECIMALS;
-
-  try {
-    await db
-      .insert(thirtyMinuteBucketUsd)
-      .values({
-        thirtyMinuteId,
-        pool: poolAddress.toLowerCase() as `0x${string}`,
-        open: usdPrice,
-        close: usdPrice,
-        low: usdPrice,
-        high: usdPrice,
-        average: usdPrice,
-        count: 1,
-        chainId: BigInt(network.chainId),
-      })
-      .onConflictDoUpdate((row) => ({
-        close: usdPrice,
-        low: row.low < usdPrice ? row.low : usdPrice,
-        high: row.high > usdPrice ? row.high : usdPrice,
-        average:
-          (row.average * BigInt(row.count) + usdPrice) / BigInt(row.count + 1),
-        count: row.count + 1,
-      }));
-  } catch (e) {
-    console.error("error inserting hour bucket", e);
-  }
-};
-
-const insertOrUpdateFifteenMinuteBucket = async ({
-  poolAddress,
-  price,
-  timestamp,
-  context,
-}: {
-  poolAddress: Address;
-  price: bigint;
-  timestamp: bigint;
-  context: Context;
-}) => {
-  const { db, network } = context;
-  const fifteenMinuteId =
-    Math.floor(Number(timestamp) / secondsIn15Minutes) * secondsIn15Minutes;
-
-  try {
-    await db
-      .insert(fifteenMinuteBucket)
-      .values({
-        fifteenMinuteId,
-        pool: poolAddress.toLowerCase() as `0x${string}`,
-        open: price,
-        close: price,
-        low: price,
-        high: price,
-        average: price,
-        count: 1,
-        chainId: BigInt(network.chainId),
-      })
-      .onConflictDoUpdate((row) => ({
-        close: price,
-        low: row.low < price ? row.low : price,
-        high: row.high > price ? row.high : price,
-        average:
-          (row.average * BigInt(row.count) + price) / BigInt(row.count + 1),
-        count: row.count + 1,
-      }));
-  } catch (e) {
-    console.error("error inserting hour bucket", e);
-  }
-};
-
-const insertOrUpdateFifteenMinuteBucketUsd = async ({
-  poolAddress,
-  price,
-  timestamp,
-  ethPrice,
-  context,
-}: {
-  poolAddress: Address;
-  price: bigint;
-  timestamp: bigint;
-  ethPrice: bigint;
-  context: Context;
-}) => {
-  const { db, network } = context;
-  const fifteenMinuteId =
-    Math.floor(Number(timestamp) / secondsIn15Minutes) * secondsIn15Minutes;
-
-  const usdPrice = (price * ethPrice) / CHAINLINK_ETH_DECIMALS;
-
-  try {
-    await db
-      .insert(fifteenMinuteBucketUsd)
-      .values({
-        fifteenMinuteId,
-        pool: poolAddress.toLowerCase() as `0x${string}`,
-        open: usdPrice,
-        close: usdPrice,
-        low: usdPrice,
-        high: usdPrice,
-        average: usdPrice,
-        count: 1,
-        chainId: BigInt(network.chainId),
-      })
-      .onConflictDoUpdate((row) => ({
-        close: usdPrice,
-        low: row.low < usdPrice ? row.low : usdPrice,
-        high: row.high > usdPrice ? row.high : usdPrice,
-        average:
-          (row.average * BigInt(row.count) + usdPrice) / BigInt(row.count + 1),
-        count: row.count + 1,
-      }));
-  } catch (e) {
-    console.error("error inserting hour bucket", e);
-  }
-};
-
-const insertOrUpdateHourBucket = async ({
-  poolAddress,
-  price,
-  timestamp,
-  context,
-}: {
-  poolAddress: Address;
-  price: bigint;
-  timestamp: bigint;
-  context: Context;
-}) => {
-  const { db, network } = context;
-  const hourId = Math.floor(Number(timestamp) / secondsInHour) * secondsInHour;
-
-  try {
-    await db
-      .insert(hourBucket)
-      .values({
-        hourId,
-        pool: poolAddress.toLowerCase() as `0x${string}`,
-        open: price,
-        close: price,
-        low: price,
-        high: price,
-        average: price,
-        count: 1,
-        chainId: BigInt(network.chainId),
-      })
-      .onConflictDoUpdate((row) => ({
-        close: price,
-        low: row.low < price ? row.low : price,
-        high: row.high > price ? row.high : price,
-        average:
-          (row.average * BigInt(row.count) + price) / BigInt(row.count + 1),
-        count: row.count + 1,
-      }));
-  } catch (e) {
-    console.error("error inserting hour bucket", e);
-  }
 };
 
 const insertOrUpdateHourBucketUsd = async ({
@@ -426,3 +202,178 @@ export const insertOrUpdateDailyVolume = async ({
 
   return volume;
 };
+
+// const insertOrUpdateThirtyMinuteBucketUsd = async ({
+//   poolAddress,
+//   price,
+//   timestamp,
+//   ethPrice,
+//   context,
+// }: {
+//   poolAddress: Address;
+//   price: bigint;
+//   timestamp: bigint;
+//   ethPrice: bigint;
+//   context: Context;
+// }) => {
+//   const { db, network } = context;
+//   const thirtyMinuteId =
+//     Math.floor(Number(timestamp) / secondsIn30Minutes) * secondsIn30Minutes;
+
+//   const usdPrice = (price * ethPrice) / CHAINLINK_ETH_DECIMALS;
+
+//   try {
+//     await db
+//       .insert(thirtyMinuteBucketUsd)
+//       .values({
+//         thirtyMinuteId,
+//         pool: poolAddress.toLowerCase() as `0x${string}`,
+//         open: usdPrice,
+//         close: usdPrice,
+//         low: usdPrice,
+//         high: usdPrice,
+//         average: usdPrice,
+//         count: 1,
+//         chainId: BigInt(network.chainId),
+//       })
+//       .onConflictDoUpdate((row) => ({
+//         close: usdPrice,
+//         low: row.low < usdPrice ? row.low : usdPrice,
+//         high: row.high > usdPrice ? row.high : usdPrice,
+//         average:
+//           (row.average * BigInt(row.count) + usdPrice) / BigInt(row.count + 1),
+//         count: row.count + 1,
+//       }));
+//   } catch (e) {
+//     console.error("error inserting hour bucket", e);
+//   }
+// };
+
+// const insertOrUpdateFifteenMinuteBucket = async ({
+//   poolAddress,
+//   price,
+//   timestamp,
+//   context,
+// }: {
+//   poolAddress: Address;
+//   price: bigint;
+//   timestamp: bigint;
+//   context: Context;
+// }) => {
+//   const { db, network } = context;
+//   const fifteenMinuteId =
+//     Math.floor(Number(timestamp) / secondsIn15Minutes) * secondsIn15Minutes;
+
+//   try {
+//     await db
+//       .insert(fifteenMinuteBucket)
+//       .values({
+//         fifteenMinuteId,
+//         pool: poolAddress.toLowerCase() as `0x${string}`,
+//         open: price,
+//         close: price,
+//         low: price,
+//         high: price,
+//         average: price,
+//         count: 1,
+//         chainId: BigInt(network.chainId),
+//       })
+//       .onConflictDoUpdate((row) => ({
+//         close: price,
+//         low: row.low < price ? row.low : price,
+//         high: row.high > price ? row.high : price,
+//         average:
+//           (row.average * BigInt(row.count) + price) / BigInt(row.count + 1),
+//         count: row.count + 1,
+//       }));
+//   } catch (e) {
+//     console.error("error inserting hour bucket", e);
+//   }
+// };
+
+// const insertOrUpdateFifteenMinuteBucketUsd = async ({
+//   poolAddress,
+//   price,
+//   timestamp,
+//   ethPrice,
+//   context,
+// }: {
+//   poolAddress: Address;
+//   price: bigint;
+//   timestamp: bigint;
+//   ethPrice: bigint;
+//   context: Context;
+// }) => {
+//   const { db, network } = context;
+//   const fifteenMinuteId =
+//     Math.floor(Number(timestamp) / secondsIn15Minutes) * secondsIn15Minutes;
+
+//   const usdPrice = (price * ethPrice) / CHAINLINK_ETH_DECIMALS;
+
+//   try {
+//     await db
+//       .insert(fifteenMinuteBucketUsd)
+//       .values({
+//         fifteenMinuteId,
+//         pool: poolAddress.toLowerCase() as `0x${string}`,
+//         open: usdPrice,
+//         close: usdPrice,
+//         low: usdPrice,
+//         high: usdPrice,
+//         average: usdPrice,
+//         count: 1,
+//         chainId: BigInt(network.chainId),
+//       })
+//       .onConflictDoUpdate((row) => ({
+//         close: usdPrice,
+//         low: row.low < usdPrice ? row.low : usdPrice,
+//         high: row.high > usdPrice ? row.high : usdPrice,
+//         average:
+//           (row.average * BigInt(row.count) + usdPrice) / BigInt(row.count + 1),
+//         count: row.count + 1,
+//       }));
+//   } catch (e) {
+//     console.error("error inserting hour bucket", e);
+//   }
+// };
+
+// const insertOrUpdateHourBucket = async ({
+//   poolAddress,
+//   price,
+//   timestamp,
+//   context,
+// }: {
+//   poolAddress: Address;
+//   price: bigint;
+//   timestamp: bigint;
+//   context: Context;
+// }) => {
+//   const { db, network } = context;
+//   const hourId = Math.floor(Number(timestamp) / secondsInHour) * secondsInHour;
+
+//   try {
+//     await db
+//       .insert(hourBucket)
+//       .values({
+//         hourId,
+//         pool: poolAddress.toLowerCase() as `0x${string}`,
+//         open: price,
+//         close: price,
+//         low: price,
+//         high: price,
+//         average: price,
+//         count: 1,
+//         chainId: BigInt(network.chainId),
+//       })
+//       .onConflictDoUpdate((row) => ({
+//         close: price,
+//         low: row.low < price ? row.low : price,
+//         high: row.high > price ? row.high : price,
+//         average:
+//           (row.average * BigInt(row.count) + price) / BigInt(row.count + 1),
+//         count: row.count + 1,
+//       }));
+//   } catch (e) {
+//     console.error("error inserting hour bucket", e);
+//   }
+// };

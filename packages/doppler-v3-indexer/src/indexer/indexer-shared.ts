@@ -1,5 +1,5 @@
 import { ponder } from "ponder:registry";
-import { token, userAsset, user, ethPrice } from "ponder.schema";
+import { token, user, ethPrice } from "ponder.schema";
 import { configs } from "addresses";
 import { ChainlinkOracleABI } from "@app/abis/ChainlinkOracleABI";
 import { updateAsset } from "./shared/entities/asset";
@@ -8,6 +8,7 @@ import { insertV2PoolIfNotExists } from "./shared/entities/v2Pool";
 import { updateUserAsset } from "./shared/entities/userAsset";
 import { insertUserAssetIfNotExists } from "./shared/entities/userAsset";
 import { DERC20ABI } from "@app/abis/DERC20ABI";
+
 ponder.on("Airlock:Migrate", async ({ event, context }) => {
   const { timestamp } = event.block;
   const { asset: assetId, pool: poolId } = event.args;

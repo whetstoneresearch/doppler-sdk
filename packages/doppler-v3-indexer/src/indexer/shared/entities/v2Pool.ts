@@ -65,7 +65,7 @@ export const insertV2PoolIfNotExists = async ({
     reserveBaseToken: isToken0 ? reserve0 : reserve1,
     reserveQuoteToken: isToken0 ? reserve1 : reserve0,
     price: dollarPrice,
-    v3Pool: poolAddress,
+    v3Pool: poolAddr,
     totalFeeBaseToken: 0n,
     totalFeeQuoteToken: 0n,
     migratedAt: timestamp,
