@@ -18,16 +18,13 @@ ponder.on("UniswapV2Pair:Swap", async ({ event, context }) => {
   const { timestamp } = event.block;
   const { amount0In, amount1In, amount0Out, amount1Out } = event.args;
 
-  // Early exit if pool not found
   const v2PoolData = await db.find(v2Pool, { address });
   if (!v2PoolData) return;
 
-  // Fetch pair data
   const pairData = await getPairData({ address, context });
   if (!pairData) return;
   const { token0, token1, reserve0, reserve1 } = pairData;
 
-  // Find associated asset data
   const assetData =
     (await db.find(asset, { address: token0 })) ||
     (await db.find(asset, { address: token1 }));
@@ -44,14 +41,9 @@ ponder.on("UniswapV2Pair:Swap", async ({ event, context }) => {
     context,
   });
 
-  console.log("poolEntity", poolEntity);
-
-
-  // Calculate swap amounts
   const amountIn = amount0In > 0 ? amount0In : amount1In;
   const amountOut = amount0Out > 0 ? amount0Out : amount1Out;
 
-  // Determine token relationships
   const isToken0 = assetData.address.toLowerCase() === token0.toLowerCase();
   const { numeraire, poolAddress } = assetData;
 
