@@ -302,6 +302,7 @@ ponder.on("UniswapV3Pool:Swap", async ({ event, context }) => {
       currentPrice: price,
       ethPrice,
       currentTimestamp: event.block.timestamp,
+      createdAt: poolEntity.createdAt,
       context,
     });
 
@@ -320,7 +321,7 @@ ponder.on("UniswapV3Pool:Swap", async ({ event, context }) => {
       liquidity: liquidity,
       price: price,
       dollarLiquidity: dollarLiquidity,
-      dayChange: dayChange?.priceChange ?? poolEntity.dayChange,
+      dayChange: dayChange?.priceChange ?? 0,
       totalFee0: poolEntity.totalFee0 + fee0,
       totalFee1: poolEntity.totalFee1 + fee1,
       graduationBalance: poolEntity.graduationBalance + quoteDelta,

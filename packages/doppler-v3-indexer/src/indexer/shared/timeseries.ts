@@ -126,26 +126,29 @@ export const get24HourPriceChange = async ({
   currentPrice,
   currentTimestamp,
   ethPrice,
+  createdAt,
   context,
 }: {
   poolAddress: Address;
   currentPrice: bigint;
   currentTimestamp: bigint;
   ethPrice: bigint;
+  createdAt: bigint;
   context: Context;
 }) => {
   const { db } = context;
 
   const timestampFrom = currentTimestamp - BigInt(secondsInDay);
   const usdPrice = (currentPrice * ethPrice) / CHAINLINK_ETH_DECIMALS;
+  const searchDelta = currentTimestamp - createdAt > BigInt(secondsInDay) ? secondsInHour : secondsInDay;
 
   const priceFrom = await db.sql.query.hourBucketUsd.findFirst({
     where: (fields, { and, eq, gte, lte, between }) =>
       and(
         eq(fields.pool, poolAddress.toLowerCase() as `0x${string}`),
         between(fields.hourId,
-          Number(timestampFrom) - secondsInDay,
-          Number(timestampFrom) + secondsInDay
+          Number(timestampFrom) - searchDelta,
+          Number(timestampFrom) + searchDelta
         )
       ),
     orderBy: (fields, { asc }) => [
