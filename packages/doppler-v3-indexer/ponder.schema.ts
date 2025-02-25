@@ -110,6 +110,7 @@ export const hourBucketUsd = onchainTable(
   })
 );
 
+
 export const thirtyMinuteBucket = onchainTable(
   "thirty_minute_bucket",
   (t) => ({
@@ -250,6 +251,7 @@ export const pool = onchainTable(
     dollarLiquidity: t.bigint().notNull(),
     dailyVolume: t.hex().notNull(),
     volumeUsd: t.bigint().notNull(),
+    dayChange: t.real().notNull(),
     totalFee0: t.bigint().notNull(),
     totalFee1: t.bigint().notNull(),
     graduationThreshold: t.bigint().notNull(),

@@ -45,7 +45,6 @@ export const insertOrUpdateBuckets = async ({
       ethPrice,
       context,
     }),
-
     // insertOrUpdateThirtyMinuteBucket({
     //   poolAddress,
     //   price,
@@ -121,6 +120,53 @@ const insertOrUpdateHourBucketUsd = async ({
     console.error("error inserting hour bucket", e);
   }
 };
+
+export const get24HourPriceChange = async ({
+  poolAddress,
+  currentPrice,
+  currentTimestamp,
+  ethPrice,
+  context,
+}: {
+  poolAddress: Address;
+  currentPrice: bigint;
+  currentTimestamp: bigint;
+  ethPrice: bigint;
+  context: Context;
+}) => {
+  const { db } = context;
+
+  const timestampFrom = currentTimestamp - BigInt(secondsInDay);
+  const usdPrice = (currentPrice * ethPrice) / CHAINLINK_ETH_DECIMALS;
+
+  const priceFrom = await db.sql.query.hourBucketUsd.findFirst({
+    where: (fields, { and, eq, gte, lte, between }) =>
+      and(
+        eq(fields.pool, poolAddress.toLowerCase() as `0x${string}`),
+        between(fields.hourId,
+          Number(timestampFrom) - secondsInDay,
+          Number(timestampFrom) + secondsInDay
+        )
+      ),
+    orderBy: (fields, { asc }) => [
+      asc(fields.hourId)
+    ],
+  });
+
+  if (!priceFrom) {
+    return null;
+  }
+
+  const priceChangePercent = Number(usdPrice - priceFrom.open) / Number(priceFrom.open) * 100;
+
+  return {
+    priceChange: priceChangePercent,
+    priceFrom: priceFrom.open,
+    priceTo: currentPrice,
+    timestamp24hAgo: BigInt(priceFrom.hourId)
+  };
+};
+
 
 export const insertOrUpdateDailyVolume = async ({
   tokenIn,

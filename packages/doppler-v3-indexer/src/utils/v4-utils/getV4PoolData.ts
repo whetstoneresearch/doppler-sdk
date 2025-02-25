@@ -45,11 +45,7 @@ export const getV4PoolData = async ({
     hooks: poolKey[4],
   };
 
-  console.log("key", key);
-
   const poolId = getPoolId(key);
-  console.log("poolId", poolId);
-  console.log("stateView", stateView);
 
   const [slot0, liquidity] = await client.multicall({
     contracts: [

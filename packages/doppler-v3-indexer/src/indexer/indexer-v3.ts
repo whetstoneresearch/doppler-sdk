@@ -6,7 +6,7 @@ import {
   updatePosition,
 } from "./shared/entities/position";
 import { insertTokenIfNotExists } from "./shared/entities/token";
-import { insertOrUpdateDailyVolume } from "./shared/timeseries";
+import { insertOrUpdateDailyVolume, get24HourPriceChange } from "./shared/timeseries";
 import { insertPoolIfNotExists, updatePool } from "./shared/entities/pool";
 import { insertAssetIfNotExists } from "./shared/entities/asset";
 import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
@@ -277,6 +277,7 @@ ponder.on("UniswapV3Pool:Swap", async ({ event, context }) => {
   const quoteDelta = poolEntity.isToken0 ? amount1 - fee1 : amount0 - fee0;
 
   let dollarLiquidity;
+  let dayChange;
   if (ethPrice) {
     await insertOrUpdateBuckets({
       poolAddress: address,
@@ -296,6 +297,14 @@ ponder.on("UniswapV3Pool:Swap", async ({ event, context }) => {
       ethPrice,
     });
 
+    dayChange = await get24HourPriceChange({
+      poolAddress: address,
+      currentPrice: price,
+      ethPrice,
+      currentTimestamp: event.block.timestamp,
+      context,
+    });
+
     dollarLiquidity = await computeDollarLiquidity({
       assetBalance,
       quoteBalance,
@@ -311,6 +320,7 @@ ponder.on("UniswapV3Pool:Swap", async ({ event, context }) => {
       liquidity: liquidity,
       price: price,
       dollarLiquidity: dollarLiquidity,
+      dayChange: dayChange?.priceChange ?? poolEntity.dayChange,
       totalFee0: poolEntity.totalFee0 + fee0,
       totalFee1: poolEntity.totalFee1 + fee1,
       graduationBalance: poolEntity.graduationBalance + quoteDelta,

@@ -79,6 +79,7 @@ export const insertPoolIfNotExists = async ({
     totalFee0: 0n,
     totalFee1: 0n,
     volumeUsd: 0n,
+    dayChange: 0,
     isToken0,
   });
 };
