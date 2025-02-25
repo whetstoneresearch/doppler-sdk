@@ -62,6 +62,7 @@ ponder.on("UniswapV3Initializer:Create", async ({ event, context }) => {
       timestamp: event.block.timestamp,
       context,
       tokenIn: assetId,
+      tokenOut: numeraire,
       ethPrice,
     });
   }
@@ -258,18 +259,21 @@ ponder.on("UniswapV3Pool:Swap", async ({ event, context }) => {
   let amountIn;
   let amountOut;
   let tokenIn;
+  let tokenOut;
   let fee0;
   let fee1;
   if (amount0 > 0n) {
     amountIn = amount0;
     amountOut = amount1;
     tokenIn = token0;
+    tokenOut = token1;
     fee0 = (amountIn * BigInt(fee)) / BigInt(1_000_000);
     fee1 = 0n;
   } else {
     amountIn = amount1;
     amountOut = amount0;
     tokenIn = token1;
+    tokenOut = token0;
     fee1 = (amountIn * BigInt(fee)) / BigInt(1_000_000);
     fee0 = 0n;
   }
@@ -294,6 +298,7 @@ ponder.on("UniswapV3Pool:Swap", async ({ event, context }) => {
       timestamp: event.block.timestamp,
       context,
       tokenIn,
+      tokenOut,
       ethPrice,
     });
 

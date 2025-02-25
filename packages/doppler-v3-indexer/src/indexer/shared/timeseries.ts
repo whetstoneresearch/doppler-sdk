@@ -1,23 +1,17 @@
 import { Address } from "viem";
 import {
-  fifteenMinuteBucket,
-  fifteenMinuteBucketUsd,
-  hourBucket,
   hourBucketUsd,
-  thirtyMinuteBucket,
-  thirtyMinuteBucketUsd,
   dailyVolume,
 } from "ponder.schema";
 import { Context } from "ponder:registry";
 import {
   secondsInDay,
-  secondsIn30Minutes,
-  secondsIn15Minutes,
   secondsInHour,
   CHAINLINK_ETH_DECIMALS,
 } from "@app/utils/constants";
 import { configs } from "addresses";
 import { updatePool } from "./entities/pool";
+import { updateToken } from "./entities/token";
 
 export const insertOrUpdateBuckets = async ({
   poolAddress,
@@ -173,6 +167,7 @@ export const get24HourPriceChange = async ({
 
 export const insertOrUpdateDailyVolume = async ({
   tokenIn,
+  tokenOut,
   poolAddress,
   amountIn,
   amountOut,
@@ -181,6 +176,7 @@ export const insertOrUpdateDailyVolume = async ({
   context,
 }: {
   tokenIn: Address;
+  tokenOut: Address;
   poolAddress: Address;
   amountIn: bigint;
   amountOut: bigint;
@@ -191,15 +187,18 @@ export const insertOrUpdateDailyVolume = async ({
   const { db, network } = context;
 
   let volumeUsd;
-  if (
-    tokenIn.toLowerCase() ===
+
+  const isTokenInWeth = tokenIn.toLowerCase() ===
     (configs[network.name].shared.weth.toLowerCase() as `0x${string}`)
-  ) {
+
+  if (isTokenInWeth) {
     volumeUsd = (amountIn * ethPrice) / CHAINLINK_ETH_DECIMALS;
   } else {
     const uintAmountOut = amountOut > 0n ? amountOut : -amountOut;
     volumeUsd = (uintAmountOut * ethPrice) / CHAINLINK_ETH_DECIMALS;
   }
+
+  const assetAddress = isTokenInWeth ? tokenOut : tokenIn;
 
   let computedVolumeUsd;
   const volume = await db
@@ -242,6 +241,13 @@ export const insertOrUpdateDailyVolume = async ({
   if (computedVolumeUsd && computedVolumeUsd > 0n) {
     await updatePool({
       poolAddress,
+      context,
+      update: {
+        volumeUsd: computedVolumeUsd,
+      },
+    });
+    await updateToken({
+      tokenAddress: assetAddress,
       context,
       update: {
         volumeUsd: computedVolumeUsd,

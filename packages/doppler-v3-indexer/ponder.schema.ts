@@ -30,6 +30,7 @@ export const token = onchainTable(
     firstSeenAt: t.bigint().notNull(),
     lastSeenAt: t.bigint().notNull(),
     pool: t.hex(),
+    volumeUsd: t.bigint().notNull().default(0n),
     holderCount: t.integer().notNull().default(0),
   }),
   (table) => ({
