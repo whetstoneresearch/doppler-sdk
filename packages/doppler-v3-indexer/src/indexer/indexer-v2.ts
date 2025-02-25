@@ -44,6 +44,8 @@ ponder.on("UniswapV2Pair:Swap", async ({ event, context }) => {
     context,
   });
 
+  console.log("poolEntity", poolEntity);
+
 
   // Calculate swap amounts
   const amountIn = amount0In > 0 ? amount0In : amount1In;
@@ -110,7 +112,7 @@ ponder.on("UniswapV2Pair:Swap", async ({ event, context }) => {
     });
 
     await updatePool({
-      poolAddress: address,
+      poolAddress: v2PoolData.parentPool,
       context,
       update: { price, dollarLiquidity, dayChange: dayChange?.priceChange ?? 0 },
     });
