@@ -13,7 +13,7 @@ import { insertPoolIfNotExists, updatePool, updateV2Pool } from "./shared/entiti
 import { CHAINLINK_ETH_DECIMALS } from "@app/utils/constants";
 
 ponder.on("UniswapV2Pair:Swap", async ({ event, context }) => {
-  const { db, network } = context;
+  const { db } = context;
   const { address } = event.log;
   const { timestamp } = event.block;
   const { amount0In, amount1In, amount0Out, amount1Out } = event.args;
@@ -43,6 +43,8 @@ ponder.on("UniswapV2Pair:Swap", async ({ event, context }) => {
     timestamp,
     context,
   });
+
+  console.log("poolEntity", poolEntity);
 
   // Calculate swap amounts
   const amountIn = amount0In > 0 ? amount0In : amount1In;
@@ -107,12 +109,12 @@ ponder.on("UniswapV2Pair:Swap", async ({ event, context }) => {
       context,
       update: { price: (price * ethPrice) / CHAINLINK_ETH_DECIMALS },
     });
-  }
 
-  await updatePool({
-    poolAddress: address,
-    context,
-    update: { price, dollarLiquidity, dayChange: dayChange?.priceChange ?? 0 },
-  });
+    await updatePool({
+      poolAddress: address,
+      context,
+      update: { price, dollarLiquidity, dayChange: dayChange?.priceChange ?? 0 },
+    });
+  }
 });
 
