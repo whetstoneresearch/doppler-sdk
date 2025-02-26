@@ -41,6 +41,11 @@ export const insertAssetIfNotExists = async ({
     createdAt: timestamp,
     migratedAt: null,
     migrated: false,
+    holderCount: 0,
+    dayChange: 0,
+    marketCapUsd: 0n,
+    dayVolumeUsd: 0n,
+    liquidityUsd: 0n,
   });
 };
 

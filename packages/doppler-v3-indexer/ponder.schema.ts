@@ -64,6 +64,11 @@ export const asset = onchainTable(
     createdAt: t.bigint().notNull(),
     migratedAt: t.bigint(),
     migrated: t.boolean().notNull().default(false),
+    dayChange: t.real().notNull(),
+    marketCapUsd: t.bigint().notNull(),
+    holderCount: t.integer().notNull(),
+    dayVolumeUsd: t.bigint().notNull(),
+    liquidityUsd: t.bigint().notNull(),
   }),
   (table) => ({
     addressIdx: index().on(table.address),
@@ -107,87 +112,6 @@ export const hourBucketUsd = onchainTable(
   (table) => ({
     pk: primaryKey({
       columns: [table.pool, table.hourId, table.chainId],
-    }),
-  })
-);
-
-
-export const thirtyMinuteBucket = onchainTable(
-  "thirty_minute_bucket",
-  (t) => ({
-    thirtyMinuteId: t.integer().notNull(),
-    pool: t.hex().notNull(),
-    open: t.bigint().notNull(),
-    close: t.bigint().notNull(),
-    low: t.bigint().notNull(),
-    high: t.bigint().notNull(),
-    average: t.bigint().notNull(),
-    count: t.integer().notNull(),
-    chainId: t.bigint().notNull(),
-  }),
-  (table) => ({
-    pk: primaryKey({
-      columns: [table.pool, table.thirtyMinuteId, table.chainId],
-    }),
-  })
-);
-
-export const thirtyMinuteBucketUsd = onchainTable(
-  "thirty_minute_bucket_usd",
-  (t) => ({
-    thirtyMinuteId: t.integer().notNull(),
-    pool: t.hex().notNull(),
-    open: t.bigint().notNull(),
-    close: t.bigint().notNull(),
-    low: t.bigint().notNull(),
-    high: t.bigint().notNull(),
-    average: t.bigint().notNull(),
-    count: t.integer().notNull(),
-    chainId: t.bigint().notNull(),
-  }),
-  (table) => ({
-    pk: primaryKey({
-      columns: [table.pool, table.thirtyMinuteId, table.chainId],
-    }),
-  })
-);
-
-export const fifteenMinuteBucket = onchainTable(
-  "fifteen_minute_bucket",
-  (t) => ({
-    fifteenMinuteId: t.integer().notNull(),
-    pool: t.hex().notNull(),
-    open: t.bigint().notNull(),
-    close: t.bigint().notNull(),
-    low: t.bigint().notNull(),
-    high: t.bigint().notNull(),
-    average: t.bigint().notNull(),
-    count: t.integer().notNull(),
-    chainId: t.bigint().notNull(),
-  }),
-  (table) => ({
-    pk: primaryKey({
-      columns: [table.pool, table.fifteenMinuteId, table.chainId],
-    }),
-  })
-);
-
-export const fifteenMinuteBucketUsd = onchainTable(
-  "fifteen_minute_bucket_usd",
-  (t) => ({
-    fifteenMinuteId: t.integer().notNull(),
-    pool: t.hex().notNull(),
-    open: t.bigint().notNull(),
-    close: t.bigint().notNull(),
-    low: t.bigint().notNull(),
-    high: t.bigint().notNull(),
-    average: t.bigint().notNull(),
-    count: t.integer().notNull(),
-    chainId: t.bigint().notNull(),
-  }),
-  (table) => ({
-    pk: primaryKey({
-      columns: [table.pool, table.fifteenMinuteId, table.chainId],
     }),
   })
 );
@@ -332,10 +256,6 @@ export const poolRelations = relations(pool, ({ one, many }) => ({
   }),
   hourBuckets: many(hourBucket),
   hourBucketUsds: many(hourBucketUsd),
-  thirtyMinuteBuckets: many(thirtyMinuteBucket),
-  thirtyMinuteBucketUsds: many(thirtyMinuteBucketUsd),
-  fifteenMinuteBuckets: many(fifteenMinuteBucket),
-  fifteenMinuteBucketUsds: many(fifteenMinuteBucketUsd),
 }));
 
 export const v2PoolRelations = relations(v2Pool, ({ one }) => ({
@@ -386,43 +306,3 @@ export const hourBucketUsdRelations = relations(hourBucketUsd, ({ one }) => ({
     references: [pool.address],
   }),
 }));
-
-export const thirtyMinuteBucketRelations = relations(
-  thirtyMinuteBucket,
-  ({ one }) => ({
-    pool: one(pool, {
-      fields: [thirtyMinuteBucket.pool],
-      references: [pool.address],
-    }),
-  })
-);
-
-export const thirtyMinuteBucketUsdRelations = relations(
-  thirtyMinuteBucketUsd,
-  ({ one }) => ({
-    pool: one(pool, {
-      fields: [thirtyMinuteBucketUsd.pool],
-      references: [pool.address],
-    }),
-  })
-);
-
-export const fifteenMinuteBucketRelations = relations(
-  fifteenMinuteBucket,
-  ({ one }) => ({
-    pool: one(pool, {
-      fields: [fifteenMinuteBucket.pool],
-      references: [pool.address],
-    }),
-  })
-);
-
-export const fifteenMinuteBucketUsdRelations = relations(
-  fifteenMinuteBucketUsd,
-  ({ one }) => ({
-    pool: one(pool, {
-      fields: [fifteenMinuteBucketUsd.pool],
-      references: [pool.address],
-    }),
-  })
-);

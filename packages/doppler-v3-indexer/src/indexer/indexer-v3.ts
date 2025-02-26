@@ -6,13 +6,14 @@ import {
   updatePosition,
 } from "./shared/entities/position";
 import { insertTokenIfNotExists } from "./shared/entities/token";
-import { insertOrUpdateDailyVolume, get24HourPriceChange } from "./shared/timeseries";
+import { insertOrUpdateDailyVolume, update24HourPriceChange } from "./shared/timeseries";
 import { insertPoolIfNotExists, updatePool } from "./shared/entities/pool";
-import { insertAssetIfNotExists } from "./shared/entities/asset";
+import { insertAssetIfNotExists, updateAsset } from "./shared/entities/asset";
 import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
 import { insertOrUpdateBuckets } from "./shared/timeseries";
 import { getV3PoolReserves } from "@app/utils/v3-utils/getV3PoolData";
-import { fetchEthPrice } from "./shared/oracle";
+import { fetchEthPrice, updateMarketCap } from "./shared/oracle";
+import { Hex } from "viem";
 
 ponder.on("UniswapV3Initializer:Create", async ({ event, context }) => {
   const { poolOrHook, asset: assetId, numeraire } = event.args;
@@ -281,7 +282,6 @@ ponder.on("UniswapV3Pool:Swap", async ({ event, context }) => {
   const quoteDelta = poolEntity.isToken0 ? amount1 - fee1 : amount0 - fee0;
 
   let dollarLiquidity;
-  let dayChange;
   if (ethPrice) {
     await insertOrUpdateBuckets({
       poolAddress: address,
@@ -302,12 +302,20 @@ ponder.on("UniswapV3Pool:Swap", async ({ event, context }) => {
       ethPrice,
     });
 
-    dayChange = await get24HourPriceChange({
+    await update24HourPriceChange({
       poolAddress: address,
+      assetAddress: poolEntity.isToken0 ? token0.toLowerCase() as Hex : token1.toLowerCase() as Hex,
       currentPrice: price,
       ethPrice,
       currentTimestamp: event.block.timestamp,
       createdAt: poolEntity.createdAt,
+      context,
+    });
+
+    await updateMarketCap({
+      assetAddress: poolEntity.isToken0 ? token0.toLowerCase() as Hex : token1.toLowerCase() as Hex,
+      price,
+      ethPrice,
       context,
     });
 
@@ -326,11 +334,18 @@ ponder.on("UniswapV3Pool:Swap", async ({ event, context }) => {
       liquidity: liquidity,
       price: price,
       dollarLiquidity: dollarLiquidity,
-      dayChange: dayChange?.priceChange ?? 0,
       totalFee0: poolEntity.totalFee0 + fee0,
       totalFee1: poolEntity.totalFee1 + fee1,
       graduationBalance: poolEntity.graduationBalance + quoteDelta,
       ...slot0Data,
+    },
+  });
+
+  await updateAsset({
+    assetAddress: poolEntity.isToken0 ? token0.toLowerCase() as Hex : token1.toLowerCase() as Hex,
+    context,
+    update: {
+      liquidityUsd: dollarLiquidity ?? 0n,
     },
   });
 });
