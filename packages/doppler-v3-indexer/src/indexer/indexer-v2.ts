@@ -3,7 +3,6 @@ import { asset, pool, v2Pool } from "ponder.schema";
 import {
   insertOrUpdateBuckets,
   insertOrUpdateDailyVolume,
-  get24HourPriceChange,
   update24HourPriceChange,
 } from "./shared/timeseries";
 import { computeV2Price } from "@app/utils/v2-utils/computeV2Price";
