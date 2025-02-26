@@ -1,8 +1,7 @@
 import { Hono } from "hono";
-import { client, desc, graphql, ilike, or } from "ponder";
+import { client, desc, graphql, ilike, or, replaceBigInts } from "ponder";
 import { db } from "ponder:api";
 import schema, { token } from "ponder:schema";
-import { replaceBigInts } from "ponder";
 
 const app = new Hono();
 
@@ -22,7 +21,7 @@ app.get("/search/:query", async (c) => {
         ilike(token.address, `%${query}%`)
       )
     )
-    .orderBy(desc(token.holderCount))
+    .orderBy(desc(token.volumeUsd))
     .limit(15);
 
   return c.json(replaceBigInts(results, (v) => String(v)));
