@@ -4,12 +4,13 @@ import {
   insertOrUpdateBuckets,
   insertOrUpdateDailyVolume,
   get24HourPriceChange,
+  update24HourPriceChange,
 } from "./shared/timeseries";
 import { computeV2Price } from "@app/utils/v2-utils/computeV2Price";
 import { getPairData } from "@app/utils/v2-utils/getPairData";
 import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
 import { fetchEthPrice } from "./shared/oracle";
-import { insertPoolIfNotExists, updatePool, updateV2Pool } from "./shared/entities";
+import { insertPoolIfNotExists, updateAsset, updatePool, updateV2Pool } from "./shared/entities";
 import { CHAINLINK_ETH_DECIMALS } from "@app/utils/constants";
 
 ponder.on("UniswapV2Pair:Swap", async ({ event, context }) => {
@@ -84,8 +85,9 @@ ponder.on("UniswapV2Pair:Swap", async ({ event, context }) => {
       }),
     ]);
 
-    dayChange = await get24HourPriceChange({
+    await update24HourPriceChange({
       poolAddress,
+      assetAddress: poolEntity.baseToken,
       currentPrice: price,
       ethPrice,
       currentTimestamp: timestamp,
@@ -105,10 +107,18 @@ ponder.on("UniswapV2Pair:Swap", async ({ event, context }) => {
       update: { price: (price * ethPrice) / CHAINLINK_ETH_DECIMALS },
     });
 
+    await updateAsset({
+      assetAddress: poolEntity.baseToken,
+      context,
+      update: {
+        liquidityUsd: dollarLiquidity ?? 0n,
+      },
+    });
+
     await updatePool({
       poolAddress: v2PoolData.parentPool,
       context,
-      update: { price, dollarLiquidity, dayChange: dayChange?.priceChange ?? 0 },
+      update: { price, dollarLiquidity },
     });
   }
 });
