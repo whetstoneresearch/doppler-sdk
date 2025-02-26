@@ -84,14 +84,14 @@ export const insertTokenIfNotExists = async ({
     });
 
     const tokenURI = tokenURIResult?.result;
-    let tokenURIJson: Record<string, string> | undefined;
+    let tokenURIJson;
     let image: string | undefined;
     if (tokenURI?.startsWith("ipfs://")) {
       try {
         const cid = tokenURI.replace("ipfs://", "");
         const url = `https://${process.env.PINATA_GATEWAY_URL}/ipfs/${cid}?pinataGatewayToken=${process.env.PINATA_GATEWAY_KEY}`;
         const response = await fetch(url);
-        const tokenURIJson = await response.json();
+        tokenURIJson = await response.json();
 
         if (
           tokenURIJson &&
