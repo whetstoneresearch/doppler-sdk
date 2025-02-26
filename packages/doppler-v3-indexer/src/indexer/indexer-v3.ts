@@ -127,6 +127,23 @@ ponder.on("UniswapV3Pool:Mint", async ({ event, context }) => {
       },
   });
 
+  if (ethPrice) {
+    await updateMarketCap({
+      assetAddress: poolEntity.baseToken,
+      price: poolEntity.price,
+      ethPrice,
+      context,
+    });
+  }
+
+  await updateAsset({
+    assetAddress: poolEntity.baseToken,
+    context,
+    update: {
+      liquidityUsd: dollarLiquidity ?? 0n,
+    },
+  });
+
   const positionEntity = await insertPositionIfNotExists({
     poolAddress: address,
     tickLower,
@@ -178,6 +195,19 @@ ponder.on("UniswapV3Pool:Burn", async ({ event, context }) => {
       quoteBalance,
       price,
       ethPrice,
+    });
+    await updateMarketCap({
+      assetAddress: poolEntity.baseToken,
+      price,
+      ethPrice,
+      context,
+    });
+    await updateAsset({
+      assetAddress: poolEntity.baseToken,
+      context,
+      update: {
+        liquidityUsd: dollarLiquidity ?? 0n,
+      },
     });
   }
 

@@ -134,7 +134,7 @@ export const update24HourPriceChange = async ({
     assetAddress,
     context,
     update: {
-      dayChange: priceChangePercent,
+      percentDayChange: priceChangePercent,
     },
   });
 
@@ -142,7 +142,7 @@ export const update24HourPriceChange = async ({
     poolAddress,
     context,
     update: {
-      dayChange: priceChangePercent,
+      percentDayChange: priceChangePercent,
     },
   });
 };
