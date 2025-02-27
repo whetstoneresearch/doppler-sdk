@@ -8,6 +8,7 @@ import { insertV2PoolIfNotExists } from "./shared/entities/v2Pool";
 import { updateUserAsset } from "./shared/entities/userAsset";
 import { insertUserAssetIfNotExists } from "./shared/entities/userAsset";
 import { DERC20ABI } from "@app/abis/DERC20ABI";
+import { executeScheduledJobs } from "./shared/scheduledJobs";
 
 ponder.on("Airlock:Migrate", async ({ event, context }) => {
   const { timestamp } = event.block;

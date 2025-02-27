@@ -13,6 +13,7 @@ import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
 import { insertOrUpdateBuckets } from "./shared/timeseries";
 import { getV3PoolReserves } from "@app/utils/v3-utils/getV3PoolData";
 import { fetchEthPrice, updateMarketCap } from "./shared/oracle";
+import { executeScheduledJobs } from "./shared/scheduledJobs";
 import { Hex } from "viem";
 
 ponder.on("UniswapV3Initializer:Create", async ({ event, context }) => {
@@ -261,6 +262,12 @@ ponder.on("UniswapV3Pool:Burn", async ({ event, context }) => {
 ponder.on("UniswapV3Pool:Swap", async ({ event, context }) => {
   const address = event.log.address;
   const { amount0, amount1 } = event.args;
+  
+  // Run scheduled jobs on common events to ensure regular updates
+  await executeScheduledJobs({
+    context,
+    currentTimestamp: event.block.timestamp,
+  });
 
   const poolEntity = await insertPoolIfNotExists({
     poolAddress: address,
