@@ -47,12 +47,12 @@ export default createConfig({
     VolumeRefresher: {
       network: "unichainSepolia",
       startBlock: unichainSepolia.startBlock,
-      interval: (60 * 15) / 12, // every 15 minutes
+      interval: 60 * 30, // every 30 minutes (accounting for 250ms block time)
     },
     VolumeRefresherUnichain: {
       network: "unichain",
       startBlock: unichain.startBlock,
-      interval: (60 * 15) / 12, // every 15 minutes 
+      interval: 60 * 30, // every 30 minutes (accounting for 250ms block time)
     },
   },
   contracts: {

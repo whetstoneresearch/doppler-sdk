@@ -5,7 +5,6 @@ import { secondsInDay, secondsInHour } from "@app/utils/constants";
 import { updatePool } from "./entities/pool";
 import { updateToken } from "./entities/token";
 import { updateAsset } from "./entities/asset";
-
 /**
  * Refreshes stale volume data by cleaning up old checkpoints
  * and updating volume metrics even without new swap events
@@ -18,21 +17,27 @@ export const refreshStaleVolumeData = async ({
   currentTimestamp: bigint;
 }) => {
   const { db, network } = context;
+  const chainId = BigInt(network.chainId);
 
   // Find pools with stale volume data (last update > 1 hour ago)
+  // that belong to the current chain
   const staleThreshold = currentTimestamp - BigInt(secondsInHour);
 
-  const stalePools = await db.sql.query.dailyVolume.findMany({
-      where: (fields, { lt }) => lt(fields.lastUpdated, staleThreshold),
-      orderBy: (fields, { asc }) => [asc(fields.lastUpdated)],
-      limit: 50, // Process in batches to avoid overloading
-    });
+  // Get stale volume records for this specific chain
+  const staleVolumeRecords = await db.sql.query.dailyVolume.findMany({
+    where: (fields, { lt, eq }) =>
+      lt(fields.lastUpdated, staleThreshold) && eq(fields.chainId, chainId),
+    orderBy: (fields, { asc }) => [asc(fields.lastUpdated)],
+    limit: 50, // Process in batches to avoid overloading
+  });
 
-  console.log(`Found ${stalePools.length} pools with stale volume data`);
+  console.log(
+    `Found ${staleVolumeRecords.length} pools with stale volume data on chain ${network.name}`
+  );
 
-  for (const stalePool of stalePools) {
+  for (const staleRecord of staleVolumeRecords) {
     await refreshPoolVolume({
-      poolAddress: stalePool.pool,
+      poolAddress: staleRecord.pool,
       currentTimestamp,
       context,
     });
@@ -54,17 +59,19 @@ export const refreshPoolVolume = async ({
   currentTimestamp: bigint;
   context: Context;
 }) => {
-  const { db } = context;
+  const { db, network } = context;
 
   const volumeData = await db.sql.query.dailyVolume.findFirst({
-    where: (fields, { eq }) => eq(fields.pool, poolAddress.toLowerCase() as `0x${string}`),
+    where: (fields, { eq }) =>
+      eq(fields.pool, poolAddress.toLowerCase() as `0x${string}`),
   });
 
   if (!volumeData) return;
 
   // Get related pool data to find the asset
   const poolData = await db.sql.query.pool.findFirst({
-    where: (fields, { eq }) => eq(fields.address, poolAddress.toLowerCase() as `0x${string}`),
+    where: (fields, { eq }) =>
+      eq(fields.address, poolAddress.toLowerCase() as `0x${string}`),
   });
 
   if (!poolData) return;
@@ -74,9 +81,7 @@ export const refreshPoolVolume = async ({
   const cutoffTimestamp = currentTimestamp - BigInt(secondsInDay);
 
   const updatedCheckpoints = Object.fromEntries(
-    Object.entries(checkpoints).filter(
-      ([ts]) => BigInt(ts) >= cutoffTimestamp
-    )
+    Object.entries(checkpoints).filter(([ts]) => BigInt(ts) >= cutoffTimestamp)
   );
 
   // Recalculate total volume based on remaining checkpoints
@@ -85,44 +90,82 @@ export const refreshPoolVolume = async ({
     BigInt(0)
   );
 
-  // Update the dailyVolume record
-  await db
-    .update(dailyVolume, {
-      pool: poolAddress.toLowerCase() as `0x${string}`,
-    })
-    .set({
-      volumeUsd: totalVolumeUsd,
-      checkpoints: updatedCheckpoints,
-      lastUpdated: currentTimestamp,
-    });
-
-  // Update related entities with the refreshed volume data
-  await updatePool({
-    poolAddress,
-    context,
-    update: {
-      volumeUsd: totalVolumeUsd,
-    },
-  });
-
-  if (poolData.asset) {
-    await updateAsset({
-      assetAddress: poolData.asset,
-      context,
-      update: {
-        dayVolumeUsd: totalVolumeUsd,
-      },
-    });
-  }
-
-  // Update token volumes
-  if (poolData.baseToken) {
-    await updateToken({
-      tokenAddress: poolData.baseToken,
-      context,
-      update: {
+  // Check if anything has changed before updating
+  const checkpointsChanged = 
+    JSON.stringify(checkpoints) !== JSON.stringify(updatedCheckpoints);
+  const volumeChanged = volumeData.volumeUsd !== totalVolumeUsd;
+  
+  // Only update if there's an actual change (checkpoints removed or volume changed)
+  if (checkpointsChanged || volumeChanged) {
+    console.log(`Updating volume for pool ${poolAddress} (${volumeData.volumeUsd} → ${totalVolumeUsd})`);
+    
+    await db
+      .update(dailyVolume, {
+        pool: poolAddress.toLowerCase() as `0x${string}`,
+      })
+      .set({
         volumeUsd: totalVolumeUsd,
-      },
-    });
+        checkpoints: updatedCheckpoints,
+        lastUpdated: currentTimestamp,
+      });
+  } else {
+    // Just update the lastUpdated timestamp to prevent repeated processing
+    await db
+      .update(dailyVolume, {
+        pool: poolAddress.toLowerCase() as `0x${string}`,
+      })
+      .set({
+        lastUpdated: currentTimestamp,
+      });
+    
+    // Skip further updates if volume hasn't changed
+    return;
   }
-}
+
+  // Only update related entities if the volume actually changed
+  // Avoids unnecessary database updates
+  if (volumeChanged) {
+    // Update related entities with the refreshed volume data
+    try {
+      await updatePool({
+        poolAddress,
+        context,
+        update: {
+          volumeUsd: totalVolumeUsd,
+        },
+      });
+    } catch (error) {
+      console.error(`Failed to update pool ${poolAddress}: ${error}`);
+      // Continue with other updates rather than failing the whole job
+    }
+
+    if (poolData.asset) {
+      try {
+        await updateAsset({
+          assetAddress: poolData.asset,
+          context,
+          update: {
+            dayVolumeUsd: totalVolumeUsd,
+          },
+        });
+      } catch (error) {
+        console.error(`Failed to update asset ${poolData.asset}: ${error}`);
+      }
+    }
+
+    // Update token volumes
+    if (poolData.baseToken) {
+      try {
+        await updateToken({
+          tokenAddress: poolData.baseToken,
+          context,
+          update: {
+            volumeUsd: totalVolumeUsd,
+          },
+        });
+      } catch (error) {
+        console.error(`Failed to update token ${poolData.baseToken}: ${error}`);
+      }
+    }
+  }
+};
