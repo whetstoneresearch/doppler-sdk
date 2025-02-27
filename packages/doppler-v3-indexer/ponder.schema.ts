@@ -183,6 +183,9 @@ export const pool = onchainTable(
     graduationThreshold: t.bigint().notNull(),
     graduationBalance: t.bigint().notNull(),
     isToken0: t.boolean().notNull(),
+    lastRefreshed: t.bigint(),
+    reserves0: t.bigint().notNull().default(0n),
+    reserves1: t.bigint().notNull().default(0n),
   }),
   (table) => ({
     pk: primaryKey({
@@ -190,6 +193,7 @@ export const pool = onchainTable(
     }),
     baseTokenIdx: index().on(table.baseToken),
     quoteTokenIdx: index().on(table.quoteToken),
+    lastRefreshedIdx: index().on(table.lastRefreshed),
   })
 );
 
