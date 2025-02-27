@@ -24,12 +24,22 @@ export const refreshStaleVolumeData = async ({
   const staleThreshold = currentTimestamp - BigInt(secondsInHour);
 
   // Get stale volume records for this specific chain
-  const staleVolumeRecords = await db.sql.query.dailyVolume.findMany({
-    where: (fields, { lt, eq }) =>
-      lt(fields.lastUpdated, staleThreshold) && eq(fields.chainId, chainId),
-    orderBy: (fields, { asc }) => [asc(fields.lastUpdated)],
-    limit: 50, // Process in batches to avoid overloading
-  });
+  let staleVolumeRecords = [];
+
+  try {
+    staleVolumeRecords = await db.sql.query.dailyVolume.findMany({
+      where: (fields, { lt, eq }) =>
+        lt(fields.lastUpdated, staleThreshold) && eq(fields.chainId, chainId),
+      orderBy: (fields, { asc }) => [asc(fields.lastUpdated)],
+      limit: 50, // Process in batches to avoid overloading
+    });
+  } catch (error) {
+    // Handle case where tables might not exist yet
+    console.log(
+      `Volume tables not ready yet on chain ${network.name}: ${error}`
+    );
+    return; // Exit early if tables aren't ready
+  }
 
   console.log(
     `Found ${staleVolumeRecords.length} pools with stale volume data on chain ${network.name}`
@@ -91,14 +101,16 @@ export const refreshPoolVolume = async ({
   );
 
   // Check if anything has changed before updating
-  const checkpointsChanged = 
+  const checkpointsChanged =
     JSON.stringify(checkpoints) !== JSON.stringify(updatedCheckpoints);
   const volumeChanged = volumeData.volumeUsd !== totalVolumeUsd;
-  
+
   // Only update if there's an actual change (checkpoints removed or volume changed)
   if (checkpointsChanged || volumeChanged) {
-    console.log(`Updating volume for pool ${poolAddress} (${volumeData.volumeUsd} → ${totalVolumeUsd})`);
-    
+    console.log(
+      `Updating volume for pool ${poolAddress} (${volumeData.volumeUsd} → ${totalVolumeUsd})`
+    );
+
     await db
       .update(dailyVolume, {
         pool: poolAddress.toLowerCase() as `0x${string}`,
@@ -117,7 +129,7 @@ export const refreshPoolVolume = async ({
       .set({
         lastUpdated: currentTimestamp,
       });
-    
+
     // Skip further updates if volume hasn't changed
     return;
   }

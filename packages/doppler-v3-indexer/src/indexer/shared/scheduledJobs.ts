@@ -45,7 +45,9 @@ export const executeScheduledJobs = async ({
   if (currentTimestamp - lastVolumeRefreshTime >= VOLUME_REFRESH_INTERVAL) {
     try {
       if (isFirstRun.volumeRefresher) {
-        console.log("Skipping first volume refresh run to allow data to accumulate");
+        console.log(
+          "Skipping first volume refresh run to allow data to accumulate"
+        );
         isFirstRun.volumeRefresher = false;
       } else {
         await refreshStaleVolumeData({ context, currentTimestamp });
@@ -61,7 +63,9 @@ export const executeScheduledJobs = async ({
   if (currentTimestamp - lastMetricsRefreshTime >= METRICS_REFRESH_INTERVAL) {
     try {
       if (isFirstRun.metricsRefresher) {
-        console.log("Skipping first metrics refresh run to allow data to accumulate");
+        console.log(
+          "Skipping first metrics refresh run to allow data to accumulate"
+        );
         isFirstRun.metricsRefresher = false;
       } else {
         await refreshPoolMetrics({ context, currentTimestamp });
@@ -94,17 +98,25 @@ export const refreshPoolMetrics = async ({
   const staleThreshold = currentTimestamp - BigInt(secondsInHour * 2);
 
   // Use db.select with drizzle-orm sql for COALESCE
-  const stalePools = await db.sql
-    .select()
-    .from(pool)
-    .where(
-      and(
-        eq(pool.chainId, chainId),
-        or(isNull(pool.lastRefreshed), lt(pool.lastRefreshed, staleThreshold))
+  let stalePools = [];
+
+  try {
+    stalePools = await db.sql
+      .select()
+      .from(pool)
+      .where(
+        and(
+          eq(pool.chainId, chainId),
+          or(isNull(pool.lastRefreshed), lt(pool.lastRefreshed, staleThreshold))
+        )
       )
-    )
-    .orderBy(sql`COALESCE(${pool.lastRefreshed}, ${pool.createdAt})`)
-    .limit(20);
+      .orderBy(sql`COALESCE(${pool.lastRefreshed}, ${pool.createdAt})`)
+      .limit(20);
+  } catch (error) {
+    // Handle case where tables might not exist yet
+    console.log(`Pool tables not ready yet on chain ${network.name}: ${error}`);
+    return; // Exit early if tables aren't ready
+  }
 
   console.log(
     `Found ${stalePools.length} pools with stale metrics on chain ${network.name}`
