@@ -6,6 +6,7 @@ import {
   CHAINLINK_ETH_DECIMALS,
 } from "@app/utils/constants";
 import { pool, asset } from "ponder.schema";
+import { and, eq, isNull, lt, or } from "drizzle-orm";
 import { refreshStaleVolumeData } from "./volumeRefresher";
 import { updatePool } from "./entities/pool";
 import { updateAsset } from "./entities/asset";
@@ -76,20 +77,17 @@ export const refreshPoolMetrics = async ({
   // Find pools that haven't been refreshed in the last hour
   const staleThreshold = currentTimestamp - BigInt(secondsInHour * 2);
 
-  // Get stale pools for this chain - use last_updated field or fallback to created_at
+  // Use Drizzle helpers for constructing the query
   const stalePools = await db.sql.query.pool.findMany({
-    where: (fields, { lt, eq, or, isNull, and }) =>
-      and(
-        eq(fields.chainId, chainId),
-        or(
-          isNull(fields.lastRefreshed),
-          lt(fields.lastRefreshed, staleThreshold)
-        )
-      ),
-    orderBy: (fields, { asc }) => [
-      asc(fields.lastRefreshed || fields.createdAt),
-    ],
-    limit: 20, // Process in smaller batches to avoid timeout
+    where: and(
+      eq(pool.chainId, chainId),
+      or(
+        isNull(pool.lastRefreshed),
+        lt(pool.lastRefreshed, staleThreshold)
+      )
+    ),
+    limit: 20,
+    orderBy: (fields, { asc }) => [asc(fields.lastRefreshed || fields.createdAt)]
   });
 
   console.log(
