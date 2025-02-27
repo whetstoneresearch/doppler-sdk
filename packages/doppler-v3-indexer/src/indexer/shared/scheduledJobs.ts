@@ -19,9 +19,15 @@ const lastExecutionTimes: Record<string, bigint> = {
   metricsRefresher: 0n,
 };
 
+// Track whether this is the first run for each job
+const isFirstRun: Record<string, boolean> = {
+  volumeRefresher: true,
+  metricsRefresher: true,
+};
+
 // Job execution intervals
 const VOLUME_REFRESH_INTERVAL = BigInt(secondsInHour / 4); // Run every 15 minutes
-const METRICS_REFRESH_INTERVAL = BigInt(secondsInHour); // Run every hour
+const METRICS_REFRESH_INTERVAL = BigInt(secondsInHour / 4); // Run every 15 minutes
 
 /**
  * Executes scheduled jobs based on their defined intervals
@@ -38,7 +44,12 @@ export const executeScheduledJobs = async ({
   const lastVolumeRefreshTime = lastExecutionTimes.volumeRefresher ?? 0n;
   if (currentTimestamp - lastVolumeRefreshTime >= VOLUME_REFRESH_INTERVAL) {
     try {
-      await refreshStaleVolumeData({ context, currentTimestamp });
+      if (isFirstRun.volumeRefresher) {
+        console.log("Skipping first volume refresh run to allow data to accumulate");
+        isFirstRun.volumeRefresher = false;
+      } else {
+        await refreshStaleVolumeData({ context, currentTimestamp });
+      }
       lastExecutionTimes.volumeRefresher = currentTimestamp;
     } catch (error) {
       console.error("Error in volume refresh job:", error);
@@ -49,7 +60,12 @@ export const executeScheduledJobs = async ({
   const lastMetricsRefreshTime = lastExecutionTimes.metricsRefresher ?? 0n;
   if (currentTimestamp - lastMetricsRefreshTime >= METRICS_REFRESH_INTERVAL) {
     try {
-      await refreshPoolMetrics({ context, currentTimestamp });
+      if (isFirstRun.metricsRefresher) {
+        console.log("Skipping first metrics refresh run to allow data to accumulate");
+        isFirstRun.metricsRefresher = false;
+      } else {
+        await refreshPoolMetrics({ context, currentTimestamp });
+      }
       lastExecutionTimes.metricsRefresher = currentTimestamp;
     } catch (error) {
       console.error("Error in metrics refresh job:", error);
