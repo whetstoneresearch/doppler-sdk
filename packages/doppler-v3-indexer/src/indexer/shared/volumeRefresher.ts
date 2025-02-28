@@ -2,6 +2,7 @@ import { Address } from "viem";
 import { dailyVolume, pool } from "ponder.schema";
 import { Context } from "ponder:registry";
 import { secondsInDay, secondsInHour } from "@app/utils/constants";
+import { and, eq, lt } from "drizzle-orm";
 import { updatePool } from "./entities/pool";
 import { updateToken } from "./entities/token";
 import { updateAsset } from "./entities/asset";
@@ -27,12 +28,18 @@ export const refreshStaleVolumeData = async ({
   let staleVolumeRecords = [];
 
   try {
-    staleVolumeRecords = await db.sql.query.dailyVolume.findMany({
-      where: (fields, { lt, eq }) =>
-        lt(fields.lastUpdated, staleThreshold) && eq(fields.chainId, chainId),
-      orderBy: (fields, { asc }) => [asc(fields.lastUpdated)],
-      limit: 50, // Process in batches to avoid overloading
-    });
+    // Use the sql.select approach for consistency
+    staleVolumeRecords = await db.sql
+      .select()
+      .from(dailyVolume)
+      .where(
+        and(
+          lt(dailyVolume.lastUpdated, staleThreshold),
+          eq(dailyVolume.chainId, chainId)
+        )
+      )
+      .orderBy(dailyVolume.lastUpdated)
+      .limit(50); // Process in batches to avoid overloading
   } catch (error) {
     // Handle case where tables might not exist yet
     console.log(
@@ -70,9 +77,9 @@ export const refreshPoolVolume = async ({
   context: Context;
 }) => {
   const { db, network } = context;
-  
+
   let volumeData, poolData;
-  
+
   try {
     volumeData = await db.sql.query.dailyVolume.findFirst({
       where: (fields, { eq }) =>
@@ -89,7 +96,7 @@ export const refreshPoolVolume = async ({
 
     if (!poolData) return;
   } catch (error) {
-    console.log(`Tables not ready yet for pool ${poolAddress}: ${error.message}`);
+    console.log(`Tables not ready yet for pool ${poolAddress}: ${error}`);
     return; // Exit early if tables aren't ready
   }
 
@@ -99,37 +106,55 @@ export const refreshPoolVolume = async ({
     const cutoffTimestamp = currentTimestamp - BigInt(secondsInDay);
 
     const updatedCheckpoints = Object.fromEntries(
-      Object.entries(checkpoints).filter(([ts]) => BigInt(ts) >= cutoffTimestamp)
+      Object.entries(checkpoints).filter(
+        ([ts]) => BigInt(ts) >= cutoffTimestamp
+      )
     );
 
     // Recalculate total volume based on remaining checkpoints
     const totalVolumeUsd = Object.values(updatedCheckpoints).reduce(
       (acc, vol) => acc + BigInt(vol),
       BigInt(0)
-  );
+    );
 
     // Check if anything has changed before updating
     const checkpointsChanged =
       JSON.stringify(checkpoints) !== JSON.stringify(updatedCheckpoints);
     const volumeChanged = volumeData.volumeUsd !== totalVolumeUsd;
 
-    // Only update if there's an actual change (checkpoints removed or volume changed)
+    // Always update the lastUpdated timestamp regardless of changes
+    // This ensures that stale pools are processed only once per cycle
+
     if (checkpointsChanged || volumeChanged) {
+      // Update data only if something has actually changed
       console.log(
         `Updating volume for pool ${poolAddress} (${volumeData.volumeUsd} → ${totalVolumeUsd})`
       );
 
-      await db
-        .update(dailyVolume, {
-          pool: poolAddress.toLowerCase() as `0x${string}`,
-        })
-        .set({
-          volumeUsd: totalVolumeUsd,
-          checkpoints: updatedCheckpoints,
-          lastUpdated: currentTimestamp,
-        });
+      try {
+        await db
+          .update(dailyVolume, {
+            pool: poolAddress.toLowerCase() as `0x${string}`,
+          })
+          .set({
+            volumeUsd: totalVolumeUsd,
+            checkpoints: updatedCheckpoints,
+            lastUpdated: currentTimestamp,
+          });
+      } catch (error) {
+        console.error(
+          `Failed to update dailyVolume for ${poolAddress}: ${error}`
+        );
+        // Even if this update fails, we'll try to update the timestamp separately
+      }
     } else {
-      // Just update the lastUpdated timestamp to prevent repeated processing
+      console.log(
+        `No volume changes for pool ${poolAddress}, skipping volume update`
+      );
+    }
+
+    try {
+      // ALWAYS update the lastUpdated timestamp to prevent repeated processing of the same pools
       await db
         .update(dailyVolume, {
           pool: poolAddress.toLowerCase() as `0x${string}`,
@@ -137,55 +162,57 @@ export const refreshPoolVolume = async ({
         .set({
           lastUpdated: currentTimestamp,
         });
+    } catch (error) {
+      console.error(
+        `Failed to update lastUpdated timestamp for ${poolAddress}: ${error}`
+      );
+    }
 
-      // Skip further updates if volume hasn't changed
+    // If no volume changes, skip updating related entities
+    if (!volumeChanged) {
       return;
     }
 
-    // Only update related entities if the volume actually changed
-    // Avoids unnecessary database updates
-    if (volumeChanged) {
-      // Update related entities with the refreshed volume data
+    // Update related entities with the refreshed volume data
+    try {
+      await updatePool({
+        poolAddress,
+        context,
+        update: {
+          volumeUsd: totalVolumeUsd,
+        },
+      });
+    } catch (error) {
+      console.error(`Failed to update pool ${poolAddress}: ${error}`);
+      // Continue with other updates rather than failing the whole job
+    }
+
+    if (poolData.asset) {
       try {
-        await updatePool({
-          poolAddress,
+        await updateAsset({
+          assetAddress: poolData.asset,
+          context,
+          update: {
+            dayVolumeUsd: totalVolumeUsd,
+          },
+        });
+      } catch (error) {
+        console.error(`Failed to update asset ${poolData.asset}: ${error}`);
+      }
+    }
+
+    // Update token volumes
+    if (poolData.baseToken) {
+      try {
+        await updateToken({
+          tokenAddress: poolData.baseToken,
           context,
           update: {
             volumeUsd: totalVolumeUsd,
           },
         });
       } catch (error) {
-        console.error(`Failed to update pool ${poolAddress}: ${error}`);
-        // Continue with other updates rather than failing the whole job
-      }
-
-      if (poolData.asset) {
-        try {
-          await updateAsset({
-            assetAddress: poolData.asset,
-            context,
-            update: {
-              dayVolumeUsd: totalVolumeUsd,
-            },
-          });
-        } catch (error) {
-          console.error(`Failed to update asset ${poolData.asset}: ${error}`);
-        }
-      }
-
-      // Update token volumes
-      if (poolData.baseToken) {
-        try {
-          await updateToken({
-            tokenAddress: poolData.baseToken,
-            context,
-            update: {
-              volumeUsd: totalVolumeUsd,
-            },
-          });
-        } catch (error) {
-          console.error(`Failed to update token ${poolData.baseToken}: ${error}`);
-        }
+        console.error(`Failed to update token ${poolData.baseToken}: ${error}`);
       }
     }
   } catch (error) {
