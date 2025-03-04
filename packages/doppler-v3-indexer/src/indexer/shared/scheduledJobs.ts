@@ -16,12 +16,12 @@ import {
   gt,
   sql,
   between,
-  not,
 } from "drizzle-orm";
 import { updatePool } from "./entities/pool";
 import { updateAsset } from "./entities/asset";
 import { fetchEthPrice } from "./oracle";
 import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
+import { calculatePriceChange } from "./timeseries";
 
 /**
  * Executes a comprehensive refresh job that handles both volume and metrics updates
@@ -79,7 +79,7 @@ export const executeScheduledJobs = async ({
         batch.map((poolInfo: any) =>
           refreshPoolComprehensive({
             poolInfo,
-            ethPrice, 
+            ethPrice,
             currentTimestamp,
             context,
           }).catch((error) => {
@@ -163,7 +163,7 @@ async function findStalePoolsWithVolume(
             // but still have trading volume or price changes
             and(
               lt(pool.lastRefreshed, staleThreshold),
-              or(gt(pool.volumeUsd, 0n), not(eq(pool.percentDayChange, 0)))
+              or(gt(pool.volumeUsd, 0n), gt(pool.percentDayChange, 0), lt(pool.percentDayChange, 0))
             ),
 
             // 3. Pools with stale volume data that needs regular cleanup
@@ -275,7 +275,7 @@ async function refreshPoolComprehensive({
         ([ts]) => BigInt(ts) >= cutoffTimestamp
       )
     );
-    
+
     // Skip unnecessary processing if no checkpoints remain
     if (Object.keys(updatedCheckpoints).length === 0) {
       // Just update the timestamp if no relevant checkpoints
@@ -360,7 +360,7 @@ async function refreshPoolComprehensive({
         dollarLiquidity &&
         Math.abs(
           Number(dollarLiquidity - poolInfo.pool.dollarLiquidity) /
-            Number(poolInfo.pool.dollarLiquidity || 1n)
+          Number(poolInfo.pool.dollarLiquidity || 1n)
         ) > 0.01
       ) {
         poolUpdates.dollarLiquidity = dollarLiquidity;
@@ -401,9 +401,9 @@ async function refreshPoolComprehensive({
 
   // Optionally update market cap in the background, but only if there's been a significant price change
   // This avoids unnecessary contract calls and database updates
-  if (poolInfo.needsMetricsUpdate && poolInfo.pool.baseToken && 
-      (Math.abs(poolInfo.pool.percentDayChange) > 1 || // Only refresh if price changed by more than 1%
-       (poolUpdates.percentDayChange !== undefined && Math.abs(poolUpdates.percentDayChange as number) > 1))) {
+  if (poolInfo.needsMetricsUpdate && poolInfo.pool.baseToken &&
+    (Math.abs(poolInfo.pool.percentDayChange) > 1 || // Only refresh if price changed by more than 1%
+      (poolUpdates.percentDayChange !== undefined && Math.abs(poolUpdates.percentDayChange as number) > 1))) {
     refreshAssetMarketCap({
       assetAddress: poolInfo.pool.baseToken as Address,
       price: poolInfo.pool.price,
@@ -420,6 +420,7 @@ async function refreshPoolComprehensive({
 
 /**
  * Helper function to calculate price change percentage
+ * Use the shared implementation in timeseries.ts
  */
 async function calculatePriceChangePercent({
   poolAddress,
@@ -436,55 +437,15 @@ async function calculatePriceChangePercent({
   createdAt: bigint;
   context: Context;
 }): Promise<number> {
-  const { db } = context;
-
-  // Skip if price is 0
-  if (currentPrice === 0n) {
-    return 0; // Return 0 instead of null
-  }
-
-  const usdPrice = (currentPrice * ethPrice) / CHAINLINK_ETH_DECIMALS;
-  const timestampFrom = currentTimestamp - BigInt(secondsInDay);
-  const searchDelta =
-    currentTimestamp - createdAt > BigInt(secondsInDay)
-      ? secondsInHour
-      : secondsInDay;
-
-  try {
-    // Get historical price
-    const historyResults = await db.sql
-      .select()
-      .from(hourBucketUsd)
-      .where(
-        and(
-          eq(hourBucketUsd.pool, poolAddress.toLowerCase() as `0x${string}`),
-          between(
-            hourBucketUsd.hourId,
-            Number(timestampFrom) - searchDelta,
-            Number(timestampFrom) + searchDelta
-          )
-        )
-      )
-      .orderBy(hourBucketUsd.hourId)
-      .limit(1);
-
-    const priceFrom = historyResults[0];
-    if (!priceFrom || priceFrom.open === 0n) {
-      return 0; // Return 0 instead of null
-    }
-
-    const priceChangePercent = (Number(usdPrice - priceFrom.open) / Number(priceFrom.open)) * 100;
-    
-    // Ensure we're not returning NaN or Infinity
-    if (isNaN(priceChangePercent) || !isFinite(priceChangePercent)) {
-      return 0;
-    }
-    
-    return priceChangePercent;
-  } catch (error) {
-    console.error(`Error calculating price change: ${error}`);
-    return 0; // Return 0 instead of null on error
-  }
+  // Use the shared implementation from timeseries.ts
+  return calculatePriceChange({
+    poolAddress,
+    currentPrice,
+    currentTimestamp,
+    ethPrice,
+    createdAt,
+    context,
+  });
 }
 
 /**
@@ -614,7 +575,7 @@ export const refreshPoolData = async ({
       const percentChange =
         Math.abs(
           Number(dollarLiquidity - poolData.dollarLiquidity) /
-            Number(poolData.dollarLiquidity)
+          Number(poolData.dollarLiquidity)
         ) * 100;
       shouldUpdateLiquidity = percentChange > 1;
     }
