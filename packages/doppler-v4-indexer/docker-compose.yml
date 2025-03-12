@@ -1,0 +1,42 @@
+services:
+  doppler-indexer-database:
+    image: postgres:16.6
+    environment:
+      # Database credentials
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: default
+      # Performance tuning parameters
+      POSTGRES_INITDB_ARGS: "--data-checksums"
+    command: >
+      postgres
+        -c shared_buffers=256MB
+        -c work_mem=16MB
+        -c maintenance_work_mem=64MB
+        -c effective_cache_size=768MB
+        -c max_connections=100
+        -c random_page_cost=1.1
+        -c max_parallel_workers_per_gather=4
+        -c max_parallel_workers=8
+        -c synchronous_commit=off
+        -c wal_writer_delay=10ms
+        -c max_wal_size=1GB
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
