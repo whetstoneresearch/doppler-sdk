@@ -1,7 +1,7 @@
 import { Hono } from "hono";
-import { client, desc, graphql, ilike, or } from "ponder";
+import { client, desc, graphql, gte, ilike, or } from "ponder";
 import { db } from "ponder:api";
-import schema, { token } from "ponder:schema";
+import schema, { pool, token } from "ponder:schema";
 import { replaceBigInts } from "ponder";
 
 const app = new Hono();
@@ -26,6 +26,14 @@ app.get("/search/:query", async (c) => {
     .limit(15);
 
   return c.json(replaceBigInts(results, (v) => String(v)));
+});
+
+app.get("/migrateable-pools", async (c) => {
+  const pools = await db
+    .select()
+    .from(pool)
+    .where(gte(pool.graduationBalance, pool.graduationThreshold));
+  return c.json(replaceBigInts(pools, (v) => String(v)));
 });
 
 export default app;

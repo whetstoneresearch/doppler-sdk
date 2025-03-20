@@ -1,4 +1,5 @@
 import { getV3PoolData } from "@app/utils/v3-utils";
+import { getV4PoolData } from "@app/utils/v4-utils";
 import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
 import { pool } from "ponder:schema";
 import { Address } from "viem";
@@ -9,10 +10,12 @@ export const insertPoolIfNotExists = async ({
   poolAddress,
   timestamp,
   context,
+  type = "v3",
 }: {
   poolAddress: Address;
   timestamp: bigint;
   context: Context;
+  type?: "v3" | "v4";
 }): Promise<typeof pool.$inferSelect> => {
   const { db, network } = context;
   const address = poolAddress.toLowerCase() as `0x${string}`;
@@ -26,6 +29,25 @@ export const insertPoolIfNotExists = async ({
     return existingPool;
   }
 
+  if (type == "v3") {
+    return await insertV3Pool({ address, timestamp, context, type });
+  } else if (type == "v4") {
+    return await insertV4Pool({ address, timestamp, context, type });
+  }
+};
+
+const insertV3Pool = async ({
+  address,
+  timestamp,
+  context,
+  type,
+}: {
+  address: Address;
+  timestamp: bigint;
+  context: Context;
+  type: "v3";
+}) => {
+  const { db, network } = context;
   const poolData = await getV3PoolData({
     address,
     context,
@@ -69,7 +91,77 @@ export const insertPoolIfNotExists = async ({
     baseToken: assetAddr,
     quoteToken: numeraireAddr,
     price,
-    type: "v3",
+    type,
+    chainId: BigInt(network.chainId),
+    fee,
+    dollarLiquidity: dollarLiquidity ?? 0n,
+    dailyVolume: address,
+    graduationThreshold: 0n,
+    graduationBalance: 0n,
+    totalFee0: 0n,
+    totalFee1: 0n,
+    volumeUsd: 0n,
+    percentDayChange: 0,
+    isToken0,
+  });
+};
+
+const insertV4Pool = async ({
+  address,
+  timestamp,
+  context,
+  type,
+}: {
+  address: Address;
+  timestamp: bigint;
+  context: Context;
+  type: "v4";
+}) => {
+  const { db, network } = context;
+  const poolData = await getV4PoolData({
+    address,
+    context,
+  });
+
+  const {
+    slot0Data,
+    liquidity,
+    price,
+    fee,
+    reserve0,
+    reserve1,
+    token0,
+    poolState,
+  } = poolData;
+
+  const ethPrice = await fetchEthPrice(timestamp, context);
+
+  const isToken0 = token0.toLowerCase() === poolState.asset.toLowerCase();
+
+  const assetAddr = poolState.asset.toLowerCase() as `0x${string}`;
+  const numeraireAddr = poolState.numeraire.toLowerCase() as `0x${string}`;
+
+  let dollarLiquidity;
+  if (ethPrice) {
+    dollarLiquidity = await computeDollarLiquidity({
+      assetBalance: isToken0 ? reserve0 : reserve1,
+      quoteBalance: isToken0 ? reserve1 : reserve0,
+      price,
+      ethPrice,
+    });
+  }
+
+  return await db.insert(pool).values({
+    ...poolData,
+    ...slot0Data,
+    address,
+    liquidity: liquidity,
+    createdAt: timestamp,
+    asset: assetAddr,
+    baseToken: assetAddr,
+    quoteToken: numeraireAddr,
+    price,
+    type,
     chainId: BigInt(network.chainId),
     fee,
     dollarLiquidity: dollarLiquidity ?? 0n,
@@ -95,15 +187,17 @@ export const updatePool = async ({
 }) => {
   const { db, network } = context;
   const address = poolAddress.toLowerCase() as `0x${string}`;
-  
+
   // First check if the pool exists before attempting to update
   const existingPool = await db.find(pool, {
     address,
     chainId: BigInt(network.chainId),
   });
-  
+
   if (!existingPool) {
-    console.warn(`Pool ${address} not found in chain ${network.chainId}, skipping update`);
+    console.warn(
+      `Pool ${address} not found in chain ${network.chainId}, skipping update`
+    );
     return;
   }
 

@@ -1,4 +1,4 @@
-import { Address, Hex, zeroAddress } from "viem";
+import { Address, zeroAddress } from "viem";
 import { Context } from "ponder:registry";
 import { DERC20ABI, DopplerABI, StateViewABI } from "@app/abis";
 import { configs } from "addresses";
@@ -22,18 +22,18 @@ export interface V4PoolData {
 }
 
 export const getV4PoolData = async ({
+  address,
   context,
-  hook,
 }: {
+  address: Address;
   context: Context;
-  hook: Address;
 }): Promise<V4PoolData> => {
   const { stateView } = configs[context.network.name].v4;
   const { client } = context;
 
   const poolKey = await client.readContract({
     abi: DopplerABI,
-    address: hook,
+    address,
     functionName: "poolKey",
   });
 
@@ -47,7 +47,7 @@ export const getV4PoolData = async ({
 
   const poolId = getPoolId(key);
 
-  const [slot0, liquidity] = await client.multicall({
+  const [slot0, liquidity, minProceeds, maxProceeds] = await client.multicall({
     contracts: [
       {
         abi: StateViewABI,
@@ -59,6 +59,18 @@ export const getV4PoolData = async ({
         abi: StateViewABI,
         address: stateView,
         functionName: "getLiquidity",
+        args: [poolId],
+      },
+      {
+        abi: DopplerABI,
+        address,
+        functionName: "minimumProceeds",
+        args: [poolId],
+      },
+      {
+        abi: DopplerABI,
+        address,
+        functionName: "maximumProceeds",
         args: [poolId],
       },
     ],
