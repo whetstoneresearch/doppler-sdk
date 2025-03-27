@@ -48,7 +48,7 @@ export default createConfig({
   blocks: {
     ChainlinkEthPriceFeed: {
       network: "mainnet",
-      startBlock: mainnet.oracleStartBlock,
+      startBlock: ink.oracleStartBlock,
       interval: (60 * 5) / 12, // every 5 minutes
     },
     // Volume refresh job that runs periodically to ensure volume data is up-to-date
