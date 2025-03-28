@@ -5,24 +5,27 @@ import { Address } from "viem";
 import { CHAINLINK_ETH_DECIMALS } from "@app/utils/constants";
 import { updateAsset } from "./entities/asset";
 import { DERC20ABI } from "@app/abis";
+
 export const fetchEthPrice = async (
   timestamp: bigint,
   context: Context
 ): Promise<bigint | null> => {
   const { db } = context;
-  const priceObj = await db.sql.query.ethPrice.findFirst({
-    where: and(
-      gte(ethPrice.timestamp, timestamp - 10n * 60n),
-      lte(ethPrice.timestamp, timestamp)
-    ),
-  });
 
-  if (!priceObj) {
-    console.error("No price found for timestamp", timestamp);
-    return null;
+  let roundedTimestamp = BigInt(Math.floor(Number(timestamp) / 300) * 300);
+
+  let ethPriceData;
+  while (!ethPriceData) {
+    ethPriceData = await db.find(ethPrice, {
+      timestamp: roundedTimestamp,
+    });
+
+    if (!ethPriceData) {
+      roundedTimestamp -= 300n;
+    }
   }
 
-  return priceObj.price;
+  return ethPriceData.price;
 };
 
 export const updateMarketCap = async ({
@@ -37,7 +40,6 @@ export const updateMarketCap = async ({
   context: Context;
 }) => {
   const { client } = context;
-
 
   const totalSupply = await client.readContract({
     address: assetAddress,

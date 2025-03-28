@@ -1,5 +1,8 @@
 import { ponder } from "ponder:registry";
 import { executeScheduledJobs } from "./shared/scheduledJobs";
+import { configs } from "addresses";
+import { ChainlinkOracleABI } from "@app/abis/ChainlinkOracleABI";
+import { ethPrice } from "ponder.schema";
 
 /**
  * Block handlers that run periodically to ensure volume data and metrics are up-to-date
@@ -101,4 +104,28 @@ ponder.on("MetricRefresherInk:block", async ({ event, context }) => {
     console.error(`Error in ink refresh job: ${error}`);
     // Log error but don't throw to prevent handler from failing completely
   }
+});
+
+ponder.on("ChainlinkEthPriceFeed:block", async ({ event, context }) => {
+  const { db, client, network } = context;
+  const { timestamp } = event.block;
+
+  const latestAnswer = await client.readContract({
+    abi: ChainlinkOracleABI,
+    address: configs[network.name].oracle.chainlinkEth,
+    functionName: "latestAnswer",
+  });
+
+  const price = latestAnswer;
+
+  const roundedTimestamp = BigInt(Math.floor(Number(timestamp) / 300) * 300);
+  const adjustedTimestamp = roundedTimestamp + 300n;
+
+  await db
+    .insert(ethPrice)
+    .values({
+      timestamp: adjustedTimestamp,
+      price,
+    })
+    .onConflictDoNothing();
 });

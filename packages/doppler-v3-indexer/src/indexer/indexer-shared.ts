@@ -155,24 +155,3 @@ ponder.on("DERC20:Transfer", async ({ event, context }) => {
     },
   });
 });
-
-ponder.on("ChainlinkEthPriceFeed:block", async ({ event, context }) => {
-  const { db, client, network } = context;
-  const { timestamp } = event.block;
-
-  const latestAnswer = await client.readContract({
-    abi: ChainlinkOracleABI,
-    address: configs[network.name].oracle.chainlinkEth,
-    functionName: "latestAnswer",
-  });
-
-  const price = latestAnswer;
-
-  await db
-    .insert(ethPrice)
-    .values({
-      timestamp: timestamp,
-      price: price,
-    })
-    .onConflictDoNothing();
-});

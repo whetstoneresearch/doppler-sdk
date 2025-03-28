@@ -101,27 +101,34 @@ export const update24HourPriceChange = async ({
   createdAt: bigint;
   context: Context;
 }) => {
-  const { db } = context;
+  const { db, network } = context;
 
-  const timestampFrom = currentTimestamp - BigInt(secondsInDay);
   const usdPrice = (currentPrice * ethPrice) / CHAINLINK_ETH_DECIMALS;
-  const searchDelta =
-    currentTimestamp - createdAt > BigInt(secondsInDay)
-      ? secondsInHour
-      : secondsInDay;
+  const dayHasElapsed = currentTimestamp - createdAt > BigInt(secondsInDay);
+  const timestampFrom = dayHasElapsed
+    ? Math.floor(Number(createdAt) / secondsInHour) * secondsInHour
+    : Math.floor(
+        Number(currentTimestamp - BigInt(secondsInDay)) / secondsInHour
+      ) * secondsInHour;
 
-  const priceFrom = await db.sql.query.hourBucketUsd.findFirst({
-    where: (fields, { and, eq, between }) =>
-      and(
-        eq(fields.pool, poolAddress.toLowerCase() as `0x${string}`),
-        between(
-          fields.hourId,
-          Number(timestampFrom) - searchDelta,
-          Number(timestampFrom) + searchDelta
-        )
-      ),
-    orderBy: (fields, { asc }) => [asc(fields.hourId)],
+  const priceFrom = await db.find(hourBucketUsd, {
+    pool: poolAddress.toLowerCase() as `0x${string}`,
+    hourId: timestampFrom,
+    chainId: BigInt(network.chainId),
   });
+
+  // const priceFrom = await db.sql.query.hourBucketUsd.findFirst({
+  //   where: (fields, { and, eq, between }) =>
+  //     and(
+  //       eq(fields.pool, poolAddress.toLowerCase() as `0x${string}`),
+  //       between(
+  //         fields.hourId,
+  //         Number(timestampFrom) - searchDelta,
+  //         Number(timestampFrom) + searchDelta
+  //       )
+  //     ),
+  //   orderBy: (fields, { asc }) => [asc(fields.hourId)],
+  // });
 
   if (!priceFrom) {
     // Default to 0% change if no previous price data found
