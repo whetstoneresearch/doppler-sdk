@@ -214,6 +214,33 @@ export default createConfig({
     UniswapV2Pair: {
       abi: UniswapV2PairABI,
       network: {
+        baseSepolia: {
+          startBlock: baseSepolia.startBlock,
+          address: factory({
+            address: baseSepolia.shared.airlock,
+            event: getAbiItem({
+              abi: AirlockABI,
+              name: "Migrate",
+            }),
+            parameter: "pool",
+          }),
+        },
+        ink: {
+          startBlock: ink.startBlock,
+          address: factory({
+            address: ink.v2.factory,
+            event: getAbiItem({
+              abi: UniswapV2FactoryABI,
+              name: "PairCreated",
+            }),
+            parameter: "pair",
+          }),
+        },
+      },
+    },
+    UniswapV2PairUnichain: {
+      abi: UniswapV2PairABI,
+      network: {
         unichainSepolia: {
           startBlock: unichainSepolia.startBlock,
           address: factory({
@@ -229,28 +256,6 @@ export default createConfig({
           startBlock: unichain.startBlock,
           address: factory({
             address: unichain.v2.factory,
-            event: getAbiItem({
-              abi: UniswapV2FactoryABI,
-              name: "PairCreated",
-            }),
-            parameter: "pair",
-          }),
-        },
-        baseSepolia: {
-          startBlock: baseSepolia.startBlock,
-          address: factory({
-            address: baseSepolia.v2.factory,
-            event: getAbiItem({
-              abi: UniswapV2FactoryABI,
-              name: "PairCreated",
-            }),
-            parameter: "pair",
-          }),
-        },
-        ink: {
-          startBlock: ink.startBlock,
-          address: factory({
-            address: ink.v2.factory,
             event: getAbiItem({
               abi: UniswapV2FactoryABI,
               name: "PairCreated",

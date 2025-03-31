@@ -18,7 +18,7 @@ export const insertTokenIfNotExists = async ({
   isDerc20?: boolean;
   poolAddress?: Address;
 }) => {
-  const { db, network, client } = context;
+  const { db, network } = context;
 
   let multiCallAddress = {};
   if (network.name == "ink") {
