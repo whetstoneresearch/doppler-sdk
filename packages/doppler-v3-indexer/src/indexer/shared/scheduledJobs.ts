@@ -1,17 +1,18 @@
 import { Context } from "ponder:registry";
-import { Address, formatUnits, parseUnits } from "viem";
+import { Address } from "viem";
 import {
   secondsInHour,
   secondsInDay,
   CHAINLINK_ETH_DECIMALS,
 } from "@app/utils/constants";
-import { pool, asset, hourBucketUsd, dailyVolume } from "ponder.schema";
-import { and, eq, lt, sql, between, or, not } from "drizzle-orm";
+import { pool, dailyVolume } from "ponder.schema";
+import { and, eq, lt, sql, or, not } from "drizzle-orm";
 import { updateAsset } from "./entities/asset";
 import { updatePool } from "./entities/pool";
 import { fetchEthPrice } from "./oracle";
 import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
-import { updateDailyVolume } from "./timeseries";
+import { insertAssetIfNotExists } from "@app/indexer/shared/entities/asset";
+import { update24HourPriceChange, updateDailyVolume } from "./timeseries";
 
 /**
  * Executes a comprehensive refresh job that handles both volume and metrics updates
@@ -24,7 +25,7 @@ export const executeScheduledJobs = async ({
   context: Context;
   currentTimestamp: bigint;
 }) => {
-  const { network, db } = context;
+  const { network } = context;
   const chainId = BigInt(network.chainId);
 
   console.log(`[${network.name}] Running comprehensive refresh job...`);
@@ -91,8 +92,7 @@ export const executeScheduledJobs = async ({
     // Log performance metrics
     const duration = (Date.now() - startTime) / 1000; // in seconds
     console.log(
-      `[${network.name}] Refreshed ${
-        stalePoolsWithVolume.length
+      `[${network.name}] Refreshed ${stalePoolsWithVolume.length
       } pools in ${duration.toFixed(2)}s (${(
         duration / stalePoolsWithVolume.length
       ).toFixed(3)}s per pool)`
@@ -238,25 +238,28 @@ async function refreshPoolComprehensive({
     context,
   });
 
-  // try {
-  const priceChangeInfo = await calculatePriceChangePercent({
+  const asset = await insertAssetIfNotExists({ assetAddress: poolInfo.pool.asset as Address, timestamp: 0n, context });
+
+  const isMigrated = asset.migrated;
+
+  const assetBalance = poolInfo.pool.isToken0 ? poolInfo.pool.reserves0 : poolInfo.pool.reserves1;
+  const quoteBalance = poolInfo.pool.isToken0 ? poolInfo.pool.reserves1 : poolInfo.pool.reserves0;
+
+  const dollarLiquidity = await computeDollarLiquidity({
+    assetBalance,
+    quoteBalance,
+    price: poolInfo.pool.price,
+    ethPrice,
+  });
+
+  const priceChangeInfo = await update24HourPriceChange({
     poolAddress,
+    assetAddress: asset.address,
     currentPrice: poolInfo.pool.price,
     currentTimestamp,
     ethPrice,
     createdAt: poolInfo.pool.createdAt,
     context,
-  });
-
-  const dollarLiquidity = await computeDollarLiquidity({
-    assetBalance: poolInfo.pool.isToken0
-      ? poolInfo.pool.reserves0
-      : poolInfo.pool.reserves1,
-    quoteBalance: poolInfo.pool.isToken0
-      ? poolInfo.pool.reserves1
-      : poolInfo.pool.reserves0,
-    price: poolInfo.pool.price,
-    ethPrice,
   });
 
   const marketCap = await getAssetMarketCap({
@@ -301,77 +304,6 @@ async function refreshPoolComprehensive({
   // }
 }
 
-/**
- * Helper function to calculate price change percentage
- */
-async function calculatePriceChangePercent({
-  poolAddress,
-  currentPrice,
-  currentTimestamp,
-  ethPrice,
-  createdAt,
-  context,
-}: {
-  poolAddress: Address;
-  currentPrice: bigint;
-  currentTimestamp: bigint;
-  ethPrice: bigint;
-  createdAt: bigint;
-  context: Context;
-}): Promise<number> {
-  const { db } = context;
-
-  if (currentPrice === 0n) {
-    return 0;
-  }
-
-  const usdPrice = (currentPrice * ethPrice) / CHAINLINK_ETH_DECIMALS;
-  const timestampFrom = currentTimestamp - BigInt(secondsInDay);
-  const searchDelta =
-    currentTimestamp - createdAt > BigInt(secondsInDay)
-      ? secondsInHour
-      : secondsInDay;
-
-  try {
-    // Get historical price
-    const historyResults = await db.sql
-      .select()
-      .from(hourBucketUsd)
-      .where(
-        and(
-          eq(hourBucketUsd.pool, poolAddress.toLowerCase() as `0x${string}`),
-          between(
-            hourBucketUsd.hourId,
-            Number(timestampFrom) - searchDelta,
-            Number(timestampFrom) + searchDelta
-          )
-        )
-      )
-      .orderBy(hourBucketUsd.hourId)
-      .limit(1);
-
-    const priceFrom = historyResults[0];
-    if (!priceFrom || priceFrom.open === 0n) {
-      return 0; // Return 0 instead of null
-    }
-
-    const num = formatUnits(usdPrice - priceFrom.open, 8);
-    const denom = formatUnits(priceFrom.open, 8);
-    const priceChangePercent = (Number(num) / Number(denom)) * 100;
-
-    console.log(priceChangePercent);
-
-    // Ensure we're not returning NaN or Infinity
-    if (isNaN(priceChangePercent) || !isFinite(priceChangePercent)) {
-      return 0;
-    }
-
-    return priceChangePercent;
-  } catch (error) {
-    console.error(`Error calculating price change: ${error}`);
-    return 0; // Return 0 instead of null on error
-  }
-}
 
 /**
  * Computes the market cap for an asset

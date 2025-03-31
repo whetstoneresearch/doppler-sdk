@@ -62,7 +62,6 @@ ponder.on("UniswapV2Pair:Swap", async ({ event, context }) => {
   const ethPrice = await fetchEthPrice(timestamp, context);
 
   let dollarLiquidity;
-  let dayChange;
   if (ethPrice) {
     await Promise.all([
       insertOrUpdateBuckets({
@@ -118,8 +117,8 @@ ponder.on("UniswapV2Pair:Swap", async ({ event, context }) => {
       await updatePool({
         poolAddress: v2PoolData.parentPool,
         context,
-        update: { 
-          price, 
+        update: {
+          price,
           dollarLiquidity,
           lastRefreshed: timestamp,
           lastSwapTimestamp: timestamp,
@@ -129,7 +128,7 @@ ponder.on("UniswapV2Pair:Swap", async ({ event, context }) => {
       await updatePool({
         poolAddress: v2PoolData.parentPool,
         context,
-        update: { 
+        update: {
           price,
           lastRefreshed: timestamp,
           lastSwapTimestamp: timestamp,
