@@ -292,6 +292,7 @@ async function refreshPoolComprehensive({
   }
   if (marketCap) {
     assetUpdate.marketCapUsd = marketCap;
+    assetUpdate.percentDayChange = priceChangeInfo;
   }
 
   await updateAsset({
