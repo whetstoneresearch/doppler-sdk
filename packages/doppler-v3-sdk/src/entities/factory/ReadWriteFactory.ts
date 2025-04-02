@@ -574,6 +574,19 @@ export class ReadWriteFactory extends ReadFactory {
     );
   }
 
+  public async collectIntegratorFees(
+    to: FunctionArgs<AirlockABI, "collectIntegratorFees">["to"],
+    token: FunctionArgs<AirlockABI, "collectIntegratorFees">["token"],
+    amount: FunctionArgs<AirlockABI, "collectIntegratorFees">["amount"],
+    options?: ContractWriteOptions & OnMinedParam
+  ): Promise<Hex> {
+    return this.airlock.write(
+      "collectIntegratorFees",
+      { to, token, amount },
+      options
+    )
+  }
+
   /**
    * Update default configurations
    * @param configs Partial configuration overrides
