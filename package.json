@@ -11,6 +11,6 @@
     "ethers": "^5.0.8"
   },
   "dependencies": {
-    "ponder": "^0.9.24"
+    "ponder": "^0.10.8"
   }
 }
