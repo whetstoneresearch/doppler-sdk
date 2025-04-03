@@ -48,7 +48,7 @@ export default createConfig({
   blocks: {
     ChainlinkEthPriceFeed: {
       network: "mainnet",
-      startBlock: mainnet.oracleStartBlock,
+      startBlock: 22180000,
       interval: (60 * 5) / 12, // every 5 minutes
     },
     // MetricRefresherUnichain: {
