@@ -43,7 +43,7 @@ export const insertTokenIfNotExists = async ({
   const chainId = BigInt(network.chainId);
 
   // ignore pool field for native tokens
-  if (address === zeroAddress) {
+  if (address == zeroAddress) {
     return await db.insert(token).values({
       address: address.toLowerCase() as `0x${string}`,
       chainId,

@@ -4,9 +4,11 @@ import {
   DERC20ABI,
   UniswapV3InitializerABI,
   UniswapV3PoolABI,
+  ZoraCoinABI,
 } from "@app/abis";
 import { configs } from "addresses";
 import { computeV3Price } from "./computeV3Price";
+import { zeroAddress } from "viem";
 
 export type PoolState = {
   asset: Address;
@@ -39,9 +41,11 @@ export type V3PoolData = {
 export const getV3PoolData = async ({
   address,
   context,
+  isZora = false,
 }: {
   address: Address;
   context: Context;
+  isZora?: boolean;
 }): Promise<V3PoolData> => {
   const { client, network } = context;
 
@@ -83,10 +87,15 @@ export const getV3PoolData = async ({
     ...multiCallAddress,
   });
 
-  const poolState = await getPoolState({
-    poolAddress: address,
-    context,
-  });
+  const poolState = isZora
+    ? await getZoraPoolState({
+        poolAddress: address,
+        context,
+      })
+    : await getPoolState({
+        poolAddress: address,
+        context,
+      });
 
   const slot0Data = {
     sqrtPrice: slot0.result?.[0] ?? 0n,
@@ -202,6 +211,72 @@ const getPoolState = async ({
     maxShareToBeSold: poolData[7],
     maxShareToBond: poolData[8],
     initializer: v3Initializer,
+  };
+
+  return poolState;
+};
+
+export const getZoraPoolState = async ({
+  poolAddress,
+  context,
+}: {
+  poolAddress: Address;
+  context: Context;
+}) => {
+  const { client } = context;
+
+  const [slot0, liquidity, token0, token1, fee] = await client.multicall({
+    contracts: [
+      {
+        abi: UniswapV3PoolABI,
+        address: poolAddress,
+        functionName: "slot0",
+      },
+      {
+        abi: UniswapV3PoolABI,
+        address: poolAddress,
+        functionName: "liquidity",
+      },
+      {
+        abi: UniswapV3PoolABI,
+        address: poolAddress,
+        functionName: "token0",
+      },
+      {
+        abi: UniswapV3PoolABI,
+        address: poolAddress,
+        functionName: "token1",
+      },
+      {
+        abi: UniswapV3PoolABI,
+        address: poolAddress,
+        functionName: "fee",
+      },
+    ],
+  });
+
+  const coinAddress =
+    token0.result == "0x4200000000000000000000000000000000000006"
+      ? token1.result
+      : token0.result;
+
+  const poolData = await client.readContract({
+    abi: ZoraCoinABI,
+    address: coinAddress,
+    functionName: "poolState",
+  });
+
+  const poolState: PoolState = {
+    asset: poolData[0],
+    numeraire: poolData[1],
+    tickLower: 0,
+    tickUpper: 0,
+    numPositions: 0,
+    isInitialized: true,
+    isExited: false,
+    maxShareToBeSold: 0n,
+    maxShareToBond: 0n,
+    initializer: zeroAddress,
   };
 
   return poolState;
