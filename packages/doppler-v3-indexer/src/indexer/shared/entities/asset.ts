@@ -1,16 +1,18 @@
 import { Context } from "ponder:registry";
 import { asset } from "ponder:schema";
 import { Address } from "viem";
-import { getAssetData } from "@app/utils/getAssetData";
+import { getAssetData, getZoraAssetData } from "@app/utils/getAssetData";
 
 export const insertAssetIfNotExists = async ({
   assetAddress,
   timestamp,
   context,
+  isZora = false,
 }: {
   assetAddress: Address;
   timestamp: bigint;
   context: Context;
+  isZora?: boolean;
 }) => {
   const { db, network } = context;
   const address = assetAddress.toLowerCase() as `0x${string}`;
@@ -24,10 +26,11 @@ export const insertAssetIfNotExists = async ({
   }
 
   const chainId = BigInt(network.chainId);
-  const assetData = await getAssetData(assetAddress, context);
+  const assetData = isZora
+    ? await getZoraAssetData(assetAddress, context)
+    : await getAssetData(assetAddress, context);
 
   const poolAddress = assetData.pool.toLowerCase() as `0x${string}`;
-
 
   const isToken0 =
     assetAddress.toLowerCase() < assetData.numeraire.toLowerCase();

@@ -78,7 +78,7 @@ ponder.on("MetricRefresherInk:block", async ({ event, context }) => {
   }
 });
 
-// Handler for base network
+// // Handler for base network
 ponder.on("MetricRefresherBase:block", async ({ event, context }) => {
   console.log(
     `Running comprehensive refresh for base at block ${event.block.number}`

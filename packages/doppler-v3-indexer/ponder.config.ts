@@ -9,8 +9,15 @@ import {
   DopplerABI,
   PoolManagerABI,
   UniswapV2PairABI,
+  ZoraFactoryABI,
+  ZoraCoinABI,
 } from "./src/abis";
-import { CHAIN_IDS, configs } from "./addresses";
+import {
+  CHAIN_IDS,
+  configs,
+  zoraFactoryBase,
+  zoraStartBlock,
+} from "./addresses";
 import { UniswapV2FactoryABI } from "@app/abis/UniswapV2Factory";
 
 const { unichain, mainnet, baseSepolia, ink, base } = configs;
@@ -48,28 +55,28 @@ export default createConfig({
   blocks: {
     ChainlinkEthPriceFeed: {
       network: "mainnet",
-      startBlock: mainnet.oracleStartBlock,
+      startBlock: unichain.oracleStartBlock,
       interval: (60 * 5) / 12, // every 5 minutes
     },
     MetricRefresherUnichain: {
       network: "unichain",
       startBlock: unichain.startBlock,
-      interval: 1000, // every 1000 blocks
+      interval: 100, // every 1000 blocks
     },
     MetricRefresherInk: {
       network: "ink",
       startBlock: ink.startBlock,
-      interval: 1000, // every 1000 blocks
+      interval: 100, // every 1000 blocks
     },
     MetricRefresherBase: {
       network: "base",
       startBlock: base.startBlock,
-      interval: 1000, // every 1000 blocks
+      interval: 100, // every 1000 blocks
     },
     MetricRefresherBaseSepolia: {
       network: "baseSepolia",
       startBlock: baseSepolia.startBlock,
-      interval: 1000, // every 1000 blocks
+      interval: 100, // every 1000 blocks
     },
   },
   contracts: {
@@ -206,6 +213,41 @@ export default createConfig({
             address: base.v3.v3Initializer,
             event: getAbiItem({ abi: UniswapV3InitializerABI, name: "Create" }),
             parameter: "poolOrHook",
+          }),
+        },
+      },
+    },
+    ZoraFactory: {
+      abi: ZoraFactoryABI,
+      network: {
+        base: {
+          startBlock: zoraStartBlock,
+          address: zoraFactoryBase,
+        },
+      },
+    },
+    ZoraCoin: {
+      abi: ZoraCoinABI,
+      network: {
+        base: {
+          startBlock: zoraStartBlock,
+          address: factory({
+            address: zoraFactoryBase,
+            event: getAbiItem({ abi: ZoraFactoryABI, name: "CoinCreated" }),
+            parameter: "coin",
+          }),
+        },
+      },
+    },
+    ZoraUniswapV3Pool: {
+      abi: UniswapV3PoolABI,
+      network: {
+        base: {
+          startBlock: zoraStartBlock,
+          address: factory({
+            address: zoraFactoryBase,
+            event: getAbiItem({ abi: ZoraFactoryABI, name: "CoinCreated" }),
+            parameter: "pool",
           }),
         },
       },
