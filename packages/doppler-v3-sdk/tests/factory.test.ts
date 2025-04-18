@@ -2,30 +2,8 @@ import { createDrift } from "@delvtech/drift";
 import { describe, expect, it } from "vitest";
 import * as DopplerSDK from "../src/";
 
-describe("ReadWriteFactory tests", { timeout: 1000 * 5 }, async () => {
-  // it("computeCreate2Address", async () => {
-  //   const salt: Hash = ("0x" + "a".repeat(64)) as Hash; // Fake 32-byte hash
-  //   const initCodeHash: Hash = ("0x" + "b".repeat(64)) as Hash; // Fake 32-byte hash
-  //   const deployer: Address = ("0x" + "c".repeat(40)) as Address; // Fake 20-byte address
-  //   let address = "";
-  //   // while (!address.endsWith("abcdef")) {
-  //   for (let salt = BigInt(0); salt < BigInt(1_000_000); salt++) {
-  //     const saltBytes = `0x${salt.toString(16).padStart(64, "0")}` as Hash;
-  //     const encoded = encodePacked(
-  //       ["bytes1", "address", "bytes32", "bytes32"],
-  //       ["0xff", deployer, saltBytes, initCodeHash]
-  //     );
-  //     address = getAddress(`0x${keccak256(encoded).slice(-40)}`);
-  //     console.log("Address: ", address);
-  //     if (address.endsWith("aaaa")) {
-  //       console.log("Found vanity address: ", address);
-  //       break;
-  //     }
-  //   }
-  //   // }
-  // });
-
-  it("Vanity address mining", async () => {
+describe("ReadWriteFactory tests", async () => {
+  it("Vanity address mining", { timeout: 1000 * 5 }, async () => {
     const drift = createDrift({
       rpcUrl: "https://unichain-sepolia.api.onfinality.io/public",
     });
