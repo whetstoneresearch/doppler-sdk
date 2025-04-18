@@ -2,7 +2,7 @@ import { createDrift } from "@delvtech/drift";
 import { describe, expect, it } from "vitest";
 import * as DopplerSDK from "../src/";
 
-describe("ReadWriteFactory tests", { timeout: 1000 * 60 * 5 }, async () => {
+describe("ReadWriteFactory tests", { timeout: 1000 * 5 }, async () => {
   // it("computeCreate2Address", async () => {
   //   const salt: Hash = ("0x" + "a".repeat(64)) as Hash; // Fake 32-byte hash
   //   const initCodeHash: Hash = ("0x" + "b".repeat(64)) as Hash; // Fake 32-byte hash
