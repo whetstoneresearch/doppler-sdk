@@ -531,7 +531,8 @@ export class ReadWriteFactory extends ReadFactory {
         tokenInitHash,
         tokenFactory
       );
-      if (token.endsWith(VANITY_ADDRESS_ENDING)) {
+      if (token.toLowerCase().endsWith(VANITY_ADDRESS_ENDING)) {
+        console.log(token);
         minedSalt = saltBytes;
         break;
       }
