@@ -1,3 +1,4 @@
+import { VANITY_ADDRESS_ENDING } from "@/constants";
 import {
   ContractWriteOptions,
   createDrift,
@@ -530,7 +531,7 @@ export class ReadWriteFactory extends ReadFactory {
         tokenInitHash,
         tokenFactory
       );
-      if (token.endsWith("abcdef")) {
+      if (token.endsWith(VANITY_ADDRESS_ENDING)) {
         minedSalt = saltBytes;
         break;
       }

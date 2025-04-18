@@ -1,5 +1,5 @@
 import { createDrift } from "@delvtech/drift";
-import { describe, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import * as DopplerSDK from "../src/";
 
 describe("ReadWriteFactory tests", { timeout: 1000 * 60 * 5 }, async () => {
@@ -62,6 +62,8 @@ describe("ReadWriteFactory tests", { timeout: 1000 * 60 * 5 }, async () => {
     const simulatedCreateData = await readWriteFactory.simulateCreate(
       createParams
     );
-    console.log("Simulated create data: ", simulatedCreateData);
+    expect(
+      simulatedCreateData.asset.substring(simulatedCreateData.asset.length - 4)
+    ).toBe(DopplerSDK.VANITY_ADDRESS_ENDING);
   });
 });
