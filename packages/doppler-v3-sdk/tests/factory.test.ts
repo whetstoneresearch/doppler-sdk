@@ -63,7 +63,10 @@ describe("ReadWriteFactory tests", { timeout: 1000 * 60 * 5 }, async () => {
       createParams
     );
     expect(
-      simulatedCreateData.asset.substring(simulatedCreateData.asset.length - 4)
+      simulatedCreateData.asset.substring(
+        simulatedCreateData.asset.length -
+          DopplerSDK.VANITY_ADDRESS_ENDING.length
+      )
     ).toBe(DopplerSDK.VANITY_ADDRESS_ENDING);
   });
 });

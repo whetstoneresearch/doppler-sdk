@@ -1,4 +1,3 @@
-import { VANITY_ADDRESS_ENDING } from "@/constants";
 import {
   ContractWriteOptions,
   createDrift,
@@ -22,6 +21,7 @@ import {
 } from "viem";
 import { BundlerAbi } from "../../abis";
 import { DERC20Bytecode } from "../../abis/bytecodes";
+import { VANITY_ADDRESS_ENDING } from "../../constants";
 import { AirlockABI, ReadFactory } from "./ReadFactory";
 
 // Constants for default configuration values
