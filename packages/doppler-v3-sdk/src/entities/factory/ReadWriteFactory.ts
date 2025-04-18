@@ -567,7 +567,7 @@ export class ReadWriteFactory extends ReadFactory {
    */
   public async encodeCreateData(
     params: CreateV3PoolParams
-  ): Promise<{ createParams: CreateParams; asset: Address }> {
+  ): Promise<CreateParams> {
     let isToken0 = true;
     let createParams!: CreateParams;
     let asset!: Address;
@@ -579,7 +579,7 @@ export class ReadWriteFactory extends ReadFactory {
       asset = simulateResult.asset;
       isToken0 = Number(asset) < Number(params.numeraire);
     }
-    return { createParams, asset };
+    return createParams;
   }
 
   /**

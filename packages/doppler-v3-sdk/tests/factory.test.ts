@@ -37,7 +37,7 @@ describe("ReadWriteFactory tests", { timeout: 1000 * 60 * 5 }, async () => {
       bundlerAddress,
       drift
     );
-    const { createParams, asset } = await readWriteFactory.encodeCreateData({
+    const createParams = await readWriteFactory.encodeCreateData({
       integrator: "0x21E2ce70511e4FE542a97708e89520471DAa7A66",
       userAddress: "0x8e8757Aba1a98F5A5A68027DBb31D481B53b58Ce",
       numeraire: "0x4200000000000000000000000000000000000006",
