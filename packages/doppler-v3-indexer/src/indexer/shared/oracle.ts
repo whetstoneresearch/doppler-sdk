@@ -58,3 +58,18 @@ export const updateMarketCap = async ({
     },
   });
 };
+
+export const computeMarketCap = ({
+  price,
+  ethPrice,
+  totalSupply,
+}: {
+  price: bigint;
+  ethPrice: bigint;
+  totalSupply: bigint;
+}) => {
+  const marketCap = (price * totalSupply) / BigInt(10 ** 18);
+  const marketCapUsd = (marketCap * ethPrice) / CHAINLINK_ETH_DECIMALS;
+
+  return marketCapUsd;
+};

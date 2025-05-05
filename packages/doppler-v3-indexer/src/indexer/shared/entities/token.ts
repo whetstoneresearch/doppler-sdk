@@ -97,52 +97,61 @@ export const insertTokenIfNotExists = async ({
     const tokenURI = tokenURIResult?.result;
     let tokenUriData;
     let image: string | undefined;
-    if (tokenURI?.startsWith("ipfs://")) {
-      try {
-        const cid = tokenURI.replace("ipfs://", "");
-        const url = `https://${process.env.PINATA_GATEWAY_URL}/ipfs/${cid}?pinataGatewayToken=${process.env.PINATA_GATEWAY_KEY}`;
-        const response = await fetch(url);
-        tokenUriData = await response.json();
+    // if (tokenURI?.startsWith("ipfs://")) {
+    //   try {
+    //     if (
+    //       !tokenURI.startsWith("ipfs://") &&
+    //       !tokenURI.startsWith("http://") &&
+    //       !tokenURI.startsWith("https://")
+    //     ) {
+    //       return;
+    //     }
+    //     const cid = tokenURI.replace("ipfs://", "");
+    //     const url = `https://${process.env.PINATA_GATEWAY_URL}/ipfs/${cid}?pinataGatewayToken=${process.env.PINATA_GATEWAY_KEY}`;
+    //     console.log(url);
+    //     const response = await fetch(url);
+    //     console.log(response);
+    //     tokenUriData = await response.json();
 
-        if (
-          tokenUriData &&
-          typeof tokenUriData === "object" &&
-          "image" in tokenUriData &&
-          typeof tokenUriData.image === "string"
-        ) {
-          if (tokenUriData.image.startsWith("ipfs://")) {
-            image = tokenUriData.image;
-          }
-        }
-      } catch (error) {
-        console.error(
-          `Failed to fetch IPFS metadata for token ${address}:`,
-          error
-        );
-      }
-    } else if (tokenURI?.includes("ohara")) {
-      try {
-        const url = tokenURI;
-        const response = await fetch(url);
-        tokenUriData = await response.json();
+    //     if (
+    //       tokenUriData &&
+    //       typeof tokenUriData === "object" &&
+    //       "image" in tokenUriData &&
+    //       typeof tokenUriData.image === "string"
+    //     ) {
+    //       if (tokenUriData.image.startsWith("ipfs://")) {
+    //         image = tokenUriData.image;
+    //       }
+    //     }
+    //   } catch (error) {
+    //     console.error(
+    //       `Failed to fetch IPFS metadata for token ${address}:`,
+    //       error
+    //     );
+    //   }
+    // } else if (tokenURI?.includes("ohara")) {
+    //   try {
+    //     const url = tokenURI;
+    //     const response = await fetch(url);
+    //     tokenUriData = await response.json();
 
-        if (
-          tokenUriData &&
-          typeof tokenUriData === "object" &&
-          "image" in tokenUriData &&
-          typeof tokenUriData.image === "string"
-        ) {
-          if (tokenUriData.image.startsWith("https://")) {
-            image = tokenUriData.image;
-          }
-        }
-      } catch (error) {
-        console.error(
-          `Failed to fetch ohara metadata for token ${address}:`,
-          error
-        );
-      }
-    }
+    //     if (
+    //       tokenUriData &&
+    //       typeof tokenUriData === "object" &&
+    //       "image" in tokenUriData &&
+    //       typeof tokenUriData.image === "string"
+    //     ) {
+    //       if (tokenUriData.image.startsWith("https://")) {
+    //         image = tokenUriData.image;
+    //       }
+    //     }
+    //   } catch (error) {
+    //     console.error(
+    //       `Failed to fetch ohara metadata for token ${address}:`,
+    //       error
+    //     );
+    //   }
+    // }
 
     return await context.db
       .insert(token)

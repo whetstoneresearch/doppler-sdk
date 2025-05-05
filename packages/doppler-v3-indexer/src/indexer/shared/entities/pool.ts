@@ -1,8 +1,12 @@
-import { getV3PoolData, getZoraPoolState } from "@app/utils/v3-utils";
+import { getV3PoolData } from "@app/utils/v3-utils";
+import { getV4PoolData } from "@app/utils/v4-utils";
 import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
 import { pool } from "ponder:schema";
 import { Address, zeroAddress } from "viem";
 import { Context } from "ponder:registry";
+import { fetchEthPrice } from "../oracle";
+import { getReservesV4, V4PoolData } from "@app/utils/v4-utils/getV4PoolData";
+import { computeV4Price } from "@app/utils/v4-utils/computeV4Price";
 import { getZoraPoolData, PoolState } from "@app/utils/v3-utils/getV3PoolData";
 
 export const insertPoolIfNotExists = async ({
@@ -209,5 +213,90 @@ export const insertZoraPoolIfNotExists = async ({
     volumeUsd: 0n,
     percentDayChange: 0,
     isToken0,
+  });
+};
+
+export const insertPoolIfNotExistsV4 = async ({
+  poolAddress,
+  timestamp,
+  poolData,
+  context,
+}: {
+  poolAddress: Address;
+  timestamp: bigint;
+  poolData?: V4PoolData;
+  context: Context;
+}): Promise<typeof pool.$inferSelect> => {
+  const { db, network } = context;
+  const address = poolAddress.toLowerCase() as `0x${string}`;
+
+  const existingPool = await db.find(pool, {
+    address,
+    chainId: BigInt(network.chainId),
+  });
+
+  if (existingPool) {
+    return existingPool;
+  }
+
+  if (!poolData) {
+    poolData = await getV4PoolData({
+      hook: address,
+      context,
+    });
+  }
+
+  const { poolKey, slot0Data, liquidity, price, poolConfig } = poolData;
+  const { fee } = poolKey;
+
+  const { token0Reserve, token1Reserve } = await getReservesV4({
+    hook: address,
+    context,
+  });
+
+  const assetAddr = poolConfig.isToken0 ? poolKey.currency0 : poolKey.currency1;
+  const numeraireAddr = poolConfig.isToken0
+    ? poolKey.currency1
+    : poolKey.currency0;
+
+  const ethPrice = await fetchEthPrice(timestamp, context);
+
+  const assetBalance = poolConfig.isToken0 ? token0Reserve : token1Reserve;
+  const quoteBalance = poolConfig.isToken0 ? token1Reserve : token0Reserve;
+
+  const dollarLiquidity = await computeDollarLiquidity({
+    assetBalance,
+    quoteBalance,
+    price,
+    ethPrice,
+  });
+
+  return await db.insert(pool).values({
+    ...poolData,
+    ...slot0Data,
+    address,
+    chainId: BigInt(network.chainId),
+    tick: slot0Data.tick,
+    sqrtPrice: slot0Data.sqrtPrice,
+    liquidity: liquidity,
+    createdAt: timestamp,
+    asset: assetAddr,
+    baseToken: assetAddr,
+    quoteToken: numeraireAddr,
+    price,
+    fee,
+    type: "v4",
+    dollarLiquidity: dollarLiquidity ?? 0n,
+    dailyVolume: address,
+    volumeUsd: 0n,
+    percentDayChange: 0,
+    totalFee0: 0n,
+    totalFee1: 0n,
+    graduationThreshold: 0n,
+    graduationBalance: 0n,
+    isToken0: poolConfig.isToken0,
+    reserves0: token0Reserve,
+    reserves1: token1Reserve,
+    poolKey: JSON.stringify(poolKey),
   });
 };

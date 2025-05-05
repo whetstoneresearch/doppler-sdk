@@ -160,6 +160,70 @@ export const module = onchainTable(
   })
 );
 
+export const v4PoolConfig = onchainTable("v4_pool_config", (t) => ({
+  hookAddress: t.hex().notNull().primaryKey(),
+  numTokensToSell: t.bigint().notNull(),
+  minProceeds: t.bigint().notNull(),
+  maxProceeds: t.bigint().notNull(),
+  startingTime: t.bigint().notNull(),
+  endingTime: t.bigint().notNull(),
+  startingTick: t.integer().notNull(),
+  endingTick: t.integer().notNull(),
+  epochLength: t.bigint().notNull(),
+  gamma: t.integer().notNull(),
+  isToken0: t.boolean().notNull(),
+  numPdSlugs: t.bigint().notNull(),
+}));
+
+export const v4PoolState = onchainTable("v4_pool_state", (t) => ({
+  hookAddress: t.hex().notNull().primaryKey(),
+  lastEpoch: t.integer().notNull(),
+  tickAccumulator: t.bigint().notNull(),
+  totalTokensSold: t.bigint().notNull(),
+  totalProceeds: t.bigint().notNull(),
+  totalTokensSoldLastEpoch: t.bigint().notNull(),
+  feesAccrued: t.bigint().notNull(),
+}));
+
+export const poolV4 = onchainTable(
+  "pool_v4",
+  (t) => ({
+    hookAddress: t.hex().notNull(),
+    chainId: t.bigint().notNull(),
+    tick: t.integer().notNull(),
+    sqrtPrice: t.bigint().notNull(),
+    liquidity: t.bigint().notNull(),
+    createdAt: t.bigint().notNull(),
+    asset: t.hex().notNull(),
+    baseToken: t.hex().notNull(),
+    quoteToken: t.hex().notNull(),
+    price: t.bigint().notNull(),
+    fee: t.integer().notNull(),
+    type: t.text().notNull(),
+    dollarLiquidity: t.bigint().notNull(),
+    dailyVolume: t.hex().notNull(),
+    volumeUsd: t.bigint().notNull(),
+    percentDayChange: t.real().notNull(),
+    totalFee0: t.bigint().notNull(),
+    totalFee1: t.bigint().notNull(),
+    isToken0: t.boolean().notNull(),
+    lastRefreshed: t.bigint(),
+    lastSwapTimestamp: t.bigint(),
+    reserves0: t.bigint().notNull().default(0n),
+    reserves1: t.bigint().notNull().default(0n),
+    poolKey: t.jsonb().notNull().default("{}"),
+  }),
+  (table) => ({
+    pk: primaryKey({
+      columns: [table.hookAddress, table.chainId],
+    }),
+    baseTokenIdx: index().on(table.baseToken),
+    quoteTokenIdx: index().on(table.quoteToken),
+    lastRefreshedIdx: index().on(table.lastRefreshed),
+    lastSwapTimestampIdx: index().on(table.lastSwapTimestamp),
+  })
+);
+
 export const pool = onchainTable(
   "pool",
   (t) => ({
@@ -188,6 +252,7 @@ export const pool = onchainTable(
     lastSwapTimestamp: t.bigint(),
     reserves0: t.bigint().notNull().default(0n),
     reserves1: t.bigint().notNull().default(0n),
+    unitPriceUsd: t.bigint().notNull().default(0n),
   }),
   (table) => ({
     pk: primaryKey({
@@ -234,6 +299,11 @@ export const userAsset = onchainTable(
     chainIdIdx: index().on(table.chainId),
   })
 );
+
+export const v4PoolCheckpoints = onchainTable("v4_pool_checkpoints", (t) => ({
+  chainId: t.integer().notNull().primaryKey(),
+  checkpoints: t.jsonb().notNull().default("{}"),
+}));
 
 /* RELATIONS */
 

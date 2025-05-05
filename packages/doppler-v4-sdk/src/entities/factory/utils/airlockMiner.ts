@@ -52,7 +52,6 @@ export function mine(params: MineV4Params): [Hash, Address, Address, Hex, Hex] {
     params.numeraire !== '0x0000000000000000000000000000000000000000';
 
   const {
-    initialPrice,
     minimumProceeds,
     maximumProceeds,
     startingTime,
@@ -68,7 +67,6 @@ export function mine(params: MineV4Params): [Hash, Address, Address, Hex, Hex] {
 
   const poolInitializerData = encodeAbiParameters(
     [
-      { type: 'uint160' },
       { type: 'uint256' },
       { type: 'uint256' },
       { type: 'uint256' },
@@ -83,7 +81,6 @@ export function mine(params: MineV4Params): [Hash, Address, Address, Hex, Hex] {
       { type: 'int24' },
     ],
     [
-      initialPrice,
       minimumProceeds,
       maximumProceeds,
       startingTime,

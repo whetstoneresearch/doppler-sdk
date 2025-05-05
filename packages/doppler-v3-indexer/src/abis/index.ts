@@ -7,6 +7,7 @@ export {
   DopplerABI,
   StateViewABI,
   PoolManagerABI,
+  DopplerLensQuoterABI,
 } from "./v4-abis";
 
 // shared abis

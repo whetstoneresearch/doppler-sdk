@@ -1,7 +1,6 @@
 import { Address } from 'viem';
 
 export interface DopplerData {
-  initialPrice: bigint;
   minimumProceeds: bigint;
   maximumProceeds: bigint;
   startingTime: bigint;

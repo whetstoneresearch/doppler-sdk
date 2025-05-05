@@ -66,6 +66,11 @@ export interface PriceRange {
   endPrice: number;
 }
 
+export interface TickRange {
+  startTick: number;
+  endTick: number;
+}
+
 export interface DopplerPreDeploymentConfig {
   // Token details
   name: string;
@@ -82,7 +87,8 @@ export interface DopplerPreDeploymentConfig {
 
   // Price parameters
   numeraire?: Address; // defaults to native if unset
-  priceRange: PriceRange;
+  priceRange?: PriceRange;
+  tickRange?: TickRange;
   tickSpacing: number;
   fee: number; // In bips
 

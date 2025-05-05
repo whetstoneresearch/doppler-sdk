@@ -3,34 +3,35 @@ import { executeScheduledJobs } from "./shared/scheduledJobs";
 import { configs } from "addresses";
 import { ChainlinkOracleABI } from "@app/abis/ChainlinkOracleABI";
 import { ethPrice } from "ponder.schema";
+import { refreshV4PoolCheckpoints } from "./shared/entities/v4-entities/v4PoolCheckpoints";
 
 /**
  * Block handlers that run periodically to ensure volume data and metrics are up-to-date
  * These are triggered by the block configuration in ponder.config.ts
  */
 
-// Handler for unichain network
-ponder.on("MetricRefresherUnichain:block", async ({ event, context }) => {
-  console.log(
-    `Running comprehensive refresh for unichain at block ${event.block.number}`
-  );
+// // Handler for unichain network
+// ponder.on("MetricRefresherUnichain:block", async ({ event, context }) => {
+//   console.log(
+//     `Running comprehensive refresh for unichain at block ${event.block.number}`
+//   );
 
-  const startTime = Date.now();
+//   const startTime = Date.now();
 
-  try {
-    // Execute optimized combined refresh job
-    await executeScheduledJobs({
-      context,
-      currentTimestamp: BigInt(event.block.timestamp),
-    });
+//   try {
+//     // Execute optimized combined refresh job
+//     await executeScheduledJobs({
+//       context,
+//       currentTimestamp: BigInt(event.block.timestamp),
+//     });
 
-    const duration = (Date.now() - startTime) / 1000;
-    console.log(`Unichain refresh completed in ${duration.toFixed(2)}s`);
-  } catch (error) {
-    console.error(`Error in unichain refresh job: ${error}`);
-    // Log error but don't throw to prevent handler from failing completely
-  }
-});
+//     const duration = (Date.now() - startTime) / 1000;
+//     console.log(`Unichain refresh completed in ${duration.toFixed(2)}s`);
+//   } catch (error) {
+//     console.error(`Error in unichain refresh job: ${error}`);
+//     // Log error but don't throw to prevent handler from failing completely
+//   }
+// });
 
 // Handler for baseSepolia network
 // ponder.on("MetricRefresherBaseSepolia:block", async ({ event, context }) => {
@@ -55,51 +56,51 @@ ponder.on("MetricRefresherUnichain:block", async ({ event, context }) => {
 //   }
 // });
 
-// Handler for ink network
-ponder.on("MetricRefresherInk:block", async ({ event, context }) => {
-  console.log(
-    `Running comprehensive refresh for ink at block ${event.block.number}`
-  );
+// // Handler for ink network
+// ponder.on("MetricRefresherInk:block", async ({ event, context }) => {
+//   console.log(
+//     `Running comprehensive refresh for ink at block ${event.block.number}`
+//   );
 
-  const startTime = Date.now();
+//   const startTime = Date.now();
 
-  try {
-    // Execute optimized combined refresh job
-    await executeScheduledJobs({
-      context,
-      currentTimestamp: BigInt(event.block.timestamp),
-    });
+//   try {
+//     // Execute optimized combined refresh job
+//     await executeScheduledJobs({
+//       context,
+//       currentTimestamp: BigInt(event.block.timestamp),
+//     });
 
-    const duration = (Date.now() - startTime) / 1000;
-    console.log(`Ink refresh completed in ${duration.toFixed(2)}s`);
-  } catch (error) {
-    console.error(`Error in ink refresh job: ${error}`);
-    // Log error but don't throw to prevent handler from failing completely
-  }
-});
+//     const duration = (Date.now() - startTime) / 1000;
+//     console.log(`Ink refresh completed in ${duration.toFixed(2)}s`);
+//   } catch (error) {
+//     console.error(`Error in ink refresh job: ${error}`);
+//     // Log error but don't throw to prevent handler from failing completely
+//   }
+// });
 
-// // Handler for base network
-ponder.on("MetricRefresherBase:block", async ({ event, context }) => {
-  console.log(
-    `Running comprehensive refresh for base at block ${event.block.number}`
-  );
+// // // Handler for base network
+// ponder.on("MetricRefresherBase:block", async ({ event, context }) => {
+//   console.log(
+//     `Running comprehensive refresh for base at block ${event.block.number}`
+//   );
 
-  const startTime = Date.now();
+//   const startTime = Date.now();
 
-  try {
-    // Execute optimized combined refresh job
-    await executeScheduledJobs({
-      context,
-      currentTimestamp: BigInt(event.block.timestamp),
-    });
+//   try {
+//     // Execute optimized combined refresh job
+//     await executeScheduledJobs({
+//       context,
+//       currentTimestamp: BigInt(event.block.timestamp),
+//     });
 
-    const duration = (Date.now() - startTime) / 1000;
-    console.log(`Ink refresh completed in ${duration.toFixed(2)}s`);
-  } catch (error) {
-    console.error(`Error in ink refresh job: ${error}`);
-    // Log error but don't throw to prevent handler from failing completely
-  }
-});
+//     const duration = (Date.now() - startTime) / 1000;
+//     console.log(`Ink refresh completed in ${duration.toFixed(2)}s`);
+//   } catch (error) {
+//     console.error(`Error in ink refresh job: ${error}`);
+//     // Log error but don't throw to prevent handler from failing completely
+//   }
+// });
 
 ponder.on("ChainlinkEthPriceFeed:block", async ({ event, context }) => {
   const { db, client, network } = context;
@@ -123,4 +124,11 @@ ponder.on("ChainlinkEthPriceFeed:block", async ({ event, context }) => {
       price,
     })
     .onConflictDoNothing();
+});
+
+ponder.on("BaseSepoliaV4PoolCheckpoints:block", async ({ event, context }) => {
+  await refreshV4PoolCheckpoints({
+    context,
+    timestamp: Number(event.block.timestamp),
+  });
 });
