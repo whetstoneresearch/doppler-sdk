@@ -1,16 +1,28 @@
 import {
-  ReadWriteContract,
-  ReadWriteAdapter,
-  Drift,
   ContractWriteOptions,
-  OnMinedParam,
   createDrift,
-  FunctionReturn,
+  Drift,
   FunctionArgs,
+  FunctionReturn,
+  HexString,
+  OnMinedParam,
+  ReadWriteAdapter,
+  ReadWriteContract,
 } from "@delvtech/drift";
-import { ReadFactory, AirlockABI } from "./ReadFactory";
+import {
+  Address,
+  encodeAbiParameters,
+  encodePacked,
+  getAddress,
+  Hash,
+  Hex,
+  keccak256,
+  parseEther,
+} from "viem";
 import { BundlerAbi } from "../../abis";
-import { Address, encodeAbiParameters, Hex, parseEther } from "viem";
+import { DERC20Bytecode } from "../../abis/bytecodes";
+import { VANITY_ADDRESS_ENDING } from "../../constants";
+import { AirlockABI, ReadFactory } from "./ReadFactory";
 
 // Constants for default configuration values
 const ONE_YEAR_IN_SECONDS = 365 * 24 * 60 * 60;
@@ -234,6 +246,17 @@ export class ReadWriteFactory extends ReadFactory {
       initialProposalThreshold: DEFAULT_INITIAL_PROPOSAL_THRESHOLD,
     };
   }
+  private computeCreate2Address(
+    salt: Hash,
+    initCodeHash: Hash,
+    deployer: Address
+  ): Address {
+    const encoded = encodePacked(
+      ["bytes1", "address", "bytes32", "bytes32"],
+      ["0xff", deployer, salt, initCodeHash]
+    );
+    return getAddress(`0x${keccak256(encoded).slice(-40)}`);
+  }
 
   /**
    * Merge user configuration with defaults
@@ -307,7 +330,7 @@ export class ReadWriteFactory extends ReadFactory {
    * @param account User address to incorporate into salt
    * @returns Hex string of generated salt
    */
-  private generateRandomSalt = (account: Address) => {
+  private generateRandomSalt = (account: Address): HexString => {
     const array = new Uint8Array(32);
 
     // Cross-platform random generation
@@ -449,8 +472,37 @@ export class ReadWriteFactory extends ReadFactory {
       );
     }
 
-    // Generate unique salt and encode contract data
-    const salt = this.generateRandomSalt(userAddress) as Hex;
+    const initHashData = encodeAbiParameters(
+      [
+        { type: "string" },
+        { type: "string" },
+        { type: "uint256" },
+        { type: "address" },
+        { type: "address" },
+        { type: "uint256" },
+        { type: "uint256" },
+        { type: "address[]" },
+        { type: "uint256[]" },
+        { type: "string" },
+      ],
+      [
+        params.tokenConfig.name,
+        params.tokenConfig.symbol,
+        saleConfig.initialSupply,
+        this.airlock.address,
+        this.airlock.address,
+        vestingConfig.yearlyMintRate,
+        vestingConfig.vestingDuration,
+        vestingConfig.recipients,
+        vestingConfig.amounts,
+        tokenConfig.tokenURI,
+      ]
+    );
+
+    const tokenInitHash = keccak256(
+      encodePacked(["bytes", "bytes"], [DERC20Bytecode as Hex, initHashData])
+    );
+
     const governanceFactoryData = this.encodeGovernanceFactoryData(
       tokenConfig,
       governanceConfig
@@ -470,6 +522,22 @@ export class ReadWriteFactory extends ReadFactory {
       liquidityMigrator,
     } = contracts;
 
+    let minedSalt = this.generateRandomSalt(userAddress);
+    for (let salt = BigInt(0); salt < BigInt(1_000_000); salt++) {
+      const saltBytes = `0x${salt.toString(16).padStart(64, "0")}` as Hash;
+
+      const token = this.computeCreate2Address(
+        saltBytes,
+        tokenInitHash,
+        tokenFactory
+      );
+      if (token.toLowerCase().endsWith(VANITY_ADDRESS_ENDING)) {
+        console.log(token);
+        minedSalt = saltBytes;
+        break;
+      }
+    }
+
     const { initialSupply, numTokensToSell } = saleConfig;
 
     const args: CreateParams = {
@@ -485,7 +553,7 @@ export class ReadWriteFactory extends ReadFactory {
       liquidityMigrator,
       liquidityMigratorData,
       integrator,
-      salt,
+      salt: minedSalt,
     };
 
     return {
@@ -513,7 +581,6 @@ export class ReadWriteFactory extends ReadFactory {
       asset = simulateResult.asset;
       isToken0 = Number(asset) < Number(params.numeraire);
     }
-
     return createParams;
   }
 
