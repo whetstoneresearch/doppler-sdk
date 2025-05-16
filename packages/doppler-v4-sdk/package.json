@@ -1,7 +1,7 @@
 {
   "name": "doppler-v4-sdk",
   "author": "Whetstone Research",
-  "version": "0.2.0-rc28",
+  "version": "0.2.0-rc36",
   "license": "MIT",
   "main": "dist/index.js",
   "module": "dist/index.mjs",

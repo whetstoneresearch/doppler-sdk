@@ -67,11 +67,13 @@ export const insertAssetIfNotExists = async ({
   assetAddress,
   timestamp,
   context,
+  marketCapUsd,
   isZora = false,
 }: {
   assetAddress: Address;
   timestamp: bigint;
   context: Context;
+  marketCapUsd?: bigint;
   isZora?: boolean;
 }) => {
   const { db, network } = context;
@@ -104,7 +106,7 @@ export const insertAssetIfNotExists = async ({
     migrated: false,
     holderCount: 0,
     percentDayChange: 0,
-    marketCapUsd: 0n,
+    marketCapUsd: marketCapUsd ?? 0n,
     dayVolumeUsd: 0n,
     liquidityUsd: 0n,
   });

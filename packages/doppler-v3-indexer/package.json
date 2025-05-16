@@ -15,7 +15,7 @@
     "@uniswap/v3-sdk": "^3.24.0",
     "hono": "^4.6.19",
     "jsbi": "^4.3.0",
-    "ponder": "^0.10.16",
+    "ponder": "0.10.24",
     "viem": "2.23.1"
   },
   "devDependencies": {

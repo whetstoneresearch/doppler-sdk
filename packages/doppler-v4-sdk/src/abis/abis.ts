@@ -1337,7 +1337,6 @@ export const uniswapV4InitializerAbi = [
   { type: 'error', name: 'InvalidTokenOrder', inputs: [] },
   { type: 'error', name: 'SenderNotAirlock', inputs: [] },
 ] as const;
-
 export const universalRouterAbi = [
   {
     type: 'constructor',

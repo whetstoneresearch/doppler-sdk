@@ -281,6 +281,8 @@ export const updateDailyVolume = async ({
       BigInt(0)
     );
 
+    console.log("totalVolumeUsd", totalVolumeUsd);
+
     await db
       .update(dailyVolume, {
         pool: poolAddress.toLowerCase() as `0x${string}`,

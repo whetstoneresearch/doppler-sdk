@@ -7,9 +7,9 @@ import { Address, Hex } from 'viem';
  * @property tokenURI URI for token metadata
  */
 export interface TokenConfig {
-    name: string;
-    symbol: string;
-    tokenURI: string;
+  name: string;
+  symbol: string;
+  tokenURI: string;
 }
 
 /**
@@ -29,21 +29,19 @@ export interface TokenConfig {
  * @property salt Unique salt for deployment
  */
 export interface CreateParams {
-    initialSupply: bigint;
-    numTokensToSell: bigint;
-    numeraire: Address;
-    tokenFactory: Address;
-    tokenFactoryData: Hex;
-    governanceFactory: Address;
-    governanceFactoryData: Hex;
-    poolInitializer: Address;
-    poolInitializerData: Hex;
-    liquidityMigrator: Address;
-    liquidityMigratorData: Hex;
-    integrator: Address;
-    salt: Hex;
-    hook: Hex;
-    token: Hex;
+  initialSupply: bigint;
+  numTokensToSell: bigint;
+  numeraire: Address;
+  tokenFactory: Address;
+  tokenFactoryData: Hex;
+  governanceFactory: Address;
+  governanceFactoryData: Hex;
+  poolInitializer: Address;
+  poolInitializerData: Hex;
+  liquidityMigrator: Address;
+  liquidityMigratorData: Hex;
+  integrator: Address;
+  salt: Hex;
 }
 
 /**
@@ -51,5 +49,5 @@ export interface CreateParams {
  * @property asset Address of the asset to migrate
  */
 export interface MigrateParams {
-    asset: Address;
+  asset: Address;
 }

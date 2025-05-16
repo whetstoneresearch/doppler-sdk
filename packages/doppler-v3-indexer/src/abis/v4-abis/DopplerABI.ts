@@ -19,6 +19,7 @@ export const DopplerABI = [
       { name: "_isToken0", type: "bool", internalType: "bool" },
       { name: "_numPDSlugs", type: "uint256", internalType: "uint256" },
       { name: "initializer_", type: "address", internalType: "address" },
+      { name: "initialLpFee_", type: "uint24", internalType: "uint24" },
     ],
     stateMutability: "nonpayable",
   },
@@ -27,9 +28,9 @@ export const DopplerABI = [
     type: "function",
     name: "afterAddLiquidity",
     inputs: [
-      { name: "", type: "address", internalType: "address" },
+      { name: "sender", type: "address", internalType: "address" },
       {
-        name: "",
+        name: "key",
         type: "tuple",
         internalType: "struct PoolKey",
         components: [
@@ -41,7 +42,7 @@ export const DopplerABI = [
         ],
       },
       {
-        name: "",
+        name: "params",
         type: "tuple",
         internalType: "struct IPoolManager.ModifyLiquidityParams",
         components: [
@@ -51,9 +52,9 @@ export const DopplerABI = [
           { name: "salt", type: "bytes32", internalType: "bytes32" },
         ],
       },
-      { name: "", type: "int256", internalType: "BalanceDelta" },
-      { name: "", type: "int256", internalType: "BalanceDelta" },
-      { name: "", type: "bytes", internalType: "bytes" },
+      { name: "delta", type: "int256", internalType: "BalanceDelta" },
+      { name: "feesAccrued", type: "int256", internalType: "BalanceDelta" },
+      { name: "hookData", type: "bytes", internalType: "bytes" },
     ],
     outputs: [
       { name: "", type: "bytes4", internalType: "bytes4" },
@@ -65,9 +66,9 @@ export const DopplerABI = [
     type: "function",
     name: "afterDonate",
     inputs: [
-      { name: "", type: "address", internalType: "address" },
+      { name: "sender", type: "address", internalType: "address" },
       {
-        name: "",
+        name: "key",
         type: "tuple",
         internalType: "struct PoolKey",
         components: [
@@ -78,9 +79,9 @@ export const DopplerABI = [
           { name: "hooks", type: "address", internalType: "contract IHooks" },
         ],
       },
-      { name: "", type: "uint256", internalType: "uint256" },
-      { name: "", type: "uint256", internalType: "uint256" },
-      { name: "", type: "bytes", internalType: "bytes" },
+      { name: "amount0", type: "uint256", internalType: "uint256" },
+      { name: "amount1", type: "uint256", internalType: "uint256" },
+      { name: "hookData", type: "bytes", internalType: "bytes" },
     ],
     outputs: [{ name: "", type: "bytes4", internalType: "bytes4" }],
     stateMutability: "nonpayable",
@@ -102,7 +103,7 @@ export const DopplerABI = [
           { name: "hooks", type: "address", internalType: "contract IHooks" },
         ],
       },
-      { name: "", type: "uint160", internalType: "uint160" },
+      { name: "sqrtPriceX96", type: "uint160", internalType: "uint160" },
       { name: "tick", type: "int24", internalType: "int24" },
     ],
     outputs: [{ name: "", type: "bytes4", internalType: "bytes4" }],
@@ -112,9 +113,9 @@ export const DopplerABI = [
     type: "function",
     name: "afterRemoveLiquidity",
     inputs: [
-      { name: "", type: "address", internalType: "address" },
+      { name: "sender", type: "address", internalType: "address" },
       {
-        name: "",
+        name: "key",
         type: "tuple",
         internalType: "struct PoolKey",
         components: [
@@ -126,7 +127,7 @@ export const DopplerABI = [
         ],
       },
       {
-        name: "",
+        name: "params",
         type: "tuple",
         internalType: "struct IPoolManager.ModifyLiquidityParams",
         components: [
@@ -136,9 +137,9 @@ export const DopplerABI = [
           { name: "salt", type: "bytes32", internalType: "bytes32" },
         ],
       },
-      { name: "", type: "int256", internalType: "BalanceDelta" },
-      { name: "", type: "int256", internalType: "BalanceDelta" },
-      { name: "", type: "bytes", internalType: "bytes" },
+      { name: "delta", type: "int256", internalType: "BalanceDelta" },
+      { name: "feesAccrued", type: "int256", internalType: "BalanceDelta" },
+      { name: "hookData", type: "bytes", internalType: "bytes" },
     ],
     outputs: [
       { name: "", type: "bytes4", internalType: "bytes4" },
@@ -150,7 +151,7 @@ export const DopplerABI = [
     type: "function",
     name: "afterSwap",
     inputs: [
-      { name: "", type: "address", internalType: "address" },
+      { name: "sender", type: "address", internalType: "address" },
       {
         name: "key",
         type: "tuple",
@@ -164,7 +165,7 @@ export const DopplerABI = [
         ],
       },
       {
-        name: "swapParams",
+        name: "params",
         type: "tuple",
         internalType: "struct IPoolManager.SwapParams",
         components: [
@@ -177,8 +178,8 @@ export const DopplerABI = [
           },
         ],
       },
-      { name: "swapDelta", type: "int256", internalType: "BalanceDelta" },
-      { name: "", type: "bytes", internalType: "bytes" },
+      { name: "delta", type: "int256", internalType: "BalanceDelta" },
+      { name: "hookData", type: "bytes", internalType: "bytes" },
     ],
     outputs: [
       { name: "", type: "bytes4", internalType: "bytes4" },
@@ -190,64 +191,7 @@ export const DopplerABI = [
     type: "function",
     name: "beforeAddLiquidity",
     inputs: [
-      { name: "caller", type: "address", internalType: "address" },
-      {
-        name: "",
-        type: "tuple",
-        internalType: "struct PoolKey",
-        components: [
-          { name: "currency0", type: "address", internalType: "Currency" },
-          { name: "currency1", type: "address", internalType: "Currency" },
-          { name: "fee", type: "uint24", internalType: "uint24" },
-          { name: "tickSpacing", type: "int24", internalType: "int24" },
-          { name: "hooks", type: "address", internalType: "contract IHooks" },
-        ],
-      },
-      {
-        name: "",
-        type: "tuple",
-        internalType: "struct IPoolManager.ModifyLiquidityParams",
-        components: [
-          { name: "tickLower", type: "int24", internalType: "int24" },
-          { name: "tickUpper", type: "int24", internalType: "int24" },
-          { name: "liquidityDelta", type: "int256", internalType: "int256" },
-          { name: "salt", type: "bytes32", internalType: "bytes32" },
-        ],
-      },
-      { name: "", type: "bytes", internalType: "bytes" },
-    ],
-    outputs: [{ name: "", type: "bytes4", internalType: "bytes4" }],
-    stateMutability: "view",
-  },
-  {
-    type: "function",
-    name: "beforeDonate",
-    inputs: [
-      { name: "", type: "address", internalType: "address" },
-      {
-        name: "",
-        type: "tuple",
-        internalType: "struct PoolKey",
-        components: [
-          { name: "currency0", type: "address", internalType: "Currency" },
-          { name: "currency1", type: "address", internalType: "Currency" },
-          { name: "fee", type: "uint24", internalType: "uint24" },
-          { name: "tickSpacing", type: "int24", internalType: "int24" },
-          { name: "hooks", type: "address", internalType: "contract IHooks" },
-        ],
-      },
-      { name: "", type: "uint256", internalType: "uint256" },
-      { name: "", type: "uint256", internalType: "uint256" },
-      { name: "", type: "bytes", internalType: "bytes" },
-    ],
-    outputs: [{ name: "", type: "bytes4", internalType: "bytes4" }],
-    stateMutability: "pure",
-  },
-  {
-    type: "function",
-    name: "beforeInitialize",
-    inputs: [
-      { name: "", type: "address", internalType: "address" },
+      { name: "sender", type: "address", internalType: "address" },
       {
         name: "key",
         type: "tuple",
@@ -260,7 +204,64 @@ export const DopplerABI = [
           { name: "hooks", type: "address", internalType: "contract IHooks" },
         ],
       },
-      { name: "", type: "uint160", internalType: "uint160" },
+      {
+        name: "params",
+        type: "tuple",
+        internalType: "struct IPoolManager.ModifyLiquidityParams",
+        components: [
+          { name: "tickLower", type: "int24", internalType: "int24" },
+          { name: "tickUpper", type: "int24", internalType: "int24" },
+          { name: "liquidityDelta", type: "int256", internalType: "int256" },
+          { name: "salt", type: "bytes32", internalType: "bytes32" },
+        ],
+      },
+      { name: "hookData", type: "bytes", internalType: "bytes" },
+    ],
+    outputs: [{ name: "", type: "bytes4", internalType: "bytes4" }],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "beforeDonate",
+    inputs: [
+      { name: "sender", type: "address", internalType: "address" },
+      {
+        name: "key",
+        type: "tuple",
+        internalType: "struct PoolKey",
+        components: [
+          { name: "currency0", type: "address", internalType: "Currency" },
+          { name: "currency1", type: "address", internalType: "Currency" },
+          { name: "fee", type: "uint24", internalType: "uint24" },
+          { name: "tickSpacing", type: "int24", internalType: "int24" },
+          { name: "hooks", type: "address", internalType: "contract IHooks" },
+        ],
+      },
+      { name: "amount0", type: "uint256", internalType: "uint256" },
+      { name: "amount1", type: "uint256", internalType: "uint256" },
+      { name: "hookData", type: "bytes", internalType: "bytes" },
+    ],
+    outputs: [{ name: "", type: "bytes4", internalType: "bytes4" }],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "beforeInitialize",
+    inputs: [
+      { name: "sender", type: "address", internalType: "address" },
+      {
+        name: "key",
+        type: "tuple",
+        internalType: "struct PoolKey",
+        components: [
+          { name: "currency0", type: "address", internalType: "Currency" },
+          { name: "currency1", type: "address", internalType: "Currency" },
+          { name: "fee", type: "uint24", internalType: "uint24" },
+          { name: "tickSpacing", type: "int24", internalType: "int24" },
+          { name: "hooks", type: "address", internalType: "contract IHooks" },
+        ],
+      },
+      { name: "sqrtPriceX96", type: "uint160", internalType: "uint160" },
     ],
     outputs: [{ name: "", type: "bytes4", internalType: "bytes4" }],
     stateMutability: "nonpayable",
@@ -269,40 +270,7 @@ export const DopplerABI = [
     type: "function",
     name: "beforeRemoveLiquidity",
     inputs: [
-      { name: "", type: "address", internalType: "address" },
-      {
-        name: "",
-        type: "tuple",
-        internalType: "struct PoolKey",
-        components: [
-          { name: "currency0", type: "address", internalType: "Currency" },
-          { name: "currency1", type: "address", internalType: "Currency" },
-          { name: "fee", type: "uint24", internalType: "uint24" },
-          { name: "tickSpacing", type: "int24", internalType: "int24" },
-          { name: "hooks", type: "address", internalType: "contract IHooks" },
-        ],
-      },
-      {
-        name: "",
-        type: "tuple",
-        internalType: "struct IPoolManager.ModifyLiquidityParams",
-        components: [
-          { name: "tickLower", type: "int24", internalType: "int24" },
-          { name: "tickUpper", type: "int24", internalType: "int24" },
-          { name: "liquidityDelta", type: "int256", internalType: "int256" },
-          { name: "salt", type: "bytes32", internalType: "bytes32" },
-        ],
-      },
-      { name: "", type: "bytes", internalType: "bytes" },
-    ],
-    outputs: [{ name: "", type: "bytes4", internalType: "bytes4" }],
-    stateMutability: "nonpayable",
-  },
-  {
-    type: "function",
-    name: "beforeSwap",
-    inputs: [
-      { name: "", type: "address", internalType: "address" },
+      { name: "sender", type: "address", internalType: "address" },
       {
         name: "key",
         type: "tuple",
@@ -316,7 +284,40 @@ export const DopplerABI = [
         ],
       },
       {
-        name: "swapParams",
+        name: "params",
+        type: "tuple",
+        internalType: "struct IPoolManager.ModifyLiquidityParams",
+        components: [
+          { name: "tickLower", type: "int24", internalType: "int24" },
+          { name: "tickUpper", type: "int24", internalType: "int24" },
+          { name: "liquidityDelta", type: "int256", internalType: "int256" },
+          { name: "salt", type: "bytes32", internalType: "bytes32" },
+        ],
+      },
+      { name: "hookData", type: "bytes", internalType: "bytes" },
+    ],
+    outputs: [{ name: "", type: "bytes4", internalType: "bytes4" }],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "beforeSwap",
+    inputs: [
+      { name: "sender", type: "address", internalType: "address" },
+      {
+        name: "key",
+        type: "tuple",
+        internalType: "struct PoolKey",
+        components: [
+          { name: "currency0", type: "address", internalType: "Currency" },
+          { name: "currency1", type: "address", internalType: "Currency" },
+          { name: "fee", type: "uint24", internalType: "uint24" },
+          { name: "tickSpacing", type: "int24", internalType: "int24" },
+          { name: "hooks", type: "address", internalType: "contract IHooks" },
+        ],
+      },
+      {
+        name: "params",
         type: "tuple",
         internalType: "struct IPoolManager.SwapParams",
         components: [
@@ -329,7 +330,7 @@ export const DopplerABI = [
           },
         ],
       },
-      { name: "", type: "bytes", internalType: "bytes" },
+      { name: "hookData", type: "bytes", internalType: "bytes" },
     ],
     outputs: [
       { name: "", type: "bytes4", internalType: "bytes4" },
@@ -343,6 +344,34 @@ export const DopplerABI = [
     name: "earlyExit",
     inputs: [],
     outputs: [{ name: "", type: "bool", internalType: "bool" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "endingTick",
+    inputs: [],
+    outputs: [{ name: "", type: "int24", internalType: "int24" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "endingTime",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "epochLength",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "gamma",
+    inputs: [],
+    outputs: [{ name: "", type: "int24", internalType: "int24" }],
     stateMutability: "view",
   },
   {
@@ -405,6 +434,20 @@ export const DopplerABI = [
   },
   {
     type: "function",
+    name: "isToken0",
+    inputs: [],
+    outputs: [{ name: "", type: "bool", internalType: "bool" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "maximumProceeds",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
     name: "migrate",
     inputs: [{ name: "recipient", type: "address", internalType: "address" }],
     outputs: [
@@ -417,6 +460,27 @@ export const DopplerABI = [
       { name: "balance1", type: "uint128", internalType: "uint128" },
     ],
     stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "minimumProceeds",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "numPDSlugs",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "numTokensToSell",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
+    stateMutability: "view",
   },
   {
     type: "function",
@@ -450,6 +514,20 @@ export const DopplerABI = [
       { name: "liquidity", type: "uint128", internalType: "uint128" },
       { name: "salt", type: "uint8", internalType: "uint8" },
     ],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "startingTick",
+    inputs: [],
+    outputs: [{ name: "", type: "int24", internalType: "int24" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "startingTime",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
     stateMutability: "view",
   },
   {
@@ -556,7 +634,6 @@ export const DopplerABI = [
   { type: "error", name: "InvalidEpochLength", inputs: [] },
   { type: "error", name: "InvalidGamma", inputs: [] },
   { type: "error", name: "InvalidNumPDSlugs", inputs: [] },
-  { type: "error", name: "InvalidPool", inputs: [] },
   { type: "error", name: "InvalidProceedLimits", inputs: [] },
   { type: "error", name: "InvalidStartTime", inputs: [] },
   {
@@ -572,10 +649,8 @@ export const DopplerABI = [
   { type: "error", name: "InvalidTickRange", inputs: [] },
   { type: "error", name: "InvalidTickSpacing", inputs: [] },
   { type: "error", name: "InvalidTimeRange", inputs: [] },
-  { type: "error", name: "LockFailure", inputs: [] },
   { type: "error", name: "MaximumProceedsReached", inputs: [] },
   { type: "error", name: "NotPoolManager", inputs: [] },
-  { type: "error", name: "NotSelf", inputs: [] },
   { type: "error", name: "SenderNotInitializer", inputs: [] },
   { type: "error", name: "SenderNotPoolManager", inputs: [] },
   { type: "error", name: "SwapBelowRange", inputs: [] },
