@@ -6,12 +6,16 @@ import {
   WAD_STRING,
 } from '@/constants';
 import { DopplerV4Addresses } from '@/types';
-import { Price, Token } from '@uniswap/sdk-core';
-import { encodeSqrtRatioX96, tickToPrice, TickMath } from '@uniswap/v3-sdk';
-import { encodeAbiParameters, parseEther, toHex, Address } from 'viem';
+import { encodeSqrtRatioX96, TickMath } from '@uniswap/v3-sdk';
+import {
+  encodeAbiParameters,
+  parseEther,
+  toHex,
+  Address,
+  zeroAddress,
+} from 'viem';
 import { ETH_ADDRESS } from '@/constants';
 import { MineV4Params, mine } from '@/entities/factory';
-import { sortsBefore } from '@uniswap/v4-sdk';
 import {
   DEFAULT_INITIAL_VOTING_DELAY,
   DEFAULT_INITIAL_VOTING_PERIOD,
@@ -25,8 +29,16 @@ import { CreateParams, TokenFactoryData, DopplerData } from '../types';
 export function buildConfig(
   params: DopplerPreDeploymentConfig,
   addresses: DopplerV4Addresses
-): CreateParams {
+): {
+  createParams: CreateParams;
+  hook: Address;
+  token: Address;
+} {
   validateBasicParams(params);
+
+  if (!params.priceRange) {
+    throw new Error('Price range  must be provided');
+  }
 
   const { startTick, endTick } = computeTicks(
     params.priceRange,
@@ -74,12 +86,7 @@ export function buildConfig(
     tokenURI: params.tokenURI,
   };
 
-  const initialPrice = BigInt(
-    TickMath.getSqrtRatioAtTick(startTick).toString()
-  );
-
   const dopplerParams: DopplerData = {
-    initialPrice,
     minimumProceeds: params.minProceeds,
     maximumProceeds: params.maxProceeds,
     startingTime: BigInt(startTime),
@@ -125,20 +132,22 @@ export function buildConfig(
     ]
   );
 
-  const createArgs: CreateParams = {
-    initialSupply: params.totalSupply,
-    numTokensToSell: params.numTokensToSell,
-    numeraire: ETH_ADDRESS,
-    tokenFactory,
-    tokenFactoryData,
-    governanceFactory: addresses.governanceFactory,
-    governanceFactoryData,
-    poolInitializer: v4Initializer,
-    poolInitializerData,
-    liquidityMigrator: migrator,
-    liquidityMigratorData: toHex(''),
-    integrator: '0xcD3365F82eDD9750C2Fb287309eD7539cBFB51a9' as Address,
-    salt,
+  const createArgs = {
+    createParams: {
+      initialSupply: params.totalSupply,
+      numTokensToSell: params.numTokensToSell,
+      numeraire: zeroAddress,
+      tokenFactory,
+      tokenFactoryData,
+      governanceFactory: addresses.governanceFactory,
+      governanceFactoryData,
+      poolInitializer: v4Initializer,
+      poolInitializerData,
+      liquidityMigrator: migrator,
+      liquidityMigratorData: toHex(''),
+      integrator: '0xcD3365F82eDD9750C2Fb287309eD7539cBFB51a9' as Address,
+      salt,
+    },
     hook,
     token,
   };
@@ -215,43 +224,15 @@ function validateBasicParams(params: DopplerPreDeploymentConfig) {
   }
 
   // Validate price range
-  if (params.priceRange.startPrice === 0 || params.priceRange.endPrice === 0) {
-    throw new Error('Prices must be positive');
-  }
-  if (params.priceRange.startPrice === params.priceRange.endPrice) {
-    throw new Error('Start and end prices must be different');
-  }
-}
-
-export function priceToClosestTick(price: Price<Token, Token>): number {
-  const sorted = sortsBefore(price.baseCurrency, price.quoteCurrency);
-
-  const sqrtRatioX96 = sorted
-    ? encodeSqrtRatioX96(price.numerator, price.denominator)
-    : encodeSqrtRatioX96(price.denominator, price.numerator);
-
-  let tick = TickMath.getTickAtSqrtRatio(sqrtRatioX96);
-  const nextTickPrice = tickToPrice(
-    price.baseCurrency,
-    price.quoteCurrency,
-    tick + 1
-  );
-  if (sorted) {
-    if (!price.lessThan(nextTickPrice)) {
-      tick++;
+  if (params.priceRange) {
+    if (
+      params.priceRange.startPrice === 0 ||
+      params.priceRange.endPrice === 0
+    ) {
+      throw new Error('Prices must be positive');
     }
-  } else {
-    if (!price.greaterThan(nextTickPrice)) {
-      tick++;
+    if (params.priceRange.startPrice === params.priceRange.endPrice) {
+      throw new Error('Start and end prices must be different');
     }
   }
-  return tick;
 }
-
-// // Helper to suggest optimal epoch length based on duration
-// function suggestEpochLength(durationDays: number): number {
-//   if (durationDays > 30) return 2 * 60 * 60; // 2 hours
-//   if (durationDays > 7) return 1 * 60 * 60; // 1 hour
-//   if (durationDays > 1) return 1 * 60 * 30; // 30 minutes
-//   return 1 * 60 * 20; // 20 minutes
-// }

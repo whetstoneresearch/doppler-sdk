@@ -122,8 +122,6 @@ export const dailyVolume = onchainTable("daily_volume", (t) => ({
   chainId: t.bigint().notNull(),
   checkpoints: t.jsonb().notNull().default("{}"),
   lastUpdated: t.bigint().notNull(),
-  earliestCheckpoint: t.bigint().notNull(),
-  inactive: t.boolean().notNull().default(true), // indicates if the pool has checkpoints
 }));
 
 export const position = onchainTable(
@@ -160,6 +158,21 @@ export const module = onchainTable(
   })
 );
 
+export const v4PoolConfig = onchainTable("v4_pool_config", (t) => ({
+  hookAddress: t.hex().notNull().primaryKey(),
+  numTokensToSell: t.bigint().notNull(),
+  minProceeds: t.bigint().notNull(),
+  maxProceeds: t.bigint().notNull(),
+  startingTime: t.bigint().notNull(),
+  endingTime: t.bigint().notNull(),
+  startingTick: t.integer().notNull(),
+  endingTick: t.integer().notNull(),
+  epochLength: t.bigint().notNull(),
+  gamma: t.integer().notNull(),
+  isToken0: t.boolean().notNull(),
+  numPdSlugs: t.bigint().notNull(),
+}));
+
 export const pool = onchainTable(
   "pool",
   (t) => ({
@@ -188,6 +201,10 @@ export const pool = onchainTable(
     lastSwapTimestamp: t.bigint(),
     reserves0: t.bigint().notNull().default(0n),
     reserves1: t.bigint().notNull().default(0n),
+    totalProceeds: t.bigint().notNull().default(0n),
+    totalTokensSold: t.bigint().notNull().default(0n),
+    holderCount: t.integer().notNull().default(0),
+    marketCapUsd: t.bigint().notNull().default(0n),
   }),
   (table) => ({
     pk: primaryKey({
@@ -232,6 +249,25 @@ export const userAsset = onchainTable(
     userIdIdx: index().on(table.userId),
     assetIdIdx: index().on(table.assetId),
     chainIdIdx: index().on(table.chainId),
+  })
+);
+
+export const v4CheckpointBlob = onchainTable("v4_checkpoint_blob", (t) => ({
+  chainId: t.integer().notNull().primaryKey(),
+  checkpoints: t.jsonb().notNull().default("{}"),
+}));
+
+export const activePoolsBlob = onchainTable("active_pools_blob", (t) => ({
+  chainId: t.bigint().notNull().primaryKey(),
+  activePools: t.jsonb().notNull().default("{}"),
+}));
+
+export const v4PoolPriceHistory = onchainTable(
+  "v4_pool_price_history",
+  (t) => ({
+    pool: t.hex().notNull().primaryKey(),
+    chainId: t.bigint().notNull(),
+    history: t.jsonb().notNull().default("{}"),
   })
 );
 

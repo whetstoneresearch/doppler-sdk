@@ -70,8 +70,16 @@ export class ReadWriteFactory extends ReadFactory {
     if (params.numTokensToSell <= 0) {
       throw new Error('Number of tokens to sell must be positive');
     }
-    if (params.priceRange.startPrice <= params.priceRange.endPrice) {
+    if (
+      params.priceRange &&
+      params.priceRange.startPrice <= params.priceRange.endPrice
+    ) {
       throw new Error('Invalid price range');
+    }
+    if (params.tickRange) {
+      if (params.tickRange.startTick >= params.tickRange.endTick) {
+        throw new Error('Invalid tick range');
+      }
     }
     if (params.duration <= 0) {
       throw new Error('Duration must be positive');
@@ -178,21 +186,43 @@ export class ReadWriteFactory extends ReadFactory {
   public buildConfig(
     params: DopplerPreDeploymentConfig,
     addresses: DopplerV4Addresses
-  ): CreateParams {
+  ): {
+    createParams: CreateParams;
+    hook: Hex;
+    token: Hex;
+  } {
     this.validateBasicParams(params);
 
-    const { startTick, endTick } = this.computeTicks(
-      params.priceRange,
-      params.tickSpacing
-    );
+    if (!params.priceRange && !params.tickRange) {
+      throw new Error('Price range or tick range must be provided');
+    }
 
-    const gamma = this.computeOptimalGamma(
-      startTick,
-      endTick,
-      params.duration,
-      params.epochLength,
-      params.tickSpacing
-    );
+    let startTick;
+    let endTick;
+    if (params.priceRange) {
+      const ticks = this.computeTicks(params.priceRange, params.tickSpacing);
+      startTick = ticks.startTick;
+      endTick = ticks.endTick;
+    }
+
+    if (params.tickRange) {
+      startTick = params.tickRange.startTick;
+      endTick = params.tickRange.endTick;
+    }
+
+    if (!startTick || !endTick) {
+      throw new Error('Start tick or end tick not found');
+    }
+
+    const gamma =
+      params.gamma ??
+      this.computeOptimalGamma(
+        startTick,
+        endTick,
+        params.duration,
+        params.epochLength,
+        params.tickSpacing
+      );
 
     const startTime = params.blockTimestamp + 30;
     const endTime = params.blockTimestamp + params.duration * DAY_SECONDS + 30;
@@ -228,12 +258,7 @@ export class ReadWriteFactory extends ReadFactory {
       tokenURI: params.tokenURI,
     };
 
-    const initialPrice = BigInt(
-      TickMath.getSqrtRatioAtTick(startTick).toString()
-    );
-
     const dopplerParams: DopplerData = {
-      initialPrice,
       minimumProceeds: params.minProceeds,
       maximumProceeds: params.maxProceeds,
       startingTime: BigInt(startTime),
@@ -279,20 +304,22 @@ export class ReadWriteFactory extends ReadFactory {
     );
 
     return {
-      initialSupply: params.totalSupply,
-      numTokensToSell: params.numTokensToSell,
-      numeraire:
-        params.numeraire ?? '0x0000000000000000000000000000000000000000',
-      tokenFactory,
-      tokenFactoryData,
-      governanceFactory: governanceFactory,
-      governanceFactoryData,
-      poolInitializer: v4Initializer,
-      poolInitializerData,
-      liquidityMigrator: migrator,
-      liquidityMigratorData: params.liquidityMigratorData ?? '0x',
-      integrator: params.integrator,
-      salt,
+      createParams: {
+        initialSupply: params.totalSupply,
+        numTokensToSell: params.numTokensToSell,
+        numeraire:
+          params.numeraire ?? '0x0000000000000000000000000000000000000000',
+        tokenFactory,
+        tokenFactoryData,
+        governanceFactory: governanceFactory,
+        governanceFactoryData,
+        poolInitializer: v4Initializer,
+        poolInitializerData,
+        liquidityMigrator: migrator,
+        liquidityMigratorData: params.liquidityMigratorData ?? '0x',
+        integrator: params.integrator,
+        salt,
+      },
       hook,
       token,
     };
@@ -319,7 +346,6 @@ export class ReadWriteFactory extends ReadFactory {
       params.numeraire !== '0x0000000000000000000000000000000000000000';
 
     const {
-      initialPrice,
       minimumProceeds,
       maximumProceeds,
       startingTime,
@@ -335,7 +361,6 @@ export class ReadWriteFactory extends ReadFactory {
 
     const poolInitializerData = encodeAbiParameters(
       [
-        { type: 'uint160' },
         { type: 'uint256' },
         { type: 'uint256' },
         { type: 'uint256' },
@@ -350,7 +375,6 @@ export class ReadWriteFactory extends ReadFactory {
         { type: 'int24' },
       ],
       [
-        initialPrice,
         minimumProceeds,
         maximumProceeds,
         startingTime,

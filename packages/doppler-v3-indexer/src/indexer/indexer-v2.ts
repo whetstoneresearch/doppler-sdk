@@ -1,5 +1,5 @@
 import { ponder } from "ponder:registry";
-import { v2Pool } from "ponder.schema";
+import { token, v2Pool } from "ponder.schema";
 import {
   insertOrUpdateBuckets,
   insertOrUpdateDailyVolume,
@@ -8,14 +8,16 @@ import {
 import { computeV2Price } from "@app/utils/v2-utils/computeV2Price";
 import { getPairData } from "@app/utils/v2-utils/getPairData";
 import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
-import { fetchEthPrice } from "./shared/oracle";
+import { computeMarketCap, fetchEthPrice } from "./shared/oracle";
 import {
   insertPoolIfNotExists,
+  insertTokenIfNotExists,
   updateAsset,
   updatePool,
   updateV2Pool,
 } from "./shared/entities";
 import { CHAINLINK_ETH_DECIMALS } from "@app/utils/constants";
+import { tryAddActivePool } from "./shared/scheduledJobs";
 
 ponder.on("UniswapV2Pair:Swap", async ({ event, context }) => {
   const { db } = context;
@@ -27,7 +29,7 @@ ponder.on("UniswapV2Pair:Swap", async ({ event, context }) => {
   const v2PoolData = await db.find(v2Pool, { address });
   if (!v2PoolData) return;
 
-  const { parentPool } = v2PoolData;
+  const parentPool = v2PoolData.parentPool.toLowerCase() as `0x${string}`;
   const { reserve0, reserve1 } = await getPairData({ address, context });
 
   const ethPrice = await fetchEthPrice(timestamp, context);
@@ -53,16 +55,27 @@ ponder.on("UniswapV2Pair:Swap", async ({ event, context }) => {
 
   const price = computeV2Price({ assetBalance, quoteBalance });
 
+  const { totalSupply } = await insertTokenIfNotExists({
+    tokenAddress: baseToken,
+    creatorAddress: address,
+    timestamp,
+    context,
+    isDerc20: true,
+  });
+
+  const marketCapUsd = computeMarketCap({
+    price,
+    ethPrice,
+    totalSupply,
+  });
+
   const priceChange = await compute24HourPriceChange({
     poolAddress: address,
-    currentPrice: price,
-    ethPrice,
-    currentTimestamp: timestamp,
-    createdAt,
+    marketCapUsd,
     context,
   });
 
-  const liquidityUsd = await computeDollarLiquidity({
+  const liquidityUsd = computeDollarLiquidity({
     assetBalance,
     quoteBalance,
     price,
@@ -70,6 +83,11 @@ ponder.on("UniswapV2Pair:Swap", async ({ event, context }) => {
   });
 
   await Promise.all([
+    tryAddActivePool({
+      poolAddress: parentPool,
+      lastSwapTimestamp: Number(timestamp),
+      context,
+    }),
     insertOrUpdateBuckets({
       poolAddress: parentPool,
       price,
@@ -86,6 +104,7 @@ ponder.on("UniswapV2Pair:Swap", async ({ event, context }) => {
       tokenIn,
       tokenOut,
       ethPrice,
+      marketCapUsd,
     }),
     updateV2Pool({
       poolAddress: address,
@@ -97,6 +116,8 @@ ponder.on("UniswapV2Pair:Swap", async ({ event, context }) => {
       context,
       update: {
         liquidityUsd: liquidityUsd,
+        percentDayChange: priceChange,
+        marketCapUsd,
       },
     }),
     updatePool({
@@ -108,6 +129,7 @@ ponder.on("UniswapV2Pair:Swap", async ({ event, context }) => {
         lastRefreshed: timestamp,
         lastSwapTimestamp: timestamp,
         percentDayChange: priceChange,
+        marketCapUsd,
       },
     }),
   ]);
@@ -128,13 +150,12 @@ ponder.on("UniswapV2PairUnichain:Swap", async ({ event, context }) => {
 
   const ethPrice = await fetchEthPrice(timestamp, context);
 
-  const { isToken0, baseToken, quoteToken, createdAt } =
-    await insertPoolIfNotExists({
-      poolAddress: parentPool,
-      timestamp,
-      context,
-      ethPrice,
-    });
+  const { isToken0, baseToken, quoteToken } = await insertPoolIfNotExists({
+    poolAddress: parentPool,
+    timestamp,
+    context,
+    ethPrice,
+  });
 
   const amountIn = amount0In > 0 ? amount0In : amount1In;
   const amountOut = amount0Out > 0 ? amount0Out : amount1Out;
@@ -149,12 +170,23 @@ ponder.on("UniswapV2PairUnichain:Swap", async ({ event, context }) => {
 
   const price = computeV2Price({ assetBalance, quoteBalance });
 
-  const priceChange = await compute24HourPriceChange({
-    poolAddress: address,
-    currentPrice: price,
+  const { totalSupply } = await insertTokenIfNotExists({
+    tokenAddress: baseToken,
+    creatorAddress: address,
+    timestamp,
+    context,
+    isDerc20: true,
+  });
+
+  const marketCapUsd = computeMarketCap({
+    price,
     ethPrice,
-    currentTimestamp: timestamp,
-    createdAt,
+    totalSupply,
+  });
+
+  const priceChange = await compute24HourPriceChange({
+    poolAddress: parentPool,
+    marketCapUsd,
     context,
   });
 
@@ -166,6 +198,11 @@ ponder.on("UniswapV2PairUnichain:Swap", async ({ event, context }) => {
   });
 
   await Promise.all([
+    tryAddActivePool({
+      poolAddress: parentPool,
+      lastSwapTimestamp: Number(timestamp),
+      context,
+    }),
     insertOrUpdateBuckets({
       poolAddress: parentPool,
       price,
@@ -182,6 +219,7 @@ ponder.on("UniswapV2PairUnichain:Swap", async ({ event, context }) => {
       tokenIn,
       tokenOut,
       ethPrice,
+      marketCapUsd,
     }),
     updateV2Pool({
       poolAddress: address,
@@ -193,6 +231,8 @@ ponder.on("UniswapV2PairUnichain:Swap", async ({ event, context }) => {
       context,
       update: {
         liquidityUsd: liquidityUsd,
+        percentDayChange: priceChange,
+        marketCapUsd,
       },
     }),
     updatePool({
@@ -204,6 +244,7 @@ ponder.on("UniswapV2PairUnichain:Swap", async ({ event, context }) => {
         lastRefreshed: timestamp,
         lastSwapTimestamp: timestamp,
         percentDayChange: priceChange,
+        marketCapUsd,
       },
     }),
   ]);

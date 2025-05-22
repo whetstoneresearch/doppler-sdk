@@ -17,7 +17,7 @@ export const insertTokenIfNotExists = async ({
   context: Context;
   isDerc20?: boolean;
   poolAddress?: Address;
-}) => {
+}): Promise<typeof token.$inferSelect> => {
   const { db, network } = context;
 
   let multiCallAddress = {};
@@ -99,6 +99,13 @@ export const insertTokenIfNotExists = async ({
     let image: string | undefined;
     if (tokenURI?.startsWith("ipfs://")) {
       try {
+        if (
+          !tokenURI.startsWith("ipfs://") &&
+          !tokenURI.startsWith("http://") &&
+          !tokenURI.startsWith("https://")
+        ) {
+          console.error(`Invalid tokenURI for token ${address}: ${tokenURI}`);
+        }
         const cid = tokenURI.replace("ipfs://", "");
         const url = `https://${process.env.PINATA_GATEWAY_URL}/ipfs/${cid}?pinataGatewayToken=${process.env.PINATA_GATEWAY_KEY}`;
         const response = await fetch(url);
@@ -112,6 +119,15 @@ export const insertTokenIfNotExists = async ({
         ) {
           if (tokenUriData.image.startsWith("ipfs://")) {
             image = tokenUriData.image;
+          }
+        } else if (
+          tokenUriData &&
+          typeof tokenUriData === "object" &&
+          "image_hash" in tokenUriData &&
+          typeof tokenUriData.image_hash === "string"
+        ) {
+          if (tokenUriData.image_hash.startsWith("ipfs://")) {
+            image = tokenUriData.image_hash;
           }
         }
       } catch (error) {

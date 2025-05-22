@@ -4,8 +4,8 @@ import {
   Drift,
   EventLog,
   FunctionReturn,
-  ContractGetEventsOptions,
-  ContractReadOptions,
+  GetEventsOptions,
+  ContractOptions,
   createDrift,
 } from "@delvtech/drift";
 import { Address } from "viem";
@@ -33,7 +33,7 @@ export class ReadFactory {
 
   async getModuleState(
     address: Address,
-    options?: ContractReadOptions
+    options?: ContractOptions
   ): Promise<FunctionReturn<AirlockABI, "getModuleState">> {
     return this.airlock.read("getModuleState", {
       module: address,
@@ -43,7 +43,7 @@ export class ReadFactory {
 
   async getAssetData(
     asset: Address,
-    options?: ContractReadOptions
+    options?: ContractOptions
   ): Promise<FunctionReturn<AirlockABI, "getAssetData">> {
     return this.airlock.read("getAssetData", {
       asset,
@@ -52,7 +52,7 @@ export class ReadFactory {
   }
 
   async getCreateEvents(
-    options?: ContractGetEventsOptions
+    options?: GetEventsOptions
   ): Promise<EventLog<AirlockABI, "Create">[]> {
     return this.airlock.getEvents("Create", {
       ...options,
@@ -60,7 +60,7 @@ export class ReadFactory {
   }
 
   async getMigrateEvents(
-    options?: ContractGetEventsOptions
+    options?: GetEventsOptions
   ): Promise<EventLog<AirlockABI, "Migrate">[]> {
     return this.airlock.getEvents("Migrate", {
       ...options,
@@ -68,7 +68,7 @@ export class ReadFactory {
   }
 
   async getSetModuleStateEvents(
-    options?: ContractGetEventsOptions
+    options?: GetEventsOptions
   ): Promise<EventLog<AirlockABI, "SetModuleState">[]> {
     return this.airlock.getEvents("SetModuleState", {
       ...options,

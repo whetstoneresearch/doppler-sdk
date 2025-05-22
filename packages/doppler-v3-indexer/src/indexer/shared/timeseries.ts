@@ -1,4 +1,4 @@
-import { Address, zeroAddress } from "viem";
+import { Address, formatEther, zeroAddress } from "viem";
 import { hourBucketUsd, dailyVolume } from "ponder.schema";
 import { Context } from "ponder:registry";
 import {
@@ -10,6 +10,11 @@ import { configs } from "addresses";
 import { updatePool } from "./entities/pool";
 import { updateToken } from "./entities/token";
 import { updateAsset } from "./entities/asset";
+
+export interface DayMetrics {
+  volumeUsd: bigint;
+  marketCapUsd: bigint;
+}
 
 export const insertOrUpdateBuckets = async ({
   poolAddress,
@@ -86,49 +91,49 @@ const insertOrUpdateHourBucketUsd = async ({
 
 export const compute24HourPriceChange = async ({
   poolAddress,
-  currentPrice,
-  currentTimestamp,
-  ethPrice,
-  createdAt,
+  marketCapUsd,
   context,
 }: {
   poolAddress: Address;
-  currentPrice: bigint;
-  currentTimestamp: bigint;
-  ethPrice: bigint;
-  createdAt: bigint;
+  marketCapUsd: bigint;
   context: Context;
 }) => {
-  const { db, network } = context;
+  const { db } = context;
 
-  const usdPrice = (currentPrice * ethPrice) / CHAINLINK_ETH_DECIMALS;
-  const dayHasElapsed = currentTimestamp - createdAt > BigInt(secondsInDay);
-  const timestampFrom = dayHasElapsed
-    ? Math.floor(Number(createdAt) / secondsInHour) * secondsInHour
-    : Math.floor(
-        Number(currentTimestamp - BigInt(secondsInDay)) / secondsInHour
-      ) * secondsInHour;
-
-  const priceFrom = await db.find(hourBucketUsd, {
+  const dailyVolumeEntity = await db.find(dailyVolume, {
     pool: poolAddress.toLowerCase() as `0x${string}`,
-    hourId: timestampFrom,
-    chainId: BigInt(network.chainId),
   });
 
-  if (!priceFrom) {
+  if (!dailyVolumeEntity) {
     return 0;
   }
 
-  // Calculate the price change percentage
-  let priceChangePercent =
-    (Number(usdPrice - priceFrom.open) / Number(priceFrom.open)) * 100;
+  const checkpoints = dailyVolumeEntity.checkpoints as Record<
+    string,
+    DayMetrics
+  >;
 
-  // Ensure we're not sending null values to the database
-  if (isNaN(priceChangePercent) || !isFinite(priceChangePercent)) {
-    priceChangePercent = 0;
-  }
+  const oldestCheckpointTime =
+    Object.keys(checkpoints).length > 0
+      ? BigInt(Math.min(...Object.keys(checkpoints).map(Number)))
+      : undefined;
 
-  return priceChangePercent;
+  const oldestMarketCapUsd = oldestCheckpointTime
+    ? BigInt(checkpoints[oldestCheckpointTime!.toString()]?.marketCapUsd || "0")
+    : 0n;
+
+  const priceChangePercent =
+    oldestMarketCapUsd === 0n || marketCapUsd === 0n
+      ? 0
+      : Number(
+          formatEther(
+            ((BigInt(marketCapUsd) - BigInt(oldestMarketCapUsd)) *
+              BigInt(1e18)) /
+              BigInt(oldestMarketCapUsd)
+          )
+        ) * 100;
+
+  return Number(priceChangePercent);
 };
 
 export const insertOrUpdateDailyVolume = async ({
@@ -139,6 +144,7 @@ export const insertOrUpdateDailyVolume = async ({
   amountOut,
   timestamp,
   ethPrice,
+  marketCapUsd,
   context,
 }: {
   poolAddress: Address;
@@ -148,12 +154,12 @@ export const insertOrUpdateDailyVolume = async ({
   amountOut: bigint;
   timestamp: bigint;
   ethPrice: bigint;
+  marketCapUsd: bigint;
   context: Context;
 }) => {
   const { db, network } = context;
 
   let volumeUsd;
-
   const isTokenInWeth =
     tokenIn.toLowerCase() ===
     (configs[network.name].shared.weth.toLowerCase() as `0x${string}`);
@@ -183,8 +189,11 @@ export const insertOrUpdateDailyVolume = async ({
     })
     .onConflictDoUpdate((row) => {
       const checkpoints = {
-        ...(row.checkpoints as Record<string, string>),
-        [timestamp.toString()]: volumeUsd.toString(),
+        ...(row.checkpoints as Record<string, DayMetrics>),
+        [timestamp.toString()]: {
+          volumeUsd: volumeUsd.toString(),
+          marketCapUsd: marketCapUsd.toString(),
+        },
       };
 
       const updatedCheckpoints = Object.fromEntries(
@@ -193,13 +202,8 @@ export const insertOrUpdateDailyVolume = async ({
         )
       );
 
-      const oldestCheckpointTime =
-        Object.keys(updatedCheckpoints).length > 0
-          ? BigInt(Math.min(...Object.keys(updatedCheckpoints).map(Number)))
-          : timestamp;
-
       const totalVolumeUsd = Object.values(updatedCheckpoints).reduce(
-        (acc, vol) => acc + BigInt(vol),
+        (acc, vol) => acc + BigInt(vol.volumeUsd),
         BigInt(0)
       );
 
@@ -209,8 +213,6 @@ export const insertOrUpdateDailyVolume = async ({
         volumeUsd: totalVolumeUsd,
         checkpoints: updatedCheckpoints,
         lastUpdated: timestamp,
-        earliestCheckpoint: oldestCheckpointTime,
-        inactive: totalVolumeUsd === 0n,
       };
     });
 
@@ -245,78 +247,21 @@ export const insertOrUpdateDailyVolume = async ({
 
 export const updateDailyVolume = async ({
   poolAddress,
-  asset,
   volumeData,
-  timestamp,
   context,
 }: {
   poolAddress: Address;
-  asset: Address;
   volumeData: {
     volumeUsd: bigint;
-    checkpoints: Record<string, string>;
-    lastUpdated: bigint;
+    checkpoints: Record<string, DayMetrics>;
   };
-  timestamp: bigint;
   context: Context;
 }) => {
   const { db } = context;
 
-  try {
-    let checkpoints = volumeData.checkpoints as Record<string, string>;
-
-    const updatedCheckpoints = Object.fromEntries(
-      Object.entries(checkpoints).filter(
-        ([ts]) => BigInt(ts) >= timestamp - BigInt(secondsInDay)
-      )
-    );
-
-    const oldestCheckpointTime =
-      Object.keys(updatedCheckpoints).length > 0
-        ? BigInt(Math.min(...Object.keys(updatedCheckpoints).map(Number)))
-        : timestamp;
-
-    const totalVolumeUsd = Object.values(updatedCheckpoints).reduce(
-      (acc, vol) => acc + BigInt(vol),
-      BigInt(0)
-    );
-
-    await db
-      .update(dailyVolume, {
-        pool: poolAddress.toLowerCase() as `0x${string}`,
-      })
-      .set({
-        volumeUsd: totalVolumeUsd,
-        checkpoints: updatedCheckpoints,
-        lastUpdated: timestamp,
-        earliestCheckpoint: oldestCheckpointTime,
-        inactive: totalVolumeUsd === 0n,
-      });
-
-    await updatePool({
-      poolAddress,
-      context,
-      update: {
-        volumeUsd: totalVolumeUsd,
-        lastRefreshed: timestamp, // Mark as recently updated to prevent redundant refresh
-        lastSwapTimestamp: timestamp, // Track when the pool was last swapped on
-      },
-    });
-    await updateToken({
-      tokenAddress: asset,
-      context,
-      update: {
-        volumeUsd: totalVolumeUsd,
-      },
-    });
-    await updateAsset({
-      assetAddress: asset,
-      context,
-      update: {
-        dayVolumeUsd: totalVolumeUsd,
-      },
-    });
-  } catch (e) {
-    console.error("error updating daily volume", e);
-  }
+  await db
+    .update(dailyVolume, {
+      pool: poolAddress,
+    })
+    .set({ ...volumeData });
 };

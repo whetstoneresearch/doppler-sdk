@@ -110,7 +110,7 @@ export const getV3PoolData = async ({
   });
 
   const isToken0 = token0Result.toLowerCase() === poolState.asset.toLowerCase();
-  const price = await computeV3Price({
+  const price = computeV3Price({
     sqrtPriceX96: slot0Data.sqrtPrice,
     isToken0,
     decimals: 18,

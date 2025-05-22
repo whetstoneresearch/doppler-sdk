@@ -2,8 +2,7 @@ import {
   ReadWriteContract,
   ReadWriteAdapter,
   Drift,
-  ContractWriteOptions,
-  OnMinedParam,
+  TransactionOptions,
   createDrift,
   FunctionReturn,
   FunctionArgs,
@@ -303,21 +302,18 @@ export class ReadWriteFactory extends ReadFactory {
   }
 
   /**
-   * Generate a random salt using cryptographic random values
+   * Generate a random salt
    * @param account User address to incorporate into salt
    * @returns Hex string of generated salt
    */
   private generateRandomSalt = (account: Address) => {
     const array = new Uint8Array(32);
 
-    // Cross-platform random generation
-    if (typeof window !== "undefined" && window.crypto) {
-      window.crypto.getRandomValues(array);
-    } else {
-      array.set(require("crypto").randomBytes(32));
+    // Sequential byte generation
+    for (let i = 0; i < 32; i++) {
+      array[i] = i;
     }
 
-    // Incorporate user address into salt
     if (account) {
       const addressBytes = account.slice(2).padStart(40, "0");
       for (let i = 0; i < 20; i++) {
@@ -525,7 +521,7 @@ export class ReadWriteFactory extends ReadFactory {
    */
   public async create(
     params: CreateParams,
-    options?: ContractWriteOptions & OnMinedParam
+    options?: TransactionOptions
   ): Promise<Hex> {
     return this.airlock.write("create", { createData: params }, options);
   }
@@ -565,7 +561,7 @@ export class ReadWriteFactory extends ReadFactory {
     createData: CreateParams,
     commands: FunctionArgs<BundlerABI, "bundle">["commands"],
     inputs: FunctionArgs<BundlerABI, "bundle">["inputs"],
-    options?: ContractWriteOptions & OnMinedParam
+    options?: TransactionOptions
   ): Promise<Hex> {
     return this.bundler.write(
       "bundle",
