@@ -6,6 +6,7 @@ import {
   graphql,
   ilike,
   inArray,
+  like,
   or,
   replaceBigInts,
 } from "ponder";
@@ -31,12 +32,17 @@ app.get("/search/:query", async (c) => {
       .select()
       .from(token)
       .where(
-        and(
-          inArray(token.chainId, chainIds || []),
-          or(
-            ilike(token.name, `%${query}%`),
-            ilike(token.symbol, `%${query}%`),
-            ilike(token.address, `%${query}%`)
+        or(
+          and(
+            inArray(token.chainId, chainIds || []),
+            or(
+              ilike(token.name, `%${query}%`),
+              ilike(token.symbol, `%${query}%`)
+            )
+          ),
+          and(
+            inArray(token.chainId, chainIds || []),
+            like(token.address, query)
           )
         )
       )
