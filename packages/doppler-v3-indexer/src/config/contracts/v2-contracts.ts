@@ -21,7 +21,7 @@ export const generateV2Contracts = (): ContractConfigMap => {
         airlockChains.map(([name, config]) => [
           name,
           {
-            startBlock: config.v4StartBlock || config.startBlock,
+            startBlock: config.startBlock,
             address: createAirlockMigrationFactory(config.addresses.shared.airlock),
           },
         ])
