@@ -19,6 +19,7 @@ export interface DopplerV4Addresses {
   v4Initializer: Address;
   v3Initializer?: Address;
   governanceFactory: Address;
+  noOpGovernanceFactory: Address;
   migrator: Address;
   poolManager: Address;
   dopplerDeployer: Address;
@@ -72,6 +73,11 @@ export interface TickRange {
   endTick: number;
 }
 
+export interface PriceRange {
+  startPrice: number;
+  endPrice: number;
+}
+
 export interface DopplerPreDeploymentConfig {
   // Token details
   name: string;
@@ -88,7 +94,8 @@ export interface DopplerPreDeploymentConfig {
 
   // Price parameters
   numeraire?: Address; // defaults to native if unset
-  tickRange: TickRange;
+  tickRange?: TickRange;
+  priceRange?: PriceRange;
   tickSpacing: number;
   gamma?: number; // allow gamma to be passed directly instead of computed
   fee: number; // In bips

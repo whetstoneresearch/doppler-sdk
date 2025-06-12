@@ -9,7 +9,7 @@ The Doppler V4 SDK provides a comprehensive interface for:
 - **Token Creation & Management**: Deploy ERC-20 tokens with vesting schedules
 - **Pool Creation**: Create Uniswap V4 pools with custom hooks for price discovery
 - **Price Discovery**: Automated gradual dutch auctions with customizable parameters
-- **Governance**: Deploy and manage governance contracts for token communities
+- **Governance**: Deploy and manage governance contracts for token communities (optional)
 - **Liquidity Migration**: Move liquidity between discovery and trading pools
 
 ## Installation
@@ -77,7 +77,7 @@ Each Doppler pool requires:
 
 The main class for creating and managing Doppler pools.
 
-#### Creating a Pool
+#### Creating a Pool with Governance
 
 ```typescript
 const config: DopplerPreDeploymentConfig = {
@@ -107,7 +107,7 @@ const config: DopplerPreDeploymentConfig = {
   integrator,
 };
 
-// Build configuration
+// Build configuration (uses governance by default)
 const { createParams, hook, token } = factory.buildConfig(config, addresses);
 
 // Simulate transaction
@@ -119,9 +119,31 @@ const txHash = await factory.create(createParams);
 console.log(`Pool created: ${txHash}`);
 ```
 
+#### Creating a Pool without Governance
+
+To deploy tokens without governance (using NoOpGovernanceFactory), pass the optional `useGovernance: false` parameter:
+
+```typescript
+// Build configuration without governance
+const { createParams, hook, token } = factory.buildConfig(
+  config,
+  addresses,
+  { useGovernance: false }
+);
+
+// Deploy the token (no governance contracts will be created)
+const txHash = await factory.create(createParams);
+```
+
+When using `useGovernance: false`:
+- The NoOpGovernanceFactory will be used instead of the regular governance factory
+- No actual governance or timelock contracts will be deployed
+- The governance and timelock addresses will be set to `0xdead`
+- This saves gas and simplifies deployment for tokens that don't need governance
+
 #### Key Methods
 
-- `buildConfig(params, addresses)` - Build complete pool configuration
+- `buildConfig(params, addresses, options?)` - Build complete pool configuration
 - `create(createParams, options?)` - Deploy the pool
 - `simulateCreate(createParams)` - Simulate deployment
 - `migrate(asset, options?)` - Migrate liquidity after price discovery
@@ -245,6 +267,12 @@ const gamma = Math.ceil(tickDelta / totalEpochs) * tickSpacing;
 
 ### Error Handling
 
+The SDK provides detailed error messages for common issues:
+- Missing or invalid configuration parameters
+- NoOpGovernanceFactory not deployed when `useGovernance: false`
+- Invalid price ranges or tick ranges
+- Insufficient permissions
+
 ### Building
 
 ```bash
@@ -259,6 +287,12 @@ See the `examples/` directory for complete implementation examples:
 - Multi-chain deployment
 - Custom governance setup
 - Liquidity migration strategies
+
+## Important Notes
+
+- The `useGovernance` parameter defaults to `true` to maintain backward compatibility
+- NoOpGovernanceFactory must be deployed on the target chain before using `useGovernance: false`
+- If NoOpGovernanceFactory is not deployed, the SDK will throw an error when attempting to use it
 
 ## Contributing
 

@@ -20,7 +20,7 @@ import { CreateParams } from './types';
 import { DERC20Bytecode, DopplerBytecode } from '@/abis';
 import { DAY_SECONDS, DEFAULT_PD_SLUGS } from '@/constants';
 import { DopplerData, TokenFactoryData } from './types';
-import { DopplerPreDeploymentConfig, DopplerV4Addresses } from '@/types';
+import { DopplerPreDeploymentConfig, DopplerV4Addresses, PriceRange, TickRange } from '@/types';
 
 const DEFAULT_INITIAL_VOTING_DELAY = 7200;
 const DEFAULT_INITIAL_VOTING_PERIOD = 50400;
@@ -165,6 +165,24 @@ export class ReadWriteFactory extends ReadFactory {
   }
 
   /**
+   * Computes tick values from price range
+   * @param priceRange - The price range in human-readable format
+   * @param tickSpacing - The tick spacing for the pool
+   * @returns The tick range
+   * @private
+   */
+  private computeTicks(priceRange: PriceRange, tickSpacing: number): TickRange {
+    // Convert prices to ticks using the formula: tick = log(price) / log(1.0001) * tickSpacing
+    const startTick = Math.floor(Math.log(priceRange.startPrice) / Math.log(1.0001) / tickSpacing) * tickSpacing;
+    const endTick = Math.ceil(Math.log(priceRange.endPrice) / Math.log(1.0001) / tickSpacing) * tickSpacing;
+    
+    return {
+      startTick,
+      endTick
+    };
+  }
+
+  /**
    * Encodes token factory initialization data
    * @param tokenConfig - Basic token configuration (name, symbol, URI)
    * @param vestingConfig - Vesting schedule configuration
@@ -257,7 +275,8 @@ export class ReadWriteFactory extends ReadFactory {
    */
   public buildConfig(
     params: DopplerPreDeploymentConfig,
-    addresses: DopplerV4Addresses
+    addresses: DopplerV4Addresses,
+    options?: { useGovernance?: boolean }
   ): {
     createParams: CreateParams;
     hook: Hex;
@@ -265,11 +284,38 @@ export class ReadWriteFactory extends ReadFactory {
   } {
     this.validateBasicParams(params);
 
+    // Validate governance configuration
+    const useGovernance = options?.useGovernance ?? true;
+    if (!useGovernance && addresses.noOpGovernanceFactory === '0x0000000000000000000000000000000000000000') {
+      throw new Error('NoOpGovernanceFactory address not configured for this chain. Please deploy NoOpGovernanceFactory first.');
+    }
+
+    if (!params.priceRange && !params.tickRange) {
+      throw new Error('Price range or tick range must be provided');
+    }
+
+    let startTick;
+    let endTick;
+    if (params.priceRange) {
+      const ticks = this.computeTicks(params.priceRange, params.tickSpacing);
+      startTick = ticks.startTick;
+      endTick = ticks.endTick;
+    }
+
+    if (params.tickRange) {
+      startTick = params.tickRange.startTick;
+      endTick = params.tickRange.endTick;
+    }
+
+    if (!startTick || !endTick) {
+      throw new Error('Start tick or end tick not found');
+    }
+
     const gamma =
       params.gamma ??
       this.computeOptimalGamma(
-        params.tickRange.startTick,
-        params.tickRange.endTick,
+        startTick,
+        endTick,
         params.duration,
         params.epochLength,
         params.tickSpacing
@@ -314,8 +360,8 @@ export class ReadWriteFactory extends ReadFactory {
       maximumProceeds: params.maxProceeds,
       startingTime: BigInt(startTime),
       endingTime: BigInt(endTime),
-      startingTick: params.tickRange.startTick,
-      endingTick: params.tickRange.endTick,
+      startingTick: startTick,
+      endingTick: endTick,
       epochLength: BigInt(params.epochLength),
       gamma,
       isToken0: false,
@@ -340,20 +386,29 @@ export class ReadWriteFactory extends ReadFactory {
         poolInitializerData: dopplerParams,
       });
 
-    const governanceFactoryData = encodeAbiParameters(
-      [
-        { type: 'string' },
-        { type: 'uint48' },
-        { type: 'uint32' },
-        { type: 'uint256' },
-      ],
-      [
-        params.name,
-        DEFAULT_INITIAL_VOTING_DELAY,
-        DEFAULT_INITIAL_VOTING_PERIOD,
-        DEFAULT_INITIAL_PROPOSAL_THRESHOLD,
-      ]
-    );
+    // Determine whether to use governance or no-op governance
+    const useGovernance = options?.useGovernance ?? true;
+    const selectedGovernanceFactory = useGovernance
+      ? addresses.governanceFactory
+      : addresses.noOpGovernanceFactory;
+
+    // When using NoOpGovernanceFactory, the data is ignored, but we still need to provide valid encoding
+    const governanceFactoryData = useGovernance
+      ? encodeAbiParameters(
+          [
+            { type: 'string' },
+            { type: 'uint48' },
+            { type: 'uint32' },
+            { type: 'uint256' },
+          ],
+          [
+            params.name,
+            DEFAULT_INITIAL_VOTING_DELAY,
+            DEFAULT_INITIAL_VOTING_PERIOD,
+            DEFAULT_INITIAL_PROPOSAL_THRESHOLD,
+          ]
+        )
+      : '0x' as Hex; // NoOpGovernanceFactory ignores the data
 
     return {
       createParams: {
@@ -362,7 +417,7 @@ export class ReadWriteFactory extends ReadFactory {
         numeraire,
         tokenFactory,
         tokenFactoryData,
-        governanceFactory: governanceFactory,
+        governanceFactory: selectedGovernanceFactory,
         governanceFactoryData,
         poolInitializer: v4Initializer,
         poolInitializerData,
