@@ -52,7 +52,7 @@ export const addAndUpdateV4PoolPriceHistory = async ({
 
   const marketCapString = marketCapUsd.toString();
 
-  const oneDayAgo = timestamp - 24 * 60 * 60 * 1000;
+  const oneDayAgo = timestamp - 24 * 60 * 60;
   const filteredHistory = Object.fromEntries(
     Object.entries(history).filter(([key]) => Number(key) >= oneDayAgo)
   );
@@ -70,9 +70,9 @@ export const addAndUpdateV4PoolPriceHistory = async ({
     !earliestMarketCap || earliestMarketCap === 0n
       ? 0
       : ((Number(formatEther(BigInt(marketCapUsd))) -
-          Number(formatEther(BigInt(earliestMarketCap)))) /
-          Number(formatEther(BigInt(earliestMarketCap)))) *
-        100;
+        Number(formatEther(BigInt(earliestMarketCap)))) /
+        Number(formatEther(BigInt(earliestMarketCap)))) *
+      100;
 
   if (dayChangeUsd > 1000000000) {
     return;

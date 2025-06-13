@@ -6,8 +6,7 @@ import {
   compute24HourPriceChange,
 } from "./shared/timeseries";
 import { getPairData } from "@app/utils/v2-utils/getPairData";
-import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
-import { computeMarketCap, fetchEthPrice } from "./shared/oracle";
+import { fetchEthPrice } from "./shared/oracle";
 import {
   insertPoolIfNotExists,
   insertTokenIfNotExists,

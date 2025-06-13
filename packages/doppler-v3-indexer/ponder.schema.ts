@@ -191,7 +191,7 @@ export const pool = onchainTable(
     dollarLiquidity: t.bigint().notNull(),
     dailyVolume: t.hex().notNull(),
     volumeUsd: t.bigint().notNull(),
-    percentDayChange: t.real().notNull(),
+    percentDayChange: t.real().notNull().default(0),
     totalFee0: t.bigint().notNull(),
     totalFee1: t.bigint().notNull(),
     graduationThreshold: t.bigint().notNull(),

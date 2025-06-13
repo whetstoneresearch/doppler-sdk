@@ -1,5 +1,5 @@
 import { ponder } from "ponder:registry";
-import { pool, user } from "ponder.schema";
+import { pool } from "ponder.schema";
 import { insertAssetIfNotExists, updateAsset } from "./shared/entities/asset";
 import { insertTokenIfNotExists, updateToken } from "./shared/entities/token";
 import { insertV2PoolIfNotExists } from "./shared/entities/v2Pool";

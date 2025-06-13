@@ -175,7 +175,7 @@ export class SwapService {
     return {
       liquidityUsd: params.liquidityUsd,
       marketCapUsd: params.marketCapUsd,
-      percentDayChange: params.percentDayChange.toString(),
+      percentDayChange: params.percentDayChange,
     };
   }
 }
