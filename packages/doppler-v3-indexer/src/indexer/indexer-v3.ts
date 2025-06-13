@@ -120,6 +120,7 @@ ponder.on("UniswapV3Pool:Mint", async ({ event, context }) => {
   });
 
 
+
   const reserveAssetBefore = isToken0 ? reserves0 : reserves1;
   const reserveQuoteBefore = isToken0 ? reserves1 : reserves0;
 
@@ -297,12 +298,17 @@ ponder.on("UniswapV3Pool:Swap", async ({ event, context }) => {
     totalFee0,
     totalFee1,
     graduationBalance,
+    migrated
   } = await insertPoolIfNotExists({
     poolAddress: address,
     timestamp,
     context,
     ethPrice,
   });
+
+  if (migrated) {
+    return;
+  }
 
   const price = PriceService.computePriceFromSqrtPriceX96({
     sqrtPriceX96,
