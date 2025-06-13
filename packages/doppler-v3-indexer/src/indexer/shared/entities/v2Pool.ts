@@ -28,6 +28,15 @@ export const insertV2PoolIfNotExists = async ({
       context,
     });
 
+  const existingV2Pool = await db.find(v2Pool, {
+    address: migrationPool,
+  });
+
+  if (existingV2Pool) {
+    return existingV2Pool;
+  }
+
+
   const { baseToken } = await insertPoolIfNotExists({
     poolAddress,
     timestamp,
