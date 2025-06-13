@@ -6,7 +6,7 @@ import {
   compute24HourPriceChange,
 } from "./shared/timeseries";
 import { getPairData } from "@app/utils/v2-utils/getPairData";
-import { fetchEthPrice } from "./shared/oracle";
+import { computeMarketCap, fetchEthPrice } from "./shared/oracle";
 import {
   insertPoolIfNotExists,
   insertTokenIfNotExists,
@@ -20,6 +20,7 @@ import { zeroAddress } from "viem";
 import { configs } from "@app/types";
 import { insertSwapIfNotExists } from "./shared/entities/swap";
 import { SwapService, SwapOrchestrator, PriceService } from "@app/core";
+import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
 
 ponder.on("UniswapV2Pair:Swap", async ({ event, context }) => {
   const { db, chain } = context;
