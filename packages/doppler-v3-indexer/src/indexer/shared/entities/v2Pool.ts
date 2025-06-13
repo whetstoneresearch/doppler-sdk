@@ -28,8 +28,10 @@ export const insertV2PoolIfNotExists = async ({
       context,
     });
 
+  const migrationPoolAddr = migrationPool.toLowerCase() as `0x${string}`;
+
   const existingV2Pool = await db.find(v2Pool, {
-    address: migrationPool,
+    address: migrationPoolAddr,
   });
 
   if (existingV2Pool) {
@@ -50,7 +52,6 @@ export const insertV2PoolIfNotExists = async ({
   const numeraireId = numeraire.toLowerCase() as `0x${string}`;
 
   const poolAddr = poolAddress.toLowerCase() as `0x${string}`;
-  const migrationPoolAddr = migrationPool.toLowerCase() as `0x${string}`;
 
   const { reserve0, reserve1 } = await getPairData({
     address: migrationPoolAddr,
