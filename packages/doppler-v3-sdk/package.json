@@ -38,7 +38,7 @@
     "@delvtech/drift-viem": "^0.8.4",
     "@uniswap/sdk-core": "^5.9.0",
     "@uniswap/v4-sdk": "^1.10.4",
-    "ponder": "^0.9.26",
+    "ponder": "^0.11.15",
     "viem": "^2.21.55"
   },
   "devDependencies": {
