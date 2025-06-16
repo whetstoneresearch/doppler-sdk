@@ -111,7 +111,7 @@ ponder.on("UniswapV3Pool:Mint", async ({ event, context }) => {
     liquidity,
     reserves0,
     reserves1,
-    graduationThreshold,
+    maxThreshold,
   } = await insertPoolIfNotExists({
     poolAddress: address,
     timestamp,
@@ -170,7 +170,7 @@ ponder.on("UniswapV3Pool:Mint", async ({ event, context }) => {
       poolAddress: address,
       context,
       update: {
-        graduationThreshold: graduationThreshold + graduationThresholdDelta,
+        maxThreshold: maxThreshold + graduationThresholdDelta,
         liquidity: liquidity + amount,
         dollarLiquidity: liquidityUsd,
         reserves0: reserves0 + amount0,
@@ -207,7 +207,7 @@ ponder.on("UniswapV3Pool:Burn", async ({ event, context }) => {
     liquidity,
     reserves0,
     reserves1,
-    graduationThreshold,
+    maxThreshold,
   } = await insertPoolIfNotExists({
     poolAddress: address,
     timestamp,
@@ -262,7 +262,7 @@ ponder.on("UniswapV3Pool:Burn", async ({ event, context }) => {
       update: {
         liquidity: liquidity - amount,
         dollarLiquidity: liquidityUsd,
-        graduationThreshold: graduationThreshold - graduationThresholdDelta,
+        maxThreshold: maxThreshold - graduationThresholdDelta,
         reserves0: reserves0 - amount0,
         reserves1: reserves1 - amount1,
       },

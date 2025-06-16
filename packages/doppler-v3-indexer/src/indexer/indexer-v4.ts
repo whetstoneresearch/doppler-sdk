@@ -274,8 +274,7 @@ ponder.on("UniswapV4Pool:Swap", async ({ event, context }) => {
       context,
       update: {
         liquidity: v4PoolData.liquidity,
-        totalProceeds,
-        totalTokensSold,
+        graduationBalance: totalProceeds,
       },
     }),
     addAndUpdateV4PoolPriceHistory({
