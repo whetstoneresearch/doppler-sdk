@@ -4,6 +4,7 @@ import { configs } from "addresses";
 import { ChainlinkOracleABI } from "@app/abis/ChainlinkOracleABI";
 import { ethPrice } from "ponder.schema";
 import { refreshCheckpointBlob } from "./shared/entities/v4-entities/v4CheckpointBlob";
+import { handlePendingTokenImages } from "./shared/process-pending-images";
 
 /**
  * Block handlers that run periodically to ensure volume data and metrics are up-to-date
@@ -115,6 +116,14 @@ ponder.on("BaseSepoliaV4PoolCheckpoints:block", async ({ event, context }) => {
 
 ponder.on("BaseV4PoolCheckpoints:block", async ({ event, context }) => {
   await refreshCheckpointBlob({
+    context,
+    timestamp: Number(event.block.timestamp),
+  });
+});
+
+// Handler for processing pending token images on Base
+ponder.on("PendingTokenImagesBase:block", async ({ event, context }) => {
+  await handlePendingTokenImages({
     context,
     timestamp: Number(event.block.timestamp),
   });

@@ -260,6 +260,11 @@ export const v4CheckpointBlob = onchainTable("v4_checkpoint_blob", (t) => ({
   checkpoints: t.jsonb().notNull().default("{}"),
 }));
 
+export const pendingTokenImages = onchainTable("pending_token_images", (t) => ({
+  chainId: t.bigint().notNull().primaryKey(),
+  tokens: t.jsonb().notNull().default("{}"),
+}));
+
 export const activePoolsBlob = onchainTable("active_pools_blob", (t) => ({
   chainId: t.bigint().notNull().primaryKey(),
   activePools: t.jsonb().notNull().default("{}"),

@@ -1,7 +1,7 @@
 {
   "name": "doppler-v4-sdk",
   "author": "Whetstone Research",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "license": "MIT",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -41,7 +41,7 @@
     "vitest": "^2.1.9"
   },
   "dependencies": {
-    "@delvtech/drift": "^0.8.4",
+    "@delvtech/drift": "^0.9.1",
     "@uniswap/sdk-core": "^5.9.0",
     "@uniswap/v4-sdk": "^1.21.4",
     "ethers": "^5.8.0",

@@ -1,6 +1,7 @@
 import { BlockConfigMap } from "./types";
 import { generateCheckpointBlocks } from "./checkpoints";
 import { generateMetricBlocks } from "./metrics";
+import { generatePendingImageBlocks } from "./pending-images";
 import { BLOCK_INTERVALS } from "./intervals";
 import { chainConfigs } from "../chains";
 
@@ -8,6 +9,7 @@ export * from "./types";
 export * from "./intervals";
 export * from "./checkpoints";
 export * from "./metrics";
+export * from "./pending-images";
 
 // Special oracle block configuration
 export const generateOracleBlocks = (): BlockConfigMap => ({
@@ -23,4 +25,5 @@ export const generateAllBlockConfigs = (): BlockConfigMap => ({
   ...generateOracleBlocks(),
   ...generateCheckpointBlocks(), 
   ...generateMetricBlocks(),
+  ...generatePendingImageBlocks(),
 });
