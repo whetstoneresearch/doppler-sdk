@@ -270,7 +270,6 @@ ponder.on("UniswapV4Pool:Swap", async ({ event, context }) => {
 
   // Calculate graduation percentage
   const graduationPercentage = computeGraduationPercentage({
-    maxThreshold: poolEntity.maxThreshold,
     minThreshold: poolEntity.minThreshold,
     graduationBalance: totalProceeds,
   });
@@ -540,7 +539,6 @@ ponder.on("UniswapV4Pool2:Swap", async ({ event, context }) => {
 
   // Calculate graduation percentage 
   const graduationPercentage = computeGraduationPercentage({
-    maxThreshold: poolData.poolConfig.maxProceeds,
     minThreshold: poolData.poolConfig.minProceeds,
     graduationBalance: totalProceeds,
   });
