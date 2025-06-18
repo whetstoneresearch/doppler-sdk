@@ -5,6 +5,7 @@ import { Address } from "viem";
 import { Context } from "ponder:registry";
 import { computeMarketCap } from "../oracle";
 import { getReservesV4 } from "@app/utils/v4-utils/getV4PoolData";
+import { computeGraduationPercentage } from "@app/utils/v4-utils";
 import { DERC20ABI } from "@app/abis";
 import { V4PoolData } from "@app/types";
 import { configs } from "@app/types";
@@ -195,6 +196,11 @@ export const insertPoolIfNotExistsV4 = async ({
     totalSupply,
   });
 
+  const graduationPercentage = computeGraduationPercentage({
+    maxThreshold: poolConfig.maxProceeds,
+    graduationBalance: 0n,
+  });
+
   return await db.insert(pool).values({
     address,
     chainId: BigInt(chain.id),
@@ -217,6 +223,7 @@ export const insertPoolIfNotExistsV4 = async ({
     maxThreshold: poolConfig.maxProceeds,
     minThreshold: poolConfig.minProceeds,
     graduationBalance: 0n,
+    graduationPercentage,
     isToken0: poolConfig.isToken0,
     marketCapUsd,
     reserves0: token0Reserve,

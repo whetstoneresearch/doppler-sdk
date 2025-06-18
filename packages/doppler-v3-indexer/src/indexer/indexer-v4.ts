@@ -24,6 +24,7 @@ import { SwapService, SwapOrchestrator, PriceService } from "@app/core";
 import { tryAddActivePool } from "./shared/scheduledJobs";
 import { TickMath } from "@uniswap/v3-sdk";
 import { computeV4Price } from "@app/utils/v4-utils/computeV4Price";
+import { computeGraduationPercentage } from "@app/utils/v4-utils";
 
 ponder.on("UniswapV4Initializer:Create", async ({ event, context }) => {
   const { poolOrHook, asset: assetId, numeraire } = event.args;
@@ -267,6 +268,12 @@ ponder.on("UniswapV4Pool:Swap", async ({ event, context }) => {
     entityUpdaters
   );
 
+  // Calculate graduation percentage
+  const graduationPercentage = computeGraduationPercentage({
+    maxThreshold: poolEntity.maxThreshold,
+    graduationBalance: totalProceeds,
+  });
+
   // V4-specific updates
   await Promise.all([
     updatePool({
@@ -275,6 +282,7 @@ ponder.on("UniswapV4Pool:Swap", async ({ event, context }) => {
       update: {
         liquidity: v4PoolData.liquidity,
         graduationBalance: totalProceeds,
+        graduationPercentage,
       },
     }),
     addAndUpdateV4PoolPriceHistory({
@@ -529,6 +537,12 @@ ponder.on("UniswapV4Pool2:Swap", async ({ event, context }) => {
     entityUpdaters
   );
 
+  // Calculate graduation percentage 
+  const graduationPercentage = computeGraduationPercentage({
+    maxThreshold: poolData.poolConfig.maxProceeds,
+    graduationBalance: totalProceeds,
+  });
+
   // V4-specific updates
   await Promise.all([
     updatePool({
@@ -538,6 +552,7 @@ ponder.on("UniswapV4Pool2:Swap", async ({ event, context }) => {
         liquidity: poolData.liquidity,
         totalProceeds,
         totalTokensSold,
+        graduationPercentage,
       },
     }),
     addAndUpdateV4PoolPriceHistory({

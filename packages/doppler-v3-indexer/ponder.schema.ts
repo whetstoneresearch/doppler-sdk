@@ -195,6 +195,7 @@ export const pool = onchainTable(
     totalFee0: t.bigint().notNull(),
     totalFee1: t.bigint().notNull(),
     graduationBalance: t.bigint().notNull(),
+    graduationPercentage: t.doublePrecision().notNull().default(0),
     minThreshold: t.bigint(),
     maxThreshold: t.bigint().notNull(),
     isToken0: t.boolean().notNull(),
