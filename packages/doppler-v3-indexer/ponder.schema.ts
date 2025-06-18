@@ -208,6 +208,7 @@ export const pool = onchainTable(
     marketCapUsd: t.bigint().notNull().default(0n),
     migrated: t.boolean().notNull().default(false),
     migratedAt: t.bigint(),
+    isQuoteEth: t.boolean().notNull(),
   }),
   (table) => ({
     pk: primaryKey({

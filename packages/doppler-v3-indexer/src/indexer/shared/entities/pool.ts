@@ -7,6 +7,7 @@ import { computeMarketCap } from "../oracle";
 import { getReservesV4 } from "@app/utils/v4-utils/getV4PoolData";
 import { DERC20ABI } from "@app/abis";
 import { V4PoolData } from "@app/types";
+import { configs } from "@app/types";
 
 export const fetchExistingPool = async ({
   poolAddress,
@@ -63,6 +64,8 @@ export const insertPoolIfNotExists = async ({
   const assetAddr = poolState.asset.toLowerCase() as `0x${string}`;
   const numeraireAddr = poolState.numeraire.toLowerCase() as `0x${string}`;
 
+  const isQuoteEth = poolState.numeraire.toLowerCase() === "0x0000000000000000000000000000000000000000" || poolState.numeraire.toLowerCase() === configs[chain.name].shared.weth;
+
   const assetTotalSupply = await client.readContract({
     address: assetAddr,
     abi: DERC20ABI,
@@ -100,6 +103,7 @@ export const insertPoolIfNotExists = async ({
     percentDayChange: 0,
     isToken0,
     marketCapUsd,
+    isQuoteEth
   });
 };
 
@@ -156,6 +160,8 @@ export const insertPoolIfNotExistsV4 = async ({
   const numeraireAddr = poolConfig.isToken0
     ? poolKey.currency1
     : poolKey.currency0;
+
+  const isQuoteEth = numeraireAddr.toLowerCase() === "0x0000000000000000000000000000000000000000" || numeraireAddr.toLowerCase() === configs[chain.name].shared.weth;
 
 
   const [reserves, totalSupply] = await Promise.all([
@@ -216,5 +222,6 @@ export const insertPoolIfNotExistsV4 = async ({
     reserves0: token0Reserve,
     reserves1: token1Reserve,
     poolKey: JSON.stringify(poolKey),
+    isQuoteEth
   });
 };
