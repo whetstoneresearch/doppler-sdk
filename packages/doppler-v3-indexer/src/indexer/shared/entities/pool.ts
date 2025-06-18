@@ -197,7 +197,7 @@ export const insertPoolIfNotExistsV4 = async ({
   });
 
   const graduationPercentage = computeGraduationPercentage({
-    minThreshold: poolConfig.minProceeds,
+    maxThreshold: poolConfig.maxProceeds,
     graduationBalance: 0n,
   });
 
