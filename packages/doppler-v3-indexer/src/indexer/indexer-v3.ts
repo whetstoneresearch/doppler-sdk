@@ -144,6 +144,7 @@ ponder.on("UniswapV3Pool:Mint", async ({ event, context }) => {
     isToken0,
   });
 
+  // First, ensure all entities exist
   const [positionEntity] = await Promise.all([
     insertPositionIfNotExists({
       poolAddress: address,
@@ -159,6 +160,10 @@ ponder.on("UniswapV3Pool:Mint", async ({ event, context }) => {
       timestamp,
       context,
     }),
+  ]);
+
+  // Then perform updates
+  await Promise.all([
     updateAsset({
       assetAddress: baseToken,
       context,
