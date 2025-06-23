@@ -14,17 +14,18 @@ The StreamableFeesLocker is a contract that:
 ### 1. Setting Up Beneficiaries
 
 ```typescript
-import { BeneficiaryData, WAD, DEAD_ADDRESS } from '@doppler-v4/sdk';
+import { BeneficiaryData, WAD, DEAD_ADDRESS } from 'doppler-v4-sdk';
 
 // Define beneficiaries with their share percentages
+// WAD is a constant equal to 1e18, representing 100% in fixed-point arithmetic
 const beneficiaries: BeneficiaryData[] = [
   {
     beneficiary: '0x...protocol', // Protocol treasury
-    shares: BigInt(0.05e18), // 5% in WAD
+    shares: BigInt(0.05e18), // 5% in WAD (1e18 = 100%)
   },
   {
     beneficiary: '0x...integrator', // Integrator
-    shares: BigInt(0.05e18), // 5% in WAD
+    shares: BigInt(0.05e18), // 5% in WAD (1e18 = 100%)
   },
   {
     beneficiary: '0x...team', // Team/DAO
@@ -39,7 +40,7 @@ const sortedBeneficiaries = factory.sortBeneficiaries(beneficiaries);
 ### 2. Creating V4 Migrator Data
 
 ```typescript
-import { V4MigratorData } from '@doppler-v4/sdk';
+import { V4MigratorData } from 'doppler-v4-sdk';
 
 const v4MigratorConfig: V4MigratorData = {
   fee: 3000, // 0.3% in bips
@@ -90,7 +91,7 @@ const config = await factory.buildConfig({
 Anyone can call `distributeFees` to collect and distribute trading fees:
 
 ```typescript
-import { streamableFeesLockerAbi } from '@doppler-v4/sdk';
+import { streamableFeesLockerAbi } from 'doppler-v4-sdk';
 import { createPublicClient, createWalletClient } from 'viem';
 
 const client = createWalletClient({
@@ -132,59 +133,49 @@ const hash = await client.writeContract({
 });
 ```
 
-## Example: Complete Flow
+## Complete Examples
+
+For detailed, production-ready examples of launching tokens with StreamableFeesLocker:
+
+- **[Token Launch Examples](./token-launch-examples.md)** - Complete guide with:
+  - Standard governance launch (90/10 split)
+  - No-op governance launch (100% locked)
+  - Custom quote token launch
+  - Post-launch fee operations
+
+## Quick Example
 
 ```typescript
 import { 
   ReadWriteFactory, 
   BeneficiaryData, 
   V4MigratorData,
-  WAD,
-  DEAD_ADDRESS,
-  parseEther
-} from '@doppler-v4/sdk';
+  DEAD_ADDRESS
+} from 'doppler-v4-sdk';
 
-// 1. Initialize factory
-const factory = new ReadWriteFactory(addresses.airlock, drift);
-
-// 2. Set up beneficiaries
+// 1. Set up beneficiaries
 const beneficiaries: BeneficiaryData[] = [
-  { beneficiary: addresses.airlock, shares: BigInt(0.05e18) }, // 5%
-  { beneficiary: integratorAddress, shares: BigInt(0.05e18) }, // 5%
+  { beneficiary: protocolAddress, shares: BigInt(0.1e18) }, // 10%
   { beneficiary: teamAddress, shares: BigInt(0.9e18) }, // 90%
 ];
 
-// 3. Sort beneficiaries
-const sortedBeneficiaries = factory.sortBeneficiaries(beneficiaries);
-
-// 4. Create V4 migrator configuration
+// 2. Create V4 migrator config
 const v4Config: V4MigratorData = {
   fee: 3000,
   tickSpacing: 60,
-  lockDuration: 30 * 24 * 60 * 60, // 30 days
-  beneficiaries: sortedBeneficiaries,
+  lockDuration: 180 * 24 * 60 * 60, // 180 days
+  beneficiaries: factory.sortBeneficiaries(beneficiaries),
 };
 
-// 5. Encode migrator data
-const liquidityMigratorData = factory.encodeV4MigratorData(v4Config);
-
-// 6. Build pool configuration
+// 3. Build and launch
 const config = await factory.buildConfig({
-  name: "Example Token",
-  symbol: "EXT",
-  totalSupply: parseEther("1000000"),
-  numTokensToSell: parseEther("500000"),
-  priceRange: { startPrice: 0.001, endPrice: 0.01 },
-  duration: 30,
-  epochLength: 3600,
-  liquidityMigratorData,
-  // ... other required parameters
+  // ... token parameters
+  liquidityMigratorData: factory.encodeV4MigratorData(v4Config),
 }, addresses, {
   useGovernance: false // For no-op governance
 });
 
-// 7. Create the pool
-const txHash = await factory.create(config.createParams);
+const tx = await factory.create(config.createParams);
 ```
 
 ## Key Points
@@ -196,11 +187,11 @@ const txHash = await factory.create(config.createParams);
 
 2. **Lock Duration**: 
    - Standard governance: Position unlocks after duration
-   - No-op governance: Position locked forever (recipient = DEAD_ADDRESS)
+   - No-op governance: Position locked forever (recipient = DEAD_ADDRESS). The lockDuration value is ignored since the position is permanently locked
 
 3. **Fee Distribution**:
-   - 10% of liquidity goes to StreamableFeesLocker
-   - 90% goes to governance timelock (standard) or 100% to locker (no-op)
+   - Standard governance: 90% of liquidity goes to timelock, 10% to StreamableFeesLocker (automatic split by V4Migrator contract)
+   - No-op governance: 100% goes to StreamableFeesLocker permanently
 
 4. **Migration Types**:
    - Standard: Creates 2 NFTs, locks 10% in StreamableFeesLocker
