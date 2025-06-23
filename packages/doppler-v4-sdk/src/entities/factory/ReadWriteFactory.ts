@@ -18,9 +18,9 @@ import {
 import { ReadFactory, AirlockABI } from './ReadFactory';
 import { CreateParams } from './types';
 import { DERC20Bytecode, DopplerBytecode } from '@/abis';
-import { DAY_SECONDS, DEFAULT_PD_SLUGS } from '@/constants';
+import { DAY_SECONDS, DEFAULT_PD_SLUGS, DEAD_ADDRESS, WAD } from '@/constants';
 import { DopplerData, TokenFactoryData } from './types';
-import { DopplerPreDeploymentConfig, DopplerV4Addresses, PriceRange, TickRange } from '@/types';
+import { DopplerPreDeploymentConfig, DopplerV4Addresses, PriceRange, TickRange, V4MigratorData, BeneficiaryData } from '@/types';
 
 const DEFAULT_INITIAL_VOTING_DELAY = 7200;
 const DEFAULT_INITIAL_VOTING_PERIOD = 50400;
@@ -244,6 +244,86 @@ export class ReadWriteFactory extends ReadFactory {
   }
 
   /**
+   * Encodes V4 migrator data for Uniswap V4 migration with StreamableFeesLocker
+   * @param v4Config - Configuration for V4 migration
+   * @returns Encoded migrator data
+   * @throws {Error} If beneficiaries are invalid
+   */
+  public encodeV4MigratorData(v4Config: V4MigratorData): Hex {
+    // Validate beneficiaries
+    this.validateBeneficiaries(v4Config.beneficiaries);
+    
+    return encodeAbiParameters(
+      [
+        { type: 'uint24' },  // fee
+        { type: 'int24' },   // tickSpacing
+        { type: 'uint32' },  // lockDuration
+        { type: 'tuple[]', components: [
+          { type: 'address', name: 'beneficiary' },
+          { type: 'uint96', name: 'shares' }
+        ]}
+      ],
+      [
+        v4Config.fee,
+        v4Config.tickSpacing,
+        v4Config.lockDuration,
+        v4Config.beneficiaries.map(b => ({
+          beneficiary: b.beneficiary,
+          shares: b.shares
+        }))
+      ]
+    );
+  }
+
+  /**
+   * Validates beneficiaries array for V4 migration
+   * @param beneficiaries - Array of beneficiaries to validate
+   * @throws {Error} If validation fails
+   * @private
+   */
+  private validateBeneficiaries(beneficiaries: BeneficiaryData[]): void {
+    if (!beneficiaries || beneficiaries.length === 0) {
+      throw new Error('At least one beneficiary is required');
+    }
+
+    // Check ordering (must be in ascending order by address)
+    let prevBeneficiary = zeroAddress;
+    let totalShares = BigInt(0);
+
+    for (const beneficiary of beneficiaries) {
+      if (beneficiary.beneficiary <= prevBeneficiary) {
+        throw new Error('Beneficiaries must be sorted in ascending order by address');
+      }
+      if (beneficiary.shares <= 0) {
+        throw new Error('All beneficiary shares must be positive');
+      }
+      prevBeneficiary = beneficiary.beneficiary;
+      totalShares += beneficiary.shares;
+    }
+
+    // Check total shares equals WAD (1e18)
+    if (totalShares !== WAD) {
+      throw new Error(`Total shares must equal ${WAD.toString()} (1e18), got ${totalShares.toString()}`);
+    }
+  }
+
+  /**
+   * Helper function to sort beneficiaries by address
+   * @param beneficiaries - Array of beneficiaries to sort
+   * @returns Sorted array of beneficiaries
+   */
+  public sortBeneficiaries(beneficiaries: BeneficiaryData[]): BeneficiaryData[] {
+    if (!beneficiaries || beneficiaries.length === 0) {
+      return [];
+    }
+    return [...beneficiaries].sort((a, b) => {
+      const addrA = a.beneficiary.toLowerCase();
+      const addrB = b.beneficiary.toLowerCase();
+      return addrA < addrB ? -1 : addrA > addrB ? 1 : 0;
+    });
+  }
+
+  /**
    * Builds complete configuration for creating a new Doppler pool
    *
    * This method:
@@ -386,8 +466,7 @@ export class ReadWriteFactory extends ReadFactory {
         poolInitializerData: dopplerParams,
       });
 
-    // Determine whether to use governance or no-op governance
-    const useGovernance = options?.useGovernance ?? true;
+    // Determine which governance factory to use
     const selectedGovernanceFactory = useGovernance
       ? addresses.governanceFactory
       : addresses.noOpGovernanceFactory;

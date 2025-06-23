@@ -21,6 +21,7 @@ export interface DopplerV4Addresses {
   governanceFactory: Address;
   noOpGovernanceFactory: Address;
   migrator: Address;
+  streamableFeesLocker: Address;
   poolManager: Address;
   dopplerDeployer: Address;
   universalRouter: Address;
@@ -149,4 +150,21 @@ export interface DeployerParams {
   publicClient: PublicClient;
   walletClient: WalletClient;
   addresses?: DopplerV4Addresses;
+}
+
+export interface BeneficiaryData {
+  beneficiary: Address;
+  shares: bigint; // in WAD (1e18)
+}
+
+export interface StreamableFeesConfig {
+  lockDuration: number; // in seconds
+  beneficiaries: BeneficiaryData[];
+}
+
+export interface V4MigratorData {
+  fee: number; // in bips
+  tickSpacing: number;
+  lockDuration: number; // in seconds
+  beneficiaries: BeneficiaryData[];
 }

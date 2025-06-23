@@ -13,6 +13,7 @@ export const DOPPLER_V4_ADDRESSES: { [chainId: number]: DopplerV4Addresses } = {
     governanceFactory: '0x99C94B9Df930E1E21a4E4a2c105dBff21bF5c5aE' as Address,
     noOpGovernanceFactory: '0x0000000000000000000000000000000000000000' as Address, // TODO: Deploy and update
     migrator: '0xf6023127f6E937091D5B605680056A6D27524bad' as Address,
+    streamableFeesLocker: '0x0000000000000000000000000000000000000000' as Address, // TODO: Deploy and update
     universalRouter: '0xef740bf23acae26f6492b10de645d6b98dc8eaf3' as Address,
     v4Quoter: '0x333e3c607b141b18ff6de9f258db6e77fe7491e0' as Address,
     stateView: '0x86e8631a016f9068c3f085faf484ee3f5fdee8f2' as Address,
@@ -28,6 +29,7 @@ export const DOPPLER_V4_ADDRESSES: { [chainId: number]: DopplerV4Addresses } = {
     governanceFactory: '0x1E4332EEfAE9e4967C2D186f7b2d439D778e81cC' as Address,
     noOpGovernanceFactory: '0x0000000000000000000000000000000000000000' as Address, // TODO: Deploy and update
     migrator: '0x44C448E38A2C3D206c9132E7f645510dFbBC946b' as Address,
+    streamableFeesLocker: '0x0000000000000000000000000000000000000000' as Address, // TODO: Deploy and update
     universalRouter: '0xf70536B3bcC1bD1a972dc186A2cf84cC6da6Be5D' as Address,
     stateView: '0xc199F1072a74D4e905ABa1A84d9a45E2546B6222' as Address,
     v4Quoter: '0x56dcd40a3f2d466f48e7f48bdbe5cc9b92ae4472' as Address,
@@ -39,6 +41,7 @@ export const DOPPLER_V4_ADDRESSES: { [chainId: number]: DopplerV4Addresses } = {
     governanceFactory: '0x482055c3a704610b22e77ACc29863F92bcFd4298' as Address,
     noOpGovernanceFactory: '0x0000000000000000000000000000000000000000' as Address, // TODO: Deploy and update
     migrator: '0xD797E6af3211aE124B8EDff69db21FFe6C659104' as Address,
+    streamableFeesLocker: '0x0000000000000000000000000000000000000000' as Address, // TODO: Deploy and update
     dopplerDeployer: '0xbC6352F1FE2f5790A4a16ff79C9cB5caD238b258' as Address,
     v4Initializer: '0x29D70863ee13542241ab4263A272289FD6E5F625' as Address,
     poolManager: '0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408' as Address,
@@ -58,6 +61,7 @@ export const DOPPLER_V4_ADDRESSES: { [chainId: number]: DopplerV4Addresses } = {
     governanceFactory: '0xb4deE32EB70A5E55f3D2d861F49Fb3D79f7a14d9' as Address,
     noOpGovernanceFactory: '0x0000000000000000000000000000000000000000' as Address, // TODO: Deploy and update
     migrator: '0x5F3bA43D44375286296Cb85F1EA2EBfa25dde731' as Address,
+    streamableFeesLocker: '0x0000000000000000000000000000000000000000' as Address, // TODO: Deploy and update
     universalRouter: '0x6ff5693b99212da76ad316178a184ab56d299b43' as Address,
     stateView: '0xa3c0c9b65bad0b08107aa264b0f3db444b867a71' as Address,
     v4Quoter: '0x0d5e0f971ed27fbff6c2837bf31316121532048d' as Address,
@@ -72,6 +76,7 @@ export const DOPPLER_V4_ADDRESSES: { [chainId: number]: DopplerV4Addresses } = {
     governanceFactory: '0xb4deE32EB70A5E55f3D2d861F49Fb3D79f7a14d9' as Address,
     noOpGovernanceFactory: '0x0000000000000000000000000000000000000000' as Address, // TODO: Deploy and update
     migrator: '0x5F3bA43D44375286296Cb85F1EA2EBfa25dde731' as Address,
+    streamableFeesLocker: '0x0000000000000000000000000000000000000000' as Address, // TODO: Deploy and update
     v4Initializer: '0xC99b485499f78995C6F1640dbB1413c57f8BA684' as Address,
     v4Quoter: '0x3972c00f7ed4885e145823eb7c655375d275a1c5' as Address,
     stateView: '0x76fd297e2d437cd7f76d50f01afe6160f86e9990' as Address,

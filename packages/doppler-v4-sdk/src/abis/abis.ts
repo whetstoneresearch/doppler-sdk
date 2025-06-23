@@ -1,3 +1,116 @@
+export const streamableFeesLockerAbi = [
+  {
+    type: 'function',
+    name: 'distributeFees',
+    inputs: [{ name: 'tokenId', type: 'uint256', internalType: 'uint256' }],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'releaseFees',
+    inputs: [{ name: 'tokenId', type: 'uint256', internalType: 'uint256' }],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'updateBeneficiary',
+    inputs: [
+      { name: 'tokenId', type: 'uint256', internalType: 'uint256' },
+      { name: 'newBeneficiary', type: 'address', internalType: 'address' },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'positions',
+    inputs: [{ name: 'tokenId', type: 'uint256', internalType: 'uint256' }],
+    outputs: [
+      { name: 'recipient', type: 'address', internalType: 'address' },
+      { name: 'startDate', type: 'uint32', internalType: 'uint32' },
+      { name: 'lockDuration', type: 'uint32', internalType: 'uint32' },
+      { name: 'isUnlocked', type: 'bool', internalType: 'bool' },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'beneficiariesClaims',
+    inputs: [
+      { name: 'beneficiary', type: 'address', internalType: 'address' },
+      { name: 'currency', type: 'address', internalType: 'Currency' },
+    ],
+    outputs: [{ name: 'releasableBalance', type: 'uint256', internalType: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'approveMigrator',
+    inputs: [{ name: 'migrator', type: 'address', internalType: 'address' }],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'revokeMigrator',
+    inputs: [{ name: 'migrator', type: 'address', internalType: 'address' }],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'approvedMigrators',
+    inputs: [{ name: 'migrator', type: 'address', internalType: 'address' }],
+    outputs: [{ name: 'approved', type: 'bool', internalType: 'bool' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'event',
+    name: 'Lock',
+    inputs: [
+      { name: 'tokenId', type: 'uint256', indexed: true, internalType: 'uint256' },
+      { name: 'beneficiaries', type: 'tuple[]', indexed: false, internalType: 'struct BeneficiaryData[]', components: [
+        { name: 'beneficiary', type: 'address', internalType: 'address' },
+        { name: 'shares', type: 'uint96', internalType: 'uint96' }
+      ]},
+      { name: 'unlockDate', type: 'uint256', indexed: false, internalType: 'uint256' },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'Unlock',
+    inputs: [
+      { name: 'tokenId', type: 'uint256', indexed: true, internalType: 'uint256' },
+      { name: 'recipient', type: 'address', indexed: false, internalType: 'address' },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'DistributeFees',
+    inputs: [
+      { name: 'tokenId', type: 'uint256', indexed: true, internalType: 'uint256' },
+      { name: 'amount0', type: 'uint256', indexed: false, internalType: 'uint256' },
+      { name: 'amount1', type: 'uint256', indexed: false, internalType: 'uint256' },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'Release',
+    inputs: [
+      { name: 'tokenId', type: 'uint256', indexed: true, internalType: 'uint256' },
+      { name: 'beneficiary', type: 'address', indexed: false, internalType: 'address' },
+      { name: 'amount0', type: 'uint256', indexed: false, internalType: 'uint256' },
+      { name: 'amount1', type: 'uint256', indexed: false, internalType: 'uint256' },
+    ],
+    anonymous: false,
+  },
+] as const;
+
 export const poolManagerAbi = [
   {
     type: 'function',
