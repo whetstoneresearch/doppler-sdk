@@ -27,6 +27,10 @@ export interface DopplerV4Addresses {
   universalRouter: Address;
   stateView: Address;
   v4Quoter: Address;
+  bundler?: Address;
+  lens?: Address;
+  v4MigratorHook?: Address;
+  v4Migrator?: Address;
 }
 
 export interface TokenConfig {

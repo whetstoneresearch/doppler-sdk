@@ -364,11 +364,7 @@ export class ReadWriteFactory extends ReadFactory {
   } {
     this.validateBasicParams(params);
 
-    // Validate governance configuration
     const useGovernance = options?.useGovernance ?? true;
-    if (!useGovernance && addresses.noOpGovernanceFactory === '0x0000000000000000000000000000000000000000') {
-      throw new Error('NoOpGovernanceFactory address not configured for this chain. Please deploy NoOpGovernanceFactory first.');
-    }
 
     if (!params.priceRange && !params.tickRange) {
       throw new Error('Price range or tick range must be provided');

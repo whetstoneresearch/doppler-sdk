@@ -21,34 +21,40 @@ export const DOPPLER_V4_ADDRESSES: { [chainId: number]: DopplerV4Addresses } = {
   // unichain sepolia
   1301: {
     poolManager: '0x00B036B58a818B1BC34d502D3fE730Db729e62AC' as Address,
-    airlock: '0x651ab94B4777e2e4cdf96082d90C65bd947b73A4' as Address,
-    tokenFactory: '0xC5E5a19a2ee32831Fcb8a81546979AF43936EbaA' as Address,
-    dopplerDeployer: '0x8350cAd81149A9944c2fb4276955FaAA7D61e836' as Address,
-    v4Initializer: '0x992375478626E67F4e639d3298EbCAaE51C3dF0b' as Address,
-    v3Initializer: '0x7Fb9a622186B4660A5988C223ebb9d3690dD5007' as Address,
-    governanceFactory: '0x1E4332EEfAE9e4967C2D186f7b2d439D778e81cC' as Address,
+    airlock: '0x0d2f38d807bfAd5C18e430516e10ab560D300caF' as Address,
+    tokenFactory: '0x4B0EC16Eb40318Ca5A4346f20F04A2285C19675B' as Address,
+    dopplerDeployer: '0x40Bcb4dDA3BcF7dba30C5d10c31EE2791ed9ddCa' as Address,
+    v4Initializer: '0xA36715dA46Ddf4A769f3290f49AF58bF8132ED8E' as Address,
+    v3Initializer: '0x1b8F12484422583FED5694469f94C7839a823980' as Address,
+    governanceFactory: '0x65dE470Da664A5be139A5D812bE5FDa0d76CC951' as Address,
     noOpGovernanceFactory: '0x0000000000000000000000000000000000000000' as Address, // TODO: Deploy and update
-    migrator: '0x44C448E38A2C3D206c9132E7f645510dFbBC946b' as Address,
+    migrator: '0xC541FBddfEEf798E50d257495D08efe00329109A' as Address,
     streamableFeesLocker: '0x0000000000000000000000000000000000000000' as Address, // TODO: Deploy and update
     universalRouter: '0xf70536B3bcC1bD1a972dc186A2cf84cC6da6Be5D' as Address,
     stateView: '0xc199F1072a74D4e905ABa1A84d9a45E2546B6222' as Address,
     v4Quoter: '0x56dcd40a3f2d466f48e7f48bdbe5cc9b92ae4472' as Address,
+    bundler: '0x7E5D336A6E9e453c9f02E5102CC039E015Fd8fb8' as Address,
+    lens: '0x31703C016F32aC47aB71B3160b3579EcE05a5E5d' as Address,
   },
   // base sepolia
   84532: {
-    airlock: '0xBE5ad4efe4085AF00FD4a9E30b754cDcEFE9C6Ad' as Address,
-    tokenFactory: '0xF140987E88208b1ef48Cf5D39448Cc82EdF1f51e' as Address,
-    governanceFactory: '0x482055c3a704610b22e77ACc29863F92bcFd4298' as Address,
+    airlock: '0x3411306Ce66c9469BFF1535BA955503c4Bde1C6e' as Address,
+    tokenFactory: '0xc69Ba223c617F7D936B3cf2012aa644815dBE9Ff' as Address,
+    governanceFactory: '0x9dBFaaDC8c0cB2c34bA698DD9426555336992e20' as Address,
     noOpGovernanceFactory: '0x0000000000000000000000000000000000000000' as Address, // TODO: Deploy and update
-    migrator: '0xD797E6af3211aE124B8EDff69db21FFe6C659104' as Address,
-    streamableFeesLocker: '0x0000000000000000000000000000000000000000' as Address, // TODO: Deploy and update
-    dopplerDeployer: '0xbC6352F1FE2f5790A4a16ff79C9cB5caD238b258' as Address,
-    v4Initializer: '0x29D70863ee13542241ab4263A272289FD6E5F625' as Address,
+    migrator: '0x04a898f3722c38F9Def707bD17DC78920EFA977C' as Address,
+    streamableFeesLocker: '0x4dA7d7a8034510c0FFd38a9252237AE8DbA3Cb61' as Address,
+    dopplerDeployer: '0x4Bf819DfA4066Bd7c9f21eA3dB911Bd8C10Cb3ca' as Address,
+    v4Initializer: '0xca2079706A4c2a4a1aA637dFB47d7f27Fe58653F' as Address,
     poolManager: '0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408' as Address,
-    v3Initializer: '0xEB6E6Cd5858a87908B2914AE9CC7bbBE91e70067' as Address,
+    v3Initializer: '0x4C3062B9ccFdbCB10353F57C1B59a29d4c5CFa47' as Address,
     universalRouter: '0x492e6456d9528771018deb9e87ef7750ef184104' as Address,
     v4Quoter: '0x4a6513c898fe1b2d0e78d3b0e0a4a151589b1cba' as Address,
     stateView: '0x571291b572ed32ce6751a2cb2486ebee8defb9b4' as Address,
+    bundler: '0xab7BACB0d5C2C10152f92D34e07F530EB3CB0Fb1' as Address,
+    lens: '0x4a8d81Db741248a36D9eb3bc6eF648Bf798B47a7' as Address,
+    v4MigratorHook: '0x189ef4D1f328b5D76Df78c5409A72e1e8d1C2000' as Address,
+    v4Migrator: '0x03430453206Ab11F78C2D5F8aa2c18cb6cF1DDe7' as Address,
   },
   // base
   8453: {
@@ -65,6 +71,7 @@ export const DOPPLER_V4_ADDRESSES: { [chainId: number]: DopplerV4Addresses } = {
     universalRouter: '0x6ff5693b99212da76ad316178a184ab56d299b43' as Address,
     stateView: '0xa3c0c9b65bad0b08107aa264b0f3db444b867a71' as Address,
     v4Quoter: '0x0d5e0f971ed27fbff6c2837bf31316121532048d' as Address,
+    bundler: '0x136191B46478cAB023cbC01a36160C4Aad81677a' as Address,
   },
   // ink
   57073: {
