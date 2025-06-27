@@ -1,10 +1,9 @@
-import { ponder } from "ponder:registry";
-import { refreshActivePoolsBlob } from "./shared/scheduledJobs";
-import { configs } from "addresses";
 import { ChainlinkOracleABI } from "@app/abis/ChainlinkOracleABI";
+import { configs } from "addresses";
 import { ethPrice } from "ponder.schema";
+import { ponder } from "ponder:registry";
 import { refreshCheckpointBlob } from "./shared/entities/v4-entities/v4CheckpointBlob";
-import { handlePendingTokenImages } from "./shared/process-pending-images";
+import { refreshActivePoolsBlob } from "./shared/scheduledJobs";
 
 /**
  * Block handlers that run periodically to ensure volume data and metrics are up-to-date
@@ -122,9 +121,9 @@ ponder.on("BaseV4PoolCheckpoints:block", async ({ event, context }) => {
 });
 
 // Handler for processing pending token images on Base
-ponder.on("PendingTokenImagesBase:block", async ({ event, context }) => {
-  await handlePendingTokenImages({
-    context,
-    timestamp: Number(event.block.timestamp),
-  });
-});
+// ponder.on("PendingTokenImagesBase:block", async ({ event, context }) => {
+//   await handlePendingTokenImages({
+//     context,
+//     timestamp: Number(event.block.timestamp),
+//   });
+// });
