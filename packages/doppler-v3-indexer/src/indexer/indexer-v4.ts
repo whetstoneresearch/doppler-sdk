@@ -274,6 +274,11 @@ ponder.on("UniswapV4Pool:Swap", async ({ event, context }) => {
     graduationBalance: totalProceeds,
   });
 
+  // Stop processing swaps for graduated/migrated pools
+  if (graduationPercentage >= 100) {
+    return;
+  }
+
   // V4-specific updates
   await Promise.all([
     updatePool({
@@ -545,6 +550,11 @@ ponder.on("UniswapV4Pool2:Swap", async ({ event, context }) => {
     graduationBalance: totalProceeds,
   });
 
+  // Stop processing swaps for graduated/migrated pools
+  if (graduationPercentage >= 100) {
+    return;
+  }
+
   // V4-specific updates
   await Promise.all([
     updatePool({
@@ -555,8 +565,6 @@ ponder.on("UniswapV4Pool2:Swap", async ({ event, context }) => {
         totalProceeds,
         totalTokensSold,
         graduationPercentage,
-        totalProceeds,
-        totalTokensSold,
       },
     }),
     addAndUpdateV4PoolPriceHistory({
