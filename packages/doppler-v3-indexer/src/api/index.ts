@@ -1,3 +1,4 @@
+import { I_TOKEN } from "@app/consts/search";
 import { Hono } from "hono";
 import {
   and,
@@ -23,6 +24,7 @@ app.use("/sql/*", client({ db, schema }));
 app.get("/search/:query", async (c) => {
   try {
     const query = c.req.param("query");
+    let results = [];
 
     const chainIds = c.req
       .query("chain_ids")
@@ -30,12 +32,13 @@ app.get("/search/:query", async (c) => {
       .map((id) => BigInt(id));
 
     // Normalize address queries to lowercase for case-insensitive matching
-    const normalizedQuery = query.startsWith("0x") && query.length === 42 
-      ? query.toLowerCase() 
-      : query;
+    const normalizedQuery =
+      query.startsWith("0x") && query.length === 42
+        ? query.toLowerCase()
+        : query;
 
     // First search tokens directly
-    const tokenResults = await db
+    results = await db
       .select()
       .from(token)
       .where(
@@ -74,7 +77,7 @@ app.get("/search/:query", async (c) => {
 
       // Get tokens associated with these assets
       if (assetResults.length > 0) {
-        const assetAddresses = assetResults.map(a => a.address);
+        const assetAddresses = assetResults.map((a) => a.address);
         const governanceTokens = await db
           .select()
           .from(token)
@@ -88,18 +91,24 @@ app.get("/search/:query", async (c) => {
           .limit(15);
 
         // Combine and deduplicate results
-        const combinedResults = [...tokenResults];
+        const combinedResults = [...results];
         for (const govToken of governanceTokens) {
-          if (!combinedResults.find(t => t.address === govToken.address)) {
+          if (!combinedResults.find((t) => t.address === govToken.address)) {
             combinedResults.push(govToken);
           }
         }
-        
-        return c.json(replaceBigInts(combinedResults.slice(0, 15), (v) => String(v)));
+
+        results = replaceBigInts(combinedResults.slice(0, 15), (v) =>
+          String(v)
+        );
       }
     }
+    if (query === "i") {
+      // Append the ℹ️ token if the user searches "i"
+      results = [I_TOKEN, ...results];
+    }
 
-    return c.json(replaceBigInts(tokenResults, (v) => String(v)));
+    return c.json(replaceBigInts(results, (v) => String(v)));
   } catch (error) {
     console.error("Error in /search/:query", error);
     return c.json({ error: "Internal Server Error" }, 500);
