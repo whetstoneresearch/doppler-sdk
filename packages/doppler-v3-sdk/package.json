@@ -24,11 +24,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/whetstone-research/doppler-v3-sdk.git"
+    "url": "https://github.com/whetstoneresearch/doppler-sdk.git"
   },
-  "homepage": "https://github.com/whetstone-research/doppler-v3-sdk",
+  "homepage": "https://github.com/whetstoneresearch/doppler-sdk",
   "bugs": {
-    "url": "https://github.com/whetstone-research/doppler-v3-sdk/issues"
+    "url": "https://github.com/whetstoneresearch/doppler-sdk/issues"
   },
   "engines": {
     "node": ">=18.0.0"
