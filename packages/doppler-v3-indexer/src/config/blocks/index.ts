@@ -1,15 +1,15 @@
-import { BlockConfigMap } from "./types";
+import { chainConfigs, Network } from "../chains";
 import { generateCheckpointBlocks } from "./checkpoints";
+import { BLOCK_INTERVALS } from "./intervals";
 import { generateMetricBlocks } from "./metrics";
 import { generatePendingImageBlocks } from "./pending-images";
-import { BLOCK_INTERVALS } from "./intervals";
-import { chainConfigs } from "../chains";
+import { BlockConfigMap } from "./types";
 
-export * from "./types";
-export * from "./intervals";
 export * from "./checkpoints";
+export * from "./intervals";
 export * from "./metrics";
 export * from "./pending-images";
+export * from "./types";
 
 // Special oracle block configuration
 export const generateOracleBlocks = (): BlockConfigMap => ({
@@ -23,7 +23,11 @@ export const generateOracleBlocks = (): BlockConfigMap => ({
 // Combine all block configurations
 export const generateAllBlockConfigs = (): BlockConfigMap => ({
   ...generateOracleBlocks(),
-  ...generateCheckpointBlocks(), 
+  ...generateCheckpointBlocks(),
   ...generateMetricBlocks(),
-  ...generatePendingImageBlocks(),
+  ...(((process.env.ENABLED_CHAINS?.split(",") as Network[]) || []).includes(
+    "base"
+  )
+    ? generatePendingImageBlocks()
+    : {}),
 });

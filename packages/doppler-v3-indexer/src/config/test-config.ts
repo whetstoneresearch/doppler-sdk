@@ -3,23 +3,25 @@
  * Run with: bun run src/config/test-config.ts
  */
 
-import { 
-  chainConfigs, 
-  generateAllBlockConfigs, 
+import {
+  chainConfigs,
+  generateAllBlockConfigs,
   generateAllContractConfigs,
-  getChainConfig,
   getActiveChains,
-  CHAIN_IDS 
 } from "./index";
 
 // Test chain configurations
 console.log("🔗 Testing Chain Configurations");
 console.log("Available chains:", Object.keys(chainConfigs));
-console.log("Chain IDs:", CHAIN_IDS);
+console.log(
+  "Chain IDs:",
+  Object.keys(chainConfigs).map((key) => ({ [key]: chainConfigs[key].id }))
+);
 
 // Test individual chain access
-const baseConfig = getChainConfig("base");
-console.log("Base config:", {
+const firstChainKey = Object.keys(chainConfigs)[0];
+const baseConfig = chainConfigs[firstChainKey];
+console.log(`${baseConfig.name}:`, {
   id: baseConfig.id,
   name: baseConfig.name,
   hasV4: !!baseConfig.v4StartBlock,
@@ -28,7 +30,10 @@ console.log("Base config:", {
 
 // Test active chains (non-zero airlock addresses)
 const activeChains = getActiveChains();
-console.log("Active chains:", activeChains.map(c => c.name));
+console.log(
+  "Active chains:",
+  activeChains.map((c) => c.name)
+);
 
 // Test block configurations
 console.log("\n📦 Testing Block Configurations");
@@ -47,7 +52,10 @@ if (contractConfigs.Airlock) {
 }
 
 if (contractConfigs.UniswapV4Pool) {
-  console.log("V4 Pool chains:", Object.keys(contractConfigs.UniswapV4Pool.chain));
+  console.log(
+    "V4 Pool chains:",
+    Object.keys(contractConfigs.UniswapV4Pool.chain)
+  );
 }
 
 console.log("\n✅ Configuration test completed successfully!");

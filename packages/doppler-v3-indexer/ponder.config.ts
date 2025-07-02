@@ -20,7 +20,7 @@ const chains = Object.fromEntries(
 // Generate all block configurations
 const blocks = generateAllBlockConfigs();
 
-// Generate all contract configurations  
+// Generate all contract configurations
 const contracts = {
   ...generateAllContractConfigs(),
 };
@@ -28,7 +28,7 @@ const contracts = {
 export default createConfig({
   database: {
     kind: "postgres",
-    connectionString: "postgresql://postgres:postgres@localhost:5432/default",
+    connectionString: process.env.DATABASE_URL,
     poolConfig: {
       max: 100,
     },

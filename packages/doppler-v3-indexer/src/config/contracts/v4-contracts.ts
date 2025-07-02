@@ -1,12 +1,12 @@
-import { ContractConfigMap } from "./types";
-import { chainConfigs } from "../chains";
 import {
-  UniswapV4InitializerABI,
   DERC20ABI,
+  DopplerABI,
   PoolManagerABI,
-  DopplerABI
+  UniswapV4InitializerABI,
 } from "../../abis";
+import { chainConfigs } from "../chains";
 import { createV4AssetFactory, createV4PoolFactory } from "./factories";
+import { ContractConfigMap } from "./types";
 
 export const generateV4Contracts = (): ContractConfigMap => {
   const contracts: ContractConfigMap = {};
@@ -15,14 +15,17 @@ export const generateV4Contracts = (): ContractConfigMap => {
   const v4Chains = Object.entries(chainConfigs).filter(
     ([_, config]) =>
       config.v4StartBlock &&
-      config.addresses.v4.poolManager !== "0x0000000000000000000000000000000000000000"
+      config.addresses.v4.poolManager !==
+        "0x0000000000000000000000000000000000000000"
   );
 
   if (v4Chains.length === 0) return contracts;
 
   // UniswapV4Initializer contract
   const v4InitializerChains = v4Chains.filter(
-    ([_, config]) => config.addresses.v4.v4Initializer !== "0x0000000000000000000000000000000000000000"
+    ([_, config]) =>
+      config.addresses.v4.v4Initializer !==
+      "0x0000000000000000000000000000000000000000"
   );
 
   if (v4InitializerChains.length > 0) {
@@ -64,7 +67,7 @@ export const generateV4Contracts = (): ContractConfigMap => {
           },
         ])
       ),
-    }
+    };
 
     // V4 Pool contracts
     contracts.UniswapV4Pool = {
@@ -83,7 +86,13 @@ export const generateV4Contracts = (): ContractConfigMap => {
 
   // V4 Initializer2 contracts (for chains that have them)
   const v4Initializer2Chains = v4Chains.filter(
-    ([_, config]) => config.addresses.v4.v4Initializer2 !== "0x0000000000000000000000000000000000000000"
+    ([_, config]) =>
+      config.addresses.v4.v4Initializer2 !==
+      "0x0000000000000000000000000000000000000000"
+  );
+  console.log(
+    "V4 Initializer2 chains:",
+    v4Initializer2Chains.map(([name]) => name)
   );
 
   if (v4Initializer2Chains.length > 0) {

@@ -1,14 +1,15 @@
-import { BlockConfigMap, CheckpointConfig } from "./types";
-import { chainConfigs } from "../chains";
+import { chainConfigs, Network } from "../chains";
 import { BLOCK_INTERVALS } from "./intervals";
+import { BlockConfigMap, CheckpointConfig } from "./types";
 
 // Checkpoint configuration templates
 export const CHECKPOINT_CONFIGS: CheckpointConfig[] = [
   {
     name: "V4PoolCheckpoints",
-    chains: ["baseSepolia", "base", "unichain", "ink"],
+    chains: (process.env.ENABLED_CHAINS?.split(",") as Network[]) || [],
     interval: BLOCK_INTERVALS.FIFTY_BLOCKS,
-    getStartBlock: (chainConfig) => chainConfig.v4StartBlock || chainConfig.startBlock,
+    getStartBlock: (chainConfig) =>
+      chainConfig.v4StartBlock || chainConfig.startBlock,
   },
 ];
 
@@ -16,11 +17,13 @@ export const CHECKPOINT_CONFIGS: CheckpointConfig[] = [
 export const generateCheckpointBlocks = (): BlockConfigMap => {
   const blocks: BlockConfigMap = {};
 
-  CHECKPOINT_CONFIGS.forEach(config => {
-    config.chains.forEach(chainName => {
+  CHECKPOINT_CONFIGS.forEach((config) => {
+    config.chains.forEach((chainName) => {
       const chainConfig = chainConfigs[chainName];
       if (chainConfig) {
-        const blockName = `${chainName.charAt(0).toUpperCase() + chainName.slice(1)}${config.name}`;
+        const blockName = `${
+          chainName.charAt(0).toUpperCase() + chainName.slice(1)
+        }${config.name}`;
         blocks[blockName] = {
           chain: chainName,
           startBlock: config.getStartBlock(chainConfig),

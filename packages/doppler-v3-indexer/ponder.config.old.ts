@@ -1,20 +1,17 @@
+import { UniswapV2FactoryABI } from "@app/abis/UniswapV2Factory";
 import { createConfig, factory } from "ponder";
 import { getAbiItem, http } from "viem";
+import { CHAIN_IDS, configs } from "./addresses";
 import {
-  UniswapV3InitializerABI,
-  UniswapV4InitializerABI,
-  UniswapV3PoolABI,
   AirlockABI,
   DERC20ABI,
   DopplerABI,
   PoolManagerABI,
   UniswapV2PairABI,
+  UniswapV3InitializerABI,
+  UniswapV3PoolABI,
+  UniswapV4InitializerABI,
 } from "./src/abis";
-import {
-  CHAIN_IDS,
-  configs,
-} from "./addresses";
-import { UniswapV2FactoryABI } from "@app/abis/UniswapV2Factory";
 
 const { unichain, mainnet, baseSepolia, ink, base } = configs;
 
