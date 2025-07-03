@@ -1,9 +1,9 @@
 import { ContractConfigMap } from "./types";
-import { chainConfigs } from "../chains";
+import { IndexerConfigs } from "../chains";
 import { UniswapV3InitializerABI, DERC20ABI, UniswapV3PoolABI } from "../../abis";
 import { createV3AssetFactory, createV3PoolFactory } from "./factories";
 
-export const generateV3Contracts = (): ContractConfigMap => {
+export const generateV3Contracts = (chainConfigs: IndexerConfigs): ContractConfigMap => {
   const contracts: ContractConfigMap = {};
 
   // Get chains with V3 initializers

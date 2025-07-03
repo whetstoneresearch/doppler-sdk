@@ -4,7 +4,13 @@ import {
   chainConfigs,
   generateAllBlockConfigs,
   generateAllContractConfigs,
+  IndexerConfigs,
 } from "./src/config";
+
+
+const configs: IndexerConfigs = {
+  baseSepolia: chainConfigs.baseSepolia,
+}
 
 // Generate chains configuration from our modular setup
 const chains = Object.fromEntries(
@@ -18,12 +24,15 @@ const chains = Object.fromEntries(
 );
 
 // Generate all block configurations
-const blocks = generateAllBlockConfigs();
+const blocks = generateAllBlockConfigs(configs);
 
 // Generate all contract configurations  
 const contracts = {
-  ...generateAllContractConfigs(),
+  ...generateAllContractConfigs(configs),
 };
+
+console.log(blocks);
+console.log("contracts", contracts);
 
 export default createConfig({
   database: {

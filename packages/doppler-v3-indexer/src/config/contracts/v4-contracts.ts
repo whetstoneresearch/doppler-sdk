@@ -1,5 +1,5 @@
 import { ContractConfigMap } from "./types";
-import { chainConfigs } from "../chains";
+import { IndexerConfigs } from "../chains";
 import {
   UniswapV4InitializerABI,
   DERC20ABI,
@@ -9,7 +9,7 @@ import {
 } from "../../abis";
 import { createV4AssetFactory, createV4PoolFactory } from "./factories";
 
-export const generateV4Contracts = (): ContractConfigMap => {
+export const generateV4Contracts = (chainConfigs: IndexerConfigs): ContractConfigMap => {
   const contracts: ContractConfigMap = {};
 
   // Get chains with V4 contracts

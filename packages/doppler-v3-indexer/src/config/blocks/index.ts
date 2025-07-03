@@ -3,7 +3,7 @@ import { generateCheckpointBlocks } from "./checkpoints";
 import { generateMetricBlocks } from "./metrics";
 import { generatePendingImageBlocks } from "./pending-images";
 import { BLOCK_INTERVALS } from "./intervals";
-import { chainConfigs } from "../chains";
+import { chainConfigs, IndexerConfigs } from "../chains";
 
 export * from "./types";
 export * from "./intervals";
@@ -21,9 +21,9 @@ export const generateOracleBlocks = (): BlockConfigMap => ({
 });
 
 // Combine all block configurations
-export const generateAllBlockConfigs = (): BlockConfigMap => ({
+export const generateAllBlockConfigs = (chainConfigs: IndexerConfigs): BlockConfigMap => ({
   ...generateOracleBlocks(),
-  ...generateCheckpointBlocks(), 
-  ...generateMetricBlocks(),
+  ...generateCheckpointBlocks(chainConfigs),
+  ...generateMetricBlocks(chainConfigs),
   ...generatePendingImageBlocks(),
 });

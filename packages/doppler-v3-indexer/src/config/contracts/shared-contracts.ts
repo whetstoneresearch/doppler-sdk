@@ -1,8 +1,8 @@
 import { ContractConfigMap } from "./types";
-import { chainConfigs } from "../chains";
+import { IndexerConfigs } from "../chains";
 import { AirlockABI } from "../../abis";
 
-export const generateSharedContracts = (): ContractConfigMap => {
+export const generateSharedContracts = (chainConfigs: IndexerConfigs): ContractConfigMap => {
   const contracts: ContractConfigMap = {};
 
   // Airlock contract - available on most chains

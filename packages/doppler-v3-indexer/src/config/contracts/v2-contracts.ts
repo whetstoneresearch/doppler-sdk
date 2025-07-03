@@ -1,15 +1,14 @@
 import { ContractConfigMap } from "./types";
-import { chainConfigs } from "../chains";
+import { IndexerConfigs } from "../chains";
 import { UniswapV2PairABI } from "../../abis";
-import { UniswapV2FactoryABI } from "../../abis/UniswapV2Factory";
 import { createAirlockMigrationFactory, createV2PairFactory } from "./factories";
 
-export const generateV2Contracts = (): ContractConfigMap => {
+export const generateV2Contracts = (chainConfigs: IndexerConfigs): ContractConfigMap => {
   const contracts: ContractConfigMap = {};
 
   // V2 Pairs from Airlock migration
   const airlockChains = Object.entries(chainConfigs).filter(
-    ([name, config]) => 
+    ([name, config]) =>
       name !== "unichain" && // Unichain uses different V2 setup
       config.addresses.shared.airlock !== "0x0000000000000000000000000000000000000000"
   );
@@ -31,6 +30,11 @@ export const generateV2Contracts = (): ContractConfigMap => {
 
   // Unichain has its own V2 factory setup
   const unichainConfig = chainConfigs.unichain;
+  if (!unichainConfig) {
+    console.warn("Unichain config not found");
+    return contracts;
+  }
+
   if (unichainConfig.addresses.v2.factory !== "0x0000000000000000000000000000000000000000") {
     contracts.UniswapV2PairUnichain = {
       abi: UniswapV2PairABI,

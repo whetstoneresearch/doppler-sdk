@@ -1,5 +1,5 @@
 import { BlockConfigMap, CheckpointConfig } from "./types";
-import { chainConfigs } from "../chains";
+import { IndexerConfigs } from "../chains";
 import { BLOCK_INTERVALS } from "./intervals";
 
 // Checkpoint configuration templates
@@ -13,7 +13,7 @@ export const CHECKPOINT_CONFIGS: CheckpointConfig[] = [
 ];
 
 // Generate checkpoint block configurations
-export const generateCheckpointBlocks = (): BlockConfigMap => {
+export const generateCheckpointBlocks = (chainConfigs: IndexerConfigs): BlockConfigMap => {
   const blocks: BlockConfigMap = {};
 
   CHECKPOINT_CONFIGS.forEach(config => {
