@@ -11,18 +11,18 @@ import {
 import { SwapService, PriceService } from "@app/core";
 import { TickMath } from "@uniswap/v3-sdk";
 import { getV4PoolData, getReservesV4 } from "@app/utils/v4-utils/getV4PoolData";
-import { insertPoolIfNotExistsV4 } from "@app/indexer/shared/entities/pool";
-import { insertTokenIfNotExists } from "@app/indexer/shared/entities/token";
-import { insertAssetIfNotExists } from "@app/indexer/shared/entities/asset";
+import { insertPoolIfNotExistsV4 } from "@app/entities/pool";
+import { insertTokenIfNotExists } from "@app/entities/token";
+import { insertAssetIfNotExists } from "@app/entities/asset";
 import { insertOrUpdateBuckets, insertOrUpdateDailyVolume } from "@app/indexer/shared/timeseries";
 import { fetchEthPrice, computeMarketCap } from "@app/indexer/shared/oracle";
 import { CHAINLINK_ETH_DECIMALS } from "@app/utils/constants";
 import {
   insertActivePoolsBlobIfNotExists,
 } from "@app/indexer/shared/scheduledJobs";
-import { insertV4ConfigIfNotExists } from "@app/indexer/shared/entities/v4-entities/v4Config";
-import { insertV4PoolPriceHistoryIfNotExists } from "@app/indexer/shared/entities/v4-entities/v4PoolPriceHistory";
-import { insertCheckpointBlobIfNotExist } from "@app/indexer/shared/entities/v4-entities/v4CheckpointBlob";
+import { insertV4ConfigIfNotExists } from "@app/entities/v4-entities/v4Config";
+import { insertV4PoolPriceHistoryIfNotExists } from "@app/entities/v4-entities/v4PoolPriceHistory";
+import { insertCheckpointBlobIfNotExist } from "@app/entities/v4-entities/v4CheckpointBlob";
 
 /**
  * V4 Protocol Adapter

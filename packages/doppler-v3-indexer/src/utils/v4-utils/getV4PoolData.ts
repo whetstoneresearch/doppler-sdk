@@ -21,34 +21,38 @@ import {
   getAmount0Delta,
   getAmount1Delta,
 } from "../v3-utils/computeGraduationThreshold";
-import { configs } from "addresses";
+import { configs } from "@app/types";
 import { getMulticallOptions } from "@app/core/utils";
 
 export const getV4PoolData = async ({
   hook,
+  key,
   context,
 }: {
   hook: Address;
+  key?: PoolKey;
   context: Context;
 }): Promise<V4PoolData> => {
-  const { stateView } = configs[context.chain.name].v4;
+  const { stateView } = configs[context.chain.name].addresses.v4;
   const { client, chain } = context;
 
   const poolConfig = await getV4PoolConfig({ hook, context });
 
-  const poolKey = await client.readContract({
-    abi: DopplerABI,
-    address: hook,
-    functionName: "poolKey",
-  });
+  if (!key) {
+    const poolKey = await client.readContract({
+      abi: DopplerABI,
+      address: hook,
+      functionName: "poolKey",
+    });
 
-  const key: PoolKey = {
-    currency0: poolKey[0],
-    currency1: poolKey[1],
-    fee: poolKey[2],
-    tickSpacing: poolKey[3],
-    hooks: poolKey[4],
-  };
+    key = {
+      currency0: poolKey[0],
+      currency1: poolKey[1],
+      fee: poolKey[2],
+      tickSpacing: poolKey[3],
+      hooks: poolKey[4],
+    };
+  }
 
   const poolId = getPoolId(key);
 
@@ -217,27 +221,31 @@ export const getV4PoolConfig = async ({
 
 export const getReservesV4 = async ({
   hook,
+  key,
   context,
 }: {
   hook: Address;
+  key?: PoolKey;
   context: Context;
 }) => {
   const { client } = context;
-  const { stateView } = configs[context.chain.name].v4;
+  const { stateView } = configs[context.chain.name].addresses.v4;
 
-  const poolKey = await client.readContract({
-    abi: DopplerABI,
-    address: hook,
-    functionName: "poolKey",
-  });
+  if (!key) {
+    const poolKey = await client.readContract({
+      abi: DopplerABI,
+      address: hook,
+      functionName: "poolKey",
+    });
 
-  const key: PoolKey = {
-    currency0: poolKey[0],
-    currency1: poolKey[1],
-    fee: poolKey[2],
-    tickSpacing: poolKey[3],
-    hooks: poolKey[4],
-  };
+    key = {
+      currency0: poolKey[0],
+      currency1: poolKey[1],
+      fee: poolKey[2],
+      tickSpacing: poolKey[3],
+      hooks: poolKey[4],
+    };
+  }
 
   const poolId = getPoolId(key);
 
@@ -376,7 +384,7 @@ export const getLatestSqrtPrice = async ({
   amount1: bigint;
 }> => {
   const { client, chain } = context;
-  const lensQuoter = configs[chain.name].v4.dopplerLens;
+  const lensQuoter = configs[chain.name].addresses.v4.dopplerLens;
 
   const input: QuoteExactSingleParams = {
     poolKey,

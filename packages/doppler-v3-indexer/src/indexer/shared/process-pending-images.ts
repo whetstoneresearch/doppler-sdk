@@ -2,7 +2,7 @@ import { Context } from "ponder:registry";
 import { token } from "ponder.schema";
 import { processPendingTokenImages, removePendingTokenImage } from "./pending-token-images";
 import type { Address } from "viem";
-import { updateToken } from "./entities/token";
+import { updateToken } from "../../entities/token";
 
 /**
  * Block handler that processes pending token images

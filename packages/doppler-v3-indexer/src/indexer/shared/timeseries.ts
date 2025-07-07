@@ -6,10 +6,10 @@ import {
   secondsInHour,
   CHAINLINK_ETH_DECIMALS,
 } from "@app/utils/constants";
-import { configs } from "addresses";
-import { updatePool } from "./entities/pool";
-import { updateToken } from "./entities/token";
-import { insertAssetIfNotExists, updateAsset } from "./entities/asset";
+import { configs } from "@app/types";
+import { updatePool } from "../../entities/pool";
+import { updateToken } from "../../entities/token";
+import { insertAssetIfNotExists, updateAsset } from "../../entities/asset";
 
 export interface DayMetrics {
   volumeUsd: bigint;
@@ -164,7 +164,7 @@ export const insertOrUpdateDailyVolume = async ({
   const isTokenInEth =
     tokenIn.toLowerCase() === zeroAddress ||
     tokenIn.toLowerCase() ===
-    (configs[chain.name].shared.weth.toLowerCase() as `0x${string}`);
+    (configs[chain.name].addresses.shared.weth.toLowerCase() as `0x${string}`);
 
   if (isTokenInEth) {
     volumeUsd = (amountIn * ethPrice) / CHAINLINK_ETH_DECIMALS;

@@ -3,7 +3,7 @@ import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
 import { pool } from "ponder:schema";
 import { Address } from "viem";
 import { Context } from "ponder:registry";
-import { computeMarketCap } from "../oracle";
+import { computeMarketCap } from "../indexer/shared/oracle";
 import { getReservesV4 } from "@app/utils/v4-utils/getV4PoolData";
 import { computeGraduationPercentage } from "@app/utils/v4-utils";
 import { DERC20ABI } from "@app/abis";
@@ -65,7 +65,7 @@ export const insertPoolIfNotExists = async ({
   const assetAddr = poolState.asset.toLowerCase() as `0x${string}`;
   const numeraireAddr = poolState.numeraire.toLowerCase() as `0x${string}`;
 
-  const isQuoteEth = poolState.numeraire.toLowerCase() === "0x0000000000000000000000000000000000000000" || poolState.numeraire.toLowerCase() === configs[chain.name].shared.weth;
+  const isQuoteEth = poolState.numeraire.toLowerCase() === "0x0000000000000000000000000000000000000000" || poolState.numeraire.toLowerCase() === configs[chain.name].addresses.shared.weth;
 
   const assetTotalSupply = await client.readContract({
     address: assetAddr,
@@ -162,7 +162,7 @@ export const insertPoolIfNotExistsV4 = async ({
     ? poolKey.currency1
     : poolKey.currency0;
 
-  const isQuoteEth = numeraireAddr.toLowerCase() === "0x0000000000000000000000000000000000000000" || numeraireAddr.toLowerCase() === configs[chain.name].shared.weth;
+  const isQuoteEth = numeraireAddr.toLowerCase() === "0x0000000000000000000000000000000000000000" || numeraireAddr.toLowerCase() === configs[chain.name].addresses.shared.weth;
 
 
   const [reserves, totalSupply] = await Promise.all([

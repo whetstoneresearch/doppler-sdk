@@ -25,8 +25,6 @@ const getMetricsConfigs = (chainConfigs: IndexerConfigs): MetricRefresherConfig[
 export const generateMetricBlocks = (chainConfigs: IndexerConfigs): BlockConfigMap => {
   const blocks: BlockConfigMap = {};
 
-  console.log("here")
-  console.log(getMetricsConfigs(chainConfigs));
 
   getMetricsConfigs(chainConfigs).forEach(config => {
     config.chains.forEach(chainName => {
@@ -42,6 +40,5 @@ export const generateMetricBlocks = (chainConfigs: IndexerConfigs): BlockConfigM
     });
   });
 
-  console.log(blocks);
   return blocks;
 };

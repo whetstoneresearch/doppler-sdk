@@ -2,7 +2,7 @@ import { Context } from "ponder:registry";
 import { token } from "ponder.schema";
 import { Address, zeroAddress } from "viem";
 import { DERC20ABI } from "@app/abis";
-import { addPendingTokenImage } from "../pending-token-images";
+import { addPendingTokenImage } from "../indexer/shared/pending-token-images";
 
 export const insertTokenIfNotExists = async ({
   tokenAddress,

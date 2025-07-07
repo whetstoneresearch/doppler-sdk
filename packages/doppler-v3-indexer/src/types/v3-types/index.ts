@@ -4,8 +4,7 @@ import { Address } from "viem";
  * V3-specific address configuration
  */
 export interface V3Addresses {
-  factory: Address;
-  initializer: Address;
+  v3Initializer: Address;
 }
 
 /**

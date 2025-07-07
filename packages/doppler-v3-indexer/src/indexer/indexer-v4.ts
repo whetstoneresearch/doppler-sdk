@@ -1,29 +1,28 @@
 import { ponder } from "ponder:registry";
 import { getV4PoolData } from "@app/utils/v4-utils";
-import { insertTokenIfNotExists } from "./shared/entities/token";
+import { insertTokenIfNotExists } from "../entities/token";
 import { computeMarketCap, fetchEthPrice } from "./shared/oracle";
-import { insertPoolIfNotExistsV4, updatePool } from "./shared/entities/pool";
+import { insertPoolIfNotExistsV4, updatePool } from "../entities/pool";
 import { insertOrUpdateDailyVolume } from "./shared/timeseries";
-import { insertAssetIfNotExists, updateAsset } from "./shared/entities/asset";
+import { insertAssetIfNotExists, updateAsset } from "../entities/asset";
 import { insertOrUpdateBuckets } from "./shared/timeseries";
 import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
-import { insertV4ConfigIfNotExists } from "./shared/entities/v4-entities/v4Config";
+import { insertV4ConfigIfNotExists } from "../entities/v4-entities/v4Config";
 import { getReservesV4 } from "@app/utils/v4-utils/getV4PoolData";
 import {
   addCheckpoint,
   insertCheckpointBlobIfNotExist,
-} from "./shared/entities/v4-entities/v4CheckpointBlob";
+} from "../entities/v4-entities/v4CheckpointBlob";
 import {
   addAndUpdateV4PoolPriceHistory,
   insertV4PoolPriceHistoryIfNotExists,
-} from "./shared/entities/v4-entities/v4PoolPriceHistory";
+} from "../entities/v4-entities/v4PoolPriceHistory";
 import { insertActivePoolsBlobIfNotExists } from "./shared/scheduledJobs";
-import { insertSwapIfNotExists } from "./shared/entities/swap";
+import { insertSwapIfNotExists } from "../entities/swap";
 import { CHAINLINK_ETH_DECIMALS } from "@app/utils/constants";
 import { SwapService, SwapOrchestrator, PriceService } from "@app/core";
 import { tryAddActivePool } from "./shared/scheduledJobs";
 import { TickMath } from "@uniswap/v3-sdk";
-import { computeV4Price } from "@app/utils/v4-utils/computeV4Price";
 import { computeGraduationPercentage } from "@app/utils/v4-utils";
 
 ponder.on("UniswapV4Initializer:Create", async ({ event, context }) => {

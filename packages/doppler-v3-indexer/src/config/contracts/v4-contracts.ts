@@ -8,6 +8,7 @@ import {
   V4MigratorABI
 } from "../../abis";
 import { createV4AssetFactory, createV4PoolFactory } from "./factories";
+import { zeroAddress } from "viem";
 
 export const generateV4Contracts = (chainConfigs: IndexerConfigs): ContractConfigMap => {
   const contracts: ContractConfigMap = {};
@@ -16,14 +17,15 @@ export const generateV4Contracts = (chainConfigs: IndexerConfigs): ContractConfi
   const v4Chains = Object.entries(chainConfigs).filter(
     ([_, config]) =>
       config.v4StartBlock &&
-      config.addresses.v4.poolManager !== "0x0000000000000000000000000000000000000000"
+      config.addresses.v4.poolManager !== zeroAddress
   );
 
   if (v4Chains.length === 0) return contracts;
 
+
   // UniswapV4Initializer contract
   const v4InitializerChains = v4Chains.filter(
-    ([_, config]) => config.addresses.v4.v4Initializer !== "0x0000000000000000000000000000000000000000"
+    ([_, config]) => config.addresses.v4.v4Initializer !== zeroAddress
   );
 
   if (v4InitializerChains.length > 0) {
@@ -84,7 +86,7 @@ export const generateV4Contracts = (chainConfigs: IndexerConfigs): ContractConfi
 
   // V4 Initializer2 contracts (for chains that have them)
   const v4Initializer2Chains = v4Chains.filter(
-    ([_, config]) => config.addresses.v4.v4Initializer2 !== "0x0000000000000000000000000000000000000000"
+    ([_, config]) => config.addresses.v4.v4Initializer2 !== zeroAddress
   );
 
   if (v4Initializer2Chains.length > 0) {
@@ -130,23 +132,9 @@ export const generateV4Contracts = (chainConfigs: IndexerConfigs): ContractConfi
     };
   }
 
-  // PoolManager contract
-  contracts.PoolManager = {
-    abi: PoolManagerABI,
-    chain: Object.fromEntries(
-      v4Chains.map(([name, config]) => [
-        name,
-        {
-          startBlock: config.v4MigratorStartBlock!,
-          address: config.addresses.v4.poolManager,
-        },
-      ])
-    ),
-  };
-
   // V4 Migrator contract
   const v4MigratorChains = v4Chains.filter(
-    ([_, config]) => config.addresses.v4.v4Migrator !== "0x0000000000000000000000000000000000000000"
+    ([_, config]) => config.addresses.v4.v4Migrator !== zeroAddress
   );
 
   if (v4MigratorChains.length > 0) {
@@ -163,6 +151,21 @@ export const generateV4Contracts = (chainConfigs: IndexerConfigs): ContractConfi
       ),
     };
   }
+
+  // PoolManager contract
+  contracts.PoolManager = {
+    abi: PoolManagerABI,
+    chain: Object.fromEntries(
+      v4Chains.map(([name, config]) => [
+        name,
+        {
+          startBlock: config.v4MigratorStartBlock!,
+          address: config.addresses.v4.poolManager,
+        },
+      ])
+    ),
+  };
+
 
   return contracts;
 };

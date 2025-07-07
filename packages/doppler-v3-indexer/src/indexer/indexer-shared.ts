@@ -1,16 +1,12 @@
 import { ponder } from "ponder:registry";
-import { pool, v4pools } from "ponder:schema";
-import { insertAssetIfNotExists, updateAsset } from "./shared/entities/asset";
-import { insertTokenIfNotExists, updateToken } from "./shared/entities/token";
-import { insertV2PoolIfNotExists } from "./shared/entities/v2Pool";
-import { updateUserAsset } from "./shared/entities/userAsset";
-import { insertUserAssetIfNotExists } from "./shared/entities/userAsset";
-import { insertUserIfNotExists, updateUser } from "./shared/entities/user";
-import { updatePool } from "./shared/entities/pool";
-import { V4MigratorABI } from "../abis";
-import { chainConfigs } from "../config/chains";
-import { getPoolId } from "../utils/v4-utils/getPoolId";
-
+import { pool } from "ponder:schema";
+import { insertAssetIfNotExists, updateAsset } from "../entities/asset";
+import { insertTokenIfNotExists, updateToken } from "../entities/token";
+import { insertV2PoolIfNotExists } from "../entities/v2Pool";
+import { updateUserAsset } from "../entities/userAsset";
+import { insertUserAssetIfNotExists } from "../entities/userAsset";
+import { insertUserIfNotExists, updateUser } from "../entities/user";
+import { updatePool } from "../entities/pool";
 
 ponder.on("Airlock:Migrate", async ({ event, context }) => {
   const { timestamp } = event.block;
@@ -19,157 +15,197 @@ ponder.on("Airlock:Migrate", async ({ event, context }) => {
 
   // Check if this is a V4 migration (pool address is 0x0)
   if (poolAddress === "0x0000000000000000000000000000000000000000") {
-    // V4 Migration
-    const { chain } = context;
-    if (!chain) {
-      console.warn("Chain not available in context");
-      return;
-    }
+    // // V4 Migration
+    // const { chain } = context;
+    // if (!chain) {
+    //   console.warn("Chain not available in context");
+    //   return;
+    // }
 
-    const chainConfig = chainConfigs[chain.name as keyof typeof chainConfigs];
+    // const chainConfig = chainConfigs[chain.name as keyof typeof chainConfigs];
 
-    if (!chainConfig || chainConfig.addresses.v4.v4Migrator === "0x0000000000000000000000000000000000000000") {
-      console.warn(`V4 migrator not configured for chain ${chain.name}`);
-      return;
-    }
+    // if (!chainConfig || chainConfig.addresses.v4.v4Migrator === "0x0000000000000000000000000000000000000000") {
+    //   console.warn(`V4 migrator not configured for chain ${chain.name}`);
+    //   return;
+    // }
 
-    // Get the asset to find the old pool and numeraire
-    const assetEntity = await insertAssetIfNotExists({
-      assetAddress: assetId,
-      timestamp,
-      context,
-    });
+    // // Get the asset to find the old pool and numeraire
+    // const assetEntity = await insertAssetIfNotExists({
+    //   assetAddress: assetId,
+    //   timestamp,
+    //   context,
+    // });
 
-    const oldPoolAddress = assetEntity.poolAddress;
-    const numeraireAddress = assetEntity.numeraire;
+    // const oldPoolAddress = assetEntity.poolAddress;
+    // const numeraireAddress = assetEntity.numeraire;
 
-    // Determine token0 and token1 order for the V4 migrator mapping
-    const [token0, token1] = assetId < numeraireAddress
-      ? [assetId, numeraireAddress]
-      : [numeraireAddress, assetId];
+    // // Determine token0 and token1 order for the V4 migrator mapping
+    // const [token0, token1] = assetId < numeraireAddress
+    //   ? [assetId, numeraireAddress]
+    //   : [numeraireAddress, assetId];
 
-    try {
-      // Query the V4 migrator to get the asset data
-      console.log("here1")
-      console.log("token0", token0)
-      console.log("token1", token1)
-      const assetData = await context.client.readContract({
-        address: chainConfig.addresses.v4.v4Migrator,
-        abi: V4MigratorABI,
-        functionName: 'getAssetData',
-        args: [token0, token1],
-      });
+    // try {
+    //   // Query the V4 migrator to get the asset data
+    //   const assetData = await context.client.readContract({
+    //     address: chainConfig.addresses.v4.v4Migrator,
+    //     abi: V4MigratorABI,
+    //     functionName: 'getAssetData',
+    //     args: [token0, token1],
+    //   });
 
-      console.log("here2")
+    //   const poolKey = assetData[0];
 
-      const { poolKey } = assetData;
+    //   // Calculate the pool ID from the pool key - this is the unique identifier for V4 pools
+    //   const poolId = getPoolId(poolKey);
 
-      // Calculate the pool ID from the pool key - this is the unique identifier for V4 pools
-      const poolId = getPoolId(poolKey);
+    //   const key = {
+    //     currency0: poolKey.currency0,
+    //     currency1: poolKey.currency1,
+    //     fee: poolKey.fee,
+    //     tickSpacing: poolKey.tickSpacing,
+    //     hooks: poolKey.hooks,
+    //   }
 
-      // For V4 migrated pools, we can't use getV4PoolData because they don't have individual hook contracts
-      // Instead, we'll create a basic pool entity with the migration information
+    //   // For V4 migrated pools, we can't use getV4PoolData because they don't have individual hook contracts
+    //   // Instead, we'll create a basic pool entity with the migration information
 
-      // Create a basic pool entity for the migrated V4 pool
-      const { db, chain } = context;
-      if (!chain) {
-        console.warn("Chain not available in context");
-        return;
-      }
+    //   // Create a basic pool entity for the migrated V4 pool
+    //   const { db, chain } = context;
+    //   if (!chain) {
+    //     console.warn("Chain not available in context");
+    //     return;
+    //   }
 
-      // Check if v4pool already exists
-      const existingV4Pool = await db.find(v4pools, {
-        poolId: poolId.toLowerCase() as `0x${string}`,
-        chainId: BigInt(chain.id),
-      });
+    //   // Check if v4pool already exists
+    //   const existingV4Pool = await db.find(v4pools, {
+    //     poolId: poolId.toLowerCase() as `0x${string}`,
+    //     chainId: BigInt(chain.id),
+    //   });
 
-      if (!existingV4Pool) {
-        // Extract basic information from the poolKey
-        const isToken0First = poolKey.currency0.toLowerCase() < poolKey.currency1.toLowerCase();
-        const baseToken = isToken0First ? poolKey.currency0 : poolKey.currency1;
-        const quoteToken = isToken0First ? poolKey.currency1 : poolKey.currency0;
+    //   const [baseToken, ethPrice, poolData] = await Promise.all([
+    //     insertTokenIfNotExists({
+    //       tokenAddress: assetId,
+    //       creatorAddress: event.transaction.from.toLowerCase() as `0x${string}`,
+    //       timestamp,
+    //       context,
+    //       isDerc20: true,
+    //       poolAddress: poolAddress,
+    //     }),
+    //     fetchEthPrice(timestamp, context),
+    //     getV4PoolData({
+    //       hook: poolAddress,
+    //       key,
+    //       context,
+    //     }),
+    //     insertTokenIfNotExists({
+    //       tokenAddress: numeraireAddress,
+    //       creatorAddress: event.transaction.from.toLowerCase() as `0x${string}`,
+    //       timestamp,
+    //       context,
+    //       isDerc20: false,
+    //     }),
+    //   ]);
 
-        // Create the v4pools entity
-        await db.insert(v4pools).values({
-          poolId: poolId.toLowerCase() as `0x${string}`,
-          chainId: BigInt(chain.id),
+    //   const [reserves, totalSupply] = await Promise.all([
+    //     getReservesV4({
+    //       hook: address,
+    //       context,
+    //     }),
+    //     client.readContract({
+    //       address: assetId,
+    //       abi: DERC20ABI,
+    //       functionName: "totalSupply",
+    //     }),
+    //   ]);
 
-          // PoolKey components
-          currency0: poolKey.currency0.toLowerCase() as `0x${string}`,
-          currency1: poolKey.currency1.toLowerCase() as `0x${string}`,
-          fee: Number(poolKey.fee),
-          tickSpacing: Number(poolKey.tickSpacing),
-          hooks: poolKey.hooks.toLowerCase() as `0x${string}`,
 
-          // Pool state (will be initialized by PoolManager:Initialize event)
-          sqrtPriceX96: 0n,
-          liquidity: 0n,
-          tick: 0,
 
-          // Token references
-          baseToken: baseToken.toLowerCase() as `0x${string}`,
-          quoteToken: quoteToken.toLowerCase() as `0x${string}`,
-          asset: assetId,
+    //   if (!existingV4Pool) {
+    //     // Extract basic information from the poolKey
+    //     const isToken0First = poolKey.currency0.toLowerCase() < poolKey.currency1.toLowerCase();
+    //     const baseToken = isToken0First ? poolKey.currency0 : poolKey.currency1;
+    //     const quoteToken = isToken0First ? poolKey.currency1 : poolKey.currency0;
 
-          // Migration tracking
-          migratedFromPool: oldPoolAddress,
-          migratedAt: timestamp,
-          migratorVersion: "v4",
+    //     // Create the v4pools entity
+    //     await db.insert(v4pools).values({
+    //       poolId: poolId.toLowerCase() as `0x${string}`,
+    //       chainId: BigInt(chain.id),
 
-          // Metrics (will be updated by swap events)
-          price: 0n,
-          volumeUsd: 0n,
-          dollarLiquidity: 0n,
-          totalFee0: 0n,
-          totalFee1: 0n,
-          reserves0: 0n,
-          reserves1: 0n,
+    //       // PoolKey components
+    //       currency0: poolKey.currency0.toLowerCase() as `0x${string}`,
+    //       currency1: poolKey.currency1.toLowerCase() as `0x${string}`,
+    //       fee: Number(poolKey.fee),
+    //       tickSpacing: Number(poolKey.tickSpacing),
+    //       hooks: poolKey.hooks.toLowerCase() as `0x${string}`,
 
-          // Timestamps
-          createdAt: timestamp,
-          lastRefreshed: timestamp,
-          lastSwapTimestamp: null,
+    //       // Pool state (will be initialized by PoolManager:Initialize event)
+    //       sqrtPriceX96: 0n,
+    //       liquidity: 0n,
+    //       tick: 0,
 
-          // Price tracking
-          percentDayChange: 0,
+    //       // Token references
+    //       baseToken: baseToken.toLowerCase() as `0x${string}`,
+    //       quoteToken: quoteToken.toLowerCase() as `0x${string}`,
+    //       asset: assetId,
 
-          // Relations
-          dailyVolume: null,
+    //       // Migration tracking
+    //       migratedFromPool: oldPoolAddress,
+    //       migratedAt: timestamp,
+    //       migratorVersion: "v4",
 
-          // Helper fields
-          isToken0: assetId === baseToken.toLowerCase(),
-          isQuoteEth: quoteToken.toLowerCase() === "0x0000000000000000000000000000000000000000" ||
-            quoteToken.toLowerCase() === chainConfigs[chain.name as keyof typeof chainConfigs].addresses.shared.weth.toLowerCase(),
-        });
-      }
+    //       // Metrics (will be updated by swap events)
+    //       price: 0n,
+    //       volumeUsd: 0n,
+    //       dollarLiquidity: 0n,
+    //       totalFee0: 0n,
+    //       totalFee1: 0n,
+    //       reserves0: 0n,
+    //       reserves1: 0n,
 
-      // Update the old pool as migrated (store the V4 pool ID)
-      await updatePool({
-        poolAddress: oldPoolAddress,
-        context,
-        update: {
-          migratedAt: timestamp,
-          migrated: true,
-          migratedToV4PoolId: poolId.toLowerCase() as `0x${string}`, // Store the 32-byte pool ID
-        },
-      });
+    //       // Timestamps
+    //       createdAt: timestamp,
+    //       lastRefreshed: timestamp,
+    //       lastSwapTimestamp: null,
 
-      // Update the asset as migrated
-      await updateAsset({
-        assetAddress: assetId,
-        context,
-        update: {
-          migratedAt: timestamp,
-          migrated: true,
-          // Note: We keep poolAddress pointing to the original pool
-          // The v4pools entity tracks the new pool
-        },
-      });
+    //       // Price tracking
+    //       percentDayChange: 0,
 
-    } catch (error) {
-      console.error(`Failed to process V4 migration for asset ${assetId}:`, error);
-    }
+    //       // Relations
+    //       dailyVolume: null,
 
+    //       // Helper fields
+    //       isToken0: assetId === baseToken.toLowerCase(),
+    //       isQuoteEth: quoteToken.toLowerCase() === "0x0000000000000000000000000000000000000000" ||
+    //         quoteToken.toLowerCase() === chainConfigs[chain.name as keyof typeof chainConfigs].addresses.shared.weth.toLowerCase(),
+    //     });
+    //   }
+
+    //   // Update the old pool as migrated (store the V4 pool ID)
+    //   await updatePool({
+    //     poolAddress: oldPoolAddress,
+    //     context,
+    //     update: {
+    //       migratedAt: timestamp,
+    //       migrated: true,
+    //       migratedToV4PoolId: poolId.toLowerCase() as `0x${string}`, // Store the 32-byte pool ID
+    //     },
+    //   });
+
+    //   // Update the asset as migrated
+    //   await updateAsset({
+    //     assetAddress: assetId,
+    //     context,
+    //     update: {
+    //       migratedAt: timestamp,
+    //       migrated: true,
+    //       // Note: We keep poolAddress pointing to the original pool
+    //       // The v4pools entity tracks the new pool
+    //     },
+    //   });
+
+    // } catch (error) {
+    //   console.error(`Failed to process V4 migration for asset ${assetId}:`, error);
+    // }
   } else {
     // V2 Migration (existing logic)
     const v2Pool = await insertV2PoolIfNotExists({
@@ -551,3 +587,12 @@ ponder.on("V4DERC20_2:Transfer", async ({ event, context }) => {
     });
   }
 });
+
+ponder.on("V4Migrator:Migrate", async ({ event, context }) => {
+  const { timestamp } = event.block;
+  const { poolId, sqrtPriceX96, lowerTick, upperTick, liquidity, reserves0, reserves1 } = event.args;
+  const { db, chain } = context;
+
+
+});
+

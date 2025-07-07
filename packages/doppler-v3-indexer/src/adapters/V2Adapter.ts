@@ -1,17 +1,17 @@
 import { Address } from "viem";
 import { Context } from "ponder:registry";
-import { 
-  IV2Adapter, 
-  V2SwapEventData, 
-  V2PoolData, 
+import {
+  IV2Adapter,
+  V2SwapEventData,
+  V2PoolData,
   PoolCreateEventData,
   SwapResult,
-  AdapterConfig 
+  AdapterConfig
 } from "./types";
 import { SwapService, PriceService } from "@app/core";
 import { getPairData } from "@app/utils/v2-utils/getPairData";
-import { insertPoolIfNotExists, insertTokenIfNotExists } from "@app/indexer/shared/entities";
-import { insertAssetIfNotExists } from "@app/indexer/shared/entities/asset";
+import { insertPoolIfNotExists, insertTokenIfNotExists } from "@app/entities";
+import { insertAssetIfNotExists } from "@app/entities/asset";
 import { insertOrUpdateBuckets, insertOrUpdateDailyVolume } from "@app/indexer/shared/timeseries";
 import { fetchEthPrice, computeMarketCap } from "@app/indexer/shared/oracle";
 import { CHAINLINK_ETH_DECIMALS } from "@app/utils/constants";
@@ -124,7 +124,7 @@ export class V2Adapter implements IV2Adapter {
     // Determine swap direction
     const amountIn = amount0In > 0 ? amount0In : amount1In;
     const amountOut = amount0Out > 0 ? amount0Out : amount1Out;
-    
+
     const tokenIn = amount0In > 0 ? poolData.token0 : poolData.token1;
     const tokenOut = amount0In > 0 ? poolData.token1 : poolData.token0;
 
@@ -167,7 +167,7 @@ export class V2Adapter implements IV2Adapter {
     context: Context
   ): Promise<V2PoolData> {
     const { db } = context;
-    
+
     // Get V2 pool entity
     const v2PoolEntity = await db.find(v2Pool, { address: poolAddress });
     if (!v2PoolEntity) {
@@ -184,18 +184,18 @@ export class V2Adapter implements IV2Adapter {
     });
 
     // Get reserves from pair contract
-    const { reserve0, reserve1 } = await getPairData({ 
-      address: poolAddress, 
-      context 
+    const { reserve0, reserve1 } = await getPairData({
+      address: poolAddress,
+      context
     });
 
     // Calculate price
     const assetBalance = poolEntity.isToken0 ? reserve0 : reserve1;
     const quoteBalance = poolEntity.isToken0 ? reserve1 : reserve0;
-    const price = this.calculatePrice({ 
-      ...poolEntity, 
-      reserves0: reserve0, 
-      reserves1: reserve1 
+    const price = this.calculatePrice({
+      ...poolEntity,
+      reserves0: reserve0,
+      reserves1: reserve1
     });
 
     return {
@@ -217,7 +217,7 @@ export class V2Adapter implements IV2Adapter {
   calculatePrice(poolData: PoolData): bigint {
     const assetBalance = poolData.isToken0 ? poolData.reserves0 : poolData.reserves1;
     const quoteBalance = poolData.isToken0 ? poolData.reserves1 : poolData.reserves0;
-    
+
     return PriceService.computePriceFromReserves({ assetBalance, quoteBalance });
   }
 }

@@ -5,7 +5,7 @@ import {
   updateAsset,
   updatePool,
   updateToken,
-} from "@app/indexer/shared/entities";
+} from "@app/entities";
 import { pool } from "ponder:schema";
 import { secondsInDay } from "@app/utils/constants";
 import { compute24HourPriceChange, updateDailyVolume } from "./timeseries";

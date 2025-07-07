@@ -6,4 +6,4 @@ export * from "./v4-types";
 export * from "./config";
 
 // Legacy export for compatibility
-export { configs } from "addresses";
+export { chainConfigs as configs } from "../config/chains";

@@ -26,8 +26,8 @@ export const V4_START_BLOCKS = {
 } as const;
 
 export const V4_MIGRATOR_START_BLOCKS = {
-  baseSepolia: 27881556,
-  base: 32374780,
+  baseSepolia: 27931560,
+  base: 32421090,
 } as const;
 
 // Special contract addresses used across chains

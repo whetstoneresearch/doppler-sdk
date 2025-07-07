@@ -6,21 +6,20 @@ import {
   compute24HourPriceChange,
 } from "./shared/timeseries";
 import { getPairData } from "@app/utils/v2-utils/getPairData";
-import { computeMarketCap, fetchEthPrice } from "./shared/oracle";
+import { fetchEthPrice } from "./shared/oracle";
 import {
   insertPoolIfNotExists,
   insertTokenIfNotExists,
   updateAsset,
   updatePool,
   updateV2Pool,
-} from "./shared/entities";
+} from "../entities";
 import { CHAINLINK_ETH_DECIMALS } from "@app/utils/constants";
 import { tryAddActivePool } from "./shared/scheduledJobs";
 import { zeroAddress } from "viem";
 import { configs } from "@app/types";
-import { insertSwapIfNotExists } from "./shared/entities/swap";
+import { insertSwapIfNotExists } from "../entities/swap";
 import { SwapService, SwapOrchestrator, PriceService } from "@app/core";
-import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
 
 ponder.on("UniswapV2Pair:Swap", async ({ event, context }) => {
   const { db, chain } = context;
@@ -49,7 +48,7 @@ ponder.on("UniswapV2Pair:Swap", async ({ event, context }) => {
 
   let v2isToken0 = isToken0;
   if (quoteToken.toLowerCase() == zeroAddress) {
-    const weth = configs[chain.name].shared.weth.toLowerCase() as `0x${string}`;
+    const weth = configs[chain.name].addresses.shared.weth.toLowerCase() as `0x${string}`;
     v2isToken0 = baseToken.toLowerCase() < weth.toLowerCase();
   }
 

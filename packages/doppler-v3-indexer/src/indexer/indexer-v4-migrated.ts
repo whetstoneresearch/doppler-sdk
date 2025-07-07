@@ -1,8 +1,8 @@
 import { ponder } from "ponder:registry";
 import { chainConfigs } from "@app/config/chains";
-import { insertSwapIfNotExists } from "./shared/entities/swap";
-import { updatePool } from "./shared/entities/pool";
-import { updateAsset } from "./shared/entities/asset";
+import { insertSwapIfNotExists } from "../entities/swap";
+import { updatePool } from "../entities/pool";
+import { updateAsset } from "../entities/asset";
 import { fetchEthPrice } from "./shared/oracle";
 import { computeV4Price } from "@app/utils/v4-utils/computeV4Price";
 import { Address } from "viem";
@@ -14,11 +14,11 @@ import {
 import { SwapService, SwapOrchestrator } from "@app/core";
 import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
 import { tryAddActivePool } from "./shared/scheduledJobs";
-import { insertTokenIfNotExists } from "./shared/entities/token";
+import { insertTokenIfNotExists } from "../entities/token";
 import { CHAINLINK_ETH_DECIMALS } from "@app/utils/constants";
 import { position } from "ponder:schema";
-import { fetchExistingV4Pool, updateV4Pool } from "./shared/entities/v4pools";
-import { insertPositionIfNotExists, updatePosition } from "./shared/entities/position";
+import { fetchExistingV4Pool, updateV4Pool } from "../entities/v4pools";
+import { insertPositionIfNotExists, updatePosition } from "../entities/position";
 
 // Helper to get V4MigratorHook address for a chain
 const getV4MigratorHook = (chainName: string): Address | null => {

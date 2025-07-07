@@ -1,9 +1,9 @@
 import { ponder } from "ponder:registry";
 import { refreshActivePoolsBlob } from "./shared/scheduledJobs";
-import { configs } from "addresses";
+import { configs } from "@app/types";
 import { ChainlinkOracleABI } from "@app/abis/ChainlinkOracleABI";
 import { ethPrice } from "ponder.schema";
-import { refreshCheckpointBlob } from "./shared/entities/v4-entities/v4CheckpointBlob";
+import { refreshCheckpointBlob } from "../entities/v4-entities/v4CheckpointBlob";
 import { handlePendingTokenImages } from "./shared/process-pending-images";
 
 /**
@@ -89,7 +89,7 @@ ponder.on("ChainlinkEthPriceFeed:block", async ({ event, context }) => {
 
   const latestAnswer = await client.readContract({
     abi: ChainlinkOracleABI,
-    address: configs[chain.name].oracle.chainlinkEth,
+    address: configs.mainnet.addresses.oracle.chainlinkEth,
     functionName: "latestAnswer",
   });
 

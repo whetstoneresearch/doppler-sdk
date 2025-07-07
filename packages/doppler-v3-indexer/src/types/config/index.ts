@@ -1,4 +1,7 @@
 import { Address } from "viem";
+import { V2Addresses } from "../v2-types";
+import { V3Addresses } from "../v3-types";
+import { V4Addresses } from "../v4-types";
 
 /**
  * Network identifiers

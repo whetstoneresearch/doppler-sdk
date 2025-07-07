@@ -5,7 +5,7 @@ import { getPairData } from "@app/utils/v2-utils/getPairData";
 import { getPoolDataSafe } from "@app/utils/v2-utils/getPoolDataSafe";
 import { insertAssetIfNotExists } from "./asset";
 import { PriceService } from "@app/core";
-import { fetchEthPrice } from "../oracle";
+import { fetchEthPrice } from "../indexer/shared/oracle";
 import { CHAINLINK_ETH_DECIMALS } from "@app/utils/constants";
 import { insertPoolIfNotExists } from "./pool";
 

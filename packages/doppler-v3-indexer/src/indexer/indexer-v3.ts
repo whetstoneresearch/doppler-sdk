@@ -3,8 +3,8 @@ import { computeGraduationThresholdDelta } from "@app/utils/v3-utils/computeGrad
 import {
   insertPositionIfNotExists,
   updatePosition,
-} from "./shared/entities/position";
-import { insertTokenIfNotExists } from "./shared/entities/token";
+} from "../entities/position";
+import { insertTokenIfNotExists } from "../entities/token";
 import {
   insertOrUpdateDailyVolume,
   compute24HourPriceChange,
@@ -12,8 +12,8 @@ import {
 import {
   insertPoolIfNotExists,
   updatePool,
-} from "./shared/entities/pool";
-import { insertAssetIfNotExists, updateAsset } from "./shared/entities/asset";
+} from "../entities/pool";
+import { insertAssetIfNotExists, updateAsset } from "../entities/asset";
 import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
 import { insertOrUpdateBuckets } from "./shared/timeseries";
 import { computeMarketCap, fetchEthPrice } from "./shared/oracle";
@@ -21,7 +21,7 @@ import {
   insertActivePoolsBlobIfNotExists,
   tryAddActivePool,
 } from "./shared/scheduledJobs";
-import { insertSwapIfNotExists } from "./shared/entities/swap";
+import { insertSwapIfNotExists } from "../entities/swap";
 import { CHAINLINK_ETH_DECIMALS } from "@app/utils/constants";
 import { SwapOrchestrator, SwapService, PriceService } from "@app/core";
 

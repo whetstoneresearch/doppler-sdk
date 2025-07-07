@@ -5,7 +5,7 @@ import {
   UniswapV3InitializerABI,
   UniswapV3PoolABI,
 } from "@app/abis";
-import { configs } from "addresses";
+import { configs } from "@app/types";
 import { computeV3Price } from "./computeV3Price";
 import { zeroAddress } from "viem";
 import { getMulticallOptions } from "@app/core/utils";
@@ -146,7 +146,7 @@ const getPoolState = async ({
   context: Context;
 }) => {
   const { client } = context;
-  const { v3Initializer } = configs[context.chain.name].v3;
+  const { v3Initializer } = configs[context.chain.name].addresses.v3;
 
   const poolData = await client.readContract({
     abi: UniswapV3InitializerABI,

@@ -11,8 +11,8 @@ import {
 } from "./types";
 import { SwapService, PriceService } from "@app/core";
 import { computeGraduationThresholdDelta } from "@app/utils/v3-utils/computeGraduationThreshold";
-import { insertPoolIfNotExists, insertTokenIfNotExists } from "@app/indexer/shared/entities";
-import { insertAssetIfNotExists } from "@app/indexer/shared/entities/asset";
+import { insertPoolIfNotExists, insertTokenIfNotExists } from "@app/entities";
+import { insertAssetIfNotExists } from "@app/entities/asset";
 import { insertOrUpdateBuckets, insertOrUpdateDailyVolume } from "@app/indexer/shared/timeseries";
 import { fetchEthPrice, computeMarketCap } from "@app/indexer/shared/oracle";
 import { CHAINLINK_ETH_DECIMALS } from "@app/utils/constants";
@@ -20,7 +20,7 @@ import { insertActivePoolsBlobIfNotExists } from "@app/indexer/shared/scheduledJ
 import {
   insertPositionIfNotExists,
   updatePosition,
-} from "@app/indexer/shared/entities/position";
+} from "@app/entities/position";
 import { position } from "ponder:schema";
 
 

@@ -242,55 +242,39 @@ export const v2Pool = onchainTable("v2_pool", (t) => ({
   isToken0: t.boolean().notNull(),
 }));
 
-export const v4pools = onchainTable(
-  "v4_pools",
+export const v4Pool = onchainTable(
+  "v4_pool",
   (t) => ({
     // Identity - using 32-byte pool ID as primary key
     poolId: t.hex().notNull(),
     chainId: t.bigint().notNull(),
-    
+
     // PoolKey components for reconstruction
     currency0: t.hex().notNull(),
     currency1: t.hex().notNull(),
     fee: t.integer().notNull(),
     tickSpacing: t.integer().notNull(),
     hooks: t.hex().notNull(),
-    
+
     // Pool state
     sqrtPriceX96: t.bigint().notNull(),
     liquidity: t.bigint().notNull(),
     tick: t.integer().notNull(),
-    
-    // Token references
-    baseToken: t.hex().notNull(),
-    quoteToken: t.hex().notNull(),
-    asset: t.hex(), // Reference to asset if this is a Doppler token
-    
+
     // Migration tracking
-    migratedFromPool: t.hex(), // Original Doppler pool address
+    parentPool: t.hex().notNull(), // original lbp pool address
     migratedAt: t.bigint().notNull(),
-    migratorVersion: t.text().notNull().default("v4"),
-    
+
     // Metrics
     price: t.bigint().notNull(),
-    volumeUsd: t.bigint().notNull().default(0n),
-    dollarLiquidity: t.bigint().notNull().default(0n),
-    totalFee0: t.bigint().notNull().default(0n),
-    totalFee1: t.bigint().notNull().default(0n),
     reserves0: t.bigint().notNull().default(0n),
     reserves1: t.bigint().notNull().default(0n),
-    
+
     // Timestamps
     createdAt: t.bigint().notNull(),
     lastRefreshed: t.bigint(),
     lastSwapTimestamp: t.bigint(),
-    
-    // Price tracking
-    percentDayChange: t.doublePrecision().notNull().default(0),
-    
-    // Relations
-    dailyVolume: t.hex(),
-    
+
     // Helper fields
     isToken0: t.boolean().notNull(),
     isQuoteEth: t.boolean().notNull(),
@@ -299,10 +283,7 @@ export const v4pools = onchainTable(
     pk: primaryKey({
       columns: [table.poolId, table.chainId],
     }),
-    baseTokenIdx: index().on(table.baseToken),
-    quoteTokenIdx: index().on(table.quoteToken),
-    assetIdx: index().on(table.asset),
-    migratedFromPoolIdx: index().on(table.migratedFromPool),
+    parentPoolIdx: index().on(table.parentPool),
     lastRefreshedIdx: index().on(table.lastRefreshed),
     lastSwapTimestampIdx: index().on(table.lastSwapTimestamp),
   })
@@ -450,27 +431,9 @@ export const hourBucketUsdRelations = relations(hourBucketUsd, ({ one }) => ({
   }),
 }));
 
-// v4pools relations
-export const v4poolsRelations = relations(v4pools, ({ one, many }) => ({
-  baseToken: one(token, {
-    fields: [v4pools.baseToken],
-    references: [token.address],
-  }),
-  quoteToken: one(token, {
-    fields: [v4pools.quoteToken],
-    references: [token.address],
-  }),
-  asset: one(asset, {
-    fields: [v4pools.asset],
-    references: [asset.address],
-  }),
-  migratedFromPool: one(pool, {
-    fields: [v4pools.migratedFromPool],
+export const v4PoolRelations = relations(v4Pool, ({ one }) => ({
+  parentPool: one(pool, {
+    fields: [v4Pool.parentPool],
     references: [pool.address],
   }),
-  dailyVolume: one(dailyVolume, {
-    fields: [v4pools.poolId],
-    references: [dailyVolume.pool],
-  }),
-  // Note: positions, hourBuckets, etc. would need to be updated to support v4pools
 }));
