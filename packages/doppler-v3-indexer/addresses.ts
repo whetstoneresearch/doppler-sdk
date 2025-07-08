@@ -1,7 +1,6 @@
 import { Address, zeroAddress } from "viem";
 
 export type Network =
-  | "unichainSepolia"
   | "mainnet"
   | "unichain"
   | "baseSepolia"
@@ -9,7 +8,6 @@ export type Network =
   | "base";
 
 export const CHAIN_IDS = {
-  unichainSepolia: 1301,
   unichain: 130,
   mainnet: 1,
   baseSepolia: 84532,
@@ -17,22 +15,22 @@ export const CHAIN_IDS = {
   base: 8453,
 } as const;
 
-const mainnetStartBlock = 21782000;
+const mainnetStartBlock = 21781000;
 
-const unichainSepoliaStartBlock = 11932039;
 
 const unichainStartBlock = 8536880;
+const v4UnichainStartBlock = 17686805;
 
 const baseSepoliaStartBlock = 22668126;
+const v4BaseSepoliaStartBlock = 26638492;
 
 const inkStartBlock = 9500879;
+const v4InkStartBlock = 14937170;
 
-const baseStartBlock = 28415526;
+const baseStartBlock = 28415520;
+const v4BaseStartBlock = 30822164;
 
 export type IndexerConfigs = Record<Network, DopplerConfig>;
-
-export const zoraFactoryBase = "0x777777751622c0d3258f214F9DF38E35BF45baF3";
-export const zoraStartBlock = 29011355;
 
 export type DopplerConfig = {
   v2: V2Addresses;
@@ -41,6 +39,7 @@ export type DopplerConfig = {
   shared: SharedAddresses;
   oracle: OracleAddresses;
   startBlock: number;
+  v4StartBlock?: number;
   oracleStartBlock: number;
 };
 
@@ -55,13 +54,16 @@ export type SharedAddresses = {
 
 export type V4Addresses = {
   dopplerDeployer: Address;
-  v4Initializer: Address;
   stateView: Address;
   poolManager: Address;
+  dopplerLens: Address;
+  v4Initializer: Address;
+  v4Initializer2: Address;
 };
 
 export type V3Addresses = {
   v3Initializer: Address;
+  lockableV3Initializer: Address;
 };
 
 export type V2Addresses = {
@@ -83,32 +85,6 @@ export const oracleAddresses: OracleAddresses = {
 };
 
 export const configs: IndexerConfigs = {
-  unichainSepolia: {
-    v2: {
-      factory: "0x5C69bEe701ef814a2B6a3EDD4B165e154b09Fcd3" as Address,
-    },
-    v3: {
-      v3Initializer: "0x7Fb9a622186B4660A5988C223ebb9d3690dD5007" as Address,
-    },
-    v4: {
-      poolManager: "0x00B036B58a818B1BC34d502D3fE730Db729e62AC" as Address,
-      dopplerDeployer: "0x8350cAd81149A9944c2fb4276955FaAA7D61e836" as Address,
-      v4Initializer: "0x992375478626E67F4e639d3298EbCAaE51C3dF0b" as Address,
-      stateView: "0xc199F1072a74D4e905ABa1A84d9a45E2546B6222" as Address,
-    },
-    shared: {
-      airlock: "0x651ab94B4777e2e4cdf96082d90C65bd947b73A4" as Address,
-      tokenFactory: "0xC5E5a19a2ee32831Fcb8a81546979AF43936EbaA" as Address,
-      universalRouter: "0xf70536B3bcC1bD1a972dc186A2cf84cC6da6Be5D" as Address,
-      governanceFactory:
-        "0x1E4332EEfAE9e4967C2D186f7b2d439D778e81cC" as Address,
-      migrator: "0x44C448E38A2C3D206c9132E7f645510dFbBC946b" as Address,
-      weth: "0x4200000000000000000000000000000000000006" as Address,
-    },
-    oracle: oracleAddresses,
-    startBlock: unichainSepoliaStartBlock,
-    oracleStartBlock: mainnetStartBlock,
-  },
   mainnet: {
     v2: {
       factory: zeroAddress as Address,
@@ -121,6 +97,8 @@ export const configs: IndexerConfigs = {
       dopplerDeployer: zeroAddress as Address,
       v4Initializer: zeroAddress as Address,
       stateView: zeroAddress as Address,
+      dopplerLens: zeroAddress,
+      v4Initializer2: zeroAddress,
     },
     shared: {
       airlock: zeroAddress as Address,
@@ -143,9 +121,11 @@ export const configs: IndexerConfigs = {
     },
     v4: {
       poolManager: "0x1F98400000000000000000000000000000000004" as Address,
-      dopplerDeployer: zeroAddress as Address,
-      v4Initializer: zeroAddress as Address,
-      stateView: zeroAddress as Address,
+      dopplerDeployer: "0xBEd386a1Fc62B6598c9b8d2BF634471B6Fe75EB7" as Address,
+      v4Initializer: "0xA7A28cB18F73CDd591fa81ead6ffadf749c0d0a2" as Address,
+      stateView: "0x86e8631a016f9068c3f085faf484ee3f5fdee8f2" as Address,
+      dopplerLens: "0x166109C4EE7fE69164631Caa937dAA5F5cEbFef0" as Address,
+      v4Initializer2: zeroAddress,
     },
     shared: {
       airlock: "0x77EbfBAE15AD200758E9E2E61597c0B07d731254" as Address,
@@ -159,31 +139,35 @@ export const configs: IndexerConfigs = {
     oracle: oracleAddresses,
     startBlock: unichainStartBlock,
     oracleStartBlock: mainnetStartBlock,
+    v4StartBlock: v4UnichainStartBlock,
   },
   baseSepolia: {
     v2: {
       factory: "0x7Ae58f10f7849cA6F5fB71b7f45CB416c9204b1e" as Address,
     },
     v3: {
-      v3Initializer: "0xBEd386a1Fc62B6598c9b8d2BF634471B6Fe75EB7" as Address,
+      v3Initializer: "0x4c3062b9ccfdbcb10353f57c1b59a29d4c5cfa47" as Address,
     },
     v4: {
-      poolManager: zeroAddress as Address,
-      dopplerDeployer: zeroAddress as Address,
-      v4Initializer: zeroAddress as Address,
-      stateView: zeroAddress as Address,
+      poolManager: "0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408" as Address,
+      dopplerDeployer: "0x4bf819dfa4066bd7c9f21ea3db911bd8c10cb3ca" as Address,
+      v4Initializer: "0xca2079706a4c2a4a1aa637dfb47d7f27fe58653f" as Address,
+      dopplerLens: "0x4a8d81db741248a36d9eb3bc6ef648bf798b47a7" as Address,
+      stateView: "0x571291b572ed32ce6751a2cb2486ebee8defb9b4" as Address,
+      v4Initializer2: zeroAddress,
     },
     shared: {
-      airlock: "0xa24E35a5d71d02a59b41E7c93567626302da1958" as Address,
-      tokenFactory: "0x91231cDdD8d6C86Df602070a3081478e074b97b7" as Address,
-      universalRouter: "0x95273d871c8156636e114b63797d78D7E1720d81" as Address,
+      airlock: "0x3411306ce66c9469bff1535ba955503c4bde1c6e" as Address,
+      tokenFactory: "0xc69ba223c617f7d936b3cf2012aa644815dbe9ff" as Address,
+      universalRouter: "0x492e6456d9528771018deb9e87ef7750ef184104" as Address,
       governanceFactory:
-        "0xA7A28cB18F73CDd591fa81ead6ffadf749c0d0a2" as Address,
-      migrator: "0x166109C4EE7fE69164631Caa937dAA5F5cEbFef0" as Address,
+        "0x9dbfaadc8c0cb2c34ba698dd9426555336992e20" as Address,
+      migrator: "0xb2ec6559704467306d04322a5dc082b2af4562dd" as Address,
       weth: "0x4200000000000000000000000000000000000006" as Address,
     },
     oracle: oracleAddresses,
     startBlock: baseSepoliaStartBlock,
+    v4StartBlock: v4BaseSepoliaStartBlock,
     oracleStartBlock: mainnetStartBlock,
   },
   ink: {
@@ -194,10 +178,12 @@ export const configs: IndexerConfigs = {
       v3Initializer: "0xaA47D2977d622DBdFD33eeF6a8276727c52EB4e5" as Address,
     },
     v4: {
-      poolManager: zeroAddress as Address,
-      dopplerDeployer: zeroAddress as Address,
-      v4Initializer: zeroAddress as Address,
-      stateView: zeroAddress as Address,
+      poolManager: "0x360e68faccca8ca495c1b759fd9eee466db9fb32" as Address,
+      dopplerDeployer: "0x8b4C7DB9121FC885689C0A50D5a1429F15AEc2a0" as Address,
+      v4Initializer: "0xC99b485499f78995C6F1640dbB1413c57f8BA684" as Address,
+      v4Initializer2: "0x014E1c0bd34f3B10546E554CB33B3293fECDD056" as Address,
+      stateView: "0x76fd297e2d437cd7f76d50f01afe6160f86e9990" as Address,
+      dopplerLens: "0xCe3099B2F07029b086E5e92a1573C5f5A3071783" as Address,
     },
     shared: {
       airlock: "0x660eAaEdEBc968f8f3694354FA8EC0b4c5Ba8D12" as Address,
@@ -211,6 +197,7 @@ export const configs: IndexerConfigs = {
     oracle: oracleAddresses,
     startBlock: inkStartBlock,
     oracleStartBlock: mainnetStartBlock,
+    v4StartBlock: v4InkStartBlock,
   },
   base: {
     v2: {
@@ -220,10 +207,12 @@ export const configs: IndexerConfigs = {
       v3Initializer: "0xaA47D2977d622DBdFD33eeF6a8276727c52EB4e5" as Address,
     },
     v4: {
-      poolManager: zeroAddress as Address,
-      dopplerDeployer: zeroAddress as Address,
-      v4Initializer: zeroAddress as Address,
-      stateView: zeroAddress as Address,
+      poolManager: "0x498581ff718922c3f8e6a244956af099b2652b2b" as Address,
+      dopplerDeployer: "0x014E1c0bd34f3B10546E554CB33B3293fECDD056" as Address,
+      v4Initializer: "0x8AF018e28c273826e6b2d5a99e81c8fB63729b07" as Address,
+      v4Initializer2: "0x77EbfBAE15AD200758E9E2E61597c0B07d731254" as Address,
+      stateView: "0xa3c0c9b65bad0b08107aa264b0f3db444b867a71" as Address,
+      dopplerLens: "0x094d926a969b3024ca46d2186bf13fd5cdba9ce2" as Address,
     },
     shared: {
       airlock: "0x660eAaEdEBc968f8f3694354FA8EC0b4c5Ba8D12" as Address,
@@ -236,6 +225,7 @@ export const configs: IndexerConfigs = {
     },
     oracle: oracleAddresses,
     startBlock: baseStartBlock,
+    v4StartBlock: v4BaseStartBlock,
     oracleStartBlock: mainnetStartBlock,
   },
 };

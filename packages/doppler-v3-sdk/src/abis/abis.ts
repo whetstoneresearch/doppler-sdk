@@ -91,6 +91,13 @@ export const derc20Abi = [
     stateMutability: "view",
   },
   {
+    type: 'function',
+    name: 'computeAvailableVestedAmount',
+    inputs: [{ name: 'account', type: 'address', internalType: 'address' }],
+    outputs: [{ name: '', type: 'uint256', internalType: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
     type: "function",
     name: "currentYearStart",
     inputs: [],
@@ -3054,4 +3061,231 @@ export const BundlerAbi = [
   { type: "error", name: "InvalidAddresses", inputs: [] },
   { type: "error", name: "InvalidBundleData", inputs: [] },
   { type: "error", name: "InvalidOutputToken", inputs: [] },
+] as const;
+
+export const v4MigratorAbi = [
+  {
+    type: 'constructor',
+    inputs: [
+      {
+        name: 'airlock_',
+        type: 'address',
+        internalType: 'address'
+      },
+      {
+        name: 'poolManager_',
+        type: 'address',
+        internalType: 'address'
+      },
+      {
+        name: 'positionManager_',
+        type: 'address',
+        internalType: 'address payable'
+      },
+      {
+        name: 'locker_',
+        type: 'address',
+        internalType: 'contract StreamableFeesLocker'
+      }
+    ],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'receive',
+    stateMutability: 'payable'
+  },
+  {
+    type: 'function',
+    name: 'DEAD_ADDRESS',
+    inputs: [],
+    outputs: [
+      {
+        name: '',
+        type: 'address',
+        internalType: 'address'
+      }
+    ],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    name: 'airlock',
+    inputs: [],
+    outputs: [
+      {
+        name: '',
+        type: 'address',
+        internalType: 'contract Airlock'
+      }
+    ],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    name: 'getAssetData',
+    inputs: [
+      {
+        name: 'token0',
+        type: 'address',
+        internalType: 'address'
+      },
+      {
+        name: 'token1',
+        type: 'address',
+        internalType: 'address'
+      }
+    ],
+    outputs: [
+      {
+        name: 'poolKey',
+        type: 'tuple',
+        internalType: 'struct PoolKey',
+        components: [
+          {
+            name: 'currency0',
+            type: 'address',
+            internalType: 'Currency'
+          },
+          {
+            name: 'currency1',
+            type: 'address',
+            internalType: 'Currency'
+          },
+          {
+            name: 'fee',
+            type: 'uint24',
+            internalType: 'uint24'
+          },
+          {
+            name: 'tickSpacing',
+            type: 'int24',
+            internalType: 'int24'
+          },
+          {
+            name: 'hooks',
+            type: 'address',
+            internalType: 'contract IHooks'
+          }
+        ]
+      }
+    ],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    name: 'initialize',
+    inputs: [
+      {
+        name: 'asset',
+        type: 'address',
+        internalType: 'address'
+      },
+      {
+        name: 'numeraire',
+        type: 'address',
+        internalType: 'address'
+      },
+      {
+        name: 'liquidityMigratorData',
+        type: 'bytes',
+        internalType: 'bytes'
+      }
+    ],
+    outputs: [
+      {
+        name: '',
+        type: 'address',
+        internalType: 'address'
+      }
+    ],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    name: 'locker',
+    inputs: [],
+    outputs: [
+      {
+        name: '',
+        type: 'address',
+        internalType: 'contract StreamableFeesLocker'
+      }
+    ],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    name: 'migrate',
+    inputs: [
+      {
+        name: 'sqrtPriceX96',
+        type: 'uint160',
+        internalType: 'uint160'
+      },
+      {
+        name: 'token0',
+        type: 'address',
+        internalType: 'address'
+      },
+      {
+        name: 'token1',
+        type: 'address',
+        internalType: 'address'
+      },
+      {
+        name: 'recipient',
+        type: 'address',
+        internalType: 'address'
+      }
+    ],
+    outputs: [
+      {
+        name: 'liquidity',
+        type: 'uint256',
+        internalType: 'uint256'
+      }
+    ],
+    stateMutability: 'payable'
+  },
+  {
+    type: 'function',
+    name: 'poolManager',
+    inputs: [],
+    outputs: [
+      {
+        name: '',
+        type: 'address',
+        internalType: 'contract IPoolManager'
+      }
+    ],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    name: 'positionManager',
+    inputs: [],
+    outputs: [
+      {
+        name: '',
+        type: 'address',
+        internalType: 'contract PositionManager'
+      }
+    ],
+    stateMutability: 'view'
+  },
+  {
+    type: 'error',
+    name: 'SenderNotAirlock',
+    inputs: []
+  },
+  {
+    type: 'error',
+    name: 'TickOutOfRange',
+    inputs: []
+  },
+  {
+    type: 'error',
+    name: 'ZeroLiquidity',
+    inputs: []
+  }
 ] as const;

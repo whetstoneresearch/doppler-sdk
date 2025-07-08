@@ -1,6 +1,6 @@
-import { WAD, CHAINLINK_ETH_DECIMALS } from "../utils/constants";
+import { MarketDataService } from "@app/core";
 
-export const computeDollarLiquidity = async ({
+export const computeDollarLiquidity = ({
   assetBalance,
   quoteBalance,
   price,
@@ -11,9 +11,11 @@ export const computeDollarLiquidity = async ({
   price: bigint;
   ethPrice: bigint;
 }) => {
-  const assetLiquidity =
-    (((assetBalance * price) / WAD) * ethPrice) / CHAINLINK_ETH_DECIMALS;
-  const numeraireLiquidity = (quoteBalance * ethPrice) / CHAINLINK_ETH_DECIMALS;
-
-  return assetLiquidity + numeraireLiquidity;
+  return MarketDataService.calculateLiquidity({
+    assetBalance,
+    quoteBalance,
+    price,
+    ethPriceUSD: ethPrice,
+    isQuoteETH: true,
+  });
 };

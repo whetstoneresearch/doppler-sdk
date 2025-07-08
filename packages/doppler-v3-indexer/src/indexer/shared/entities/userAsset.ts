@@ -13,14 +13,14 @@ export const insertUserAssetIfNotExists = async ({
   timestamp: bigint;
   context: Context;
 }): Promise<typeof userAsset.$inferSelect> => {
-  const { db, network } = context;
+  const { db, chain } = context;
   const userIdAddr = userId.toLowerCase() as `0x${string}`;
   const assetIdAddr = assetId.toLowerCase() as `0x${string}`;
 
   const existingUserAsset = await db.find(userAsset, {
     userId: userIdAddr,
     assetId: assetIdAddr,
-    chainId: BigInt(network.chainId),
+    chainId: BigInt(chain.id),
   });
 
   if (existingUserAsset) {
@@ -33,7 +33,7 @@ export const insertUserAssetIfNotExists = async ({
     createdAt: timestamp,
     assetId: assetIdAddr,
     balance: 0n,
-    chainId: BigInt(network.chainId),
+    chainId: BigInt(chain.id),
   });
 };
 
@@ -48,7 +48,7 @@ export const updateUserAsset = async ({
   context: Context;
   update: Partial<typeof userAsset.$inferInsert>;
 }) => {
-  const { db, network } = context;
+  const { db, chain } = context;
   const userIdAddr = userId.toLowerCase() as `0x${string}`;
   const assetIdAddr = assetId.toLowerCase() as `0x${string}`;
 
@@ -56,7 +56,7 @@ export const updateUserAsset = async ({
     .update(userAsset, {
       userId: userIdAddr,
       assetId: assetIdAddr,
-      chainId: BigInt(network.chainId),
+      chainId: BigInt(chain.id),
     })
     .set({
       ...update,

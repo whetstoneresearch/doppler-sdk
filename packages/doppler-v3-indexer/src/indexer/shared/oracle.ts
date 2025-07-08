@@ -5,11 +5,13 @@ import { Address } from "viem";
 import { CHAINLINK_ETH_DECIMALS } from "@app/utils/constants";
 import { updateAsset } from "./entities/asset";
 import { DERC20ABI } from "@app/abis";
+import { updatePool } from "./entities/pool";
+import { MarketDataService } from "@app/core";
 
 export const fetchEthPrice = async (
   timestamp: bigint,
   context: Context
-): Promise<bigint | null> => {
+): Promise<bigint> => {
   const { db } = context;
 
   let roundedTimestamp = BigInt(Math.floor(Number(timestamp) / 300) * 300);
@@ -28,33 +30,20 @@ export const fetchEthPrice = async (
   return ethPriceData.price;
 };
 
-export const updateMarketCap = async ({
-  assetAddress,
+export const computeMarketCap = ({
   price,
   ethPrice,
-  context,
+  totalSupply,
 }: {
-  assetAddress: Address;
   price: bigint;
   ethPrice: bigint;
-  context: Context;
+  totalSupply: bigint;
 }) => {
-  const { client } = context;
-
-  const totalSupply = await client.readContract({
-    address: assetAddress,
-    abi: DERC20ABI,
-    functionName: "totalSupply",
-  });
-
-  const marketCap = (price * totalSupply) / BigInt(10 ** 18);
-  const marketCapUsd = (marketCap * ethPrice) / CHAINLINK_ETH_DECIMALS;
-
-  await updateAsset({
-    assetAddress,
-    context,
-    update: {
-      marketCapUsd,
-    },
+  return MarketDataService.calculateMarketCap({
+    price,
+    totalSupply,
+    ethPriceUSD: ethPrice,
+    assetDecimals: 18,
+    isQuoteETH: true,
   });
 };

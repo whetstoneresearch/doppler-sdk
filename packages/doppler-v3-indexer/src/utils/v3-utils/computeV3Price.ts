@@ -1,6 +1,6 @@
-import { Q192 } from "@app/utils/constants";
+import { PriceService } from "@app/core/pricing";
 
-export const computeV3Price = async ({
+export const computeV3Price = ({
   sqrtPriceX96,
   isToken0,
   decimals,
@@ -9,13 +9,9 @@ export const computeV3Price = async ({
   isToken0: boolean;
   decimals: number;
 }) => {
-  const ratioX192 = sqrtPriceX96 * sqrtPriceX96;
-
-  const baseTokenDecimalScale = 10 ** decimals;
-
-  const price = isToken0
-    ? (ratioX192 * BigInt(baseTokenDecimalScale)) / Q192
-    : (Q192 * BigInt(baseTokenDecimalScale)) / ratioX192;
-
-  return price;
+  return PriceService.computePriceFromSqrtPriceX96({
+    sqrtPriceX96,
+    isToken0,
+    decimals,
+  });
 };

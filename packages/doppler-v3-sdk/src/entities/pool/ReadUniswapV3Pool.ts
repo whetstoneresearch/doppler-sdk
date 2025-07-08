@@ -3,7 +3,7 @@ import {
   ReadAdapter,
   Drift,
   EventLog,
-  ContractGetEventsOptions,
+  GetEventsOptions,
   createDrift,
   FunctionReturn,
 } from "@delvtech/drift";
@@ -42,7 +42,7 @@ export class ReadUniswapV3Pool {
    * @returns Array of Mint event logs
    */
   async getMintEvents(
-    options?: ContractGetEventsOptions
+    options?: GetEventsOptions
   ): Promise<EventLog<UniswapV3PoolABI, "Mint">[]> {
     return this.pool.getEvents("Mint", {
       ...options,
@@ -55,7 +55,7 @@ export class ReadUniswapV3Pool {
    * @returns Array of Burn event logs
    */
   async getBurnEvents(
-    options?: ContractGetEventsOptions
+    options?: GetEventsOptions
   ): Promise<EventLog<UniswapV3PoolABI, "Burn">[]> {
     return this.pool.getEvents("Burn", {
       ...options,
@@ -68,7 +68,7 @@ export class ReadUniswapV3Pool {
    * @returns Array of Swap event logs
    */
   async getSwapEvents(
-    options?: ContractGetEventsOptions
+    options?: GetEventsOptions
   ): Promise<EventLog<UniswapV3PoolABI, "Swap">[]> {
     return this.pool.getEvents("Swap", {
       ...options,

@@ -2,6 +2,7 @@ import { Context } from "ponder:registry";
 import { token } from "ponder.schema";
 import { Address, zeroAddress } from "viem";
 import { DERC20ABI } from "@app/abis";
+import { addPendingTokenImage } from "../pending-token-images";
 
 export const insertTokenIfNotExists = async ({
   tokenAddress,
@@ -17,11 +18,11 @@ export const insertTokenIfNotExists = async ({
   context: Context;
   isDerc20?: boolean;
   poolAddress?: Address;
-}) => {
-  const { db, network } = context;
+}): Promise<typeof token.$inferSelect> => {
+  const { db, chain } = context;
 
   let multiCallAddress = {};
-  if (network.name == "ink") {
+  if (chain.name == "ink") {
     multiCallAddress = {
       multicallAddress: "0xcA11bde05977b3631167028862bE2a173976CA11",
     };
@@ -40,7 +41,7 @@ export const insertTokenIfNotExists = async ({
     return existingToken;
   }
 
-  const chainId = BigInt(network.chainId);
+  const chainId = BigInt(chain.id);
 
   // ignore pool field for native tokens
   if (address == zeroAddress) {
@@ -99,6 +100,13 @@ export const insertTokenIfNotExists = async ({
     let image: string | undefined;
     if (tokenURI?.startsWith("ipfs://")) {
       try {
+        if (
+          !tokenURI.startsWith("ipfs://") &&
+          !tokenURI.startsWith("http://") &&
+          !tokenURI.startsWith("https://")
+        ) {
+          console.error(`Invalid tokenURI for token ${address}: ${tokenURI}`);
+        }
         const cid = tokenURI.replace("ipfs://", "");
         const url = `https://${process.env.PINATA_GATEWAY_URL}/ipfs/${cid}?pinataGatewayToken=${process.env.PINATA_GATEWAY_KEY}`;
         const response = await fetch(url);
@@ -112,6 +120,15 @@ export const insertTokenIfNotExists = async ({
         ) {
           if (tokenUriData.image.startsWith("ipfs://")) {
             image = tokenUriData.image;
+          }
+        } else if (
+          tokenUriData &&
+          typeof tokenUriData === "object" &&
+          "image_hash" in tokenUriData &&
+          typeof tokenUriData.image_hash === "string"
+        ) {
+          if (tokenUriData.image_hash.startsWith("ipfs://")) {
+            image = tokenUriData.image_hash;
           }
         }
       } catch (error) {
@@ -135,12 +152,29 @@ export const insertTokenIfNotExists = async ({
           if (tokenUriData.image.startsWith("https://")) {
             image = tokenUriData.image;
           }
+        } else {
+          // Add to pending list for retry
+          await addPendingTokenImage({
+            context,
+            chainId,
+            tokenAddress: address,
+            tokenURI,
+            timestamp: Number(timestamp),
+          });
         }
       } catch (error) {
         console.error(
           `Failed to fetch ohara metadata for token ${address}:`,
           error
         );
+        // Add to pending list for retry
+        await addPendingTokenImage({
+          context,
+          chainId,
+          tokenAddress: address,
+          tokenURI,
+          timestamp: Number(timestamp),
+        });
       }
     }
 

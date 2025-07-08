@@ -7,11 +7,9 @@ export const user = onchainTable(
     address: t.hex().primaryKey(),
     createdAt: t.bigint().notNull(),
     lastSeenAt: t.bigint().notNull(),
-    chainId: t.bigint().notNull(),
   }),
   (table) => ({
     addressIdx: index().on(table.address),
-    chainIdIdx: index().on(table.chainId),
   })
 );
 
@@ -66,7 +64,7 @@ export const asset = onchainTable(
     createdAt: t.bigint().notNull(),
     migratedAt: t.bigint(),
     migrated: t.boolean().notNull().default(false),
-    percentDayChange: t.real().notNull().default(0),
+    percentDayChange: t.doublePrecision().notNull().default(0),
     marketCapUsd: t.bigint().notNull().default(0n),
     holderCount: t.integer().notNull().default(0),
     dayVolumeUsd: t.bigint().notNull().default(0n),
@@ -124,8 +122,6 @@ export const dailyVolume = onchainTable("daily_volume", (t) => ({
   chainId: t.bigint().notNull(),
   checkpoints: t.jsonb().notNull().default("{}"),
   lastUpdated: t.bigint().notNull(),
-  earliestCheckpoint: t.bigint().notNull(),
-  inactive: t.boolean().notNull().default(true), // indicates if the pool has checkpoints
 }));
 
 export const position = onchainTable(
@@ -162,6 +158,21 @@ export const module = onchainTable(
   })
 );
 
+export const v4PoolConfig = onchainTable("v4_pool_config", (t) => ({
+  hookAddress: t.hex().notNull().primaryKey(),
+  numTokensToSell: t.bigint().notNull(),
+  minProceeds: t.bigint().notNull(),
+  maxProceeds: t.bigint().notNull(),
+  startingTime: t.bigint().notNull(),
+  endingTime: t.bigint().notNull(),
+  startingTick: t.integer().notNull(),
+  endingTick: t.integer().notNull(),
+  epochLength: t.bigint().notNull(),
+  gamma: t.integer().notNull(),
+  isToken0: t.boolean().notNull(),
+  numPdSlugs: t.bigint().notNull(),
+}));
+
 export const pool = onchainTable(
   "pool",
   (t) => ({
@@ -180,16 +191,29 @@ export const pool = onchainTable(
     dollarLiquidity: t.bigint().notNull(),
     dailyVolume: t.hex().notNull(),
     volumeUsd: t.bigint().notNull(),
-    percentDayChange: t.real().notNull(),
+    percentDayChange: t.doublePrecision().notNull().default(0),
     totalFee0: t.bigint().notNull(),
     totalFee1: t.bigint().notNull(),
-    graduationThreshold: t.bigint().notNull(),
     graduationBalance: t.bigint().notNull(),
+    graduationPercentage: t.doublePrecision().notNull().default(0),
+    minThreshold: t.bigint(),
+    maxThreshold: t.bigint().notNull(),
     isToken0: t.boolean().notNull(),
     lastRefreshed: t.bigint(),
     lastSwapTimestamp: t.bigint(),
     reserves0: t.bigint().notNull().default(0n),
     reserves1: t.bigint().notNull().default(0n),
+    totalProceeds: t.bigint().notNull().default(0n),
+    totalTokensSold: t.bigint().notNull().default(0n),
+    holderCount: t.integer().notNull().default(0),
+    marketCapUsd: t.bigint().notNull().default(0n),
+    migrated: t.boolean().notNull().default(false),
+    migratedAt: t.bigint(),
+    migratedToPool: t.hex(),
+    migratedToV4PoolId: t.hex(), // For V4 migrations, stores the 32-byte pool ID
+    migratedFromPool: t.hex(),
+    isQuoteEth: t.boolean().notNull(),
+    isStreaming: t.boolean().notNull().default(false),
   }),
   (table) => ({
     pk: primaryKey({
@@ -219,12 +243,78 @@ export const v2Pool = onchainTable("v2_pool", (t) => ({
   isToken0: t.boolean().notNull(),
 }));
 
+export const v4pools = onchainTable(
+  "v4_pools",
+  (t) => ({
+    // Identity - using 32-byte pool ID as primary key
+    poolId: t.hex().notNull(),
+    chainId: t.bigint().notNull(),
+
+    // PoolKey components for reconstruction
+    currency0: t.hex().notNull(),
+    currency1: t.hex().notNull(),
+    fee: t.integer().notNull(),
+    tickSpacing: t.integer().notNull(),
+    hooks: t.hex().notNull(),
+
+    // Pool state
+    sqrtPriceX96: t.bigint().notNull(),
+    liquidity: t.bigint().notNull(),
+    tick: t.integer().notNull(),
+
+    // Token references
+    baseToken: t.hex().notNull(),
+    quoteToken: t.hex().notNull(),
+    asset: t.hex(), // Reference to asset if this is a Doppler token
+
+    // Migration tracking
+    migratedFromPool: t.hex(), // Original Doppler pool address
+    migratedAt: t.bigint().notNull(),
+    migratorVersion: t.text().notNull().default("v4"),
+
+    // Metrics
+    price: t.bigint().notNull(),
+    volumeUsd: t.bigint().notNull().default(0n),
+    dollarLiquidity: t.bigint().notNull().default(0n),
+    totalFee0: t.bigint().notNull().default(0n),
+    totalFee1: t.bigint().notNull().default(0n),
+    reserves0: t.bigint().notNull().default(0n),
+    reserves1: t.bigint().notNull().default(0n),
+
+    // Timestamps
+    createdAt: t.bigint().notNull(),
+    lastRefreshed: t.bigint(),
+    lastSwapTimestamp: t.bigint(),
+
+    // Price tracking
+    percentDayChange: t.doublePrecision().notNull().default(0),
+
+    // Relations
+    dailyVolume: t.hex(),
+
+    // Helper fields
+    isToken0: t.boolean().notNull(),
+    isQuoteEth: t.boolean().notNull(),
+  }),
+  (table) => ({
+    pk: primaryKey({
+      columns: [table.poolId, table.chainId],
+    }),
+    baseTokenIdx: index().on(table.baseToken),
+    quoteTokenIdx: index().on(table.quoteToken),
+    assetIdx: index().on(table.asset),
+    migratedFromPoolIdx: index().on(table.migratedFromPool),
+    lastRefreshedIdx: index().on(table.lastRefreshed),
+    lastSwapTimestampIdx: index().on(table.lastSwapTimestamp),
+  })
+);
+
 export const userAsset = onchainTable(
   "user_asset",
   (t) => ({
     chainId: t.bigint().notNull(),
-    userId: t.text().notNull(),
-    assetId: t.text().notNull(),
+    userId: t.hex().notNull(),
+    assetId: t.hex().notNull(),
     balance: t.bigint().notNull(),
     createdAt: t.bigint().notNull(),
     lastInteraction: t.bigint().notNull(),
@@ -237,12 +327,55 @@ export const userAsset = onchainTable(
   })
 );
 
+export const v4CheckpointBlob = onchainTable("v4_checkpoint_blob", (t) => ({
+  chainId: t.integer().notNull().primaryKey(),
+  checkpoints: t.jsonb().notNull().default("{}"),
+}));
+
+export const pendingTokenImages = onchainTable("pending_token_images", (t) => ({
+  chainId: t.bigint().notNull().primaryKey(),
+  tokens: t.jsonb().notNull().default("{}"),
+}));
+
+export const activePoolsBlob = onchainTable("active_pools_blob", (t) => ({
+  chainId: t.bigint().notNull().primaryKey(),
+  activePools: t.jsonb().notNull().default("{}"),
+}));
+
+export const v4PoolPriceHistory = onchainTable(
+  "v4_pool_price_history",
+  (t) => ({
+    pool: t.hex().notNull().primaryKey(),
+    chainId: t.bigint().notNull(),
+    history: t.jsonb().notNull().default("{}"),
+  })
+);
+
+export const swap = onchainTable("swap", (t) => ({
+  txHash: t.hex().notNull().primaryKey(),
+  pool: t.hex().notNull(),
+  asset: t.hex().notNull(),
+  chainId: t.bigint().notNull(),
+  amountIn: t.bigint().notNull(),
+  amountOut: t.bigint().notNull(),
+  type: t.text().notNull(), // buy or sell
+  user: t.hex().notNull(),
+  timestamp: t.bigint().notNull(),
+  usdPrice: t.bigint().notNull(),
+}));
+
 /* RELATIONS */
 
 // assets have one pool
 export const assetRelations = relations(asset, ({ one, many }) => ({
   pool: one(pool, { fields: [asset.poolAddress], references: [pool.address] }),
   userAssets: many(userAsset),
+  swaps: many(swap),
+}));
+
+export const swapRelations = relations(swap, ({ one }) => ({
+  pool: one(pool, { fields: [swap.pool], references: [pool.address] }),
+  asset: one(asset, { fields: [swap.asset], references: [asset.address] }),
 }));
 
 // pools have many positions
@@ -266,11 +399,12 @@ export const poolRelations = relations(pool, ({ one, many }) => ({
   }),
   hourBuckets: many(hourBucket),
   hourBucketUsds: many(hourBucketUsd),
+  swaps: many(swap),
 }));
 
 export const v2PoolRelations = relations(v2Pool, ({ one }) => ({
-  pool: one(pool, {
-    fields: [v2Pool.address],
+  v3Pool: one(pool, {
+    fields: [v2Pool.v3Pool],
     references: [pool.address],
   }),
 }));
@@ -315,4 +449,29 @@ export const hourBucketUsdRelations = relations(hourBucketUsd, ({ one }) => ({
     fields: [hourBucketUsd.pool],
     references: [pool.address],
   }),
+}));
+
+// v4pools relations
+export const v4poolsRelations = relations(v4pools, ({ one, many }) => ({
+  baseToken: one(token, {
+    fields: [v4pools.baseToken],
+    references: [token.address],
+  }),
+  quoteToken: one(token, {
+    fields: [v4pools.quoteToken],
+    references: [token.address],
+  }),
+  asset: one(asset, {
+    fields: [v4pools.asset],
+    references: [asset.address],
+  }),
+  migratedFromPool: one(pool, {
+    fields: [v4pools.migratedFromPool],
+    references: [pool.address],
+  }),
+  dailyVolume: one(dailyVolume, {
+    fields: [v4pools.poolId],
+    references: [dailyVolume.pool],
+  }),
+  // Note: positions, hourBuckets, etc. would need to be updated to support v4pools
 }));

@@ -1,31 +1,25 @@
 import { ponder } from "ponder:registry";
-import { executeScheduledJobs } from "./shared/scheduledJobs";
+import { refreshActivePoolsBlob } from "./shared/scheduledJobs";
 import { configs } from "addresses";
 import { ChainlinkOracleABI } from "@app/abis/ChainlinkOracleABI";
 import { ethPrice } from "ponder.schema";
+import { refreshCheckpointBlob } from "./shared/entities/v4-entities/v4CheckpointBlob";
+import { handlePendingTokenImages } from "./shared/process-pending-images";
 
 /**
  * Block handlers that run periodically to ensure volume data and metrics are up-to-date
  * These are triggered by the block configuration in ponder.config.ts
  */
 
-// Handler for unichain network
+// // Handler for unichain network
 ponder.on("MetricRefresherUnichain:block", async ({ event, context }) => {
-  console.log(
-    `Running comprehensive refresh for unichain at block ${event.block.number}`
-  );
-
-  const startTime = Date.now();
-
   try {
     // Execute optimized combined refresh job
-    await executeScheduledJobs({
+    await refreshActivePoolsBlob({
       context,
-      currentTimestamp: BigInt(event.block.timestamp),
+      timestamp: Number(event.block.timestamp),
     });
 
-    const duration = (Date.now() - startTime) / 1000;
-    console.log(`Unichain refresh completed in ${duration.toFixed(2)}s`);
   } catch (error) {
     console.error(`Error in unichain refresh job: ${error}`);
     // Log error but don't throw to prevent handler from failing completely
@@ -33,81 +27,56 @@ ponder.on("MetricRefresherUnichain:block", async ({ event, context }) => {
 });
 
 // Handler for baseSepolia network
-// ponder.on("MetricRefresherBaseSepolia:block", async ({ event, context }) => {
-//   console.log(
-//     `Running comprehensive refresh for baseSepolia at block ${event.block.number}`
-//   );
-
-//   const startTime = Date.now();
-
-//   try {
-//     // Execute optimized combined refresh job
-//     await executeScheduledJobs({
-//       context,
-//       currentTimestamp: BigInt(event.block.timestamp),
-//     });
-
-//     const duration = (Date.now() - startTime) / 1000;
-//     console.log(`BaseSepolia refresh completed in ${duration.toFixed(2)}s`);
-//   } catch (error) {
-//     console.error(`Error in baseSepolia refresh job: ${error}`);
-//     // Log error but don't throw to prevent handler from failing completely
-//   }
-// });
-
-// Handler for ink network
-ponder.on("MetricRefresherInk:block", async ({ event, context }) => {
-  console.log(
-    `Running comprehensive refresh for ink at block ${event.block.number}`
-  );
-
-  const startTime = Date.now();
-
+ponder.on("MetricRefresherBaseSepolia:block", async ({ event, context }) => {
   try {
     // Execute optimized combined refresh job
-    await executeScheduledJobs({
+    await refreshActivePoolsBlob({
       context,
-      currentTimestamp: BigInt(event.block.timestamp),
+      timestamp: Number(event.block.timestamp),
     });
 
-    const duration = (Date.now() - startTime) / 1000;
-    console.log(`Ink refresh completed in ${duration.toFixed(2)}s`);
   } catch (error) {
-    console.error(`Error in ink refresh job: ${error}`);
+    console.error(`Error in baseSepolia refresh job: ${error}`);
     // Log error but don't throw to prevent handler from failing completely
   }
 });
 
-// // Handler for base network
-ponder.on("MetricRefresherBase:block", async ({ event, context }) => {
-  console.log(
-    `Running comprehensive refresh for base at block ${event.block.number}`
-  );
-
-  const startTime = Date.now();
+// // Handler for ink network
+ponder.on("MetricRefresherInk:block", async ({ event, context }) => {
 
   try {
     // Execute optimized combined refresh job
-    await executeScheduledJobs({
+    await refreshActivePoolsBlob({
       context,
-      currentTimestamp: BigInt(event.block.timestamp),
+      timestamp: Number(event.block.timestamp),
     });
 
-    const duration = (Date.now() - startTime) / 1000;
-    console.log(`Ink refresh completed in ${duration.toFixed(2)}s`);
   } catch (error) {
     console.error(`Error in ink refresh job: ${error}`);
-    // Log error but don't throw to prevent handler from failing completely
+  }
+});
+
+// Handler for base network
+ponder.on("MetricRefresherBase:block", async ({ event, context }) => {
+
+  try {
+    await refreshActivePoolsBlob({
+      context,
+      timestamp: Number(event.block.timestamp),
+    });
+
+  } catch (error) {
+    console.error(`Error in base refresh job: ${error}`);
   }
 });
 
 ponder.on("ChainlinkEthPriceFeed:block", async ({ event, context }) => {
-  const { db, client, network } = context;
+  const { db, client, chain } = context;
   const { timestamp } = event.block;
 
   const latestAnswer = await client.readContract({
     abi: ChainlinkOracleABI,
-    address: configs[network.name].oracle.chainlinkEth,
+    address: configs[chain.name].oracle.chainlinkEth,
     functionName: "latestAnswer",
   });
 
@@ -123,4 +92,26 @@ ponder.on("ChainlinkEthPriceFeed:block", async ({ event, context }) => {
       price,
     })
     .onConflictDoNothing();
+});
+
+ponder.on("BaseSepoliaV4PoolCheckpoints:block", async ({ event, context }) => {
+  await refreshCheckpointBlob({
+    context,
+    timestamp: Number(event.block.timestamp),
+  });
+});
+
+ponder.on("BaseV4PoolCheckpoints:block", async ({ event, context }) => {
+  await refreshCheckpointBlob({
+    context,
+    timestamp: Number(event.block.timestamp),
+  });
+});
+
+// Handler for processing pending token images on Base
+ponder.on("PendingTokenImagesBase:block", async ({ event, context }) => {
+  await handlePendingTokenImages({
+    context,
+    timestamp: Number(event.block.timestamp),
+  });
 });

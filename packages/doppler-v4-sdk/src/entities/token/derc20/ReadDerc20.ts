@@ -82,9 +82,14 @@ export class ReadDerc20 {
     return this.contract.read('vestingStart');
   }
 
-  /** Get the total amount of tokens that have been vested */
+  /** Get the total amount of tokens allocated for vesting */
   async getVestedTotalAmount(): Promise<bigint> {
     return this.contract.read('vestedTotalAmount');
+  }
+
+  /** Get the amount of vested tokens available for a specific address */
+  async getAvailableVestedAmount(account: Address): Promise<bigint> {
+    return this.contract.read('computeAvailableVestedAmount', { account });
   }
 
   /** Get the current annual mint rate in tokens per year */

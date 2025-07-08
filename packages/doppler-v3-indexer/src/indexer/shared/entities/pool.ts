@@ -1,28 +1,53 @@
-import { getV3PoolData, getZoraPoolState } from "@app/utils/v3-utils";
+import { getV3PoolData } from "@app/utils/v3-utils";
 import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
 import { pool } from "ponder:schema";
-import { Address, zeroAddress } from "viem";
+import { Address } from "viem";
 import { Context } from "ponder:registry";
-import { fetchEthPrice } from "../oracle";
-import { getZoraPoolData, PoolState } from "@app/utils/v3-utils/getV3PoolData";
+import { computeMarketCap } from "../oracle";
+import { getReservesV4 } from "@app/utils/v4-utils/getV4PoolData";
+import { computeGraduationPercentage } from "@app/utils/v4-utils";
+import { DERC20ABI } from "@app/abis";
+import { V4PoolData } from "@app/types";
+import { configs } from "@app/types";
+import { getLockableV3PoolData } from "@app/utils/v3-utils/getV3PoolData";
+
+export const fetchExistingPool = async ({
+  poolAddress,
+  context,
+}: {
+  poolAddress: Address;
+  context: Context;
+}): Promise<typeof pool.$inferSelect> => {
+  const { db, chain } = context;
+  const address = poolAddress.toLowerCase() as `0x${string}`;
+  const existingPool = await db.find(pool, {
+    address,
+    chainId: BigInt(chain.id),
+  });
+
+  if (!existingPool) {
+    throw new Error(`Pool ${address} not found in chain ${chain.id}`);
+  }
+  return existingPool;
+};
 
 export const insertPoolIfNotExists = async ({
   poolAddress,
   timestamp,
   context,
-  isZora = false,
+  ethPrice,
 }: {
   poolAddress: Address;
   timestamp: bigint;
   context: Context;
-  isZora?: boolean;
+  ethPrice: bigint;
 }): Promise<typeof pool.$inferSelect> => {
-  const { db, network } = context;
+  const { db, chain, client } = context;
   const address = poolAddress.toLowerCase() as `0x${string}`;
 
   const existingPool = await db.find(pool, {
     address,
-    chainId: BigInt(network.chainId),
+    chainId: BigInt(chain.id),
   });
 
   if (existingPool) {
@@ -32,36 +57,28 @@ export const insertPoolIfNotExists = async ({
   const poolData = await getV3PoolData({
     address,
     context,
-    isZora,
   });
 
-  const {
-    slot0Data,
-    liquidity,
-    price,
-    fee,
-    reserve0,
-    reserve1,
-    token0,
-    poolState,
-  } = poolData;
-
-  const ethPrice = await fetchEthPrice(timestamp, context);
+  const { slot0Data, liquidity, price, fee, token0, poolState } = poolData;
 
   const isToken0 = token0.toLowerCase() === poolState.asset.toLowerCase();
 
   const assetAddr = poolState.asset.toLowerCase() as `0x${string}`;
   const numeraireAddr = poolState.numeraire.toLowerCase() as `0x${string}`;
 
-  let dollarLiquidity;
-  if (ethPrice) {
-    dollarLiquidity = await computeDollarLiquidity({
-      assetBalance: isToken0 ? reserve0 : reserve1,
-      quoteBalance: isToken0 ? reserve1 : reserve0,
-      price,
-      ethPrice,
-    });
-  }
+  const isQuoteEth = poolState.numeraire.toLowerCase() === "0x0000000000000000000000000000000000000000" || poolState.numeraire.toLowerCase() === configs[chain.name].shared.weth;
+
+  const assetTotalSupply = await client.readContract({
+    address: assetAddr,
+    abi: DERC20ABI,
+    functionName: "totalSupply",
+  });
+
+  const marketCapUsd = computeMarketCap({
+    price,
+    ethPrice,
+    totalSupply: assetTotalSupply,
+  });
 
   return await db.insert(pool).values({
     ...poolData,
@@ -74,17 +91,21 @@ export const insertPoolIfNotExists = async ({
     quoteToken: numeraireAddr,
     price,
     type: "v3",
-    chainId: BigInt(network.chainId),
+    chainId: BigInt(chain.id),
     fee,
-    dollarLiquidity: dollarLiquidity ?? 0n,
+    dollarLiquidity: 0n,
     dailyVolume: address,
-    graduationThreshold: 0n,
+    maxThreshold: 0n,
     graduationBalance: 0n,
     totalFee0: 0n,
     totalFee1: 0n,
     volumeUsd: 0n,
+    reserves0: 0n,
+    reserves1: 0n,
     percentDayChange: 0,
     isToken0,
+    marketCapUsd,
+    isQuoteEth
   });
 };
 
@@ -95,98 +116,172 @@ export const updatePool = async ({
 }: {
   poolAddress: Address;
   context: Context;
-  update?: Partial<typeof pool.$inferInsert>;
+  update: Partial<typeof pool.$inferInsert>;
 }) => {
-  const { db, network } = context;
+  const { db, chain } = context;
   const address = poolAddress.toLowerCase() as `0x${string}`;
-
-  // First check if the pool exists before attempting to update
-  const existingPool = await db.find(pool, {
-    address,
-    chainId: BigInt(network.chainId),
-  });
-
-  if (!existingPool) {
-    console.warn(
-      `Pool ${address} not found in chain ${network.chainId}, skipping update`
-    );
-    return;
-  }
 
   await db
     .update(pool, {
       address,
-      chainId: BigInt(network.chainId),
+      chainId: BigInt(chain.id),
     })
     .set({
       ...update,
     });
 };
 
-export const insertZoraPoolIfNotExists = async ({
+export const insertPoolIfNotExistsV4 = async ({
   poolAddress,
-  assetAddress,
-  numeraireAddress,
   timestamp,
+  poolData,
+  ethPrice,
   context,
 }: {
   poolAddress: Address;
-  assetAddress: Address;
-  numeraireAddress: Address;
   timestamp: bigint;
+  ethPrice: bigint;
   context: Context;
+  poolData: V4PoolData;
 }): Promise<typeof pool.$inferSelect> => {
-  const { db, network } = context;
+  const { db, chain, client } = context;
   const address = poolAddress.toLowerCase() as `0x${string}`;
-
   const existingPool = await db.find(pool, {
     address,
-    chainId: BigInt(network.chainId),
+    chainId: BigInt(chain.id),
   });
 
   if (existingPool) {
     return existingPool;
   }
 
-  const poolState: PoolState = {
-    asset: assetAddress,
-    numeraire: numeraireAddress,
-    tickLower: 0,
-    tickUpper: 0,
-    numPositions: 0,
-    isInitialized: true,
-    isExited: false,
-    maxShareToBeSold: 0n,
-    maxShareToBond: 0n,
-    initializer: zeroAddress,
-  };
+  const { poolKey, slot0Data, liquidity, price, poolConfig } = poolData;
+  const { fee } = poolKey;
 
-  const poolData = await getZoraPoolData({
-    address: poolAddress,
-    context,
-    assetAddress,
-    numeraireAddress,
+  const assetAddr = poolConfig.isToken0 ? poolKey.currency0 : poolKey.currency1;
+  const numeraireAddr = poolConfig.isToken0
+    ? poolKey.currency1
+    : poolKey.currency0;
+
+  const isQuoteEth = numeraireAddr.toLowerCase() === "0x0000000000000000000000000000000000000000" || numeraireAddr.toLowerCase() === configs[chain.name].shared.weth;
+
+
+  const [reserves, totalSupply] = await Promise.all([
+    getReservesV4({
+      hook: address,
+      context,
+    }),
+    client.readContract({
+      address: assetAddr,
+      abi: DERC20ABI,
+      functionName: "totalSupply",
+    }),
+  ]);
+
+  const { token0Reserve, token1Reserve } = reserves;
+
+
+  const assetBalance = poolConfig.isToken0 ? token0Reserve : token1Reserve;
+  const quoteBalance = poolConfig.isToken0 ? token1Reserve : token0Reserve;
+
+  const dollarLiquidity = computeDollarLiquidity({
+    assetBalance,
+    quoteBalance,
+    price,
+    ethPrice,
   });
 
-  const { slot0Data, liquidity, price, fee, reserve0, reserve1, token0 } =
-    poolData;
+  const marketCapUsd = computeMarketCap({
+    price,
+    ethPrice,
+    totalSupply,
+  });
 
-  const ethPrice = await fetchEthPrice(timestamp, context);
+  const graduationPercentage = computeGraduationPercentage({
+    maxThreshold: poolConfig.maxProceeds,
+    graduationBalance: 0n,
+  });
+
+  return await db.insert(pool).values({
+    address,
+    chainId: BigInt(chain.id),
+    tick: slot0Data.tick,
+    sqrtPrice: slot0Data.sqrtPrice,
+    liquidity: liquidity,
+    createdAt: timestamp,
+    asset: assetAddr,
+    baseToken: assetAddr,
+    quoteToken: numeraireAddr,
+    price,
+    fee,
+    type: "v4",
+    dollarLiquidity: dollarLiquidity ?? 0n,
+    dailyVolume: address,
+    volumeUsd: 0n,
+    percentDayChange: 0,
+    totalFee0: 0n,
+    totalFee1: 0n,
+    maxThreshold: poolConfig.maxProceeds,
+    minThreshold: poolConfig.minProceeds,
+    graduationBalance: 0n,
+    graduationPercentage,
+    isToken0: poolConfig.isToken0,
+    marketCapUsd,
+    reserves0: token0Reserve,
+    reserves1: token1Reserve,
+    poolKey: JSON.stringify(poolKey),
+    isQuoteEth
+  });
+};
+
+export const insertLockableV3PoolIfNotExists = async ({
+  poolAddress,
+  timestamp,
+  context,
+  ethPrice,
+}: {
+  poolAddress: Address;
+  timestamp: bigint;
+  context: Context;
+  ethPrice: bigint;
+}): Promise<typeof pool.$inferSelect> => {
+  const { db, chain, client } = context;
+  const address = poolAddress.toLowerCase() as `0x${string}`;
+
+  const existingPool = await db.find(pool, {
+    address,
+    chainId: BigInt(chain.id),
+  });
+
+  if (existingPool) {
+    return existingPool;
+  }
+
+  const poolData = await getLockableV3PoolData({
+    address,
+    context,
+  });
+
+  const { slot0Data, liquidity, price, fee, token0, poolState } = poolData;
 
   const isToken0 = token0.toLowerCase() === poolState.asset.toLowerCase();
 
   const assetAddr = poolState.asset.toLowerCase() as `0x${string}`;
   const numeraireAddr = poolState.numeraire.toLowerCase() as `0x${string}`;
 
-  let dollarLiquidity;
-  if (ethPrice) {
-    dollarLiquidity = await computeDollarLiquidity({
-      assetBalance: isToken0 ? reserve0 : reserve1,
-      quoteBalance: isToken0 ? reserve1 : reserve0,
-      price,
-      ethPrice,
-    });
-  }
+  const isQuoteEth = poolState.numeraire.toLowerCase() === "0x0000000000000000000000000000000000000000" || poolState.numeraire.toLowerCase() === configs[chain.name].shared.weth;
+
+  const assetTotalSupply = await client.readContract({
+    address: assetAddr,
+    abi: DERC20ABI,
+    functionName: "totalSupply",
+  });
+
+  const marketCapUsd = computeMarketCap({
+    price,
+    ethPrice,
+    totalSupply: assetTotalSupply,
+  });
 
   return await db.insert(pool).values({
     ...poolData,
@@ -199,16 +294,20 @@ export const insertZoraPoolIfNotExists = async ({
     quoteToken: numeraireAddr,
     price,
     type: "v3",
-    chainId: BigInt(network.chainId),
+    chainId: BigInt(chain.id),
     fee,
-    dollarLiquidity: dollarLiquidity ?? 0n,
+    dollarLiquidity: 0n,
     dailyVolume: address,
-    graduationThreshold: 0n,
+    maxThreshold: 0n,
     graduationBalance: 0n,
     totalFee0: 0n,
     totalFee1: 0n,
     volumeUsd: 0n,
+    reserves0: 0n,
+    reserves1: 0n,
     percentDayChange: 0,
     isToken0,
+    marketCapUsd,
+    isQuoteEth
   });
 };

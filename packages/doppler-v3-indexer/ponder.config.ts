@@ -9,18 +9,13 @@ import {
   DopplerABI,
   PoolManagerABI,
   UniswapV2PairABI,
-  ZoraFactoryABI,
-  ZoraCoinABI,
 } from "./src/abis";
-import {
-  CHAIN_IDS,
-  configs,
-  zoraFactoryBase,
-  zoraStartBlock,
-} from "./addresses";
 import { UniswapV2FactoryABI } from "@app/abis/UniswapV2Factory";
+import { BLOCK_INTERVALS } from "@app/config/blocks/intervals";
+import { chainConfigs, CHAIN_IDS, V4_START_BLOCKS, LOCKABLE_V3_INITIALIZER_START_BLOCKS } from "./src/config/chains";
+import { LockableUniswapV3InitializerABI } from "@app/abis/v3-abis/LockableUniswapV3InitializerABI";
 
-const { unichain, mainnet, baseSepolia, ink, base } = configs;
+const { unichain, mainnet, baseSepolia, ink, base } = chainConfigs;
 
 export default createConfig({
   database: {
@@ -30,151 +25,194 @@ export default createConfig({
       max: 100,
     },
   },
-  networks: {
+  ordering: "multichain",
+  chains: {
     mainnet: {
-      chainId: 1,
-      transport: http(process.env.PONDER_RPC_URL_1),
+      id: 1,
+      rpc: http(process.env.PONDER_RPC_URL_1),
     },
     unichain: {
-      chainId: CHAIN_IDS.unichain,
-      transport: http(process.env.PONDER_RPC_URL_130),
+      id: CHAIN_IDS.unichain,
+      rpc: http(process.env.PONDER_RPC_URL_130),
     },
     baseSepolia: {
-      chainId: CHAIN_IDS.baseSepolia,
-      transport: http(process.env.PONDER_RPC_URL_84532),
+      id: CHAIN_IDS.baseSepolia,
+      rpc: http(process.env.PONDER_RPC_URL_84532),
     },
     ink: {
-      chainId: CHAIN_IDS.ink,
-      transport: http(process.env.PONDER_RPC_URL_57073),
+      id: CHAIN_IDS.ink,
+      rpc: http(process.env.PONDER_RPC_URL_57073),
     },
     base: {
-      chainId: CHAIN_IDS.base,
-      transport: http(process.env.PONDER_RPC_URL_8453),
+      id: CHAIN_IDS.base,
+      rpc: http(process.env.PONDER_RPC_URL_8453),
     },
   },
   blocks: {
     ChainlinkEthPriceFeed: {
-      network: "mainnet",
-      startBlock: unichain.oracleStartBlock,
-      interval: (60 * 5) / 12, // every 5 minutes
+      chain: "mainnet",
+      startBlock: mainnet.startBlock,
+      interval: BLOCK_INTERVALS.FIVE_MINUTES, // every 5 minutes
+    },
+    BaseSepoliaV4PoolCheckpoints: {
+      chain: "baseSepolia",
+      startBlock: baseSepolia.v4StartBlock,
+      interval: BLOCK_INTERVALS.FIFTY_BLOCKS, // every 50 blocks
+    },
+    BaseV4PoolCheckpoints: {
+      chain: "base",
+      startBlock: base.v4StartBlock,
+      interval: BLOCK_INTERVALS.FIFTY_BLOCKS, // every 50 blocks
+    },
+    UnichainV4PoolCheckpoints: {
+      chain: "unichain",
+      startBlock: unichain.v4StartBlock,
+      interval: BLOCK_INTERVALS.FIFTY_BLOCKS, // every 50 blocks
+    },
+    InkV4PoolCheckpoints: {
+      chain: "ink",
+      startBlock: ink.v4StartBlock,
+      interval: BLOCK_INTERVALS.FIFTY_BLOCKS, // every 50 blocks
     },
     MetricRefresherUnichain: {
-      network: "unichain",
+      chain: "unichain",
       startBlock: unichain.startBlock,
-      interval: 1000, // every 1000 blocks
+      interval: BLOCK_INTERVALS.THOUSAND_BLOCKS, // every 1000 blocks
     },
     MetricRefresherInk: {
-      network: "ink",
+      chain: "ink",
       startBlock: ink.startBlock,
-      interval: 5000, // every 1000 blocks
+      interval: BLOCK_INTERVALS.THOUSAND_BLOCKS, // every 1000 blocks
     },
     MetricRefresherBase: {
-      network: "base",
+      chain: "base",
       startBlock: base.startBlock,
-      interval: 500, // every 1000 blocks
+      interval: BLOCK_INTERVALS.THOUSAND_BLOCKS, // every 1000 blocks
     },
-    // MetricRefresherBaseSepolia: {
-    //   network: "baseSepolia",
-    //   startBlock: baseSepolia.startBlock,
-    //   interval: 5000, // every 1000 blocks
-    // },
+    MetricRefresherBaseSepolia: {
+      chain: "baseSepolia",
+      startBlock: baseSepolia.startBlock,
+      interval: BLOCK_INTERVALS.THOUSAND_BLOCKS, // every 1000 blocks
+    },
+    PendingTokenImagesBase: {
+      chain: "base",
+      startBlock: base.startBlock,
+      interval: BLOCK_INTERVALS.THOUSAND_BLOCKS * 3, // Check every 3000 blocks
+    },
   },
   contracts: {
     Airlock: {
       abi: AirlockABI,
-      network: {
+      chain: {
         unichain: {
           startBlock: unichain.startBlock,
-          address: unichain.shared.airlock,
+          address: unichain.addresses.shared.airlock,
         },
         ink: {
           startBlock: ink.startBlock,
-          address: ink.shared.airlock,
+          address: ink.addresses.shared.airlock,
         },
         baseSepolia: {
-          startBlock: baseSepolia.startBlock,
-          address: baseSepolia.shared.airlock,
+          startBlock: V4_START_BLOCKS.baseSepolia,
+          address: baseSepolia.addresses.shared.airlock,
         },
         base: {
           startBlock: base.startBlock,
-          address: base.shared.airlock,
+          address: base.addresses.shared.airlock,
         },
       },
     },
     UniswapV3Initializer: {
       abi: UniswapV3InitializerABI,
-      network: {
+      chain: {
         unichain: {
           startBlock: unichain.startBlock,
-          address: unichain.v3.v3Initializer,
+          address: unichain.addresses.v3.v3Initializer,
         },
         ink: {
           startBlock: ink.startBlock,
-          address: ink.v3.v3Initializer,
+          address: ink.addresses.v3.v3Initializer,
         },
         baseSepolia: {
-          startBlock: baseSepolia.startBlock,
-          address: baseSepolia.v3.v3Initializer,
+          startBlock: V4_START_BLOCKS.baseSepolia,
+          address: baseSepolia.addresses.v3.v3Initializer,
         },
         base: {
           startBlock: base.startBlock,
-          address: base.v3.v3Initializer,
+          address: base.addresses.v3.v3Initializer,
         },
       },
     },
     UniswapV4Initializer: {
       abi: UniswapV4InitializerABI,
-      network: {
+      chain: {
         unichain: {
-          startBlock: unichain.startBlock,
-          address: unichain.v4.v4Initializer,
+          startBlock: V4_START_BLOCKS.unichain,
+          address: unichain.addresses.v4.v4Initializer,
         },
         ink: {
-          startBlock: ink.startBlock,
-          address: ink.v4.v4Initializer,
+          startBlock: V4_START_BLOCKS.ink,
+          address: ink.addresses.v4.v4Initializer,
         },
         baseSepolia: {
-          startBlock: baseSepolia.startBlock,
-          address: baseSepolia.v4.v4Initializer,
+          startBlock: V4_START_BLOCKS.baseSepolia,
+          address: baseSepolia.addresses.v4.v4Initializer,
         },
         base: {
-          startBlock: base.startBlock,
-          address: base.v4.v4Initializer,
+          startBlock: V4_START_BLOCKS.base,
+          address: base.addresses.v4.v4Initializer,
+        },
+      },
+    },
+    UniswapV4Initializer2: {
+      abi: UniswapV4InitializerABI,
+      chain: {
+        base: {
+          startBlock: V4_START_BLOCKS.base,
+          address: base.addresses.v4.v4Initializer2,
+        },
+        unichain: {
+          startBlock: V4_START_BLOCKS.unichain,
+          address: unichain.addresses.v4.v4Initializer2,
+        },
+        ink: {
+          startBlock: V4_START_BLOCKS.ink,
+          address: ink.addresses.v4.v4Initializer2,
         },
       },
     },
     DERC20: {
       abi: DERC20ABI,
-      network: {
+      chain: {
         unichain: {
           startBlock: unichain.startBlock,
           address: factory({
-            address: unichain.v3.v3Initializer,
-            event: getAbiItem({ abi: UniswapV3InitializerABI, name: "Create" }),
+            address: unichain.addresses.shared.airlock,
+            event: getAbiItem({ abi: AirlockABI, name: "Create" }),
             parameter: "asset",
           }),
         },
         ink: {
           startBlock: ink.startBlock,
           address: factory({
-            address: ink.v3.v3Initializer,
-            event: getAbiItem({ abi: UniswapV3InitializerABI, name: "Create" }),
+            address: ink.addresses.shared.airlock,
+            event: getAbiItem({ abi: AirlockABI, name: "Create" }),
             parameter: "asset",
           }),
         },
         baseSepolia: {
-          startBlock: baseSepolia.startBlock,
+          startBlock: V4_START_BLOCKS.baseSepolia,
           address: factory({
-            address: baseSepolia.v3.v3Initializer,
-            event: getAbiItem({ abi: UniswapV3InitializerABI, name: "Create" }),
+            address: baseSepolia.addresses.shared.airlock,
+            event: getAbiItem({ abi: AirlockABI, name: "Create" }),
             parameter: "asset",
           }),
         },
         base: {
           startBlock: base.startBlock,
           address: factory({
-            address: base.v3.v3Initializer,
-            event: getAbiItem({ abi: UniswapV3InitializerABI, name: "Create" }),
+            address: base.addresses.shared.airlock,
+            event: getAbiItem({ abi: AirlockABI, name: "Create" }),
             parameter: "asset",
           }),
         },
@@ -182,11 +220,11 @@ export default createConfig({
     },
     UniswapV3Pool: {
       abi: UniswapV3PoolABI,
-      network: {
+      chain: {
         unichain: {
           startBlock: unichain.startBlock,
           address: factory({
-            address: unichain.v3.v3Initializer,
+            address: unichain.addresses.v3.v3Initializer,
             event: getAbiItem({ abi: UniswapV3InitializerABI, name: "Create" }),
             parameter: "poolOrHook",
           }),
@@ -194,15 +232,15 @@ export default createConfig({
         ink: {
           startBlock: ink.startBlock,
           address: factory({
-            address: ink.v3.v3Initializer,
+            address: ink.addresses.v3.v3Initializer,
             event: getAbiItem({ abi: UniswapV3InitializerABI, name: "Create" }),
             parameter: "poolOrHook",
           }),
         },
         baseSepolia: {
-          startBlock: baseSepolia.startBlock,
+          startBlock: V4_START_BLOCKS.baseSepolia,
           address: factory({
-            address: baseSepolia.v3.v3Initializer,
+            address: baseSepolia.addresses.v3.v3Initializer,
             event: getAbiItem({ abi: UniswapV3InitializerABI, name: "Create" }),
             parameter: "poolOrHook",
           }),
@@ -210,55 +248,33 @@ export default createConfig({
         base: {
           startBlock: base.startBlock,
           address: factory({
-            address: base.v3.v3Initializer,
+            address: base.addresses.v3.v3Initializer,
             event: getAbiItem({ abi: UniswapV3InitializerABI, name: "Create" }),
             parameter: "poolOrHook",
           }),
         },
       },
     },
-    ZoraFactory: {
-      abi: ZoraFactoryABI,
-      network: {
-        base: {
-          startBlock: zoraStartBlock,
-          address: zoraFactoryBase,
-        },
-      },
-    },
-    ZoraCoin: {
-      abi: ZoraCoinABI,
-      network: {
-        base: {
-          startBlock: zoraStartBlock,
-          address: factory({
-            address: zoraFactoryBase,
-            event: getAbiItem({ abi: ZoraFactoryABI, name: "CoinCreated" }),
-            parameter: "coin",
-          }),
-        },
-      },
-    },
-    ZoraUniswapV3Pool: {
+    LockableUniswapV3Pool: {
       abi: UniswapV3PoolABI,
-      network: {
-        base: {
-          startBlock: zoraStartBlock,
+      chain: {
+        baseSepolia: {
+          startBlock: V4_START_BLOCKS.baseSepolia,
           address: factory({
-            address: zoraFactoryBase,
-            event: getAbiItem({ abi: ZoraFactoryABI, name: "CoinCreated" }),
-            parameter: "pool",
+            address: baseSepolia.addresses.v3.lockableV3Initializer,
+            event: getAbiItem({ abi: LockableUniswapV3InitializerABI, name: "Create" }),
+            parameter: "poolOrHook",
           }),
         },
       },
     },
     UniswapV2Pair: {
       abi: UniswapV2PairABI,
-      network: {
+      chain: {
         baseSepolia: {
-          startBlock: baseSepolia.startBlock,
+          startBlock: V4_START_BLOCKS.baseSepolia,
           address: factory({
-            address: baseSepolia.shared.airlock,
+            address: baseSepolia.addresses.shared.airlock,
             event: getAbiItem({
               abi: AirlockABI,
               name: "Migrate",
@@ -269,7 +285,7 @@ export default createConfig({
         ink: {
           startBlock: ink.startBlock,
           address: factory({
-            address: ink.shared.airlock,
+            address: ink.addresses.shared.airlock,
             event: getAbiItem({
               abi: AirlockABI,
               name: "Migrate",
@@ -280,7 +296,7 @@ export default createConfig({
         base: {
           startBlock: base.startBlock,
           address: factory({
-            address: base.shared.airlock,
+            address: base.addresses.shared.airlock,
             event: getAbiItem({
               abi: AirlockABI,
               name: "Migrate",
@@ -292,11 +308,11 @@ export default createConfig({
     },
     UniswapV2PairUnichain: {
       abi: UniswapV2PairABI,
-      network: {
+      chain: {
         unichain: {
           startBlock: unichain.startBlock,
           address: factory({
-            address: unichain.v2.factory,
+            address: unichain.addresses.v2.factory,
             event: getAbiItem({
               abi: UniswapV2FactoryABI,
               name: "PairCreated",
@@ -308,23 +324,85 @@ export default createConfig({
     },
     PoolManager: {
       abi: PoolManagerABI,
-      network: {
+      chain: {
+        baseSepolia: {
+          startBlock: V4_START_BLOCKS.baseSepolia,
+          address: baseSepolia.addresses.v4.poolManager,
+        },
+        base: {
+          startBlock: V4_START_BLOCKS.base,
+          address: base.addresses.v4.poolManager,
+        },
         unichain: {
-          startBlock: unichain.startBlock,
-          address: unichain.v4.poolManager,
+          startBlock: V4_START_BLOCKS.unichain,
+          address: unichain.addresses.v4.poolManager,
+        },
+        ink: {
+          startBlock: V4_START_BLOCKS.ink,
+          address: ink.addresses.v4.poolManager,
         },
       },
     },
     UniswapV4Pool: {
       abi: DopplerABI,
-      network: {
-        unichain: {
-          startBlock: unichain.startBlock,
+      chain: {
+        baseSepolia: {
+          startBlock: V4_START_BLOCKS.baseSepolia,
           address: factory({
-            address: unichain.v4.v4Initializer,
+            address: baseSepolia.addresses.v4.v4Initializer,
             event: getAbiItem({ abi: UniswapV4InitializerABI, name: "Create" }),
             parameter: "poolOrHook",
           }),
+        },
+        base: {
+          startBlock: V4_START_BLOCKS.base,
+          address: factory({
+            address: base.addresses.v4.v4Initializer,
+            event: getAbiItem({ abi: UniswapV4InitializerABI, name: "Create" }),
+            parameter: "poolOrHook",
+          }),
+        },
+        unichain: {
+          startBlock: V4_START_BLOCKS.unichain,
+          address: factory({
+            address: unichain.addresses.v4.v4Initializer,
+            event: getAbiItem({ abi: UniswapV4InitializerABI, name: "Create" }),
+            parameter: "poolOrHook",
+          }),
+        },
+        ink: {
+          startBlock: V4_START_BLOCKS.ink,
+          address: factory({
+            address: ink.addresses.v4.v4Initializer,
+            event: getAbiItem({ abi: UniswapV4InitializerABI, name: "Create" }),
+            parameter: "poolOrHook",
+          }),
+        },
+      },
+    },
+    UniswapV4Pool2: {
+      abi: DopplerABI,
+      chain: {
+        base: {
+          startBlock: V4_START_BLOCKS.base,
+          address: base.addresses.v4.v4Initializer2,
+        },
+        unichain: {
+          startBlock: V4_START_BLOCKS.unichain,
+          address: unichain.addresses.v4.v4Initializer2,
+        },
+        ink: {
+          startBlock: V4_START_BLOCKS.ink,
+          address: ink.addresses.v4.v4Initializer2,
+        },
+      },
+    },
+    LockableUniswapV3Initializer: {
+      abi: LockableUniswapV3InitializerABI,
+      chain: {
+        baseSepolia: {
+          startBlock: LOCKABLE_V3_INITIALIZER_START_BLOCKS.baseSepolia,
+          address: baseSepolia.addresses.v3.lockableV3Initializer,
         },
       },
     },

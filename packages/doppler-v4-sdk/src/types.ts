@@ -1,4 +1,11 @@
-import { Address, Hash, PublicClient, TestClient, WalletClient } from 'viem';
+import {
+  Address,
+  Hash,
+  PublicClient,
+  TestClient,
+  WalletClient,
+  Hex,
+} from 'viem';
 
 export interface Clients {
   publicClient: PublicClient;
@@ -12,11 +19,14 @@ export interface DopplerV4Addresses {
   v4Initializer: Address;
   v3Initializer?: Address;
   governanceFactory: Address;
+  noOpGovernanceFactory: Address;
   migrator: Address;
+  streamableFeesLocker: Address;
   poolManager: Address;
   dopplerDeployer: Address;
   universalRouter: Address;
   stateView: Address;
+  v4Quoter: Address;
 }
 
 export interface TokenConfig {
@@ -59,7 +69,11 @@ export interface PoolKey {
   hooks: Address;
 }
 
-// this maps onto the tick range, startingTick -> endingTick
+export interface TickRange {
+  startTick: number;
+  endTick: number;
+}
+
 export interface PriceRange {
   startPrice: number;
   endPrice: number;
@@ -81,8 +95,10 @@ export interface DopplerPreDeploymentConfig {
 
   // Price parameters
   numeraire?: Address; // defaults to native if unset
-  priceRange: PriceRange;
+  tickRange?: TickRange;
+  priceRange?: PriceRange;
   tickSpacing: number;
+  gamma?: number; // allow gamma to be passed directly instead of computed
   fee: number; // In bips
 
   // Sale parameters
@@ -95,6 +111,9 @@ export interface DopplerPreDeploymentConfig {
   vestingDuration: bigint;
   recipients: Address[];
   amounts: bigint[];
+
+  // Liquidity migration parameters
+  liquidityMigratorData?: Hex;
 
   integrator: Address;
 }
@@ -131,4 +150,21 @@ export interface DeployerParams {
   publicClient: PublicClient;
   walletClient: WalletClient;
   addresses?: DopplerV4Addresses;
+}
+
+export interface BeneficiaryData {
+  beneficiary: Address;
+  shares: bigint; // in WAD (1e18)
+}
+
+export interface StreamableFeesConfig {
+  lockDuration: number; // in seconds
+  beneficiaries: BeneficiaryData[];
+}
+
+export interface V4MigratorData {
+  fee: number; // in bips
+  tickSpacing: number;
+  lockDuration: number; // in seconds
+  beneficiaries: BeneficiaryData[];
 }

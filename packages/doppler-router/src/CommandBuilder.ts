@@ -5,6 +5,7 @@ export enum CommandType {
   V3_SWAP_EXACT_IN = 0x00,
   V3_SWAP_EXACT_OUT = 0x01,
   PERMIT2_TRANSFER_FROM = 0x02,
+  SWEEP = 0x04,
   V2_SWAP_EXACT_IN = 0x08,
   V2_SWAP_EXACT_OUT = 0x09,
   PERMIT2_PERMIT = 0x0a,
@@ -69,6 +70,11 @@ const ABI_DEFINITION: { [key in CommandType]: any[] } = {
     { type: "uint256" },
     { type: "address[]" },
     { type: "bool" },
+  ],
+  [CommandType.SWEEP]: [
+    { type: "address" },
+    { type: "address" },
+    { type: "uint256" },
   ],
 };
 

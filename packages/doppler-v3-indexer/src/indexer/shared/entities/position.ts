@@ -19,14 +19,14 @@ export const insertPositionIfNotExists = async ({
   timestamp: bigint;
   context: Context;
 }): Promise<typeof position.$inferSelect> => {
-  const { db, network } = context;
+  const { db, chain } = context;
   const poolAddr = poolAddress.toLowerCase() as `0x${string}`;
 
   const existingPosition = await db.find(position, {
     pool: poolAddr,
     tickLower: tickLower,
     tickUpper: tickUpper,
-    chainId: BigInt(network.chainId),
+    chainId: BigInt(chain.id),
   });
 
   if (existingPosition) {
@@ -40,7 +40,7 @@ export const insertPositionIfNotExists = async ({
     tickUpper,
     liquidity,
     createdAt: timestamp,
-    chainId: BigInt(network.chainId),
+    chainId: BigInt(chain.id),
   });
 };
 
@@ -57,7 +57,7 @@ export const updatePosition = async ({
   context: Context;
   update: Partial<typeof position.$inferInsert>;
 }) => {
-  const { db, network } = context;
+  const { db, chain } = context;
   const poolAddr = poolAddress.toLowerCase() as `0x${string}`;
 
   await db
@@ -65,7 +65,7 @@ export const updatePosition = async ({
       pool: poolAddr,
       tickLower,
       tickUpper,
-      chainId: BigInt(network.chainId),
+      chainId: BigInt(chain.id),
     })
     .set({
       ...update,

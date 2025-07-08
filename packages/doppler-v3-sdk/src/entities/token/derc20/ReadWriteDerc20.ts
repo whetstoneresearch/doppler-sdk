@@ -18,14 +18,6 @@ export class ReadWriteDerc20 extends ReadDerc20 {
   }
 
   async approve(spender: Address, value: bigint): Promise<Hex> {
-    return this.contract.write(
-      "approve",
-      { spender, value },
-      {
-        onMined: () => {
-          this.contract.invalidateReadsMatching("allowance");
-        },
-      }
-    );
+    return this.contract.write("approve", { spender, value });
   }
 }
