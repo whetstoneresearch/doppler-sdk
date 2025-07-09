@@ -1,17 +1,30 @@
 import {
-  ReadWriteContract,
-  ReadWriteAdapter,
-  Drift,
-  TransactionOptions,
   createDrift,
-  FunctionReturn,
+  Drift,
   FunctionArgs,
+  FunctionReturn,
+  HexString,
+  ReadWriteAdapter,
+  ReadWriteContract,
+  TransactionOptions,
 } from "@delvtech/drift";
-import { ReadFactory, AirlockABI } from "./ReadFactory";
+import {
+  Address,
+  encodeAbiParameters,
+  encodePacked,
+  getAddress,
+  Hash,
+  Hex,
+  keccak256,
+  parseEther,
+  toHex,
+} from "viem";
 import { BundlerAbi } from "../../abis";
-import { Address, encodeAbiParameters, Hex, parseEther, toHex } from "viem";
-import { BeneficiaryData, V4MigratorData } from "../../types";
 import { DOPPLER_V3_ADDRESSES } from "../../addresses";
+import { BeneficiaryData, V4MigratorData } from "../../types";
+import { DERC20Bytecode } from "@/abis/bytecodes";
+import { VANITY_ADDRESS_ENDING } from "@/constants";
+import { ReadFactory, AirlockABI } from "./ReadFactory";
 
 // Constants for default configuration values
 export const ONE_YEAR_IN_SECONDS = 365 * 24 * 60 * 60;
@@ -31,7 +44,8 @@ export const DEFAULT_INITIAL_VOTING_PERIOD = 1209600;
 export const DEFAULT_INITIAL_PROPOSAL_THRESHOLD = BigInt(0);
 
 export const WAD = BigInt(10 ** 18);
-export const DEAD_ADDRESS = "0x000000000000000000000000000000000000dEaD" as Address;
+export const DEAD_ADDRESS =
+  "0x000000000000000000000000000000000000dEaD" as Address;
 
 /**
  * Parameters required for creating a new Doppler V3 pool
@@ -244,6 +258,17 @@ export class ReadWriteFactory extends ReadFactory {
       initialProposalThreshold: DEFAULT_INITIAL_PROPOSAL_THRESHOLD,
     };
   }
+  private computeCreate2Address(
+    salt: Hash,
+    initCodeHash: Hash,
+    deployer: Address
+  ): Address {
+    const encoded = encodePacked(
+      ["bytes1", "address", "bytes32", "bytes32"],
+      ["0xff", deployer, salt, initCodeHash]
+    );
+    return getAddress(`0x${keccak256(encoded).slice(-40)}`);
+  }
 
   /**
    * Merge user configuration with defaults
@@ -317,7 +342,7 @@ export class ReadWriteFactory extends ReadFactory {
    * @param account User address to incorporate into salt
    * @returns Hex string of generated salt
    */
-  private generateRandomSalt = (account: Address) => {
+  private generateRandomSalt = (account: Address): HexString => {
     const array = new Uint8Array(32);
 
     // Sequential byte generation
@@ -347,10 +372,15 @@ export class ReadWriteFactory extends ReadFactory {
    */
   private encodeLockablePoolInitializerData(v3PoolConfig: V3PoolConfig): Hex {
     if (!v3PoolConfig.beneficiaries) {
-      throw new Error("Beneficiaries are required for lockable pool initialization");
+      throw new Error(
+        "Beneficiaries are required for lockable pool initialization"
+      );
     }
 
-    const totalShares = v3PoolConfig.beneficiaries.reduce((acc, beneficiary) => acc + beneficiary.shares, 0n);
+    const totalShares = v3PoolConfig.beneficiaries.reduce(
+      (acc, beneficiary) => acc + beneficiary.shares,
+      0n
+    );
 
     if (totalShares !== WAD) {
       throw new Error("Total shares must be equal to 1e18");
@@ -372,10 +402,10 @@ export class ReadWriteFactory extends ReadFactory {
               type: "tuple[]",
               components: [
                 { type: "address", name: "beneficiary" },
-                { type: "uint96", name: "shares" }
-              ]
+                { type: "uint96", name: "shares" },
+              ],
             },
-          ]
+          ],
         },
       ],
       [
@@ -386,8 +416,8 @@ export class ReadWriteFactory extends ReadFactory {
           numPositions: v3PoolConfig.numPositions,
           maxShareToBeSold: v3PoolConfig.maxShareToBeSold,
           beneficiaries: v3PoolConfig.beneficiaries,
-        }
-      ],
+        },
+      ]
     );
   }
 
@@ -507,8 +537,37 @@ export class ReadWriteFactory extends ReadFactory {
       );
     }
 
-    // Generate unique salt and encode contract data
-    const salt = this.generateRandomSalt(userAddress) as Hex;
+    const initHashData = encodeAbiParameters(
+      [
+        { type: "string" },
+        { type: "string" },
+        { type: "uint256" },
+        { type: "address" },
+        { type: "address" },
+        { type: "uint256" },
+        { type: "uint256" },
+        { type: "address[]" },
+        { type: "uint256[]" },
+        { type: "string" },
+      ],
+      [
+        params.tokenConfig.name,
+        params.tokenConfig.symbol,
+        saleConfig.initialSupply,
+        this.airlock.address,
+        this.airlock.address,
+        vestingConfig.yearlyMintRate,
+        vestingConfig.vestingDuration,
+        vestingConfig.recipients,
+        vestingConfig.amounts,
+        tokenConfig.tokenURI,
+      ]
+    );
+
+    const tokenInitHash = keccak256(
+      encodePacked(["bytes", "bytes"], [DERC20Bytecode as Hex, initHashData])
+    );
+
     const governanceFactoryData = this.encodeGovernanceFactoryData(
       tokenConfig,
       governanceConfig
@@ -518,7 +577,9 @@ export class ReadWriteFactory extends ReadFactory {
       vestingConfig
     );
 
-    const poolInitializerData = v3PoolConfig.beneficiaries ? this.encodeLockablePoolInitializerData(v3PoolConfig) : this.encodePoolInitializerData(v3PoolConfig)
+    const poolInitializerData = v3PoolConfig.beneficiaries
+      ? this.encodeLockablePoolInitializerData(v3PoolConfig)
+      : this.encodePoolInitializerData(v3PoolConfig);
     const liquidityMigratorData = params.liquidityMigratorData ?? ("0x" as Hex);
 
     // Prepare final arguments
@@ -528,6 +589,22 @@ export class ReadWriteFactory extends ReadFactory {
       v3Initializer: poolInitializer,
       liquidityMigrator,
     } = contracts;
+
+    let minedSalt = this.generateRandomSalt(userAddress);
+    for (let salt = BigInt(0); salt < BigInt(1_000_000); salt++) {
+      const saltBytes = `0x${salt.toString(16).padStart(64, "0")}` as Hash;
+
+      const token = this.computeCreate2Address(
+        saltBytes,
+        tokenInitHash,
+        tokenFactory
+      );
+      if (token.toLowerCase().endsWith(VANITY_ADDRESS_ENDING)) {
+        console.log(token);
+        minedSalt = saltBytes;
+        break;
+      }
+    }
 
     const { initialSupply, numTokensToSell } = saleConfig;
 
@@ -544,7 +621,7 @@ export class ReadWriteFactory extends ReadFactory {
       liquidityMigrator,
       liquidityMigratorData,
       integrator,
-      salt,
+      salt: minedSalt,
     };
 
     return {
@@ -573,10 +650,15 @@ export class ReadWriteFactory extends ReadFactory {
     );
 
     // Validation Rule #1: Supply Integrity Constraint
-    if (saleConfig.initialSupply < saleConfig.numTokensToSell + totalVestedAmount) {
+    if (
+      saleConfig.initialSupply <
+      saleConfig.numTokensToSell + totalVestedAmount
+    ) {
       throw new Error(
-        `Configuration Error: Vesting and sale amounts (${saleConfig.numTokensToSell + totalVestedAmount
-        }) exceed the initial supply (${saleConfig.initialSupply
+        `Configuration Error: Vesting and sale amounts (${
+          saleConfig.numTokensToSell + totalVestedAmount
+        }) exceed the initial supply (${
+          saleConfig.initialSupply
         }). Please adjust your vesting schedule or increase the initial supply.`
       );
     }
@@ -599,17 +681,20 @@ export class ReadWriteFactory extends ReadFactory {
     // Check if the governance factory is a no-op governance factory
     const chainId = await this.drift.getChainId();
     const addresses = DOPPLER_V3_ADDRESSES[chainId];
-    const isNoOp = addresses?.noOpGovernanceFactory &&
+    const isNoOp =
+      addresses?.noOpGovernanceFactory &&
       params.contracts.governanceFactory.toLowerCase() ===
-      addresses.noOpGovernanceFactory.toLowerCase();
+        addresses.noOpGovernanceFactory.toLowerCase();
 
     if (isNoOp) {
-      const excess = saleConfig.initialSupply - (saleConfig.numTokensToSell + totalVestedAmount);
+      const excess =
+        saleConfig.initialSupply -
+        (saleConfig.numTokensToSell + totalVestedAmount);
       if (excess !== 0n) {
         throw new Error(
           `Configuration Error: No-op governance requires zero excess tokens. ` +
-          `The current configuration creates an excess of ${excess} tokens. ` +
-          `Please set initialSupply to be exactly the sum of numTokensToSell and vested amounts.`
+            `The current configuration creates an excess of ${excess} tokens. ` +
+            `Please set initialSupply to be exactly the sum of numTokensToSell and vested amounts.`
         );
       }
     }
@@ -631,7 +716,6 @@ export class ReadWriteFactory extends ReadFactory {
       isToken0 = Number(asset) < Number(params.numeraire);
       i++;
     }
-
     return createParams;
   }
 
@@ -795,7 +879,7 @@ export class ReadWriteFactory extends ReadFactory {
 
       // Check if airlock owner is already in the beneficiaries list
       const existingOwnerIndex = beneficiaries.findIndex(
-        b => b.beneficiary.toLowerCase() === airlockOwner.toLowerCase()
+        (b) => b.beneficiary.toLowerCase() === airlockOwner.toLowerCase()
       );
 
       if (existingOwnerIndex === -1) {
@@ -804,17 +888,20 @@ export class ReadWriteFactory extends ReadFactory {
 
         // Scale down other beneficiaries proportionally
         const remainingShares = WAD - ownerShares; // 95% remaining
-        const currentTotal = beneficiaries.reduce((sum, b) => sum + b.shares, BigInt(0));
+        const currentTotal = beneficiaries.reduce(
+          (sum, b) => sum + b.shares,
+          BigInt(0)
+        );
 
-        beneficiaries = beneficiaries.map(b => ({
+        beneficiaries = beneficiaries.map((b) => ({
           ...b,
-          shares: (b.shares * remainingShares) / currentTotal
+          shares: (b.shares * remainingShares) / currentTotal,
         }));
 
         // Add the owner beneficiary
         beneficiaries.push({
           beneficiary: airlockOwner,
-          shares: ownerShares
+          shares: ownerShares,
         });
 
         // Sort beneficiaries by address
@@ -827,24 +914,25 @@ export class ReadWriteFactory extends ReadFactory {
 
     return encodeAbiParameters(
       [
-        { type: "uint24" },  // fee
-        { type: "int24" },   // tickSpacing
-        { type: "uint32" },  // lockDuration
+        { type: "uint24" }, // fee
+        { type: "int24" }, // tickSpacing
+        { type: "uint32" }, // lockDuration
         {
-          type: "tuple[]", components: [
+          type: "tuple[]",
+          components: [
             { type: "address", name: "beneficiary" },
-            { type: "uint96", name: "shares" }
-          ]
-        }
+            { type: "uint96", name: "shares" },
+          ],
+        },
       ],
       [
         data.fee,
         data.tickSpacing,
         data.lockDuration,
-        beneficiaries.map(b => ({
+        beneficiaries.map((b) => ({
           beneficiary: b.beneficiary,
-          shares: b.shares
-        }))
+          shares: b.shares,
+        })),
       ]
     );
   }
