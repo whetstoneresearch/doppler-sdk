@@ -181,6 +181,7 @@ export const pool = onchainTable(
     tick: t.integer().notNull(),
     sqrtPrice: t.bigint().notNull(),
     liquidity: t.bigint().notNull(),
+    integrator: t.hex(),
     createdAt: t.bigint().notNull(),
     asset: t.hex().notNull(),
     baseToken: t.hex().notNull(),

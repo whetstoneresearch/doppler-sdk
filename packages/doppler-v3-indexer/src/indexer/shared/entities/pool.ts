@@ -1,10 +1,14 @@
-import { getV3PoolData } from "@app/utils/v3-utils";
+import { DERC20ABI } from "@app/abis";
+import { configs, V4PoolData } from "@app/types";
 import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
+import { getAssetData } from "@app/utils/getAssetData";
+import { getV3PoolData } from "@app/utils/v3-utils";
+import { computeGraduationPercentage } from "@app/utils/v4-utils";
+import { getReservesV4 } from "@app/utils/v4-utils/getV4PoolData";
+import { Context } from "ponder:registry";
 import { pool } from "ponder:schema";
 import { Address } from "viem";
-import { Context } from "ponder:registry";
 import { computeMarketCap } from "../oracle";
-import { getReservesV4 } from "@app/utils/v4-utils/getV4PoolData";
 import { computeGraduationPercentage } from "@app/utils/v4-utils";
 import { DERC20ABI } from "@app/abis";
 import { V4PoolData } from "@app/types";
@@ -66,13 +70,19 @@ export const insertPoolIfNotExists = async ({
   const assetAddr = poolState.asset.toLowerCase() as `0x${string}`;
   const numeraireAddr = poolState.numeraire.toLowerCase() as `0x${string}`;
 
-  const isQuoteEth = poolState.numeraire.toLowerCase() === "0x0000000000000000000000000000000000000000" || poolState.numeraire.toLowerCase() === configs[chain.name].shared.weth;
+  const isQuoteEth =
+    poolState.numeraire.toLowerCase() ===
+      "0x0000000000000000000000000000000000000000" ||
+    poolState.numeraire.toLowerCase() === configs[chain.name].shared.weth;
 
-  const assetTotalSupply = await client.readContract({
-    address: assetAddr,
-    abi: DERC20ABI,
-    functionName: "totalSupply",
-  });
+  const [assetTotalSupply, assetData] = await Promise.all([
+    client.readContract({
+      address: assetAddr,
+      abi: DERC20ABI,
+      functionName: "totalSupply",
+    }),
+    getAssetData(assetAddr, context),
+  ]);
 
   const marketCapUsd = computeMarketCap({
     price,
@@ -105,7 +115,8 @@ export const insertPoolIfNotExists = async ({
     percentDayChange: 0,
     isToken0,
     marketCapUsd,
-    isQuoteEth
+    isQuoteEth,
+    integrator: assetData.integrator,
   });
 };
 
@@ -163,10 +174,12 @@ export const insertPoolIfNotExistsV4 = async ({
     ? poolKey.currency1
     : poolKey.currency0;
 
-  const isQuoteEth = numeraireAddr.toLowerCase() === "0x0000000000000000000000000000000000000000" || numeraireAddr.toLowerCase() === configs[chain.name].shared.weth;
+  const isQuoteEth =
+    numeraireAddr.toLowerCase() ===
+      "0x0000000000000000000000000000000000000000" ||
+    numeraireAddr.toLowerCase() === configs[chain.name].shared.weth;
 
-
-  const [reserves, totalSupply] = await Promise.all([
+  const [reserves, totalSupply, assetData] = await Promise.all([
     getReservesV4({
       hook: address,
       context,
@@ -176,10 +189,10 @@ export const insertPoolIfNotExistsV4 = async ({
       abi: DERC20ABI,
       functionName: "totalSupply",
     }),
+    getAssetData(assetAddr, context),
   ]);
 
   const { token0Reserve, token1Reserve } = reserves;
-
 
   const assetBalance = poolConfig.isToken0 ? token0Reserve : token1Reserve;
   const quoteBalance = poolConfig.isToken0 ? token1Reserve : token0Reserve;
@@ -230,7 +243,8 @@ export const insertPoolIfNotExistsV4 = async ({
     reserves0: token0Reserve,
     reserves1: token1Reserve,
     poolKey: JSON.stringify(poolKey),
-    isQuoteEth
+    isQuoteEth,
+    integrator: assetData.integrator,
   });
 };
 
@@ -269,13 +283,19 @@ export const insertLockableV3PoolIfNotExists = async ({
   const assetAddr = poolState.asset.toLowerCase() as `0x${string}`;
   const numeraireAddr = poolState.numeraire.toLowerCase() as `0x${string}`;
 
-  const isQuoteEth = poolState.numeraire.toLowerCase() === "0x0000000000000000000000000000000000000000" || poolState.numeraire.toLowerCase() === configs[chain.name].shared.weth;
+  const isQuoteEth =
+    poolState.numeraire.toLowerCase() ===
+      "0x0000000000000000000000000000000000000000" ||
+    poolState.numeraire.toLowerCase() === configs[chain.name].shared.weth;
 
-  const assetTotalSupply = await client.readContract({
-    address: assetAddr,
-    abi: DERC20ABI,
-    functionName: "totalSupply",
-  });
+  const [assetTotalSupply, assetData] = await Promise.all([
+    client.readContract({
+      address: assetAddr,
+      abi: DERC20ABI,
+      functionName: "totalSupply",
+    }),
+    getAssetData(assetAddr, context),
+  ]);
 
   const marketCapUsd = computeMarketCap({
     price,
@@ -308,6 +328,9 @@ export const insertLockableV3PoolIfNotExists = async ({
     percentDayChange: 0,
     isToken0,
     marketCapUsd,
+    isStreaming: true,
+    isQuoteEth,
+    integrator: assetData.integrator,
     isQuoteEth
   });
 };
