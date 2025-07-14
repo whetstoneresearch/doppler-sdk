@@ -6,24 +6,24 @@ import { ethPrice } from "ponder.schema";
 import { refreshCheckpointBlob } from "./shared/entities/v4-entities/v4CheckpointBlob";
 import { handlePendingTokenImages } from "./shared/process-pending-images";
 
-/**
- * Block handlers that run periodically to ensure volume data and metrics are up-to-date
- * These are triggered by the block configuration in ponder.config.ts
- */
+// /**
+//  * Block handlers that run periodically to ensure volume data and metrics are up-to-date
+//  * These are triggered by the block configuration in ponder.config.ts
+//  */
 
-// // Handler for unichain network
-ponder.on("MetricRefresherUnichain:block", async ({ event, context }) => {
-  try {
-    // Execute optimized combined refresh job
-    await refreshActivePoolsBlob({
-      context,
-      timestamp: Number(event.block.timestamp),
-    });
-  } catch (error) {
-    console.error(`Error in unichain refresh job: ${error}`);
-    // Log error but don't throw to prevent handler from failing completely
-  }
-});
+// // // Handler for unichain network
+// ponder.on("MetricRefresherUnichain:block", async ({ event, context }) => {
+//   try {
+//     // Execute optimized combined refresh job
+//     await refreshActivePoolsBlob({
+//       context,
+//       timestamp: Number(event.block.timestamp),
+//     });
+//   } catch (error) {
+//     console.error(`Error in unichain refresh job: ${error}`);
+//     // Log error but don't throw to prevent handler from failing completely
+//   }
+// });
 
 // Handler for baseSepolia network
 ponder.on("MetricRefresherBaseSepolia:block", async ({ event, context }) => {
@@ -39,18 +39,18 @@ ponder.on("MetricRefresherBaseSepolia:block", async ({ event, context }) => {
   }
 });
 
-// // Handler for ink network
-ponder.on("MetricRefresherInk:block", async ({ event, context }) => {
-  try {
-    // Execute optimized combined refresh job
-    await refreshActivePoolsBlob({
-      context,
-      timestamp: Number(event.block.timestamp),
-    });
-  } catch (error) {
-    console.error(`Error in ink refresh job: ${error}`);
-  }
-});
+// // // Handler for ink network
+// ponder.on("MetricRefresherInk:block", async ({ event, context }) => {
+//   try {
+//     // Execute optimized combined refresh job
+//     await refreshActivePoolsBlob({
+//       context,
+//       timestamp: Number(event.block.timestamp),
+//     });
+//   } catch (error) {
+//     console.error(`Error in ink refresh job: ${error}`);
+//   }
+// });
 
 // Handler for base network
 ponder.on("MetricRefresherBase:block", async ({ event, context }) => {
