@@ -5,6 +5,7 @@ import {
   DopplerABI,
   DopplerLensQuoterABI,
   StateViewABI,
+  ZoraV4HookABI,
 } from "@app/abis";
 import {
   PoolKey,
@@ -23,6 +24,7 @@ import {
 } from "../v3-utils/computeGraduationThreshold";
 import { configs } from "addresses";
 import { getMulticallOptions } from "@app/core/utils";
+import { chainConfigs } from "@app/config";
 
 export const getV4PoolData = async ({
   hook,
@@ -398,4 +400,106 @@ export const getLatestSqrtPrice = async ({
   const amount1 = lensQuote.result.amount1;
 
   return { sqrtPriceX96, tick, amount0, amount1 };
+};
+
+export const getReservesV4Zora = async ({
+  poolAddress,
+  poolKey,
+  context,
+}: {
+  poolAddress: Address;
+  poolKey: PoolKey;
+  context: Context;
+}) => {
+  const { client, chain } = context;
+  const stateView = chainConfigs[chain.name].addresses.v4.stateView;
+
+  console.log(stateView)
+  console.log(poolAddress)
+
+  const poolId = getPoolId(poolKey);
+
+  const [poolCoin, slot0] = await client.multicall({
+    contracts: [
+      {
+        abi: ZoraV4HookABI,
+        address: poolAddress,
+        functionName: "getPoolCoin",
+        args: [poolKey],
+      },
+      {
+        abi: StateViewABI,
+        address: stateView,
+        functionName: "getSlot0",
+        args: [poolId],
+      },
+    ],
+  });
+
+  console.log(poolCoin, slot0)
+
+  const sqrtPriceX96 = slot0.result?.[0] ?? 0n;
+  const tick = slot0.result?.[1] ?? 0;
+  const positions = poolCoin.result?.positions ?? [];
+
+  const reserves = positions
+    .map((position) => {
+      const { tickLower, tickUpper, liquidity } = position;
+
+      let amount0;
+      let amount1;
+      if (tick < tickLower) {
+        amount0 = getAmount0Delta({
+          tickLower,
+          tickUpper,
+          liquidity,
+          roundUp: false,
+        });
+      } else if (tick < tickUpper) {
+        amount0 = getAmount0Delta({
+          tickLower: tick,
+          tickUpper,
+          liquidity,
+          roundUp: false,
+        });
+      } else {
+        amount0 = 0n;
+      }
+
+      if (tick < tickLower) {
+        amount1 = 0n;
+      } else if (tick < tickUpper) {
+        amount1 = getAmount1Delta({
+          tickLower,
+          tickUpper: tick,
+          liquidity,
+          roundUp: false,
+        });
+      } else {
+        amount1 = getAmount1Delta({
+          tickLower,
+          tickUpper,
+          liquidity,
+          roundUp: false,
+        });
+      }
+
+      return {
+        liquidity: liquidity,
+        token0Reserve: amount0,
+        token1Reserve: amount1,
+      };
+    })
+    .reduce(
+      (acc, curr) => {
+        return {
+          liquidity: acc.liquidity + curr.liquidity,
+          token0Reserve: acc.token0Reserve + curr.token0Reserve,
+          token1Reserve: acc.token1Reserve + curr.token1Reserve,
+        };
+      },
+      { liquidity: 0n, token0Reserve: 0n, token1Reserve: 0n }
+    );
+
+  return { reserves, sqrtPriceX96, tick };
 };

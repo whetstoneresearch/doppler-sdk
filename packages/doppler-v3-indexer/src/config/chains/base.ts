@@ -27,6 +27,9 @@ export const baseSepoliaConfig: ChainConfig = {
         "0x1fb8a108ff5c16213ebe3456314858d6b069a23b" as Address,
       v3Migrator: "0x0A3d3678b31cfF5F926c2A0384E742E4747605A0" as Address,
     },
+    zora: {
+      zoraFactory: COMMON_ADDRESSES.ZERO_ADDRESS,
+    },
     v4: {
       poolManager: "0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408" as Address,
       dopplerDeployer: "0x4bf819dfa4066bd7c9f21ea3db911bd8c10cb3ca" as Address,
@@ -57,6 +60,7 @@ export const baseConfig: ChainConfig = {
   startBlock: START_BLOCKS.base,
   v4StartBlock: V4_START_BLOCKS.base,
   oracleStartBlock: START_BLOCKS.mainnet,
+  zoraStartBlock: 26602741,
   rpcEnvVar: RPC_ENV_VARS.base,
   addresses: {
     v2: {
@@ -80,6 +84,9 @@ export const baseConfig: ChainConfig = {
       v4MigratorHook: "0x1370ad7fda3b054eca3532a066b968433e736000" as Address,
       v4InitializerSelfCorrecting:
         "0x82Ac010C67f70BACf7655cd8948a4AD92A173CAC" as Address,
+    },
+    zora: {
+      zoraFactory: "0x777777751622c0d3258f214F9DF38E35BF45baF3" as Address,
     },
     shared: {
       airlock: "0x660eAaEdEBc968f8f3694354FA8EC0b4c5Ba8D12" as Address,

@@ -10,6 +10,7 @@ import { configs } from "addresses";
 import { updatePool } from "./entities/pool";
 import { updateToken } from "./entities/token";
 import { insertAssetIfNotExists, updateAsset } from "./entities/asset";
+import { insertZoraAssetIfNotExists } from "./entities/zora/asset";
 
 export interface DayMetrics {
   volumeUsd: bigint;
@@ -271,4 +272,124 @@ export const updateDailyVolume = async ({
       pool: poolAddress,
     })
     .set({ ...volumeData });
+};
+
+export const insertOrUpdateDailyVolumeZora = async ({
+  poolAddress,
+  numeraireAddress,
+  tokenIn,
+  tokenOut,
+  amountIn,
+  amountOut,
+  timestamp,
+  ethPrice,
+  marketCapUsd,
+  context,
+}: {
+  poolAddress: Address;
+  numeraireAddress: Address;
+  tokenIn: Address;
+  tokenOut: Address;
+  amountIn: bigint;
+  amountOut: bigint;
+  timestamp: bigint;
+  ethPrice: bigint;
+  marketCapUsd: bigint;
+  context: Context;
+}) => {
+  const { db, chain } = context;
+
+  let volumeUsd;
+
+  const isTokenInEth =
+    tokenIn.toLowerCase() === zeroAddress ||
+    tokenIn.toLowerCase() ===
+    (configs[chain.name].shared.weth.toLowerCase() as `0x${string}`);
+
+  if (isTokenInEth) {
+    volumeUsd = (amountIn * ethPrice) / CHAINLINK_ETH_DECIMALS;
+  } else {
+    const uintAmountOut = amountOut > 0n ? amountOut : -amountOut;
+    volumeUsd = (uintAmountOut * ethPrice) / CHAINLINK_ETH_DECIMALS;
+  }
+
+  const assetAddress = isTokenInEth ? tokenOut : tokenIn;
+
+  const asset = await insertZoraAssetIfNotExists({
+    poolAddress,
+    numeraireAddress,
+    assetAddress: assetAddress.toLowerCase() as `0x${string}`,
+    timestamp,
+    context,
+  });
+
+  let computedVolumeUsd;
+  const volume = await db
+    .insert(dailyVolume)
+    .values({
+      pool: poolAddress.toLowerCase() as `0x${string}`,
+      volumeUsd: volumeUsd,
+      chainId: BigInt(chain.id),
+      lastUpdated: timestamp,
+      checkpoints: {},
+      earliestCheckpoint: 0n,
+      dayChangeUsd: 0n,
+    })
+    .onConflictDoUpdate((row) => {
+      const checkpoints = {
+        ...(row.checkpoints as Record<string, DayMetrics>),
+        [timestamp.toString()]: {
+          volumeUsd: volumeUsd.toString(),
+          marketCapUsd: marketCapUsd.toString(),
+        },
+      };
+
+      const updatedCheckpoints = Object.fromEntries(
+        Object.entries(checkpoints).filter(
+          ([ts]) => BigInt(ts) >= timestamp - BigInt(secondsInDay)
+        )
+      );
+
+      const totalVolumeUsd = Object.values(updatedCheckpoints).reduce(
+        (acc, vol) => acc + BigInt(vol.volumeUsd),
+        BigInt(0)
+      );
+
+      computedVolumeUsd = totalVolumeUsd;
+
+      return {
+        volumeUsd: totalVolumeUsd,
+        checkpoints: updatedCheckpoints,
+        lastUpdated: timestamp,
+      };
+    });
+
+
+  if (computedVolumeUsd) {
+    await updatePool({
+      poolAddress,
+      context,
+      update: {
+        volumeUsd: computedVolumeUsd,
+        lastRefreshed: timestamp,
+        lastSwapTimestamp: timestamp,
+      },
+    });
+    await updateToken({
+      tokenAddress: asset.address,
+      context,
+      update: {
+        volumeUsd: computedVolumeUsd,
+      },
+    });
+    await updateAsset({
+      assetAddress: asset.address,
+      context,
+      update: {
+        dayVolumeUsd: computedVolumeUsd,
+      },
+    });
+  }
+
+  return volume;
 };

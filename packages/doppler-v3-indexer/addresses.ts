@@ -29,6 +29,7 @@ const v4InkStartBlock = 14937170;
 
 const baseStartBlock = 28415520;
 const v4BaseStartBlock = 30822164;
+const baseZoraStartBlock = 26602741;
 
 export type IndexerConfigs = Record<Network, DopplerConfig>;
 
@@ -36,10 +37,12 @@ export type DopplerConfig = {
   v2: V2Addresses;
   v3: V3Addresses;
   v4: V4Addresses;
+  zora: ZoraAddresses;
   shared: SharedAddresses;
   oracle: OracleAddresses;
   startBlock: number;
   v4StartBlock?: number;
+  zoraStartBlock?: number;
   oracleStartBlock: number;
 };
 
@@ -70,6 +73,10 @@ export type V2Addresses = {
   factory: Address;
 };
 
+export type ZoraAddresses = {
+  zoraFactory: Address;
+};
+
 export type OracleAddresses = {
   mainnetEthUsdc: Address;
   weth: Address;
@@ -91,6 +98,7 @@ export const configs: IndexerConfigs = {
     },
     v3: {
       v3Initializer: zeroAddress as Address,
+      lockableV3Initializer: zeroAddress as Address,
     },
     v4: {
       poolManager: zeroAddress as Address,
@@ -108,6 +116,9 @@ export const configs: IndexerConfigs = {
       migrator: zeroAddress as Address,
       weth: zeroAddress as Address,
     },
+    zora: {
+      zoraFactory: zeroAddress as Address,
+    },
     oracle: oracleAddresses,
     startBlock: mainnetStartBlock,
     oracleStartBlock: mainnetStartBlock,
@@ -118,6 +129,7 @@ export const configs: IndexerConfigs = {
     },
     v3: {
       v3Initializer: "0x9F4e56be80f08ba1A2445645EFa6d231E27b43ec" as Address,
+      lockableV3Initializer: zeroAddress as Address,
     },
     v4: {
       poolManager: "0x1F98400000000000000000000000000000000004" as Address,
@@ -126,6 +138,9 @@ export const configs: IndexerConfigs = {
       stateView: "0x86e8631a016f9068c3f085faf484ee3f5fdee8f2" as Address,
       dopplerLens: "0x166109C4EE7fE69164631Caa937dAA5F5cEbFef0" as Address,
       v4Initializer2: zeroAddress,
+    },
+    zora: {
+      zoraFactory: zeroAddress as Address,
     },
     shared: {
       airlock: "0x77EbfBAE15AD200758E9E2E61597c0B07d731254" as Address,
@@ -147,6 +162,7 @@ export const configs: IndexerConfigs = {
     },
     v3: {
       v3Initializer: "0x4c3062b9ccfdbcb10353f57c1b59a29d4c5cfa47" as Address,
+      lockableV3Initializer: zeroAddress as Address,
     },
     v4: {
       poolManager: "0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408" as Address,
@@ -165,6 +181,9 @@ export const configs: IndexerConfigs = {
       migrator: "0xb2ec6559704467306d04322a5dc082b2af4562dd" as Address,
       weth: "0x4200000000000000000000000000000000000006" as Address,
     },
+    zora: {
+      zoraFactory: zeroAddress as Address,
+    },
     oracle: oracleAddresses,
     startBlock: baseSepoliaStartBlock,
     v4StartBlock: v4BaseSepoliaStartBlock,
@@ -176,6 +195,7 @@ export const configs: IndexerConfigs = {
     },
     v3: {
       v3Initializer: "0xaA47D2977d622DBdFD33eeF6a8276727c52EB4e5" as Address,
+      lockableV3Initializer: zeroAddress as Address,
     },
     v4: {
       poolManager: "0x360e68faccca8ca495c1b759fd9eee466db9fb32" as Address,
@@ -194,6 +214,9 @@ export const configs: IndexerConfigs = {
       migrator: "0x5F3bA43D44375286296Cb85F1EA2EBfa25dde731" as Address,
       weth: "0x4200000000000000000000000000000000000006" as Address,
     },
+    zora: {
+      zoraFactory: zeroAddress as Address,
+    },
     oracle: oracleAddresses,
     startBlock: inkStartBlock,
     oracleStartBlock: mainnetStartBlock,
@@ -205,6 +228,10 @@ export const configs: IndexerConfigs = {
     },
     v3: {
       v3Initializer: "0xaA47D2977d622DBdFD33eeF6a8276727c52EB4e5" as Address,
+      lockableV3Initializer: zeroAddress as Address,
+    },
+    zora: {
+      zoraFactory: "0x777777751622c0d3258f214F9DF38E35BF45baF3" as Address,
     },
     v4: {
       poolManager: "0x498581ff718922c3f8e6a244956af099b2652b2b" as Address,
@@ -227,5 +254,6 @@ export const configs: IndexerConfigs = {
     startBlock: baseStartBlock,
     v4StartBlock: v4BaseStartBlock,
     oracleStartBlock: mainnetStartBlock,
+    zoraStartBlock: baseZoraStartBlock,
   },
 };

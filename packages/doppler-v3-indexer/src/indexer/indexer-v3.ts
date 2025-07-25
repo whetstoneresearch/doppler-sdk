@@ -27,7 +27,6 @@ import { SwapOrchestrator, SwapService, PriceService } from "@app/core";
 import { computeGraduationThresholdDelta } from "@app/utils/v3-utils/computeGraduationThreshold";
 import {
   fetchV3MigrationPool,
-  insertV3MigrationPoolIfNotExists,
   updateMigrationPool,
 } from "./shared/entities/migrationPool";
 

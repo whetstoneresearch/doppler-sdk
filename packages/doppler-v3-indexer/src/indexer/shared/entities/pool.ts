@@ -9,10 +9,6 @@ import { Context } from "ponder:registry";
 import { pool } from "ponder:schema";
 import { Address } from "viem";
 import { computeMarketCap } from "../oracle";
-import { computeGraduationPercentage } from "@app/utils/v4-utils";
-import { DERC20ABI } from "@app/abis";
-import { V4PoolData } from "@app/types";
-import { configs } from "@app/types";
 import { getLockableV3PoolData } from "@app/utils/v3-utils/getV3PoolData";
 
 export const fetchExistingPool = async ({
@@ -72,7 +68,7 @@ export const insertPoolIfNotExists = async ({
 
   const isQuoteEth =
     poolState.numeraire.toLowerCase() ===
-      "0x0000000000000000000000000000000000000000" ||
+    "0x0000000000000000000000000000000000000000" ||
     poolState.numeraire.toLowerCase() === configs[chain.name].shared.weth;
 
   const [assetTotalSupply, assetData] = await Promise.all([
@@ -176,7 +172,7 @@ export const insertPoolIfNotExistsV4 = async ({
 
   const isQuoteEth =
     numeraireAddr.toLowerCase() ===
-      "0x0000000000000000000000000000000000000000" ||
+    "0x0000000000000000000000000000000000000000" ||
     numeraireAddr.toLowerCase() === configs[chain.name].shared.weth;
 
   const [reserves, totalSupply, assetData] = await Promise.all([
@@ -285,7 +281,7 @@ export const insertLockableV3PoolIfNotExists = async ({
 
   const isQuoteEth =
     poolState.numeraire.toLowerCase() ===
-      "0x0000000000000000000000000000000000000000" ||
+    "0x0000000000000000000000000000000000000000" ||
     poolState.numeraire.toLowerCase() === configs[chain.name].shared.weth;
 
   const [assetTotalSupply, assetData] = await Promise.all([
@@ -331,6 +327,5 @@ export const insertLockableV3PoolIfNotExists = async ({
     isStreaming: true,
     isQuoteEth,
     integrator: assetData.integrator,
-    isQuoteEth
   });
 };

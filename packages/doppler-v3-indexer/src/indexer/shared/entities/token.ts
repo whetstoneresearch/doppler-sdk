@@ -3,6 +3,7 @@ import { token } from "ponder.schema";
 import { Context } from "ponder:registry";
 import { Address, zeroAddress } from "viem";
 import { addPendingTokenImage } from "../pending-token-images";
+import { getMulticallOptions } from "@app/core/utils/multicall";
 
 export const insertTokenIfNotExists = async ({
   tokenAddress,
@@ -21,12 +22,7 @@ export const insertTokenIfNotExists = async ({
 }): Promise<typeof token.$inferSelect> => {
   const { db, chain } = context;
 
-  let multiCallAddress = {};
-  if (chain.name == "ink") {
-    multiCallAddress = {
-      multicallAddress: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    };
-  }
+  const multicallOptions = getMulticallOptions(chain);
   const address = tokenAddress.toLowerCase() as `0x${string}`;
 
   const existingToken = await db.find(token, {
@@ -92,112 +88,112 @@ export const insertTokenIfNotExists = async ({
           functionName: "tokenURI",
         },
       ],
-      ...multiCallAddress,
+      ...multicallOptions,
     });
 
     const tokenURI = tokenURIResult?.result;
     let tokenUriData;
     let image: string | undefined;
-    if (tokenURI?.startsWith("ipfs://")) {
-      try {
-        if (
-          !tokenURI.startsWith("ipfs://") &&
-          !tokenURI.startsWith("http://") &&
-          !tokenURI.startsWith("https://")
-        ) {
-          console.error(`Invalid tokenURI for token ${address}: ${tokenURI}`);
-        }
-        const cid = tokenURI.replace("ipfs://", "");
-        const url = `https://${process.env.PINATA_GATEWAY_URL}/ipfs/${cid}?pinataGatewayToken=${process.env.PINATA_GATEWAY_KEY}`;
-        const response = await fetch(url);
-        tokenUriData = await response.json();
+    // if (tokenURI?.startsWith("ipfs://")) {
+    //   try {
+    //     if (
+    //       !tokenURI.startsWith("ipfs://") &&
+    //       !tokenURI.startsWith("http://") &&
+    //       !tokenURI.startsWith("https://")
+    //     ) {
+    //       console.error(`Invalid tokenURI for token ${address}: ${tokenURI}`);
+    //     }
+    //     const cid = tokenURI.replace("ipfs://", "");
+    //     const url = `https://${process.env.PINATA_GATEWAY_URL}/ipfs/${cid}?pinataGatewayToken=${process.env.PINATA_GATEWAY_KEY}`;
+    //     const response = await fetch(url);
+    //     tokenUriData = await response.json();
 
-        if (
-          tokenUriData &&
-          typeof tokenUriData === "object" &&
-          "image" in tokenUriData &&
-          typeof tokenUriData.image === "string"
-        ) {
-          if (tokenUriData.image.startsWith("ipfs://")) {
-            image = tokenUriData.image;
-          }
-        } else if (
-          tokenUriData &&
-          typeof tokenUriData === "object" &&
-          "image_hash" in tokenUriData &&
-          typeof tokenUriData.image_hash === "string"
-        ) {
-          if (tokenUriData.image_hash.startsWith("ipfs://")) {
-            image = tokenUriData.image_hash;
-          }
-        }
-      } catch (error) {
-        console.error(
-          `Failed to fetch IPFS metadata for token ${address}:`,
-          error
-        );
-      }
-    } else if (tokenURI?.includes("ohara")) {
-      try {
-        const url = tokenURI;
-        const response = await fetch(url);
-        tokenUriData = await response.json();
+    //     if (
+    //       tokenUriData &&
+    //       typeof tokenUriData === "object" &&
+    //       "image" in tokenUriData &&
+    //       typeof tokenUriData.image === "string"
+    //     ) {
+    //       if (tokenUriData.image.startsWith("ipfs://")) {
+    //         image = tokenUriData.image;
+    //       }
+    //     } else if (
+    //       tokenUriData &&
+    //       typeof tokenUriData === "object" &&
+    //       "image_hash" in tokenUriData &&
+    //       typeof tokenUriData.image_hash === "string"
+    //     ) {
+    //       if (tokenUriData.image_hash.startsWith("ipfs://")) {
+    //         image = tokenUriData.image_hash;
+    //       }
+    //     }
+    //   } catch (error) {
+    //     console.error(
+    //       `Failed to fetch IPFS metadata for token ${address}:`,
+    //       error
+    //     );
+    //   }
+    // } else if (tokenURI?.includes("ohara")) {
+    //   try {
+    //     const url = tokenURI;
+    //     const response = await fetch(url);
+    //     tokenUriData = await response.json();
 
-        if (
-          tokenUriData &&
-          typeof tokenUriData === "object" &&
-          "image" in tokenUriData &&
-          typeof tokenUriData.image === "string"
-        ) {
-          if (tokenUriData.image.startsWith("https://")) {
-            image = tokenUriData.image;
-          }
-        } else {
-          // Add to pending list for retry
-          await addPendingTokenImage({
-            context,
-            chainId,
-            tokenAddress: address,
-            tokenURI,
-            timestamp: Number(timestamp),
-          });
-        }
-      } catch (error) {
-        console.error(
-          `Failed to fetch ohara metadata for token ${address}:`,
-          error
-        );
-        // Add to pending list for retry
-        await addPendingTokenImage({
-          context,
-          chainId,
-          tokenAddress: address,
-          tokenURI,
-          timestamp: Number(timestamp),
-        });
-      }
-    } else if (tokenURI?.includes("https://api.paragraph.com")) {
-      try {
-        const response = await fetch(tokenURI);
-        tokenUriData = await response.json();
+    //     if (
+    //       tokenUriData &&
+    //       typeof tokenUriData === "object" &&
+    //       "image" in tokenUriData &&
+    //       typeof tokenUriData.image === "string"
+    //     ) {
+    //       if (tokenUriData.image.startsWith("https://")) {
+    //         image = tokenUriData.image;
+    //       }
+    //     } else {
+    //       // Add to pending list for retry
+    //       await addPendingTokenImage({
+    //         context,
+    //         chainId,
+    //         tokenAddress: address,
+    //         tokenURI,
+    //         timestamp: Number(timestamp),
+    //       });
+    //     }
+    //   } catch (error) {
+    //     console.error(
+    //       `Failed to fetch ohara metadata for token ${address}:`,
+    //       error
+    //     );
+    //     // Add to pending list for retry
+    //     await addPendingTokenImage({
+    //       context,
+    //       chainId,
+    //       tokenAddress: address,
+    //       tokenURI,
+    //       timestamp: Number(timestamp),
+    //     });
+    //   }
+    // } else if (tokenURI?.includes("https://api.paragraph.com")) {
+    //   try {
+    //     const response = await fetch(tokenURI);
+    //     tokenUriData = await response.json();
 
-        if (
-          tokenUriData &&
-          typeof tokenUriData === "object" &&
-          "image" in tokenUriData &&
-          typeof tokenUriData.image === "string"
-        ) {
-          if (tokenUriData.image.startsWith("https://")) {
-            image = tokenUriData.image;
-          }
-        }
-      } catch (error) {
-        console.error(
-          `Failed to fetch Paragraph metadata for token ${address}:`,
-          error
-        );
-      }
-    }
+    //     if (
+    //       tokenUriData &&
+    //       typeof tokenUriData === "object" &&
+    //       "image" in tokenUriData &&
+    //       typeof tokenUriData.image === "string"
+    //     ) {
+    //       if (tokenUriData.image.startsWith("https://")) {
+    //         image = tokenUriData.image;
+    //       }
+    //     }
+    //   } catch (error) {
+    //     console.error(
+    //       `Failed to fetch Paragraph metadata for token ${address}:`,
+    //       error
+    //     );
+    //   }
+    // }
 
     return await context.db
       .insert(token)

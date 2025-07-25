@@ -3,7 +3,7 @@ import { getV4PoolData } from "@app/utils/v4-utils";
 import { insertTokenIfNotExists } from "./shared/entities/token";
 import { computeMarketCap, fetchEthPrice } from "./shared/oracle";
 import { insertPoolIfNotExistsV4, updatePool } from "./shared/entities/pool";
-import { insertOrUpdateDailyVolume } from "./shared/timeseries";
+import { compute24HourPriceChange, insertOrUpdateDailyVolume } from "./shared/timeseries";
 import { insertAssetIfNotExists, updateAsset } from "./shared/entities/asset";
 import { insertOrUpdateBuckets } from "./shared/timeseries";
 import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
@@ -234,12 +234,18 @@ ponder.on("UniswapV4Pool:Swap", async ({ event, context }) => {
     ethPriceUSD: ethPrice,
   });
 
+  const percentDayChange = await compute24HourPriceChange({
+    poolAddress: address,
+    marketCapUsd,
+    context,
+  });
+
   // Create market metrics
   const marketMetrics = {
     liquidityUsd: dollarLiquidity,
     marketCapUsd,
     swapValueUsd,
-    percentDayChange: 0, // TODO: implement price change calculation
+    percentDayChange,
   };
 
   // Define entity updaters
@@ -619,12 +625,18 @@ ponder.on("UniswapV4PoolSelfCorrecting:Swap", async ({ event, context }) => {
     ethPriceUSD: ethPrice,
   });
 
+  const percentDayChange = await compute24HourPriceChange({
+    poolAddress: address,
+    marketCapUsd,
+    context,
+  });
+
   // Create market metrics
   const marketMetrics = {
     liquidityUsd: dollarLiquidity,
     marketCapUsd,
     swapValueUsd,
-    percentDayChange: 0, // TODO: implement price change calculation
+    percentDayChange,
   };
 
   // Define entity updaters

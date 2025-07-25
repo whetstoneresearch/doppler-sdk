@@ -22,6 +22,7 @@ export interface ChainConfig {
   startBlock: number;
   v4StartBlock?: number;
   v4MigratorStartBlock?: number;
+  zoraStartBlock?: number;
   oracleStartBlock: number;
   rpcEnvVar: string;
   addresses: ChainAddresses;
@@ -34,8 +35,13 @@ export interface ChainAddresses {
   v2: V2Addresses;
   v3: V3Addresses;
   v4: V4Addresses;
+  zora: ZoraAddresses;
   shared: SharedAddresses;
   oracle: OracleAddresses;
+}
+
+export interface ZoraAddresses {
+  zoraFactory: Address;
 }
 
 /**

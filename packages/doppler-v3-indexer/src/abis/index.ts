@@ -16,3 +16,6 @@ export { DERC20ABI } from "./DERC20ABI";
 export { AirlockABI } from "./AirlockABI";
 export { MigratorABI } from "./MigratorABI";
 export { UniswapV2PairABI } from "./UniswapV2PairABI";
+export { ZoraFactoryABI } from "./ZoraFactoryABI";
+export { ZoraCoinABI } from "./ZoraCoinABI";
+export { ZoraV4HookABI } from "./ZoraV4HookABI";

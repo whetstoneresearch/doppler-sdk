@@ -79,3 +79,15 @@ export interface LockableV3PoolData {
   reserve1: bigint;
 }
 
+export interface ZoraV3PoolData {
+  slot0Data: {
+    sqrtPrice: bigint;
+    tick: number;
+  };
+  liquidity: bigint;
+  token0: Address;
+  token1: Address;
+  fee: number;
+  reserve0: bigint;
+  reserve1: bigint;
+}
