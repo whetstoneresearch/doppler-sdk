@@ -1,8 +1,9 @@
 import { Context } from "ponder:registry";
-import { token } from "ponder.schema";
-import { processPendingTokenImages, removePendingTokenImage } from "./pending-token-images";
-import type { Address } from "viem";
 import { updateToken } from "./entities/token";
+import {
+  processPendingTokenImages,
+  removePendingTokenImage,
+} from "./pending-token-images";
 
 /**
  * Block handler that processes pending token images
@@ -32,7 +33,9 @@ export async function handlePendingTokenImages({
       return;
     }
 
-    console.log(`Processing ${tokensToProcess.length} pending token images on ${chain.name}`);
+    console.log(
+      `Processing ${tokensToProcess.length} pending token images on ${chain.name}`
+    );
 
     // Process each token
     for (const tokenAddress of tokensToProcess) {
@@ -100,6 +103,7 @@ export async function handlePendingTokenImages({
             context,
             update: {
               image,
+              tokenUriData: tokenUriData,
             },
           });
 

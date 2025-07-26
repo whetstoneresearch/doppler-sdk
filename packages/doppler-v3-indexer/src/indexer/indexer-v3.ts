@@ -1,35 +1,34 @@
+import { PriceService, SwapOrchestrator, SwapService } from "@app/core";
+import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
+import { CHAINLINK_ETH_DECIMALS } from "@app/utils/constants";
+import { computeGraduationThresholdDelta } from "@app/utils/v3-utils/computeGraduationThreshold";
 import { ponder } from "ponder:registry";
+import { insertAssetIfNotExists, updateAsset } from "./shared/entities/asset";
 import {
-  insertPositionIfNotExists,
-  updatePosition,
-} from "./shared/entities/position";
-import { insertTokenIfNotExists } from "./shared/entities/token";
-import {
-  insertOrUpdateDailyVolume,
-  compute24HourPriceChange,
-} from "./shared/timeseries";
+  fetchV3MigrationPool,
+  updateMigrationPool,
+} from "./shared/entities/migrationPool";
 import {
   insertLockableV3PoolIfNotExists,
   insertPoolIfNotExists,
   updatePool,
 } from "./shared/entities/pool";
-import { insertAssetIfNotExists, updateAsset } from "./shared/entities/asset";
-import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
-import { insertOrUpdateBuckets } from "./shared/timeseries";
+import {
+  insertPositionIfNotExists,
+  updatePosition,
+} from "./shared/entities/position";
+import { insertSwapIfNotExists } from "./shared/entities/swap";
+import { insertTokenIfNotExists } from "./shared/entities/token";
 import { computeMarketCap, fetchEthPrice } from "./shared/oracle";
 import {
   insertActivePoolsBlobIfNotExists,
   tryAddActivePool,
 } from "./shared/scheduledJobs";
-import { insertSwapIfNotExists } from "./shared/entities/swap";
-import { CHAINLINK_ETH_DECIMALS } from "@app/utils/constants";
-import { SwapOrchestrator, SwapService, PriceService } from "@app/core";
-import { computeGraduationThresholdDelta } from "@app/utils/v3-utils/computeGraduationThreshold";
 import {
-  fetchV3MigrationPool,
-  insertV3MigrationPoolIfNotExists,
-  updateMigrationPool,
-} from "./shared/entities/migrationPool";
+  compute24HourPriceChange,
+  insertOrUpdateBuckets,
+  insertOrUpdateDailyVolume,
+} from "./shared/timeseries";
 
 ponder.on("UniswapV3Initializer:Create", async ({ event, context }) => {
   const { poolOrHook, asset, numeraire } = event.args;
@@ -54,6 +53,7 @@ ponder.on("UniswapV3Initializer:Create", async ({ event, context }) => {
       creatorAddress: creatorId,
       timestamp,
       context,
+      poolAddress: poolOrHookId,
     }),
     insertTokenIfNotExists({
       tokenAddress: numeraireId,
