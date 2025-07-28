@@ -1,5 +1,5 @@
 import { Context } from "ponder:registry";
-import { activePoolsBlob, dailyVolume } from "ponder:schema";
+import { activePoolsBlob, volumeBucket24h } from "ponder:schema";
 import { Address, formatEther } from "viem";
 import {
   updateAsset,
@@ -7,9 +7,7 @@ import {
   updateToken,
 } from "@app/indexer/shared/entities";
 import { pool } from "ponder:schema";
-import { secondsInDay } from "@app/utils/constants";
-import { compute24HourPriceChange, updateDailyVolume } from "./timeseries";
-import { DayMetrics } from "./timeseries";
+import { get24HourVolume, getDayBucketTimestamp } from "@app/utils/time-buckets";
 interface ActivePools {
   [poolAddress: Address]: number;
 }
@@ -104,7 +102,12 @@ export const tryAddActivePool = async ({
     });
 };
 
-export const refreshActivePoolsBlob = async ({
+
+/**
+ * Refreshes active pools using the new bucket system
+ * This is a more efficient version that uses pre-aggregated bucket data
+ */
+export const refreshActivePoolsBlobWithBuckets = async ({
   context,
   timestamp,
 }: {
@@ -125,14 +128,13 @@ export const refreshActivePoolsBlob = async ({
   const poolsToRefresh: Address[] = [];
   const timestampMinusDay = timestamp - 86400;
 
+  // Find pools that haven't been refreshed in the last 24 hours
   for (const [poolAddress, lastSwapTimestamp] of Object.entries(
     existingBlob.activePools as ActivePools
   )) {
-    // ignore pools that dont have an earliest timestamp that is greater than the timestamp minus 24 hours
     if (lastSwapTimestamp > timestampMinusDay) {
       continue;
     }
-
     poolsToRefresh.push(poolAddress as Address);
   }
 
@@ -141,79 +143,53 @@ export const refreshActivePoolsBlob = async ({
 
   await Promise.all(
     poolsToRefresh.map(async (poolAddress) => {
-      const volumeEntity = await db.find(dailyVolume, {
-        pool: poolAddress,
-      });
-
-      if (!volumeEntity) {
-        return null;
-      }
-      const { checkpoints } = volumeEntity;
-
-      const volumeCheckpoints = checkpoints as Record<string, DayMetrics>;
-
-      const updatedCheckpoints = Object.fromEntries(
-        Object.entries(volumeCheckpoints).filter(
-          ([ts]) => BigInt(ts) >= BigInt(timestamp) - BigInt(secondsInDay)
-        )
+      // Get 24-hour volume from bucket
+      const volume24h = await get24HourVolume(
+        context,
+        poolAddress,
+        BigInt(chainId),
+        BigInt(timestamp)
       );
 
-      const oldestCheckpointTime =
-        Object.keys(updatedCheckpoints).length > 0
-          ? BigInt(Math.min(...Object.keys(updatedCheckpoints).map(Number)))
-          : undefined;
+      // Get the current day's bucket for market cap data
+      const currentDayTimestamp = getDayBucketTimestamp(BigInt(timestamp));
+      const bucket = await db.find(volumeBucket24h, {
+        poolAddress: poolAddress as `0x${string}`,
+        timestamp: currentDayTimestamp,
+        chainId: BigInt(chainId),
+      });
 
-      const newestCheckpointTime =
-        Object.keys(updatedCheckpoints).length > 0
-          ? BigInt(Math.max(...Object.keys(updatedCheckpoints).map(Number)))
-          : undefined;
-
-      const totalVolumeUsd = oldestCheckpointTime
-        ? Object.values(updatedCheckpoints).reduce((acc, vol) => {
-          return acc + BigInt(vol.volumeUsd);
-        }, BigInt(0))
-        : 0n;
-
-      if (!oldestCheckpointTime) {
+      if (!bucket) {
         poolsToClear.push(poolAddress);
-      } else {
-        poolsToUpdate.push({
-          [poolAddress]: Number(oldestCheckpointTime),
-        });
+        return;
       }
 
-      const newestMarketCapUsd = newestCheckpointTime
-        ? BigInt(
-          volumeCheckpoints[newestCheckpointTime!.toString()]?.marketCapUsd ||
-          "0"
-        )
-        : 0n;
-
-      const percentDayChange = await compute24HourPriceChange({
-        poolAddress,
-        marketCapUsd: newestMarketCapUsd,
-        context,
+      // Get the previous day's bucket for % change calculation
+      const previousDayTimestamp = currentDayTimestamp - BigInt(86400);
+      const previousBucket = await db.find(volumeBucket24h, {
+        poolAddress: poolAddress as `0x${string}`,
+        timestamp: previousDayTimestamp,
+        chainId: BigInt(chainId),
       });
 
-      if (newestCheckpointTime) {
-        poolsToUpdate.push({
-          [poolAddress]: Number(newestCheckpointTime),
-        });
+      // Calculate percent change
+      let percentDayChange = 0;
+      if (previousBucket && previousBucket.marketCapUsd > 0n) {
+        const currentMarketCap = bucket.marketCapUsd;
+        const previousMarketCap = previousBucket.marketCapUsd;
+        percentDayChange = Number(
+          formatEther(
+            ((currentMarketCap - previousMarketCap) * BigInt(1e18)) / previousMarketCap
+          )
+        ) * 100;
       }
 
-      const volumeEntityUpdate = {
-        poolAddress,
-        volumeUsd: totalVolumeUsd,
-        checkpoints: updatedCheckpoints,
-        lastUpdated: BigInt(timestamp),
-      };
-
-      await updateDailyVolume({
-        poolAddress,
-        volumeData: volumeEntityUpdate,
-        context,
+      // Update pool to refresh (using the bucket's last update time)
+      poolsToUpdate.push({
+        [poolAddress]: Number(bucket.updatedAt),
       });
 
+      // Get pool entity to find associated asset
       const poolEntity = await db.find(pool, {
         address: poolAddress,
         chainId: BigInt(chainId),
@@ -223,12 +199,14 @@ export const refreshActivePoolsBlob = async ({
         return;
       }
 
+      // Update all entities with bucket data
       await updatePool({
         poolAddress,
         context,
         update: {
-          volumeUsd: totalVolumeUsd,
-          percentDayChange: Number(percentDayChange),
+          volumeUsd: volume24h,
+          percentDayChange,
+          marketCapUsd: bucket.marketCapUsd,
         },
       });
 
@@ -236,7 +214,7 @@ export const refreshActivePoolsBlob = async ({
         tokenAddress: poolEntity.asset,
         context,
         update: {
-          volumeUsd: totalVolumeUsd,
+          volumeUsd: volume24h,
         },
       });
 
@@ -244,14 +222,17 @@ export const refreshActivePoolsBlob = async ({
         assetAddress: poolEntity.asset,
         context,
         update: {
-          dayVolumeUsd: totalVolumeUsd,
-          percentDayChange: Number(percentDayChange),
+          dayVolumeUsd: volume24h,
+          percentDayChange,
+          marketCapUsd: bucket.marketCapUsd,
         },
       });
     })
   );
 
+  // Update the active pools blob
   const blob = existingBlob.activePools as ActivePools;
+  
   poolsToClear.forEach((poolAddress) => {
     delete blob[poolAddress];
   });

@@ -360,6 +360,57 @@ export const activePoolsBlob = onchainTable("active_pools_blob", (t) => ({
   activePools: t.jsonb().notNull().default("{}"),
 }));
 
+/* TIME BUCKET TABLES FOR PRE-AGGREGATED METRICS */
+
+// 24-hour volume buckets (keep forever)
+export const volumeBucket24h = onchainTable(
+  "volume_bucket_24h",
+  (t) => ({
+    poolAddress: t.hex().notNull(),
+    assetAddress: t.hex().notNull(),
+    chainId: t.bigint().notNull(),
+    timestamp: t.bigint().notNull(), // Rounded to day intervals
+    
+    // Volume metrics
+    volumeUsd: t.bigint().notNull().default(0n),
+    volumeToken0: t.bigint().notNull().default(0n),
+    volumeToken1: t.bigint().notNull().default(0n),
+    txCount: t.integer().notNull().default(0),
+    uniqueUsers: t.integer().notNull().default(0),
+    buyCount: t.integer().notNull().default(0),
+    sellCount: t.integer().notNull().default(0),
+    
+    // Price metrics (OHLC)
+    open: t.bigint().notNull(),
+    high: t.bigint().notNull(),
+    low: t.bigint().notNull(),
+    close: t.bigint().notNull(),
+    vwap: t.bigint(), // Volume-weighted average price
+    
+    // Snapshot metrics at close
+    liquidityUsd: t.bigint().notNull(),
+    marketCapUsd: t.bigint().notNull(),
+    holderCount: t.integer().notNull().default(0),
+    
+    // Fee metrics
+    feesUsd: t.bigint().notNull().default(0n),
+    
+    // Metadata
+    createdAt: t.bigint().notNull(),
+    updatedAt: t.bigint().notNull(),
+  }),
+  (table) => ({
+    pk: primaryKey({
+      columns: [table.poolAddress, table.timestamp, table.chainId],
+    }),
+    timestampIdx: index().on(table.timestamp),
+    assetIdx: index().on(table.assetAddress),
+    volumeIdx: index().on(table.volumeUsd),
+    marketCapIdx: index().on(table.marketCapUsd),
+    txCountIdx: index().on(table.txCount),
+  })
+);
+
 export const v4PoolPriceHistory = onchainTable(
   "v4_pool_price_history",
   (t) => ({
@@ -389,6 +440,7 @@ export const assetRelations = relations(asset, ({ one, many }) => ({
   pool: one(pool, { fields: [asset.poolAddress], references: [pool.address] }),
   userAssets: many(userAsset),
   swaps: many(swap),
+  volumeBuckets24h: many(volumeBucket24h),
 }));
 
 export const swapRelations = relations(swap, ({ one }) => ({
@@ -418,6 +470,7 @@ export const poolRelations = relations(pool, ({ one, many }) => ({
   hourBuckets: many(hourBucket),
   hourBucketUsds: many(hourBucketUsd),
   swaps: many(swap),
+  volumeBuckets24h: many(volumeBucket24h),
 }));
 
 export const v2PoolRelations = relations(v2Pool, ({ one }) => ({
@@ -499,4 +552,16 @@ export const v4poolsRelations = relations(v4pools, ({ one, many }) => ({
     references: [dailyVolume.pool],
   }),
   // Note: positions, hourBuckets, etc. would need to be updated to support v4pools
+}));
+
+// Time bucket relations
+export const volumeBucket24hRelations = relations(volumeBucket24h, ({ one }) => ({
+  pool: one(pool, {
+    fields: [volumeBucket24h.poolAddress],
+    references: [pool.address],
+  }),
+  asset: one(asset, {
+    fields: [volumeBucket24h.assetAddress],
+    references: [asset.address],
+  }),
 }));

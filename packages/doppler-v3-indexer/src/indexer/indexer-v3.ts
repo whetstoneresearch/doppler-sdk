@@ -5,22 +5,13 @@ import {
 } from "./shared/entities/position";
 import { insertTokenIfNotExists } from "./shared/entities/token";
 import {
-  insertOrUpdateDailyVolume,
-  compute24HourPriceChange,
-} from "./shared/timeseries";
-import {
   insertLockableV3PoolIfNotExists,
   insertPoolIfNotExists,
   updatePool,
 } from "./shared/entities/pool";
 import { insertAssetIfNotExists, updateAsset } from "./shared/entities/asset";
 import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
-import { insertOrUpdateBuckets } from "./shared/timeseries";
 import { computeMarketCap, fetchEthPrice } from "./shared/oracle";
-import {
-  insertActivePoolsBlobIfNotExists,
-  tryAddActivePool,
-} from "./shared/scheduledJobs";
 import { insertSwapIfNotExists } from "./shared/entities/swap";
 import { CHAINLINK_ETH_DECIMALS } from "@app/utils/constants";
 import { SwapOrchestrator, SwapService, PriceService } from "@app/core";
@@ -73,9 +64,6 @@ ponder.on("UniswapV3Initializer:Create", async ({ event, context }) => {
 
   // benchmark time
   await Promise.all([
-    insertActivePoolsBlobIfNotExists({
-      context,
-    }),
     insertAssetIfNotExists({
       assetAddress: assetId,
       timestamp,
@@ -87,17 +75,6 @@ ponder.on("UniswapV3Initializer:Create", async ({ event, context }) => {
       timestamp,
       ethPrice,
       context,
-    }),
-    insertOrUpdateDailyVolume({
-      poolAddress: poolOrHookId,
-      amountIn: 0n,
-      amountOut: 0n,
-      timestamp,
-      context,
-      tokenIn: assetId,
-      tokenOut: numeraireId,
-      ethPrice,
-      marketCapUsd,
     }),
   ]);
 });
@@ -145,9 +122,6 @@ ponder.on("LockableUniswapV3Initializer:Create", async ({ event, context }) => {
 
   // benchmark time
   await Promise.all([
-    insertActivePoolsBlobIfNotExists({
-      context,
-    }),
     insertAssetIfNotExists({
       assetAddress: assetId,
       timestamp,
@@ -159,17 +133,6 @@ ponder.on("LockableUniswapV3Initializer:Create", async ({ event, context }) => {
       timestamp,
       ethPrice,
       context,
-    }),
-    insertOrUpdateDailyVolume({
-      poolAddress: poolOrHookId,
-      amountIn: 0n,
-      amountOut: 0n,
-      timestamp,
-      context,
-      tokenIn: assetId,
-      tokenOut: numeraireId,
-      ethPrice,
-      marketCapUsd,
     }),
   ]);
 });
@@ -431,11 +394,8 @@ ponder.on("LockableUniswapV3Pool:Swap", async ({ event, context }) => {
       ethPrice) /
     CHAINLINK_ETH_DECIMALS;
 
-  const priceChangeInfo = await compute24HourPriceChange({
-    poolAddress: address,
-    marketCapUsd,
-    context,
-  });
+  // Price change is now calculated in scheduled jobs using buckets
+  const priceChangeInfo = 0;
 
   // Create swap data
   const swapData = SwapOrchestrator.createSwapData({
@@ -468,8 +428,6 @@ ponder.on("LockableUniswapV3Pool:Swap", async ({ event, context }) => {
     updateAsset,
     insertSwap: insertSwapIfNotExists,
     insertOrUpdateBuckets,
-    insertOrUpdateDailyVolume,
-    tryAddActivePool,
   };
 
   // Perform common updates via orchestrator
@@ -823,7 +781,6 @@ ponder.on("UniswapV3Pool:Swap", async ({ event, context }) => {
     updateAsset,
     insertSwap: insertSwapIfNotExists,
     insertOrUpdateBuckets,
-    insertOrUpdateDailyVolume,
     tryAddActivePool,
   };
 
@@ -996,8 +953,6 @@ ponder.on("UniswapV3MigrationPool:Swap", async ({ event, context }) => {
     updateAsset,
     insertSwap: insertSwapIfNotExists,
     insertOrUpdateBuckets,
-    insertOrUpdateDailyVolume,
-    tryAddActivePool,
   };
 
   // Perform common updates via orchestrator

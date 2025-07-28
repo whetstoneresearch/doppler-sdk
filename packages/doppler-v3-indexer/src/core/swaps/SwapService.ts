@@ -159,7 +159,7 @@ export class SwapService {
       price: params.price,
       dollarLiquidity: params.liquidityUsd, // Pool entity uses 'dollarLiquidity' field
       marketCapUsd: params.marketCapUsd,
-      volume24h: params.volume24h,
+      volumeUsd: params.volume24h, // Pool entity uses 'volumeUsd' field for 24h volume
       lastSwapTimestamp: params.timestamp,
     };
   }

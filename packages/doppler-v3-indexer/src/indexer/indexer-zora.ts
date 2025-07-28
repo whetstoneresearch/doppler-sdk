@@ -5,22 +5,13 @@ import {
 } from "./shared/entities/position";
 import { insertTokenIfNotExists, updateToken } from "./shared/entities/token";
 import {
-  insertOrUpdateDailyVolume,
-  compute24HourPriceChange,
-  insertOrUpdateDailyVolumeZora,
-} from "./shared/timeseries";
-import {
-  insertLockableV3PoolIfNotExists,
-  insertPoolIfNotExists,
   updatePool,
 } from "./shared/entities/pool";
-import { insertAssetIfNotExists, updateAsset } from "./shared/entities/asset";
+import { updateAsset } from "./shared/entities/asset";
 import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
-import { insertOrUpdateBuckets } from "./shared/timeseries";
 import { computeMarketCap, fetchEthPrice } from "./shared/oracle";
 import {
   insertActivePoolsBlobIfNotExists,
-  tryAddActivePool,
 } from "./shared/scheduledJobs";
 import { insertSwapIfNotExists } from "./shared/entities/swap";
 import { CHAINLINK_ETH_DECIMALS } from "@app/utils/constants";
@@ -91,34 +82,12 @@ ponder.on("ZoraFactory:CoinCreated", async ({ event, context }) => {
   });
 
   await Promise.all([
-    insertActivePoolsBlobIfNotExists({
-      context,
-    }),
     insertZoraAssetIfNotExists({
       assetAddress: coin,
       poolAddress: pool,
       numeraireAddress: currency,
       timestamp,
       context,
-    }),
-    insertOrUpdateBuckets({
-      poolAddress: pool,
-      price,
-      timestamp,
-      ethPrice: quotePrice,
-      context,
-    }),
-    insertOrUpdateDailyVolumeZora({
-      poolAddress: pool,
-      numeraireAddress: currency,
-      amountIn: 0n,
-      amountOut: 0n,
-      timestamp,
-      context,
-      tokenIn: coin,
-      tokenOut: numeraireId,
-      ethPrice: quotePrice,
-      marketCapUsd,
     }),
     updatePool({
       poolAddress: pool,
@@ -486,24 +455,6 @@ ponder.on("ZoraFactory:CoinCreatedV4", async ({ event, context }) => {
       timestamp,
       context,
     }),
-    insertOrUpdateBuckets({
-      poolAddress,
-      price: poolEntity.price,
-      timestamp,
-      ethPrice,
-      context,
-    }),
-    insertOrUpdateDailyVolume({
-      poolAddress,
-      amountIn: 0n,
-      amountOut: 0n,
-      timestamp,
-      context,
-      tokenIn: coin,
-      tokenOut: numeraireId,
-      ethPrice,
-      marketCapUsd,
-    }),
     updatePool({
       poolAddress,
       context,
@@ -607,11 +558,6 @@ ponder.on("ZoraUniswapV3Pool:Swap", async ({ event, context }) => {
       ethPrice) /
     CHAINLINK_ETH_DECIMALS;
 
-  const priceChangeInfo = await compute24HourPriceChange({
-    poolAddress: address,
-    marketCapUsd,
-    context,
-  });
 
   // Create swap data
   const swapData = SwapOrchestrator.createSwapData({
@@ -636,7 +582,7 @@ ponder.on("ZoraUniswapV3Pool:Swap", async ({ event, context }) => {
     liquidityUsd: dollarLiquidity,
     marketCapUsd,
     swapValueUsd,
-    percentDayChange: priceChangeInfo,
+    percentDayChange: 0,
   };
 
   // Define entity updaters
@@ -644,9 +590,6 @@ ponder.on("ZoraUniswapV3Pool:Swap", async ({ event, context }) => {
     updatePool,
     updateAsset,
     insertSwap: insertSwapIfNotExists,
-    insertOrUpdateBuckets,
-    insertOrUpdateDailyVolume,
-    tryAddActivePool,
   };
 
 
@@ -675,7 +618,6 @@ ponder.on("ZoraUniswapV3Pool:Swap", async ({ event, context }) => {
         totalFee0: totalFee0 + fee0,
         totalFee1: totalFee1 + fee1,
         lastRefreshed: timestamp,
-        percentDayChange: priceChangeInfo,
         reserves0: reserves0 + amount0,
         reserves1: reserves1 + amount1,
         marketCapUsd,

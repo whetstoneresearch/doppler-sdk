@@ -3,9 +3,7 @@ import { getV4PoolData } from "@app/utils/v4-utils";
 import { insertTokenIfNotExists } from "./shared/entities/token";
 import { computeMarketCap, fetchEthPrice } from "./shared/oracle";
 import { insertPoolIfNotExistsV4, updatePool } from "./shared/entities/pool";
-import { compute24HourPriceChange, insertOrUpdateDailyVolume } from "./shared/timeseries";
 import { insertAssetIfNotExists, updateAsset } from "./shared/entities/asset";
-import { insertOrUpdateBuckets } from "./shared/timeseries";
 import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
 import { insertV4ConfigIfNotExists } from "./shared/entities/v4-entities/v4Config";
 import { getReservesV4 } from "@app/utils/v4-utils/getV4PoolData";
@@ -17,13 +15,10 @@ import {
   addAndUpdateV4PoolPriceHistory,
   insertV4PoolPriceHistoryIfNotExists,
 } from "./shared/entities/v4-entities/v4PoolPriceHistory";
-import { insertActivePoolsBlobIfNotExists } from "./shared/scheduledJobs";
 import { insertSwapIfNotExists } from "./shared/entities/swap";
 import { CHAINLINK_ETH_DECIMALS } from "@app/utils/constants";
 import { SwapService, SwapOrchestrator, PriceService } from "@app/core";
-import { tryAddActivePool } from "./shared/scheduledJobs";
 import { TickMath } from "@uniswap/v3-sdk";
-import { computeV4Price } from "@app/utils/v4-utils/computeV4Price";
 import { computeGraduationPercentage } from "@app/utils/v4-utils";
 
 ponder.on("UniswapV4Initializer:Create", async ({ event, context }) => {
@@ -63,9 +58,6 @@ ponder.on("UniswapV4Initializer:Create", async ({ event, context }) => {
     }),
     insertV4PoolPriceHistoryIfNotExists({
       pool: poolAddress,
-      context,
-    }),
-    insertActivePoolsBlobIfNotExists({
       context,
     }),
   ]);
@@ -119,18 +111,6 @@ ponder.on("UniswapV4Initializer:Create", async ({ event, context }) => {
       context,
     }),
   ]);
-
-  await insertOrUpdateDailyVolume({
-    poolAddress: poolAddress,
-    amountIn: 0n,
-    amountOut: 0n,
-    timestamp,
-    context,
-    tokenIn: assetAddress,
-    tokenOut: numeraireAddress,
-    ethPrice,
-    marketCapUsd,
-  });
 });
 
 ponder.on("UniswapV4Pool:Swap", async ({ event, context }) => {
@@ -254,8 +234,6 @@ ponder.on("UniswapV4Pool:Swap", async ({ event, context }) => {
     updateAsset,
     insertSwap: insertSwapIfNotExists,
     insertOrUpdateBuckets,
-    insertOrUpdateDailyVolume,
-    tryAddActivePool,
   };
 
   // Perform common updates via orchestrator
@@ -341,9 +319,6 @@ ponder.on("UniswapV4Initializer2:Create", async ({ event, context }) => {
       pool: poolAddress,
       context,
     }),
-    insertActivePoolsBlobIfNotExists({
-      context,
-    }),
   ]);
 
   const { totalSupply } = baseToken;
@@ -399,17 +374,6 @@ ponder.on("UniswapV4Initializer2:Create", async ({ event, context }) => {
       context,
     }),
   ]);
-  await insertOrUpdateDailyVolume({
-    poolAddress: poolAddress,
-    amountIn: 0n,
-    amountOut: 0n,
-    timestamp,
-    context,
-    tokenIn: assetAddress,
-    tokenOut: numeraireAddress,
-    ethPrice,
-    marketCapUsd,
-  });
 });
 
 
@@ -453,9 +417,6 @@ ponder.on("UniswapV4InitializerSelfCorrecting:Create", async ({ event, context }
       pool: poolAddress,
       context,
     }),
-    insertActivePoolsBlobIfNotExists({
-      context,
-    }),
   ]);
 
   const { totalSupply } = baseToken;
@@ -511,17 +472,6 @@ ponder.on("UniswapV4InitializerSelfCorrecting:Create", async ({ event, context }
       context,
     }),
   ]);
-  await insertOrUpdateDailyVolume({
-    poolAddress: poolAddress,
-    amountIn: 0n,
-    amountOut: 0n,
-    timestamp,
-    context,
-    tokenIn: assetAddress,
-    tokenOut: numeraireAddress,
-    ethPrice,
-    marketCapUsd,
-  });
 });
 
 ponder.on("UniswapV4PoolSelfCorrecting:Swap", async ({ event, context }) => {
@@ -645,8 +595,6 @@ ponder.on("UniswapV4PoolSelfCorrecting:Swap", async ({ event, context }) => {
     updateAsset,
     insertSwap: insertSwapIfNotExists,
     insertOrUpdateBuckets,
-    insertOrUpdateDailyVolume,
-    tryAddActivePool,
   };
 
   // Perform common updates via orchestrator
@@ -808,8 +756,6 @@ ponder.on("UniswapV4Pool2:Swap", async ({ event, context }) => {
     updateAsset,
     insertSwap: insertSwapIfNotExists,
     insertOrUpdateBuckets,
-    insertOrUpdateDailyVolume,
-    tryAddActivePool,
   };
 
   // Perform common updates via orchestrator

@@ -1,10 +1,5 @@
 import { ponder } from "ponder:registry";
 import { v2Pool } from "ponder.schema";
-import {
-  insertOrUpdateBuckets,
-  insertOrUpdateDailyVolume,
-  compute24HourPriceChange,
-} from "./shared/timeseries";
 import { getPairData } from "@app/utils/v2-utils/getPairData";
 import { computeMarketCap, fetchEthPrice } from "./shared/oracle";
 import {
@@ -15,7 +10,6 @@ import {
   updateV2Pool,
 } from "./shared/entities";
 import { CHAINLINK_ETH_DECIMALS } from "@app/utils/constants";
-import { tryAddActivePool } from "./shared/scheduledJobs";
 import { zeroAddress } from "viem";
 import { configs } from "@app/types";
 import { insertSwapIfNotExists } from "./shared/entities/swap";
@@ -106,11 +100,8 @@ ponder.on("UniswapV2Pair:Swap", async ({ event, context }) => {
   }
   const swapValueUsd = (quoteDelta * ethPrice) / CHAINLINK_ETH_DECIMALS;
 
-  const priceChange = await compute24HourPriceChange({
-    poolAddress: address,
-    marketCapUsd: metrics.marketCapUsd,
-    context,
-  });
+  // Price change is now calculated in scheduled jobs using buckets
+  const priceChange = 0;
 
   // Create swap data
   const swapData = SwapOrchestrator.createSwapData({
@@ -143,8 +134,6 @@ ponder.on("UniswapV2Pair:Swap", async ({ event, context }) => {
     updateAsset,
     insertSwap: insertSwapIfNotExists,
     insertOrUpdateBuckets,
-    insertOrUpdateDailyVolume,
-    tryAddActivePool,
   };
 
   // Perform common updates via orchestrator
@@ -293,8 +282,6 @@ ponder.on("UniswapV2PairUnichain:Swap", async ({ event, context }) => {
     updateAsset,
     insertSwap: insertSwapIfNotExists,
     insertOrUpdateBuckets,
-    insertOrUpdateDailyVolume,
-    tryAddActivePool,
   };
 
   // Perform common updates via orchestrator

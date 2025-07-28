@@ -6,11 +6,6 @@ import { updateAsset } from "./shared/entities/asset";
 import { fetchEthPrice } from "./shared/oracle";
 import { computeV4Price } from "@app/utils/v4-utils/computeV4Price";
 import { Address } from "viem";
-import {
-  insertOrUpdateBuckets,
-  insertOrUpdateDailyVolume,
-  compute24HourPriceChange,
-} from "./shared/timeseries";
 import { SwapService, SwapOrchestrator } from "@app/core";
 import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
 import { tryAddActivePool } from "./shared/scheduledJobs";
