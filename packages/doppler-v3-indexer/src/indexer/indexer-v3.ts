@@ -59,7 +59,6 @@ ponder.on("UniswapV3Initializer:Create", async ({ event, context }) => {
     insertTokenIfNotExists({
       tokenAddress: numeraireId,
       creatorAddress: creatorId,
-      poolAddress: poolOrHookId,
       timestamp,
       context,
       isDerc20: false,
