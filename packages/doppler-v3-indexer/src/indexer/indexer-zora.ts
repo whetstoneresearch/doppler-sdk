@@ -25,14 +25,14 @@ import {
 import { insertSwapIfNotExists } from "./shared/entities/swap";
 import { CHAINLINK_ETH_DECIMALS } from "@app/utils/constants";
 import { SwapOrchestrator, SwapService, PriceService } from "@app/core";
-import { computeGraduationThresholdDelta } from "@app/utils/v3-utils/computeGraduationThreshold";
-import { insertUserIfNotExists, updateUser } from "./shared/entities/user";
+import { insertUserIfNotExists } from "./shared/entities/user";
 import { insertUserAssetIfNotExists, updateUserAsset } from "./shared/entities/userAsset";
 import { asset, pool } from "ponder:schema";
 import { insertZoraAssetIfNotExists, updateZoraAsset } from "./shared/entities/zora/asset";
 import { insertZoraPoolIfNotExists, insertZoraPoolV4IfNotExists } from "./shared/entities/zora/pool";
 import { Address, zeroAddress } from "viem";
 import { computeV3Price } from "@app/utils";
+import { chainConfigs } from "@app/config";
 
 ponder.on("ZoraFactory:CoinCreated", async ({ event, context }) => {
   const { pool, coin, currency, caller } = event.args;
@@ -42,7 +42,12 @@ ponder.on("ZoraFactory:CoinCreated", async ({ event, context }) => {
 
   const isToken0 = coin.toLowerCase() < currency.toLowerCase();
 
-  const ethPrice = await fetchEthPrice(timestamp, context);
+  let quotePrice;
+  if (numeraireId === chainConfigs.base.addresses.stables?.usdc) {
+    quotePrice = 10n ** 8n;
+  } else {
+    quotePrice = await fetchEthPrice(timestamp, context);
+  }
 
   const [poolEntity, assetTokenEntity] = await Promise.all([
     insertZoraPoolIfNotExists({
@@ -74,7 +79,7 @@ ponder.on("ZoraFactory:CoinCreated", async ({ event, context }) => {
   const { totalSupply } = assetTokenEntity;
   const marketCapUsd = computeMarketCap({
     price,
-    ethPrice,
+    ethPrice: quotePrice,
     totalSupply,
   });
 
@@ -82,7 +87,7 @@ ponder.on("ZoraFactory:CoinCreated", async ({ event, context }) => {
     assetBalance: isToken0 ? poolEntity.reserves0 : poolEntity.reserves1,
     quoteBalance: isToken0 ? poolEntity.reserves1 : poolEntity.reserves0,
     price,
-    ethPrice,
+    ethPrice: quotePrice,
   });
 
   await Promise.all([
@@ -100,7 +105,7 @@ ponder.on("ZoraFactory:CoinCreated", async ({ event, context }) => {
       poolAddress: pool,
       price,
       timestamp,
-      ethPrice,
+      ethPrice: quotePrice,
       context,
     }),
     insertOrUpdateDailyVolumeZora({
@@ -112,7 +117,7 @@ ponder.on("ZoraFactory:CoinCreated", async ({ event, context }) => {
       context,
       tokenIn: coin,
       tokenOut: numeraireId,
-      ethPrice,
+      ethPrice: quotePrice,
       marketCapUsd,
     }),
     updatePool({
@@ -126,6 +131,7 @@ ponder.on("ZoraFactory:CoinCreated", async ({ event, context }) => {
         quoteToken: currency,
         marketCapUsd,
         dollarLiquidity: liquidityUsd,
+        isQuoteEth: currency === chainConfigs.base.addresses.shared.weth,
       }
     })
   ]);
@@ -505,5 +511,177 @@ ponder.on("ZoraFactory:CoinCreatedV4", async ({ event, context }) => {
         marketCapUsd,
       }
     })
+  ]);
+});
+
+ponder.on("ZoraUniswapV3Pool:Swap", async ({ event, context }) => {
+  const { chain, db } = context;
+  const address = event.log.address.toLowerCase() as `0x${string}`;
+  const timestamp = event.block.timestamp;
+  const { amount0, amount1, sqrtPriceX96 } = event.args;
+  const chainId = BigInt(chain.id);
+
+  const ethPrice = await fetchEthPrice(timestamp, context);
+
+  const {
+    isToken0,
+    baseToken,
+    quoteToken,
+    reserves0,
+    reserves1,
+    fee,
+    totalFee0,
+    totalFee1,
+  } = await insertZoraPoolIfNotExists({
+    poolAddress: address,
+    timestamp,
+    context,
+  });
+
+  if (baseToken === zeroAddress || quoteToken === zeroAddress) {
+    return;
+  }
+
+  const assetEntity = await db.find(asset, {
+    address: baseToken,
+  });
+
+  const price = PriceService.computePriceFromSqrtPriceX96({
+    sqrtPriceX96,
+    isToken0,
+    decimals: 18,
+  });
+
+  const reserveAssetBefore = isToken0 ? reserves0 : reserves1;
+  const reserveQuoteBefore = isToken0 ? reserves1 : reserves0;
+
+  const reserveAssetDelta = isToken0 ? amount0 : amount1;
+  const reserveQuoteDelta = isToken0 ? amount1 : amount0;
+
+  const nextReservesAsset = reserveAssetBefore + reserveAssetDelta;
+  const nextReservesQuote = reserveQuoteBefore + reserveQuoteDelta;
+
+  let amountIn;
+  let amountOut;
+  let fee0;
+  let fee1;
+  if (amount0 > 0n) {
+    amountIn = amount0;
+    amountOut = amount1;
+    fee0 = (amountIn * BigInt(fee)) / BigInt(1_000_000);
+    fee1 = 0n;
+  } else {
+    amountIn = amount1;
+    amountOut = amount0;
+    fee1 = (amountIn * BigInt(fee)) / BigInt(1_000_000);
+    fee0 = 0n;
+  }
+
+  // buy or sell
+  const type = SwapService.determineSwapType({
+    isToken0,
+    amount0,
+    amount1,
+  });
+
+  const dollarLiquidity = computeDollarLiquidity({
+    assetBalance: nextReservesAsset,
+    quoteBalance: nextReservesQuote,
+    price,
+    ethPrice,
+  });
+
+  const { totalSupply } = await insertTokenIfNotExists({
+    tokenAddress: baseToken,
+    creatorAddress: address,
+    timestamp,
+    context,
+    isDerc20: true,
+    poolAddress: address,
+  });
+
+  const marketCapUsd = computeMarketCap({
+    price,
+    ethPrice,
+    totalSupply,
+  });
+
+  const swapValueUsd =
+    ((reserveQuoteDelta < 0n ? -reserveQuoteDelta : reserveQuoteDelta) *
+      ethPrice) /
+    CHAINLINK_ETH_DECIMALS;
+
+  const priceChangeInfo = await compute24HourPriceChange({
+    poolAddress: address,
+    marketCapUsd,
+    context,
+  });
+
+  // Create swap data
+  const swapData = SwapOrchestrator.createSwapData({
+    poolAddress: address,
+    sender: event.transaction.from,
+    transactionHash: event.transaction.hash,
+    transactionFrom: event.transaction.from,
+    blockNumber: event.block.number,
+    timestamp,
+    assetAddress: baseToken,
+    quoteAddress: quoteToken,
+    isToken0,
+    amountIn,
+    amountOut,
+    price,
+    ethPriceUSD: ethPrice,
+  });
+
+  // Create market metrics
+  const metrics = {
+    liquidityUsd: dollarLiquidity,
+    marketCapUsd,
+    swapValueUsd,
+    percentDayChange: priceChangeInfo,
+  };
+
+  // Define entity updaters
+  const entityUpdaters = {
+    updatePool,
+    updateAsset,
+    insertSwap: insertSwapIfNotExists,
+    insertOrUpdateBuckets,
+    insertOrUpdateDailyVolume,
+    tryAddActivePool,
+  };
+
+  // Perform common updates via orchestrator
+  await Promise.all([
+    SwapOrchestrator.performSwapUpdates(
+      {
+        swapData,
+        swapType: type,
+        metrics,
+        poolData: {
+          parentPoolAddress: address,
+          price,
+        },
+        chainId: BigInt(chainId),
+        context,
+      },
+      entityUpdaters
+    ),
+    // V3-specific pool updates that aren't handled by the orchestrator
+    updatePool({
+      poolAddress: address,
+      context,
+      update: {
+        sqrtPrice: sqrtPriceX96,
+        totalFee0: totalFee0 + fee0,
+        totalFee1: totalFee1 + fee1,
+        lastRefreshed: timestamp,
+        percentDayChange: priceChangeInfo,
+        reserves0: reserves0 + amount0,
+        reserves1: reserves1 + amount1,
+        marketCapUsd,
+      },
+    }),
   ]);
 });

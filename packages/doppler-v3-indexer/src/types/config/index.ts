@@ -37,7 +37,12 @@ export interface ChainAddresses {
   v4: V4Addresses;
   zora: ZoraAddresses;
   shared: SharedAddresses;
+  stables?: StablesAddresses;
   oracle: OracleAddresses;
+}
+
+export interface StablesAddresses {
+  usdc: Address;
 }
 
 export interface ZoraAddresses {

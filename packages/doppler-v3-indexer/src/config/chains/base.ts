@@ -96,6 +96,11 @@ export const baseConfig: ChainConfig = {
         "0xb4deE32EB70A5E55f3D2d861F49Fb3D79f7a14d9" as Address,
       weth: COMMON_ADDRESSES.WETH_BASE,
     },
+    stables: {
+      usdc: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" as Address,
+      usdt: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" as Address,
+      dai: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" as Address,
+    },
     oracle: ORACLE_ADDRESSES,
   },
 };
