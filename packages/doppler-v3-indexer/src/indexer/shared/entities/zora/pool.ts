@@ -1,15 +1,10 @@
-import { DERC20ABI, ZoraCoinABI, ZoraV4HookABI } from "@app/abis";
-import { configs, PoolKey, V4PoolData } from "@app/types";
+import { configs, PoolKey } from "@app/types";
 import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
-import { getAssetData } from "@app/utils/getAssetData";
-import { computeV3Price, getV3PoolData } from "@app/utils/v3-utils";
-import { computeGraduationPercentage } from "@app/utils/v4-utils";
-import { getReservesV4, getReservesV4Zora } from "@app/utils/v4-utils/getV4PoolData";
+import { computeV3Price } from "@app/utils/v3-utils";
+import { getReservesV4Zora } from "@app/utils/v4-utils/getV4PoolData";
 import { Context } from "ponder:registry";
 import { pool } from "ponder:schema";
 import { Address, zeroAddress } from "viem";
-import { computeMarketCap } from "../../oracle";
-import { getSlot0Data } from "@app/utils/v3-utils/getV3PoolData";
 
 export const insertZoraPoolIfNotExists = async ({
   poolAddress,

@@ -86,14 +86,14 @@ export class SwapOrchestrator {
         context,
       }),
 
-      // Update time series data
-      insertOrUpdateBuckets({
-        poolAddress: poolData.parentPoolAddress,
-        price: poolData.price,
-        timestamp: swapData.timestamp,
-        ethPrice: swapData.ethPriceUSD,
-        context,
-      }),
+      // // Update time series data
+      // insertOrUpdateBuckets({
+      //   poolAddress: poolData.parentPoolAddress,
+      //   price: poolData.price,
+      //   timestamp: swapData.timestamp,
+      //   ethPrice: swapData.ethPriceUSD,
+      //   context,
+      // }),
 
       // Update daily volume
       insertOrUpdateDailyVolume({

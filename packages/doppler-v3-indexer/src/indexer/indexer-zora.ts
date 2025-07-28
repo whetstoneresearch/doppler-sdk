@@ -515,7 +515,7 @@ ponder.on("ZoraFactory:CoinCreatedV4", async ({ event, context }) => {
 });
 
 ponder.on("ZoraUniswapV3Pool:Swap", async ({ event, context }) => {
-  const { chain, db } = context;
+  const { chain } = context;
   const address = event.log.address.toLowerCase() as `0x${string}`;
   const timestamp = event.block.timestamp;
   const { amount0, amount1, sqrtPriceX96 } = event.args;
@@ -541,10 +541,6 @@ ponder.on("ZoraUniswapV3Pool:Swap", async ({ event, context }) => {
   if (baseToken === zeroAddress || quoteToken === zeroAddress) {
     return;
   }
-
-  const assetEntity = await db.find(asset, {
-    address: baseToken,
-  });
 
   const price = PriceService.computePriceFromSqrtPriceX96({
     sqrtPriceX96,
@@ -634,6 +630,7 @@ ponder.on("ZoraUniswapV3Pool:Swap", async ({ event, context }) => {
     ethPriceUSD: ethPrice,
   });
 
+
   // Create market metrics
   const metrics = {
     liquidityUsd: dollarLiquidity,
@@ -651,6 +648,7 @@ ponder.on("ZoraUniswapV3Pool:Swap", async ({ event, context }) => {
     insertOrUpdateDailyVolume,
     tryAddActivePool,
   };
+
 
   // Perform common updates via orchestrator
   await Promise.all([
@@ -684,4 +682,5 @@ ponder.on("ZoraUniswapV3Pool:Swap", async ({ event, context }) => {
       },
     }),
   ]);
+
 });
