@@ -115,16 +115,18 @@ ponder.on("LockableUniswapV3Initializer:Create", async ({ event, context }) => {
 
   const ethPrice = await fetchEthPrice(timestamp, context);
 
-  const [poolEntity, assetTokenEntity] = await Promise.all([
-    insertLockableV3PoolIfNotExists({
-      poolAddress: poolOrHookId,
-      context,
-      timestamp,
-      ethPrice,
-    }),
+  const poolEntity = await insertLockableV3PoolIfNotExists({
+    poolAddress: poolOrHookId,
+    context,
+    timestamp,
+    ethPrice,
+  });
+
+  const [assetTokenEntity] = await Promise.all([
     insertTokenIfNotExists({
       tokenAddress: assetId,
       creatorAddress: creatorId,
+      poolAddress: poolOrHookId,
       timestamp,
       context,
     }),
