@@ -94,11 +94,11 @@ export default createConfig({
     //   startBlock: ink.startBlock,
     //   interval: BLOCK_INTERVALS.THOUSAND_BLOCKS, // every 1000 blocks
     // },
-    MetricRefresherBase: {
-      chain: "base",
-      startBlock: base.zoraStartBlock,
-      interval: BLOCK_INTERVALS.THOUSAND_BLOCKS, // every 1000 blocks
-    },
+    // MetricRefresherBase: {
+    //   chain: "base",
+    //   startBlock: base.zoraStartBlock,
+    //   interval: BLOCK_INTERVALS.THOUSAND_BLOCKS, // every 1000 blocks
+    // },
     // MetricRefresherBaseSepolia: {
     //   chain: "baseSepolia",
     //   startBlock: baseSepolia.startBlock,
@@ -550,14 +550,14 @@ export default createConfig({
     ZoraV4Hook: {
       abi: ZoraV4HookABI,
       chain: {
-        // base: {
-        //   startBlock: base.zoraStartBlock,
-        //   address: factory({
-        //     address: base.addresses.zora.zoraFactory,
-        //     event: getAbiItem({ abi: ZoraFactoryABI, name: "CoinCreatedV4" }),
-        //     parameter: "poolKey.hooks",
-        //   }),
-        // },
+        base: {
+          startBlock: base.zoraStartBlock,
+          address: factory({
+            address: base.addresses.zora.zoraFactory,
+            event: getAbiItem({ abi: ZoraFactoryABI, name: "CoinCreatedV4" }),
+            parameter: "poolKey.hooks",
+          }),
+        },
       },
     },
   },

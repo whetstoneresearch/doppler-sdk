@@ -5,6 +5,7 @@ import {
 } from "./shared/entities/position";
 import { insertTokenIfNotExists, updateToken } from "./shared/entities/token";
 import {
+  fetchExistingPool,
   updatePool,
 } from "./shared/entities/pool";
 import { updateAsset } from "./shared/entities/asset";
@@ -13,7 +14,6 @@ import { computeMarketCap, fetchEthPrice } from "./shared/oracle";
 import {
   insertActivePoolsBlobIfNotExists,
 } from "./shared/scheduledJobs";
-import { insertSwapIfNotExists } from "./shared/entities/swap";
 import { CHAINLINK_ETH_DECIMALS } from "@app/utils/constants";
 import { SwapOrchestrator, SwapService, PriceService } from "@app/core";
 import { insertUserIfNotExists } from "./shared/entities/user";
@@ -59,6 +59,13 @@ ponder.on("ZoraFactory:CoinCreated", async ({ event, context }) => {
       context,
       isDerc20: false,
     }),
+    insertZoraAssetIfNotExists({
+      assetAddress: coin,
+      poolAddress: pool,
+      numeraireAddress: currency,
+      timestamp,
+      context,
+    }),
   ]);
 
   const price = computeV3Price({
@@ -81,29 +88,20 @@ ponder.on("ZoraFactory:CoinCreated", async ({ event, context }) => {
     ethPrice: quotePrice,
   });
 
-  await Promise.all([
-    insertZoraAssetIfNotExists({
-      assetAddress: coin,
-      poolAddress: pool,
-      numeraireAddress: currency,
-      timestamp,
-      context,
-    }),
-    updatePool({
-      poolAddress: pool,
-      context,
-      update: {
-        price,
-        isToken0,
-        asset: coin,
-        baseToken: coin,
-        quoteToken: currency,
-        marketCapUsd,
-        dollarLiquidity: liquidityUsd,
-        isQuoteEth: currency === chainConfigs.base.addresses.shared.weth,
-      }
-    })
-  ]);
+  await updatePool({
+    poolAddress: pool,
+    context,
+    update: {
+      price,
+      isToken0,
+      asset: coin,
+      baseToken: coin,
+      quoteToken: currency,
+      marketCapUsd,
+      dollarLiquidity: liquidityUsd,
+      isQuoteEth: currency === chainConfigs.base.addresses.shared.weth,
+    }
+  })
 });
 
 ponder.on("ZoraUniswapV3Pool:Initialize", async ({ event, context }) => {
@@ -589,7 +587,6 @@ ponder.on("ZoraUniswapV3Pool:Swap", async ({ event, context }) => {
   const entityUpdaters = {
     updatePool,
     updateAsset,
-    insertSwap: insertSwapIfNotExists,
   };
 
 

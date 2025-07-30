@@ -132,8 +132,6 @@ ponder.on("UniswapV2Pair:Swap", async ({ event, context }) => {
   const entityUpdaters = {
     updatePool,
     updateAsset,
-    insertSwap: insertSwapIfNotExists,
-    insertOrUpdateBuckets,
   };
 
   // Perform common updates via orchestrator
@@ -280,8 +278,6 @@ ponder.on("UniswapV2PairUnichain:Swap", async ({ event, context }) => {
   const entityUpdaters = {
     updatePool,
     updateAsset,
-    insertSwap: insertSwapIfNotExists,
-    insertOrUpdateBuckets,
   };
 
   // Perform common updates via orchestrator

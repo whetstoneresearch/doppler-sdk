@@ -426,8 +426,6 @@ ponder.on("LockableUniswapV3Pool:Swap", async ({ event, context }) => {
   const entityUpdaters = {
     updatePool,
     updateAsset,
-    insertSwap: insertSwapIfNotExists,
-    insertOrUpdateBuckets,
   };
 
   // Perform common updates via orchestrator
@@ -779,9 +777,6 @@ ponder.on("UniswapV3Pool:Swap", async ({ event, context }) => {
   const entityUpdaters = {
     updatePool,
     updateAsset,
-    insertSwap: insertSwapIfNotExists,
-    insertOrUpdateBuckets,
-    tryAddActivePool,
   };
 
   // Perform common updates via orchestrator
@@ -951,8 +946,6 @@ ponder.on("UniswapV3MigrationPool:Swap", async ({ event, context }) => {
   const entityUpdaters = {
     updatePool,
     updateAsset,
-    insertSwap: insertSwapIfNotExists,
-    insertOrUpdateBuckets,
   };
 
   // Perform common updates via orchestrator

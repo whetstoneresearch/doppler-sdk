@@ -232,8 +232,6 @@ ponder.on("UniswapV4Pool:Swap", async ({ event, context }) => {
   const entityUpdaters = {
     updatePool,
     updateAsset,
-    insertSwap: insertSwapIfNotExists,
-    insertOrUpdateBuckets,
   };
 
   // Perform common updates via orchestrator
@@ -575,26 +573,18 @@ ponder.on("UniswapV4PoolSelfCorrecting:Swap", async ({ event, context }) => {
     ethPriceUSD: ethPrice,
   });
 
-  const percentDayChange = await compute24HourPriceChange({
-    poolAddress: address,
-    marketCapUsd,
-    context,
-  });
-
   // Create market metrics
   const marketMetrics = {
     liquidityUsd: dollarLiquidity,
     marketCapUsd,
     swapValueUsd,
-    percentDayChange,
+    percentDayChange: 0,
   };
 
   // Define entity updaters
   const entityUpdaters = {
     updatePool,
     updateAsset,
-    insertSwap: insertSwapIfNotExists,
-    insertOrUpdateBuckets,
   };
 
   // Perform common updates via orchestrator
@@ -754,8 +744,6 @@ ponder.on("UniswapV4Pool2:Swap", async ({ event, context }) => {
   const entityUpdaters = {
     updatePool,
     updateAsset,
-    insertSwap: insertSwapIfNotExists,
-    insertOrUpdateBuckets,
   };
 
   // Perform common updates via orchestrator
