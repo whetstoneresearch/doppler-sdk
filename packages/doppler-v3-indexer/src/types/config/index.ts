@@ -47,6 +47,7 @@ export interface StablesAddresses {
 
 export interface ZoraAddresses {
   zoraFactory: Address;
+  zoraToken: Address;
 }
 
 /**

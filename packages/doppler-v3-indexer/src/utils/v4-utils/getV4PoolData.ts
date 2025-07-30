@@ -414,8 +414,6 @@ export const getReservesV4Zora = async ({
   const { client, chain } = context;
   const stateView = chainConfigs[chain.name].addresses.v4.stateView;
 
-  console.log(stateView)
-  console.log(poolAddress)
 
   const poolId = getPoolId(poolKey);
 
@@ -435,8 +433,6 @@ export const getReservesV4Zora = async ({
       },
     ],
   });
-
-  console.log(poolCoin, slot0)
 
   const sqrtPriceX96 = slot0.result?.[0] ?? 0n;
   const tick = slot0.result?.[1] ?? 0;

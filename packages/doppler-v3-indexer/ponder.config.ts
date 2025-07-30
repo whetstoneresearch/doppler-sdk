@@ -61,7 +61,13 @@ export default createConfig({
   blocks: {
     ChainlinkEthPriceFeed: {
       chain: "mainnet",
-      startBlock: mainnet.startBlock,
+      // startBlock: mainnet.startBlock,
+      startBlock: 22624231,
+      interval: BLOCK_INTERVALS.FIVE_MINUTES, // every 5 minutes
+    },
+    ZoraUsdcPrice: {
+      chain: "base",
+      startBlock: 31058549,
       interval: BLOCK_INTERVALS.FIVE_MINUTES, // every 5 minutes
     },
     // BaseSepoliaV4PoolCheckpoints: {
@@ -503,7 +509,7 @@ export default createConfig({
       abi: ZoraFactoryABI,
       chain: {
         base: {
-          startBlock: base.zoraStartBlock,
+          startBlock: 31058549,
           address: base.addresses.zora.zoraFactory,
         },
       },
@@ -511,21 +517,21 @@ export default createConfig({
     ZoraCoin: {
       abi: ZoraCoinABI,
       chain: {
-        base: {
-          startBlock: base.zoraStartBlock,
-          address: factory({
-            address: base.addresses.zora.zoraFactory,
-            event: getAbiItem({ abi: ZoraFactoryABI, name: "CoinCreated" }),
-            parameter: "coin",
-          }),
-        },
+        // base: {
+        //   startBlock: base.zoraStartBlock,
+        //   address: factory({
+        //     address: base.addresses.zora.zoraFactory,
+        //     event: getAbiItem({ abi: ZoraFactoryABI, name: "CoinCreated" }),
+        //     parameter: "coin",
+        //   }),
+        // },
       },
     },
     ZoraCoinV4: {
       abi: ZoraCoinABI,
       chain: {
         base: {
-          startBlock: base.zoraStartBlock,
+          startBlock: 31058549,
           address: factory({
             address: base.addresses.zora.zoraFactory,
             event: getAbiItem({ abi: ZoraFactoryABI, name: "CoinCreatedV4" }),
@@ -537,21 +543,21 @@ export default createConfig({
     ZoraUniswapV3Pool: {
       abi: UniswapV3PoolABI,
       chain: {
-        base: {
-          startBlock: base.zoraStartBlock,
-          address: factory({
-            address: base.addresses.zora.zoraFactory,
-            event: getAbiItem({ abi: ZoraFactoryABI, name: "CoinCreated" }),
-            parameter: "pool",
-          }),
-        },
+        // base: {
+        //   startBlock: base.zoraStartBlock,
+        //   address: factory({
+        //     address: base.addresses.zora.zoraFactory,
+        //     event: getAbiItem({ abi: ZoraFactoryABI, name: "CoinCreated" }),
+        //     parameter: "pool",
+        //   }),
+        // },
       },
     },
     ZoraV4Hook: {
       abi: ZoraV4HookABI,
       chain: {
         base: {
-          startBlock: base.zoraStartBlock,
+          startBlock: 31058549,
           address: factory({
             address: base.addresses.zora.zoraFactory,
             event: getAbiItem({ abi: ZoraFactoryABI, name: "CoinCreatedV4" }),

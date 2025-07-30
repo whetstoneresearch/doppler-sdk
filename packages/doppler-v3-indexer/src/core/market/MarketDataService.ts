@@ -21,6 +21,7 @@ export interface LiquidityParams {
   price: bigint;
   ethPriceUSD: bigint;
   isQuoteETH?: boolean;
+  decimals?: number;
 }
 
 /**
@@ -32,6 +33,7 @@ export interface MarketCapParams {
   ethPriceUSD: bigint;
   assetDecimals?: number;
   isQuoteETH?: boolean;
+  decimals?: number;
 }
 
 /**
@@ -61,6 +63,7 @@ export class MarketDataService {
       ethPriceUSD,
       assetDecimals = 18,
       isQuoteETH = true,
+      decimals = 8,
     } = params;
 
     // Calculate market cap in quote currency
@@ -68,7 +71,7 @@ export class MarketDataService {
 
     // Convert to USD if quote is ETH
     if (isQuoteETH) {
-      return (marketCap * ethPriceUSD) / CHAINLINK_ETH_DECIMALS;
+      return (marketCap * ethPriceUSD) / BigInt(10 ** decimals);
     }
 
     return marketCap;
@@ -85,6 +88,7 @@ export class MarketDataService {
       price,
       ethPriceUSD,
       isQuoteETH = true,
+      decimals = 8,
     } = params;
 
     // Calculate asset value in quote currency
@@ -92,8 +96,8 @@ export class MarketDataService {
 
     if (isQuoteETH) {
       // Convert both to USD
-      const assetValueUsd = (assetValueInQuote * ethPriceUSD) / CHAINLINK_ETH_DECIMALS;
-      const quoteValueUsd = (quoteBalance * ethPriceUSD) / CHAINLINK_ETH_DECIMALS;
+      const assetValueUsd = (assetValueInQuote * ethPriceUSD) / BigInt(10 ** decimals);
+      const quoteValueUsd = (quoteBalance * ethPriceUSD) / BigInt(10 ** decimals);
       return assetValueUsd + quoteValueUsd;
     }
 

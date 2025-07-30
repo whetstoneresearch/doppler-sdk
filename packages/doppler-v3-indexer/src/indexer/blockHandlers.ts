@@ -2,9 +2,11 @@ import { ponder } from "ponder:registry";
 import { refreshActivePoolsBlobWithBuckets } from "./shared/scheduledJobs";
 import { configs } from "addresses";
 import { ChainlinkOracleABI } from "@app/abis/ChainlinkOracleABI";
-import { ethPrice } from "ponder.schema";
+import { ethPrice, zoraUsdcPrice } from "ponder.schema";
 import { refreshCheckpointBlob } from "./shared/entities/v4-entities/v4CheckpointBlob";
 import { handlePendingTokenImages } from "./shared/process-pending-images";
+import { UniswapV3PoolABI } from "@app/abis/v3-abis/UniswapV3PoolABI";
+import { computeV3Price } from "@app/utils/v3-utils";
 
 // /**
 //  * Block handlers that run periodically to ensure volume data and metrics are up-to-date
@@ -86,6 +88,34 @@ ponder.on("ChainlinkEthPriceFeed:block", async ({ event, context }) => {
       price,
     })
     .onConflictDoNothing();
+});
+
+ponder.on("ZoraUsdcPrice:block", async ({ event, context }) => {
+  const { db, client, chain } = context;
+  const { timestamp } = event.block;
+
+  const slot0 = await client.readContract({
+    abi: UniswapV3PoolABI,
+    address: "0xedc625b74537ee3a10874f53d170e9c17a906b9c",
+    functionName: "slot0",
+  });
+
+  const sqrtPriceX96 = slot0[0] as bigint;
+
+  const price = computeV3Price({
+    sqrtPriceX96,
+    isToken0: true,
+    decimals: 18,
+    quoteDecimals: 6,
+  });
+
+  const roundedTimestamp = BigInt(Math.floor(Number(timestamp) / 300) * 300);
+  const adjustedTimestamp = roundedTimestamp + 300n;
+
+  await db.insert(zoraUsdcPrice).values({
+    timestamp: adjustedTimestamp,
+    price,
+  }).onConflictDoNothing();
 });
 
 // ponder.on("BaseSepoliaV4PoolCheckpoints:block", async ({ event, context }) => {

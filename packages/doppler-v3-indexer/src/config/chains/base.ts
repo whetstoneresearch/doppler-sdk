@@ -29,6 +29,7 @@ export const baseSepoliaConfig: ChainConfig = {
     },
     zora: {
       zoraFactory: COMMON_ADDRESSES.ZERO_ADDRESS,
+      zoraToken: COMMON_ADDRESSES.ZERO_ADDRESS,
     },
     v4: {
       poolManager: "0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408" as Address,
@@ -87,6 +88,7 @@ export const baseConfig: ChainConfig = {
     },
     zora: {
       zoraFactory: "0x777777751622c0d3258f214F9DF38E35BF45baF3" as Address,
+      zoraToken: "0xedc625b74537ee3a10874f53d170e9c17a906b9c" as Address,
     },
     shared: {
       airlock: "0x660eAaEdEBc968f8f3694354FA8EC0b4c5Ba8D12" as Address,
@@ -98,8 +100,6 @@ export const baseConfig: ChainConfig = {
     },
     stables: {
       usdc: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" as Address,
-      usdt: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" as Address,
-      dai: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" as Address,
     },
     oracle: ORACLE_ADDRESSES,
   },

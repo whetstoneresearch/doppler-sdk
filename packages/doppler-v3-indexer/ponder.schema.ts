@@ -45,6 +45,11 @@ export const ethPrice = onchainTable("eth_price", (t) => ({
   price: t.bigint().notNull(),
 }));
 
+export const zoraUsdcPrice = onchainTable("zora_usdc_price", (t) => ({
+  timestamp: t.bigint().primaryKey(),
+  price: t.bigint().notNull(),
+}));
+
 export const asset = onchainTable(
   "asset",
   (t) => ({
@@ -215,6 +220,8 @@ export const pool = onchainTable(
     migratedToV4PoolId: t.hex(), // For V4 migrations, stores the 32-byte pool ID
     migratedFromPool: t.hex(),
     isQuoteEth: t.boolean().notNull(),
+    isQuoteZora: t.boolean().notNull().default(false),
+    isZoraPool: t.boolean().notNull().default(false),
     isStreaming: t.boolean().notNull().default(false),
     migrationType: t.text().notNull().default("v2"),
   }),
