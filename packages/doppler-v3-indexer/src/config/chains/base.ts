@@ -29,7 +29,10 @@ export const baseSepoliaConfig: ChainConfig = {
     },
     zora: {
       zoraFactory: COMMON_ADDRESSES.ZERO_ADDRESS,
+      zoraTokenPool: COMMON_ADDRESSES.ZERO_ADDRESS,
       zoraToken: COMMON_ADDRESSES.ZERO_ADDRESS,
+      creatorCoinHook: COMMON_ADDRESSES.ZERO_ADDRESS,
+      contentCoinHook: COMMON_ADDRESSES.ZERO_ADDRESS,
     },
     v4: {
       poolManager: "0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408" as Address,
@@ -88,7 +91,10 @@ export const baseConfig: ChainConfig = {
     },
     zora: {
       zoraFactory: "0x777777751622c0d3258f214F9DF38E35BF45baF3" as Address,
-      zoraToken: "0xedc625b74537ee3a10874f53d170e9c17a906b9c" as Address,
+      zoraTokenPool: "0xedc625b74537ee3a10874f53d170e9c17a906b9c" as Address,
+      zoraToken: "0x1111111111166b7FE7bd91427724B487980aFc69" as Address,
+      creatorCoinHook: "0xd61A675F8a0c67A73DC3B54FB7318B4D91409040" as Address,
+      contentCoinHook: "0x9ea932730A7787000042e34390B8E435dD839040" as Address,
     },
     shared: {
       airlock: "0x660eAaEdEBc968f8f3694354FA8EC0b4c5Ba8D12" as Address,

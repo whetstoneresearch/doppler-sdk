@@ -99,6 +99,8 @@ export const insertZoraPoolV4IfNotExists = async ({
   ethPrice,
   poolKey,
   isQuoteZora,
+  isCreatorCoin,
+  isContentCoin
 }: {
   poolAddress: Address;
   baseToken: Address;
@@ -108,6 +110,8 @@ export const insertZoraPoolV4IfNotExists = async ({
   ethPrice: bigint;
   poolKey: PoolKey;
   isQuoteZora: boolean;
+  isCreatorCoin: boolean;
+  isContentCoin: boolean;
 }): Promise<typeof pool.$inferSelect> => {
   const { db, chain } = context;
   const address = poolAddress.toLowerCase() as `0x${string}`;
@@ -125,6 +129,8 @@ export const insertZoraPoolV4IfNotExists = async ({
 
   const { reserves, sqrtPriceX96, tick } = await getReservesV4Zora({
     poolAddress,
+    isContentCoin,
+    isCreatorCoin,
     poolKey,
     context,
   });
@@ -133,7 +139,7 @@ export const insertZoraPoolV4IfNotExists = async ({
 
   const { token0Reserve, token1Reserve, liquidity } = reserves;
 
-  const price = sqrtPriceX96 === 0n ? 0n : computeV3Price({
+  const price = computeV3Price({
     sqrtPriceX96,
     isToken0,
     decimals: 18,
@@ -172,8 +178,9 @@ export const insertZoraPoolV4IfNotExists = async ({
     isToken0,
     marketCapUsd: 0n,
     isQuoteEth,
-    integrator: zeroAddress,
-    isZoraPool: true,
     isQuoteZora,
+    integrator: zeroAddress,
+    isContentCoin,
+    isCreatorCoin,
   });
 };

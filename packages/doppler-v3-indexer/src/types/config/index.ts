@@ -48,6 +48,9 @@ export interface StablesAddresses {
 export interface ZoraAddresses {
   zoraFactory: Address;
   zoraToken: Address;
+  zoraTokenPool: Address;
+  creatorCoinHook: Address;
+  contentCoinHook: Address;
 }
 
 /**

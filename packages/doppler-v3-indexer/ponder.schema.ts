@@ -24,7 +24,9 @@ export const token = onchainTable(
     tokenUriData: t.jsonb().notNull().default("{}"),
     totalSupply: t.bigint().notNull(),
     image: t.text(),
-    isDerc20: t.boolean().notNull(),
+    isDerc20: t.boolean().notNull().default(false),
+    isCreatorCoin: t.boolean().notNull().default(false),
+    isContentCoin: t.boolean().notNull().default(false),
     derc20Data: t.hex(),
     firstSeenAt: t.bigint().notNull(),
     lastSeenAt: t.bigint().notNull(),
@@ -32,6 +34,7 @@ export const token = onchainTable(
     volumeUsd: t.bigint().notNull().default(0n),
     holderCount: t.integer().notNull().default(0),
     creatorAddress: t.hex().notNull(),
+    creatorCoinPid: t.hex()
   }),
   (table) => ({
     addressIdx: index().on(table.address),
@@ -219,11 +222,12 @@ export const pool = onchainTable(
     migratedToPool: t.hex(),
     migratedToV4PoolId: t.hex(), // For V4 migrations, stores the 32-byte pool ID
     migratedFromPool: t.hex(),
-    isQuoteEth: t.boolean().notNull(),
+    isQuoteEth: t.boolean().notNull().default(false),
     isQuoteZora: t.boolean().notNull().default(false),
-    isZoraPool: t.boolean().notNull().default(false),
     isStreaming: t.boolean().notNull().default(false),
     migrationType: t.text().notNull().default("v2"),
+    isContentCoin: t.boolean().notNull().default(false),
+    isCreatorCoin: t.boolean().notNull().default(false),
   }),
   (table) => ({
     pk: primaryKey({

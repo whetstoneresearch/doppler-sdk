@@ -7,6 +7,7 @@ import { refreshCheckpointBlob } from "./shared/entities/v4-entities/v4Checkpoin
 import { handlePendingTokenImages } from "./shared/process-pending-images";
 import { UniswapV3PoolABI } from "@app/abis/v3-abis/UniswapV3PoolABI";
 import { computeV3Price } from "@app/utils/v3-utils";
+import { chainConfigs } from "@app/config";
 
 // /**
 //  * Block handlers that run periodically to ensure volume data and metrics are up-to-date
@@ -96,7 +97,7 @@ ponder.on("ZoraUsdcPrice:block", async ({ event, context }) => {
 
   const slot0 = await client.readContract({
     abi: UniswapV3PoolABI,
-    address: "0xedc625b74537ee3a10874f53d170e9c17a906b9c",
+    address: chainConfigs[chain.name].addresses.zora.zoraTokenPool,
     functionName: "slot0",
   });
 

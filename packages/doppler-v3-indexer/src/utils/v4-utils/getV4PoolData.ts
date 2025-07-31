@@ -404,16 +404,22 @@ export const getLatestSqrtPrice = async ({
 
 export const getReservesV4Zora = async ({
   poolAddress,
+  isContentCoin,
+  isCreatorCoin,
   poolKey,
   context,
 }: {
   poolAddress: Address;
+  isContentCoin: boolean;
+  isCreatorCoin: boolean;
   poolKey: PoolKey;
   context: Context;
 }) => {
   const { client, chain } = context;
-  const stateView = chainConfigs[chain.name].addresses.v4.stateView;
 
+  const stateView = chainConfigs[chain.name].addresses.v4.stateView;
+  const contentCoinHook = chainConfigs[chain.name].addresses.zora.contentCoinHook;
+  const creatorCoinHook = chainConfigs[chain.name].addresses.zora.creatorCoinHook;
 
   const poolId = getPoolId(poolKey);
 
@@ -421,7 +427,7 @@ export const getReservesV4Zora = async ({
     contracts: [
       {
         abi: ZoraV4HookABI,
-        address: poolAddress,
+        address: isContentCoin ? contentCoinHook : creatorCoinHook,
         functionName: "getPoolCoin",
         args: [poolKey],
       },

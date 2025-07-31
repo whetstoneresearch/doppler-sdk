@@ -2,8 +2,46 @@ import { DERC20ABI } from "@app/abis";
 import { token } from "ponder.schema";
 import { Context } from "ponder:registry";
 import { Address, zeroAddress } from "viem";
-import { addPendingTokenImage } from "../pending-token-images";
 import { getMulticallOptions } from "@app/core/utils/multicall";
+import { chainConfigs } from "@app/config";
+
+export const appendTokenPool = async ({
+  tokenAddress,
+  isDerc20,
+  isCreatorCoin,
+  isContentCoin,
+  poolAddress,
+  context,
+  creatorCoinPid = null,
+}: {
+  tokenAddress: Address;
+  isDerc20: boolean;
+  isCreatorCoin: boolean;
+  isContentCoin: boolean;
+  poolAddress: Address;
+  context: Context;
+  creatorCoinPid?: Address | null;
+}) => {
+  const { db } = context;
+
+  const existingToken = await db.find(token, {
+    address: tokenAddress,
+  });
+
+  if (existingToken) {
+    return existingToken;
+  }
+
+  return await db.update(token, {
+    address: tokenAddress,
+  }).set({
+    isDerc20,
+    isCreatorCoin,
+    isContentCoin,
+    pool: poolAddress,
+    creatorCoinPid,
+  });
+};
 
 export const insertTokenIfNotExists = async ({
   tokenAddress,
@@ -18,6 +56,8 @@ export const insertTokenIfNotExists = async ({
   timestamp: bigint;
   context: Context;
   isDerc20?: boolean;
+  creatorCoin?: boolean;
+  contentCoin?: boolean;
   poolAddress?: Address;
 }): Promise<typeof token.$inferSelect> => {
   const { db, chain } = context;
@@ -39,6 +79,8 @@ export const insertTokenIfNotExists = async ({
 
   const chainId = BigInt(chain.id);
 
+  const zoraAddress = chainConfigs[chain.name].addresses.zora.zoraToken;
+
   // ignore pool field for native tokens
   if (address == zeroAddress) {
     return await db.insert(token).values({
@@ -51,6 +93,19 @@ export const insertTokenIfNotExists = async ({
       firstSeenAt: timestamp,
       lastSeenAt: timestamp,
       totalSupply: 0n,
+      isDerc20: false,
+    });
+  } else if (address == zoraAddress) {
+    return await db.insert(token).values({
+      address: address.toLowerCase() as `0x${string}`,
+      chainId,
+      name: "Zora",
+      symbol: "ZORA",
+      decimals: 18,
+      creatorAddress: zeroAddress,
+      firstSeenAt: timestamp,
+      lastSeenAt: timestamp,
+      totalSupply: 10000000000000000000000000000n,
       isDerc20: false,
     });
   } else {
