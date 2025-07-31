@@ -506,6 +506,7 @@ ponder.on("ZoraFactory:CoinCreatedV4", async ({ event, context }) => {
     quoteBalance: isToken0 ? poolEntity.reserves1 : poolEntity.reserves0,
     price: poolEntity.price,
     ethPrice: usdPrice,
+    decimals: 18,
   });
 
   await Promise.all([
@@ -566,6 +567,7 @@ ponder.on("ZoraFactory:CreatorCoinCreated", async ({ event, context }) => {
       isQuoteZora,
       isCreatorCoin: true,
       isContentCoin: false,
+      poolKeyHash,
     }),
     appendTokenPool({
       tokenAddress: coin,
@@ -575,6 +577,12 @@ ponder.on("ZoraFactory:CreatorCoinCreated", async ({ event, context }) => {
       poolAddress,
       context,
       creatorAddress: caller,
+    }),
+    insertTokenIfNotExists({
+      tokenAddress: currency,
+      creatorAddress: caller,
+      timestamp,
+      context,
     }),
   ]);
 
@@ -592,6 +600,7 @@ ponder.on("ZoraFactory:CreatorCoinCreated", async ({ event, context }) => {
     quoteBalance: isToken0 ? poolEntity.reserves1 : poolEntity.reserves0,
     price: poolEntity.price,
     ethPrice: usdPrice,
+    decimals: 18,
   });
 
   await Promise.all([

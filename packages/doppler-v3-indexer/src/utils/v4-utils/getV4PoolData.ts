@@ -408,26 +408,30 @@ export const getReservesV4Zora = async ({
   isCreatorCoin,
   poolKey,
   context,
+  poolKeyHash,
 }: {
   poolAddress: Address;
   isContentCoin: boolean;
   isCreatorCoin: boolean;
   poolKey: PoolKey;
   context: Context;
+  poolKeyHash?: Address;
 }) => {
   const { client, chain } = context;
 
   const stateView = chainConfigs[chain.name].addresses.v4.stateView;
-  const contentCoinHook = chainConfigs[chain.name].addresses.zora.contentCoinHook;
-  const creatorCoinHook = chainConfigs[chain.name].addresses.zora.creatorCoinHook;
 
   const poolId = getPoolId(poolKey);
+  // convert the poolAddress to bytes23 instead of bytes32
+  const poolAddressBytes23 = poolAddress.slice(0, 48);
+
+  const hook = poolKey.hooks;
 
   const [poolCoin, slot0] = await client.multicall({
     contracts: [
       {
         abi: ZoraV4HookABI,
-        address: isContentCoin ? contentCoinHook : creatorCoinHook,
+        address: hook,
         functionName: "getPoolCoin",
         args: [poolKey],
       },
@@ -439,6 +443,7 @@ export const getReservesV4Zora = async ({
       },
     ],
   });
+
 
   const sqrtPriceX96 = slot0.result?.[0] ?? 0n;
   const tick = slot0.result?.[1] ?? 0;

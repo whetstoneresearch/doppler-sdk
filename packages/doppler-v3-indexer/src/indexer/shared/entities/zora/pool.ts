@@ -100,7 +100,8 @@ export const insertZoraPoolV4IfNotExists = async ({
   poolKey,
   isQuoteZora,
   isCreatorCoin,
-  isContentCoin
+  isContentCoin,
+  poolKeyHash,
 }: {
   poolAddress: Address;
   baseToken: Address;
@@ -112,6 +113,7 @@ export const insertZoraPoolV4IfNotExists = async ({
   isQuoteZora: boolean;
   isCreatorCoin: boolean;
   isContentCoin: boolean;
+  poolKeyHash?: `0x${string}`;
 }): Promise<typeof pool.$inferSelect> => {
   const { db, chain } = context;
   const address = poolAddress.toLowerCase() as `0x${string}`;
@@ -133,6 +135,7 @@ export const insertZoraPoolV4IfNotExists = async ({
     isCreatorCoin,
     poolKey,
     context,
+    poolKeyHash,
   });
 
   const isQuoteEth = quoteToken === zeroAddress || quoteToken === configs[chain.name].shared.weth;
