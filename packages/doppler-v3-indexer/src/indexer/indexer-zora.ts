@@ -784,7 +784,7 @@ ponder.on("ZoraUniswapV3Pool:Swap", async ({ event, context }) => {
 
 ponder.on("ZoraV4Hook:Swapped", async ({ event, context }) => {
   const { chain, db } = context;
-  const { sender, poolKeyHash, swapSender, key, params, amount0, amount1, sqrtPriceX96 } = event.args;
+  const { sender, poolKeyHash, swapSender, key, params, amount0, amount1, sqrtPriceX96, isCoinBuy } = event.args;
   const timestamp = event.block.timestamp;
 
   const poolAddress = poolKeyHash as `0x${string}`;
@@ -801,8 +801,9 @@ ponder.on("ZoraV4Hook:Swapped", async ({ event, context }) => {
   const zoraPrice = await fetchZoraPrice(timestamp, context);
   const ethPrice = await fetchEthPrice(timestamp, context);
 
-  const isQuoteZora = poolEntity.quoteToken === chainConfigs[context.chain.name].addresses.zora.zoraToken;
-  const isQuoteEth = poolEntity.quoteToken === chainConfigs[context.chain.name].addresses.shared.weth;
+
+  const isQuoteZora = poolEntity.quoteToken.toLowerCase() === chainConfigs[context.chain.name].addresses.zora.zoraToken.toLowerCase();
+  const isQuoteEth = poolEntity.quoteToken.toLowerCase() === chainConfigs[context.chain.name].addresses.shared.weth.toLowerCase();
 
   let isQuoteCreatorCoin = false;
   let creatorCoinPid = null;
@@ -815,7 +816,6 @@ ponder.on("ZoraV4Hook:Swapped", async ({ event, context }) => {
       creatorCoinPid = creatorCoinEntity?.pool;
     }
   }
-
   if (!isQuoteZora && !isQuoteEth && !isQuoteCreatorCoin && !creatorCoinPid) {
     return;
   }
@@ -873,8 +873,11 @@ ponder.on("ZoraV4Hook:Swapped", async ({ event, context }) => {
   const reserveAssetDelta = isToken0 ? amount0 : amount1;
   const reserveQuoteDelta = isToken0 ? amount1 : amount0;
 
-  const nextReservesAsset = reserveAssetBefore + reserveAssetDelta;
-  const nextReservesQuote = reserveQuoteBefore + reserveQuoteDelta;
+  const realQuoteDelta = isCoinBuy ? reserveQuoteDelta : -reserveQuoteDelta;
+  const realAssetDelta = isCoinBuy ? -reserveAssetDelta : reserveAssetDelta;
+
+  const nextReservesAsset = reserveAssetBefore + realAssetDelta;
+  const nextReservesQuote = reserveQuoteBefore + realQuoteDelta;
 
   let amountIn;
   let amountOut;
@@ -985,9 +988,8 @@ ponder.on("ZoraV4Hook:Swapped", async ({ event, context }) => {
         totalFee0: totalFee0 + fee0,
         totalFee1: totalFee1 + fee1,
         lastRefreshed: timestamp,
-        reserves0: reserves0 + amount0,
-        reserves1: reserves1 + amount1,
-        marketCapUsd,
+        reserves0: reserves0 - amount0,
+        reserves1: reserves1 - amount1,
       },
     }),
   ]);
