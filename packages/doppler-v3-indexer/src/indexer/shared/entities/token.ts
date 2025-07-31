@@ -13,6 +13,7 @@ export const appendTokenPool = async ({
   poolAddress,
   context,
   creatorCoinPid = null,
+  creatorAddress = zeroAddress,
 }: {
   tokenAddress: Address;
   isDerc20: boolean;
@@ -21,6 +22,7 @@ export const appendTokenPool = async ({
   poolAddress: Address;
   context: Context;
   creatorCoinPid?: Address | null;
+  creatorAddress?: Address;
 }) => {
   const { db } = context;
 
@@ -28,8 +30,16 @@ export const appendTokenPool = async ({
     address: tokenAddress,
   });
 
-  if (existingToken) {
-    return existingToken;
+  console.log("existingToken", existingToken);
+
+  if (!existingToken) {
+    await insertTokenIfNotExists({
+      tokenAddress,
+      creatorAddress,
+      timestamp: BigInt(context.chain.id),
+      context,
+      poolAddress,
+    });
   }
 
   return await db.update(token, {

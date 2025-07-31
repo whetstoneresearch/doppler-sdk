@@ -534,6 +534,7 @@ ponder.on("ZoraFactory:CreatorCoinCreated", async ({ event, context }) => {
   const poolAddress = poolKeyHash as `0x${string}`;
 
   const zoraPrice = await fetchZoraPrice(timestamp, context);
+  const ethPrice = await fetchEthPrice(timestamp, context);
 
   const isQuoteZora = currency != zeroAddress && currency === chainConfigs[context.chain.name].addresses.zora.zoraToken;
   const isQuoteEth = currency != zeroAddress && currency === chainConfigs[context.chain.name].addresses.shared.weth;
@@ -573,6 +574,7 @@ ponder.on("ZoraFactory:CreatorCoinCreated", async ({ event, context }) => {
       isContentCoin: false,
       poolAddress,
       context,
+      creatorAddress: caller,
     }),
   ]);
 
@@ -617,7 +619,6 @@ ponder.on("ZoraUniswapV3Pool:Swap", async ({ event, context }) => {
   const address = event.log.address.toLowerCase() as `0x${string}`;
   const timestamp = event.block.timestamp;
   const { amount0, amount1, sqrtPriceX96 } = event.args;
-  const chainId = BigInt(chain.id);
 
   const ethPrice = await fetchEthPrice(timestamp, context);
 
@@ -750,7 +751,7 @@ ponder.on("ZoraUniswapV3Pool:Swap", async ({ event, context }) => {
           parentPoolAddress: address,
           price,
         },
-        chainId: BigInt(chainId),
+        chainId: BigInt(context.chain.id),
         context,
       },
       entityUpdaters
