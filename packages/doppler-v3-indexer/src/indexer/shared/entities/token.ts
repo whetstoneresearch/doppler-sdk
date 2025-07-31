@@ -30,8 +30,6 @@ export const appendTokenPool = async ({
     address: tokenAddress,
   });
 
-  console.log("existingToken", existingToken);
-
   if (!existingToken) {
     await insertTokenIfNotExists({
       tokenAddress,
