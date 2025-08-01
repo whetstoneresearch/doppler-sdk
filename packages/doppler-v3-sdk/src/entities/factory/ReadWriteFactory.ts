@@ -1,17 +1,16 @@
 import {
-  ReadWriteContract,
-  ReadWriteAdapter,
-  Drift,
-  TransactionOptions,
   createDrift,
-  FunctionReturn,
+  Drift,
   FunctionArgs,
+  FunctionReturn,
+  ReadWriteAdapter,
+  ReadWriteContract,
+  TransactionOptions,
 } from "@delvtech/drift";
-import { ReadFactory, AirlockABI } from "./ReadFactory";
-import { BundlerAbi } from "../../abis";
 import { Address, encodeAbiParameters, Hex, parseEther, toHex } from "viem";
+import { BundlerAbi } from "../../abis";
 import { BeneficiaryData, V4MigratorData } from "../../types";
-import { DOPPLER_V3_ADDRESSES } from "../../addresses";
+import { AirlockABI, ReadFactory } from "./ReadFactory";
 
 // Constants for default configuration values
 export const ONE_YEAR_IN_SECONDS = 365 * 24 * 60 * 60;
@@ -31,7 +30,8 @@ export const DEFAULT_INITIAL_VOTING_PERIOD = 1209600;
 export const DEFAULT_INITIAL_PROPOSAL_THRESHOLD = BigInt(0);
 
 export const WAD = BigInt(10 ** 18);
-export const DEAD_ADDRESS = "0x000000000000000000000000000000000000dEaD" as Address;
+export const DEAD_ADDRESS =
+  "0x000000000000000000000000000000000000dEaD" as Address;
 
 /**
  * Parameters required for creating a new Doppler V3 pool
@@ -216,6 +216,8 @@ export class ReadWriteFactory extends ReadFactory {
       abi: BundlerAbi,
       address: bundlerAddress,
     });
+    if (!bundlerAddress) throw new Error("Bundler address is required");
+    if (!this.bundler) throw new Error("Failed to initialize bundler");
 
     // Initialize default configurations with fallback values
     this.defaultV3PoolConfig = defaultConfigs?.defaultV3PoolConfig ?? {
@@ -347,10 +349,15 @@ export class ReadWriteFactory extends ReadFactory {
    */
   private encodeLockablePoolInitializerData(v3PoolConfig: V3PoolConfig): Hex {
     if (!v3PoolConfig.beneficiaries) {
-      throw new Error("Beneficiaries are required for lockable pool initialization");
+      throw new Error(
+        "Beneficiaries are required for lockable pool initialization"
+      );
     }
 
-    const totalShares = v3PoolConfig.beneficiaries.reduce((acc, beneficiary) => acc + beneficiary.shares, 0n);
+    const totalShares = v3PoolConfig.beneficiaries.reduce(
+      (acc, beneficiary) => acc + beneficiary.shares,
+      0n
+    );
 
     if (totalShares !== WAD) {
       throw new Error("Total shares must be equal to 1e18");
@@ -372,10 +379,10 @@ export class ReadWriteFactory extends ReadFactory {
               type: "tuple[]",
               components: [
                 { type: "address", name: "beneficiary" },
-                { type: "uint96", name: "shares" }
-              ]
+                { type: "uint96", name: "shares" },
+              ],
             },
-          ]
+          ],
         },
       ],
       [
@@ -386,8 +393,8 @@ export class ReadWriteFactory extends ReadFactory {
           numPositions: v3PoolConfig.numPositions,
           maxShareToBeSold: v3PoolConfig.maxShareToBeSold,
           beneficiaries: v3PoolConfig.beneficiaries,
-        }
-      ],
+        },
+      ]
     );
   }
 
@@ -518,7 +525,9 @@ export class ReadWriteFactory extends ReadFactory {
       vestingConfig
     );
 
-    const poolInitializerData = v3PoolConfig.beneficiaries ? this.encodeLockablePoolInitializerData(v3PoolConfig) : this.encodePoolInitializerData(v3PoolConfig)
+    const poolInitializerData = v3PoolConfig.beneficiaries
+      ? this.encodeLockablePoolInitializerData(v3PoolConfig)
+      : this.encodePoolInitializerData(v3PoolConfig);
     const liquidityMigratorData = params.liquidityMigratorData ?? ("0x" as Hex);
 
     // Prepare final arguments
@@ -573,25 +582,37 @@ export class ReadWriteFactory extends ReadFactory {
     );
 
     // Validation Rule #1: Supply Integrity Constraint
-    if (saleConfig.initialSupply < saleConfig.numTokensToSell + totalVestedAmount) {
+    if (
+      saleConfig.initialSupply <
+      saleConfig.numTokensToSell + totalVestedAmount
+    ) {
       throw new Error(
-        `Configuration Error: Vesting and sale amounts (${saleConfig.numTokensToSell + totalVestedAmount
-        }) exceed the initial supply (${saleConfig.initialSupply
+        `Configuration Error: Vesting and sale amounts (${
+          saleConfig.numTokensToSell + totalVestedAmount
+        }) exceed the initial supply (${
+          saleConfig.initialSupply
         }). Please adjust your vesting schedule or increase the initial supply.`
       );
     }
 
     if (params.v3PoolConfig?.beneficiaries) {
-      params.v3PoolConfig.beneficiaries = this.sortBeneficiaries(params.v3PoolConfig.beneficiaries);
+      params.v3PoolConfig.beneficiaries = this.sortBeneficiaries(
+        params.v3PoolConfig.beneficiaries
+      );
       this.validateBeneficiaries(params.v3PoolConfig.beneficiaries);
 
       // assert that the beneficiaries are sorted and give 0.05 ether to the airlock owner
       const airlockOwner = await this.airlock.read("owner");
-      const airlockOwnerIndex = params.v3PoolConfig.beneficiaries.findIndex(b => b.beneficiary.toLowerCase() === airlockOwner.toLowerCase());
+      const airlockOwnerIndex = params.v3PoolConfig.beneficiaries.findIndex(
+        (b) => b.beneficiary.toLowerCase() === airlockOwner.toLowerCase()
+      );
       if (airlockOwnerIndex === -1) {
         throw new Error("Airlock owner is not a beneficiary");
       }
-      if (params.v3PoolConfig.beneficiaries[airlockOwnerIndex].shares !== parseEther("0.05")) {
+      if (
+        params.v3PoolConfig.beneficiaries[airlockOwnerIndex].shares !==
+        parseEther("0.05")
+      ) {
         throw new Error("Airlock owner must have 0.05 ether");
       }
     }
@@ -796,7 +817,7 @@ export class ReadWriteFactory extends ReadFactory {
 
       // Check if airlock owner is already in the beneficiaries list
       const existingOwnerIndex = beneficiaries.findIndex(
-        b => b.beneficiary.toLowerCase() === airlockOwner.toLowerCase()
+        (b) => b.beneficiary.toLowerCase() === airlockOwner.toLowerCase()
       );
 
       if (existingOwnerIndex === -1) {
@@ -805,17 +826,20 @@ export class ReadWriteFactory extends ReadFactory {
 
         // Scale down other beneficiaries proportionally
         const remainingShares = WAD - ownerShares; // 95% remaining
-        const currentTotal = beneficiaries.reduce((sum, b) => sum + b.shares, BigInt(0));
+        const currentTotal = beneficiaries.reduce(
+          (sum, b) => sum + b.shares,
+          BigInt(0)
+        );
 
-        beneficiaries = beneficiaries.map(b => ({
+        beneficiaries = beneficiaries.map((b) => ({
           ...b,
-          shares: (b.shares * remainingShares) / currentTotal
+          shares: (b.shares * remainingShares) / currentTotal,
         }));
 
         // Add the owner beneficiary
         beneficiaries.push({
           beneficiary: airlockOwner,
-          shares: ownerShares
+          shares: ownerShares,
         });
 
         // Sort beneficiaries by address
@@ -828,24 +852,25 @@ export class ReadWriteFactory extends ReadFactory {
 
     return encodeAbiParameters(
       [
-        { type: "uint24" },  // fee
-        { type: "int24" },   // tickSpacing
-        { type: "uint32" },  // lockDuration
+        { type: "uint24" }, // fee
+        { type: "int24" }, // tickSpacing
+        { type: "uint32" }, // lockDuration
         {
-          type: "tuple[]", components: [
+          type: "tuple[]",
+          components: [
             { type: "address", name: "beneficiary" },
-            { type: "uint96", name: "shares" }
-          ]
-        }
+            { type: "uint96", name: "shares" },
+          ],
+        },
       ],
       [
         data.fee,
         data.tickSpacing,
         data.lockDuration,
-        beneficiaries.map(b => ({
+        beneficiaries.map((b) => ({
           beneficiary: b.beneficiary,
-          shares: b.shares
-        }))
+          shares: b.shares,
+        })),
       ]
     );
   }
