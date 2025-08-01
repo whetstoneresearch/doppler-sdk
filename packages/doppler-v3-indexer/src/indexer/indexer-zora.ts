@@ -1280,6 +1280,13 @@ ponder.on("ZoraCreatorCoinV4:LiquidityMigrated", async ({ event, context }) => {
     context,
     update: updateData,
   });
+
+  await db.delete(pool, {
+    address: fromPoolAddress,
+    chainId: BigInt(chain.id),
+  }).catch(() => {
+    console.log(`Failed to delete pool ${fromPoolAddress} from ZoraCreatorCoinV4:LiquidityMigrated`);
+  });
 });
 
 ponder.on("ZoraCreatorCoinV4:CoinTransfer", async ({ event, context }) => {
