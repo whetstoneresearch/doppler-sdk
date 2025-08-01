@@ -497,6 +497,7 @@ ponder.on("ZoraFactory:CoinCreatedV4", async ({ event, context }) => {
     price: poolEntity.price,
     ethPrice: usdPrice,
     totalSupply,
+    decimals: isQuoteEth ? 8 : 18,
   });
 
   const isToken0 = poolEntity.isToken0;
@@ -506,7 +507,7 @@ ponder.on("ZoraFactory:CoinCreatedV4", async ({ event, context }) => {
     quoteBalance: isToken0 ? poolEntity.reserves1 : poolEntity.reserves0,
     price: poolEntity.price,
     ethPrice: usdPrice,
-    decimals: 18,
+    decimals: isQuoteEth ? 8 : 18,
   });
 
   await Promise.all([
@@ -591,6 +592,7 @@ ponder.on("ZoraFactory:CreatorCoinCreated", async ({ event, context }) => {
     price: poolEntity.price,
     ethPrice: usdPrice,
     totalSupply,
+    decimals: isQuoteEth ? 8 : 18,
   });
 
   const isToken0 = poolEntity.isToken0;
@@ -600,7 +602,7 @@ ponder.on("ZoraFactory:CreatorCoinCreated", async ({ event, context }) => {
     quoteBalance: isToken0 ? poolEntity.reserves1 : poolEntity.reserves0,
     price: poolEntity.price,
     ethPrice: usdPrice,
-    decimals: 18,
+    decimals: isQuoteEth ? 8 : 18,
   });
 
   await Promise.all([
@@ -907,7 +909,7 @@ ponder.on("ZoraV4Hook:Swapped", async ({ event, context }) => {
     quoteBalance: nextReservesQuote,
     price,
     ethPrice: usdPrice,
-    decimals: 18,
+    decimals: isQuoteEth ? 8 : 18,
   });
 
   const { totalSupply } = await insertTokenIfNotExists({
@@ -923,7 +925,7 @@ ponder.on("ZoraV4Hook:Swapped", async ({ event, context }) => {
     price,
     ethPrice: usdPrice,
     totalSupply,
-    decimals: 18,
+    decimals: isQuoteEth ? 8 : 18,
   });
 
   const swapValueUsd =
