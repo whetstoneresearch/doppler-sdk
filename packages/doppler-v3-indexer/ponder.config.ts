@@ -540,6 +540,19 @@ export default createConfig({
         },
       },
     },
+    ZoraCreatorCoinV4: {
+      abi: ZoraCoinABI,
+      chain: {
+        base: {
+          startBlock: 31058549,
+          address: factory({
+            address: base.addresses.zora.zoraFactory,
+            event: getAbiItem({ abi: ZoraFactoryABI, name: "CreatorCoinCreated" }),
+            parameter: "coin",
+          }),
+        },
+      },
+    },
     ZoraUniswapV3Pool: {
       abi: UniswapV3PoolABI,
       chain: {
@@ -561,6 +574,19 @@ export default createConfig({
           address: factory({
             address: base.addresses.zora.zoraFactory,
             event: getAbiItem({ abi: ZoraFactoryABI, name: "CoinCreatedV4" }),
+            parameter: "poolKey.hooks",
+          }),
+        },
+      },
+    },
+    ZoraV4CreatorCoinHook: {
+      abi: ZoraV4HookABI,
+      chain: {
+        base: {
+          startBlock: 31058549,
+          address: factory({
+            address: base.addresses.zora.zoraFactory,
+            event: getAbiItem({ abi: ZoraFactoryABI, name: "CreatorCoinCreated" }),
             parameter: "poolKey.hooks",
           }),
         },
