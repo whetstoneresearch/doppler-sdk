@@ -1218,8 +1218,71 @@ ponder.on("ZoraV4CreatorCoinHook:Swapped", async ({ event, context }) => {
   ]);
 });
 
+ponder.on("ZoraCreatorCoinV4:LiquidityMigrated", async ({ event, context }) => {
+  const { chain, db } = context;
+  const { fromPoolKey, fromPoolKeyHash, toPoolKey, toPoolKeyHash } = event.args;
+  const timestamp = event.block.timestamp;
 
-ponder.on("ZoraCoinV4:CoinTransfer", async ({ event, context }) => {
+  const fromPoolAddress = fromPoolKeyHash;
+  const toPoolAddress = toPoolKeyHash;
+
+  const fromPoolEntity = await db.find(pool, {
+    address: fromPoolAddress,
+    chainId: BigInt(chain.id),
+  });
+
+  if (!fromPoolEntity) {
+    return;
+  }
+
+  const zoraPrice = await fetchZoraPrice(timestamp, context);
+  const ethPrice = await fetchEthPrice(timestamp, context);
+
+  const isQuoteZora = fromPoolEntity.quoteToken.toLowerCase() === chainConfigs[context.chain.name].addresses.zora.zoraToken.toLowerCase();
+  const isQuoteEth = fromPoolEntity.quoteToken.toLowerCase() === chainConfigs[context.chain.name].addresses.shared.weth.toLowerCase();
+
+  await Promise.all([
+    insertZoraPoolV4IfNotExists({
+      poolAddress: toPoolAddress,
+      context,
+      timestamp,
+      ethPrice: isQuoteEth ? ethPrice : zoraPrice,
+      poolKey: toPoolKey,
+      baseToken: fromPoolEntity.baseToken,
+      quoteToken: fromPoolEntity.quoteToken,
+      isQuoteZora,
+      isCreatorCoin: true,
+      isContentCoin: false,
+    }),
+    updateToken({
+      tokenAddress: fromPoolEntity.baseToken,
+      context,
+      update: {
+        pool: toPoolAddress,
+      },
+    }),
+    updateAsset({
+      assetAddress: fromPoolEntity.baseToken,
+      context,
+      update: {
+        poolAddress: toPoolAddress,
+      },
+    })
+  ]);
+
+  const updateData = {
+    ...fromPoolEntity,
+    address: toPoolAddress,
+  }
+
+  await updatePool({
+    poolAddress: toPoolAddress,
+    context,
+    update: updateData,
+  });
+});
+
+ponder.on("ZoraCreatorCoinV4:CoinTransfer", async ({ event, context }) => {
   const { address } = event.log;
   const { timestamp } = event.block;
   const { sender, recipient, senderBalance, recipientBalance } = event.args;

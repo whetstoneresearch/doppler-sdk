@@ -12,6 +12,7 @@ import {
   ZoraFactoryABI,
   ZoraV4HookABI,
   ZoraCoinABI,
+  ZoraCreatorCoinABI,
 } from "./src/abis";
 import { UniswapV2FactoryABI } from "@app/abis/UniswapV2Factory";
 import { BLOCK_INTERVALS } from "@app/config/blocks/intervals";
@@ -541,7 +542,7 @@ export default createConfig({
       },
     },
     ZoraCreatorCoinV4: {
-      abi: ZoraCoinABI,
+      abi: ZoraCreatorCoinABI,
       chain: {
         base: {
           startBlock: 31058549,

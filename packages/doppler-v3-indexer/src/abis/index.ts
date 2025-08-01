@@ -19,3 +19,4 @@ export { UniswapV2PairABI } from "./UniswapV2PairABI";
 export { ZoraFactoryABI } from "./ZoraFactoryABI";
 export { ZoraCoinABI } from "./ZoraCoinABI";
 export { ZoraV4HookABI } from "./ZoraV4HookABI";
+export { ZoraCreatorCoinABI } from "./ZoraCreatorCoinABI";
