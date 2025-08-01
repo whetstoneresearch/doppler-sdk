@@ -228,6 +228,7 @@ export const pool = onchainTable(
     migrationType: t.text().notNull().default("v2"),
     isContentCoin: t.boolean().notNull().default(false),
     isCreatorCoin: t.boolean().notNull().default(false),
+    poolKey: t.jsonb().notNull().default("{}"),
   }),
   (table) => ({
     pk: primaryKey({

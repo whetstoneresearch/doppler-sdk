@@ -469,6 +469,7 @@ ponder.on("ZoraFactory:CoinCreatedV4", async ({ event, context }) => {
     return;
   }
 
+
   const [poolEntity, assetTokenEntity] = await Promise.all([
     insertZoraPoolV4IfNotExists({
       poolAddress,
@@ -500,6 +501,7 @@ ponder.on("ZoraFactory:CoinCreatedV4", async ({ event, context }) => {
     }),
   ]);
 
+
   const { totalSupply } = assetTokenEntity;
   const marketCapUsd = computeMarketCap({
     price: poolEntity.price,
@@ -518,6 +520,7 @@ ponder.on("ZoraFactory:CoinCreatedV4", async ({ event, context }) => {
     decimals: isQuoteEth ? 8 : 18,
   });
 
+
   await Promise.all([
     insertZoraAssetIfNotExists({
       assetAddress: coin,
@@ -532,6 +535,7 @@ ponder.on("ZoraFactory:CoinCreatedV4", async ({ event, context }) => {
       update: {
         marketCapUsd,
         dollarLiquidity,
+        poolKey: poolKey,
       }
     })
   ]);
@@ -630,6 +634,7 @@ ponder.on("ZoraFactory:CreatorCoinCreated", async ({ event, context }) => {
       update: {
         marketCapUsd,
         dollarLiquidity,
+        poolKey: poolKey,
       }
     })
   ]);
@@ -1284,6 +1289,7 @@ ponder.on("ZoraCreatorCoinV4:LiquidityMigrated", async ({ event, context }) => {
   const updateData = {
     ...fromPoolEntity,
     address: toPoolAddress,
+    poolKey: toPoolKey,
   }
 
   await updatePool({
