@@ -1,12 +1,11 @@
 import { MarketDataService } from "@app/core";
-import { CHAINLINK_ETH_DECIMALS } from "./constants";
 
 export const computeDollarLiquidity = ({
   assetBalance,
   quoteBalance,
   price,
   ethPrice,
-  decimals = 8,
+  decimals,
 }: {
   assetBalance: bigint;
   quoteBalance: bigint;

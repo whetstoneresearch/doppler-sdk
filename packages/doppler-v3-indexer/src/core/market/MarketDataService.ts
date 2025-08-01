@@ -66,6 +66,7 @@ export class MarketDataService {
       decimals = 8,
     } = params;
 
+
     // Calculate market cap in quote currency
     const marketCap = (price * totalSupply) / BigInt(10 ** assetDecimals);
 

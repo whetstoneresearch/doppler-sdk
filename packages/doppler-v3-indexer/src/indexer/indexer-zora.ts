@@ -454,7 +454,9 @@ ponder.on("ZoraFactory:CoinCreatedV4", async ({ event, context }) => {
       decimals: 18,
     });
 
-    usdPrice = creatorCoinPrice;
+    const contentCoinUsdPrice = creatorCoinPrice * zoraPrice / 10n ** 18n;
+
+    usdPrice = contentCoinUsdPrice;
   }
 
   if (!usdPrice) {
@@ -803,7 +805,6 @@ ponder.on("ZoraV4Hook:Swapped", async ({ event, context }) => {
   const zoraPrice = await fetchZoraPrice(timestamp, context);
   const ethPrice = await fetchEthPrice(timestamp, context);
 
-
   const isQuoteZora = poolEntity.quoteToken.toLowerCase() === chainConfigs[context.chain.name].addresses.zora.zoraToken.toLowerCase();
   const isQuoteEth = poolEntity.quoteToken.toLowerCase() === chainConfigs[context.chain.name].addresses.shared.weth.toLowerCase();
 
@@ -845,7 +846,9 @@ ponder.on("ZoraV4Hook:Swapped", async ({ event, context }) => {
       decimals: 18,
     });
 
-    usdPrice = creatorCoinPrice;
+    const contentCoinUsdPrice = creatorCoinPrice * zoraPrice / 10n ** 18n;
+
+    usdPrice = contentCoinUsdPrice;
   }
 
   if (!usdPrice) {
@@ -920,6 +923,7 @@ ponder.on("ZoraV4Hook:Swapped", async ({ event, context }) => {
     isDerc20: true,
     poolAddress,
   });
+
 
   const marketCapUsd = computeMarketCap({
     price,
