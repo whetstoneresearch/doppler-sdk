@@ -424,21 +424,14 @@ ponder.on("ZoraFactory:CoinCreatedV4", async ({ event, context }) => {
   let isQuoteCreatorCoin = false;
   let creatorCoinPid = null;
   if (!isQuoteZora && !isQuoteEth) {
-    console.log("txHash", event.transaction.hash);
-    console.log(poolKey);
-    console.log(currencyAddress);
-    console.log("here?");
     const creatorCoinEntity = await db.find(token, {
       address: currencyAddress,
     });
 
-    console.log("creatorCoinEntity", creatorCoinEntity);
     isQuoteCreatorCoin = creatorCoinEntity?.isCreatorCoin ?? false;
     if (isQuoteCreatorCoin) {
       creatorCoinPid = creatorCoinEntity?.pool;
     }
-    console.log("isQuoteCreatorCoin", isQuoteCreatorCoin);
-    console.log("creatorCoinPid", creatorCoinPid);
   }
 
   if (!isQuoteZora && !isQuoteEth && !isQuoteCreatorCoin && !creatorCoinPid) {
@@ -561,8 +554,8 @@ ponder.on("ZoraFactory:CreatorCoinCreated", async ({ event, context }) => {
   const zoraPrice = await fetchZoraPrice(timestamp, context);
   const ethPrice = await fetchEthPrice(timestamp, context);
 
-  const isQuoteZora = currency != zeroAddress && currency === chainConfigs[context.chain.name].addresses.zora.zoraToken;
-  const isQuoteEth = currency != zeroAddress && currency === chainConfigs[context.chain.name].addresses.shared.weth;
+  const isQuoteZora = currency != zeroAddress && currency.toLowerCase() === chainConfigs[context.chain.name].addresses.zora.zoraToken.toLowerCase();
+  const isQuoteEth = currency === zeroAddress || currency.toLowerCase() === chainConfigs[context.chain.name].addresses.shared.weth.toLowerCase();
 
   if (!isQuoteEth && !isQuoteZora) {
     return;
