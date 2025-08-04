@@ -21,7 +21,7 @@ export const token = onchainTable(
     name: t.text().notNull(),
     symbol: t.text().notNull(),
     decimals: t.integer().notNull(),
-    tokenUriData: t.jsonb().notNull().default("{}"),
+    tokenUriData: t.jsonb(),
     totalSupply: t.bigint().notNull(),
     image: t.text(),
     isDerc20: t.boolean().notNull().default(false),
@@ -34,7 +34,8 @@ export const token = onchainTable(
     volumeUsd: t.bigint().notNull().default(0n),
     holderCount: t.integer().notNull().default(0),
     creatorAddress: t.hex().notNull(),
-    creatorCoinPid: t.hex()
+    creatorCoinPid: t.hex(),
+    triedMetadata: t.boolean().notNull().default(false),
   }),
   (table) => ({
     addressIdx: index().on(table.address),
