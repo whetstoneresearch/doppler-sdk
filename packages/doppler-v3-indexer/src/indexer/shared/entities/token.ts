@@ -84,9 +84,8 @@ export const insertTokenIfNotExists = async ({
       ...multicallOptions,
     });
 
-    fetch(`${process.env.METADATA_UPDATER_ENDPOINT}?tokenAddress=${address}`) as unknown;
 
-    return await context.db
+    const data = await context.db
       .insert(token)
       .values({
         address: address.toLowerCase() as `0x${string}`,
@@ -105,6 +104,9 @@ export const insertTokenIfNotExists = async ({
       .onConflictDoUpdate((row) => ({
         pool: row.pool,
       }));
+        fetch(`${process.env.METADATA_UPDATER_ENDPOINT}?tokenAddress=${address}`) as unknown;
+
+        return data
   }
 };
 
@@ -121,9 +123,14 @@ export const updateToken = async ({
 
   const address = tokenAddress.toLowerCase() as `0x${string}`;
 
-  return await db
+
+  const data = await db
     .update(token, {
       address,
     })
     .set(update);
+
+      fetch(`${process.env.METADATA_UPDATER_ENDPOINT}?tokenAddress=${address}`) as unknown;
+
+      return data;
 };
