@@ -425,7 +425,7 @@ ponder.on("ZoraFactory:CoinCreatedV4", async ({ event, context }) => {
   let creatorCoinPid = null;
   if (!isQuoteZora && !isQuoteEth) {
     const creatorCoinEntity = await db.find(token, {
-      address: currency,
+      address: currencyAddress,
     });
     isQuoteCreatorCoin = creatorCoinEntity?.isCreatorCoin ?? false;
     if (isQuoteCreatorCoin) {
@@ -523,9 +523,9 @@ ponder.on("ZoraFactory:CoinCreatedV4", async ({ event, context }) => {
 
   await Promise.all([
     insertZoraAssetIfNotExists({
-      assetAddress: coin,
+      assetAddress: coinAddress,
       poolAddress,
-      numeraireAddress: currency,
+      numeraireAddress: currencyAddress,
       timestamp,
       context,
     }),
@@ -624,7 +624,7 @@ ponder.on("ZoraFactory:CreatorCoinCreated", async ({ event, context }) => {
     insertZoraAssetIfNotExists({
       assetAddress: coinAddress,
       poolAddress,
-      numeraireAddress: currency,
+      numeraireAddress: currencyAddress,
       timestamp,
       context,
     }),
