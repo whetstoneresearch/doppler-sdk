@@ -9,17 +9,21 @@
     "db": "ponder db",
     "codegen": "ponder codegen",
     "lint": "eslint .",
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "async-task-server": "bun run asyncTaskServer.ts"
   },
   "dependencies": {
     "@uniswap/v3-sdk": "^3.24.0",
     "hono": "^4.6.19",
     "jsbi": "^4.3.0",
+    "pg": "^8.11.3",
     "ponder": "^0.11.37",
+    "postgres": "^3.4.7",
     "viem": "2.30.1"
   },
   "devDependencies": {
     "@types/node": "^20.9.0",
+    "@types/pg": "^8.10.7",
     "eslint": "^8.53.0",
     "eslint-config-ponder": "^0.8.5",
     "typescript": "^5.2.2"
