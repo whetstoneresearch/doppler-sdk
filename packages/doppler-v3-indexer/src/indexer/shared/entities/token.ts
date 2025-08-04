@@ -1,9 +1,9 @@
 import { DERC20ABI } from "@app/abis";
+import { chainConfigs } from "@app/config";
+import { getMulticallOptions } from "@app/core/utils/multicall";
 import { token } from "ponder.schema";
 import { Context } from "ponder:registry";
 import { Address, zeroAddress } from "viem";
-import { getMulticallOptions } from "@app/core/utils/multicall";
-import { chainConfigs } from "@app/config";
 
 export const appendTokenPool = async ({
   tokenAddress,
@@ -155,108 +155,7 @@ export const insertTokenIfNotExists = async ({
     });
 
     const tokenURI = tokenURIResult?.result;
-    let tokenUriData;
-    let image: string | undefined;
-    // if (tokenURI?.startsWith("ipfs://")) {
-    //   try {
-    //     if (
-    //       !tokenURI.startsWith("ipfs://") &&
-    //       !tokenURI.startsWith("http://") &&
-    //       !tokenURI.startsWith("https://")
-    //     ) {
-    //       console.error(`Invalid tokenURI for token ${address}: ${tokenURI}`);
-    //     }
-    //     const cid = tokenURI.replace("ipfs://", "");
-    //     const url = `https://${process.env.PINATA_GATEWAY_URL}/ipfs/${cid}?pinataGatewayToken=${process.env.PINATA_GATEWAY_KEY}`;
-    //     const response = await fetch(url);
-    //     tokenUriData = await response.json();
-
-    //     if (
-    //       tokenUriData &&
-    //       typeof tokenUriData === "object" &&
-    //       "image" in tokenUriData &&
-    //       typeof tokenUriData.image === "string"
-    //     ) {
-    //       if (tokenUriData.image.startsWith("ipfs://")) {
-    //         image = tokenUriData.image;
-    //       }
-    //     } else if (
-    //       tokenUriData &&
-    //       typeof tokenUriData === "object" &&
-    //       "image_hash" in tokenUriData &&
-    //       typeof tokenUriData.image_hash === "string"
-    //     ) {
-    //       if (tokenUriData.image_hash.startsWith("ipfs://")) {
-    //         image = tokenUriData.image_hash;
-    //       }
-    //     }
-    //   } catch (error) {
-    //     console.error(
-    //       `Failed to fetch IPFS metadata for token ${address}:`,
-    //       error
-    //     );
-    //   }
-    // } else if (tokenURI?.includes("ohara")) {
-    //   try {
-    //     const url = tokenURI;
-    //     const response = await fetch(url);
-    //     tokenUriData = await response.json();
-
-    //     if (
-    //       tokenUriData &&
-    //       typeof tokenUriData === "object" &&
-    //       "image" in tokenUriData &&
-    //       typeof tokenUriData.image === "string"
-    //     ) {
-    //       if (tokenUriData.image.startsWith("https://")) {
-    //         image = tokenUriData.image;
-    //       }
-    //     } else {
-    //       // Add to pending list for retry
-    //       await addPendingTokenImage({
-    //         context,
-    //         chainId,
-    //         tokenAddress: address,
-    //         tokenURI,
-    //         timestamp: Number(timestamp),
-    //       });
-    //     }
-    //   } catch (error) {
-    //     console.error(
-    //       `Failed to fetch ohara metadata for token ${address}:`,
-    //       error
-    //     );
-    //     // Add to pending list for retry
-    //     await addPendingTokenImage({
-    //       context,
-    //       chainId,
-    //       tokenAddress: address,
-    //       tokenURI,
-    //       timestamp: Number(timestamp),
-    //     });
-    //   }
-    // } else if (tokenURI?.includes("https://api.paragraph.com")) {
-    //   try {
-    //     const response = await fetch(tokenURI);
-    //     tokenUriData = await response.json();
-
-    //     if (
-    //       tokenUriData &&
-    //       typeof tokenUriData === "object" &&
-    //       "image" in tokenUriData &&
-    //       typeof tokenUriData.image === "string"
-    //     ) {
-    //       if (tokenUriData.image.startsWith("https://")) {
-    //         image = tokenUriData.image;
-    //       }
-    //     }
-    //   } catch (error) {
-    //     console.error(
-    //       `Failed to fetch Paragraph metadata for token ${address}:`,
-    //       error
-    //     );
-    //   }
-    // }
+    fetch(`${process.env.METADATA_UPDATER_ENDPOINT}?tokenAddress=${address}`) as unknown;
 
     return await context.db
       .insert(token)
@@ -270,10 +169,8 @@ export const insertTokenIfNotExists = async ({
         creatorAddress,
         firstSeenAt: timestamp,
         lastSeenAt: timestamp,
-        tokenUri,
+        tokenURI,
         isDerc20,
-        image,
-        tokenUriData,
         pool: isDerc20 ? poolAddress : undefined,
         derc20Data: isDerc20 ? address : undefined,
       })
@@ -295,6 +192,7 @@ export const updateToken = async ({
   const { db } = context;
 
   const address = tokenAddress.toLowerCase() as `0x${string}`;
+  fetch(`${process.env.METADATA_UPDATER_ENDPOINT}?tokenAddress=${address}`) as unknown;
 
   return await db
     .update(token, {
