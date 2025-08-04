@@ -103,7 +103,7 @@ export const insertTokenIfNotExists = async ({
       totalSupply: 0n,
       isDerc20: false,
     });
-  } else if (address == zoraAddress) {
+  } else if (address == zoraAddress.toLowerCase()) {
     return await db.insert(token).values({
       address: address.toLowerCase() as `0x${string}`,
       chainId,
@@ -270,6 +270,7 @@ export const insertTokenIfNotExists = async ({
         creatorAddress,
         firstSeenAt: timestamp,
         lastSeenAt: timestamp,
+        tokenUri,
         isDerc20,
         image,
         tokenUriData,
