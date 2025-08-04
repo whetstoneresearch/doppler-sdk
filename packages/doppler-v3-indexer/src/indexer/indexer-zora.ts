@@ -419,18 +419,26 @@ ponder.on("ZoraFactory:CoinCreatedV4", async ({ event, context }) => {
   const ethPrice = await fetchEthPrice(timestamp, context);
 
   const isQuoteZora = currency != zeroAddress && currency.toLowerCase() === chainConfigs[context.chain.name].addresses.zora.zoraToken.toLowerCase();
-  const isQuoteEth = currency != zeroAddress && currency.toLowerCase() === chainConfigs[context.chain.name].addresses.shared.weth.toLowerCase();
+  const isQuoteEth = currency === zeroAddress || currency.toLowerCase() === chainConfigs[context.chain.name].addresses.shared.weth.toLowerCase();
 
   let isQuoteCreatorCoin = false;
   let creatorCoinPid = null;
   if (!isQuoteZora && !isQuoteEth) {
+    console.log("txHash", event.transaction.hash);
+    console.log(poolKey);
+    console.log(currencyAddress);
+    console.log("here?");
     const creatorCoinEntity = await db.find(token, {
       address: currencyAddress,
     });
+
+    console.log("creatorCoinEntity", creatorCoinEntity);
     isQuoteCreatorCoin = creatorCoinEntity?.isCreatorCoin ?? false;
     if (isQuoteCreatorCoin) {
       creatorCoinPid = creatorCoinEntity?.pool;
     }
+    console.log("isQuoteCreatorCoin", isQuoteCreatorCoin);
+    console.log("creatorCoinPid", creatorCoinPid);
   }
 
   if (!isQuoteZora && !isQuoteEth && !isQuoteCreatorCoin && !creatorCoinPid) {
@@ -1313,38 +1321,41 @@ ponder.on("ZoraCreatorCoinV4:CoinTransfer", async ({ event, context }) => {
 
   const { db, chain } = context;
 
-  const creatorAddress = event.transaction.from;
+  const creatorAddress = event.transaction.from.toLowerCase() as `0x${string}`;
+  const recipientAddress = recipient.toLowerCase() as `0x${string}`;
+  const senderAddress = sender.toLowerCase() as `0x${string}`;
+  const tokenAddress = address.toLowerCase() as `0x${string}`;
 
   const [tokenData, fromUser, toUserAsset, fromUserAsset, assetData] =
     await Promise.all([
       insertTokenIfNotExists({
-        tokenAddress: address,
+        tokenAddress,
         creatorAddress,
         timestamp,
         context,
       }),
       insertUserIfNotExists({
-        userId: recipient,
+        userId: recipientAddress,
         timestamp,
         context,
       }),
       insertUserAssetIfNotExists({
-        userId: recipient,
-        assetId: address,
+        userId: recipientAddress,
+        assetId: tokenAddress,
         timestamp,
         context,
       }),
       insertUserAssetIfNotExists({
-        userId: sender,
-        assetId: address,
+        userId: senderAddress,
+        assetId: tokenAddress,
         timestamp,
         context,
       }),
       db.find(asset, {
-        address: address,
+        address: tokenAddress,
       }),
       insertUserIfNotExists({
-        userId: sender,
+        userId: senderAddress,
         timestamp,
         context,
       }),
@@ -1360,19 +1371,19 @@ ponder.on("ZoraCreatorCoinV4:CoinTransfer", async ({ event, context }) => {
 
   const [poolEntity] = await Promise.all([
     db.find(pool, {
-      address: address,
+      address: tokenAddress,
       chainId: BigInt(chain.id),
     }),
     updateToken({
-      tokenAddress: address,
+      tokenAddress,
       context,
       update: {
         holderCount: tokenData.holderCount + holderCountDelta,
       },
     }),
     updateUserAsset({
-      userId: recipient,
-      assetId: address,
+      userId: recipientAddress,
+      assetId: tokenAddress,
       context,
       update: {
         balance: recipientBalance,
@@ -1380,8 +1391,8 @@ ponder.on("ZoraCreatorCoinV4:CoinTransfer", async ({ event, context }) => {
       },
     }),
     updateUserAsset({
-      userId: sender,
-      assetId: address,
+      userId: senderAddress,
+      assetId: tokenAddress,
       context,
       update: {
         lastInteraction: timestamp,
@@ -1393,14 +1404,14 @@ ponder.on("ZoraCreatorCoinV4:CoinTransfer", async ({ event, context }) => {
   if (poolEntity && assetData) {
     await Promise.all([
       updatePool({
-        poolAddress: address,
+        poolAddress: poolEntity.address,
         context,
         update: {
           holderCount: tokenData.holderCount + holderCountDelta,
         },
       }),
       updateZoraAsset({
-        assetAddress: address,
+        assetAddress: tokenAddress,
         context,
         update: {
           holderCount: assetData.holderCount + holderCountDelta,
@@ -1417,38 +1428,41 @@ ponder.on("ZoraCoinV4:CoinTransfer", async ({ event, context }) => {
 
   const { db, chain } = context;
 
-  const creatorAddress = event.transaction.from;
+  const creatorAddress = event.transaction.from.toLowerCase() as `0x${string}`;
+  const recipientAddress = recipient.toLowerCase() as `0x${string}`;
+  const senderAddress = sender.toLowerCase() as `0x${string}`;
+  const tokenAddress = address.toLowerCase() as `0x${string}`;
 
   const [tokenData, fromUser, toUserAsset, fromUserAsset, assetData] =
     await Promise.all([
       insertTokenIfNotExists({
-        tokenAddress: address,
+        tokenAddress,
         creatorAddress,
         timestamp,
         context,
       }),
       insertUserIfNotExists({
-        userId: recipient,
+        userId: recipientAddress,
         timestamp,
         context,
       }),
       insertUserAssetIfNotExists({
-        userId: recipient,
-        assetId: address,
+        userId: recipientAddress,
+        assetId: tokenAddress,
         timestamp,
         context,
       }),
       insertUserAssetIfNotExists({
-        userId: sender,
-        assetId: address,
+        userId: senderAddress,
+        assetId: tokenAddress,
         timestamp,
         context,
       }),
       db.find(asset, {
-        address: address,
+        address: tokenAddress,
       }),
       insertUserIfNotExists({
-        userId: sender,
+        userId: senderAddress,
         timestamp,
         context,
       }),
@@ -1468,15 +1482,15 @@ ponder.on("ZoraCoinV4:CoinTransfer", async ({ event, context }) => {
       chainId: BigInt(chain.id),
     }),
     updateToken({
-      tokenAddress: address,
+      tokenAddress,
       context,
       update: {
         holderCount: tokenData.holderCount + holderCountDelta,
       },
     }),
     updateUserAsset({
-      userId: recipient,
-      assetId: address,
+      userId: recipientAddress,
+      assetId: tokenAddress,
       context,
       update: {
         balance: recipientBalance,
@@ -1484,8 +1498,8 @@ ponder.on("ZoraCoinV4:CoinTransfer", async ({ event, context }) => {
       },
     }),
     updateUserAsset({
-      userId: sender,
-      assetId: address,
+      userId: senderAddress,
+      assetId: tokenAddress,
       context,
       update: {
         lastInteraction: timestamp,
@@ -1497,14 +1511,14 @@ ponder.on("ZoraCoinV4:CoinTransfer", async ({ event, context }) => {
   if (poolEntity && assetData) {
     await Promise.all([
       updatePool({
-        poolAddress: address,
+        poolAddress: poolEntity.address,
         context,
         update: {
           holderCount: tokenData.holderCount + holderCountDelta,
         },
       }),
       updateZoraAsset({
-        assetAddress: address,
+        assetAddress: tokenAddress,
         context,
         update: {
           holderCount: assetData.holderCount + holderCountDelta,
