@@ -84,7 +84,7 @@ export const insertTokenIfNotExists = async ({
       ...multicallOptions,
     });
 
-    fetch(`${process.env.METADATA_UPDATER_URL}/api/update-metadata?tokenAddress=${address.toLowerCase()}`) as unknown;
+    fetch(`${process.env.METADATA_UPDATER_ENDPOINT}?tokenAddress=${address.toLowerCase()}`) as unknown;
 
     return await context.db
       .insert(token)
