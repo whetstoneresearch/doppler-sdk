@@ -104,6 +104,7 @@ export const insertTokenIfNotExists = async ({
       isDerc20: false,
     });
   } else if (address == zoraAddress.toLowerCase()) {
+    fetch(`${process.env.METADATA_UPDATER_ENDPOINT}?tokenAddress=${address}`) as unknown;
     return await db.insert(token).values({
       address: address.toLowerCase() as `0x${string}`,
       chainId,
