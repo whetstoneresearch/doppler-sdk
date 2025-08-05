@@ -101,11 +101,11 @@ export default createConfig({
     //   startBlock: ink.startBlock,
     //   interval: BLOCK_INTERVALS.THOUSAND_BLOCKS, // every 1000 blocks
     // },
-    // MetricRefresherBase: {
-    //   chain: "base",
-    //   startBlock: base.zoraStartBlock,
-    //   interval: BLOCK_INTERVALS.THOUSAND_BLOCKS, // every 1000 blocks
-    // },
+    MetricRefresherBase: {
+      chain: "base",
+      startBlock: base.zoraStartBlock,
+      interval: BLOCK_INTERVALS.THOUSAND_BLOCKS, // every 1000 blocks
+    },
     // MetricRefresherBaseSepolia: {
     //   chain: "baseSepolia",
     //   startBlock: baseSepolia.startBlock,

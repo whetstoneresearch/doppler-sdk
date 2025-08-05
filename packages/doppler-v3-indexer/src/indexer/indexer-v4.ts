@@ -18,6 +18,7 @@ import {
 import { insertSwapIfNotExists } from "./shared/entities/swap";
 import { CHAINLINK_ETH_DECIMALS } from "@app/utils/constants";
 import { SwapService, SwapOrchestrator, PriceService } from "@app/core";
+import { tryAddActivePool } from "./shared/scheduledJobs";
 import { TickMath } from "@uniswap/v3-sdk";
 import { computeGraduationPercentage } from "@app/utils/v4-utils";
 
@@ -92,13 +93,14 @@ ponder.on("UniswapV4Initializer:Create", async ({ event, context }) => {
       context,
       marketCapUsd,
     }),
-    insertOrUpdateBuckets({
-      poolAddress: poolAddress,
-      price: poolEntity.price,
-      timestamp,
-      ethPrice,
-      context,
-    }),
+    // Bucket updates are now handled by SwapOrchestrator during swaps
+    // insertOrUpdateBuckets({
+    //   poolAddress: poolAddress,
+    //   price: poolEntity.price,
+    //   timestamp,
+    //   ethPrice,
+    //   context,
+    // }),
     addCheckpoint({
       poolAddress: poolAddress,
       asset: assetAddress,
@@ -214,11 +216,8 @@ ponder.on("UniswapV4Pool:Swap", async ({ event, context }) => {
     ethPriceUSD: ethPrice,
   });
 
-  const percentDayChange = await compute24HourPriceChange({
-    poolAddress: address,
-    marketCapUsd,
-    context,
-  });
+  // Price change is now calculated in scheduled jobs using buckets
+  const percentDayChange = 0;
 
   // Create market metrics
   const marketMetrics = {
@@ -232,6 +231,7 @@ ponder.on("UniswapV4Pool:Swap", async ({ event, context }) => {
   const entityUpdaters = {
     updatePool,
     updateAsset,
+    tryAddActivePool,
   };
 
   // Perform common updates via orchestrator

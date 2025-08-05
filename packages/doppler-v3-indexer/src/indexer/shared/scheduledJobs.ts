@@ -1,6 +1,6 @@
 import { Context } from "ponder:registry";
 import { activePoolsBlob, volumeBucket24h } from "ponder:schema";
-import { Address, formatEther } from "viem";
+import { Address } from "viem";
 import {
   updateAsset,
   updatePool,
@@ -8,6 +8,7 @@ import {
 } from "@app/indexer/shared/entities";
 import { pool } from "ponder:schema";
 import { get24HourVolume, getDayBucketTimestamp } from "@app/utils/time-buckets";
+import { MarketDataService } from "@app/core/market/MarketDataService";
 interface ActivePools {
   [poolAddress: Address]: number;
 }
@@ -125,24 +126,30 @@ export const refreshActivePoolsBlobWithBuckets = async ({
     return;
   }
 
-  const poolsToRefresh: Address[] = [];
+  const poolsToProcess: Address[] = [];
   const timestampMinusDay = timestamp - 86400;
 
-  // Find pools that haven't been refreshed in the last 24 hours
+  // Process ALL pools in the active blob
   for (const [poolAddress, lastSwapTimestamp] of Object.entries(
     existingBlob.activePools as ActivePools
   )) {
-    if (lastSwapTimestamp > timestampMinusDay) {
-      continue;
-    }
-    poolsToRefresh.push(poolAddress as Address);
+    poolsToProcess.push(poolAddress as Address);
   }
 
   const poolsToClear: Address[] = [];
   const poolsToUpdate: ActivePools[] = [];
+  let poolsSkipped = 0;
 
   await Promise.all(
-    poolsToRefresh.map(async (poolAddress) => {
+    poolsToProcess.map(async (poolAddress) => {
+      const lastSwapTimestamp = (existingBlob.activePools as ActivePools)[poolAddress];
+      
+      // Skip refresh if pool was recently updated
+      if (lastSwapTimestamp > timestampMinusDay) {
+        poolsSkipped++;
+        return;
+      }
+
       // Get 24-hour volume from bucket
       const volume24h = await get24HourVolume(
         context,
@@ -160,7 +167,35 @@ export const refreshActivePoolsBlobWithBuckets = async ({
       });
 
       if (!bucket) {
+        // No bucket data for today means no swaps in last 24 hours
         poolsToClear.push(poolAddress);
+        
+        const poolEntity = await db.find(pool, {
+          address: poolAddress,
+          chainId: BigInt(chainId),
+        });
+        
+        if (poolEntity) {
+          // Zero out daily metrics since there's no activity
+          await Promise.all([
+            updatePool({
+              poolAddress,
+              context,
+              update: {
+                volumeUsd: 0n,
+                percentDayChange: 0,
+              },
+            }),
+            updateAsset({
+              assetAddress: poolEntity.asset,
+              context,
+              update: {
+                dayVolumeUsd: 0n,
+                percentDayChange: 0,
+              },
+            }),
+          ]);
+        }
         return;
       }
 
@@ -172,17 +207,13 @@ export const refreshActivePoolsBlobWithBuckets = async ({
         chainId: BigInt(chainId),
       });
 
-      // Calculate percent change
-      let percentDayChange = 0;
-      if (previousBucket && previousBucket.marketCapUsd > 0n) {
-        const currentMarketCap = bucket.marketCapUsd;
-        const previousMarketCap = previousBucket.marketCapUsd;
-        percentDayChange = Number(
-          formatEther(
-            ((currentMarketCap - previousMarketCap) * BigInt(1e18)) / previousMarketCap
+      // Calculate percent change using market cap
+      const percentDayChange = previousBucket 
+        ? MarketDataService.calculatePriceChange(
+            bucket.marketCapUsd,
+            previousBucket.marketCapUsd
           )
-        ) * 100;
-      }
+        : 0;
 
       // Update pool to refresh (using the bucket's last update time)
       poolsToUpdate.push({
@@ -242,6 +273,19 @@ export const refreshActivePoolsBlobWithBuckets = async ({
       blob[poolAddress as Address] = lastSwapTimestamp;
     });
   });
+
+  // Log cleanup stats
+  const initialPoolCount = Object.keys(existingBlob.activePools as ActivePools).length;
+  const finalPoolCount = Object.keys(blob).length;
+  
+  if (poolsToClear.length > 0 || poolsToUpdate.length > 0 || initialPoolCount !== finalPoolCount) {
+    console.log(`Active pools blob update - Chain ${chainId}: 
+      Initial pools: ${initialPoolCount}
+      Final pools: ${finalPoolCount}
+      Removed (no 24h activity): ${poolsToClear.length}
+      Updated with data: ${poolsToUpdate.length}
+      Skipped (recent activity): ${poolsSkipped}`);
+  }
 
   await updateActivePoolsBlob({
     context,

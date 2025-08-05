@@ -426,6 +426,7 @@ ponder.on("LockableUniswapV3Pool:Swap", async ({ event, context }) => {
   const entityUpdaters = {
     updatePool,
     updateAsset,
+    tryAddActivePool,
   };
 
   // Perform common updates via orchestrator

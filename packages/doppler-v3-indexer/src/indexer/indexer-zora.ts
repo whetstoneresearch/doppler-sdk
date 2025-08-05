@@ -13,6 +13,7 @@ import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
 import { computeMarketCap, fetchEthPrice, fetchZoraPrice } from "./shared/oracle";
 import {
   insertActivePoolsBlobIfNotExists,
+  tryAddActivePool,
 } from "./shared/scheduledJobs";
 import { CHAINLINK_ETH_DECIMALS } from "@app/utils/constants";
 import { SwapOrchestrator, SwapService, PriceService } from "@app/core";
@@ -765,6 +766,7 @@ ponder.on("ZoraUniswapV3Pool:Swap", async ({ event, context }) => {
   const entityUpdaters = {
     updatePool,
     updateAsset,
+    tryAddActivePool,
   };
 
 
@@ -985,6 +987,7 @@ ponder.on("ZoraV4Hook:Swapped", async ({ event, context }) => {
   const entityUpdaters = {
     updatePool,
     updateAsset,
+    tryAddActivePool,
   };
 
 
@@ -1201,6 +1204,7 @@ ponder.on("ZoraV4CreatorCoinHook:Swapped", async ({ event, context }) => {
   const entityUpdaters = {
     updatePool,
     updateAsset,
+    tryAddActivePool,
   };
 
 

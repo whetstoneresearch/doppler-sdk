@@ -15,6 +15,7 @@ import { configs } from "@app/types";
 import { insertSwapIfNotExists } from "./shared/entities/swap";
 import { SwapService, SwapOrchestrator, PriceService } from "@app/core";
 import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
+import { tryAddActivePool } from "./shared/scheduledJobs";
 
 ponder.on("UniswapV2Pair:Swap", async ({ event, context }) => {
   const { db, chain } = context;
@@ -132,6 +133,7 @@ ponder.on("UniswapV2Pair:Swap", async ({ event, context }) => {
   const entityUpdaters = {
     updatePool,
     updateAsset,
+    tryAddActivePool,
   };
 
   // Perform common updates via orchestrator
@@ -220,11 +222,8 @@ ponder.on("UniswapV2PairUnichain:Swap", async ({ event, context }) => {
     totalSupply,
   });
 
-  const priceChange = await compute24HourPriceChange({
-    poolAddress: parentPool,
-    marketCapUsd,
-    context,
-  });
+  // Price change is now calculated in scheduled jobs using buckets
+  const priceChange = 0;
 
   const liquidityUsd = await computeDollarLiquidity({
     assetBalance,

@@ -3,6 +3,7 @@ import { Context } from "ponder:registry";
 import { SwapService, SwapData, MarketMetrics } from "./SwapService";
 import { SwapType } from "@app/types/shared";
 import { updateDayBucket, BucketUpdateParams, get24HourVolume } from "@app/utils/time-buckets";
+import { tryAddActivePool } from "@app/indexer/shared/scheduledJobs";
 
 /**
  * Orchestrates all entity updates required after a swap
@@ -26,6 +27,7 @@ export interface SwapUpdateParams {
 export interface EntityUpdaters {
   updatePool: (params: any) => Promise<any>;
   updateAsset: (params: any) => Promise<any>;
+  tryAddActivePool: (params: any) => Promise<any>;
 }
 
 /**
@@ -44,6 +46,7 @@ export class SwapOrchestrator {
     const {
       updatePool,
       updateAsset,
+      tryAddActivePool,
     } = updaters;
 
     // Update the 24-hour bucket with this swap data
@@ -93,6 +96,13 @@ export class SwapOrchestrator {
         assetAddress: swapData.assetAddress,
         context,
         update: SwapService.formatAssetUpdate(metrics),
+      }),
+
+      // Add pool to active pools blob for scheduled metric updates
+      tryAddActivePool({
+        poolAddress: poolData.parentPoolAddress,
+        lastSwapTimestamp: Number(swapData.timestamp),
+        context,
       }),
     ];
 

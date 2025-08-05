@@ -55,17 +55,17 @@ import { chainConfigs } from "@app/config";
 //   }
 // });
 
-// // Handler for base network
-// ponder.on("MetricRefresherBase:block", async ({ event, context }) => {
-//   try {
-//     await refreshActivePoolsBlobWithBuckets({
-//       context,
-//       timestamp: Number(event.block.timestamp),
-//     });
-//   } catch (error) {
-//     console.error(`Error in base refresh job: ${error}`);
-//   }
-// });
+// Handler for base network
+ponder.on("MetricRefresherBase:block", async ({ event, context }) => {
+  try {
+    await refreshActivePoolsBlobWithBuckets({
+      context,
+      timestamp: Number(event.block.timestamp),
+    });
+  } catch (error) {
+    console.error(`Error in base refresh job: ${error}`);
+  }
+});
 
 ponder.on("ChainlinkEthPriceFeed:block", async ({ event, context }) => {
   const { db, client, chain } = context;
