@@ -193,7 +193,6 @@ export const updateToken = async ({
   const { db } = context;
 
   const address = tokenAddress.toLowerCase() as `0x${string}`;
-  fetch(`${process.env.METADATA_UPDATER_ENDPOINT}?tokenAddress=${address}`) as unknown;
 
   return await db
     .update(token, {
