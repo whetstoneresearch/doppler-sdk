@@ -1366,11 +1366,7 @@ ponder.on("ZoraCreatorCoinV4:CoinTransfer", async ({ event, context }) => {
     holderCountDelta -= 1;
   }
 
-  const [poolEntity] = await Promise.all([
-    db.find(pool, {
-      address: tokenAddress,
-      chainId: BigInt(chain.id),
-    }),
+  await Promise.all([
     updateToken({
       tokenAddress,
       context,
@@ -1398,10 +1394,12 @@ ponder.on("ZoraCreatorCoinV4:CoinTransfer", async ({ event, context }) => {
     }),
   ]);
 
-  if (poolEntity && assetData) {
+  const poolAddress = tokenData.pool;
+
+  if (poolAddress && assetData) {
     await Promise.all([
       updatePool({
-        poolAddress: poolEntity.address,
+        poolAddress,
         context,
         update: {
           holderCount: tokenData.holderCount + holderCountDelta,
@@ -1465,6 +1463,7 @@ ponder.on("ZoraCoinV4:CoinTransfer", async ({ event, context }) => {
       }),
   ]);
 
+
   let holderCountDelta = 0;
   if (toUserAsset.balance == 0n && recipientBalance > 0n) {
     holderCountDelta += 1;
@@ -1473,11 +1472,7 @@ ponder.on("ZoraCoinV4:CoinTransfer", async ({ event, context }) => {
     holderCountDelta -= 1;
   }
 
-  const [poolEntity] = await Promise.all([
-    db.find(pool, {
-      address: address,
-      chainId: BigInt(chain.id),
-    }),
+  await Promise.all([
     updateToken({
       tokenAddress,
       context,
@@ -1505,10 +1500,12 @@ ponder.on("ZoraCoinV4:CoinTransfer", async ({ event, context }) => {
     }),
   ]);
 
-  if (poolEntity && assetData) {
+  const poolAddress = tokenData.pool;
+
+  if (poolAddress && assetData) {
     await Promise.all([
       updatePool({
-        poolAddress: poolEntity.address,
+        poolAddress,
         context,
         update: {
           holderCount: tokenData.holderCount + holderCountDelta,

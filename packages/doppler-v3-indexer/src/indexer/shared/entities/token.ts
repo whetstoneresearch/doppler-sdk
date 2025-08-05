@@ -177,7 +177,7 @@ export const insertTokenIfNotExists = async ({
         lastSeenAt: timestamp,
         tokenURI,
         isDerc20,
-        pool: isDerc20 ? poolAddress : undefined,
+        pool: poolAddress,
         derc20Data: isDerc20 ? address : undefined,
       })
       .onConflictDoUpdate((row) => ({
