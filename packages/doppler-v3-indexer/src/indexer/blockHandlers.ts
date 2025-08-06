@@ -3,11 +3,10 @@ import { refreshActivePoolsBlobWithBuckets } from "./shared/scheduledJobs";
 import { configs } from "addresses";
 import { ChainlinkOracleABI } from "@app/abis/ChainlinkOracleABI";
 import { ethPrice, zoraUsdcPrice } from "ponder.schema";
-import { refreshCheckpointBlob } from "./shared/entities/v4-entities/v4CheckpointBlob";
-import { handlePendingTokenImages } from "./shared/process-pending-images";
 import { UniswapV3PoolABI } from "@app/abis/v3-abis/UniswapV3PoolABI";
 import { computeV3Price } from "@app/utils/v3-utils";
 import { chainConfigs } from "@app/config";
+import { refreshCheckpointBlob } from "./shared/entities/v4-entities";
 
 // /**
 //  * Block handlers that run periodically to ensure volume data and metrics are up-to-date
@@ -18,7 +17,7 @@ import { chainConfigs } from "@app/config";
 // ponder.on("MetricRefresherUnichain:block", async ({ event, context }) => {
 //   try {
 //     // Execute optimized combined refresh job
-//     await refreshActivePoolsBlob({
+//     await refreshActivePoolsBlobWithBuckets({
 //       context,
 //       timestamp: Number(event.block.timestamp),
 //     });
@@ -32,7 +31,7 @@ import { chainConfigs } from "@app/config";
 // ponder.on("MetricRefresherBaseSepolia:block", async ({ event, context }) => {
 //   try {
 //     // Execute optimized combined refresh job
-//     await refreshActivePoolsBlob({
+//     await refreshActivePoolsBlobWithBuckets({
 //       context,
 //       timestamp: Number(event.block.timestamp),
 //     });
@@ -46,7 +45,7 @@ import { chainConfigs } from "@app/config";
 // ponder.on("MetricRefresherInk:block", async ({ event, context }) => {
 //   try {
 //     // Execute optimized combined refresh job
-//     await refreshActivePoolsBlob({
+//     await refreshActivePoolsBlobWithBuckets({
 //       context,
 //       timestamp: Number(event.block.timestamp),
 //     });
@@ -128,14 +127,6 @@ ponder.on("ZoraUsdcPrice:block", async ({ event, context }) => {
 
 // ponder.on("BaseV4PoolCheckpoints:block", async ({ event, context }) => {
 //   await refreshCheckpointBlob({
-//     context,
-//     timestamp: Number(event.block.timestamp),
-//   });
-// });
-
-// // Handler for processing pending token images on Base
-// ponder.on("PendingTokenImagesBase:block", async ({ event, context }) => {
-//   await handlePendingTokenImages({
 //     context,
 //     timestamp: Number(event.block.timestamp),
 //   });

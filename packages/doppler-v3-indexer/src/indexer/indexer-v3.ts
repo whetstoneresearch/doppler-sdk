@@ -20,6 +20,7 @@ import {
   fetchV3MigrationPool,
   updateMigrationPool,
 } from "./shared/entities/migrationPool";
+import { tryAddActivePool } from "./shared/scheduledJobs";
 
 ponder.on("UniswapV3Initializer:Create", async ({ event, context }) => {
   const { poolOrHook, asset, numeraire } = event.args;
@@ -54,26 +55,11 @@ ponder.on("UniswapV3Initializer:Create", async ({ event, context }) => {
     }),
   ]);
 
-  const { price } = poolEntity;
-  const { totalSupply } = assetTokenEntity;
-  const marketCapUsd = computeMarketCap({
-    price,
-    ethPrice,
-    totalSupply,
-  });
-
   // benchmark time
   await Promise.all([
     insertAssetIfNotExists({
       assetAddress: assetId,
       timestamp,
-      context,
-    }),
-    insertOrUpdateBuckets({
-      poolAddress: poolOrHookId,
-      price,
-      timestamp,
-      ethPrice,
       context,
     }),
   ]);
@@ -112,29 +98,11 @@ ponder.on("LockableUniswapV3Initializer:Create", async ({ event, context }) => {
     }),
   ]);
 
-  const { price } = poolEntity;
-  const { totalSupply } = assetTokenEntity;
-  const marketCapUsd = computeMarketCap({
-    price,
-    ethPrice,
-    totalSupply,
+  await insertAssetIfNotExists({
+    assetAddress: assetId,
+    timestamp,
+    context,
   });
-
-  // benchmark time
-  await Promise.all([
-    insertAssetIfNotExists({
-      assetAddress: assetId,
-      timestamp,
-      context,
-    }),
-    insertOrUpdateBuckets({
-      poolAddress: poolOrHookId,
-      price,
-      timestamp,
-      ethPrice,
-      context,
-    }),
-  ]);
 });
 
 ponder.on("LockableUniswapV3Initializer:Lock", async ({ event, context }) => {
@@ -306,7 +274,6 @@ ponder.on("LockableUniswapV3Pool:Swap", async ({ event, context }) => {
   const address = event.log.address.toLowerCase() as `0x${string}`;
   const timestamp = event.block.timestamp;
   const { amount0, amount1, sqrtPriceX96 } = event.args;
-  const chainId = chain.id;
 
   const ethPrice = await fetchEthPrice(event.block.timestamp, context);
 
@@ -394,9 +361,6 @@ ponder.on("LockableUniswapV3Pool:Swap", async ({ event, context }) => {
       ethPrice) /
     CHAINLINK_ETH_DECIMALS;
 
-  // Price change is now calculated in scheduled jobs using buckets
-  const priceChangeInfo = 0;
-
   // Create swap data
   const swapData = SwapOrchestrator.createSwapData({
     poolAddress: address,
@@ -419,7 +383,7 @@ ponder.on("LockableUniswapV3Pool:Swap", async ({ event, context }) => {
     liquidityUsd: dollarLiquidity,
     marketCapUsd,
     swapValueUsd,
-    percentDayChange: priceChangeInfo,
+    percentDayChange: 0,
   };
 
   // Define entity updaters
@@ -440,7 +404,7 @@ ponder.on("LockableUniswapV3Pool:Swap", async ({ event, context }) => {
           parentPoolAddress: address,
           price,
         },
-        chainId: BigInt(chainId),
+        chainId: BigInt(context.chain.id),
         context,
       },
       entityUpdaters
@@ -455,7 +419,6 @@ ponder.on("LockableUniswapV3Pool:Swap", async ({ event, context }) => {
         totalFee1: totalFee1 + fee1,
         graduationBalance: graduationBalance + quoteDelta,
         lastRefreshed: timestamp,
-        percentDayChange: priceChangeInfo,
         reserves0: reserves0 + amount0,
         reserves1: reserves1 + amount1,
       },
@@ -650,7 +613,6 @@ ponder.on("UniswapV3Pool:Swap", async ({ event, context }) => {
   const address = event.log.address.toLowerCase() as `0x${string}`;
   const timestamp = event.block.timestamp;
   const { amount0, amount1, sqrtPriceX96 } = event.args;
-  const chainId = chain.id;
 
   const ethPrice = await fetchEthPrice(event.block.timestamp, context);
 
@@ -743,12 +705,6 @@ ponder.on("UniswapV3Pool:Swap", async ({ event, context }) => {
       ethPrice) /
     CHAINLINK_ETH_DECIMALS;
 
-  const priceChangeInfo = await compute24HourPriceChange({
-    poolAddress: address,
-    marketCapUsd,
-    context,
-  });
-
   // Create swap data
   const swapData = SwapOrchestrator.createSwapData({
     poolAddress: address,
@@ -771,13 +727,14 @@ ponder.on("UniswapV3Pool:Swap", async ({ event, context }) => {
     liquidityUsd: dollarLiquidity,
     marketCapUsd,
     swapValueUsd,
-    percentDayChange: priceChangeInfo,
+    percentDayChange: 0,
   };
 
   // Define entity updaters
   const entityUpdaters = {
     updatePool,
     updateAsset,
+    tryAddActivePool,
   };
 
   // Perform common updates via orchestrator
@@ -791,7 +748,7 @@ ponder.on("UniswapV3Pool:Swap", async ({ event, context }) => {
           parentPoolAddress: address,
           price,
         },
-        chainId: BigInt(chainId),
+        chainId: BigInt(context.chain.id),
         context,
       },
       entityUpdaters
@@ -806,7 +763,6 @@ ponder.on("UniswapV3Pool:Swap", async ({ event, context }) => {
         totalFee1: totalFee1 + fee1,
         graduationBalance: graduationBalance + quoteDelta,
         lastRefreshed: timestamp,
-        percentDayChange: priceChangeInfo,
         reserves0: reserves0 + amount0,
         reserves1: reserves1 + amount1,
       },
@@ -815,7 +771,6 @@ ponder.on("UniswapV3Pool:Swap", async ({ event, context }) => {
 });
 
 ponder.on("UniswapV3MigrationPool:Swap", async ({ event, context }) => {
-  const { chain } = context;
   const { timestamp } = event.block;
   const { amount0, amount1, sqrtPriceX96 } = event.args;
 
@@ -912,12 +867,6 @@ ponder.on("UniswapV3MigrationPool:Swap", async ({ event, context }) => {
       ethPrice) /
     CHAINLINK_ETH_DECIMALS;
 
-  const priceChangeInfo = await compute24HourPriceChange({
-    poolAddress: address,
-    marketCapUsd,
-    context,
-  });
-
   // Create swap data
   const swapData = SwapOrchestrator.createSwapData({
     poolAddress: parentPool,
@@ -940,13 +889,14 @@ ponder.on("UniswapV3MigrationPool:Swap", async ({ event, context }) => {
     liquidityUsd: dollarLiquidity,
     marketCapUsd,
     swapValueUsd,
-    percentDayChange: priceChangeInfo,
+    percentDayChange: 0,
   };
 
   // Define entity updaters
   const entityUpdaters = {
     updatePool,
     updateAsset,
+    tryAddActivePool
   };
 
   // Perform common updates via orchestrator
@@ -960,7 +910,7 @@ ponder.on("UniswapV3MigrationPool:Swap", async ({ event, context }) => {
           parentPoolAddress: parentPool,
           price,
         },
-        chainId: BigInt(chain.id),
+        chainId: BigInt(context.chain.id),
         context,
       },
       entityUpdaters
@@ -972,7 +922,6 @@ ponder.on("UniswapV3MigrationPool:Swap", async ({ event, context }) => {
       update: {
         sqrtPrice: sqrtPriceX96,
         lastRefreshed: timestamp,
-        percentDayChange: priceChangeInfo,
         reserves0: baseTokenReserveAfter,
         reserves1: quoteTokenReserveAfter,
         dollarLiquidity: dollarLiquidity,

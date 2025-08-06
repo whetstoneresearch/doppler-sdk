@@ -154,6 +154,7 @@ export class SwapService {
     marketCapUsd: bigint;
     volume24h: bigint;
     timestamp: bigint;
+    percentDayChange: number
   }) {
     return {
       price: params.price,
@@ -161,6 +162,7 @@ export class SwapService {
       marketCapUsd: params.marketCapUsd,
       volumeUsd: params.volume24h, // Pool entity uses 'volumeUsd' field for 24h volume
       lastSwapTimestamp: params.timestamp,
+      percentDayChange: params.percentDayChange,
     };
   }
 

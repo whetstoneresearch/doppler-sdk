@@ -2,8 +2,7 @@ import { Address } from "viem";
 import { Context } from "ponder:registry";
 import { SwapService, SwapData, MarketMetrics } from "./SwapService";
 import { SwapType } from "@app/types/shared";
-import { updateDayBucket, BucketUpdateParams, get24HourVolume } from "@app/utils/time-buckets";
-import { tryAddActivePool } from "@app/indexer/shared/scheduledJobs";
+import { updateDayBucket, BucketUpdateParams, get24HourVolume, get24HourVolumeAndPercentChange } from "@app/utils/time-buckets";
 
 /**
  * Orchestrates all entity updates required after a swap
@@ -69,7 +68,7 @@ export class SwapOrchestrator {
     await updateDayBucket(context, bucketParams);
 
     // Get the updated 24-hour volume from bucket
-    const volume24h = await get24HourVolume(
+    const { volumeUsd, percentChange } = await get24HourVolumeAndPercentChange(
       context,
       poolData.parentPoolAddress,
       chainId,
@@ -86,8 +85,9 @@ export class SwapOrchestrator {
           price: poolData.price,
           liquidityUsd: metrics.liquidityUsd,
           marketCapUsd: metrics.marketCapUsd,
-          volume24h: volume24h,
+          volume24h: volumeUsd,
           timestamp: swapData.timestamp,
+          percentDayChange: percentChange,
         }),
       }),
 

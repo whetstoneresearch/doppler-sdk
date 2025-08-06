@@ -1,6 +1,7 @@
 import { and, desc, eq, gte, lt } from "ponder";
 import { Context } from "ponder:registry";
 import { volumeBucket24h } from "ponder:schema";
+import { formatEther, parseEther } from "viem";
 
 // 24 hours in seconds
 export const DAY_IN_SECONDS = 86400n;
@@ -104,12 +105,12 @@ export async function updateDayBucket(
 /**
  * Gets 24-hour volume for a pool from the current day's bucket
  */
-export async function get24HourVolume(
+export async function get24HourVolumeAndPercentChange(
   context: Context,
   poolAddress: string,
   chainId: bigint,
   currentTimestamp: bigint
-): Promise<bigint> {
+): Promise<{ volumeUsd: bigint; percentChange: number }> {
   const { db } = context;
   const currentDayTimestamp = getDayBucketTimestamp(currentTimestamp);
   
@@ -118,8 +119,15 @@ export async function get24HourVolume(
     timestamp: currentDayTimestamp,
     chainId,
   });
+
+  const open = bucket?.open || 0n;
+  const close = bucket?.close || 0n;
+  const percentChange24h = Number(formatEther(close - open)) / Number(formatEther(open)) * 100;
   
-  return bucket?.volumeUsd || 0n;
+  return {
+    volumeUsd: bucket?.volumeUsd || 0n,
+    percentChange: percentChange24h,
+  };
 }
 
 /**

@@ -44,6 +44,13 @@ export const unichainConfig: ChainConfig = {
       governanceFactory: "0x99C94B9Df930E1E21a4E4a2c105dBff21bF5c5aE" as Address,
       weth: COMMON_ADDRESSES.WETH_BASE,
     },
+    zora: {
+      zoraFactory: COMMON_ADDRESSES.ZERO_ADDRESS,
+      zoraTokenPool: COMMON_ADDRESSES.ZERO_ADDRESS,
+      zoraToken: COMMON_ADDRESSES.ZERO_ADDRESS,
+      creatorCoinHook: COMMON_ADDRESSES.ZERO_ADDRESS,
+      contentCoinHook: COMMON_ADDRESSES.ZERO_ADDRESS,
+    },
     oracle: ORACLE_ADDRESSES,
   },
 };

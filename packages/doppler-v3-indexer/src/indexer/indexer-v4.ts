@@ -15,7 +15,6 @@ import {
   addAndUpdateV4PoolPriceHistory,
   insertV4PoolPriceHistoryIfNotExists,
 } from "./shared/entities/v4-entities/v4PoolPriceHistory";
-import { insertSwapIfNotExists } from "./shared/entities/swap";
 import { CHAINLINK_ETH_DECIMALS } from "@app/utils/constants";
 import { SwapService, SwapOrchestrator, PriceService } from "@app/core";
 import { tryAddActivePool } from "./shared/scheduledJobs";

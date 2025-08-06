@@ -44,6 +44,13 @@ export const inkConfig: ChainConfig = {
       governanceFactory: "0xb4deE32EB70A5E55f3D2d861F49Fb3D79f7a14d9" as Address,
       weth: COMMON_ADDRESSES.WETH_BASE,
     },
+    zora: {
+      zoraFactory: COMMON_ADDRESSES.ZERO_ADDRESS,
+      zoraTokenPool: COMMON_ADDRESSES.ZERO_ADDRESS,
+      zoraToken: COMMON_ADDRESSES.ZERO_ADDRESS,
+      creatorCoinHook: COMMON_ADDRESSES.ZERO_ADDRESS,
+      contentCoinHook: COMMON_ADDRESSES.ZERO_ADDRESS,
+    },
     oracle: ORACLE_ADDRESSES,
   },
 };

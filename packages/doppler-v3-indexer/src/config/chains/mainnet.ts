@@ -36,6 +36,13 @@ export const mainnetConfig: ChainConfig = {
       governanceFactory: COMMON_ADDRESSES.ZERO_ADDRESS as Address,
       weth: COMMON_ADDRESSES.ZERO_ADDRESS as Address,
     },
+    zora: {
+      zoraFactory: COMMON_ADDRESSES.ZERO_ADDRESS,
+      zoraTokenPool: COMMON_ADDRESSES.ZERO_ADDRESS,
+      zoraToken: COMMON_ADDRESSES.ZERO_ADDRESS,
+      creatorCoinHook: COMMON_ADDRESSES.ZERO_ADDRESS,
+      contentCoinHook: COMMON_ADDRESSES.ZERO_ADDRESS,
+    },
     oracle: ORACLE_ADDRESSES,
   },
 };

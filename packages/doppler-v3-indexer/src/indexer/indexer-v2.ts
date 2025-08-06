@@ -12,7 +12,6 @@ import {
 import { CHAINLINK_ETH_DECIMALS } from "@app/utils/constants";
 import { zeroAddress } from "viem";
 import { configs } from "@app/types";
-import { insertSwapIfNotExists } from "./shared/entities/swap";
 import { SwapService, SwapOrchestrator, PriceService } from "@app/core";
 import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
 import { tryAddActivePool } from "./shared/scheduledJobs";
@@ -101,9 +100,6 @@ ponder.on("UniswapV2Pair:Swap", async ({ event, context }) => {
   }
   const swapValueUsd = (quoteDelta * ethPrice) / CHAINLINK_ETH_DECIMALS;
 
-  // Price change is now calculated in scheduled jobs using buckets
-  const priceChange = 0;
-
   // Create swap data
   const swapData = SwapOrchestrator.createSwapData({
     poolAddress: parentPool,
@@ -126,7 +122,7 @@ ponder.on("UniswapV2Pair:Swap", async ({ event, context }) => {
     liquidityUsd: metrics.liquidityUsd,
     marketCapUsd: metrics.marketCapUsd,
     swapValueUsd,
-    percentDayChange: priceChange,
+    percentDayChange: 0,
   };
 
   // Define entity updaters
@@ -277,6 +273,7 @@ ponder.on("UniswapV2PairUnichain:Swap", async ({ event, context }) => {
   const entityUpdaters = {
     updatePool,
     updateAsset,
+    tryAddActivePool,
   };
 
   // Perform common updates via orchestrator
