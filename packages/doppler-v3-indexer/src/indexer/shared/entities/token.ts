@@ -104,7 +104,7 @@ export const insertTokenIfNotExists = async ({
       isDerc20: false,
     });
   } else if (address == zoraAddress.toLowerCase()) {
-    if (process.env.NODE_ENV !== "development") {
+    if (process.env.NODE_ENV !== "local") {
       fetch(`${process.env.METADATA_UPDATER_ENDPOINT}?tokenAddress=${address}`) as unknown;
     }
 
@@ -160,7 +160,7 @@ export const insertTokenIfNotExists = async ({
 
     console.log("NODE_ENV", process.env.NODE_ENV);
     const tokenURI = tokenURIResult?.result;
-    if (process.env.NODE_ENV !== "development") {
+    if (process.env.NODE_ENV !== "local") {
       console.log("fetching token metadata", address);
       fetch(`${process.env.METADATA_UPDATER_ENDPOINT}?tokenAddress=${address}`) as unknown;
     }
