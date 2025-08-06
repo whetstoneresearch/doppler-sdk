@@ -7,7 +7,7 @@ import {
   updateToken,
 } from "@app/indexer/shared/entities";
 import { pool } from "ponder:schema";
-import { get24HourVolume, getDayBucketTimestamp } from "@app/utils/time-buckets";
+import { get24HourVolumeAndPercentChange, getDayBucketTimestamp } from "@app/utils/time-buckets";
 import { MarketDataService } from "@app/core/market/MarketDataService";
 interface ActivePools {
   [poolAddress: Address]: number;
@@ -145,13 +145,13 @@ export const refreshActivePoolsBlobWithBuckets = async ({
       const lastSwapTimestamp = (existingBlob.activePools as ActivePools)[poolAddress];
       
       // Skip refresh if pool was recently updated
-      if (lastSwapTimestamp > timestampMinusDay) {
+      if (lastSwapTimestamp && lastSwapTimestamp > timestampMinusDay) {
         poolsSkipped++;
         return;
       }
 
       // Get 24-hour volume from bucket
-      const volume24h = await get24HourVolume(
+      const { volumeUsd, percentChange } = await get24HourVolumeAndPercentChange(
         context,
         poolAddress,
         BigInt(chainId),
@@ -208,12 +208,7 @@ export const refreshActivePoolsBlobWithBuckets = async ({
       });
 
       // Calculate percent change using market cap
-      const percentDayChange = previousBucket 
-        ? MarketDataService.calculatePriceChange(
-            bucket.marketCapUsd,
-            previousBucket.marketCapUsd
-          )
-        : 0;
+      const percentDayChange = percentChange;
 
       // Update pool to refresh (using the bucket's last update time)
       poolsToUpdate.push({
@@ -235,7 +230,7 @@ export const refreshActivePoolsBlobWithBuckets = async ({
         poolAddress,
         context,
         update: {
-          volumeUsd: volume24h,
+          volumeUsd: volumeUsd,
           percentDayChange,
           marketCapUsd: bucket.marketCapUsd,
         },
@@ -245,7 +240,7 @@ export const refreshActivePoolsBlobWithBuckets = async ({
         tokenAddress: poolEntity.asset,
         context,
         update: {
-          volumeUsd: volume24h,
+          volumeUsd: volumeUsd,
         },
       });
 
@@ -253,7 +248,7 @@ export const refreshActivePoolsBlobWithBuckets = async ({
         assetAddress: poolEntity.asset,
         context,
         update: {
-          dayVolumeUsd: volume24h,
+          dayVolumeUsd: volumeUsd,
           percentDayChange,
           marketCapUsd: bucket.marketCapUsd,
         },
