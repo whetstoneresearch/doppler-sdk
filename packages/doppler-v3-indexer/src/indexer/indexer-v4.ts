@@ -352,13 +352,6 @@ ponder.on("UniswapV4Initializer2:Create", async ({ event, context }) => {
       context,
       marketCapUsd,
     }),
-    insertOrUpdateBuckets({
-      poolAddress: poolAddress,
-      price: poolEntity.price,
-      timestamp,
-      ethPrice,
-      context,
-    }),
     addCheckpoint({
       poolAddress: poolAddress,
       asset: assetAddress,
@@ -383,7 +376,6 @@ ponder.on("UniswapV4InitializerSelfCorrecting:Create", async ({ event, context }
   const poolAddress = poolOrHook.toLowerCase() as `0x${string}`;
   const assetAddress = assetId.toLowerCase() as `0x${string}`;
   const numeraireAddress = numeraire.toLowerCase() as `0x${string}`;
-
   const creatorAddress = event.transaction.from.toLowerCase() as `0x${string}`;
 
   const [baseToken, ethPrice, poolData] = await Promise.all([
@@ -449,13 +441,6 @@ ponder.on("UniswapV4InitializerSelfCorrecting:Create", async ({ event, context }
       timestamp,
       context,
       marketCapUsd,
-    }),
-    insertOrUpdateBuckets({
-      poolAddress: poolAddress,
-      price: poolEntity.price,
-      timestamp,
-      ethPrice,
-      context,
     }),
     addCheckpoint({
       poolAddress: poolAddress,
@@ -584,6 +569,7 @@ ponder.on("UniswapV4PoolSelfCorrecting:Swap", async ({ event, context }) => {
   const entityUpdaters = {
     updatePool,
     updateAsset,
+    tryAddActivePool,
   };
 
   // Perform common updates via orchestrator
@@ -743,6 +729,7 @@ ponder.on("UniswapV4Pool2:Swap", async ({ event, context }) => {
   const entityUpdaters = {
     updatePool,
     updateAsset,
+    tryAddActivePool,
   };
 
   // Perform common updates via orchestrator
