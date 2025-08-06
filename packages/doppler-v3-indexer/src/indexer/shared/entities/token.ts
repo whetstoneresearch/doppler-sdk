@@ -158,6 +158,7 @@ export const insertTokenIfNotExists = async ({
       ...multicallOptions,
     });
 
+    console.log("NODE_ENV", process.env.NODE_ENV);
     const tokenURI = tokenURIResult?.result;
     if (process.env.NODE_ENV !== "development") {
       console.log("fetching token metadata", address);
