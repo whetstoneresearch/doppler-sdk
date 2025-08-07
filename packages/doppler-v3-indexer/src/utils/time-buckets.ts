@@ -10,7 +10,7 @@ export const DAY_IN_SECONDS = 86400n;
  * Rounds a timestamp down to the start of the day (00:00:00 UTC)
  */
 export function getDayBucketTimestamp(timestamp: bigint): bigint {
-  return (timestamp / DAY_IN_SECONDS) * DAY_IN_SECONDS;
+  return (BigInt(timestamp) / DAY_IN_SECONDS) * DAY_IN_SECONDS;
 }
 
 /**
