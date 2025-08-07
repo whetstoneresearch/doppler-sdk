@@ -92,15 +92,16 @@ export const tryAddActivePool = async ({
     return;
   }
 
+  // Avoid spread operator for better performance
+  const updatedPools = existingData.activePools as ActivePools;
+  updatedPools[poolAddress] = lastSwapTimestamp;
+  
   await db
     .update(activePoolsBlob, {
       chainId: BigInt(chainId),
     })
     .set({
-      activePools: {
-        ...(existingData.activePools as ActivePools),
-        ...data,
-      },
+      activePools: updatedPools,
     });
 };
 
@@ -133,9 +134,12 @@ export const refreshActivePoolsBlobWithBucketsOptimized = async ({
   const previousDayTimestamp = currentDayTimestamp - DAY_IN_SECONDS;
 
   // Filter pools that need updating (haven't been updated in last 24 hours)
-  const poolsToRefresh = Object.entries(activePools)
-    .filter(([_, lastSwapTimestamp]) => !lastSwapTimestamp || lastSwapTimestamp <= timestampMinusDay)
-    .map(([poolAddress]) => poolAddress as Address);
+  const poolsToRefresh: Address[] = [];
+  for (const [poolAddress, lastSwapTimestamp] of Object.entries(activePools)) {
+    if (!lastSwapTimestamp || lastSwapTimestamp <= timestampMinusDay) {
+      poolsToRefresh.push(poolAddress as Address);
+    }
+  }
 
   if (poolsToRefresh.length === 0) {
     return; // Nothing to update
@@ -154,9 +158,10 @@ export const refreshActivePoolsBlobWithBucketsOptimized = async ({
     );
 
   // Create a map for quick bucket lookup
-  const bucketMap = new Map(
-    currentBuckets.map(b => [b.poolAddress, b])
-  );
+  const bucketMap = new Map<string, typeof currentBuckets[0]>();
+  for (const bucket of currentBuckets) {
+    bucketMap.set(bucket.poolAddress, bucket);
+  }
 
   // Batch fetch all pool entities
   const poolEntities = await db.sql
@@ -170,9 +175,10 @@ export const refreshActivePoolsBlobWithBucketsOptimized = async ({
     );
 
   // Create a map for quick pool lookup
-  const poolMap = new Map(
-    poolEntities.map(p => [p.address, p])
-  );
+  const poolMap = new Map<string, typeof poolEntities[0]>();
+  for (const poolEntity of poolEntities) {
+    poolMap.set(poolEntity.address, poolEntity);
+  }
 
   // Prepare batch updates
   const poolUpdates: Array<{ address: Address; volumeUsd: bigint; percentDayChange: number; marketCapUsd: bigint | null }> = [];
@@ -296,8 +302,8 @@ export const refreshActivePoolsBlobWithBucketsOptimized = async ({
     ),
   ]);
 
-  // Update the active pools blob
-  const updatedBlob = { ...activePools };
+  // Update the active pools blob without spread operator
+  const updatedBlob = activePools;
   
   // Remove inactive pools
   poolsToClear.forEach(poolAddress => {
