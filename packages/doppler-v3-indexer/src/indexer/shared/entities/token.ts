@@ -40,15 +40,17 @@ export const appendTokenPool = async ({
     });
   }
 
-  return await db.update(token, {
-    address: tokenAddress,
-  }).set({
-    isDerc20,
-    isCreatorCoin,
-    isContentCoin,
-    pool: poolAddress,
-    creatorCoinPid,
-  });
+  return await db
+    .update(token, {
+      address: tokenAddress,
+    })
+    .set({
+      isDerc20,
+      isCreatorCoin,
+      isContentCoin,
+      pool: poolAddress,
+      creatorCoinPid,
+    });
 };
 
 export const insertTokenIfNotExists = async ({
@@ -105,7 +107,9 @@ export const insertTokenIfNotExists = async ({
     });
   } else if (address == zoraAddress.toLowerCase()) {
     if (process.env.NODE_ENV !== "local") {
-      fetch(`${process.env.METADATA_UPDATER_ENDPOINT}?tokenAddress=${address}`) as unknown;
+      fetch(
+        `${process.env.METADATA_UPDATER_ENDPOINT}?tokenAddress=${address}&chainId=${chainId}`
+      ) as unknown;
     }
 
     return await db.insert(token).values({
@@ -160,7 +164,9 @@ export const insertTokenIfNotExists = async ({
 
     const tokenURI = tokenURIResult?.result;
     if (process.env.NODE_ENV !== "local") {
-      fetch(`${process.env.METADATA_UPDATER_ENDPOINT}?tokenAddress=${address}`) as unknown;
+      fetch(
+        `${process.env.METADATA_UPDATER_ENDPOINT}?tokenAddress=${address}&chainId=${chainId}`
+      ) as unknown;
     }
 
     return await context.db
