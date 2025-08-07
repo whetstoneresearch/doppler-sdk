@@ -144,7 +144,6 @@ export const insertV2MigrationPoolIfNotExists = async ({
 
   const assetId = assetAddress.toLowerCase() as `0x${string}`;
   const numeraireId = numeraire.toLowerCase() as `0x${string}`;
-
   const poolAddr = poolAddress.toLowerCase() as `0x${string}`;
 
   const { reserve0, reserve1 } = await getPairData({

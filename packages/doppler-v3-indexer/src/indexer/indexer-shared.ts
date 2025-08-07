@@ -34,6 +34,8 @@ ponder.on("Airlock:Migrate", async ({ event, context }) => {
       context,
     });
 
+    console.log("v2Pool", v2Pool);
+
     await Promise.all([
       updateAsset({
         assetAddress: assetId,

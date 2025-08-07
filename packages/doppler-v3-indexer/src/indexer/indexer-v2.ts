@@ -25,7 +25,12 @@ ponder.on("UniswapV2Pair:Swap", async ({ event, context }) => {
 
   const v2PoolData = await db.find(v2Pool, { address });
 
-  const parentPool = v2PoolData!.parentPool.toLowerCase() as `0x${string}`;
+  const parentPool = v2PoolData?.parentPool.toLowerCase() as `0x${string}`;
+
+  if (!parentPool) {
+    console.log("No parent pool found for v2 pool", address);
+    return;
+  }
 
   const [reserves, ethPrice] = await Promise.all([
     getPairData({ address, context }),
