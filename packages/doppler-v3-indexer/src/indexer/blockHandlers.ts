@@ -1,5 +1,5 @@
 import { ponder } from "ponder:registry";
-import { refreshActivePoolsBlobWithBuckets } from "./shared/scheduledJobs";
+import { refreshActivePoolsBlobWithBucketsOptimized } from "./shared/scheduledJobs";
 import { configs } from "addresses";
 import { ChainlinkOracleABI } from "@app/abis/ChainlinkOracleABI";
 import { ethPrice, zoraUsdcPrice } from "ponder.schema";
@@ -16,8 +16,8 @@ import { refreshCheckpointBlob } from "./shared/entities/v4-entities";
 // // // Handler for unichain network
 ponder.on("MetricRefresherUnichain:block", async ({ event, context }) => {
   try {
-    // Execute optimized combined refresh job
-    await refreshActivePoolsBlobWithBuckets({
+    // Execute optimized batch refresh job
+    await refreshActivePoolsBlobWithBucketsOptimized({
       context,
       timestamp: Number(event.block.timestamp),
     });
@@ -30,8 +30,8 @@ ponder.on("MetricRefresherUnichain:block", async ({ event, context }) => {
 // // Handler for baseSepolia network
 ponder.on("MetricRefresherBaseSepolia:block", async ({ event, context }) => {
   try {
-    // Execute optimized combined refresh job
-    await refreshActivePoolsBlobWithBuckets({
+    // Execute optimized batch refresh job
+    await refreshActivePoolsBlobWithBucketsOptimized({
       context,
       timestamp: Number(event.block.timestamp),
     });
@@ -44,8 +44,8 @@ ponder.on("MetricRefresherBaseSepolia:block", async ({ event, context }) => {
 // // // Handler for ink network
 ponder.on("MetricRefresherInk:block", async ({ event, context }) => {
   try {
-    // Execute optimized combined refresh job
-    await refreshActivePoolsBlobWithBuckets({
+    // Execute optimized batch refresh job
+    await refreshActivePoolsBlobWithBucketsOptimized({
       context,
       timestamp: Number(event.block.timestamp),
     });
@@ -57,7 +57,7 @@ ponder.on("MetricRefresherInk:block", async ({ event, context }) => {
 // Handler for base network
 ponder.on("MetricRefresherBase:block", async ({ event, context }) => {
   try {
-    await refreshActivePoolsBlobWithBuckets({
+    await refreshActivePoolsBlobWithBucketsOptimized({
       context,
       timestamp: Number(event.block.timestamp),
     });
@@ -118,16 +118,16 @@ ponder.on("ZoraUsdcPrice:block", async ({ event, context }) => {
   }).onConflictDoNothing();
 });
 
-ponder.on("BaseSepoliaV4PoolCheckpoints:block", async ({ event, context }) => {
-  await refreshCheckpointBlob({
-    context,
-    timestamp: Number(event.block.timestamp),
-  });
-});
+// ponder.on("BaseSepoliaV4PoolCheckpoints:block", async ({ event, context }) => {
+//   await refreshCheckpointBlob({
+//     context,
+//     timestamp: Number(event.block.timestamp),
+//   });
+// });
 
-ponder.on("BaseV4PoolCheckpoints:block", async ({ event, context }) => {
-  await refreshCheckpointBlob({
-    context,
-    timestamp: Number(event.block.timestamp),
-  });
-});
+// ponder.on("BaseV4PoolCheckpoints:block", async ({ event, context }) => {
+//   await refreshCheckpointBlob({
+//     context,
+//     timestamp: Number(event.block.timestamp),
+//   });
+// });
