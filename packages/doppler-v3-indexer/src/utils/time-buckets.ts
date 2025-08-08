@@ -124,7 +124,7 @@ export async function get24HourVolumeAndPercentChange(
   const close = bucket?.close || 0n;
   const percentChange24h = Number(formatEther(close - open)) / Number(formatEther(open)) * 100;
 
-  if (typeof percentChange24h != "number" || isNaN(percentChange24h)) {
+  if (typeof percentChange24h != "number" || isNaN(percentChange24h) || percentChange24h === Infinity || percentChange24h === -Infinity) {
     return {
       volumeUsd: bucket?.volumeUsd || 0n,
       percentChange: 0,

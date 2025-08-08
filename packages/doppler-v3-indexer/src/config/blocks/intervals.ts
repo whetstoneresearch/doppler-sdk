@@ -3,6 +3,7 @@ export const BLOCK_INTERVALS = {
   FIVE_MINUTES: (60 * 5) / 12, // every 5 minutes
   FIFTY_BLOCKS: 50,             // every 50 blocks  
   THOUSAND_BLOCKS: 1000,        // every 1000 blocks
+  FIVE_THOUSAND_BLOCKS: 5000,
 } as const;
 
 // Time-based intervals
