@@ -1,25 +1,24 @@
+import { PriceService, SwapOrchestrator, SwapService } from "@app/core";
+import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
+import { CHAINLINK_ETH_DECIMALS } from "@app/utils/constants";
+import { computeGraduationThresholdDelta } from "@app/utils/v3-utils/computeGraduationThreshold";
 import { ponder } from "ponder:registry";
+import { insertAssetIfNotExists, updateAsset } from "./shared/entities/asset";
 import {
-  insertPositionIfNotExists,
-  updatePosition,
-} from "./shared/entities/position";
-import { insertTokenIfNotExists } from "./shared/entities/token";
+  fetchV3MigrationPool,
+  updateMigrationPool,
+} from "./shared/entities/migrationPool";
 import {
   insertLockableV3PoolIfNotExists,
   insertPoolIfNotExists,
   updatePool,
 } from "./shared/entities/pool";
-import { insertAssetIfNotExists, updateAsset } from "./shared/entities/asset";
-import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
-import { computeMarketCap, fetchEthPrice } from "./shared/oracle";
-import { insertSwapIfNotExists } from "./shared/entities/swap";
-import { CHAINLINK_ETH_DECIMALS } from "@app/utils/constants";
-import { SwapOrchestrator, SwapService, PriceService } from "@app/core";
-import { computeGraduationThresholdDelta } from "@app/utils/v3-utils/computeGraduationThreshold";
 import {
-  fetchV3MigrationPool,
-  updateMigrationPool,
-} from "./shared/entities/migrationPool";
+  insertPositionIfNotExists,
+  updatePosition,
+} from "./shared/entities/position";
+import { insertTokenIfNotExists } from "./shared/entities/token";
+import { computeMarketCap, fetchEthPrice } from "./shared/oracle";
 import { tryAddActivePool } from "./shared/scheduledJobs";
 
 ponder.on("UniswapV3Initializer:Create", async ({ event, context }) => {
@@ -33,16 +32,18 @@ ponder.on("UniswapV3Initializer:Create", async ({ event, context }) => {
 
   const ethPrice = await fetchEthPrice(timestamp, context);
 
-  const [poolEntity, assetTokenEntity] = await Promise.all([
-    insertPoolIfNotExists({
-      poolAddress: poolOrHookId,
-      context,
-      timestamp,
-      ethPrice,
-    }),
+  const poolEntity = await insertPoolIfNotExists({
+    poolAddress: poolOrHookId,
+    context,
+    timestamp,
+    ethPrice,
+  });
+
+  const [assetTokenEntity] = await Promise.all([
     insertTokenIfNotExists({
       tokenAddress: assetId,
       creatorAddress: creatorId,
+      poolAddress: poolOrHookId,
       timestamp,
       context,
     }),
@@ -76,16 +77,18 @@ ponder.on("LockableUniswapV3Initializer:Create", async ({ event, context }) => {
 
   const ethPrice = await fetchEthPrice(timestamp, context);
 
-  const [poolEntity, assetTokenEntity] = await Promise.all([
-    insertLockableV3PoolIfNotExists({
-      poolAddress: poolOrHookId,
-      context,
-      timestamp,
-      ethPrice,
-    }),
+  const poolEntity = await insertLockableV3PoolIfNotExists({
+    poolAddress: poolOrHookId,
+    context,
+    timestamp,
+    ethPrice,
+  });
+
+  const [assetTokenEntity] = await Promise.all([
     insertTokenIfNotExists({
       tokenAddress: assetId,
       creatorAddress: creatorId,
+      poolAddress: poolOrHookId,
       timestamp,
       context,
     }),
@@ -896,7 +899,7 @@ ponder.on("UniswapV3MigrationPool:Swap", async ({ event, context }) => {
   const entityUpdaters = {
     updatePool,
     updateAsset,
-    tryAddActivePool
+    tryAddActivePool,
   };
 
   // Perform common updates via orchestrator
