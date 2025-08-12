@@ -8,11 +8,13 @@ import {
   ilike,
   inArray,
   like,
+  notInArray,
   or,
   replaceBigInts,
 } from "ponder";
 import { db } from "ponder:api";
 import schema, { asset, token } from "ponder:schema";
+import { BANNED_TOKEN_NAMES } from "./consts/token";
 
 const app = new Hono();
 
@@ -30,30 +32,40 @@ app.get("/search/:query", async (c) => {
       .map((id) => BigInt(id));
 
     // Normalize address queries to lowercase for case-insensitive matching
-    const normalizedQuery = query.startsWith("0x") && query.length === 42 
-      ? query.toLowerCase() 
-      : query;
+    const normalizedQuery =
+      query.startsWith("0x") && query.length === 42
+        ? query.toLowerCase()
+        : query;
 
     // First search tokens directly
     const tokenResults = await db
       .select()
       .from(token)
       .where(
-        or(
-          and(
-            inArray(token.chainId, chainIds || []),
-            or(
-              ilike(token.name, `%${query}%`),
-              ilike(token.symbol, `%${query}%`)
+        and(
+          or(
+            and(
+              inArray(token.chainId, chainIds || []),
+              or(
+                ilike(token.name, `%${query}%`),
+                ilike(token.symbol, `%${query}%`)
+              )
+            ),
+            and(
+              inArray(token.chainId, chainIds || []),
+              like(token.address, normalizedQuery)
+            ),
+            and(
+              inArray(token.chainId, chainIds || []),
+              like(token.pool, normalizedQuery)
             )
           ),
           and(
-            inArray(token.chainId, chainIds || []),
-            like(token.address, normalizedQuery)
-          ),
-          and(
-            inArray(token.chainId, chainIds || []),
-            like(token.pool, normalizedQuery)
+            notInArray(token?.name, BANNED_TOKEN_NAMES),
+            notInArray(
+              token?.name,
+              BANNED_TOKEN_NAMES.map((name) => name.toLowerCase())
+            )
           )
         )
       )
@@ -74,7 +86,7 @@ app.get("/search/:query", async (c) => {
 
       // Get tokens associated with these assets
       if (assetResults.length > 0) {
-        const assetAddresses = assetResults.map(a => a.address);
+        const assetAddresses = assetResults.map((a) => a.address);
         const governanceTokens = await db
           .select()
           .from(token)
@@ -90,12 +102,14 @@ app.get("/search/:query", async (c) => {
         // Combine and deduplicate results
         const combinedResults = [...tokenResults];
         for (const govToken of governanceTokens) {
-          if (!combinedResults.find(t => t.address === govToken.address)) {
+          if (!combinedResults.find((t) => t.address === govToken.address)) {
             combinedResults.push(govToken);
           }
         }
-        
-        return c.json(replaceBigInts(combinedResults.slice(0, 15), (v) => String(v)));
+
+        return c.json(
+          replaceBigInts(combinedResults.slice(0, 15), (v) => String(v))
+        );
       }
     }
 
