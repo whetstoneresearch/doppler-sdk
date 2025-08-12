@@ -8,4 +8,5 @@ export const BANNED_TOKEN_NAMES = [
   "long",
   "coop records",
   "whetstone",
+  "remix",
 ];
