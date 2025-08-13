@@ -36,10 +36,6 @@
   },
   "dependencies": {
     "@delvtech/drift": "^0.10.1",
-    "@delvtech/drift-viem": "^0.10.1",
-    "@uniswap/sdk-core": "^5.9.0",
-    "@uniswap/v4-sdk": "^1.10.4",
-    "ponder": "^0.11.15",
     "viem": "^2.21.55"
   },
   "devDependencies": {
