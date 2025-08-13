@@ -7,6 +7,9 @@ on:
     paths:
       - "packages/doppler-router/**"
 
+permissions:
+  contents: write
+
 jobs:
   deploy-dev:
     runs-on: ubuntu-latest
