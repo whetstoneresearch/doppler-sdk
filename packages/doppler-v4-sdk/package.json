@@ -14,11 +14,9 @@
         "dist"
     ],
     "scripts": {
-        "start": "tsc watch ./src/**",
-        "test": "vitest",
+        "dev": "tsup --watch",
         "build": "tsup",
-        "build:watch": "tsup --watch",
-        "test:watch": "vitest watch",
+        "lint": "tsc --noEmit",
         "size": "size-limit",
         "analyze": "size-limit --why"
     },
@@ -33,8 +31,7 @@
         "glob": "^10.4.5",
         "size-limit": "^11.2.0",
         "typescript": "^5.8.3",
-        "viem": "^2.22.15",
-        "vitest": "^2.1.9"
+        "viem": "^2.22.15"
     },
     "dependencies": {
         "@delvtech/drift": "^0.10.1",

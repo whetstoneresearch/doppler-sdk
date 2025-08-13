@@ -11,7 +11,7 @@
   "scripts": {
     "prepublishOnly": "npm run build",
     "build": "tsc",
-    "test": "vitest",
+    "dev": "tsc --watch",
     "lint": "tsc --noEmit"
   },
   "keywords": [
@@ -39,7 +39,6 @@
     "viem": "^2.21.55"
   },
   "devDependencies": {
-    "typescript": "^5.4.5",
-    "vitest": "^2.1.4"
+    "typescript": "^5.4.5"
   }
 }
