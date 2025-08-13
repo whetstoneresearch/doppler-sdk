@@ -18,14 +18,14 @@ A suite of tools for interacting with the Doppler Protocol - liquidity bootstrap
 
 ```bash
 # Install V3 SDK
-bun install doppler-v3-sdk
+pnpm add doppler-v3-sdk
 # Install Router
-bun install doppler-router
+pnpm add doppler-router
 # Install V4 SDK
-bun install doppler-v4-sdk
+pnpm add doppler-v4-sdk
 # Run indexer dev environment
 cd packages/doppler-v3-indexer
-bun run dev
+pnpm run dev
 ```
 
 ## License

@@ -2,12 +2,18 @@
   "private": true,
   "name": "doppler-monorepo",
   "author": "Whetstone Research",
-  "workspaces": [
-    "packages/*"
-  ],
-  "resolutions": {
-    "typescript": "^5.5.4",
-    "viem": "2.23.1",
-    "ethers": "^5.0.8"
+  "packageManager": "pnpm@9.0.0",
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint",
+    "clean": "pnpm -r clean"
+  },
+  "pnpm": {
+    "overrides": {
+      "typescript": "^5.5.4",
+      "viem": "2.23.1",
+      "ethers": "^5.0.8"
+    }
   }
 }
