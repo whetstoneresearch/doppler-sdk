@@ -9,7 +9,10 @@
     "prepublishOnly": "npm run build",
     "build": "tsc",
     "dev": "tsc --watch",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "publish:beta": "npm publish --tag beta",
+    "publish:rc": "npm publish --tag rc",
+    "publish:latest": "npm publish --tag latest"
   },
   "keywords": [
     "defi",
