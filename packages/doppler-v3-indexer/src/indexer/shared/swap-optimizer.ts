@@ -1,7 +1,7 @@
 import { Context } from "ponder:registry";
 import { pool, token } from "ponder:schema";
 import { Address } from "viem";
-import { tokenCache } from "./cache/token-cache";
+
 import { SwapOrchestrator } from "@app/core";
 import { PriceService, SwapService } from "@app/core";
 import { computeV3Price } from "@app/utils";

@@ -23,7 +23,7 @@ import { zeroAddress } from "viem";
 import { computeV3Price } from "@app/utils";
 import { chainConfigs } from "@app/config";
 import { PriceService, SwapService } from "@app/core";
-import { tokenCache } from "./shared/cache/token-cache";
+
 
 ponder.on("ZoraFactory:CoinCreatedV4", async ({ event, context }) => {
   const { db, chain } = context;

@@ -24,7 +24,7 @@ export interface SwapData {
 /**
  * Market metrics calculated from swap data
  */
-export interface MarketMetrics {
+export interface SwapMarketMetrics {
   liquidityUsd: bigint;
   marketCapUsd: bigint;
   swapValueUsd: bigint;
@@ -86,7 +86,7 @@ export class SwapService {
     assetBalance: bigint;
     quoteBalance: bigint;
     isQuoteETH?: boolean;
-  }): MarketMetrics {
+  }): SwapMarketMetrics {
     const {
       totalSupply,
       price,

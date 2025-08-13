@@ -1,6 +1,6 @@
 import { ethPrice, zoraUsdcPrice } from "ponder.schema";
 import { Context } from "ponder:registry";
-import { and, gte, lte } from "drizzle-orm";
+import { and, gte, lte } from "ponder";
 import { Address } from "viem";
 import { CHAINLINK_ETH_DECIMALS } from "@app/utils/constants";
 import { updateAsset } from "./entities/asset";

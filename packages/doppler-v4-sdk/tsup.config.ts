@@ -26,6 +26,7 @@ export default defineConfig({
     'ethers',
     '@delvtech/drift',
     '@delvtech/drift-viem',
-    '@uniswap/v4-sdk'
+    '@uniswap/v4-sdk',
+    'viem'
   ]
 })

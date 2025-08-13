@@ -32,11 +32,13 @@
     "devDependencies": {
         "@size-limit/preset-small-lib": "^11.2.0",
         "@vitest/coverage-c8": "^0.33.0",
+        "abitype": "^1.0.7",
         "anvil": "^0.0.6",
         "glob": "^10.4.5",
         "size-limit": "^11.2.0",
         "tslib": "^2.8.1",
         "typescript": "^5.8.3",
+        "viem": "^2.22.15",
         "vite-tsconfig-paths": "^5.1.4",
         "vitest": "^2.1.9"
     },
@@ -47,5 +49,8 @@
         "ethers": "^5.8.0",
         "tsup": "^8.4.0",
         "turbo": "^2.5.3"
+    },
+    "peerDependencies": {
+        "viem": "^2.22.15"
     }
 }

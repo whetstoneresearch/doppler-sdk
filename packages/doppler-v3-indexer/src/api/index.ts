@@ -12,6 +12,8 @@ import {
   replaceBigInts,
   gte,
   lt,
+  sum,
+  count,
 } from "ponder";
 import { db } from "ponder:api";
 import schema, { asset, token, volumeBucket24h, pool } from "ponder:schema";
@@ -207,9 +209,9 @@ app.get("/analytics/market-overview/:chainId", async (c) => {
     // Get aggregated stats for current day
     const currentDayStats = await db
       .select({
-        totalVolumeUsd: db.sum(volumeBucket24h.volumeUsd),
-        totalTxCount: db.sum(volumeBucket24h.txCount),
-        uniquePools: db.count(volumeBucket24h.poolAddress),
+        totalVolumeUsd: sum(volumeBucket24h.volumeUsd),
+        totalTxCount: sum(volumeBucket24h.txCount),
+        uniquePools: count(volumeBucket24h.poolAddress),
       })
       .from(volumeBucket24h)
       .where(
@@ -222,7 +224,7 @@ app.get("/analytics/market-overview/:chainId", async (c) => {
     // Get aggregated stats for previous day
     const previousDayStats = await db
       .select({
-        totalVolumeUsd: db.sum(volumeBucket24h.volumeUsd),
+        totalVolumeUsd: sum(volumeBucket24h.volumeUsd),
       })
       .from(volumeBucket24h)
       .where(
@@ -232,8 +234,8 @@ app.get("/analytics/market-overview/:chainId", async (c) => {
         )
       );
 
-    const currentVolume = BigInt(currentDayStats[0]?.totalVolumeUsd || "0");
-    const previousVolume = BigInt(previousDayStats[0]?.totalVolumeUsd || "0");
+    const currentVolume = BigInt((currentDayStats[0]?.totalVolumeUsd as string) || "0");
+    const previousVolume = BigInt((previousDayStats[0]?.totalVolumeUsd as string) || "0");
     
     let volumeChange = 0;
     if (previousVolume > 0n) {

@@ -1,8 +1,8 @@
 import { Address } from "viem";
 import { Context } from "ponder:registry";
-import { SwapService, SwapData, MarketMetrics } from "./SwapService";
+import { SwapService, SwapData, SwapMarketMetrics } from "./SwapService";
 import { SwapType } from "@app/types/shared";
-import { updateDayBucket, BucketUpdateParams, get24HourVolume, get24HourVolumeAndPercentChange } from "@app/utils/time-buckets";
+import { updateDayBucket, BucketUpdateParams, get24HourVolumeAndPercentChange } from "@app/utils/time-buckets";
 
 /**
  * Orchestrates all entity updates required after a swap
@@ -10,7 +10,7 @@ import { updateDayBucket, BucketUpdateParams, get24HourVolume, get24HourVolumeAn
 export interface SwapUpdateParams {
   swapData: SwapData;
   swapType: SwapType;
-  metrics: MarketMetrics;
+  metrics: SwapMarketMetrics;
   poolData: {
     parentPoolAddress: Address;
     price: bigint;
