@@ -1,0 +1,71 @@
+name: Deploy package to environment
+
+on:
+  workflow_dispatch:
+    inputs:
+      repo:
+        description: "Name of the repository to deploy"
+        required: true
+        type: choice
+        options:
+          - doppler-router
+          - doppler-sdk-v3
+          - doppler-sdk-v4
+      bump:
+        description: "How to bump the version"
+        required: false
+        default: "patch"
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      env:
+        description: "Environment to deploy to"
+        required: true
+        type: choice
+        options:
+          - stage
+          - prod
+
+permissions:
+  contents: write
+
+jobs:
+  deploy-env:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Need full history for git operations
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Notify slack
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+          --data '{"text":"Deploying ${{ inputs.repo }} to ${{ inputs.env }} environment"}' \
+          ${{ secrets.WEBHOOK_URL }}
+
+      - name: Setup
+        uses: ./.github/workflows/tooling/github/setup.yml
+
+      - name: Deploy to environment
+        uses: ./.github/workflows/tooling/github/deploy.yml
+        with:
+          repo: ${{ inputs.repo }}
+          environment: ${{ inputs.env }}
+          bump: ${{ inputs.bump }}
+
+      - name: Deploy notification
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+          --data '{"text":"Successfully deployed ${{ inputs.repo }} to ${{ inputs.env }} environment"}' \
+          ${{ secrets.WEBHOOK_URL }}
+
+      - name: On Failure
+        if: failure()
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+          --data '{"text":"Failed to deploy ${{ inputs.repo }} to ${{ inputs.env }} environment"}' \
+          ${{ secrets.WEBHOOK_URL }}

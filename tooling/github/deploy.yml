@@ -1,0 +1,72 @@
+name: "Deploy to environment"
+description: "Deploy to environment"
+
+# THIS ACTION IS NOT MEANT TO BE RUN INDEPENDENTLY
+# IT WILL BE UTILIZED WITH "uses" FIELD IN ".github" FOLDER
+# THIS ACTION ASSUMES CI HAS BEEN RUN AND CODE IS VALID
+
+inputs:
+  repo:
+    description: "Name of the repository to deploy"
+    required: true
+    options:
+      - doppler-router
+      - doppler-sdk-v3
+      - doppler-sdk-v4
+
+  env:
+    description: "Environment to deploy to"
+    required: true
+    options:
+      - dev
+      - stage
+      - prod
+
+  bump:
+    description: "How to bump the version (required for stage only)"
+    required: false
+    default: "patch"
+    options:
+      - patch
+      - minor
+      - major
+
+runs:
+  using: composite
+  steps:
+    - name: Configure Git
+      run: |
+        git config --local user.name 'whetstone-research[bot]'
+        git config --local user.email 'whetstone-research[bot]@users.noreply.github.com'
+
+    - name: Bump/document version
+      if: inputs.environment == 'stage'
+      run: |
+        if [ "${{ inputs.bump }}" = "" ]; then 
+          echo "Error: Bump version is required for stage environment" >&2
+          exit 1
+        fi
+        cd packages/${{ inputs.repo }}
+        pnpm version ${{ inputs.bump }}
+        git push origin main
+
+    - name: Update deployed/${{ inputs.environment }} branch
+      # TODO: force push is probably wack here
+      run: |
+        git fetch origin deployed/${{ inputs.environment }} || echo "deployed/${{ inputs.environment }} branch doesn't exist yet"
+        git checkout -B deployed/${{ inputs.environment }}
+        git push origin deployed/${{ inputs.environment }} --force-with-lease
+    
+    # - name: Publish to npm
+    #   run: |
+    #     cd packages/${{ inputs.repo }}
+    #     if [ "${{ inputs.environment }}" == "dev" ]; then
+    #       pnpm publish:beta
+    #     elif [ "${{ inputs.environment }}" == "stage" ]; then
+    #       pnpm publish:rc
+    #     elif [ "${{ inputs.environment }}" == "prod" ]; then
+    #       pnpm publish:latest
+    #     else
+    #       echo "Invalid environment specified"
+    #       exit 1
+    #     fi

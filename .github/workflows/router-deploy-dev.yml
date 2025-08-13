@@ -1,0 +1,56 @@
+name: Deploy router to Dev
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "packages/doppler-router/**"
+
+permissions:
+  contents: write
+
+jobs:
+  deploy-dev:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Need full history for git operations
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Notify slack
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+          --data '{"text":"Deploying doppler-router to dev environment"}' \
+          ${{ secrets.WEBHOOK_URL }}
+
+      - name: Setup
+        uses: ./.github/workflows/tooling/github/setup.yml
+
+      - name: Deploy to dev
+        uses: ./.github/workflows/tooling/github/deploy.yml
+        with:
+          repo: doppler-router
+          environment: dev
+      
+      - name: Publish to dev
+        uses: ./.github/workflows/tooling/github/publish.yml
+        with:
+          repo: doppler-router
+          environment: dev
+          bump: patch
+
+      - name: Deploy notification
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+          --data '{"text":"Successfully deployed ${{ inputs.repo }} to ${{ inputs.environment }} environment"}' \
+          ${{ secrets.WEBHOOK_URL }}
+
+      - name: On Failure
+        if: failure()
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+          --data '{"text":"Failed to deploy ${{ inputs.repo }} to ${{ inputs.environment }} environment"}' \
+          ${{ secrets.WEBHOOK_URL }}
