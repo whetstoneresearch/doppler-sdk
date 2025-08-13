@@ -107,6 +107,7 @@ export const baseConfig: ChainConfig = {
     stables: {
       usdc: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" as Address,
     },
+    chainlinkEthOracle: "0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70" as Address,
     oracle: ORACLE_ADDRESSES,
   },
 };

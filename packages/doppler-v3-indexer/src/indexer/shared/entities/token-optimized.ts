@@ -33,7 +33,6 @@ export const upsertTokenWithPool = async ({
   const address = tokenAddress.toLowerCase() as `0x${string}`;
   const chainId = BigInt(chain.id);
   
-  // Check for special tokens (ETH, WETH, ZORA)
   const wethAddress = chainConfigs[chain.name]?.addresses?.shared?.weth;
   const zoraAddress = chainConfigs[chain.name]?.addresses?.zora?.zoraToken;
   
@@ -50,7 +49,6 @@ export const upsertTokenWithPool = async ({
     lastSeenAt: timestamp,
   };
 
-  // Handle special tokens
   if (address === zeroAddress || (wethAddress && address === wethAddress.toLowerCase())) {
     tokenData = {
       ...tokenData,

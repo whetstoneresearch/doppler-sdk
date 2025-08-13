@@ -1,11 +1,5 @@
 import { ethPrice, zoraUsdcPrice } from "ponder.schema";
 import { Context } from "ponder:registry";
-import { and, gte, lte } from "drizzle-orm";
-import { Address } from "viem";
-import { CHAINLINK_ETH_DECIMALS } from "@app/utils/constants";
-import { updateAsset } from "./entities/asset";
-import { DERC20ABI } from "@app/abis";
-import { updatePool } from "./entities/pool";
 import { MarketDataService } from "@app/core";
 
 export const fetchEthPrice = async (
@@ -13,11 +7,12 @@ export const fetchEthPrice = async (
   context: Context
 ): Promise<bigint> => {
   const { db } = context;
-
   let roundedTimestamp = BigInt(Math.floor(Number(timestamp) / 300) * 300);
 
   let ethPriceData;
+  let i = 0;
   while (!ethPriceData) {
+    i++;
     ethPriceData = await db.find(ethPrice, {
       timestamp: roundedTimestamp,
     });

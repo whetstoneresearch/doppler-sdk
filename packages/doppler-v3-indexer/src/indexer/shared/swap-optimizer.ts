@@ -1,16 +1,15 @@
 import { Context } from "ponder:registry";
 import { pool, token } from "ponder:schema";
 import { Address } from "viem";
-import { tokenCache } from "./cache/token-cache";
 import { SwapOrchestrator } from "@app/core";
 import { PriceService, SwapService } from "@app/core";
 import { computeV3Price } from "@app/utils";
 import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
-import { computeMarketCap } from "./oracle";
+import { computeMarketCap, fetchEthPrice, fetchZoraPrice } from "./oracle";
 import { updatePool, updateAsset } from "./entities";
-import { tryAddActivePool } from "./scheduledJobs";
-import { upsertTokenWithPool } from "./entities/token-optimized";
 import { chainConfigs } from "@app/config";
+import { updateFifteenMinuteBucketUsd } from "@app/utils/time-buckets";
+import { WAD, CHAINLINK_ETH_DECIMALS } from "@app/utils/constants";
 import { SwapType } from "@app/types";
 
 interface SwapHandlerParams {
@@ -189,18 +188,19 @@ export function processSwapCalculations(
  */
 export async function handleOptimizedSwap(
   params: SwapHandlerParams,
-  zoraPrice: bigint,
-  ethPrice: bigint
 ): Promise<void> {
   const { context, poolKeyHash, timestamp } = params;
   const { db, chain } = context;
   const poolAddress = poolKeyHash.toLowerCase() as `0x${string}`;
-  
-  // Get pool entity
-  const poolEntity = await db.find(pool, {
-    address: poolAddress,
-    chainId: BigInt(chain.id),
-  });
+
+  const [zoraPrice, ethPrice, poolEntity] = await Promise.all([
+    fetchZoraPrice(timestamp, context),
+    fetchEthPrice(timestamp, context),
+    db.find(pool, {
+      address: poolAddress,
+      chainId: BigInt(chain.id),
+    }),
+  ]);
   
   if (!poolEntity) {
     return;
@@ -215,10 +215,7 @@ export async function handleOptimizedSwap(
   const isQuoteEth = poolEntity.quoteToken.toLowerCase() === 
     chainConfigs[chain.name].addresses.shared.weth.toLowerCase();
   
-  // Process all swap calculations
   const swapData = processSwapCalculations(poolEntity, params, usdPrice, isQuoteEth);
-  
-  // Ensure token exists and get total supply
 
   const tokenEntity = await db.find(token, {
     address: poolEntity.baseToken,
@@ -258,14 +255,12 @@ export async function handleOptimizedSwap(
     liquidityUsd: swapData.dollarLiquidity,
     marketCapUsd,
     swapValueUsd: swapData.swapValueUsd,
-    percentDayChange: 0,
   };
   
   // Define entity updaters
   const entityUpdaters = {
     updatePool,
     updateAsset,
-    tryAddActivePool,
   };
   
   // Execute all updates in parallel
@@ -296,6 +291,15 @@ export async function handleOptimizedSwap(
         reserves1: swapData.nextReserves1,
         lastSwapTimestamp: timestamp,
       },
+    }),
+    updateFifteenMinuteBucketUsd(context, {
+      poolAddress,
+      chainId: BigInt(chain.id),
+      timestamp,
+      priceUsd: isQuoteEth
+        ? (swapData.price * usdPrice) / CHAINLINK_ETH_DECIMALS
+        : (swapData.price * usdPrice) / WAD,
+      volumeUsd: swapData.swapValueUsd,
     }),
   ]);
 }

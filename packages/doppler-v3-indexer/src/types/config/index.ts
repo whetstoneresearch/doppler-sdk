@@ -39,6 +39,7 @@ export interface ChainAddresses {
   shared: SharedAddresses;
   stables?: StablesAddresses;
   oracle: OracleAddresses;
+  chainlinkEthOracle: Address;
 }
 
 export interface StablesAddresses {
@@ -72,6 +73,7 @@ export interface OracleAddresses {
   weth: Address;
   usdc: Address;
   chainlinkEth: Address;
+  chainlinkBaseEth: Address;
 }
 
 /**

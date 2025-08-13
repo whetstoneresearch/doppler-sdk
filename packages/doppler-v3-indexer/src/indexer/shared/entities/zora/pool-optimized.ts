@@ -12,6 +12,7 @@ import {
   getAmount0Delta, 
   getAmount1Delta 
 } from "@app/utils/v3-utils/computeGraduationThreshold";
+import { computeMarketCap } from "../../oracle";
 
 /**
  * Optimized version with caching and reduced contract calls
@@ -27,7 +28,7 @@ export const insertZoraPoolV4Optimized = async ({
   isQuoteZora,
   isCreatorCoin,
   isContentCoin,
-  poolKeyHash,
+  totalSupply,
 }: {
   poolAddress: Address;
   baseToken: Address;
@@ -39,7 +40,7 @@ export const insertZoraPoolV4Optimized = async ({
   isQuoteZora: boolean;
   isCreatorCoin: boolean;
   isContentCoin: boolean;
-  poolKeyHash?: `0x${string}`;
+  totalSupply: bigint;
 }): Promise<typeof pool.$inferSelect> => {
   const { db, chain, client } = context;
   const address = poolAddress.toLowerCase() as `0x${string}`;
@@ -135,11 +136,19 @@ export const insertZoraPoolV4Optimized = async ({
     decimals: 18,
   });
 
-  const liquidityUsd = computeDollarLiquidity({
+  const marketCapUsd = computeMarketCap({
+    price,
+    ethPrice,
+    totalSupply,
+    decimals: isQuoteEth ? 8 : 18,
+  });
+
+  const dollarLiquidity = computeDollarLiquidity({
     assetBalance: isToken0 ? token0Reserve : token1Reserve,
     quoteBalance: isToken0 ? token1Reserve : token0Reserve,
     price,
     ethPrice,
+    decimals: isQuoteEth ? 8 : 18,
   });
 
   // Insert new pool with all data at once
@@ -153,10 +162,10 @@ export const insertZoraPoolV4Optimized = async ({
     baseToken,
     quoteToken,
     price,
-    type: "v4",
+    type: "zora",
     chainId,
     fee: poolKey.fee,
-    dollarLiquidity: liquidityUsd,
+    dollarLiquidity,
     dailyVolume: address,
     maxThreshold: 0n,
     graduationBalance: 0n,
@@ -167,7 +176,7 @@ export const insertZoraPoolV4Optimized = async ({
     reserves1: token1Reserve,
     percentDayChange: 0,
     isToken0,
-    marketCapUsd: 0n,
+    marketCapUsd,
     isQuoteEth,
     isQuoteZora,
     integrator: zeroAddress,
@@ -176,5 +185,6 @@ export const insertZoraPoolV4Optimized = async ({
     holderCount: 0,
     lastSwapTimestamp: timestamp,
     lastRefreshed: timestamp,
+    poolKey,
   });
 };

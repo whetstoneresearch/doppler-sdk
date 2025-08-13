@@ -127,6 +127,28 @@ export const hourBucketUsd = onchainTable(
   })
 );
 
+// 15-minute OHLC buckets (USD)
+export const fifteenMinuteBucketUsd = onchainTable(
+  "fifteen_minute_bucket_usd",
+  (t) => ({
+    minuteId: t.integer().notNull(),
+    pool: t.hex().notNull(),
+    open: t.bigint().notNull(),
+    close: t.bigint().notNull(),
+    low: t.bigint().notNull(),
+    high: t.bigint().notNull(),
+    average: t.bigint().notNull(),
+    count: t.integer().notNull(),
+    chainId: t.bigint().notNull(),
+    volumeUsd: t.bigint().notNull(),
+  }),
+  (table) => ({
+    pk: primaryKey({
+      columns: [table.pool, table.minuteId, table.chainId],
+    }),
+  })
+);
+
 export const dailyVolume = onchainTable("daily_volume", (t) => ({
   pool: t.hex().notNull().primaryKey(),
   volumeUsd: t.bigint().notNull(),
@@ -483,6 +505,7 @@ export const poolRelations = relations(pool, ({ one, many }) => ({
   }),
   hourBuckets: many(hourBucket),
   hourBucketUsds: many(hourBucketUsd),
+  fifteenMinuteBucketUsds: many(fifteenMinuteBucketUsd),
   swaps: many(swap),
   volumeBuckets24h: many(volumeBucket24h),
 }));
@@ -542,6 +565,16 @@ export const hourBucketUsdRelations = relations(hourBucketUsd, ({ one }) => ({
     references: [pool.address],
   }),
 }));
+
+export const fifteenMinuteBucketUsdRelations = relations(
+  fifteenMinuteBucketUsd,
+  ({ one }) => ({
+    pool: one(pool, {
+      fields: [fifteenMinuteBucketUsd.pool],
+      references: [pool.address],
+    }),
+  })
+);
 
 // v4pools relations
 export const v4poolsRelations = relations(v4pools, ({ one, many }) => ({

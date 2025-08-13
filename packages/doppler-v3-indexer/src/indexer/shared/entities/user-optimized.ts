@@ -189,14 +189,12 @@ export const batchUpdateHolderCounts = async ({
   poolAddress,
   holderCountDelta,
   currentTokenHolderCount,
-  currentAssetHolderCount,
   context,
 }: {
   tokenAddress: Address;
   poolAddress: Address | null;
   holderCountDelta: number;
   currentTokenHolderCount: number;
-  currentAssetHolderCount: number;
   context: Context;
 }): Promise<void> => {
   const { db } = context;
@@ -226,18 +224,10 @@ export const batchUpdateHolderCounts = async ({
         holderCount: currentTokenHolderCount + holderCountDelta,
       })
     );
-
-    updates.push(
-      db.update(asset, {
-        address: tokenAddress.toLowerCase() as `0x${string}`,
-      }).set({
-        holderCount: currentAssetHolderCount + holderCountDelta,
-      })
-    );
   }
 
   await Promise.all(updates);
 };
 
 // Import necessary schema types
-import { token, pool, asset } from "ponder:schema";
+import { token, pool } from "ponder:schema";

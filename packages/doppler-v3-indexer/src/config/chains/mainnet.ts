@@ -43,6 +43,7 @@ export const mainnetConfig: ChainConfig = {
       creatorCoinHook: COMMON_ADDRESSES.ZERO_ADDRESS,
       contentCoinHook: COMMON_ADDRESSES.ZERO_ADDRESS,
     },
+    chainlinkEthOracle: ORACLE_ADDRESSES.chainlinkEth,
     oracle: ORACLE_ADDRESSES,
   },
 };

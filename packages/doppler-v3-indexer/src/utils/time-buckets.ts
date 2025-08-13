@@ -1,16 +1,25 @@
 import { and, desc, eq, gte, lt } from "ponder";
 import { Context } from "ponder:registry";
-import { volumeBucket24h } from "ponder:schema";
+import { volumeBucket24h, fifteenMinuteBucketUsd } from "ponder:schema";
 import { formatEther, parseEther } from "viem";
+import { CHAINLINK_ETH_DECIMALS } from "@app/utils/constants";
 
 // 24 hours in seconds
 export const DAY_IN_SECONDS = 86400n;
+export const FIFTEEN_MINUTES_IN_SECONDS = 900n;
 
 /**
  * Rounds a timestamp down to the start of the day (00:00:00 UTC)
  */
 export function getDayBucketTimestamp(timestamp: bigint): bigint {
   return (BigInt(timestamp) / DAY_IN_SECONDS) * DAY_IN_SECONDS;
+}
+
+/**
+ * Rounds a timestamp down to the start of the 15-minute interval (UTC)
+ */
+export function get15mBucketTimestamp(timestamp: bigint): bigint {
+  return (BigInt(timestamp) / FIFTEEN_MINUTES_IN_SECONDS) * FIFTEEN_MINUTES_IN_SECONDS;
 }
 
 /**
@@ -135,6 +144,59 @@ export async function get24HourVolumeAndPercentChange(
     volumeUsd: bucket?.volumeUsd || 0n,
     percentChange: percentChange24h,
   };
+}
+
+/**
+ * Updates or creates a 15-minute USD OHLC bucket for a pool
+ */
+export async function updateFifteenMinuteBucketUsd(
+  context: Context,
+  params: {
+    poolAddress: string;
+    chainId: bigint;
+    timestamp: bigint;
+    priceUsd: bigint; // 1e18-scaled USD price
+    volumeUsd: bigint;
+  }
+): Promise<void> {
+  const { db } = context;
+  const bucketTimestamp = get15mBucketTimestamp(params.timestamp);
+  const minuteId = Number(bucketTimestamp);
+
+  const rowId = {
+    pool: params.poolAddress as `0x${string}`,
+    minuteId,
+    chainId: params.chainId,
+  };
+
+  const existing = await db.find(fifteenMinuteBucketUsd, rowId);
+  if (existing) {
+    await db
+      .update(fifteenMinuteBucketUsd, rowId)
+      .set({
+        close: params.priceUsd,
+        low: params.priceUsd < existing.low ? params.priceUsd : existing.low,
+        high: params.priceUsd > existing.high ? params.priceUsd : existing.high,
+        average:
+          (existing.average * BigInt(existing.count) + params.priceUsd) /
+          BigInt(existing.count + 1),
+        count: existing.count + 1,
+        volumeUsd: existing.volumeUsd + params.volumeUsd,
+      });
+  } else {
+    await db.insert(fifteenMinuteBucketUsd).values({
+      minuteId,
+      pool: params.poolAddress as `0x${string}`,
+      open: params.priceUsd,
+      close: params.priceUsd,
+      low: params.priceUsd,
+      high: params.priceUsd,
+      average: params.priceUsd,
+      count: 1,
+      chainId: params.chainId,
+      volumeUsd: params.volumeUsd,
+    });
+  }
 }
 
 /**

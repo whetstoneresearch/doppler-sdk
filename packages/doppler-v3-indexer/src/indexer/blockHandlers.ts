@@ -55,16 +55,16 @@ import { refreshCheckpointBlob } from "./shared/entities/v4-entities";
 // });
 
 // Handler for base network
-ponder.on("MetricRefresherBase:block", async ({ event, context }) => {
-  try {
-    await refreshActivePoolsBlobWithBucketsOptimized({
-      context,
-      timestamp: Number(event.block.timestamp),
-    });
-  } catch (error) {
-    console.error(`Error in base refresh job: ${error}`);
-  }
-});
+// ponder.on("MetricRefresherBase:block", async ({ event, context }) => {
+//   try {
+//     await refreshActivePoolsBlobWithBucketsOptimized({
+//       context,
+//       timestamp: Number(event.block.timestamp),
+//     });
+//   } catch (error) {
+//     console.error(`Error in base refresh job: ${error}`);
+//   }
+// });
 
 ponder.on("ChainlinkEthPriceFeed:block", async ({ event, context }) => {
   const { db, client, chain } = context;
@@ -72,7 +72,7 @@ ponder.on("ChainlinkEthPriceFeed:block", async ({ event, context }) => {
 
   const latestAnswer = await client.readContract({
     abi: ChainlinkOracleABI,
-    address: configs[chain.name].oracle.chainlinkEth,
+    address: chainConfigs[chain.name].addresses.chainlinkEthOracle,
     functionName: "latestAnswer",
   });
 

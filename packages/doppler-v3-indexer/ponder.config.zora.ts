@@ -14,19 +14,15 @@ import {
   ZoraCoinABI,
   ZoraCreatorCoinABI,
 } from "./src/abis";
-import { UniswapV2FactoryABI } from "@app/abis/UniswapV2Factory";
 import { BLOCK_INTERVALS } from "@app/config/blocks/intervals";
 import {
   chainConfigs,
   CHAIN_IDS,
-  V4_START_BLOCKS,
-  LOCKABLE_V3_INITIALIZER_START_BLOCKS,
-  SELF_CORRECTING_V4_INITIALIZER_START_BLOCKS,
 } from "./src/config/chains";
 import { LockableUniswapV3InitializerABI } from "@app/abis/v3-abis/LockableUniswapV3InitializerABI";
 import { UniswapV3MigratorAbi } from "@app/abis/v3-abis/UniswapV3Migrator";
 
-const { unichain, mainnet, baseSepolia, ink, base } = chainConfigs;
+const { base } = chainConfigs;
 
 export default createConfig({
   database: {
@@ -36,12 +32,12 @@ export default createConfig({
       max: 100,
     },
   },
-  ordering: "omnichain",
+  ordering: "multichain",
   chains: {
-    mainnet: {
-      id: 1,
-      rpc: http(process.env.PONDER_RPC_URL_1),
-    },
+    // mainnet: {
+    //   id: 1,
+    //   rpc: http(process.env.PONDER_RPC_URL_1),
+    // },
     // unichain: {
     //   id: CHAIN_IDS.unichain,
     //   rpc: http(process.env.PONDER_RPC_URL_130),
@@ -61,9 +57,8 @@ export default createConfig({
   },
   blocks: {
     ChainlinkEthPriceFeed: {
-      chain: "mainnet",
-      // startBlock: mainnet.startBlock,
-      startBlock: 22624231,
+      chain: "base",
+      startBlock: 31058549,
       interval: BLOCK_INTERVALS.FIVE_MINUTES, // every 5 minutes
     },
     ZoraUsdcPrice: {
@@ -101,11 +96,11 @@ export default createConfig({
     //   startBlock: ink.startBlock,
     //   interval: BLOCK_INTERVALS.THOUSAND_BLOCKS, // every 1000 blocks
     // },
-    MetricRefresherBase: {
-      chain: "base",
-      startBlock: base.zoraStartBlock,
-      interval: BLOCK_INTERVALS.THOUSAND_BLOCKS, // every 1000 blocks
-    },
+    // MetricRefresherBase: {
+    //   chain: "base",
+    //   startBlock: base.zoraStartBlock,
+    //   interval: BLOCK_INTERVALS.THOUSAND_BLOCKS, // every 1000 blocks
+    // },
     // MetricRefresherBaseSepolia: {
     //   chain: "baseSepolia",
     //   startBlock: baseSepolia.startBlock,
