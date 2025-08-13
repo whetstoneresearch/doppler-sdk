@@ -1,0 +1,42 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version-type:
+        description: 'Version type to bump'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      repository:
+        description: 'Repository to release'
+        required: true
+        type: choice
+        options:
+          - doppler-sdk-v3
+          - doppler-sdk-v4
+          - doppler-router
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'pnpm'
+      - run: pnpm install
+      - run: pnpm run build
+      - name: Update version
+        run: |
+          cd packages/${{ inputs.repository }}
+          pnpm version ${{ inputs.version-type }}
