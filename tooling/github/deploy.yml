@@ -49,6 +49,7 @@ runs:
         cd packages/${{ inputs.repo }}
         pnpm version ${{ inputs.bump }}
         git push origin main
+        git push origin deployed/dev
 
     - name: Update deployed/${{ inputs.environment }} branch
       # TODO: force push is probably wack here
