@@ -34,13 +34,6 @@ jobs:
         with:
           repo: doppler-router
           environment: dev
-      
-      - name: Publish to dev
-        uses: ./.github/workflows/tooling/github/publish.yml
-        with:
-          repo: doppler-router
-          environment: dev
-          bump: patch
 
       - name: Deploy notification
         run: |
