@@ -16,8 +16,7 @@ inputs:
 
   bump:
     description: "How to bump the version (required for dev only)"
-    required: false
-    default: "patch"
+    required: true
 
 runs:
   using: composite

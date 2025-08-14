@@ -19,6 +19,7 @@ jobs:
           # Need full history for git operations
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
+          ref: main
 
       - name: Notify slack
         run: |
@@ -34,6 +35,7 @@ jobs:
         with:
           repo: doppler-router
           env: dev
+          bump: patch
 
       - name: Deploy notification
         run: |
