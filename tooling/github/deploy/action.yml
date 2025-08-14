@@ -15,7 +15,7 @@ inputs:
     required: true
 
   bump:
-    description: "How to bump the version (required for stage only)"
+    description: "How to bump the version (required for dev only)"
     required: false
     default: "patch"
 
