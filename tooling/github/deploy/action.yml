@@ -30,26 +30,38 @@ runs:
     - name: Bump/document version
       if: inputs.env == 'dev'
       run: |
-        if [ "${{ inputs.bump }}" = "" ]; then 
+        if [ -z "${{ inputs.bump }}" ] || [ "${{ inputs.bump }}" = "" ]; then 
           echo "Error: Bump version is required for dev environment" >&2
           exit 1
         fi
+        if [ ! -d "packages/${{ inputs.repo }}" ]; then
+          echo "Error: Package directory packages/${{ inputs.repo }} does not exist" >&2
+          exit 1
+        fi
         cd packages/${{ inputs.repo }}
-        pnpm version ${{ inputs.bump }}
+        NEW_VERSION=$(pnpm version ${{ inputs.bump }} --json | jq -r '.newVersion')
+        cd ../..
+        git add .
+        git commit -m "Bump ${{ inputs.repo }} to version $NEW_VERSION"
         git push origin main
       shell: bash
 
     - name: Update deployed/${{ inputs.env }} branch
       run: |
-        git fetch
-        git checkout deployed/${{ inputs.env }}
+        git fetch origin
+        git checkout deployed/${{ inputs.env }} 2>/dev/null || git checkout -b deployed/${{ inputs.env }}
+        
         if [ "${{ inputs.env }}" = "dev" ]; then
-          git merge main --ff-only
+          git merge origin/main --ff-only
         elif [ "${{ inputs.env }}" = "stage" ]; then
-          git merge deployed/dev --ff-only
+          git merge origin/deployed/dev --ff-only
         elif [ "${{ inputs.env }}" = "prod" ]; then
-          git merge deployed/stage --ff-only
+          git merge origin/deployed/stage --ff-only
+        else
+          echo "Error: Invalid environment '${{ inputs.env }}'. Must be dev, stage, or prod." >&2
+          exit 1
         fi
+        git push origin deployed/${{ inputs.env }}
       shell: bash
     
     # - name: Publish to npm
