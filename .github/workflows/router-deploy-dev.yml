@@ -27,13 +27,13 @@ jobs:
           ${{ secrets.WEBHOOK_URL }}
 
       - name: Setup
-        uses: ./.github/workflows/tooling/github/setup/action.yml
+        uses: ./tooling/github/setup
 
       - name: Deploy to dev
-        uses: ./.github/workflows/tooling/github/deploy/action.yml
+        uses: ./tooling/github/deploy
         with:
           repo: doppler-router
-          environment: dev
+          env: dev
 
       - name: Deploy notification
         run: |

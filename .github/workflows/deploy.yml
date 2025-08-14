@@ -48,13 +48,13 @@ jobs:
           ${{ secrets.WEBHOOK_URL }}
 
       - name: Setup
-        uses: ./.github/workflows/tooling/github/setup.yml
+        uses: ./tooling/github/setup
 
       - name: Deploy to environment
-        uses: ./.github/workflows/tooling/github/deploy.yml
+        uses: ./tooling/github/deploy
         with:
           repo: ${{ inputs.repo }}
-          environment: ${{ inputs.env }}
+          env: ${{ inputs.env }}
           bump: ${{ inputs.bump }}
 
       - name: Deploy notification
