@@ -18,9 +18,12 @@ runs:
 
     - name: Install dependencies
       run: pnpm install
+      shell: bash
 
     - name: Build packages
       run: pnpm run build
+      shell: bash
 
     - name: Lint packages
       run: pnpm run lint
+      shell: bash

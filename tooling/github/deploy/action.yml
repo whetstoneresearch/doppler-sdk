@@ -9,27 +9,15 @@ inputs:
   repo:
     description: "Name of the repository to deploy"
     required: true
-    options:
-      - doppler-router
-      - doppler-sdk-v3
-      - doppler-sdk-v4
 
   env:
     description: "Environment to deploy to"
     required: true
-    options:
-      - dev
-      - stage
-      - prod
 
   bump:
     description: "How to bump the version (required for stage only)"
     required: false
     default: "patch"
-    options:
-      - patch
-      - minor
-      - major
 
 runs:
   using: composite
@@ -38,9 +26,10 @@ runs:
       run: |
         git config --local user.name 'whetstone-research[bot]'
         git config --local user.email 'whetstone-research[bot]@users.noreply.github.com'
+      shell: bash
 
     - name: Bump/document version
-      if: inputs.environment == 'stage'
+      if: inputs.env == 'stage'
       run: |
         if [ "${{ inputs.bump }}" = "" ]; then 
           echo "Error: Bump version is required for stage environment" >&2
@@ -50,13 +39,15 @@ runs:
         pnpm version ${{ inputs.bump }}
         git push origin main
         git push origin deployed/dev
+      shell: bash
 
-    - name: Update deployed/${{ inputs.environment }} branch
+    - name: Update deployed/${{ inputs.env }} branch
       # TODO: force push is probably wack here
       run: |
-        git fetch origin deployed/${{ inputs.environment }} || echo "deployed/${{ inputs.environment }} branch doesn't exist yet"
-        git checkout -B deployed/${{ inputs.environment }}
-        git push origin deployed/${{ inputs.environment }} --force-with-lease
+        git fetch origin deployed/${{ inputs.env }} || echo "deployed/${{ inputs.env }} branch doesn't exist yet"
+        git checkout -B deployed/${{ inputs.env }}
+        git push origin deployed/${{ inputs.env }} --force-with-lease
+      shell: bash
     
     # - name: Publish to npm
     #   run: |
