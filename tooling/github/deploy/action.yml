@@ -29,24 +29,28 @@ runs:
       shell: bash
 
     - name: Bump/document version
-      if: inputs.env == 'stage'
+      if: inputs.env == 'dev'
       run: |
         if [ "${{ inputs.bump }}" = "" ]; then 
-          echo "Error: Bump version is required for stage environment" >&2
+          echo "Error: Bump version is required for dev environment" >&2
           exit 1
         fi
         cd packages/${{ inputs.repo }}
         pnpm version ${{ inputs.bump }}
         git push origin main
-        git push origin deployed/dev
       shell: bash
 
     - name: Update deployed/${{ inputs.env }} branch
-      # TODO: force push is probably wack here
       run: |
-        git fetch origin deployed/${{ inputs.env }} || echo "deployed/${{ inputs.env }} branch doesn't exist yet"
-        git checkout -B deployed/${{ inputs.env }}
-        git push origin deployed/${{ inputs.env }} --force-with-lease
+        git fetch
+        git checkout deployed/${{ inputs.env }}
+        if [ "${{ inputs.env }}" = "dev" ]; then
+          git merge main --ff-only
+        elif [ "${{ inputs.env }}" = "stage" ]; then
+          git merge deployed/dev --ff-only
+        elif [ "${{ inputs.env }}" = "prod" ]; then
+          git merge deployed/stage --ff-only
+        fi
       shell: bash
     
     # - name: Publish to npm
