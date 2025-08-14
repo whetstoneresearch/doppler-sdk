@@ -44,8 +44,8 @@ jobs:
       - name: Notify slack
         run: |
           curl -X POST -H 'Content-type: application/json' \
-          --data '{"text":"Deploying ${{ inputs.repo }} to ${{ inputs.env }} environment"}' \
-          ${{ secrets.WEBHOOK_URL }}
+          --data '{"text":":bangbang: :pepe-salute: Deploying ${{ inputs.repo }} to ${{ inputs.env }} environment :pepe-salute: :bangbang:"}' \
+          ${{ secrets.WEBHOOK_URL }}  
 
       - name: Setup
         uses: ./tooling/github/setup
@@ -60,12 +60,13 @@ jobs:
       - name: Deploy notification
         run: |
           curl -X POST -H 'Content-type: application/json' \
-          --data '{"text":"Successfully deployed ${{ inputs.repo }} to ${{ inputs.env }} environment"}' \
+          --data '{"text":":feelsgoodman: Successfully deployed ${{ inputs.repo }} to ${{ inputs.env }} environment :feelsgoodman:"}' \
           ${{ secrets.WEBHOOK_URL }}
 
       - name: On Failure
         if: failure()
         run: |
           curl -X POST -H 'Content-type: application/json' \
-          --data '{"text":"Failed to deploy ${{ inputs.repo }} to ${{ inputs.env }} environment"}' \
+          --data '{"text":":alert: :peeposad: Failed to deploy ${{ inputs.repo }} to ${{ inputs.env }} environment :peeposad: :alert:"}' \
           ${{ secrets.WEBHOOK_URL }}
+  
