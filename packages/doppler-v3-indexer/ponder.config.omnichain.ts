@@ -65,46 +65,6 @@ export default createConfig({
       startBlock: mainnet.startBlock,
       interval: BLOCK_INTERVALS.FIVE_MINUTES, // every 5 minutes
     },
-    BaseSepoliaV4PoolCheckpoints: {
-      chain: "baseSepolia",
-      startBlock: baseSepolia.v4StartBlock,
-      interval: BLOCK_INTERVALS.FIFTY_BLOCKS, // every 50 blocks
-    },
-    BaseV4PoolCheckpoints: {
-      chain: "base",
-      startBlock: base.v4StartBlock,
-      interval: BLOCK_INTERVALS.FIFTY_BLOCKS, // every 50 blocks
-    },
-    UnichainV4PoolCheckpoints: {
-      chain: "unichain",
-      startBlock: unichain.v4StartBlock,
-      interval: BLOCK_INTERVALS.FIFTY_BLOCKS, // every 50 blocks
-    },
-    InkV4PoolCheckpoints: {
-      chain: "ink",
-      startBlock: ink.v4StartBlock,
-      interval: BLOCK_INTERVALS.FIFTY_BLOCKS, // every 50 blocks
-    },
-    MetricRefresherUnichain: {
-      chain: "unichain",
-      startBlock: unichain.startBlock,
-      interval: BLOCK_INTERVALS.FIVE_THOUSAND_BLOCKS, // every 5000 blocks
-    },
-    MetricRefresherInk: {
-      chain: "ink",
-      startBlock: ink.startBlock,
-      interval: BLOCK_INTERVALS.FIVE_THOUSAND_BLOCKS, // every 5000 blocks
-    },
-    MetricRefresherBase: {
-      chain: "base",
-      startBlock: base.startBlock,
-      interval: BLOCK_INTERVALS.FIVE_THOUSAND_BLOCKS, // every 5000 blocks
-    },
-    MetricRefresherBaseSepolia: {
-      chain: "baseSepolia",
-      startBlock: baseSepolia.startBlock,
-      interval: BLOCK_INTERVALS.FIVE_THOUSAND_BLOCKS, // every 5000 blocks
-    },
     ZoraUsdcPrice: {
       chain: "base",
       startBlock: 31058549,

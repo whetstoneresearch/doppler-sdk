@@ -27,6 +27,6 @@
       "@app/*": ["src/*"]
     }
   },
-  "include": ["./**/*.ts"],
+  "include": ["./**/*.ts", "ponder.config.multichain.ts"],
   "exclude": ["node_modules"]
 }
