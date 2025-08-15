@@ -25,7 +25,6 @@ export interface SwapUpdateParams {
  */
 export interface EntityUpdaters {
   updatePool: (params: any) => Promise<any>;
-  updateAsset: (params: any) => Promise<any>;
 }
 
 /**

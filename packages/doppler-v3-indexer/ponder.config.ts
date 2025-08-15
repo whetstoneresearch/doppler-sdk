@@ -35,10 +35,6 @@ export default createConfig({
   },
   ordering: "multichain",
   chains: {
-    mainnet: {
-      id: 1,
-      rpc: http(process.env.PONDER_RPC_URL_1),
-    },
     unichain: {
       id: CHAIN_IDS.unichain,
       rpc: http(process.env.PONDER_RPC_URL_130),

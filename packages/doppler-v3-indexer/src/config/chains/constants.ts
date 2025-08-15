@@ -14,7 +14,7 @@ export const START_BLOCKS = {
   mainnet: 21781000,
   unichain: 8536880,
   baseSepolia: 27805302,
-  ink: 9500879,
+  ink: 9508011,
   base: 28415520,
 } as const;
 
