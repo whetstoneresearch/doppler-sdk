@@ -439,7 +439,7 @@ export class ReadWriteFactory extends ReadFactory {
 
     // start in 30 seconds or use params.startTime
     const startTime = params.startTime ? params.startTime : params.blockTimestamp + 30;
-    // end in 100000 seconds or use params.endTime
+    // end in duration (days) * DAY_SECONDS seconds
     const endTime = startTime + params.duration * DAY_SECONDS;
 
     const totalDuration = endTime - startTime;
