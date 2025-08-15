@@ -43,6 +43,7 @@ export const inkConfig: ChainConfig = {
       universalRouter: "0x112908dac86e20e7241b0927479ea3bf935d1fa0" as Address,
       governanceFactory: "0xb4deE32EB70A5E55f3D2d861F49Fb3D79f7a14d9" as Address,
       weth: COMMON_ADDRESSES.WETH_BASE,
+      chainlinkEthOracle: "0xe5867B1d421f0b52697F16e2ac437e87d66D5fbF" as Address,
     },
     zora: {
       zoraFactory: COMMON_ADDRESSES.ZERO_ADDRESS,

@@ -43,6 +43,7 @@ export const unichainConfig: ChainConfig = {
       universalRouter: "0xef740bf23acae26f6492b10de645d6b98dc8eaf3" as Address,
       governanceFactory: "0x99C94B9Df930E1E21a4E4a2c105dBff21bF5c5aE" as Address,
       weth: COMMON_ADDRESSES.WETH_BASE,
+      chainlinkEthOracle: "0xED2B1ca5D7E246f615c2291De309643D41FeC97e" as Address,
     },
     zora: {
       zoraFactory: COMMON_ADDRESSES.ZERO_ADDRESS,

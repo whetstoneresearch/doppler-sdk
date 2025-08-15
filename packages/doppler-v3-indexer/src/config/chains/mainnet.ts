@@ -35,6 +35,7 @@ export const mainnetConfig: ChainConfig = {
       universalRouter: COMMON_ADDRESSES.ZERO_ADDRESS as Address,
       governanceFactory: COMMON_ADDRESSES.ZERO_ADDRESS as Address,
       weth: COMMON_ADDRESSES.ZERO_ADDRESS as Address,
+      chainlinkEthOracle: ORACLE_ADDRESSES.chainlinkEth,
     },
     zora: {
       zoraFactory: COMMON_ADDRESSES.ZERO_ADDRESS,
@@ -43,7 +44,6 @@ export const mainnetConfig: ChainConfig = {
       creatorCoinHook: COMMON_ADDRESSES.ZERO_ADDRESS,
       contentCoinHook: COMMON_ADDRESSES.ZERO_ADDRESS,
     },
-    chainlinkEthOracle: ORACLE_ADDRESSES.chainlinkEth,
     oracle: ORACLE_ADDRESSES,
   },
 };
