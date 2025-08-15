@@ -89,7 +89,7 @@ export interface DopplerPreDeploymentConfig {
 
   // Time parameters
   blockTimestamp: number;
-  startTimeOffset: number; // in days from now
+  startTime?: number; // in seconds
   duration: number; // in days
   epochLength: number; // in seconds
 

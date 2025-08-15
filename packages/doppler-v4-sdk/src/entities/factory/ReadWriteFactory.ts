@@ -18,7 +18,7 @@ import {
 import { ReadFactory, AirlockABI } from './ReadFactory';
 import { CreateParams } from './types';
 import { DERC20Bytecode, DopplerBytecode } from '@/abis';
-import { DAY_SECONDS, DEFAULT_PD_SLUGS, DEAD_ADDRESS, WAD } from '@/constants';
+import { DAY_SECONDS, DEFAULT_PD_SLUGS, WAD } from '@/constants';
 import { DopplerData, TokenFactoryData } from './types';
 import { DopplerPreDeploymentConfig, DopplerV4Addresses, PriceRange, TickRange, V4MigratorData, BeneficiaryData } from '@/types';
 
@@ -110,11 +110,6 @@ export class ReadWriteFactory extends ReadFactory {
     }
     if (params.numTokensToSell <= 0) {
       throw new Error('Number of tokens to sell must be positive');
-    }
-    if (params.tickRange) {
-      if (params.tickRange.startTick >= params.tickRange.endTick) {
-        throw new Error('Invalid tick range');
-      }
     }
     if (params.duration <= 0) {
       throw new Error('Duration must be positive');
@@ -442,8 +437,10 @@ export class ReadWriteFactory extends ReadFactory {
         params.tickSpacing
       );
 
-    const startTime = params.blockTimestamp + 30;
-    const endTime = params.blockTimestamp + params.duration * DAY_SECONDS + 30;
+    // start in 30 seconds or use params.startTime
+    const startTime = params.startTime ? params.startTime : params.blockTimestamp + 30;
+    // end in duration (days) * DAY_SECONDS seconds
+    const endTime = startTime + params.duration * DAY_SECONDS;
 
     const totalDuration = endTime - startTime;
     if (totalDuration % params.epochLength !== 0) {
@@ -577,8 +574,21 @@ export class ReadWriteFactory extends ReadFactory {
     poolInitializerData: DopplerData;
     customDerc20Bytecode?: `0x${string}`;
   }): [Hash, Address, Address, Hex, Hex] {
-    const isToken0 =
-      params.numeraire !== '0x0000000000000000000000000000000000000000';
+    // Check if numeraire is lt half of max uint256
+    // If it is, then we set isToken0 to false because it is more likely to be gt numeraire
+    // If it is gt half of max uint256, then we set isToken0 to true because it is more likely to be lt numeraire
+    const numeraireBigInt = BigInt(params.numeraire);
+    const halfMaxUint256 = (2n ** 255n) - 1n;
+
+    let isToken0;
+    // If numeraire is 0 then it is eth paired and we know it is gt numeraire
+    if (numeraireBigInt === 0n) {
+      isToken0 = false;
+    } else if (numeraireBigInt > halfMaxUint256) {
+      isToken0 = true;
+    } else {
+      isToken0 = false;
+    }
 
     const {
       minimumProceeds,
@@ -741,7 +751,6 @@ export class ReadWriteFactory extends ReadFactory {
 
       const hookBigInt = BigInt(hook);
       const tokenBigInt = BigInt(token);
-      const numeraireBigInt = BigInt(params.numeraire);
 
       if (
         (hookBigInt & FLAG_MASK) === flags &&
