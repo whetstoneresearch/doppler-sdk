@@ -7,15 +7,13 @@
 
 import { createPublicClient, createWalletClient, http, parseEther } from 'viem';
 import { base } from 'viem/chains';
-import { 
-  V4PoolFactory, 
-  ReadV4Pool, 
-  ReadWriteV4Pool,
+import {
+  V4PoolFactory,
   computePoolId,
   formatPoolId,
   FEE_TIERS,
   TICK_SPACINGS
-} from '@doppler-v4-sdk';
+} from 'doppler-v4-sdk';
 
 // Example addresses (replace with actual addresses)
 const POOL_MANAGER_ADDRESS = '0x...'; // V4 PoolManager singleton
@@ -78,7 +76,7 @@ async function main() {
       amountSpecified: parseEther('1'),    // 1 token0
       sqrtPriceLimitX96: 0n,              // No price limit
     });
-    console.log('Swap tx:', swapReceipt.transactionHash);
+    console.log('Swap tx:', swapReceipt);
   } catch (error) {
     console.error('Swap failed:', error);
   }
@@ -97,7 +95,7 @@ async function main() {
       tickUpper,
       parseEther('100'), // liquidity amount
     );
-    console.log('Add liquidity tx:', liquidityReceipt.transactionHash);
+    console.log('Add liquidity tx:', liquidityReceipt);
   } catch (error) {
     console.error('Add liquidity failed:', error);
   }
@@ -126,7 +124,7 @@ async function alternativeCreation() {
     fee: 3000,
     tickSpacing: 60,
     hooks: V4_MIGRATOR_HOOK,
-  };
+  } as const;
 
   const poolFromKey = V4PoolFactory.fromPoolKey(
     poolKey,

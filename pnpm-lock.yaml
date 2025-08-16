@@ -78,6 +78,9 @@ importers:
       '@delvtech/drift':
         specifier: ^1.0.0
         version: 1.0.0(typescript@5.9.2)
+      '@delvtech/drift-viem':
+        specifier: ^1.0.0
+        version: 1.0.0(@delvtech/drift@1.0.0(typescript@5.9.2))(viem@2.33.3(typescript@5.9.2))
       abitype:
         specifier: ^1.0.8
         version: 1.0.8(typescript@5.9.2)
@@ -111,6 +114,12 @@ packages:
     resolution: {integrity: sha512-wf/lwQvWAA0goIghcb91dQYpkLBcyhOhQNqG/VgWhnKzgt+UOMvra7EX/2fv70arm5RW+PUHoQHHDa6/p77Eqg==}
     peerDependencies:
       commander: ~12.1.0
+
+  '@delvtech/drift-viem@1.0.0':
+    resolution: {integrity: sha512-gWGdPWLrDKiQUQ0RStTEUvKdFsgqGacJIAZYQDvgBwh/xfhxWjEKZTFcTEksEX7W/RBBPjaNj07W/uZ0KnfDNA==}
+    peerDependencies:
+      '@delvtech/drift': ^1.0.0
+      viem: ^2.33.3
 
   '@delvtech/drift@0.10.1':
     resolution: {integrity: sha512-I2c/1EM1eQfsI7Hy+T+eumaXUQxwJnLpWUsrRlBKZwTB8H0okzUxH5/Qcd4Qj0zHtEsMUO/9xIx3ubJyWxwsyg==}
@@ -2937,6 +2946,11 @@ snapshots:
   '@commander-js/extra-typings@12.1.0(commander@12.1.0)':
     dependencies:
       commander: 12.1.0
+
+  '@delvtech/drift-viem@1.0.0(@delvtech/drift@1.0.0(typescript@5.9.2))(viem@2.33.3(typescript@5.9.2))':
+    dependencies:
+      '@delvtech/drift': 1.0.0(typescript@5.9.2)
+      viem: 2.33.3(typescript@5.9.2)
 
   '@delvtech/drift@0.10.1(typescript@5.9.2)':
     dependencies:

@@ -28,6 +28,7 @@
   },
   "devDependencies": {
     "@delvtech/drift": "^1.0.0",
+    "@delvtech/drift-viem": "^1.0.0",
     "abitype": "^1.0.8",
     "glob": "^10.4.5",
     "size-limit": "^11.2.0",
