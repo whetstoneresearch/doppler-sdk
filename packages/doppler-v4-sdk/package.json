@@ -36,9 +36,6 @@
     "typescript": "^5.9.2",
     "viem": "^2.33.3"
   },
-  "dependencies": {
-    "ethers": "^5.8.0"
-  },
   "peerDependencies": {
     "@delvtech/drift": "^1.0.0",
     "viem": "^2.33.3"

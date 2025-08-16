@@ -23,7 +23,6 @@ export default defineConfig({
   },
   external: [
     '@uniswap/sdk-core',
-    'ethers',
     '@delvtech/drift',
     '@uniswap/v4-sdk',
     'viem'
