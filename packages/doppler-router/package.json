@@ -40,6 +40,7 @@
     "viem": "^2.33.3"
   },
   "devDependencies": {
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "viem": "^2.33.3"
   }
 }
