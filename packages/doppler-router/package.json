@@ -4,7 +4,9 @@
   "description": "Router utilities for Doppler protocol interactions",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "files": ["dist/**/*"],
+  "files": [
+    "dist/**/*"
+  ],
   "scripts": {
     "prepublishOnly": "npm run build",
     "build": "tsc",
@@ -35,9 +37,9 @@
     "node": ">=18.0.0"
   },
   "peerDependencies": {
-    "viem": "^2.22.15"
+    "viem": "^2.33.3"
   },
   "devDependencies": {
-    "typescript": "^5.4.5"
+    "typescript": "^5.9.2"
   }
 }

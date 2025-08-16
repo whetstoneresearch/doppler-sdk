@@ -10,12 +10,12 @@
     "dev": "turbo dev"
   },
   "devDependencies": {
-    "turbo": "^2.3.0"
+    "turbo": "^2.5.6"
   },
   "pnpm": {
     "overrides": {
-      "typescript": "^5.5.4",
-      "viem": "2.23.1",
+      "typescript": "^5.9.2",
+      "viem": "^2.33.3",
       "ethers": "^5.0.8"
     }
   }
