@@ -26,6 +26,7 @@ import { createPublicClient, createWalletClient, http } from 'viem';
 import { base } from 'viem/chains';
 import { privateKeyToAccount } from 'viem/accounts';
 import { createDrift } from '@delvtech/drift';
+import { viemAdapter } from '@delvtech/drift-viem';
 
 // Setup clients
 const publicClient = createPublicClient({
@@ -41,7 +42,9 @@ const walletClient = createWalletClient({
 });
 
 // Create drift instance
-const drift = createDrift({ publicClient, walletClient });
+const drift = createDrift({
+  adapter: viemAdapter({ publicClient, walletClient })
+});
 
 // Get contract addresses for Base
 const addresses = DOPPLER_V4_ADDRESSES[8453];

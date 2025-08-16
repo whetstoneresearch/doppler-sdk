@@ -27,7 +27,7 @@
     "trailingComma": "es5"
   },
   "devDependencies": {
-    "@delvtech/drift": "^0.10.1",
+    "@delvtech/drift": "^1.0.0",
     "abitype": "^1.0.8",
     "glob": "^10.4.5",
     "size-limit": "^11.2.0",
@@ -39,7 +39,7 @@
     "tsup": "^8.5.0"
   },
   "peerDependencies": {
-    "@delvtech/drift": "^0.10.1",
+    "@delvtech/drift": "^1.0.0",
     "viem": "^2.33.3"
   }
 }
