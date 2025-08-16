@@ -8,17 +8,16 @@ import {
 } from 'viem';
 import { base } from 'viem/chains';
 import { privateKeyToAccount } from 'viem/accounts';
-import { createDrift } from '@delvtech/drift';
+import { createDrift, type Drift } from '@delvtech/drift';
 import { viemAdapter } from '@delvtech/drift-viem';
 import { Chain, WalletClient } from 'viem';
 
-export function getDrift(chainId: Chain['id'], walletClient?: WalletClient) {
+export function getDrift(chainId: Chain['id'], walletClient?: WalletClient): Drift {
   const publicClient = createPublicClient({
     chain: base,
     transport: http(),
   });
 
-  // @ts-expect-error - drift-viem is not typed correctly
   return createDrift({ adapter: viemAdapter({ publicClient, walletClient }) });
 }
 
