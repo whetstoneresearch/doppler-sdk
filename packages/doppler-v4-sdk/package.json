@@ -32,12 +32,12 @@
     "abitype": "^1.0.8",
     "glob": "^10.4.5",
     "size-limit": "^11.2.0",
+    "tsup": "^8.5.0",
     "typescript": "^5.9.2",
     "viem": "^2.33.3"
   },
   "dependencies": {
-    "ethers": "^5.8.0",
-    "tsup": "^8.5.0"
+    "ethers": "^5.8.0"
   },
   "peerDependencies": {
     "@delvtech/drift": "^1.0.0",
