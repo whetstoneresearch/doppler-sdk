@@ -31,14 +31,13 @@ export const upsertTokenWithPool = async ({
 }): Promise<typeof token.$inferSelect> => {
   const { db, chain, client } = context;
   const address = tokenAddress.toLowerCase() as `0x${string}`;
-  const chainId = BigInt(chain.id);
   
   const wethAddress = chainConfigs[chain.name]?.addresses?.shared?.weth;
   const zoraAddress = chainConfigs[chain.name]?.addresses?.zora?.zoraToken;
   
   let tokenData: Partial<typeof token.$inferInsert> = {
     address,
-    chainId,
+    chainId: chain.id,
     isDerc20,
     isCreatorCoin,
     isContentCoin,

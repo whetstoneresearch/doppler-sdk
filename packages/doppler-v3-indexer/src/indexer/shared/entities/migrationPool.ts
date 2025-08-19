@@ -10,11 +10,12 @@ export const fetchV3MigrationPool = async ({
   poolAddress: Address;
   context: Context;
 }): Promise<typeof migrationPool.$inferSelect | null> => {
-  const { db } = context;
+  const { db, chain } = context;
   const address = poolAddress.toLowerCase() as `0x${string}`;
 
   const existingPool = await db.find(migrationPool, {
     address,
+    chainId: chain.id,
   });
 
   if (existingPool) {
@@ -40,11 +41,12 @@ export const insertV3MigrationPoolIfNotExists = async ({
 
   const parentPoolEntity = await db.find(pool, {
     address: parentPoolAddress,
-    chainId: BigInt(chain.id),
+    chainId: chain.id,
   });
 
   const existingPool = await db.find(migrationPool, {
     address,
+    chainId: chain.id,
   });
 
   if (existingPool) {
@@ -73,7 +75,7 @@ export const insertV3MigrationPoolIfNotExists = async ({
     reserveBaseToken,
     reserveQuoteToken,
     price,
-    chainId: BigInt(chain.id),
+    chainId: chain.id,
     parentPool: parentPoolAddress,
     isToken0,
     fee,
@@ -96,6 +98,7 @@ export const updateMigrationPool = async ({
   await db
     .update(migrationPool, {
       address,
+      chainId: chain.id,
     })
     .set({
       ...update,

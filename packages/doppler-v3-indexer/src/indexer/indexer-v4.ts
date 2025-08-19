@@ -17,7 +17,6 @@ import {
 } from "./shared/entities/v4-entities/v4PoolPriceHistory";
 import { CHAINLINK_ETH_DECIMALS } from "@app/utils/constants";
 import { SwapService, SwapOrchestrator, PriceService } from "@app/core";
-import { tryAddActivePool } from "./shared/scheduledJobs";
 import { TickMath } from "@uniswap/v3-sdk";
 import { computeGraduationPercentage } from "@app/utils/v4-utils";
 
@@ -230,7 +229,6 @@ ponder.on("UniswapV4Pool:Swap", async ({ event, context }) => {
   const entityUpdaters = {
     updatePool,
     updateAsset,
-    tryAddActivePool,
   };
 
   // Perform common updates via orchestrator
@@ -243,7 +241,7 @@ ponder.on("UniswapV4Pool:Swap", async ({ event, context }) => {
         parentPoolAddress: address,
         price,
       },
-      chainId: BigInt(chain.id),
+      chainId: chain.id,
       context,
     },
     entityUpdaters
@@ -569,7 +567,6 @@ ponder.on("UniswapV4PoolSelfCorrecting:Swap", async ({ event, context }) => {
   const entityUpdaters = {
     updatePool,
     updateAsset,
-    tryAddActivePool,
   };
 
   // Perform common updates via orchestrator
@@ -582,7 +579,7 @@ ponder.on("UniswapV4PoolSelfCorrecting:Swap", async ({ event, context }) => {
         parentPoolAddress: address,
         price,
       },
-      chainId: BigInt(chain.id),
+      chainId: chain.id,
       context,
     },
     entityUpdaters
@@ -729,7 +726,6 @@ ponder.on("UniswapV4Pool2:Swap", async ({ event, context }) => {
   const entityUpdaters = {
     updatePool,
     updateAsset,
-    tryAddActivePool,
   };
 
   // Perform common updates via orchestrator
@@ -742,7 +738,7 @@ ponder.on("UniswapV4Pool2:Swap", async ({ event, context }) => {
         parentPoolAddress: address,
         price,
       },
-      chainId: BigInt(chain.id),
+      chainId: chain.id,
       context,
     },
     entityUpdaters

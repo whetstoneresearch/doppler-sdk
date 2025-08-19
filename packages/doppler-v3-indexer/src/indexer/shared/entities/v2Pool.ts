@@ -32,6 +32,7 @@ export const insertV2PoolIfNotExists = async ({
 
   const existingV2Pool = await db.find(v2Pool, {
     address: migrationPoolAddr,
+    chainId: chain.id,
   });
 
   if (existingV2Pool) {
@@ -67,7 +68,7 @@ export const insertV2PoolIfNotExists = async ({
 
   return await db.insert(v2Pool).values({
     address: migrationPoolAddr,
-    chainId: BigInt(chain.id),
+    chainId: chain.id,
     baseToken: assetId,
     quoteToken: numeraireId,
     reserveBaseToken: isToken0 ? reserve0 : reserve1,
@@ -92,13 +93,14 @@ export const updateV2Pool = async ({
   context: Context;
   update: Partial<typeof v2Pool.$inferInsert>;
 }): Promise<typeof v2Pool.$inferSelect> => {
-  const { db } = context;
+  const { db, chain } = context;
 
   const address = poolAddress.toLowerCase() as `0x${string}`;
 
   return await db
     .update(v2Pool, {
       address,
+      chainId: chain.id,
     })
     .set(update);
 };
@@ -127,6 +129,7 @@ export const insertV2MigrationPoolIfNotExists = async ({
 
   const existingV2Pool = await db.find(v2Pool, {
     address: migrationPoolAddr,
+    chainId: chain.id,
   });
 
   if (existingV2Pool) {
@@ -161,7 +164,7 @@ export const insertV2MigrationPoolIfNotExists = async ({
 
   return await db.insert(v2Pool).values({
     address: migrationPoolAddr,
-    chainId: BigInt(chain.id),
+    chainId: chain.id,
     baseToken: assetId,
     quoteToken: numeraireId,
     reserveBaseToken: isToken0 ? reserve0 : reserve1,

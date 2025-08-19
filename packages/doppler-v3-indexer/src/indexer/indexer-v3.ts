@@ -18,7 +18,7 @@ import {
 } from "./shared/entities/position";
 import { insertTokenIfNotExists } from "./shared/entities/token";
 import { computeMarketCap, fetchEthPrice } from "./shared/oracle";
-import { tryAddActivePool } from "./shared/scheduledJobs";
+import { handleOptimizedSwap } from "./shared/swap-optimizer";
 
 ponder.on("UniswapV3Initializer:Create", async ({ event, context }) => {
   const { poolOrHook, asset, numeraire } = event.args;
@@ -353,7 +353,6 @@ ponder.on("LockableUniswapV3Pool:Swap", async ({ event, context }) => {
   // Define entity updaters
   const entityUpdaters = {
     updatePool,
-    tryAddActivePool,
   };
 
   // Perform common updates via orchestrator
@@ -367,7 +366,7 @@ ponder.on("LockableUniswapV3Pool:Swap", async ({ event, context }) => {
           parentPoolAddress: address,
           price,
         },
-        chainId: BigInt(context.chain.id),
+        chainId: context.chain.id,
         context,
       },
       entityUpdaters
@@ -678,7 +677,6 @@ ponder.on("UniswapV3Pool:Swap", async ({ event, context }) => {
   // Define entity updaters
   const entityUpdaters = {
     updatePool,
-    tryAddActivePool,
   };
 
   // Perform common updates via orchestrator
@@ -692,7 +690,7 @@ ponder.on("UniswapV3Pool:Swap", async ({ event, context }) => {
           parentPoolAddress: address,
           price,
         },
-        chainId: BigInt(context.chain.id),
+        chainId: context.chain.id,
         context,
       },
       entityUpdaters
@@ -714,170 +712,169 @@ ponder.on("UniswapV3Pool:Swap", async ({ event, context }) => {
   ]);
 });
 
-ponder.on("UniswapV3MigrationPool:Swap", async ({ event, context }) => {
-  const { timestamp } = event.block;
-  const { amount0, amount1, sqrtPriceX96 } = event.args;
+// ponder.on("UniswapV3MigrationPool:Swap", async ({ event, context }) => {
+//   const { timestamp } = event.block;
+//   const { amount0, amount1, sqrtPriceX96 } = event.args;
 
-  const address = event.log.address.toLowerCase() as `0x${string}`;
+//   const address = event.log.address.toLowerCase() as `0x${string}`;
 
-  const [ethPrice, v3MigrationPool] = await Promise.all([
-    fetchEthPrice(timestamp, context),
-    fetchV3MigrationPool({
-      poolAddress: address,
-      context,
-    }),
-  ]);
+//   const [ethPrice, v3MigrationPool] = await Promise.all([
+//     fetchEthPrice(timestamp, context),
+//     fetchV3MigrationPool({
+//       poolAddress: address,
+//       context,
+//     }),
+//   ]);
 
-  if (!v3MigrationPool) {
-    return;
-  }
+//   if (!v3MigrationPool) {
+//     return;
+//   }
 
-  const { isToken0, reserveBaseToken, reserveQuoteToken, fee } =
-    v3MigrationPool!;
+//   const { isToken0, reserveBaseToken, reserveQuoteToken, fee } =
+//     v3MigrationPool!;
 
-  const price = PriceService.computePriceFromSqrtPriceX96({
-    sqrtPriceX96,
-    isToken0,
-    decimals: 18,
-  });
+//   const price = PriceService.computePriceFromSqrtPriceX96({
+//     sqrtPriceX96,
+//     isToken0,
+//     decimals: 18,
+//   });
 
-  const parentPool = v3MigrationPool!.parentPool.toLowerCase() as `0x${string}`;
+//   const parentPool = v3MigrationPool!.parentPool.toLowerCase() as `0x${string}`;
 
-  const { baseToken, quoteToken } = await insertPoolIfNotExists({
-    poolAddress: parentPool,
-    timestamp,
-    context,
-    ethPrice,
-  });
+//   const { baseToken, quoteToken } = await insertPoolIfNotExists({
+//     poolAddress: parentPool,
+//     timestamp,
+//     context,
+//     ethPrice,
+//   });
 
-  const baseTokenReserveBefore = reserveBaseToken;
-  const quoteTokenReserveBefore = reserveQuoteToken;
+//   const baseTokenReserveBefore = reserveBaseToken;
+//   const quoteTokenReserveBefore = reserveQuoteToken;
 
-  const baseTokenReserveDelta = isToken0 ? amount0 : amount1;
-  const quoteTokenReserveDelta = isToken0 ? amount1 : amount0;
+//   const baseTokenReserveDelta = isToken0 ? amount0 : amount1;
+//   const quoteTokenReserveDelta = isToken0 ? amount1 : amount0;
 
-  const baseTokenReserveAfter = baseTokenReserveBefore + baseTokenReserveDelta;
-  const quoteTokenReserveAfter =
-    quoteTokenReserveBefore + quoteTokenReserveDelta;
+//   const baseTokenReserveAfter = baseTokenReserveBefore + baseTokenReserveDelta;
+//   const quoteTokenReserveAfter =
+//     quoteTokenReserveBefore + quoteTokenReserveDelta;
 
-  let amountIn;
-  let amountOut;
-  let fee0;
-  let fee1;
-  if (amount0 > 0n) {
-    amountIn = amount0;
-    amountOut = amount1;
-    fee0 = (amountIn * BigInt(fee)) / BigInt(1_000_000);
-    fee1 = 0n;
-  } else {
-    amountIn = amount1;
-    amountOut = amount0;
-    fee1 = (amountIn * BigInt(fee)) / BigInt(1_000_000);
-    fee0 = 0n;
-  }
+//   let amountIn;
+//   let amountOut;
+//   let fee0;
+//   let fee1;
+//   if (amount0 > 0n) {
+//     amountIn = amount0;
+//     amountOut = amount1;
+//     fee0 = (amountIn * BigInt(fee)) / BigInt(1_000_000);
+//     fee1 = 0n;
+//   } else {
+//     amountIn = amount1;
+//     amountOut = amount0;
+//     fee1 = (amountIn * BigInt(fee)) / BigInt(1_000_000);
+//     fee0 = 0n;
+//   }
 
-  const type = SwapService.determineSwapType({
-    isToken0,
-    amount0,
-    amount1,
-  });
+//   const type = SwapService.determineSwapType({
+//     isToken0,
+//     amount0,
+//     amount1,
+//   });
 
-  const dollarLiquidity = computeDollarLiquidity({
-    assetBalance: baseTokenReserveAfter,
-    quoteBalance: quoteTokenReserveAfter,
-    price,
-    ethPrice,
-  });
+//   const dollarLiquidity = computeDollarLiquidity({
+//     assetBalance: baseTokenReserveAfter,
+//     quoteBalance: quoteTokenReserveAfter,
+//     price,
+//     ethPrice,
+//   });
 
-  const { totalSupply } = await insertTokenIfNotExists({
-    tokenAddress: baseToken,
-    creatorAddress: address,
-    timestamp,
-    context,
-    isDerc20: true,
-    poolAddress: address,
-  });
+//   const { totalSupply } = await insertTokenIfNotExists({
+//     tokenAddress: baseToken,
+//     creatorAddress: address,
+//     timestamp,
+//     context,
+//     isDerc20: true,
+//     poolAddress: address,
+//   });
 
-  const marketCapUsd = computeMarketCap({
-    price,
-    ethPrice,
-    totalSupply,
-  });
+//   const marketCapUsd = computeMarketCap({
+//     price,
+//     ethPrice,
+//     totalSupply,
+//   });
 
-  const swapValueUsd =
-    ((quoteTokenReserveDelta < 0n
-      ? -quoteTokenReserveDelta
-      : quoteTokenReserveDelta) *
-      ethPrice) /
-    CHAINLINK_ETH_DECIMALS;
+//   const swapValueUsd =
+//     ((quoteTokenReserveDelta < 0n
+//       ? -quoteTokenReserveDelta
+//       : quoteTokenReserveDelta) *
+//       ethPrice) /
+//     CHAINLINK_ETH_DECIMALS;
 
-  // Create swap data
-  const swapData = SwapOrchestrator.createSwapData({
-    poolAddress: parentPool,
-    sender: event.transaction.from,
-    transactionHash: event.transaction.hash,
-    transactionFrom: event.transaction.from,
-    blockNumber: event.block.number,
-    timestamp,
-    assetAddress: baseToken,
-    quoteAddress: quoteToken,
-    isToken0,
-    amountIn,
-    amountOut,
-    price,
-    ethPriceUSD: ethPrice,
-  });
+//   // Create swap data
+//   const swapData = SwapOrchestrator.createSwapData({
+//     poolAddress: parentPool,
+//     sender: event.transaction.from,
+//     transactionHash: event.transaction.hash,
+//     transactionFrom: event.transaction.from,
+//     blockNumber: event.block.number,
+//     timestamp,
+//     assetAddress: baseToken,
+//     quoteAddress: quoteToken,
+//     isToken0,
+//     amountIn,
+//     amountOut,
+//     price,
+//     ethPriceUSD: ethPrice,
+//   });
 
-  // Create market metrics
-  const metrics = {
-    liquidityUsd: dollarLiquidity,
-    marketCapUsd,
-    swapValueUsd,
-    percentDayChange: 0,
-  };
+//   // Create market metrics
+//   const metrics = {
+//     liquidityUsd: dollarLiquidity,
+//     marketCapUsd,
+//     swapValueUsd,
+//     percentDayChange: 0,
+//   };
 
-  // Define entity updaters
-  const entityUpdaters = {
-    updatePool,
-    tryAddActivePool,
-  };
+//   // Define entity updaters
+//   const entityUpdaters = {
+//     updatePool,
+//   };
 
-  // Perform common updates via orchestrator
-  await Promise.all([
-    SwapOrchestrator.performSwapUpdates(
-      {
-        swapData,
-        swapType: type,
-        metrics,
-        poolData: {
-          parentPoolAddress: parentPool,
-          price,
-        },
-        chainId: BigInt(context.chain.id),
-        context,
-      },
-      entityUpdaters
-    ),
-    // V3-specific pool updates that aren't handled by the orchestrator
-    updatePool({
-      poolAddress: parentPool,
-      context,
-      update: {
-        sqrtPrice: sqrtPriceX96,
-        lastRefreshed: timestamp,
-        reserves0: baseTokenReserveAfter,
-        reserves1: quoteTokenReserveAfter,
-        dollarLiquidity: dollarLiquidity,
-        marketCapUsd: marketCapUsd,
-      },
-    }),
-    updateMigrationPool({
-      poolAddress: address,
-      context,
-      update: {
-        reserveBaseToken: baseTokenReserveAfter,
-        reserveQuoteToken: quoteTokenReserveAfter,
-      },
-    }),
-  ]);
-});
+//   // Perform common updates via orchestrator
+//   await Promise.all([
+//     SwapOrchestrator.performSwapUpdates(
+//       {
+//         swapData,
+//         swapType: type,
+//         metrics,
+//         poolData: {
+//           parentPoolAddress: parentPool,
+//           price,
+//         },
+//         chainId: context.chain.id,
+//         context,
+//       },
+//       entityUpdaters
+//     ),
+//     // V3-specific pool updates that aren't handled by the orchestrator
+//     updatePool({
+//       poolAddress: parentPool,
+//       context,
+//       update: {
+//         sqrtPrice: sqrtPriceX96,
+//         lastRefreshed: timestamp,
+//         reserves0: baseTokenReserveAfter,
+//         reserves1: quoteTokenReserveAfter,
+//         dollarLiquidity: dollarLiquidity,
+//         marketCapUsd: marketCapUsd,
+//       },
+//     }),
+//     updateMigrationPool({
+//       poolAddress: address,
+//       context,
+//       update: {
+//         reserveBaseToken: baseTokenReserveAfter,
+//         reserveQuoteToken: quoteTokenReserveAfter,
+//       },
+//     }),
+//   ]);
+// });

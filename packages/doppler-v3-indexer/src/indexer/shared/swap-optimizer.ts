@@ -13,7 +13,7 @@ import { WAD, CHAINLINK_ETH_DECIMALS } from "@app/utils/constants";
 import { SwapType } from "@app/types";
 
 interface SwapHandlerParams {
-  poolKeyHash: Address;
+  poolAddress: `0x${string}`; // can be 32byte poolid or 20byte pool address
   swapSender: Address;
   amount0: bigint;
   amount1: bigint;
@@ -75,6 +75,7 @@ export async function getPoolUsdPrice(
   // } else {
     const creatorCoinEntity = await db.find(token, {
       address: poolEntity.quoteToken,
+      chainId: chain.id,
     });
     isQuoteCreatorCoin = creatorCoinEntity?.isCreatorCoin ?? false;
     creatorCoinPid = isQuoteCreatorCoin ? creatorCoinEntity?.pool : null;
@@ -88,7 +89,7 @@ export async function getPoolUsdPrice(
   // Get creator coin pool price
   const creatorCoinPool = await db.find(pool, {
     address: creatorCoinPid as `0x${string}`,
-    chainId: BigInt(chain.id),
+    chainId: chain.id,
   });
   
   if (!creatorCoinPool) {
@@ -189,16 +190,16 @@ export function processSwapCalculations(
 export async function handleOptimizedSwap(
   params: SwapHandlerParams,
 ): Promise<void> {
-  const { context, poolKeyHash, timestamp } = params;
+  const { context, timestamp } = params;
   const { db, chain } = context;
-  const poolAddress = poolKeyHash.toLowerCase() as `0x${string}`;
+  const poolAddress = params.poolAddress;
 
   const [zoraPrice, ethPrice, poolEntity] = await Promise.all([
     fetchZoraPrice(timestamp, context),
     fetchEthPrice(timestamp, context),
     db.find(pool, {
       address: poolAddress,
-      chainId: BigInt(chain.id),
+      chainId: chain.id,
     }),
   ]);
   
@@ -219,6 +220,7 @@ export async function handleOptimizedSwap(
 
   const tokenEntity = await db.find(token, {
     address: poolEntity.baseToken,
+    chainId: chain.id,
   });
 
   if (!tokenEntity) {
@@ -274,7 +276,7 @@ export async function handleOptimizedSwap(
           parentPoolAddress: poolAddress,
           price: swapData.price,
         },
-        chainId: BigInt(chain.id),
+        chainId: chain.id,
         context,
       },
       entityUpdaters
@@ -294,7 +296,7 @@ export async function handleOptimizedSwap(
     }),
     updateFifteenMinuteBucketUsd(context, {
       poolAddress,
-      chainId: BigInt(chain.id),
+      chainId: chain.id,
       timestamp,
       priceUsd: isQuoteEth
         ? (swapData.price * usdPrice) / CHAINLINK_ETH_DECIMALS

@@ -6,7 +6,7 @@ export const fetchEthPrice = async (
   timestamp: bigint,
   context: Context
 ): Promise<bigint> => {
-  const { db } = context;
+  const { db, chain } = context;
   let roundedTimestamp = BigInt(Math.floor(Number(timestamp) / 300) * 300);
 
   let ethPriceData;
@@ -15,6 +15,7 @@ export const fetchEthPrice = async (
     i++;
     ethPriceData = await db.find(ethPrice, {
       timestamp: roundedTimestamp,
+      chainId: chain.id,
     });
 
     if (!ethPriceData) {
@@ -29,7 +30,7 @@ export const fetchZoraPrice = async (
   timestamp: bigint,
   context: Context
 ): Promise<bigint> => {
-  const { db } = context;
+  const { db, chain } = context;
 
   let roundedTimestamp = BigInt(Math.floor(Number(timestamp) / 300) * 300);
 
@@ -37,6 +38,7 @@ export const fetchZoraPrice = async (
   while (!zoraPriceData) {
     zoraPriceData = await db.find(zoraUsdcPrice, {
       timestamp: roundedTimestamp,
+      chainId: chain.id,
     });
 
     if (!zoraPriceData) {

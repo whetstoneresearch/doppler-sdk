@@ -26,7 +26,7 @@ export const insertPositionIfNotExists = async ({
     pool: poolAddr,
     tickLower: tickLower,
     tickUpper: tickUpper,
-    chainId: BigInt(chain.id),
+    chainId: chain.id,
   });
 
   if (existingPosition) {
@@ -40,7 +40,7 @@ export const insertPositionIfNotExists = async ({
     tickUpper,
     liquidity,
     createdAt: timestamp,
-    chainId: BigInt(chain.id),
+    chainId: chain.id,
   });
 };
 
@@ -65,7 +65,7 @@ export const updatePosition = async ({
       pool: poolAddr,
       tickLower,
       tickUpper,
-      chainId: BigInt(chain.id),
+      chainId: chain.id,
     })
     .set({
       ...update,

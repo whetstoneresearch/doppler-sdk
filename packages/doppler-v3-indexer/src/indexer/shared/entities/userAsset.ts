@@ -20,7 +20,7 @@ export const insertUserAssetIfNotExists = async ({
   const existingUserAsset = await db.find(userAsset, {
     userId: userIdAddr,
     assetId: assetIdAddr,
-    chainId: BigInt(chain.id),
+    chainId: chain.id,
   });
 
   if (existingUserAsset) {
@@ -33,7 +33,7 @@ export const insertUserAssetIfNotExists = async ({
     createdAt: timestamp,
     assetId: assetIdAddr,
     balance: 0n,
-    chainId: BigInt(chain.id),
+    chainId: chain.id,
   });
 };
 
@@ -56,7 +56,7 @@ export const updateUserAsset = async ({
     .update(userAsset, {
       userId: userIdAddr,
       assetId: assetIdAddr,
-      chainId: BigInt(chain.id),
+      chainId: chain.id,
     })
     .set({
       ...update,

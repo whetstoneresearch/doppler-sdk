@@ -11,11 +11,12 @@ export const insertUserIfNotExists = async ({
   timestamp: bigint;
   context: Context;
 }): Promise<typeof user.$inferSelect> => {
-  const { db } = context;
+  const { db, chain } = context;
   const userIdAddr = userId.toLowerCase() as `0x${string}`;
 
   const existingUser = await db.find(user, {
     address: userIdAddr,
+    chainId: chain.id,
   });
 
   if (existingUser) {
@@ -26,6 +27,7 @@ export const insertUserIfNotExists = async ({
     address: userIdAddr,
     lastSeenAt: timestamp,
     createdAt: timestamp,
+    chainId: chain.id,
   });
 };
 
@@ -38,12 +40,13 @@ export const updateUser = async ({
   context: Context;
   update: Partial<typeof user.$inferInsert>;
 }) => {
-  const { db } = context;
+  const { db, chain } = context;
   const userIdAddr = userId.toLowerCase() as `0x${string}`;
 
   await db
     .update(user, {
       address: userIdAddr,
+      chainId: chain.id,
     })
     .set({
       ...update,

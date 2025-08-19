@@ -24,10 +24,11 @@ export const appendTokenPool = async ({
   creatorCoinPid?: Address | null;
   creatorAddress?: Address;
 }) => {
-  const { db } = context;
+  const { db, chain } = context;
 
   const existingToken = await db.find(token, {
     address: tokenAddress,
+    chainId: chain.id,
   });
 
   if (!existingToken) {
@@ -43,6 +44,7 @@ export const appendTokenPool = async ({
   return await db
     .update(token, {
       address: tokenAddress,
+      chainId: chain.id,
     })
     .set({
       isDerc20,
@@ -77,17 +79,16 @@ export const insertTokenIfNotExists = async ({
 
   const existingToken = await db.find(token, {
     address,
+    chainId: chain.id,
   });
 
   if (existingToken?.isDerc20 && !existingToken?.pool && poolAddress) {
-    await db.update(token, { address }).set({
+    await db.update(token, { address, chainId: chain.id }).set({
       pool: poolAddress,
     });
   } else if (existingToken) {
     return existingToken;
   }
-
-  const chainId = BigInt(chain.id);
 
   const zoraAddress = chainConfigs[chain.name].addresses.zora.zoraToken;
 
@@ -95,7 +96,7 @@ export const insertTokenIfNotExists = async ({
   if (address == zeroAddress) {
     return await db.insert(token).values({
       address: address.toLowerCase() as `0x${string}`,
-      chainId,
+      chainId: chain.id,
       name: "Ether",
       symbol: "ETH",
       decimals: 18,
@@ -108,13 +109,13 @@ export const insertTokenIfNotExists = async ({
   } else if (address == zoraAddress.toLowerCase()) {
     if (process.env.NODE_ENV !== "local") {
       fetch(
-        `${process.env.METADATA_UPDATER_ENDPOINT}?tokenAddress=${address}&chainId=${chainId}`
+        `${process.env.METADATA_UPDATER_ENDPOINT}?tokenAddress=${address}&chainId=${chain.id}`
       ) as unknown;
     }
 
     return await db.insert(token).values({
       address: address.toLowerCase() as `0x${string}`,
-      chainId,
+      chainId: chain.id,
       name: "Zora",
       symbol: "ZORA",
       decimals: 18,
@@ -165,7 +166,7 @@ export const insertTokenIfNotExists = async ({
     const tokenURI = tokenURIResult?.result;
     if (process.env.NODE_ENV !== "local") {
       fetch(
-        `${process.env.METADATA_UPDATER_ENDPOINT}?tokenAddress=${address}&chainId=${chainId}`
+        `${process.env.METADATA_UPDATER_ENDPOINT}?tokenAddress=${address}&chainId=${chain.id}`
       ) as unknown;
     }
 
@@ -173,7 +174,7 @@ export const insertTokenIfNotExists = async ({
       .insert(token)
       .values({
         address: address.toLowerCase() as `0x${string}`,
-        chainId,
+        chainId: chain.id,
         name: nameResult?.result ?? `Unknown Token (${address})`,
         symbol: symbolResult?.result ?? "???",
         decimals: decimalsResult?.result ?? 18,
@@ -201,13 +202,14 @@ export const updateToken = async ({
   context: Context;
   update: Partial<typeof token.$inferInsert>;
 }): Promise<typeof token.$inferSelect> => {
-  const { db } = context;
+  const { db, chain } = context;
 
   const address = tokenAddress.toLowerCase() as `0x${string}`;
 
   return await db
     .update(token, {
       address,
+      chainId: chain.id,
     })
     .set(update);
 };

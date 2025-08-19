@@ -6,7 +6,7 @@ import { computeV3Price } from "@app/utils/v3-utils";
 import { chainConfigs } from "@app/config";
 
 ponder.on("BaseChainlinkEthPriceFeed:block", async ({ event, context }) => {
-  const { db, client } = context;
+  const { db, client, chain } = context;
   const { timestamp } = event.block;
 
   const latestAnswer = await client.readContract({
@@ -24,13 +24,14 @@ ponder.on("BaseChainlinkEthPriceFeed:block", async ({ event, context }) => {
     .insert(ethPrice)
     .values({
       timestamp: adjustedTimestamp,
+      chainId: chain.id,
       price,
     })
     .onConflictDoNothing();
 });
 
 ponder.on("UnichainChainlinkEthPriceFeed:block", async ({ event, context }) => {
-  const { db, client } = context;
+  const { db, client, chain } = context;
   const { timestamp } = event.block;
 
   const latestAnswer = await client.readContract({
@@ -48,13 +49,14 @@ ponder.on("UnichainChainlinkEthPriceFeed:block", async ({ event, context }) => {
     .insert(ethPrice)
     .values({
       timestamp: adjustedTimestamp,
+      chainId: chain.id,
       price,
     })
     .onConflictDoNothing();
 });
 
 ponder.on("InkChainlinkEthPriceFeed:block", async ({ event, context }) => {
-  const { db, client } = context;
+  const { db, client, chain } = context;
   const { timestamp } = event.block;
 
   const latestAnswer = await client.readContract({
@@ -73,13 +75,10 @@ ponder.on("InkChainlinkEthPriceFeed:block", async ({ event, context }) => {
     .values({
       timestamp: adjustedTimestamp,
       price,
+      chainId: chain.id,
     })
     .onConflictDoNothing();
 });
-
-
-
-
 
 ponder.on("ZoraUsdcPrice:block", async ({ event, context }) => {
   const { db, client, chain } = context;
@@ -106,19 +105,6 @@ ponder.on("ZoraUsdcPrice:block", async ({ event, context }) => {
   await db.insert(zoraUsdcPrice).values({
     timestamp: adjustedTimestamp,
     price,
+    chainId: chain.id,
   }).onConflictDoNothing();
 });
-
-// ponder.on("BaseSepoliaV4PoolCheckpoints:block", async ({ event, context }) => {
-//   await refreshCheckpointBlob({
-//     context,
-//     timestamp: Number(event.block.timestamp),
-//   });
-// });
-
-// ponder.on("BaseV4PoolCheckpoints:block", async ({ event, context }) => {
-//   await refreshCheckpointBlob({
-//     context,
-//     timestamp: Number(event.block.timestamp),
-//   });
-// });

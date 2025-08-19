@@ -15,7 +15,7 @@ export const fetchExistingV4Pool = async ({
   
   const existingPool = await db.find(v4pools, {
     poolId: poolId.toLowerCase() as `0x${string}`,
-    chainId: BigInt(chain.id),
+    chainId: chain.id,
   });
   
   if (!existingPool) {
@@ -41,6 +41,6 @@ export const updateV4Pool = async ({
   
   await db.update(v4pools, {
     poolId: poolId.toLowerCase() as `0x${string}`,
-    chainId: BigInt(chain.id),
+    chainId: chain.id,
   }).set(update);
 };

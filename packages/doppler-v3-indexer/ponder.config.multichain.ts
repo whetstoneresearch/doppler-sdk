@@ -33,7 +33,7 @@ export default createConfig({
       max: 100,
     },
   },
-  ordering: "multichain",
+  ordering: "isolated",
   chains: {
     unichain: {
       id: CHAIN_IDS.unichain,

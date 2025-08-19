@@ -28,7 +28,7 @@ export function get15mBucketTimestamp(timestamp: bigint): bigint {
 export interface BucketUpdateParams {
   poolAddress: string;
   assetAddress: string;
-  chainId: bigint;
+  chainId: number;
   timestamp: bigint;
   volumeUsd: bigint;
   volumeToken0: bigint;
@@ -117,7 +117,7 @@ export async function updateDayBucket(
 export async function get24HourVolumeAndPercentChange(
   context: Context,
   poolAddress: string,
-  chainId: bigint,
+  chainId: number,
   currentTimestamp: bigint
 ): Promise<{ volumeUsd: bigint; percentChange: number }> {
   const { db } = context;
@@ -153,7 +153,7 @@ export async function updateFifteenMinuteBucketUsd(
   context: Context,
   params: {
     poolAddress: string;
-    chainId: bigint;
+    chainId: number;
     timestamp: bigint;
     priceUsd: bigint; // 1e18-scaled USD price
     volumeUsd: bigint;
@@ -205,7 +205,7 @@ export async function updateFifteenMinuteBucketUsd(
 export async function getVolumeForLastNDays(
   context: Context,
   poolAddress: string,
-  chainId: bigint,
+  chainId: number,
   days: number,
   currentTimestamp: bigint
 ): Promise<bigint> {
@@ -235,7 +235,7 @@ export async function getVolumeForLastNDays(
 export async function getHistoricalDailyVolumes(
   context: Context,
   poolAddress: string,
-  chainId: bigint,
+  chainId: number,
   limit: number = 30
 ): Promise<Array<typeof volumeBucket24h.$inferSelect>> {
   const { db } = context;
@@ -258,7 +258,7 @@ export async function getHistoricalDailyVolumes(
  */
 export async function getTopPoolsByDailyVolume(
   context: Context,
-  chainId: bigint,
+  chainId: number,
   dayTimestamp: bigint,
   limit: number = 100
 ): Promise<Array<typeof volumeBucket24h.$inferSelect>> {
@@ -282,7 +282,7 @@ export async function getTopPoolsByDailyVolume(
  */
 export async function getTopAssetsByMarketCap(
   context: Context,
-  chainId: bigint,
+  chainId: number,
   dayTimestamp: bigint,
   limit: number = 100
 ): Promise<Array<typeof volumeBucket24h.$inferSelect>> {

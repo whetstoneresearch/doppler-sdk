@@ -16,7 +16,7 @@ export interface SwapUpdateParams {
     price: bigint;
     volume24h?: bigint;
   };
-  chainId: bigint;
+  chainId: number;
   context: Context;
 }
 
