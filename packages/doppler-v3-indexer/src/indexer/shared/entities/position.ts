@@ -22,17 +22,6 @@ export const insertPositionIfNotExists = async ({
   const { db, chain } = context;
   const poolAddr = poolAddress.toLowerCase() as `0x${string}`;
 
-  const existingPosition = await db.find(position, {
-    pool: poolAddr,
-    tickLower: tickLower,
-    tickUpper: tickUpper,
-    chainId: BigInt(chain.id),
-  });
-
-  if (existingPosition) {
-    return existingPosition;
-  }
-
   return await db.insert(position).values({
     owner: owner.toLowerCase() as `0x${string}`,
     pool: poolAddr,
@@ -41,33 +30,9 @@ export const insertPositionIfNotExists = async ({
     liquidity,
     createdAt: timestamp,
     chainId: BigInt(chain.id),
+  }).onConflictDoUpdate((curr) => {
+    return {
+      liquidity: curr.liquidity + liquidity,
+    };
   });
-};
-
-export const updatePosition = async ({
-  poolAddress,
-  tickLower,
-  tickUpper,
-  context,
-  update,
-}: {
-  poolAddress: Address;
-  tickLower: number;
-  tickUpper: number;
-  context: Context;
-  update: Partial<typeof position.$inferInsert>;
-}) => {
-  const { db, chain } = context;
-  const poolAddr = poolAddress.toLowerCase() as `0x${string}`;
-
-  await db
-    .update(position, {
-      pool: poolAddr,
-      tickLower,
-      tickUpper,
-      chainId: BigInt(chain.id),
-    })
-    .set({
-      ...update,
-    });
 };

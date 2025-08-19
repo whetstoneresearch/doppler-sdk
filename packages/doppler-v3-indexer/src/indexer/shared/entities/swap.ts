@@ -37,7 +37,6 @@ export const insertSwapIfNotExists = async ({
         return existingSwap;
     }
 
-
     return await db.insert(swap).values({
         txHash,
         timestamp,

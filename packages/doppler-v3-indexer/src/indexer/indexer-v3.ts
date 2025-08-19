@@ -14,7 +14,6 @@ import {
 } from "./shared/entities/pool";
 import {
   insertPositionIfNotExists,
-  updatePosition,
 } from "./shared/entities/position";
 import { insertTokenIfNotExists } from "./shared/entities/token";
 import { computeMarketCap, fetchEthPrice } from "./shared/oracle";
@@ -110,7 +109,7 @@ ponder.on("LockableUniswapV3Pool:Mint", async ({ event, context }) => {
 
   const ethPrice = await fetchEthPrice(timestamp, context);
 
-  const { baseToken, isToken0, price, liquidity, reserves0, reserves1 } =
+  const { isToken0, price, liquidity, reserves0, reserves1 } =
     await insertLockableV3PoolIfNotExists({
       poolAddress: address,
       timestamp,
@@ -134,16 +133,6 @@ ponder.on("LockableUniswapV3Pool:Mint", async ({ event, context }) => {
     ethPrice,
   });
 
-  const positionEntity = await insertPositionIfNotExists({
-    poolAddress: address,
-    tickLower,
-    tickUpper,
-    liquidity: amount,
-    owner,
-    timestamp,
-    context,
-  });
-
   await Promise.all([
     updatePool({
       poolAddress: address,
@@ -155,19 +144,16 @@ ponder.on("LockableUniswapV3Pool:Mint", async ({ event, context }) => {
         reserves1: reserves1 + amount1,
       },
     }),
-  ]);
-
-  if (positionEntity.createdAt != timestamp) {
-    await updatePosition({
+    insertPositionIfNotExists({
       poolAddress: address,
       tickLower,
       tickUpper,
+      liquidity: amount,
+      owner,
+      timestamp,
       context,
-      update: {
-        liquidity: positionEntity.liquidity + amount,
-      },
-    });
-  }
+    }),
+  ]);
 });
 
 ponder.on("LockableUniswapV3Pool:Burn", async ({ event, context }) => {
@@ -177,7 +163,7 @@ ponder.on("LockableUniswapV3Pool:Burn", async ({ event, context }) => {
 
   const ethPrice = await fetchEthPrice(timestamp, context);
 
-  const { baseToken, isToken0, price, liquidity, reserves0, reserves1 } =
+  const { isToken0, price, liquidity, reserves0, reserves1 } =
     await insertLockableV3PoolIfNotExists({
       poolAddress: address,
       timestamp,
@@ -201,16 +187,6 @@ ponder.on("LockableUniswapV3Pool:Burn", async ({ event, context }) => {
     ethPrice,
   });
 
-  const positionEntity = await insertPositionIfNotExists({
-    poolAddress: address,
-    tickLower,
-    tickUpper,
-    liquidity: amount,
-    owner,
-    timestamp,
-    context,
-  });
-
   await Promise.all([
     updatePool({
       poolAddress: address,
@@ -222,14 +198,14 @@ ponder.on("LockableUniswapV3Pool:Burn", async ({ event, context }) => {
         reserves1: reserves1 - amount1,
       },
     }),
-    updatePosition({
+    insertPositionIfNotExists({
       poolAddress: address,
       tickLower,
       tickUpper,
+      liquidity: amount,
+      owner,
+      timestamp,
       context,
-      update: {
-        liquidity: positionEntity.liquidity - amount,
-      },
     }),
   ]);
 });
@@ -381,7 +357,6 @@ ponder.on("LockableUniswapV3Pool:Swap", async ({ event, context }) => {
         totalFee0: totalFee0 + fee0,
         totalFee1: totalFee1 + fee1,
         graduationBalance: graduationBalance + quoteDelta,
-        lastRefreshed: timestamp,
         reserves0: reserves0 + amount0,
         reserves1: reserves1 + amount1,
       },
@@ -397,7 +372,6 @@ ponder.on("UniswapV3Pool:Mint", async ({ event, context }) => {
   const ethPrice = await fetchEthPrice(timestamp, context);
 
   const {
-    baseToken,
     isToken0,
     price,
     liquidity,
@@ -434,18 +408,6 @@ ponder.on("UniswapV3Pool:Mint", async ({ event, context }) => {
     isToken0,
   });
 
-  const [positionEntity] = await Promise.all([
-    insertPositionIfNotExists({
-      poolAddress: address,
-      tickLower,
-      tickUpper,
-      liquidity: amount,
-      owner,
-      timestamp,
-      context,
-    }),
-  ]);
-
   await Promise.all([
     updatePool({
       poolAddress: address,
@@ -458,19 +420,16 @@ ponder.on("UniswapV3Pool:Mint", async ({ event, context }) => {
         reserves1: reserves1 + amount1,
       },
     }),
-  ]);
-
-  if (positionEntity.createdAt != timestamp) {
-    await updatePosition({
+    insertPositionIfNotExists({
       poolAddress: address,
       tickLower,
       tickUpper,
+      liquidity: amount,
+      owner,
+      timestamp,
       context,
-      update: {
-        liquidity: positionEntity.liquidity + amount,
-      },
-    });
-  }
+    }),
+  ]);
 });
 
 ponder.on("UniswapV3Pool:Burn", async ({ event, context }) => {
@@ -481,7 +440,6 @@ ponder.on("UniswapV3Pool:Burn", async ({ event, context }) => {
   const ethPrice = await fetchEthPrice(timestamp, context);
 
   const {
-    baseToken,
     isToken0,
     price,
     liquidity,
@@ -518,18 +476,8 @@ ponder.on("UniswapV3Pool:Burn", async ({ event, context }) => {
     isToken0,
   });
 
-  const positionEntity = await insertPositionIfNotExists({
-    poolAddress: address,
-    tickLower,
-    tickUpper,
-    liquidity: amount,
-    owner,
-    timestamp,
-    context,
-  });
 
   await Promise.all([
-
     updatePool({
       poolAddress: address,
       context,
@@ -541,14 +489,14 @@ ponder.on("UniswapV3Pool:Burn", async ({ event, context }) => {
         reserves1: reserves1 - amount1,
       },
     }),
-    updatePosition({
+    insertPositionIfNotExists({
       poolAddress: address,
       tickLower,
       tickUpper,
+      liquidity: amount,
+      owner,
+      timestamp,
       context,
-      update: {
-        liquidity: positionEntity.liquidity - amount,
-      },
     }),
   ]);
 });
@@ -706,7 +654,6 @@ ponder.on("UniswapV3Pool:Swap", async ({ event, context }) => {
         totalFee0: totalFee0 + fee0,
         totalFee1: totalFee1 + fee1,
         graduationBalance: graduationBalance + quoteDelta,
-        lastRefreshed: timestamp,
         reserves0: reserves0 + amount0,
         reserves1: reserves1 + amount1,
       },
@@ -864,7 +811,6 @@ ponder.on("UniswapV3MigrationPool:Swap", async ({ event, context }) => {
       context,
       update: {
         sqrtPrice: sqrtPriceX96,
-        lastRefreshed: timestamp,
         reserves0: baseTokenReserveAfter,
         reserves1: quoteTokenReserveAfter,
         dollarLiquidity: dollarLiquidity,

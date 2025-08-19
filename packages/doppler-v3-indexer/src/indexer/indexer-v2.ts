@@ -1,13 +1,11 @@
 import { ponder } from "ponder:registry";
-import { v2Pool } from "ponder.schema";
 import { getPairData } from "@app/utils/v2-utils/getPairData";
 import { computeMarketCap, fetchEthPrice } from "./shared/oracle";
 import {
   insertPoolIfNotExists,
   insertTokenIfNotExists,
-  updateAsset,
+  updateMigrationPool,
   updatePool,
-  updateV2Pool,
 } from "./shared/entities";
 import { CHAINLINK_ETH_DECIMALS } from "@app/utils/constants";
 import { zeroAddress } from "viem";
@@ -15,6 +13,7 @@ import { configs } from "@app/types";
 import { SwapService, SwapOrchestrator, PriceService } from "@app/core";
 import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
 import { tryAddActivePool } from "./shared/scheduledJobs";
+import { migrationPool } from "ponder.schema";
 
 ponder.on("UniswapV2Pair:Swap", async ({ event, context }) => {
   const { db, chain } = context;
@@ -133,7 +132,6 @@ ponder.on("UniswapV2Pair:Swap", async ({ event, context }) => {
   // Define entity updaters
   const entityUpdaters = {
     updatePool,
-    updateAsset,
     tryAddActivePool,
   };
 
@@ -153,7 +151,7 @@ ponder.on("UniswapV2Pair:Swap", async ({ event, context }) => {
       },
       entityUpdaters
     ),
-    await updateV2Pool({
+    await updateMigrationPool({
       poolAddress: address,
       context,
       update: { price: (price * ethPrice) / CHAINLINK_ETH_DECIMALS },
@@ -173,7 +171,7 @@ ponder.on("UniswapV2PairUnichain:Swap", async ({ event, context }) => {
   const { timestamp } = event.block;
   const { amount0In, amount1In, amount0Out, amount1Out } = event.args;
 
-  const v2PoolData = await db.find(v2Pool, { address });
+  const v2PoolData = await db.find(migrationPool, { address });
   if (!v2PoolData) return;
 
   const { parentPool } = v2PoolData;
@@ -277,7 +275,6 @@ ponder.on("UniswapV2PairUnichain:Swap", async ({ event, context }) => {
   // Define entity updaters
   const entityUpdaters = {
     updatePool,
-    updateAsset,
     tryAddActivePool,
   };
 
@@ -298,7 +295,7 @@ ponder.on("UniswapV2PairUnichain:Swap", async ({ event, context }) => {
   );
 
   // V2-specific updates
-  await updateV2Pool({
+  await updateMigrationPool({
     poolAddress: address,
     context,
     update: { price: (price * ethPrice) / CHAINLINK_ETH_DECIMALS },

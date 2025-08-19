@@ -3,14 +3,9 @@ import { getV4PoolData } from "@app/utils/v4-utils";
 import { insertTokenIfNotExists } from "./shared/entities/token";
 import { computeMarketCap, fetchEthPrice } from "./shared/oracle";
 import { insertPoolIfNotExistsV4, updatePool } from "./shared/entities/pool";
-import { insertAssetIfNotExists, updateAsset } from "./shared/entities/asset";
 import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
 import { insertV4ConfigIfNotExists } from "./shared/entities/v4-entities/v4Config";
 import { getReservesV4 } from "@app/utils/v4-utils/getV4PoolData";
-import {
-  addCheckpoint,
-  insertCheckpointBlobIfNotExist,
-} from "./shared/entities/v4-entities/v4CheckpointBlob";
 import {
   addAndUpdateV4PoolPriceHistory,
   insertV4PoolPriceHistoryIfNotExists,
@@ -62,9 +57,7 @@ ponder.on("UniswapV4Initializer:Create", async ({ event, context }) => {
     }),
   ]);
 
-  const { totalSupply } = baseToken;
-
-  const [poolEntity, v4Config] = await Promise.all([
+  await Promise.all([
     insertPoolIfNotExistsV4({
       poolAddress,
       timestamp,
@@ -74,41 +67,6 @@ ponder.on("UniswapV4Initializer:Create", async ({ event, context }) => {
     }),
     insertV4ConfigIfNotExists({
       hookAddress: poolAddress,
-      context,
-    }),
-  ]);
-
-  const price = poolEntity.price;
-  const marketCapUsd = computeMarketCap({
-    price,
-    ethPrice,
-    totalSupply,
-  });
-
-  await Promise.all([
-    insertAssetIfNotExists({
-      assetAddress: assetAddress,
-      timestamp,
-      context,
-      marketCapUsd,
-    }),
-    // Bucket updates are now handled by SwapOrchestrator during swaps
-    // insertOrUpdateBuckets({
-    //   poolAddress: poolAddress,
-    //   price: poolEntity.price,
-    //   timestamp,
-    //   ethPrice,
-    //   context,
-    // }),
-    addCheckpoint({
-      poolAddress: poolAddress,
-      asset: assetAddress,
-      totalSupply,
-      startingTime: v4Config.startingTime,
-      endingTime: v4Config.endingTime,
-      epochLength: v4Config.epochLength,
-      isToken0: v4Config.isToken0,
-      poolKey: poolData.poolKey,
       context,
     }),
   ]);
@@ -229,7 +187,6 @@ ponder.on("UniswapV4Pool:Swap", async ({ event, context }) => {
   // Define entity updaters
   const entityUpdaters = {
     updatePool,
-    updateAsset,
     tryAddActivePool,
   };
 
@@ -309,9 +266,6 @@ ponder.on("UniswapV4Initializer2:Create", async ({ event, context }) => {
       context,
       isDerc20: false,
     }),
-    insertCheckpointBlobIfNotExist({
-      context,
-    }),
     insertV4PoolPriceHistoryIfNotExists({
       pool: poolAddress,
       context,
@@ -344,26 +298,6 @@ ponder.on("UniswapV4Initializer2:Create", async ({ event, context }) => {
   if (!v4Config) {
     return;
   }
-
-  await Promise.all([
-    insertAssetIfNotExists({
-      assetAddress: assetAddress,
-      timestamp,
-      context,
-      marketCapUsd,
-    }),
-    addCheckpoint({
-      poolAddress: poolAddress,
-      asset: assetAddress,
-      totalSupply,
-      startingTime: v4Config.startingTime,
-      endingTime: v4Config.endingTime,
-      epochLength: v4Config.epochLength,
-      isToken0: v4Config.isToken0,
-      poolKey: poolData.poolKey,
-      context,
-    }),
-  ]);
 });
 
 
@@ -378,7 +312,7 @@ ponder.on("UniswapV4InitializerSelfCorrecting:Create", async ({ event, context }
   const numeraireAddress = numeraire.toLowerCase() as `0x${string}`;
   const creatorAddress = event.transaction.from.toLowerCase() as `0x${string}`;
 
-  const [baseToken, ethPrice, poolData] = await Promise.all([
+  const [ethPrice, poolData] = await Promise.all([
     insertTokenIfNotExists({
       tokenAddress: assetAddress,
       creatorAddress,
@@ -399,18 +333,13 @@ ponder.on("UniswapV4InitializerSelfCorrecting:Create", async ({ event, context }
       context,
       isDerc20: false,
     }),
-    insertCheckpointBlobIfNotExist({
-      context,
-    }),
     insertV4PoolPriceHistoryIfNotExists({
       pool: poolAddress,
       context,
     }),
   ]);
 
-  const { totalSupply } = baseToken;
-
-  const [poolEntity, v4Config] = await Promise.all([
+ await Promise.all([
     insertPoolIfNotExistsV4({
       poolAddress,
       timestamp,
@@ -420,37 +349,6 @@ ponder.on("UniswapV4InitializerSelfCorrecting:Create", async ({ event, context }
     }),
     insertV4ConfigIfNotExists({
       hookAddress: poolAddress,
-      context,
-    }),
-  ]);
-
-  const price = poolEntity.price;
-  const marketCapUsd = computeMarketCap({
-    price,
-    ethPrice,
-    totalSupply,
-  });
-
-  if (!v4Config) {
-    return;
-  }
-
-  await Promise.all([
-    insertAssetIfNotExists({
-      assetAddress: assetAddress,
-      timestamp,
-      context,
-      marketCapUsd,
-    }),
-    addCheckpoint({
-      poolAddress: poolAddress,
-      asset: assetAddress,
-      totalSupply,
-      startingTime: v4Config.startingTime,
-      endingTime: v4Config.endingTime,
-      epochLength: v4Config.epochLength,
-      isToken0: v4Config.isToken0,
-      poolKey: poolData.poolKey,
       context,
     }),
   ]);
@@ -568,7 +466,6 @@ ponder.on("UniswapV4PoolSelfCorrecting:Swap", async ({ event, context }) => {
   // Define entity updaters
   const entityUpdaters = {
     updatePool,
-    updateAsset,
     tryAddActivePool,
   };
 
@@ -728,7 +625,6 @@ ponder.on("UniswapV4Pool2:Swap", async ({ event, context }) => {
   // Define entity updaters
   const entityUpdaters = {
     updatePool,
-    updateAsset,
     tryAddActivePool,
   };
 

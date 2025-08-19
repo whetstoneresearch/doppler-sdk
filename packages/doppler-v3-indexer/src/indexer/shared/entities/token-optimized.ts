@@ -5,9 +5,6 @@ import { DERC20ABI } from "@app/abis";
 import { getMulticallOptions } from "@app/core/utils";
 import { chainConfigs } from "@app/config";
 
-/**
- * Optimized version that combines insert and update in a single operation
- */
 export const upsertTokenWithPool = async ({
   tokenAddress,
   isDerc20,
@@ -86,8 +83,6 @@ export const upsertTokenWithPool = async ({
       symbol: symbolResult?.result ?? "???",
       decimals: decimalsResult?.result ?? 18,
       totalSupply: totalSupplyResult?.result ?? 0n,
-      tokenUri: tokenURIResult?.result,
-      derc20Data: isDerc20 ? address : undefined,
     };
 
     // Trigger metadata update in background
@@ -107,7 +102,6 @@ export const upsertTokenWithPool = async ({
       isContentCoin,
       creatorCoinPid,
       lastSeenAt: timestamp,
-      // Keep existing totalSupply if it's already set
       totalSupply: existing.totalSupply || tokenData.totalSupply,
     }));
   } else {

@@ -1,8 +1,8 @@
 import { Context } from "ponder:registry";
-import { userAsset } from "ponder.schema";
+import { userToken } from "ponder.schema";
 import { Address } from "viem";
 
-export const insertUserAssetIfNotExists = async ({
+export const insertUserTokenIfNotExists = async ({
   userId,
   assetId,
   timestamp,
@@ -12,32 +12,32 @@ export const insertUserAssetIfNotExists = async ({
   assetId: Address;
   timestamp: bigint;
   context: Context;
-}): Promise<typeof userAsset.$inferSelect> => {
+}): Promise<typeof userToken.$inferSelect> => {
   const { db, chain } = context;
   const userIdAddr = userId.toLowerCase() as `0x${string}`;
   const assetIdAddr = assetId.toLowerCase() as `0x${string}`;
 
-  const existingUserAsset = await db.find(userAsset, {
+  const existingUserToken = await db.find(userToken, {
     userId: userIdAddr,
-    assetId: assetIdAddr,
+    tokenId: assetIdAddr,
     chainId: BigInt(chain.id),
   });
 
-  if (existingUserAsset) {
-    return existingUserAsset;
+  if (existingUserToken) {
+    return existingUserToken;
   }
 
-  return await db.insert(userAsset).values({
+  return await db.insert(userToken).values({
     userId: userIdAddr,
     lastInteraction: timestamp,
     createdAt: timestamp,
-    assetId: assetIdAddr,
+    tokenId: assetIdAddr,
     balance: 0n,
     chainId: BigInt(chain.id),
   });
 };
 
-export const updateUserAsset = async ({
+export const updateUserToken = async ({
   userId,
   assetId,
   context,
@@ -46,16 +46,16 @@ export const updateUserAsset = async ({
   userId: Address;
   assetId: Address;
   context: Context;
-  update: Partial<typeof userAsset.$inferInsert>;
+  update: Partial<typeof userToken.$inferInsert>;
 }) => {
   const { db, chain } = context;
   const userIdAddr = userId.toLowerCase() as `0x${string}`;
   const assetIdAddr = assetId.toLowerCase() as `0x${string}`;
 
   await db
-    .update(userAsset, {
+    .update(userToken, {
       userId: userIdAddr,
-      assetId: assetIdAddr,
+      tokenId: assetIdAddr,
       chainId: BigInt(chain.id),
     })
     .set({

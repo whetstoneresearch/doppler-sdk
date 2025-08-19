@@ -3,26 +3,6 @@ import { Address } from "viem";
 import { Context } from "ponder:registry";
 import { getV3MigrationPoolData } from "@app/utils/v3-utils/getV3PoolData";
 
-export const fetchV3MigrationPool = async ({
-  poolAddress,
-  context,
-}: {
-  poolAddress: Address;
-  context: Context;
-}): Promise<typeof migrationPool.$inferSelect | null> => {
-  const { db } = context;
-  const address = poolAddress.toLowerCase() as `0x${string}`;
-
-  const existingPool = await db.find(migrationPool, {
-    address,
-  });
-
-  if (existingPool) {
-    return existingPool;
-  }
-
-  return null;
-};
 export const insertV3MigrationPoolIfNotExists = async ({
   poolAddress,
   parentPool,
@@ -90,7 +70,7 @@ export const updateMigrationPool = async ({
   context: Context;
   update: Partial<typeof migrationPool.$inferInsert>;
 }) => {
-  const { db, chain } = context;
+  const { db } = context;
   const address = poolAddress.toLowerCase() as `0x${string}`;
 
   await db

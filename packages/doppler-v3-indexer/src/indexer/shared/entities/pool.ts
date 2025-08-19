@@ -36,11 +36,13 @@ export const insertPoolIfNotExists = async ({
   timestamp,
   context,
   ethPrice,
+  migrationType,
 }: {
   poolAddress: Address;
   timestamp: bigint;
   context: Context;
   ethPrice: bigint;
+  migrationType?: string;
 }): Promise<typeof pool.$inferSelect> => {
   const { db, chain, client } = context;
   const address = poolAddress.toLowerCase() as `0x${string}`;
@@ -92,7 +94,6 @@ export const insertPoolIfNotExists = async ({
     address,
     liquidity: liquidity,
     createdAt: timestamp,
-    asset: assetAddr,
     baseToken: assetAddr,
     quoteToken: numeraireAddr,
     price,
@@ -100,7 +101,6 @@ export const insertPoolIfNotExists = async ({
     chainId: BigInt(chain.id),
     fee,
     dollarLiquidity: 0n,
-    dailyVolume: address,
     maxThreshold: 0n,
     graduationBalance: 0n,
     totalFee0: 0n,
@@ -108,11 +108,11 @@ export const insertPoolIfNotExists = async ({
     volumeUsd: 0n,
     reserves0: 0n,
     reserves1: 0n,
-    percentDayChange: 0,
     isToken0,
     marketCapUsd,
     isQuoteEth,
     integrator: assetData.integrator,
+    migrationType: migrationType ?? "unknown",
   });
 };
 
@@ -218,16 +218,13 @@ export const insertPoolIfNotExistsV4 = async ({
     sqrtPrice: slot0Data.sqrtPrice,
     liquidity: liquidity,
     createdAt: timestamp,
-    asset: assetAddr,
     baseToken: assetAddr,
     quoteToken: numeraireAddr,
     price,
     fee,
     type: "v4",
     dollarLiquidity: dollarLiquidity ?? 0n,
-    dailyVolume: address,
     volumeUsd: 0n,
-    percentDayChange: 0,
     totalFee0: 0n,
     totalFee1: 0n,
     maxThreshold: poolConfig.maxProceeds,
@@ -241,6 +238,7 @@ export const insertPoolIfNotExistsV4 = async ({
     poolKey: JSON.stringify(poolKey),
     isQuoteEth,
     integrator: assetData.integrator,
+    migrationType: "unknown",
   });
 };
 
@@ -305,7 +303,6 @@ export const insertLockableV3PoolIfNotExists = async ({
     address,
     liquidity: liquidity,
     createdAt: timestamp,
-    asset: assetAddr,
     baseToken: assetAddr,
     quoteToken: numeraireAddr,
     price,
@@ -313,7 +310,6 @@ export const insertLockableV3PoolIfNotExists = async ({
     chainId: BigInt(chain.id),
     fee,
     dollarLiquidity: 0n,
-    dailyVolume: address,
     maxThreshold: 0n,
     graduationBalance: 0n,
     totalFee0: 0n,
@@ -321,11 +317,11 @@ export const insertLockableV3PoolIfNotExists = async ({
     volumeUsd: 0n,
     reserves0: 0n,
     reserves1: 0n,
-    percentDayChange: 0,
     isToken0,
     marketCapUsd,
     isStreaming: true,
     isQuoteEth,
     integrator: assetData.integrator,
+    migrationType: "unknown",
   });
 };
