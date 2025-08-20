@@ -24,7 +24,7 @@ export const insertZoraPoolIfNotExists = async ({
 
   const existingPool = await db.find(pool, {
     address,
-    chainId: BigInt(chain.id),
+    chainId: chain.id,
   });
 
   if (existingPool) {
@@ -49,7 +49,7 @@ export const insertZoraPoolIfNotExists = async ({
     quoteToken: zeroAddress,
     price: 0n, // update in coin created event
     type: "v3",
-    chainId: BigInt(chain.id),
+    chainId: chain.id,
     fee: 0,
     dollarLiquidity: 0n,
     dailyVolume: address,
@@ -83,7 +83,7 @@ export const updatePool = async ({
   await db
     .update(pool, {
       address,
-      chainId: BigInt(chain.id),
+      chainId: chain.id,
     })
     .set({
       ...update,
@@ -122,7 +122,7 @@ export const insertZoraPoolV4IfNotExists = async ({
 
   const existingPool = await db.find(pool, {
     address,
-    chainId: BigInt(chain.id),
+    chainId: chain.id,
   });
 
   if (existingPool) {
@@ -166,7 +166,7 @@ export const insertZoraPoolV4IfNotExists = async ({
     quoteToken: quoteToken,
     price,
     type: "v4",
-    chainId: BigInt(chain.id),
+    chainId: chain.id,
     fee: poolKey.fee,
     dollarLiquidity: liquidityUsd,
     dailyVolume: address,

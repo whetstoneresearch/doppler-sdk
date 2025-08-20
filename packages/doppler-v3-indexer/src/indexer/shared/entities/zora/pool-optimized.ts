@@ -44,7 +44,7 @@ export const insertZoraPoolV4Optimized = async ({
 }): Promise<typeof pool.$inferSelect> => {
   const { db, chain, client } = context;
   const address = poolAddress.toLowerCase() as `0x${string}`;
-  const chainId = BigInt(chain.id);
+  const chainId = chain.id;
 
   // Check if pool already exists (early return)
   const existingPool = await db.find(pool, {
