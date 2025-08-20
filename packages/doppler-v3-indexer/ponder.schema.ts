@@ -108,6 +108,7 @@ export const asset = onchainTable(
     }),
     addressIdx: index().on(table.address),
     chainIdIdx: index().on(table.chainId),
+    poolAddressIdx: index().on(table.poolAddress),
   })
 );
 
@@ -128,6 +129,9 @@ export const hourBucket = onchainTable(
     pk: primaryKey({
       columns: [table.pool, table.hourId, table.chainId],
     }),
+    poolIdx: index().on(table.pool),
+    hourIdIdx: index().on(table.hourId),
+    chainIdIdx: index().on(table.chainId),
   })
 );
 
@@ -148,6 +152,9 @@ export const hourBucketUsd = onchainTable(
     pk: primaryKey({
       columns: [table.pool, table.hourId, table.chainId],
     }),
+    poolIdx: index().on(table.pool),
+    hourIdIdx: index().on(table.hourId),
+    chainIdIdx: index().on(table.chainId),
   })
 );
 
@@ -170,6 +177,9 @@ export const fifteenMinuteBucketUsd = onchainTable(
     pk: primaryKey({
       columns: [table.pool, table.minuteId, table.chainId],
     }),
+    poolIdx: index().on(table.pool),
+    minuteIdIdx: index().on(table.minuteId),
+    chainIdIdx: index().on(table.chainId),
   })
 );
 export const position = onchainTable(
@@ -228,6 +238,8 @@ export const v4PoolConfig = onchainTable("v4_pool_config", (t) => ({
     pk: primaryKey({
       columns: [table.hookAddress, table.chainId],
     }),
+    hookAddressIdx: index().on(table.hookAddress),
+    chainIdIdx: index().on(table.chainId),
   })
 );
 
@@ -483,6 +495,12 @@ export const swap = onchainTable("swap", (t) => ({
     pk: primaryKey({
       columns: [table.txHash, table.chainId],
     }),
+    poolIdx: index().on(table.pool),
+    assetIdx: index().on(table.asset),
+    chainIdIdx: index().on(table.chainId),
+    txHashIdx: index().on(table.txHash),
+    userIdx: index().on(table.user),
+    timestampIdx: index().on(table.timestamp),
   })
 );
 
