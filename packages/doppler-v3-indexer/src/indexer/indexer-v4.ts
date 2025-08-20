@@ -8,10 +8,6 @@ import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
 import { insertV4ConfigIfNotExists } from "./shared/entities/v4-entities/v4Config";
 import { getReservesV4 } from "@app/utils/v4-utils/getV4PoolData";
 import {
-  addCheckpoint,
-  insertCheckpointBlobIfNotExist,
-} from "./shared/entities/v4-entities/v4CheckpointBlob";
-import {
   addAndUpdateV4PoolPriceHistory,
   insertV4PoolPriceHistoryIfNotExists,
 } from "./shared/entities/v4-entities/v4PoolPriceHistory";
@@ -52,9 +48,6 @@ ponder.on("UniswapV4Initializer:Create", async ({ event, context }) => {
       context,
       isDerc20: false,
     }),
-    insertCheckpointBlobIfNotExist({
-      context,
-    }),
     insertV4PoolPriceHistoryIfNotExists({
       pool: poolAddress,
       context,
@@ -90,25 +83,6 @@ ponder.on("UniswapV4Initializer:Create", async ({ event, context }) => {
       timestamp,
       context,
       marketCapUsd,
-    }),
-    // Bucket updates are now handled by SwapOrchestrator during swaps
-    // insertOrUpdateBuckets({
-    //   poolAddress: poolAddress,
-    //   price: poolEntity.price,
-    //   timestamp,
-    //   ethPrice,
-    //   context,
-    // }),
-    addCheckpoint({
-      poolAddress: poolAddress,
-      asset: assetAddress,
-      totalSupply,
-      startingTime: v4Config.startingTime,
-      endingTime: v4Config.endingTime,
-      epochLength: v4Config.epochLength,
-      isToken0: v4Config.isToken0,
-      poolKey: poolData.poolKey,
-      context,
     }),
   ]);
 });
@@ -307,9 +281,6 @@ ponder.on("UniswapV4Initializer2:Create", async ({ event, context }) => {
       context,
       isDerc20: false,
     }),
-    insertCheckpointBlobIfNotExist({
-      context,
-    }),
     insertV4PoolPriceHistoryIfNotExists({
       pool: poolAddress,
       context,
@@ -349,17 +320,6 @@ ponder.on("UniswapV4Initializer2:Create", async ({ event, context }) => {
       timestamp,
       context,
       marketCapUsd,
-    }),
-    addCheckpoint({
-      poolAddress: poolAddress,
-      asset: assetAddress,
-      totalSupply,
-      startingTime: v4Config.startingTime,
-      endingTime: v4Config.endingTime,
-      epochLength: v4Config.epochLength,
-      isToken0: v4Config.isToken0,
-      poolKey: poolData.poolKey,
-      context,
     }),
   ]);
 });
@@ -397,9 +357,6 @@ ponder.on("UniswapV4InitializerSelfCorrecting:Create", async ({ event, context }
       context,
       isDerc20: false,
     }),
-    insertCheckpointBlobIfNotExist({
-      context,
-    }),
     insertV4PoolPriceHistoryIfNotExists({
       pool: poolAddress,
       context,
@@ -439,17 +396,6 @@ ponder.on("UniswapV4InitializerSelfCorrecting:Create", async ({ event, context }
       timestamp,
       context,
       marketCapUsd,
-    }),
-    addCheckpoint({
-      poolAddress: poolAddress,
-      asset: assetAddress,
-      totalSupply,
-      startingTime: v4Config.startingTime,
-      endingTime: v4Config.endingTime,
-      epochLength: v4Config.epochLength,
-      isToken0: v4Config.isToken0,
-      poolKey: poolData.poolKey,
-      context,
     }),
   ]);
 });
