@@ -7,10 +7,6 @@ import { insertAssetIfNotExists, updateAsset } from "./shared/entities/asset";
 import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
 import { insertV4ConfigIfNotExists } from "./shared/entities/v4-entities/v4Config";
 import { getReservesV4 } from "@app/utils/v4-utils/getV4PoolData";
-import {
-  addAndUpdateV4PoolPriceHistory,
-  insertV4PoolPriceHistoryIfNotExists,
-} from "./shared/entities/v4-entities/v4PoolPriceHistory";
 import { CHAINLINK_ETH_DECIMALS } from "@app/utils/constants";
 import { SwapService, SwapOrchestrator, PriceService } from "@app/core";
 import { TickMath } from "@uniswap/v3-sdk";
@@ -47,10 +43,6 @@ ponder.on("UniswapV4Initializer:Create", async ({ event, context }) => {
       timestamp,
       context,
       isDerc20: false,
-    }),
-    insertV4PoolPriceHistoryIfNotExists({
-      pool: poolAddress,
-      context,
     }),
   ]);
 
@@ -240,12 +232,6 @@ ponder.on("UniswapV4Pool:Swap", async ({ event, context }) => {
         totalTokensSold,
       },
     }),
-    addAndUpdateV4PoolPriceHistory({
-      pool: address,
-      timestamp: Number(event.block.timestamp),
-      marketCapUsd,
-      context,
-    }),
   ]);
 });
 
@@ -280,10 +266,6 @@ ponder.on("UniswapV4Initializer2:Create", async ({ event, context }) => {
       timestamp,
       context,
       isDerc20: false,
-    }),
-    insertV4PoolPriceHistoryIfNotExists({
-      pool: poolAddress,
-      context,
     }),
   ]);
 
@@ -356,10 +338,6 @@ ponder.on("UniswapV4InitializerSelfCorrecting:Create", async ({ event, context }
       timestamp,
       context,
       isDerc20: false,
-    }),
-    insertV4PoolPriceHistoryIfNotExists({
-      pool: poolAddress,
-      context,
     }),
   ]);
 
@@ -550,12 +528,6 @@ ponder.on("UniswapV4PoolSelfCorrecting:Swap", async ({ event, context }) => {
         totalTokensSold,
       },
     }),
-    addAndUpdateV4PoolPriceHistory({
-      pool: address,
-      timestamp: Number(event.block.timestamp),
-      marketCapUsd,
-      context,
-    }),
   ]);
 });
 
@@ -708,12 +680,6 @@ ponder.on("UniswapV4Pool2:Swap", async ({ event, context }) => {
         totalProceeds,
         totalTokensSold,
       },
-    }),
-    addAndUpdateV4PoolPriceHistory({
-      pool: address,
-      timestamp: Number(event.block.timestamp),
-      marketCapUsd,
-      context,
     }),
   ]);
 });
