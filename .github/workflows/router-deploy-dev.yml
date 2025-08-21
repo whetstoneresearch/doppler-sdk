@@ -2,10 +2,7 @@ name: Deploy router to Dev
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - "packages/doppler-router/**"
+
 
 permissions:
   contents: write
