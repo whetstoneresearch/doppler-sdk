@@ -1,0 +1,11 @@
+{
+  "extends": "../tsconfig.json",
+  "include": ["**/*.ts"],
+  "compilerOptions": {
+    "rootDir": "../",
+    "baseUrl": ".",
+    "paths": {
+      "doppler-v4-sdk": ["../src/index.ts"]
+    }
+  }
+}
