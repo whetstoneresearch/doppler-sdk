@@ -1,19 +1,29 @@
 import { ponder } from "ponder:registry";
-import { updateToken } from "./shared/entities/token";
+import { appendTokenPool, insertTokenIfNotExists, updateToken } from "./shared/entities/token";
 import { upsertTokenWithPool } from "./shared/entities/token-optimized";
 import {
   updatePool,
 } from "./shared/entities/pool";
-import { fetchEthPrice, fetchZoraPrice } from "./shared/oracle";
+import { updateAsset } from "./shared/entities/asset";
+import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
+import { computeMarketCap, fetchEthPrice, fetchZoraPrice } from "./shared/oracle";
+import {
+  tryAddActivePool,
+} from "./shared/scheduledJobs";
+import { SwapOrchestrator } from "@app/core";
+import { insertUserIfNotExists } from "./shared/entities/user";
+import { insertUserAssetIfNotExists, updateUserAsset } from "./shared/entities/userAsset";
 import { batchUpsertUsersAndAssets, batchUpdateHolderCounts } from "./shared/entities/user-optimized";
 import { handleOptimizedSwap } from "./shared/swap-optimizer";
-import { insertZoraAssetIfNotExists } from "./shared/entities/zora/asset";
-
+import { asset, pool, token } from "ponder:schema";
+import { insertZoraAssetIfNotExists, updateZoraAsset } from "./shared/entities/zora/asset";
+import { insertZoraPoolV4IfNotExists } from "./shared/entities/zora/pool";
+import { insertZoraPoolV4Optimized } from "./shared/entities/zora/pool-optimized";
 import { zeroAddress } from "viem";
 import { computeV3Price } from "@app/utils";
 import { chainConfigs } from "@app/config";
-import { token, asset, pool } from "ponder:schema";
-import { insertZoraPoolV4Optimized } from "./shared/entities/zora/pool-optimized";
+import { PriceService, SwapService } from "@app/core";
+import { tokenCache } from "./shared/cache/token-cache";
 
 ponder.on("ZoraFactory:CoinCreatedV4", async ({ event, context }) => {
   const { db, chain } = context;
@@ -25,25 +35,34 @@ ponder.on("ZoraFactory:CoinCreatedV4", async ({ event, context }) => {
   const currencyAddress = currency.toLowerCase() as `0x${string}`;
   const callerId = caller.toLowerCase() as `0x${string}`;
 
-  const [zoraPrice, ethPrice] = await Promise.all([
-    fetchZoraPrice(timestamp, context),
-    fetchEthPrice(timestamp, context),
-  ]);
-
+  const zoraPrice = await fetchZoraPrice(timestamp, context);
+  const ethPrice = await fetchEthPrice(timestamp, context);
 
   const isQuoteZora = currency != zeroAddress && currency.toLowerCase() === chainConfigs[context.chain.name].addresses.zora.zoraToken.toLowerCase();
   const isQuoteEth = currency === zeroAddress || currency.toLowerCase() === chainConfigs[context.chain.name].addresses.shared.weth.toLowerCase();
 
   let isQuoteCreatorCoin = false;
   let creatorCoinPid = null;
+  
   if (!isQuoteZora && !isQuoteEth) {
+    // Check cache first - DISABLED FOR TESTING
+    // const cached = tokenCache.get(currencyAddress);
+    
+    // if (cached) {
+    //   isQuoteCreatorCoin = cached.isCreatorCoin;
+    //   creatorCoinPid = cached.creatorCoinPid;
+    // } else {
+      // Cache miss - query database
       const creatorCoinEntity = await db.find(token, {
         address: currencyAddress,
-        chainId: chain.id,
       });
 
       isQuoteCreatorCoin = creatorCoinEntity?.isCreatorCoin ?? false;
       creatorCoinPid = isQuoteCreatorCoin ? creatorCoinEntity?.pool : null;
+      
+      // Update cache - DISABLED FOR TESTING
+      // tokenCache.set(currencyAddress, isQuoteCreatorCoin, creatorCoinPid || null);
+    // }
   }
 
   if (!isQuoteZora && !isQuoteEth && !isQuoteCreatorCoin && !creatorCoinPid) {
@@ -58,7 +77,7 @@ ponder.on("ZoraFactory:CoinCreatedV4", async ({ event, context }) => {
   } else if (isQuoteCreatorCoin && creatorCoinPid) {
     const creatorCoinPool = await db.find(pool, {
       address: creatorCoinPid as `0x${string}`,
-      chainId: chain.id,
+      chainId: BigInt(chain.id),
     });
 
     if (!creatorCoinPool) {
@@ -82,8 +101,21 @@ ponder.on("ZoraFactory:CoinCreatedV4", async ({ event, context }) => {
     return;
   }
 
+
   // Optimized parallel operations with single upsert for tokens
-  const [assetTokenEntity] = await Promise.all([
+  const [poolEntity, assetTokenEntity, _currencyToken] = await Promise.all([
+    insertZoraPoolV4Optimized({
+      poolAddress,
+      context,
+      timestamp,
+      ethPrice: usdPrice,
+      poolKey,
+      baseToken: coinAddress,
+      quoteToken: currencyAddress,
+      isQuoteZora,
+      isCreatorCoin: false,
+      isContentCoin: true,
+    }),
     upsertTokenWithPool({
       tokenAddress: coinAddress,
       isDerc20: false,
@@ -108,21 +140,44 @@ ponder.on("ZoraFactory:CoinCreatedV4", async ({ event, context }) => {
     }),
   ]);
 
-  const { totalSupply } = assetTokenEntity;
 
-  await insertZoraPoolV4Optimized({
-    poolAddress,
-    context,
-    timestamp,
+  const { totalSupply } = assetTokenEntity;
+  const marketCapUsd = computeMarketCap({
+    price: poolEntity.price,
     ethPrice: usdPrice,
-    poolKey,
-    baseToken: coinAddress,
-    quoteToken: currencyAddress,
-    isQuoteZora,
-    isCreatorCoin: false,
-    isContentCoin: true,
-    totalSupply
+    totalSupply,
+    decimals: isQuoteEth ? 8 : 18,
   });
+
+  const isToken0 = poolEntity.isToken0;
+
+  const dollarLiquidity = computeDollarLiquidity({
+    assetBalance: isToken0 ? poolEntity.reserves0 : poolEntity.reserves1,
+    quoteBalance: isToken0 ? poolEntity.reserves1 : poolEntity.reserves0,
+    price: poolEntity.price,
+    ethPrice: usdPrice,
+    decimals: isQuoteEth ? 8 : 18,
+  });
+
+
+  await Promise.all([
+    insertZoraAssetIfNotExists({
+      assetAddress: coinAddress,
+      poolAddress,
+      numeraireAddress: currencyAddress,
+      timestamp,
+      context,
+    }),
+    updatePool({
+      poolAddress,
+      context,
+      update: {
+        marketCapUsd,
+        dollarLiquidity,
+        poolKey: poolKey,
+      }
+    })
+  ]);
 });
 
 ponder.on("ZoraFactory:CreatorCoinCreated", async ({ event, context }) => {
@@ -134,13 +189,15 @@ ponder.on("ZoraFactory:CreatorCoinCreated", async ({ event, context }) => {
   const currencyAddress = currency.toLowerCase() as `0x${string}`;
   const callerId = caller.toLowerCase() as `0x${string}`;
 
-  const [zoraPrice, ethPrice] = await Promise.all([
-    fetchZoraPrice(timestamp, context),
-    fetchEthPrice(timestamp, context),
-  ]);
+  const zoraPrice = await fetchZoraPrice(timestamp, context);
+  const ethPrice = await fetchEthPrice(timestamp, context);
 
   const isQuoteZora = currency != zeroAddress && currency.toLowerCase() === chainConfigs[context.chain.name].addresses.zora.zoraToken.toLowerCase();
   const isQuoteEth = currency === zeroAddress || currency.toLowerCase() === chainConfigs[context.chain.name].addresses.shared.weth.toLowerCase();
+
+  if (!isQuoteEth && !isQuoteZora) {
+    return;
+  }
 
   let usdPrice;
   if (isQuoteZora) {
@@ -154,7 +211,20 @@ ponder.on("ZoraFactory:CreatorCoinCreated", async ({ event, context }) => {
   }
 
   // Optimized parallel operations with single upsert for tokens
-  const [assetTokenEntity] = await Promise.all([
+  const [poolEntity, assetTokenEntity, _currencyToken] = await Promise.all([
+    insertZoraPoolV4Optimized({
+      poolAddress,
+      context,
+      timestamp,
+      ethPrice: usdPrice,
+      poolKey,
+      baseToken: coinAddress,
+      quoteToken: currencyAddress,
+      isQuoteZora,
+      isCreatorCoin: true,
+      isContentCoin: false,
+      poolKeyHash,
+    }),
     upsertTokenWithPool({
       tokenAddress: coinAddress,
       isDerc20: true,
@@ -180,28 +250,55 @@ ponder.on("ZoraFactory:CreatorCoinCreated", async ({ event, context }) => {
   ]);
 
   const { totalSupply } = assetTokenEntity;
-  await insertZoraPoolV4Optimized({
-    poolAddress,
-    context,
-    timestamp,
+  const marketCapUsd = computeMarketCap({
+    price: poolEntity.price,
     ethPrice: usdPrice,
-    poolKey,
-    baseToken: coinAddress,
-    quoteToken: currencyAddress,
-    isQuoteZora,
-    isCreatorCoin: true,
-    isContentCoin: false,
     totalSupply,
+    decimals: isQuoteEth ? 8 : 18,
   });
+
+  const isToken0 = poolEntity.isToken0;
+
+  const dollarLiquidity = computeDollarLiquidity({
+    assetBalance: isToken0 ? poolEntity.reserves0 : poolEntity.reserves1,
+    quoteBalance: isToken0 ? poolEntity.reserves1 : poolEntity.reserves0,
+    price: poolEntity.price,
+    ethPrice: usdPrice,
+    decimals: isQuoteEth ? 8 : 18,
+  });
+
+  await Promise.all([
+    insertZoraAssetIfNotExists({
+      assetAddress: coinAddress,
+      poolAddress,
+      numeraireAddress: currencyAddress,
+      timestamp,
+      context,
+    }),
+    updatePool({
+      poolAddress,
+      context,
+      update: {
+        marketCapUsd,
+        dollarLiquidity,
+        poolKey: poolKey,
+      }
+    })
+  ]);
 });
 
 ponder.on("ZoraV4Hook:Swapped", async ({ event, context }) => {
   const { poolKeyHash, swapSender, amount0, amount1, sqrtPriceX96, isCoinBuy } = event.args;
   const timestamp = event.block.timestamp;
 
+  const [zoraPrice, ethPrice] = await Promise.all([
+    fetchZoraPrice(timestamp, context),
+    fetchEthPrice(timestamp, context),
+  ]);
+
   await handleOptimizedSwap(
     {
-      poolAddress: poolKeyHash,
+      poolKeyHash,
       swapSender,
       amount0,
       amount1,
@@ -213,6 +310,8 @@ ponder.on("ZoraV4Hook:Swapped", async ({ event, context }) => {
       blockNumber: event.block.number,
       context,
     },
+    zoraPrice,
+    ethPrice
   );
 });
 
@@ -220,9 +319,14 @@ ponder.on("ZoraV4CreatorCoinHook:Swapped", async ({ event, context }) => {
   const { poolKeyHash, swapSender, amount0, amount1, sqrtPriceX96, isCoinBuy } = event.args;
   const timestamp = event.block.timestamp;
 
+  const [zoraPrice, ethPrice] = await Promise.all([
+    fetchZoraPrice(timestamp, context),
+    fetchEthPrice(timestamp, context),
+  ]);
+
   await handleOptimizedSwap(
     {
-      poolAddress: poolKeyHash,
+      poolKeyHash,
       swapSender,
       amount0,
       amount1,
@@ -234,12 +338,14 @@ ponder.on("ZoraV4CreatorCoinHook:Swapped", async ({ event, context }) => {
       blockNumber: event.block.number,
       context,
     },
+    zoraPrice,
+    ethPrice
   );
 });
 
 ponder.on("ZoraCreatorCoinV4:LiquidityMigrated", async ({ event, context }) => {
   const { chain, db } = context;
-  const { fromPoolKeyHash, toPoolKey, toPoolKeyHash } = event.args;
+  const { fromPoolKey, fromPoolKeyHash, toPoolKey, toPoolKeyHash } = event.args;
   const timestamp = event.block.timestamp;
 
   const fromPoolAddress = fromPoolKeyHash;
@@ -247,23 +353,12 @@ ponder.on("ZoraCreatorCoinV4:LiquidityMigrated", async ({ event, context }) => {
 
   const fromPoolEntity = await db.find(pool, {
     address: fromPoolAddress,
-    chainId: chain.id,
+    chainId: BigInt(chain.id),
   });
 
   if (!fromPoolEntity) {
     return;
   }
-
-  const baseTokenEntity = await db.find(token, {
-    address: fromPoolEntity.baseToken,
-    chainId: chain.id,
-  });
-
-  if (!baseTokenEntity) {
-    return;
-  }
-
-  const totalSupply = baseTokenEntity.totalSupply;
 
   const zoraPrice = await fetchZoraPrice(timestamp, context);
   const ethPrice = await fetchEthPrice(timestamp, context);
@@ -272,7 +367,7 @@ ponder.on("ZoraCreatorCoinV4:LiquidityMigrated", async ({ event, context }) => {
   const isQuoteEth = fromPoolEntity.quoteToken.toLowerCase() === chainConfigs[context.chain.name].addresses.shared.weth.toLowerCase();
 
   await Promise.all([
-    insertZoraPoolV4Optimized({
+    insertZoraPoolV4IfNotExists({
       poolAddress: toPoolAddress,
       context,
       timestamp,
@@ -283,7 +378,6 @@ ponder.on("ZoraCreatorCoinV4:LiquidityMigrated", async ({ event, context }) => {
       isQuoteZora,
       isCreatorCoin: true,
       isContentCoin: false,
-      totalSupply,
     }),
     updateToken({
       tokenAddress: fromPoolEntity.baseToken,
@@ -292,6 +386,13 @@ ponder.on("ZoraCreatorCoinV4:LiquidityMigrated", async ({ event, context }) => {
         pool: toPoolAddress,
       },
     }),
+    updateAsset({
+      assetAddress: fromPoolEntity.baseToken,
+      context,
+      update: {
+        poolAddress: toPoolAddress,
+      },
+    })
   ]);
 
   const updateData = {
@@ -308,7 +409,7 @@ ponder.on("ZoraCreatorCoinV4:LiquidityMigrated", async ({ event, context }) => {
 
   await db.delete(pool, {
     address: fromPoolAddress,
-    chainId: chain.id,
+    chainId: BigInt(chain.id),
   }).catch(() => {
     console.log(`Failed to delete pool ${fromPoolAddress} from ZoraCreatorCoinV4:LiquidityMigrated`);
   });
@@ -319,7 +420,7 @@ ponder.on("ZoraCreatorCoinV4:CoinTransfer", async ({ event, context }) => {
   const { timestamp } = event.block;
   const { sender, recipient, senderBalance, recipientBalance } = event.args;
 
-  const { db, chain } = context;
+  const { db } = context;
 
   const creatorAddress = event.transaction.from.toLowerCase() as `0x${string}`;
   const recipientAddress = recipient.toLowerCase() as `0x${string}`;
@@ -327,7 +428,10 @@ ponder.on("ZoraCreatorCoinV4:CoinTransfer", async ({ event, context }) => {
   const tokenAddress = address.toLowerCase() as `0x${string}`;
 
   // Batch fetch token and asset data
-  const tokenData = await db.find(token, { address: tokenAddress, chainId: chain.id });
+  const [tokenData, assetData] = await Promise.all([
+    db.find(token, { address: tokenAddress }),
+    db.find(asset, { address: tokenAddress }),
+  ]);
 
   // Ensure token exists (upsert if needed)
   const finalTokenData = tokenData || await upsertTokenWithPool({
@@ -360,6 +464,7 @@ ponder.on("ZoraCreatorCoinV4:CoinTransfer", async ({ event, context }) => {
       poolAddress: finalTokenData.pool,
       holderCountDelta,
       currentTokenHolderCount: finalTokenData.holderCount,
+      currentAssetHolderCount: assetData?.holderCount ?? 0,
       context,
     });
   }
@@ -370,7 +475,7 @@ ponder.on("ZoraCoinV4:CoinTransfer", async ({ event, context }) => {
   const { timestamp } = event.block;
   const { sender, recipient, senderBalance, recipientBalance } = event.args;
 
-  const { db, chain } = context;
+  const { db } = context;
 
   const creatorAddress = event.transaction.from.toLowerCase() as `0x${string}`;
   const recipientAddress = recipient.toLowerCase() as `0x${string}`;
@@ -378,7 +483,10 @@ ponder.on("ZoraCoinV4:CoinTransfer", async ({ event, context }) => {
   const tokenAddress = address.toLowerCase() as `0x${string}`;
 
   // Batch fetch token and asset data
-  const tokenData = await db.find(token, { address: tokenAddress, chainId: chain.id });
+  const [tokenData, assetData] = await Promise.all([
+    db.find(token, { address: tokenAddress }),
+    db.find(asset, { address: tokenAddress }),
+  ]);
 
   // Ensure token exists (upsert if needed)
   const finalTokenData = tokenData || await upsertTokenWithPool({
@@ -411,6 +519,7 @@ ponder.on("ZoraCoinV4:CoinTransfer", async ({ event, context }) => {
       poolAddress: finalTokenData.pool,
       holderCountDelta,
       currentTokenHolderCount: finalTokenData.holderCount,
+      currentAssetHolderCount: assetData?.holderCount ?? 0,
       context,
     });
   }

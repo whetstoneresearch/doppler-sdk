@@ -14,6 +14,7 @@ import { zeroAddress } from "viem";
 import { configs } from "@app/types";
 import { SwapService, SwapOrchestrator, PriceService } from "@app/core";
 import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
+import { tryAddActivePool } from "./shared/scheduledJobs";
 
 ponder.on("UniswapV2Pair:Swap", async ({ event, context }) => {
   const { db, chain } = context;
@@ -22,7 +23,7 @@ ponder.on("UniswapV2Pair:Swap", async ({ event, context }) => {
 
   const address = event.log.address.toLowerCase() as `0x${string}`;
 
-  const v2PoolData = await db.find(v2Pool, { address, chainId: chain.id });
+  const v2PoolData = await db.find(v2Pool, { address });
 
   const parentPool = v2PoolData?.parentPool.toLowerCase() as `0x${string}`;
 
@@ -133,6 +134,7 @@ ponder.on("UniswapV2Pair:Swap", async ({ event, context }) => {
   const entityUpdaters = {
     updatePool,
     updateAsset,
+    tryAddActivePool,
   };
 
   // Perform common updates via orchestrator
@@ -146,7 +148,7 @@ ponder.on("UniswapV2Pair:Swap", async ({ event, context }) => {
           parentPoolAddress: parentPool,
           price,
         },
-        chainId: chain.id,
+        chainId: BigInt(chain.id),
         context,
       },
       entityUpdaters
@@ -171,7 +173,7 @@ ponder.on("UniswapV2PairUnichain:Swap", async ({ event, context }) => {
   const { timestamp } = event.block;
   const { amount0In, amount1In, amount0Out, amount1Out } = event.args;
 
-  const v2PoolData = await db.find(v2Pool, { address, chainId: chain.id });
+  const v2PoolData = await db.find(v2Pool, { address });
   if (!v2PoolData) return;
 
   const { parentPool } = v2PoolData;
@@ -276,6 +278,7 @@ ponder.on("UniswapV2PairUnichain:Swap", async ({ event, context }) => {
   const entityUpdaters = {
     updatePool,
     updateAsset,
+    tryAddActivePool,
   };
 
   // Perform common updates via orchestrator
@@ -288,7 +291,7 @@ ponder.on("UniswapV2PairUnichain:Swap", async ({ event, context }) => {
         parentPoolAddress: parentPool,
         price,
       },
-      chainId: chain.id,
+      chainId: BigInt(chain.id),
       context,
     },
     entityUpdaters

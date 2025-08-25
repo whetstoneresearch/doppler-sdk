@@ -53,7 +53,6 @@ export const baseSepoliaConfig: ChainConfig = {
       governanceFactory:
         "0x9dbfaadc8c0cb2c34ba698dd9426555336992e20" as Address,
       weth: COMMON_ADDRESSES.WETH_BASE,
-      chainlinkEthOracle: ORACLE_ADDRESSES.chainlinkEth,
     },
     oracle: ORACLE_ADDRESSES,
   },
@@ -104,7 +103,6 @@ export const baseConfig: ChainConfig = {
       governanceFactory:
         "0xb4deE32EB70A5E55f3D2d861F49Fb3D79f7a14d9" as Address,
       weth: COMMON_ADDRESSES.WETH_BASE,
-      chainlinkEthOracle: "0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70" as Address,
     },
     stables: {
       usdc: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" as Address,

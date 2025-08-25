@@ -28,6 +28,7 @@ export interface MarketMetrics {
   liquidityUsd: bigint;
   marketCapUsd: bigint;
   swapValueUsd: bigint;
+  percentDayChange: number;
 }
 
 /**
@@ -171,10 +172,12 @@ export class SwapService {
   static formatAssetUpdate(params: {
     liquidityUsd: bigint;
     marketCapUsd: bigint;
+    percentDayChange: number;
   }) {
     return {
       liquidityUsd: params.liquidityUsd,
       marketCapUsd: params.marketCapUsd,
+      percentDayChange: params.percentDayChange,
     };
   }
 }

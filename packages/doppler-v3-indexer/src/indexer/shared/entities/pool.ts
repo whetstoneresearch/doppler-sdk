@@ -22,7 +22,7 @@ export const fetchExistingPool = async ({
   const address = poolAddress.toLowerCase() as `0x${string}`;
   const existingPool = await db.find(pool, {
     address,
-    chainId: chain.id,
+    chainId: BigInt(chain.id),
   });
 
   if (!existingPool) {
@@ -47,7 +47,7 @@ export const insertPoolIfNotExists = async ({
 
   const existingPool = await db.find(pool, {
     address,
-    chainId: chain.id,
+    chainId: BigInt(chain.id),
   });
 
   if (existingPool) {
@@ -97,7 +97,7 @@ export const insertPoolIfNotExists = async ({
     quoteToken: numeraireAddr,
     price,
     type: "v3",
-    chainId: chain.id,
+    chainId: BigInt(chain.id),
     fee,
     dollarLiquidity: 0n,
     dailyVolume: address,
@@ -131,7 +131,7 @@ export const updatePool = async ({
   await db
     .update(pool, {
       address,
-      chainId: chain.id,
+      chainId: BigInt(chain.id),
     })
     .set({
       ...update,
@@ -155,7 +155,7 @@ export const insertPoolIfNotExistsV4 = async ({
   const address = poolAddress.toLowerCase() as `0x${string}`;
   const existingPool = await db.find(pool, {
     address,
-    chainId: chain.id,
+    chainId: BigInt(chain.id),
   });
 
   if (existingPool) {
@@ -213,7 +213,7 @@ export const insertPoolIfNotExistsV4 = async ({
 
   return await db.insert(pool).values({
     address,
-    chainId: chain.id,
+    chainId: BigInt(chain.id),
     tick: slot0Data.tick,
     sqrtPrice: slot0Data.sqrtPrice,
     liquidity: liquidity,
@@ -260,7 +260,7 @@ export const insertLockableV3PoolIfNotExists = async ({
 
   const existingPool = await db.find(pool, {
     address,
-    chainId: chain.id,
+    chainId: BigInt(chain.id),
   });
 
   if (existingPool) {
@@ -310,7 +310,7 @@ export const insertLockableV3PoolIfNotExists = async ({
     quoteToken: numeraireAddr,
     price,
     type: "v3",
-    chainId: chain.id,
+    chainId: BigInt(chain.id),
     fee,
     dollarLiquidity: 0n,
     dailyVolume: address,

@@ -1,19 +1,20 @@
 import { Context } from "ponder:registry";
 import { pool, token } from "ponder:schema";
 import { Address } from "viem";
+import { tokenCache } from "./cache/token-cache";
 import { SwapOrchestrator } from "@app/core";
 import { PriceService, SwapService } from "@app/core";
 import { computeV3Price } from "@app/utils";
 import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
-import { computeMarketCap, fetchEthPrice, fetchZoraPrice } from "./oracle";
+import { computeMarketCap } from "./oracle";
 import { updatePool, updateAsset } from "./entities";
+import { tryAddActivePool } from "./scheduledJobs";
+import { upsertTokenWithPool } from "./entities/token-optimized";
 import { chainConfigs } from "@app/config";
-import { updateFifteenMinuteBucketUsd } from "@app/utils/time-buckets";
-import { WAD, CHAINLINK_ETH_DECIMALS } from "@app/utils/constants";
 import { SwapType } from "@app/types";
 
 interface SwapHandlerParams {
-  poolAddress: `0x${string}`; // can be 32byte poolid or 20byte pool address
+  poolKeyHash: Address;
   swapSender: Address;
   amount0: bigint;
   amount1: bigint;
@@ -75,7 +76,6 @@ export async function getPoolUsdPrice(
   // } else {
     const creatorCoinEntity = await db.find(token, {
       address: poolEntity.quoteToken,
-      chainId: chain.id,
     });
     isQuoteCreatorCoin = creatorCoinEntity?.isCreatorCoin ?? false;
     creatorCoinPid = isQuoteCreatorCoin ? creatorCoinEntity?.pool : null;
@@ -89,7 +89,7 @@ export async function getPoolUsdPrice(
   // Get creator coin pool price
   const creatorCoinPool = await db.find(pool, {
     address: creatorCoinPid as `0x${string}`,
-    chainId: chain.id,
+    chainId: BigInt(chain.id),
   });
   
   if (!creatorCoinPool) {
@@ -189,19 +189,18 @@ export function processSwapCalculations(
  */
 export async function handleOptimizedSwap(
   params: SwapHandlerParams,
+  zoraPrice: bigint,
+  ethPrice: bigint
 ): Promise<void> {
-  const { context, timestamp } = params;
+  const { context, poolKeyHash, timestamp } = params;
   const { db, chain } = context;
-  const poolAddress = params.poolAddress;
-
-  const [zoraPrice, ethPrice, poolEntity] = await Promise.all([
-    fetchZoraPrice(timestamp, context),
-    fetchEthPrice(timestamp, context),
-    db.find(pool, {
-      address: poolAddress,
-      chainId: chain.id,
-    }),
-  ]);
+  const poolAddress = poolKeyHash.toLowerCase() as `0x${string}`;
+  
+  // Get pool entity
+  const poolEntity = await db.find(pool, {
+    address: poolAddress,
+    chainId: BigInt(chain.id),
+  });
   
   if (!poolEntity) {
     return;
@@ -216,11 +215,13 @@ export async function handleOptimizedSwap(
   const isQuoteEth = poolEntity.quoteToken.toLowerCase() === 
     chainConfigs[chain.name].addresses.shared.weth.toLowerCase();
   
+  // Process all swap calculations
   const swapData = processSwapCalculations(poolEntity, params, usdPrice, isQuoteEth);
+  
+  // Ensure token exists and get total supply
 
   const tokenEntity = await db.find(token, {
     address: poolEntity.baseToken,
-    chainId: chain.id,
   });
 
   if (!tokenEntity) {
@@ -257,12 +258,14 @@ export async function handleOptimizedSwap(
     liquidityUsd: swapData.dollarLiquidity,
     marketCapUsd,
     swapValueUsd: swapData.swapValueUsd,
+    percentDayChange: 0,
   };
   
   // Define entity updaters
   const entityUpdaters = {
     updatePool,
     updateAsset,
+    tryAddActivePool,
   };
   
   // Execute all updates in parallel
@@ -276,7 +279,7 @@ export async function handleOptimizedSwap(
           parentPoolAddress: poolAddress,
           price: swapData.price,
         },
-        chainId: chain.id,
+        chainId: BigInt(chain.id),
         context,
       },
       entityUpdaters
@@ -293,15 +296,6 @@ export async function handleOptimizedSwap(
         reserves1: swapData.nextReserves1,
         lastSwapTimestamp: timestamp,
       },
-    }),
-    updateFifteenMinuteBucketUsd(context, {
-      poolAddress,
-      chainId: chain.id,
-      timestamp,
-      priceUsd: isQuoteEth
-        ? (swapData.price * usdPrice) / CHAINLINK_ETH_DECIMALS
-        : (swapData.price * usdPrice) / WAD,
-      volumeUsd: swapData.swapValueUsd,
     }),
   ]);
 }

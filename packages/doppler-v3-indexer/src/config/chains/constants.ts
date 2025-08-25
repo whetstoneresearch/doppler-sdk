@@ -14,7 +14,7 @@ export const START_BLOCKS = {
   mainnet: 21781000,
   unichain: 8536880,
   baseSepolia: 27805302,
-  ink: 9508011,
+  ink: 9500879,
   base: 28415520,
 } as const;
 
@@ -47,7 +47,6 @@ export const ORACLE_ADDRESSES: OracleAddresses = {
   weth: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2" as Address,
   usdc: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48" as Address,
   chainlinkEth: "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419" as Address,
-  chainlinkBaseEth: "0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70" as Address,
 };
 
 // RPC environment variable mapping

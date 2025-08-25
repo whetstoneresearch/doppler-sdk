@@ -22,12 +22,13 @@ export const insertZoraAssetIfNotExists = async ({
 
   const existingAsset = await db.find(asset, {
     address,
-    chainId: chain.id,
   });
 
   if (existingAsset) {
     return existingAsset;
   }
+
+  const chainId = BigInt(chain.id);
 
   const isToken0 = assetAddress.toLowerCase() < numeraireAddress.toLowerCase();
 
@@ -42,7 +43,7 @@ export const insertZoraAssetIfNotExists = async ({
     migrationPool: zeroAddress,
     poolAddress,
     address,
-    chainId: chain.id,
+    chainId,
     isToken0,
     createdAt: timestamp,
     migratedAt: null,
@@ -64,13 +65,12 @@ export const updateZoraAsset = async ({
   context: Context;
   update?: Partial<typeof asset.$inferInsert>;
 }) => {
-  const { db, chain } = context;
+  const { db } = context;
   const address = assetAddress.toLowerCase() as `0x${string}`;
 
   await db
     .update(asset, {
       address,
-      chainId: chain.id,
     })
     .set({
       ...update,

@@ -12,7 +12,6 @@ import {
   getAmount0Delta, 
   getAmount1Delta 
 } from "@app/utils/v3-utils/computeGraduationThreshold";
-import { computeMarketCap } from "../../oracle";
 
 /**
  * Optimized version with caching and reduced contract calls
@@ -28,7 +27,7 @@ export const insertZoraPoolV4Optimized = async ({
   isQuoteZora,
   isCreatorCoin,
   isContentCoin,
-  totalSupply,
+  poolKeyHash,
 }: {
   poolAddress: Address;
   baseToken: Address;
@@ -40,11 +39,11 @@ export const insertZoraPoolV4Optimized = async ({
   isQuoteZora: boolean;
   isCreatorCoin: boolean;
   isContentCoin: boolean;
-  totalSupply: bigint;
+  poolKeyHash?: `0x${string}`;
 }): Promise<typeof pool.$inferSelect> => {
   const { db, chain, client } = context;
   const address = poolAddress.toLowerCase() as `0x${string}`;
-  const chainId = chain.id;
+  const chainId = BigInt(chain.id);
 
   // Check if pool already exists (early return)
   const existingPool = await db.find(pool, {
@@ -136,19 +135,11 @@ export const insertZoraPoolV4Optimized = async ({
     decimals: 18,
   });
 
-  const marketCapUsd = computeMarketCap({
-    price,
-    ethPrice,
-    totalSupply,
-    decimals: isQuoteEth ? 8 : 18,
-  });
-
-  const dollarLiquidity = computeDollarLiquidity({
+  const liquidityUsd = computeDollarLiquidity({
     assetBalance: isToken0 ? token0Reserve : token1Reserve,
     quoteBalance: isToken0 ? token1Reserve : token0Reserve,
     price,
     ethPrice,
-    decimals: isQuoteEth ? 8 : 18,
   });
 
   // Insert new pool with all data at once
@@ -162,10 +153,10 @@ export const insertZoraPoolV4Optimized = async ({
     baseToken,
     quoteToken,
     price,
-    type: "zora",
+    type: "v4",
     chainId,
     fee: poolKey.fee,
-    dollarLiquidity,
+    dollarLiquidity: liquidityUsd,
     dailyVolume: address,
     maxThreshold: 0n,
     graduationBalance: 0n,
@@ -176,7 +167,7 @@ export const insertZoraPoolV4Optimized = async ({
     reserves1: token1Reserve,
     percentDayChange: 0,
     isToken0,
-    marketCapUsd,
+    marketCapUsd: 0n,
     isQuoteEth,
     isQuoteZora,
     integrator: zeroAddress,
@@ -185,6 +176,5 @@ export const insertZoraPoolV4Optimized = async ({
     holderCount: 0,
     lastSwapTimestamp: timestamp,
     lastRefreshed: timestamp,
-    poolKey,
   });
 };

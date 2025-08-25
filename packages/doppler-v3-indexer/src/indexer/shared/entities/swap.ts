@@ -8,6 +8,7 @@ export const insertSwapIfNotExists = async ({
     context,
     pool,
     asset,
+    chainId,
     type,
     user,
     amountIn,
@@ -19,18 +20,17 @@ export const insertSwapIfNotExists = async ({
     context: Context;
     pool: Address;
     asset: Address;
-    chainId: number;
+    chainId: bigint;
     type: string;
     user: Address;
     amountIn: bigint;
     amountOut: bigint;
     usdPrice: bigint;
 }): Promise<typeof swap.$inferSelect> => {
-    const { db, chain } = context;
+    const { db } = context;
 
     const existingSwap = await db.find(swap, {
         txHash,
-        chainId: chain.id,
     });
 
     if (existingSwap) {
@@ -43,7 +43,7 @@ export const insertSwapIfNotExists = async ({
         timestamp,
         pool,
         asset,
-        chainId: chain.id,
+        chainId,
         type,
         user,
         amountIn,

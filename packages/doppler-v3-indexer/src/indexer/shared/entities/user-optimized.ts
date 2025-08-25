@@ -28,7 +28,7 @@ export const batchUpsertUsersAndAssets = async ({
   recipientAsset: typeof userAsset.$inferSelect | null;
   holderCountDelta: number;
 }> => {
-  const { db, chain } = context;
+  const { db } = context;
   const senderLower = senderAddress.toLowerCase() as `0x${string}`;
   const recipientLower = recipientAddress.toLowerCase() as `0x${string}`;
   const tokenLower = tokenAddress.toLowerCase() as `0x${string}`;
@@ -42,7 +42,6 @@ export const batchUpsertUsersAndAssets = async ({
       db.insert(user)
         .values({
           address: senderLower,
-          chainId: chain.id,
           createdAt: timestamp,
           lastSeenAt: timestamp,
         })
@@ -56,7 +55,6 @@ export const batchUpsertUsersAndAssets = async ({
       db.insert(user)
         .values({
           address: recipientLower,
-          chainId: chain.id,
           createdAt: timestamp,
           lastSeenAt: timestamp,
         })
@@ -80,7 +78,7 @@ export const batchUpsertUsersAndAssets = async ({
       db.find(userAsset, {
         userId: senderLower,
         assetId: tokenLower,
-        chainId: chain.id,
+        chainId: BigInt(context.chain.id),
       }).then(result => { existingSenderAsset = result; })
     );
   }
@@ -89,7 +87,7 @@ export const batchUpsertUsersAndAssets = async ({
       db.find(userAsset, {
         userId: recipientLower,
         assetId: tokenLower,
-        chainId: chain.id,
+        chainId: BigInt(context.chain.id),
       }).then(result => { existingRecipientAsset = result; })
     );
   }
@@ -140,7 +138,7 @@ export const batchUpsertUsersAndAssets = async ({
         .values({
           userId: senderLower,
           assetId: tokenLower,
-          chainId: chain.id,
+          chainId: BigInt(context.chain.id),
           createdAt: timestamp,
           balance: senderBalance,
           lastInteraction: timestamp,
@@ -159,7 +157,7 @@ export const batchUpsertUsersAndAssets = async ({
         .values({
           userId: recipientLower,
           assetId: tokenLower,
-          chainId: chain.id,
+          chainId: BigInt(context.chain.id),
           balance: recipientBalance,
           createdAt: timestamp,
           lastInteraction: timestamp,
@@ -191,15 +189,17 @@ export const batchUpdateHolderCounts = async ({
   poolAddress,
   holderCountDelta,
   currentTokenHolderCount,
+  currentAssetHolderCount,
   context,
 }: {
   tokenAddress: Address;
   poolAddress: Address | null;
   holderCountDelta: number;
   currentTokenHolderCount: number;
+  currentAssetHolderCount: number;
   context: Context;
 }): Promise<void> => {
-  const { db, chain } = context;
+  const { db } = context;
 
   if (holderCountDelta === 0) {
     return;
@@ -211,7 +211,6 @@ export const batchUpdateHolderCounts = async ({
   updates.push(
     db.update(token, {
       address: tokenAddress.toLowerCase() as `0x${string}`,
-      chainId: chain.id,
     }).set({
       holderCount: currentTokenHolderCount + holderCountDelta,
     })
@@ -222,9 +221,17 @@ export const batchUpdateHolderCounts = async ({
     updates.push(
       db.update(pool, {
         address: poolAddress.toLowerCase() as `0x${string}`,
-        chainId: chain.id,
+        chainId: BigInt(context.chain.id),
       }).set({
         holderCount: currentTokenHolderCount + holderCountDelta,
+      })
+    );
+
+    updates.push(
+      db.update(asset, {
+        address: tokenAddress.toLowerCase() as `0x${string}`,
+      }).set({
+        holderCount: currentAssetHolderCount + holderCountDelta,
       })
     );
   }
@@ -233,4 +240,4 @@ export const batchUpdateHolderCounts = async ({
 };
 
 // Import necessary schema types
-import { token, pool } from "ponder:schema";
+import { token, pool, asset } from "ponder:schema";

@@ -1,67 +1,78 @@
 import { ponder } from "ponder:registry";
+import { refreshActivePoolsBlobWithBucketsOptimized } from "./shared/scheduledJobs";
+import { configs } from "addresses";
 import { ChainlinkOracleABI } from "@app/abis/ChainlinkOracleABI";
 import { ethPrice, zoraUsdcPrice } from "ponder.schema";
 import { UniswapV3PoolABI } from "@app/abis/v3-abis/UniswapV3PoolABI";
 import { computeV3Price } from "@app/utils/v3-utils";
 import { chainConfigs } from "@app/config";
+import { refreshCheckpointBlob } from "./shared/entities/v4-entities";
 
-ponder.on("BaseChainlinkEthPriceFeed:block", async ({ event, context }) => {
-  const { db, client, chain } = context;
-  const { timestamp } = event.block;
+// /**
+//  * Block handlers that run periodically to ensure volume data and metrics are up-to-date
+//  * These are triggered by the block configuration in ponder.config.ts
+//  */
 
-  const latestAnswer = await client.readContract({
-    abi: ChainlinkOracleABI,
-    address: chainConfigs["base"].addresses.shared.chainlinkEthOracle,
-    functionName: "latestAnswer",
-  });
+// // // Handler for unichain network
+// ponder.on("MetricRefresherUnichain:block", async ({ event, context }) => {
+//   try {
+//     // Execute optimized batch refresh job
+//     await refreshActivePoolsBlobWithBucketsOptimized({
+//       context,
+//       timestamp: Number(event.block.timestamp),
+//     });
+//   } catch (error) {
+//     console.error(`Error in unichain refresh job: ${error}`);
+//     // Log error but don't throw to prevent handler from failing completely
+//   }
+// });
 
-  const price = latestAnswer;
+// // Handler for baseSepolia network
+// ponder.on("MetricRefresherBaseSepolia:block", async ({ event, context }) => {
+//   try {
+//     // Execute optimized batch refresh job
+//     await refreshActivePoolsBlobWithBucketsOptimized({
+//       context,
+//       timestamp: Number(event.block.timestamp),
+//     });
+//   } catch (error) {
+//     console.error(`Error in baseSepolia refresh job: ${error}`);
+//     // Log error but don't throw to prevent handler from failing completely
+//   }
+// });
 
-  const roundedTimestamp = BigInt(Math.floor(Number(timestamp) / 300) * 300);
-  const adjustedTimestamp = roundedTimestamp + 300n;
+// // // Handler for ink network
+// ponder.on("MetricRefresherInk:block", async ({ event, context }) => {
+//   try {
+//     // Execute optimized batch refresh job
+//     await refreshActivePoolsBlobWithBucketsOptimized({
+//       context,
+//       timestamp: Number(event.block.timestamp),
+//     });
+//   } catch (error) {
+//     console.error(`Error in ink refresh job: ${error}`);
+//   }
+// });
 
-  await db
-    .insert(ethPrice)
-    .values({
-      timestamp: adjustedTimestamp,
-      chainId: chain.id,
-      price,
-    })
-    .onConflictDoNothing();
+// Handler for base network
+ponder.on("MetricRefresherBase:block", async ({ event, context }) => {
+  try {
+    await refreshActivePoolsBlobWithBucketsOptimized({
+      context,
+      timestamp: Number(event.block.timestamp),
+    });
+  } catch (error) {
+    console.error(`Error in base refresh job: ${error}`);
+  }
 });
 
-ponder.on("UnichainChainlinkEthPriceFeed:block", async ({ event, context }) => {
+ponder.on("ChainlinkEthPriceFeed:block", async ({ event, context }) => {
   const { db, client, chain } = context;
   const { timestamp } = event.block;
 
   const latestAnswer = await client.readContract({
     abi: ChainlinkOracleABI,
-    address: chainConfigs["unichain"].addresses.shared.chainlinkEthOracle,
-    functionName: "latestAnswer",
-  });
-
-  const price = latestAnswer;
-
-  const roundedTimestamp = BigInt(Math.floor(Number(timestamp) / 300) * 300);
-  const adjustedTimestamp = roundedTimestamp + 300n;
-
-  await db
-    .insert(ethPrice)
-    .values({
-      timestamp: adjustedTimestamp,
-      chainId: chain.id,
-      price,
-    })
-    .onConflictDoNothing();
-});
-
-ponder.on("InkChainlinkEthPriceFeed:block", async ({ event, context }) => {
-  const { db, client, chain } = context;
-  const { timestamp } = event.block;
-
-  const latestAnswer = await client.readContract({
-    abi: ChainlinkOracleABI,
-    address: chainConfigs["ink"].addresses.shared.chainlinkEthOracle,
+    address: configs[chain.name].oracle.chainlinkEth,
     functionName: "latestAnswer",
   });
 
@@ -75,7 +86,6 @@ ponder.on("InkChainlinkEthPriceFeed:block", async ({ event, context }) => {
     .values({
       timestamp: adjustedTimestamp,
       price,
-      chainId: chain.id,
     })
     .onConflictDoNothing();
 });
@@ -105,6 +115,19 @@ ponder.on("ZoraUsdcPrice:block", async ({ event, context }) => {
   await db.insert(zoraUsdcPrice).values({
     timestamp: adjustedTimestamp,
     price,
-    chainId: chain.id,
   }).onConflictDoNothing();
 });
+
+// ponder.on("BaseSepoliaV4PoolCheckpoints:block", async ({ event, context }) => {
+//   await refreshCheckpointBlob({
+//     context,
+//     timestamp: Number(event.block.timestamp),
+//   });
+// });
+
+// ponder.on("BaseV4PoolCheckpoints:block", async ({ event, context }) => {
+//   await refreshCheckpointBlob({
+//     context,
+//     timestamp: Number(event.block.timestamp),
+//   });
+// });

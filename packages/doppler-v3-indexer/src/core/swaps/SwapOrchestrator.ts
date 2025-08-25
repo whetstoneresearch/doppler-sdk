@@ -2,7 +2,7 @@ import { Address } from "viem";
 import { Context } from "ponder:registry";
 import { SwapService, SwapData, MarketMetrics } from "./SwapService";
 import { SwapType } from "@app/types/shared";
-import { updateDayBucket, BucketUpdateParams } from "@app/utils/time-buckets";
+import { updateDayBucket, BucketUpdateParams, get24HourVolume, get24HourVolumeAndPercentChange } from "@app/utils/time-buckets";
 
 /**
  * Orchestrates all entity updates required after a swap
@@ -16,7 +16,7 @@ export interface SwapUpdateParams {
     price: bigint;
     volume24h?: bigint;
   };
-  chainId: number;
+  chainId: bigint;
   context: Context;
 }
 
@@ -25,6 +25,8 @@ export interface SwapUpdateParams {
  */
 export interface EntityUpdaters {
   updatePool: (params: any) => Promise<any>;
+  updateAsset: (params: any) => Promise<any>;
+  tryAddActivePool: (params: any) => Promise<any>;
 }
 
 /**
@@ -42,6 +44,8 @@ export class SwapOrchestrator {
     const { swapData, swapType, metrics, poolData, chainId, context } = params;
     const {
       updatePool,
+      updateAsset,
+      tryAddActivePool,
     } = updaters;
 
     // Update the 24-hour bucket with this swap data
@@ -62,6 +66,16 @@ export class SwapOrchestrator {
 
     // Update the bucket first to get the new volume
     await updateDayBucket(context, bucketParams);
+
+    // Get the updated 24-hour volume from bucket
+    const { volumeUsd, percentChange } = await get24HourVolumeAndPercentChange(
+      context,
+      poolData.parentPoolAddress,
+      chainId,
+      swapData.timestamp
+    );
+
+    // Prepare all update operations
     const updates = [
       // Update pool entity
       updatePool({
@@ -71,10 +85,24 @@ export class SwapOrchestrator {
           price: poolData.price,
           liquidityUsd: metrics.liquidityUsd,
           marketCapUsd: metrics.marketCapUsd,
-          volume24h: poolData.volume24h ?? 0n,
+          volume24h: volumeUsd,
           timestamp: swapData.timestamp,
-          percentDayChange: 0,
+          percentDayChange: percentChange,
         }),
+      }),
+
+      // Update asset entity
+      updateAsset({
+        assetAddress: swapData.assetAddress,
+        context,
+        update: SwapService.formatAssetUpdate(metrics),
+      }),
+
+      // Add pool to active pools blob for scheduled metric updates
+      tryAddActivePool({
+        poolAddress: poolData.parentPoolAddress,
+        lastSwapTimestamp: Number(swapData.timestamp),
+        context,
       }),
     ];
 

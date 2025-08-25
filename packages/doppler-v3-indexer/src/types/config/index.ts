@@ -62,7 +62,6 @@ export interface SharedAddresses {
   universalRouter: Address;
   governanceFactory: Address;
   weth: Address;
-  chainlinkEthOracle: Address;
 }
 
 /**
@@ -73,7 +72,6 @@ export interface OracleAddresses {
   weth: Address;
   usdc: Address;
   chainlinkEth: Address;
-  chainlinkBaseEth: Address;
 }
 
 /**

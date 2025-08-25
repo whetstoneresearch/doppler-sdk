@@ -7,8 +7,17 @@ import { insertAssetIfNotExists, updateAsset } from "./shared/entities/asset";
 import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
 import { insertV4ConfigIfNotExists } from "./shared/entities/v4-entities/v4Config";
 import { getReservesV4 } from "@app/utils/v4-utils/getV4PoolData";
+import {
+  addCheckpoint,
+  insertCheckpointBlobIfNotExist,
+} from "./shared/entities/v4-entities/v4CheckpointBlob";
+import {
+  addAndUpdateV4PoolPriceHistory,
+  insertV4PoolPriceHistoryIfNotExists,
+} from "./shared/entities/v4-entities/v4PoolPriceHistory";
 import { CHAINLINK_ETH_DECIMALS } from "@app/utils/constants";
 import { SwapService, SwapOrchestrator, PriceService } from "@app/core";
+import { tryAddActivePool } from "./shared/scheduledJobs";
 import { TickMath } from "@uniswap/v3-sdk";
 import { computeGraduationPercentage } from "@app/utils/v4-utils";
 
@@ -44,6 +53,13 @@ ponder.on("UniswapV4Initializer:Create", async ({ event, context }) => {
       context,
       isDerc20: false,
     }),
+    insertCheckpointBlobIfNotExist({
+      context,
+    }),
+    insertV4PoolPriceHistoryIfNotExists({
+      pool: poolAddress,
+      context,
+    }),
   ]);
 
   const { totalSupply } = baseToken;
@@ -75,6 +91,25 @@ ponder.on("UniswapV4Initializer:Create", async ({ event, context }) => {
       timestamp,
       context,
       marketCapUsd,
+    }),
+    // Bucket updates are now handled by SwapOrchestrator during swaps
+    // insertOrUpdateBuckets({
+    //   poolAddress: poolAddress,
+    //   price: poolEntity.price,
+    //   timestamp,
+    //   ethPrice,
+    //   context,
+    // }),
+    addCheckpoint({
+      poolAddress: poolAddress,
+      asset: assetAddress,
+      totalSupply,
+      startingTime: v4Config.startingTime,
+      endingTime: v4Config.endingTime,
+      epochLength: v4Config.epochLength,
+      isToken0: v4Config.isToken0,
+      poolKey: poolData.poolKey,
+      context,
     }),
   ]);
 });
@@ -195,6 +230,7 @@ ponder.on("UniswapV4Pool:Swap", async ({ event, context }) => {
   const entityUpdaters = {
     updatePool,
     updateAsset,
+    tryAddActivePool,
   };
 
   // Perform common updates via orchestrator
@@ -207,7 +243,7 @@ ponder.on("UniswapV4Pool:Swap", async ({ event, context }) => {
         parentPoolAddress: address,
         price,
       },
-      chainId: chain.id,
+      chainId: BigInt(chain.id),
       context,
     },
     entityUpdaters
@@ -231,6 +267,12 @@ ponder.on("UniswapV4Pool:Swap", async ({ event, context }) => {
         totalProceeds,
         totalTokensSold,
       },
+    }),
+    addAndUpdateV4PoolPriceHistory({
+      pool: address,
+      timestamp: Number(event.block.timestamp),
+      marketCapUsd,
+      context,
     }),
   ]);
 });
@@ -267,6 +309,13 @@ ponder.on("UniswapV4Initializer2:Create", async ({ event, context }) => {
       context,
       isDerc20: false,
     }),
+    insertCheckpointBlobIfNotExist({
+      context,
+    }),
+    insertV4PoolPriceHistoryIfNotExists({
+      pool: poolAddress,
+      context,
+    }),
   ]);
 
   const { totalSupply } = baseToken;
@@ -302,6 +351,17 @@ ponder.on("UniswapV4Initializer2:Create", async ({ event, context }) => {
       timestamp,
       context,
       marketCapUsd,
+    }),
+    addCheckpoint({
+      poolAddress: poolAddress,
+      asset: assetAddress,
+      totalSupply,
+      startingTime: v4Config.startingTime,
+      endingTime: v4Config.endingTime,
+      epochLength: v4Config.epochLength,
+      isToken0: v4Config.isToken0,
+      poolKey: poolData.poolKey,
+      context,
     }),
   ]);
 });
@@ -339,6 +399,13 @@ ponder.on("UniswapV4InitializerSelfCorrecting:Create", async ({ event, context }
       context,
       isDerc20: false,
     }),
+    insertCheckpointBlobIfNotExist({
+      context,
+    }),
+    insertV4PoolPriceHistoryIfNotExists({
+      pool: poolAddress,
+      context,
+    }),
   ]);
 
   const { totalSupply } = baseToken;
@@ -374,6 +441,17 @@ ponder.on("UniswapV4InitializerSelfCorrecting:Create", async ({ event, context }
       timestamp,
       context,
       marketCapUsd,
+    }),
+    addCheckpoint({
+      poolAddress: poolAddress,
+      asset: assetAddress,
+      totalSupply,
+      startingTime: v4Config.startingTime,
+      endingTime: v4Config.endingTime,
+      epochLength: v4Config.epochLength,
+      isToken0: v4Config.isToken0,
+      poolKey: poolData.poolKey,
+      context,
     }),
   ]);
 });
@@ -491,6 +569,7 @@ ponder.on("UniswapV4PoolSelfCorrecting:Swap", async ({ event, context }) => {
   const entityUpdaters = {
     updatePool,
     updateAsset,
+    tryAddActivePool,
   };
 
   // Perform common updates via orchestrator
@@ -503,7 +582,7 @@ ponder.on("UniswapV4PoolSelfCorrecting:Swap", async ({ event, context }) => {
         parentPoolAddress: address,
         price,
       },
-      chainId: chain.id,
+      chainId: BigInt(chain.id),
       context,
     },
     entityUpdaters
@@ -527,6 +606,12 @@ ponder.on("UniswapV4PoolSelfCorrecting:Swap", async ({ event, context }) => {
         totalProceeds,
         totalTokensSold,
       },
+    }),
+    addAndUpdateV4PoolPriceHistory({
+      pool: address,
+      timestamp: Number(event.block.timestamp),
+      marketCapUsd,
+      context,
     }),
   ]);
 });
@@ -644,6 +729,7 @@ ponder.on("UniswapV4Pool2:Swap", async ({ event, context }) => {
   const entityUpdaters = {
     updatePool,
     updateAsset,
+    tryAddActivePool,
   };
 
   // Perform common updates via orchestrator
@@ -656,7 +742,7 @@ ponder.on("UniswapV4Pool2:Swap", async ({ event, context }) => {
         parentPoolAddress: address,
         price,
       },
-      chainId: chain.id,
+      chainId: BigInt(chain.id),
       context,
     },
     entityUpdaters
@@ -680,6 +766,12 @@ ponder.on("UniswapV4Pool2:Swap", async ({ event, context }) => {
         totalProceeds,
         totalTokensSold,
       },
+    }),
+    addAndUpdateV4PoolPriceHistory({
+      pool: address,
+      timestamp: Number(event.block.timestamp),
+      marketCapUsd,
+      context,
     }),
   ]);
 });
