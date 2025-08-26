@@ -6,7 +6,7 @@ import { PriceService, SwapService } from "@app/core";
 import { computeV3Price } from "@app/utils";
 import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
 import { computeMarketCap, fetchEthPrice, fetchZoraPrice } from "./oracle";
-import { updatePool, updateAsset } from "./entities";
+import { updatePool } from "./entities";
 import { chainConfigs } from "@app/config";
 import { updateFifteenMinuteBucketUsd } from "@app/utils/time-buckets";
 import { WAD, CHAINLINK_ETH_DECIMALS } from "@app/utils/constants";
@@ -262,7 +262,7 @@ export async function handleOptimizedSwap(
   // Define entity updaters
   const entityUpdaters = {
     updatePool,
-    updateAsset,
+    updateFifteenMinuteBucketUsd,
   };
   
   // Execute all updates in parallel

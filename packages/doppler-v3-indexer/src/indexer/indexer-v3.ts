@@ -4,10 +4,6 @@ import { CHAINLINK_ETH_DECIMALS } from "@app/utils/constants";
 import { computeGraduationThresholdDelta } from "@app/utils/v3-utils/computeGraduationThreshold";
 import { ponder } from "ponder:registry";
 import {
-  fetchV3MigrationPool,
-  updateMigrationPool,
-} from "./shared/entities/migrationPool";
-import {
   insertLockableV3PoolIfNotExists,
   insertPoolIfNotExists,
   updatePool,
@@ -18,7 +14,7 @@ import {
 } from "./shared/entities/position";
 import { insertTokenIfNotExists } from "./shared/entities/token";
 import { computeMarketCap, fetchEthPrice } from "./shared/oracle";
-import { handleOptimizedSwap } from "./shared/swap-optimizer";
+import { updateFifteenMinuteBucketUsd } from "@app/utils/time-buckets";
 
 ponder.on("UniswapV3Initializer:Create", async ({ event, context }) => {
   const { poolOrHook, asset, numeraire } = event.args;
@@ -353,6 +349,7 @@ ponder.on("LockableUniswapV3Pool:Swap", async ({ event, context }) => {
   // Define entity updaters
   const entityUpdaters = {
     updatePool,
+    updateFifteenMinuteBucketUsd
   };
 
   // Perform common updates via orchestrator
@@ -677,6 +674,7 @@ ponder.on("UniswapV3Pool:Swap", async ({ event, context }) => {
   // Define entity updaters
   const entityUpdaters = {
     updatePool,
+    updateFifteenMinuteBucketUsd,
   };
 
   // Perform common updates via orchestrator

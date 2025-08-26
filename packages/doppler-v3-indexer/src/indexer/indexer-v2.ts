@@ -14,6 +14,7 @@ import { zeroAddress } from "viem";
 import { configs } from "@app/types";
 import { SwapService, SwapOrchestrator, PriceService } from "@app/core";
 import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
+import { updateFifteenMinuteBucketUsd } from "@app/utils/time-buckets";
 
 ponder.on("UniswapV2Pair:Swap", async ({ event, context }) => {
   const { db, chain } = context;
@@ -132,7 +133,7 @@ ponder.on("UniswapV2Pair:Swap", async ({ event, context }) => {
   // Define entity updaters
   const entityUpdaters = {
     updatePool,
-    updateAsset,
+    updateFifteenMinuteBucketUsd,
   };
 
   // Perform common updates via orchestrator
@@ -275,7 +276,7 @@ ponder.on("UniswapV2PairUnichain:Swap", async ({ event, context }) => {
   // Define entity updaters
   const entityUpdaters = {
     updatePool,
-    updateAsset,
+    updateFifteenMinuteBucketUsd,
   };
 
   // Perform common updates via orchestrator

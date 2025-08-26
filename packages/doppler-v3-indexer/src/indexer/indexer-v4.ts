@@ -11,6 +11,7 @@ import { CHAINLINK_ETH_DECIMALS } from "@app/utils/constants";
 import { SwapService, SwapOrchestrator, PriceService } from "@app/core";
 import { TickMath } from "@uniswap/v3-sdk";
 import { computeGraduationPercentage } from "@app/utils/v4-utils";
+import { updateFifteenMinuteBucketUsd } from "@app/utils/time-buckets";
 
 ponder.on("UniswapV4Initializer:Create", async ({ event, context }) => {
   const { poolOrHook, asset: assetId, numeraire } = event.args;
@@ -194,7 +195,7 @@ ponder.on("UniswapV4Pool:Swap", async ({ event, context }) => {
   // Define entity updaters
   const entityUpdaters = {
     updatePool,
-    updateAsset,
+    updateFifteenMinuteBucketUsd,
   };
 
   // Perform common updates via orchestrator
@@ -490,7 +491,7 @@ ponder.on("UniswapV4PoolSelfCorrecting:Swap", async ({ event, context }) => {
   // Define entity updaters
   const entityUpdaters = {
     updatePool,
-    updateAsset,
+    updateFifteenMinuteBucketUsd,
   };
 
   // Perform common updates via orchestrator
@@ -643,7 +644,7 @@ ponder.on("UniswapV4Pool2:Swap", async ({ event, context }) => {
   // Define entity updaters
   const entityUpdaters = {
     updatePool,
-    updateAsset,
+    updateFifteenMinuteBucketUsd,
   };
 
   // Perform common updates via orchestrator

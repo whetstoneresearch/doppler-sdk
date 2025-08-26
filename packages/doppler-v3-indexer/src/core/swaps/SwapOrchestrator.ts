@@ -2,7 +2,8 @@ import { Address } from "viem";
 import { Context } from "ponder:registry";
 import { SwapService, SwapData, MarketMetrics } from "./SwapService";
 import { SwapType } from "@app/types/shared";
-import { updateDayBucket, BucketUpdateParams } from "@app/utils/time-buckets";
+import { updateDayBucket, BucketUpdateParams, updateFifteenMinuteBucketUsd } from "@app/utils/time-buckets";
+import { CHAINLINK_ETH_DECIMALS } from "@app/utils/constants";
 
 /**
  * Orchestrates all entity updates required after a swap
@@ -25,6 +26,7 @@ export interface SwapUpdateParams {
  */
 export interface EntityUpdaters {
   updatePool: (params: any) => Promise<any>;
+  updateFifteenMinuteBucketUsd: (context: Context, params: any) => Promise<any>;
 }
 
 /**
@@ -39,29 +41,12 @@ export class SwapOrchestrator {
     params: SwapUpdateParams,
     updaters: EntityUpdaters
   ): Promise<void> {
-    const { swapData, swapType, metrics, poolData, chainId, context } = params;
+    const { swapData, metrics, poolData, chainId, context } = params;
     const {
       updatePool,
+      updateFifteenMinuteBucketUsd,
     } = updaters;
 
-    // Update the 24-hour bucket with this swap data
-    const bucketParams: BucketUpdateParams = {
-      poolAddress: poolData.parentPoolAddress,
-      assetAddress: swapData.assetAddress,
-      chainId,
-      timestamp: swapData.timestamp,
-      volumeUsd: metrics.swapValueUsd,
-      volumeToken0: swapData.isToken0 ? swapData.amountIn : swapData.amountOut,
-      volumeToken1: swapData.isToken0 ? swapData.amountOut : swapData.amountIn,
-      price: poolData.price,
-      liquidityUsd: metrics.liquidityUsd,
-      marketCapUsd: metrics.marketCapUsd,
-      isBuy: swapType === "buy",
-      userAddress: swapData.sender,
-    };
-
-    // Update the bucket first to get the new volume
-    await updateDayBucket(context, bucketParams);
     const updates = [
       // Update pool entity
       updatePool({
@@ -75,6 +60,13 @@ export class SwapOrchestrator {
           timestamp: swapData.timestamp,
           percentDayChange: 0,
         }),
+      }),
+      updateFifteenMinuteBucketUsd(context, {
+        poolAddress: poolData.parentPoolAddress,
+        chainId,
+        timestamp: swapData.timestamp,
+        priceUsd: swapData.price * swapData.ethPriceUSD / CHAINLINK_ETH_DECIMALS,
+        volumeUsd: metrics.swapValueUsd,
       }),
     ];
 
