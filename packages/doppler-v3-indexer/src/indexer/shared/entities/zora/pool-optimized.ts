@@ -13,6 +13,7 @@ import {
   getAmount1Delta 
 } from "@app/utils/v3-utils/computeGraduationThreshold";
 import { computeMarketCap } from "../../oracle";
+import { insertPositionIfNotExists } from "../position";
 
 /**
  * Optimized version with caching and reduced contract calls
@@ -95,10 +96,18 @@ export const insertZoraPoolV4Optimized = async ({
     
     // Batch process all positions at once
     for (const position of positions) {
+      await insertPositionIfNotExists({
+        poolAddress,
+        context,
+        timestamp,
+        tickLower: position.tickLower,
+        tickUpper: position.tickUpper,
+        liquidity: position.liquidity,
+        owner: zeroAddress,
+      });
+
       const { tickLower, tickUpper, liquidity: posLiquidity } = position;
       liquidity += posLiquidity;
-
-      // Optimized amount calculations
       if (tick < tickLower) {
         token0Reserve += getAmount0Delta({
           tickLower,
