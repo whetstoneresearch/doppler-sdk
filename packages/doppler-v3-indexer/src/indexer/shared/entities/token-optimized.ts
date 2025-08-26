@@ -67,14 +67,13 @@ export const upsertTokenWithPool = async ({
   } else {
     // Fetch token metadata for regular tokens
     const multicallOptions = getMulticallOptions(chain);
-    const [nameResult, symbolResult, decimalsResult, totalSupplyResult, tokenURIResult] = 
+    const [nameResult, symbolResult, decimalsResult, totalSupplyResult] = 
       await client.multicall({
         contracts: [
           { abi: DERC20ABI, address, functionName: "name" },
           { abi: DERC20ABI, address, functionName: "symbol" },
           { abi: DERC20ABI, address, functionName: "decimals" },
           { abi: DERC20ABI, address, functionName: "totalSupply" },
-          { abi: DERC20ABI, address, functionName: "tokenURI" },
         ],
         ...multicallOptions,
       });
@@ -85,7 +84,6 @@ export const upsertTokenWithPool = async ({
       symbol: symbolResult?.result ?? "???",
       decimals: decimalsResult?.result ?? 18,
       totalSupply: totalSupplyResult?.result ?? 0n,
-      tokenUri: tokenURIResult?.result,
       derc20Data: isDerc20 ? address : undefined,
     };
 

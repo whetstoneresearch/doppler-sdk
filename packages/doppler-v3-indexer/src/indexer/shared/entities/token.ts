@@ -131,7 +131,6 @@ export const insertTokenIfNotExists = async ({
       symbolResult,
       decimalsResult,
       totalSupplyResult,
-      tokenURIResult,
     ] = await context.client.multicall({
       contracts: [
         {
@@ -154,16 +153,10 @@ export const insertTokenIfNotExists = async ({
           address,
           functionName: "totalSupply",
         },
-        {
-          abi: DERC20ABI,
-          address,
-          functionName: "tokenURI",
-        },
       ],
       ...multicallOptions,
     });
 
-    const tokenURI = tokenURIResult?.result;
     if (process.env.NODE_ENV !== "local") {
       fetch(
         `${process.env.METADATA_UPDATER_ENDPOINT}?tokenAddress=${address}&chainId=${chain.id}`
@@ -182,7 +175,6 @@ export const insertTokenIfNotExists = async ({
         creatorAddress,
         firstSeenAt: timestamp,
         lastSeenAt: timestamp,
-        tokenURI,
         isDerc20,
         pool: poolAddress,
         derc20Data: isDerc20 ? address : undefined,
