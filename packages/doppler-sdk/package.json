@@ -21,7 +21,7 @@
     "dist"
   ],
   "scripts": {
-    "start": "tsc watch ./src/**",
+    "start": "tsc --watch",
     "test": "vitest run",
     "build": "tsup",
     "build:watch": "tsup --watch",
@@ -54,7 +54,7 @@
     "@uniswap/v3-sdk": "^3.19.0",
     "@uniswap/v4-sdk": "^1.21.4",
     "tsup": "^8.4.0",
-    "viem": "^2.21.44"
+    "viem": "^2.33.3"
   },
   "engines": {
     "node": ">=18.0.0"
