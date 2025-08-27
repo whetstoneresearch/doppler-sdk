@@ -180,6 +180,7 @@ export const fifteenMinuteBucketUsd = onchainTable(
     poolIdx: index().on(table.pool),
     minuteIdIdx: index().on(table.minuteId),
     chainIdIdx: index().on(table.chainId),
+    poolChainMinuteIdx: index().on(table.pool, table.chainId, table.minuteId),
   })
 );
 export const position = onchainTable(
@@ -299,6 +300,7 @@ export const pool = onchainTable(
     quoteTokenIdx: index().on(table.quoteToken),
     lastRefreshedIdx: index().on(table.lastRefreshed),
     lastSwapTimestampIdx: index().on(table.lastSwapTimestamp),
+    poolChainIdx: index().on(table.address, table.chainId),
   })
 );
 
