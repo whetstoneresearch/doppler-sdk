@@ -1,31 +1,30 @@
-import { createPublicClient, createWalletClient, http, parseEther } from 'viem'
-import { privateKeyToAccount } from 'viem/accounts'
-import { sepolia } from 'viem/chains'
-import { DopplerSDK } from './src/DopplerSDK'
-import { DynamicAuctionBuilder } from './src/builders'
+import { createPublicClient, createWalletClient, http, parseEther } from 'viem';
+import { privateKeyToAccount } from 'viem/accounts';
+import { base } from 'viem/chains';
+import { DopplerSDK, DynamicAuctionBuilder } from './src/index';
 
 // Test reproducing the V4 SDK deployment parameters
 async function testV4Deployment() {
-  const privateKey = process.env.PRIVATE_KEY as `0x${string}`
-  const account = privateKeyToAccount(privateKey)
-  
+  const privateKey = process.env.PRIVATE_KEY as `0x${string}`;
+  const account = privateKeyToAccount(privateKey);
+
   const publicClient = createPublicClient({
-    chain: sepolia,
+    chain: base,
     transport: http(process.env.RPC_URL),
-  })
-  
+  });
+
   const walletClient = createWalletClient({
     account,
-    chain: sepolia,
+    chain: base,
     transport: http(process.env.RPC_URL),
-  })
-  
+  });
+
   const sdk = new DopplerSDK({
     publicClient,
     walletClient,
-    chainId: sepolia.id,
-  })
-  
+    chainId: base.id,
+  });
+
   // Create the exact same parameters as the V4 SDK example via builder
   const params = new DynamicAuctionBuilder()
     .tokenConfig({
@@ -43,28 +42,35 @@ async function testV4Deployment() {
     .auctionByTicks({
       durationDays: 7,
       epochLength: 43200,
-      startTick: -92203,
-      endTick: -91003,
+      startTick: 175000,
+      endTick: 225000,
       minProceeds: parseEther('100'),
       maxProceeds: parseEther('1000'),
-      gamma: 30,
+      gamma: 60,
       numPdSlugs: 3,
     })
+    .withGovernance({ useDefaults: true })
     .withMigration({ type: 'uniswapV2' })
     .withIntegrator('0x0000000000000000000000000000000000000000')
     .withUserAddress(account.address)
-    .build()
-  
-  console.log('Creating dynamic auction with V4 SDK parameters...')
-  console.log('Parameters:', JSON.stringify(params, (key, value) => 
-    typeof value === 'bigint' ? value.toString() : value, 2))
-  
+    .build();
+
+  console.log('Creating dynamic auction with V4 SDK parameters...');
+  console.log(
+    'Parameters:',
+    JSON.stringify(
+      params,
+      (key, value) => (typeof value === 'bigint' ? value.toString() : value),
+      2
+    )
+  );
+
   try {
-    const result = await sdk.factory.createDynamicAuction(params)
-    console.log('Success!', result)
+    const result = await sdk.factory.createDynamicAuction(params);
+    console.log('Success!', result);
   } catch (error) {
-    console.error('Error:', error)
+    console.error('Error:', error);
   }
 }
 
-testV4Deployment()
+testV4Deployment();

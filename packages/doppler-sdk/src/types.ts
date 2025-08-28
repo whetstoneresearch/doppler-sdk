@@ -1,4 +1,10 @@
-import type { Address, PublicClient, WalletClient } from 'viem'
+import type { Address, PublicClient, WalletClient, Transport } from 'viem'
+import { base, ink, unichain } from 'viem/chains';
+
+export type SupportedChain = typeof base | typeof ink | typeof unichain;
+
+// Supported public clients for the Doppler SDK
+export type SupportedPublicClient = PublicClient<Transport, SupportedChain>
 
 // Core configuration types
 // Token configuration (discriminated union)
@@ -265,7 +271,7 @@ export interface DynamicAuctionBuildConfig {
 
 // SDK initialization configuration
 export interface DopplerSDKConfig {
-  publicClient: PublicClient
+  publicClient: SupportedPublicClient
   walletClient?: WalletClient
   chainId: number
 }
