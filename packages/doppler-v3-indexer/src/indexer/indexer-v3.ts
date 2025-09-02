@@ -335,7 +335,7 @@ ponder.on("LockableUniswapV3Pool:Swap", async ({ event, context }) => {
     amountIn,
     amountOut,
     price,
-    ethPriceUSD: ethPrice,
+    usdPrice: ethPrice,
   });
 
   // Create market metrics
@@ -660,7 +660,7 @@ ponder.on("UniswapV3Pool:Swap", async ({ event, context }) => {
     amountIn,
     amountOut,
     price,
-    ethPriceUSD: ethPrice,
+    usdPrice: ethPrice,
   });
 
   // Create market metrics

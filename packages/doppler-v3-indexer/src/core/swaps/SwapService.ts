@@ -18,7 +18,7 @@ export interface SwapData {
   amountIn: bigint;
   amountOut: bigint;
   price: bigint;
-  ethPriceUSD: bigint;
+  usdPrice: bigint;
 }
 
 /**
@@ -151,17 +151,13 @@ export class SwapService {
     price: bigint;
     liquidityUsd: bigint;
     marketCapUsd: bigint;
-    volume24h: bigint;
     timestamp: bigint;
-    percentDayChange: number
   }) {
     return {
       price: params.price,
       dollarLiquidity: params.liquidityUsd, // Pool entity uses 'dollarLiquidity' field
       marketCapUsd: params.marketCapUsd,
-      volumeUsd: params.volume24h, // Pool entity uses 'volumeUsd' field for 24h volume
       lastSwapTimestamp: params.timestamp,
-      percentDayChange: params.percentDayChange,
     };
   }
 

@@ -9,8 +9,8 @@ import { computeMarketCap, fetchEthPrice, fetchZoraPrice } from "./oracle";
 import { updatePool } from "./entities";
 import { chainConfigs } from "@app/config";
 import { updateFifteenMinuteBucketUsd } from "@app/utils/time-buckets";
-import { WAD, CHAINLINK_ETH_DECIMALS } from "@app/utils/constants";
 import { SwapType } from "@app/types";
+import { CHAINLINK_ETH_DECIMALS, WAD } from "@app/utils/constants";
 
 interface SwapHandlerParams {
   poolAddress: `0x${string}`; // can be 32byte poolid or 20byte pool address
@@ -45,6 +45,7 @@ interface ProcessedSwapData {
  */
 export async function getPoolUsdPrice(
   poolEntity: typeof pool.$inferSelect,
+  sqrtPriceX96: bigint,
   zoraPrice: bigint,
   ethPrice: bigint,
   context: Context
@@ -64,23 +65,15 @@ export async function getPoolUsdPrice(
     return ethPrice;
   }
   
-  // Check cache for creator coin - DISABLED FOR TESTING
   let isQuoteCreatorCoin = false;
   let creatorCoinPid = null;
   
-  // const cached = tokenCache.get(poolEntity.quoteToken);
-  // if (cached) {
-  //   isQuoteCreatorCoin = cached.isCreatorCoin;
-  //   creatorCoinPid = cached.creatorCoinPid;
-  // } else {
-    const creatorCoinEntity = await db.find(token, {
-      address: poolEntity.quoteToken,
-      chainId: chain.id,
-    });
-    isQuoteCreatorCoin = creatorCoinEntity?.isCreatorCoin ?? false;
-    creatorCoinPid = isQuoteCreatorCoin ? creatorCoinEntity?.pool : null;
-    // tokenCache.set(poolEntity.quoteToken, isQuoteCreatorCoin, creatorCoinPid || null);
-  // }
+  const creatorCoinEntity = await db.find(token, {
+    address: poolEntity.quoteToken,
+    chainId: chain.id,
+  });
+  isQuoteCreatorCoin = creatorCoinEntity?.isCreatorCoin ?? false;
+  creatorCoinPid = isQuoteCreatorCoin ? creatorCoinEntity?.pool : null;
   
   if (!isQuoteCreatorCoin || !creatorCoinPid) {
     return null;
@@ -97,7 +90,7 @@ export async function getPoolUsdPrice(
   }
   
   const creatorCoinPrice = computeV3Price({
-    sqrtPriceX96: creatorCoinPool.sqrtPrice,
+    sqrtPriceX96,
     isToken0: creatorCoinPool.isToken0,
     decimals: 18,
   });
@@ -167,7 +160,7 @@ export function processSwapCalculations(
   });
   
   const swapValueUsd = ((reserveQuoteDelta < 0n ? -reserveQuoteDelta : reserveQuoteDelta) * 
-    usdPrice) / BigInt(10 ** 18);
+    usdPrice) / (isQuoteEth ? CHAINLINK_ETH_DECIMALS : WAD);
   
   return {
     price,
@@ -208,7 +201,7 @@ export async function handleOptimizedSwap(
   }
   
   // Get USD price efficiently
-  const usdPrice = await getPoolUsdPrice(poolEntity, zoraPrice, ethPrice, context);
+  const usdPrice = await getPoolUsdPrice(poolEntity, params.sqrtPriceX96, zoraPrice, ethPrice, context);
   if (!usdPrice) {
     return;
   }
@@ -249,7 +242,7 @@ export async function handleOptimizedSwap(
     amountIn: swapData.amountIn,
     amountOut: swapData.amountOut,
     price: swapData.price,
-    ethPriceUSD: usdPrice,
+    usdPrice,
   });
   
   // Create metrics
@@ -275,33 +268,12 @@ export async function handleOptimizedSwap(
         poolData: {
           parentPoolAddress: poolAddress,
           price: swapData.price,
+          isQuoteEth
         },
         chainId: chain.id,
         context,
       },
       entityUpdaters
     ),
-    updatePool({
-      poolAddress,
-      context,
-      update: {
-        sqrtPrice: params.sqrtPriceX96,
-        totalFee0: poolEntity.totalFee0 + swapData.fee0,
-        totalFee1: poolEntity.totalFee1 + swapData.fee1,
-        lastRefreshed: timestamp,
-        reserves0: swapData.nextReserves0,
-        reserves1: swapData.nextReserves1,
-        lastSwapTimestamp: timestamp,
-      },
-    }),
-    updateFifteenMinuteBucketUsd(context, {
-      poolAddress,
-      chainId: chain.id,
-      timestamp,
-      priceUsd: isQuoteEth
-        ? (swapData.price * usdPrice) / CHAINLINK_ETH_DECIMALS
-        : (swapData.price * usdPrice) / WAD,
-      volumeUsd: swapData.swapValueUsd,
-    }),
   ]);
 }

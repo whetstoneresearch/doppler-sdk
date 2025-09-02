@@ -119,7 +119,7 @@ ponder.on("UniswapV2Pair:Swap", async ({ event, context }) => {
     amountIn: amount0In > 0 ? amount0In : amount1In,
     amountOut: amount0Out > 0 ? amount0Out : amount1Out,
     price,
-    ethPriceUSD: ethPrice,
+    usdPrice: ethPrice,
   });
 
   // Create market metrics
@@ -262,7 +262,7 @@ ponder.on("UniswapV2PairUnichain:Swap", async ({ event, context }) => {
     amountIn,
     amountOut,
     price,
-    ethPriceUSD: ethPrice,
+    usdPrice: ethPrice,
   });
 
   // Create market metrics

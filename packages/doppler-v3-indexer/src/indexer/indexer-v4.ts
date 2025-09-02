@@ -178,7 +178,7 @@ ponder.on("UniswapV4Pool:Swap", async ({ event, context }) => {
     amountIn,
     amountOut,
     price,
-    ethPriceUSD: ethPrice,
+    usdPrice: ethPrice,
   });
 
   // Price change is now calculated in scheduled jobs using buckets
@@ -477,7 +477,7 @@ ponder.on("UniswapV4PoolSelfCorrecting:Swap", async ({ event, context }) => {
     amountIn,
     amountOut,
     price,
-    ethPriceUSD: ethPrice,
+    usdPrice: ethPrice,
   });
 
   // Create market metrics
@@ -630,7 +630,7 @@ ponder.on("UniswapV4Pool2:Swap", async ({ event, context }) => {
     amountIn,
     amountOut,
     price,
-    ethPriceUSD: ethPrice,
+    usdPrice: ethPrice,
   });
 
   // Create market metrics

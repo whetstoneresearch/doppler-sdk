@@ -2,8 +2,7 @@ import { Address } from "viem";
 import { Context } from "ponder:registry";
 import { SwapService, SwapData, MarketMetrics } from "./SwapService";
 import { SwapType } from "@app/types/shared";
-import { updateDayBucket, BucketUpdateParams, updateFifteenMinuteBucketUsd } from "@app/utils/time-buckets";
-import { CHAINLINK_ETH_DECIMALS } from "@app/utils/constants";
+import { CHAINLINK_ETH_DECIMALS, WAD } from "@app/utils/constants";
 
 /**
  * Orchestrates all entity updates required after a swap
@@ -15,7 +14,7 @@ export interface SwapUpdateParams {
   poolData: {
     parentPoolAddress: Address;
     price: bigint;
-    volume24h?: bigint;
+    isQuoteEth?: boolean;
   };
   chainId: number;
   context: Context;
@@ -56,16 +55,14 @@ export class SwapOrchestrator {
           price: poolData.price,
           liquidityUsd: metrics.liquidityUsd,
           marketCapUsd: metrics.marketCapUsd,
-          volume24h: poolData.volume24h ?? 0n,
           timestamp: swapData.timestamp,
-          percentDayChange: 0,
         }),
       }),
       updateFifteenMinuteBucketUsd(context, {
         poolAddress: poolData.parentPoolAddress,
         chainId,
         timestamp: swapData.timestamp,
-        priceUsd: swapData.price * swapData.ethPriceUSD / CHAINLINK_ETH_DECIMALS,
+        priceUsd: swapData.price * swapData.usdPrice / (poolData.isQuoteEth ? CHAINLINK_ETH_DECIMALS : WAD),
         volumeUsd: metrics.swapValueUsd,
       }),
     ];
@@ -90,7 +87,7 @@ export class SwapOrchestrator {
     amountIn: bigint;
     amountOut: bigint;
     price: bigint;
-    ethPriceUSD: bigint;
+    usdPrice: bigint;
   }): SwapData {
     return params;
   }
