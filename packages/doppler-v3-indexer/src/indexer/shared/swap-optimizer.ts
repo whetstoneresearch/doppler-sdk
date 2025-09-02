@@ -203,6 +203,7 @@ export async function handleOptimizedSwap(
   // Get USD price efficiently
   const usdPrice = await getPoolUsdPrice(poolEntity, params.sqrtPriceX96, zoraPrice, ethPrice, context);
 
+
   if (!usdPrice) {
     return;
   }
@@ -228,6 +229,7 @@ export async function handleOptimizedSwap(
     totalSupply: tokenEntity.totalSupply,
     decimals: isQuoteEth ? 8 : 18,
   });
+
   
   // Create swap data for orchestrator
   const orchestratorSwapData = SwapOrchestrator.createSwapData({
@@ -245,7 +247,7 @@ export async function handleOptimizedSwap(
     price: swapData.price,
     usdPrice,
   });
-  
+
   // Create metrics
   const metrics = {
     liquidityUsd: swapData.dollarLiquidity,

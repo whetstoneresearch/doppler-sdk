@@ -7,12 +7,11 @@ import {
 import { fetchEthPrice, fetchZoraPrice } from "./shared/oracle";
 import { batchUpsertUsersAndAssets, batchUpdateHolderCounts } from "./shared/entities/user-optimized";
 import { handleOptimizedSwap } from "./shared/swap-optimizer";
-import { insertZoraAssetIfNotExists } from "./shared/entities/zora/asset";
 
 import { zeroAddress } from "viem";
 import { computeV3Price } from "@app/utils";
 import { chainConfigs } from "@app/config";
-import { token, asset, pool } from "ponder:schema";
+import { token, pool } from "ponder:schema";
 import { insertZoraPoolV4Optimized } from "./shared/entities/zora/pool-optimized";
 
 ponder.on("ZoraFactory:CoinCreatedV4", async ({ event, context }) => {

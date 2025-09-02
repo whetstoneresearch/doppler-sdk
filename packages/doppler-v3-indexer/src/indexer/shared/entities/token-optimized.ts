@@ -62,7 +62,7 @@ export const upsertTokenWithPool = async ({
       name: "Zora",
       symbol: "ZORA",
       decimals: 18,
-      totalSupply: 10000000000000000000000000000n,
+      totalSupply: 1_000_000_000n,
     };
   } else {
     // Fetch token metadata for regular tokens
@@ -77,6 +77,7 @@ export const upsertTokenWithPool = async ({
         ],
         ...multicallOptions,
       });
+
 
     tokenData = {
       ...tokenData,

@@ -67,12 +67,7 @@ export class MarketDataService {
     // Calculate market cap in quote currency
     const marketCap = (price * totalSupply) / BigInt(10 ** assetDecimals);
 
-    // Convert to USD if quote is ETH
-    if (decimals === 8) {
-      return (marketCap * ethPriceUSD) / BigInt(10 ** decimals);
-    }
-
-    return marketCap;
+    return (marketCap * ethPriceUSD) / BigInt(10 ** decimals);
   }
 
   /**
