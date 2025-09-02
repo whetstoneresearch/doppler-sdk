@@ -95,7 +95,7 @@ export async function getPoolUsdPrice(
     decimals: 18,
   });
   
-  return (creatorCoinPrice * zoraPrice) / 10n ** 18n;
+  return (creatorCoinPrice * zoraPrice) / WAD;
 }
 
 /**
@@ -111,7 +111,7 @@ export function processSwapCalculations(
   const { isToken0, reserves0, reserves1, fee } = poolEntity;
   
   // Calculate price
-  const price = PriceService.computePriceFromSqrtPriceX96({
+  const price = computeV3Price({
     sqrtPriceX96,
     isToken0,
     decimals: 18,
@@ -202,6 +202,7 @@ export async function handleOptimizedSwap(
   
   // Get USD price efficiently
   const usdPrice = await getPoolUsdPrice(poolEntity, params.sqrtPriceX96, zoraPrice, ethPrice, context);
+
   if (!usdPrice) {
     return;
   }

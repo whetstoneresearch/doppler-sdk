@@ -65,7 +65,6 @@ export const computeMarketCap = ({
     totalSupply,
     ethPriceUSD: ethPrice,
     assetDecimals: 18,
-    isQuoteETH: true,
     decimals,
   });
 };
