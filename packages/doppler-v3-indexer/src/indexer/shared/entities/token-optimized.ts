@@ -88,9 +88,8 @@ export const upsertTokenWithPool = async ({
       derc20Data: isDerc20 ? address : undefined,
     };
 
-    // Trigger metadata update in background
     if (process.env.NODE_ENV !== "local") {
-      fetch(`${process.env.METADATA_UPDATER_ENDPOINT}?tokenAddress=${address}`) as unknown;
+      fetch(`${process.env.METADATA_UPDATER_ENDPOINT}?tokenAddress=${address}&chainId=${chain.id}`);
     }
   }
 

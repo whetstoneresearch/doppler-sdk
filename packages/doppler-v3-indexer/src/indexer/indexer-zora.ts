@@ -72,11 +72,7 @@ ponder.on("ZoraFactory:CoinCreatedV4", async ({ event, context }) => {
       decimals: 18,
     });
 
-    console.log("creatorCoinPrice", creatorCoinPrice);
-    console.log("zoraPrice", zoraPrice);
-
     const contentCoinUsdPrice = creatorCoinPrice * zoraPrice / 10n ** 18n;
-    console.log("contentCoinUsdPrice", contentCoinUsdPrice);
 
     usdPrice = contentCoinUsdPrice;
   }
