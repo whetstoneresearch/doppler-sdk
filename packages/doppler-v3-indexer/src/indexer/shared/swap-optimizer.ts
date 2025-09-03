@@ -90,7 +90,7 @@ export async function getPoolUsdPrice(
   }
   
   const creatorCoinPrice = computeV3Price({
-    sqrtPriceX96,
+    sqrtPriceX96: creatorCoinPool.sqrtPrice,
     isToken0: creatorCoinPool.isToken0,
     decimals: 18,
   });
@@ -202,7 +202,6 @@ export async function handleOptimizedSwap(
   
   // Get USD price efficiently
   const usdPrice = await getPoolUsdPrice(poolEntity, params.sqrtPriceX96, zoraPrice, ethPrice, context);
-
 
   if (!usdPrice) {
     return;

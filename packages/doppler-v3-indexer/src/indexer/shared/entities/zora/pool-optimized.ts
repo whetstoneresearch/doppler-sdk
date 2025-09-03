@@ -96,16 +96,6 @@ export const insertZoraPoolV4Optimized = async ({
     
     // Batch process all positions at once
     for (const position of positions) {
-      await insertPositionIfNotExists({
-        poolAddress,
-        context,
-        timestamp,
-        tickLower: position.tickLower,
-        tickUpper: position.tickUpper,
-        liquidity: position.liquidity,
-        owner: zeroAddress,
-      });
-
       const { tickLower, tickUpper, liquidity: posLiquidity } = position;
       liquidity += posLiquidity;
       if (tick < tickLower) {
