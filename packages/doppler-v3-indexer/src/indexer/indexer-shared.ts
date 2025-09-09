@@ -1,5 +1,6 @@
 import { ponder } from "ponder:registry";
-import { pool } from "ponder:schema";
+import { asset, pool } from "ponder:schema";
+import { insertV3MigrationPoolIfNotExists } from "./shared/entities/migrationPool";
 import { insertAssetIfNotExists, updateAsset } from "./shared/entities/asset";
 import { insertTokenIfNotExists, updateToken } from "./shared/entities/token";
 import { insertV2MigrationPoolIfNotExists } from "./shared/entities/v2Pool";
@@ -8,6 +9,7 @@ import { insertUserAssetIfNotExists } from "./shared/entities/userAsset";
 import { insertUserIfNotExists, updateUser } from "./shared/entities/user";
 import { updatePool } from "./shared/entities/pool";
 import { chainConfigs } from "../config/chains";
+import { zeroAddress } from "viem";
 
 ponder.on("Airlock:Migrate", async ({ event, context }) => {
   const { chain } = context;
@@ -54,69 +56,69 @@ ponder.on("Airlock:Migrate", async ({ event, context }) => {
   }
 });
 
-// ponder.on("UniswapV3Migrator:Migrate", async ({ event, context }) => {
-//   const { chain } = context;
-//   const { timestamp } = event.block;
-//   const { pool, token0, token1 } = event.args;
+ponder.on("UniswapV3Migrator:Migrate", async ({ event, context }) => {
+  const { chain } = context;
+  const { timestamp } = event.block;
+  const { pool, token0, token1 } = event.args;
 
-//   const poolAddress = pool.toLowerCase() as `0x${string}`;
-//   const token0Address = token0.toLowerCase() as `0x${string}`;
-//   const token1Address = token1.toLowerCase() as `0x${string}`;
+  const poolAddress = pool.toLowerCase() as `0x${string}`;
+  const token0Address = token0.toLowerCase() as `0x${string}`;
+  const token1Address = token1.toLowerCase() as `0x${string}`;
 
-//   let isToken0 = false;
+  let isToken0 = false;
 
-//   if (
-//     token0Address.toLowerCase() == zeroAddress ||
-//     token0Address.toLowerCase() ==
-//     chainConfigs[chain.name].addresses.shared.weth
-//   ) {
-//     isToken0 = false;
-//   } else {
-//     const assetEntityCheck = await context.db.find(asset, {
-//       address: token0Address,
-//       chainId: chain.id,
-//     });
-//     if (assetEntityCheck) {
-//       isToken0 = true;
-//     } else {
-//       isToken0 = false;
-//     }
-//   }
+  if (
+    token0Address.toLowerCase() == zeroAddress ||
+    token0Address.toLowerCase() ==
+    chainConfigs[chain.name].addresses.shared.weth
+  ) {
+    isToken0 = false;
+  } else {
+    const assetEntityCheck = await context.db.find(asset, {
+      address: token0Address,
+      chainId: chain.id,
+    });
+    if (assetEntityCheck) {
+      isToken0 = true;
+    } else {
+      isToken0 = false;
+    }
+  }
 
-//   const assetEntity = await context.db.find(asset, {
-//     address: isToken0 ? token0Address : token1Address,
-//     chainId: chain.id,
-//   });
+  const assetEntity = await context.db.find(asset, {
+    address: isToken0 ? token0Address : token1Address,
+    chainId: chain.id,
+  });
 
-//   await insertV3MigrationPoolIfNotExists({
-//     poolAddress,
-//     parentPool: assetEntity!.poolAddress,
-//     timestamp,
-//     context,
-//   });
+  await insertV3MigrationPoolIfNotExists({
+    poolAddress,
+    parentPool: assetEntity!.poolAddress,
+    timestamp,
+    context,
+  });
 
-//   await Promise.all([
-//     updatePool({
-//       poolAddress: assetEntity!.poolAddress,
-//       context,
-//       update: {
-//         migratedAt: timestamp,
-//         migrated: true,
-//         migratedToPool: poolAddress,
-//         migrationType: "v3",
-//       },
-//     }),
-//     updateAsset({
-//       assetAddress: isToken0 ? token0Address : token1Address,
-//       context,
-//       update: {
-//         migratedAt: timestamp,
-//         migrated: true,
-//         migrationType: "v3",
-//       },
-//     }),
-//   ]);
-// });
+  await Promise.all([
+    updatePool({
+      poolAddress: assetEntity!.poolAddress,
+      context,
+      update: {
+        migratedAt: timestamp,
+        migrated: true,
+        migratedToPool: poolAddress,
+        migrationType: "v3",
+      },
+    }),
+    updateAsset({
+      assetAddress: isToken0 ? token0Address : token1Address,
+      context,
+      update: {
+        migratedAt: timestamp,
+        migrated: true,
+        migrationType: "v3",
+      },
+    }),
+  ]);
+});
 
 ponder.on("DERC20:Transfer", async ({ event, context }) => {
   const { address } = event.log;
