@@ -1,4 +1,4 @@
-import { Address, zeroAddress } from "viem";
+import { Address } from "viem";
 import { ChainConfig } from "./types";
 import {
   CHAIN_IDS,

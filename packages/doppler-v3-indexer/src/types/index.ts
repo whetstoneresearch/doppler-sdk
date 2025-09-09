@@ -1,9 +1,9 @@
 // Re-export all types from subdirectories
-export * from "./shared";
+export * from "./shared-types";
 export * from "./v2-types";
 export * from "./v3-types";
 export * from "./v4-types";
-export * from "./config";
+export * from "./config-types";
 
 // Legacy export for compatibility
 export { configs } from "addresses";

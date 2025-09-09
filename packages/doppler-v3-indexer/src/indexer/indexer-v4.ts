@@ -3,9 +3,9 @@ import { getV4PoolData } from "@app/utils/v4-utils";
 import { insertTokenIfNotExists } from "./shared/entities/token";
 import { computeMarketCap, fetchEthPrice } from "./shared/oracle";
 import { insertPoolIfNotExistsV4, updatePool } from "./shared/entities/pool";
-import { insertAssetIfNotExists, updateAsset } from "./shared/entities/asset";
+import { insertAssetIfNotExists } from "./shared/entities/asset";
 import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
-import { insertV4ConfigIfNotExists } from "./shared/entities/v4-entities/v4Config";
+import { insertV4ConfigIfNotExists } from "./shared/entities/v4Config";
 import { getReservesV4 } from "@app/utils/v4-utils/getV4PoolData";
 import { CHAINLINK_ETH_DECIMALS } from "@app/utils/constants";
 import { SwapService, SwapOrchestrator, PriceService } from "@app/core";
@@ -49,7 +49,7 @@ ponder.on("UniswapV4Initializer:Create", async ({ event, context }) => {
 
   const { totalSupply } = baseToken;
 
-  const [poolEntity, v4Config] = await Promise.all([
+  const [poolEntity] = await Promise.all([
     insertPoolIfNotExistsV4({
       poolAddress,
       timestamp,
@@ -164,7 +164,6 @@ ponder.on("UniswapV4Pool:Swap", async ({ event, context }) => {
 
   const swapValueUsd = amountIn * ethPrice / CHAINLINK_ETH_DECIMALS;
 
-  // Create swap data
   const swapData = SwapOrchestrator.createSwapData({
     poolAddress: address,
     sender: event.transaction.from,
@@ -181,24 +180,17 @@ ponder.on("UniswapV4Pool:Swap", async ({ event, context }) => {
     usdPrice: ethPrice,
   });
 
-  // Price change is now calculated in scheduled jobs using buckets
-  const percentDayChange = 0;
-
-  // Create market metrics
   const marketMetrics = {
     liquidityUsd: dollarLiquidity,
     marketCapUsd,
     swapValueUsd,
-    percentDayChange,
   };
 
-  // Define entity updaters
   const entityUpdaters = {
     updatePool,
     updateFifteenMinuteBucketUsd,
   };
 
-  // Perform common updates via orchestrator
   await SwapOrchestrator.performSwapUpdates(
     {
       swapData,

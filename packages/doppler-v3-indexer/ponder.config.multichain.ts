@@ -14,7 +14,7 @@ import {
   ZoraCoinABI,
   ZoraCreatorCoinABI,
 } from "./src/abis";
-import { BLOCK_INTERVALS } from "@app/config/blocks/intervals";
+import { BLOCK_INTERVALS } from "./src/config/chains/constants";
 import {
   chainConfigs,
   CHAIN_IDS,
@@ -180,23 +180,23 @@ export default createConfig({
     UniswapV3MigrationPool: {
       abi: UniswapV3PoolABI,
       chain: {
-        // baseSepolia: {
-        //   startBlock: 28245945, // hardcoded for now
-        //   address: factory({
-        //     address: baseSepolia.addresses.v3.v3Migrator,
-        //     event: getAbiItem({ abi: UniswapV3MigratorAbi, name: "Migrate" }),
-        //     parameter: "pool",
-        //   }),
-        // },
+        base: {
+          startBlock: base.startBlock, // hardcoded for now
+          address: factory({
+            address: base.addresses.v3.v3Migrator,
+            event: getAbiItem({ abi: UniswapV3MigratorAbi, name: "Migrate" }),
+            parameter: "pool",
+          }),
+        },
       },
     },
     UniswapV3Migrator: {
       abi: UniswapV3MigratorAbi,
       chain: {
-        // baseSepolia: {
-        //   startBlock: 28245945, // hardcoded for now
-        //   address: baseSepolia.addresses.v3.v3Migrator,
-        // },
+        base: {
+          startBlock: base.startBlock, // hardcoded for now
+          address: base.addresses.v3.v3Migrator,
+        },
       },
     },
     UniswapV3Pool: {

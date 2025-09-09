@@ -1,96 +1,24 @@
 import { configs, PoolKey } from "@app/types";
 import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
 import { computeV3Price } from "@app/utils/v3-utils";
-import { getReservesV4Zora } from "@app/utils/v4-utils/getV4PoolData";
 import { Context } from "ponder:registry";
 import { pool } from "ponder:schema";
 import { Address, zeroAddress } from "viem";
+import { ZoraV4HookABI } from "@app/abis/ZoraV4HookABI";
+import { StateViewABI } from "@app/abis";
+import { getPoolId } from "@app/utils/v4-utils/getPoolId";
+import { chainConfigs } from "@app/config";
+import { 
+  getAmount0Delta, 
+  getAmount1Delta 
+} from "@app/utils/v3-utils/computeGraduationThreshold";
+import { computeMarketCap } from "../../oracle";
+import { insertPositionIfNotExists } from "../position";
 
-export const insertZoraPoolIfNotExists = async ({
-  poolAddress,
-  timestamp,
-  context,
-  tick,
-  sqrtPrice,
-}: {
-  poolAddress: Address;
-  timestamp: bigint;
-  context: Context;
-  tick?: number;
-  sqrtPrice?: bigint;
-}): Promise<typeof pool.$inferSelect> => {
-  const { db, chain } = context;
-  const address = poolAddress.toLowerCase() as `0x${string}`;
-
-  const existingPool = await db.find(pool, {
-    address,
-    chainId: chain.id,
-  });
-
-  if (existingPool) {
-    return existingPool;
-  }
-
-  const tickValue = tick ?? 0;
-  const sqrtPriceValue = sqrtPrice ?? 0n;
-
-  const slot0Data = {
-    tick: tickValue,
-    sqrtPrice: sqrtPriceValue,
-  }
-
-  return await db.insert(pool).values({
-    ...slot0Data,
-    address,
-    liquidity: 0n,
-    createdAt: timestamp,
-    asset: zeroAddress,
-    baseToken: zeroAddress,
-    quoteToken: zeroAddress,
-    price: 0n, // update in coin created event
-    type: "v3",
-    chainId: chain.id,
-    fee: 0,
-    dollarLiquidity: 0n,
-    dailyVolume: address,
-    maxThreshold: 0n,
-    graduationBalance: 0n,
-    totalFee0: 0n,
-    totalFee1: 0n,
-    volumeUsd: 0n,
-    reserves0: 0n,
-    reserves1: 0n,
-    percentDayChange: 0,
-    isToken0: false,
-    marketCapUsd: 0n,
-    isQuoteEth: false,
-    integrator: zeroAddress,
-  });
-};
-
-export const updatePool = async ({
-  poolAddress,
-  context,
-  update,
-}: {
-  poolAddress: Address;
-  context: Context;
-  update: Partial<typeof pool.$inferInsert>;
-}) => {
-  const { db, chain } = context;
-  const address = poolAddress.toLowerCase() as `0x${string}`;
-
-  await db
-    .update(pool, {
-      address,
-      chainId: chain.id,
-    })
-    .set({
-      ...update,
-    });
-};
-
-export const insertZoraPoolV4IfNotExists = async ({
+/**
+ * Optimized version with caching and reduced contract calls
+ */
+export const insertZoraPoolV4Optimized = async ({
   poolAddress,
   baseToken,
   quoteToken,
@@ -101,7 +29,7 @@ export const insertZoraPoolV4IfNotExists = async ({
   isQuoteZora,
   isCreatorCoin,
   isContentCoin,
-  poolKeyHash,
+  totalSupply,
 }: {
   poolAddress: Address;
   baseToken: Address;
@@ -113,34 +41,93 @@ export const insertZoraPoolV4IfNotExists = async ({
   isQuoteZora: boolean;
   isCreatorCoin: boolean;
   isContentCoin: boolean;
-  poolKeyHash?: `0x${string}`;
+  totalSupply: bigint;
 }): Promise<typeof pool.$inferSelect> => {
-  const { db, chain } = context;
+  const { db, chain, client } = context;
   const address = poolAddress.toLowerCase() as `0x${string}`;
+  const chainId = chain.id;
 
-  const isToken0 = baseToken.toLowerCase() < quoteToken.toLowerCase();
-
+  // Check if pool already exists (early return)
   const existingPool = await db.find(pool, {
     address,
-    chainId: chain.id,
+    chainId,
   });
 
   if (existingPool) {
     return existingPool;
   }
 
-  const { reserves, sqrtPriceX96, tick } = await getReservesV4Zora({
-    poolAddress,
-    isContentCoin,
-    isCreatorCoin,
-    poolKey,
-    context,
-    poolKeyHash,
+  const isToken0 = baseToken.toLowerCase() < quoteToken.toLowerCase();
+  const isQuoteEth = quoteToken === zeroAddress || 
+    quoteToken === configs[chain.name].shared.weth;
+
+  // Optimized contract calls - single multicall instead of multiple calls
+  const stateView = chainConfigs[chain.name].addresses.v4.stateView;
+  const poolId = getPoolId(poolKey);
+  const hook = poolKey.hooks;
+
+  const [poolCoinResult, slot0Result] = await client.multicall({
+    contracts: [
+      {
+        abi: ZoraV4HookABI,
+        address: hook,
+        functionName: "getPoolCoin",
+        args: [poolKey],
+      },
+      {
+        abi: StateViewABI,
+        address: stateView,
+        functionName: "getSlot0",
+        args: [poolId],
+      },
+    ],
   });
 
-  const isQuoteEth = quoteToken === zeroAddress || quoteToken === configs[chain.name].shared.weth;
+  const sqrtPriceX96 = slot0Result.result?.[0] ?? 0n;
+  const tick = slot0Result.result?.[1] ?? 0;
+  
+  // Calculate reserves only if needed
+  let token0Reserve = 0n;
+  let token1Reserve = 0n;
+  let liquidity = 0n;
 
-  const { token0Reserve, token1Reserve, liquidity } = reserves;
+  if (poolCoinResult.result?.positions) {
+    const positions = poolCoinResult.result.positions;
+    
+    // Batch process all positions at once
+    for (const position of positions) {
+      const { tickLower, tickUpper, liquidity: posLiquidity } = position;
+      liquidity += posLiquidity;
+      if (tick < tickLower) {
+        token0Reserve += getAmount0Delta({
+          tickLower,
+          tickUpper,
+          liquidity: posLiquidity,
+          roundUp: false,
+        });
+      } else if (tick < tickUpper) {
+        token0Reserve += getAmount0Delta({
+          tickLower: tick,
+          tickUpper,
+          liquidity: posLiquidity,
+          roundUp: false,
+        });
+        token1Reserve += getAmount1Delta({
+          tickLower,
+          tickUpper: tick,
+          liquidity: posLiquidity,
+          roundUp: false,
+        });
+      } else {
+        token1Reserve += getAmount1Delta({
+          tickLower,
+          tickUpper,
+          liquidity: posLiquidity,
+          roundUp: false,
+        });
+      }
+    }
+  }
 
   const price = computeV3Price({
     sqrtPriceX96,
@@ -148,27 +135,36 @@ export const insertZoraPoolV4IfNotExists = async ({
     decimals: 18,
   });
 
-  const liquidityUsd = computeDollarLiquidity({
+  const marketCapUsd = computeMarketCap({
+    price,
+    ethPrice,
+    totalSupply,
+    decimals: isQuoteEth ? 8 : 18,
+  });
+
+  const dollarLiquidity = computeDollarLiquidity({
     assetBalance: isToken0 ? token0Reserve : token1Reserve,
     quoteBalance: isToken0 ? token1Reserve : token0Reserve,
     price,
     ethPrice,
+    decimals: isQuoteEth ? 8 : 18,
   });
 
+  // Insert new pool with all data at once
   return await db.insert(pool).values({
     address,
-    tick ,
+    tick,
     sqrtPrice: sqrtPriceX96,
     liquidity,
     createdAt: timestamp,
     asset: baseToken,
-    baseToken: baseToken,
-    quoteToken: quoteToken,
+    baseToken,
+    quoteToken,
     price,
-    type: "v4",
-    chainId: chain.id,
+    type: "zora",
+    chainId,
     fee: poolKey.fee,
-    dollarLiquidity: liquidityUsd,
+    dollarLiquidity,
     dailyVolume: address,
     maxThreshold: 0n,
     graduationBalance: 0n,
@@ -179,11 +175,15 @@ export const insertZoraPoolV4IfNotExists = async ({
     reserves1: token1Reserve,
     percentDayChange: 0,
     isToken0,
-    marketCapUsd: 0n,
+    marketCapUsd,
     isQuoteEth,
     isQuoteZora,
     integrator: zeroAddress,
     isContentCoin,
     isCreatorCoin,
+    holderCount: 0,
+    lastSwapTimestamp: timestamp,
+    lastRefreshed: timestamp,
+    poolKey,
   });
 };

@@ -35,7 +35,6 @@ export const batchUpsertUsersAndAssets = async ({
   const isMint = senderLower === ZERO_ADDRESS;
   const isBurn = recipientLower === ZERO_ADDRESS;
 
-  // Create user entries (skip zero address)
   const userInserts: Promise<any>[] = [];
   if (!isMint) {
     userInserts.push(
@@ -70,52 +69,37 @@ export const batchUpsertUsersAndAssets = async ({
     await Promise.all(userInserts);
   }
 
-  // Batch fetch existing user assets (skip zero address)
-  let existingSenderAsset: typeof userAsset.$inferSelect | null = null;
-  let existingRecipientAsset: typeof userAsset.$inferSelect | null = null;
-  
-  const assetFetches: Promise<any>[] = [];
-  if (!isMint) {
-    assetFetches.push(
-      db.find(userAsset, {
-        userId: senderLower,
-        assetId: tokenLower,
-        chainId: chain.id,
-      }).then(result => { existingSenderAsset = result; })
-    );
-  }
-  if (!isBurn) {
-    assetFetches.push(
-      db.find(userAsset, {
-        userId: recipientLower,
-        assetId: tokenLower,
-        chainId: chain.id,
-      }).then(result => { existingRecipientAsset = result; })
-    );
-  }
-  
-  if (assetFetches.length > 0) {
-    await Promise.all(assetFetches);
-  }
+  let existingSenderAsset: typeof userAsset.$inferSelect | null;
+  let existingRecipientAsset: typeof userAsset.$inferSelect | null;
 
-  // Calculate holder count delta
+  existingSenderAsset = !isMint ? await db.find(userAsset, {
+    userId: senderLower,
+    assetId: tokenLower,
+    chainId: chain.id,
+  }) : null;
+
+  existingRecipientAsset = !isBurn ? await db.find(userAsset, {
+    userId: recipientLower,
+    assetId: tokenLower,
+    chainId: chain.id,
+  }) : null;
+  
   let holderCountDelta = 0;
   
-  // Handle mints (new tokens entering circulation)
   if (isMint && recipientBalance > 0n) {
     const recipientPrevBalance = existingRecipientAsset?.balance ?? 0n;
     if (recipientPrevBalance === 0n) {
       holderCountDelta += 1;
     }
   }
-  // Handle burns (tokens leaving circulation)
+
   else if (isBurn && senderBalance === 0n) {
     const senderPrevBalance = existingSenderAsset?.balance ?? 0n;
     if (senderPrevBalance > 0n) {
       holderCountDelta -= 1;
     }
   }
-  // Handle regular transfers
+
   else if (!isMint && !isBurn) {
     const senderPrevBalance = existingSenderAsset?.balance ?? 0n;
     const recipientPrevBalance = existingRecipientAsset?.balance ?? 0n;

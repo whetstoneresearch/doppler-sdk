@@ -1,13 +1,12 @@
 import { Address } from "viem";
-import { V2Addresses } from "../v2-types";
-import { V3Addresses } from "../v3-types";
-import { V4Addresses } from "../v4-types";
+import { V2Addresses } from "./v2-types";
+import { V3Addresses } from "./v3-types";
+import { V4Addresses } from "./v4-types";
 
 /**
  * Network identifiers
  */
 export type Network =
-  | "mainnet"
   | "unichain"
   | "baseSepolia"
   | "ink"
@@ -69,7 +68,6 @@ export interface SharedAddresses {
  * Oracle addresses
  */
 export interface OracleAddresses {
-  mainnetEthUsdc: Address;
   weth: Address;
   usdc: Address;
   chainlinkEth: Address;
@@ -141,6 +139,6 @@ export interface FactoryConfig {
 export type ContractConfigMap = Record<string, ContractConfig>;
 
 // Re-export protocol-specific addresses from their respective modules
-export type { V2Addresses } from "../v2-types";
-export type { V3Addresses } from "../v3-types";
-export type { V4Addresses } from "../v4-types";
+export type { V2Addresses } from "./v2-types";
+export type { V3Addresses } from "./v3-types";
+export type { V4Addresses } from "./v4-types";

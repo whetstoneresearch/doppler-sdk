@@ -1,7 +1,7 @@
 import { Hex } from "viem";
 import { Context } from "ponder:registry";
 import { AirlockABI } from "@app/abis";
-import { AssetData } from "@app/types/shared";
+import { AssetData } from "@app/types/shared-types";
 import { chainConfigs } from "@app/config";
 
 export const getAssetData = async (

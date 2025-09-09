@@ -106,7 +106,7 @@ ponder.on("LockableUniswapV3Pool:Mint", async ({ event, context }) => {
 
   const ethPrice = await fetchEthPrice(timestamp, context);
 
-  const { baseToken, isToken0, price, liquidity, reserves0, reserves1 } =
+  const { isToken0, price, liquidity, reserves0, reserves1 } =
     await insertLockableV3PoolIfNotExists({
       poolAddress: address,
       timestamp,
@@ -173,7 +173,7 @@ ponder.on("LockableUniswapV3Pool:Burn", async ({ event, context }) => {
 
   const ethPrice = await fetchEthPrice(timestamp, context);
 
-  const { baseToken, isToken0, price, liquidity, reserves0, reserves1 } =
+  const { isToken0, price, liquidity, reserves0, reserves1 } =
     await insertLockableV3PoolIfNotExists({
       poolAddress: address,
       timestamp,

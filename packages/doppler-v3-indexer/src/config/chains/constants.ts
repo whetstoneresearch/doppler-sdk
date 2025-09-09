@@ -43,7 +43,6 @@ export const COMMON_ADDRESSES = {
 
 // Oracle addresses (mainnet-based)
 export const ORACLE_ADDRESSES: OracleAddresses = {
-  mainnetEthUsdc: "0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640" as Address,
   weth: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2" as Address,
   usdc: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48" as Address,
   chainlinkEth: "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419" as Address,
@@ -57,4 +56,11 @@ export const RPC_ENV_VARS = {
   baseSepolia: "PONDER_RPC_URL_84532",
   ink: "PONDER_RPC_URL_57073",
   base: "PONDER_RPC_URL_8453",
+} as const;
+
+export const BLOCK_INTERVALS = {
+  FIVE_MINUTES: (60 * 5) / 12, // every 5 minutes
+  FIFTY_BLOCKS: 50,             // every 50 blocks  
+  THOUSAND_BLOCKS: 1000,        // every 1000 blocks
+  FIVE_THOUSAND_BLOCKS: 5000,
 } as const;

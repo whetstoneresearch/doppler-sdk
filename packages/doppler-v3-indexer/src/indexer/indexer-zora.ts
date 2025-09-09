@@ -12,7 +12,7 @@ import { zeroAddress } from "viem";
 import { computeV3Price } from "@app/utils";
 import { chainConfigs } from "@app/config";
 import { token, pool } from "ponder:schema";
-import { insertZoraPoolV4Optimized } from "./shared/entities/zora/pool-optimized";
+import { insertZoraPoolV4Optimized } from "./shared/entities/zora/pool";
 
 ponder.on("ZoraFactory:CoinCreatedV4", async ({ event, context }) => {
   const { db, chain } = context;

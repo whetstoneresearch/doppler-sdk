@@ -1,7 +1,7 @@
 import { Address } from "viem";
 import { Context } from "ponder:registry";
-import { SwapService, SwapData, MarketMetrics } from "./SwapService";
-import { SwapType } from "@app/types/shared";
+import { SwapService, SwapData, SwapMarketMetrics } from "./SwapService";
+import { SwapType } from "@app/types/shared-types";
 import { CHAINLINK_ETH_DECIMALS, WAD } from "@app/utils/constants";
 
 /**
@@ -10,7 +10,7 @@ import { CHAINLINK_ETH_DECIMALS, WAD } from "@app/utils/constants";
 export interface SwapUpdateParams {
   swapData: SwapData;
   swapType: SwapType;
-  metrics: MarketMetrics;
+  metrics: SwapMarketMetrics;
   poolData: {
     parentPoolAddress: Address;
     price: bigint;

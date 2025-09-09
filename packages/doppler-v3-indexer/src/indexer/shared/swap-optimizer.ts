@@ -2,7 +2,7 @@ import { Context } from "ponder:registry";
 import { pool, token } from "ponder:schema";
 import { Address } from "viem";
 import { SwapOrchestrator } from "@app/core";
-import { PriceService, SwapService } from "@app/core";
+import { SwapService } from "@app/core";
 import { computeV3Price } from "@app/utils";
 import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
 import { computeMarketCap, fetchEthPrice, fetchZoraPrice } from "./oracle";
@@ -45,7 +45,6 @@ interface ProcessedSwapData {
  */
 export async function getPoolUsdPrice(
   poolEntity: typeof pool.$inferSelect,
-  sqrtPriceX96: bigint,
   zoraPrice: bigint,
   ethPrice: bigint,
   context: Context
@@ -201,7 +200,7 @@ export async function handleOptimizedSwap(
   }
   
   // Get USD price efficiently
-  const usdPrice = await getPoolUsdPrice(poolEntity, params.sqrtPriceX96, zoraPrice, ethPrice, context);
+  const usdPrice = await getPoolUsdPrice(poolEntity, zoraPrice, ethPrice, context);
 
   if (!usdPrice) {
     return;

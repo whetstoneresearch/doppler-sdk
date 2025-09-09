@@ -1,28 +1,28 @@
-import { ponder } from "ponder:registry";
-import { chainConfigs } from "@app/config/chains";
-import { insertSwapIfNotExists } from "./shared/entities/swap";
-import { updatePool } from "./shared/entities/pool";
-import { updateAsset } from "./shared/entities/asset";
-import { fetchEthPrice } from "./shared/oracle";
-import { computeV4Price } from "@app/utils/v4-utils/computeV4Price";
-import { Address } from "viem";
-import { SwapService, SwapOrchestrator } from "@app/core";
-import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
-import { tryAddActivePool } from "./shared/scheduledJobs";
-import { insertTokenIfNotExists } from "./shared/entities/token";
-import { CHAINLINK_ETH_DECIMALS } from "@app/utils/constants";
-import { position } from "ponder:schema";
-import { fetchExistingV4Pool, updateV4Pool } from "./shared/entities/v4pools";
-import { insertPositionIfNotExists, updatePosition } from "./shared/entities/position";
+// import { ponder } from "ponder:registry";
+// import { chainConfigs } from "@app/config/chains";
+// import { insertSwapIfNotExists } from "./shared/entities/swap";
+// import { updatePool } from "./shared/entities/pool";
+// import { updateAsset } from "./shared/entities/asset";
+// import { fetchEthPrice } from "./shared/oracle";
+// import { computeV4Price } from "@app/utils/v4-utils/computeV4Price";
+// import { Address } from "viem";
+// import { SwapService, SwapOrchestrator } from "@app/core";
+// import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
+// import { tryAddActivePool } from "./shared/scheduledJobs";
+// import { insertTokenIfNotExists } from "./shared/entities/token";
+// import { CHAINLINK_ETH_DECIMALS } from "@app/utils/constants";
+// import { position } from "ponder:schema";
+// import { fetchExistingV4Pool, updateV4Pool } from "./shared/entities/v4pools";
+// import { insertPositionIfNotExists, updatePosition } from "./shared/entities/position";
 
-// Helper to get V4MigratorHook address for a chain
-const getV4MigratorHook = (chainName: string): Address | null => {
-  const config = chainConfigs[chainName as keyof typeof chainConfigs];
-  if (!config || config.addresses.v4.v4MigratorHook === "0x0000000000000000000000000000000000000000") {
-    return null;
-  }
-  return config.addresses.v4.v4MigratorHook;
-};
+// // Helper to get V4MigratorHook address for a chain
+// const getV4MigratorHook = (chainName: string): Address | null => {
+//   const config = chainConfigs[chainName as keyof typeof chainConfigs];
+//   if (!config || config.addresses.v4.v4MigratorHook === "0x0000000000000000000000000000000000000000") {
+//     return null;
+//   }
+//   return config.addresses.v4.v4MigratorHook;
+// };
 
 // Track PoolManager Initialize events for pools created via V4Migrator
 // ponder.on("PoolManager:Initialize", async ({ event, context }) => {

@@ -5,7 +5,6 @@ import { computeMarketCap, fetchEthPrice } from "./shared/oracle";
 import {
   insertPoolIfNotExists,
   insertTokenIfNotExists,
-  updateAsset,
   updatePool,
   updateV2Pool,
 } from "./shared/entities";
