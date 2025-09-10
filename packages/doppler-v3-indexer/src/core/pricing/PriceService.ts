@@ -67,23 +67,4 @@ export class PriceService {
     }
     return price;
   }
-
-  /**
-   * Computes price change percentage
-   * Common calculation for tracking price movements
-   */
-  static computePriceChange({
-    currentPrice,
-    previousPrice,
-  }: {
-    currentPrice: bigint;
-    previousPrice: bigint;
-  }): number {
-    if (previousPrice === 0n) return 0;
-    
-    const change = Number(currentPrice - previousPrice);
-    const base = Number(previousPrice);
-    
-    return (change / base) * 100;
-  }
 }

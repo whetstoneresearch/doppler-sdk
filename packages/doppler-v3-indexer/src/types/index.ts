@@ -4,6 +4,3 @@ export * from "./v2-types";
 export * from "./v3-types";
 export * from "./v4-types";
 export * from "./config-types";
-
-// Legacy export for compatibility
-export { configs } from "addresses";

@@ -22,7 +22,6 @@ import {
   getAmount0Delta,
   getAmount1Delta,
 } from "../v3-utils/computeGraduationThreshold";
-import { configs } from "addresses";
 import { getMulticallOptions } from "@app/core/utils";
 import { chainConfigs } from "@app/config";
 
@@ -33,7 +32,7 @@ export const getV4PoolData = async ({
   hook: Address;
   context: Context;
 }): Promise<V4PoolData> => {
-  const { stateView } = configs[context.chain.name].v4;
+  const { stateView } = chainConfigs[context.chain.name].addresses.v4;
   const { client, chain } = context;
 
   const poolConfig = await getV4PoolConfig({ hook, context });
@@ -225,7 +224,7 @@ export const getReservesV4 = async ({
   context: Context;
 }) => {
   const { client } = context;
-  const { stateView } = configs[context.chain.name].v4;
+  const { stateView } = chainConfigs[context.chain.name].addresses.v4;
 
   const poolKey = await client.readContract({
     abi: DopplerABI,
@@ -378,7 +377,7 @@ export const getLatestSqrtPrice = async ({
   amount1: bigint;
 }> => {
   const { client, chain } = context;
-  const lensQuoter = configs[chain.name].v4.dopplerLens;
+  const lensQuoter = chainConfigs[chain.name].addresses.v4.dopplerLens;
 
   const input: QuoteExactSingleParams = {
     poolKey,

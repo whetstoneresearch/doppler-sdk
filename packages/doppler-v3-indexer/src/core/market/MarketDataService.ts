@@ -190,50 +190,5 @@ export class MarketDataService {
       priceUsd,
     };
   }
-
-  /**
-   * Calculate price change percentage with proper bigint handling
-   * @param currentPrice Current price
-   * @param previousPrice Previous price (24h ago)
-   * @returns Percentage change with 2 decimal precision
-   */
-  static calculatePriceChange(
-    currentPrice: bigint,
-    previousPrice: bigint
-  ): number {
-    if (previousPrice === 0n) return 0;
-
-    // Use basis points (10000 = 100%) for precision
-    const changeInBasisPoints = ((currentPrice - previousPrice) * 10000n) / previousPrice;
-    const percentChange = Number(changeInBasisPoints) / 100;
-
-    // Cap extreme values
-    if (percentChange > 10000) return 10000; // Cap at 10,000%
-    if (percentChange < -100) return -100; // Floor at -100%
-
-    return percentChange;
-  }
-
-  /**
-   * Format large USD values for display
-   * @param value Value in USD (with appropriate decimals)
-   * @param decimals Number of decimal places to show
-   */
-  static formatUsdValue(value: bigint, decimals: number = 2): string {
-    const divisor = BigInt(10 ** 18);
-    const whole = value / divisor;
-    const fraction = value % divisor;
-    
-    const fractionStr = fraction.toString().padStart(18, '0').slice(0, decimals);
-    
-    return `${whole}.${fractionStr}`;
-  }
-
-  /**
-   * Aggregate daily volume from multiple swaps
-   * @param swapVolumes Array of individual swap volumes in USD
-   */
-  static aggregateDailyVolume(swapVolumes: bigint[]): bigint {
-    return swapVolumes.reduce((total, volume) => total + volume, 0n);
-  }
 }
+
