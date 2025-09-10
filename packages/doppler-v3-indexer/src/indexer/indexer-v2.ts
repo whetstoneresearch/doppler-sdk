@@ -10,7 +10,7 @@ import {
 } from "./shared/entities";
 import { CHAINLINK_ETH_DECIMALS } from "@app/utils/constants";
 import { zeroAddress } from "viem";
-import { configs } from "@app/types";
+import { chainConfigs } from "@app/config";
 import { SwapService, SwapOrchestrator, PriceService } from "@app/core";
 import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
 import { updateFifteenMinuteBucketUsd } from "@app/utils/time-buckets";
@@ -47,7 +47,7 @@ ponder.on("UniswapV2Pair:Swap", async ({ event, context }) => {
 
   let v2isToken0 = isToken0;
   if (quoteToken.toLowerCase() == zeroAddress) {
-    const weth = configs[chain.name].shared.weth.toLowerCase() as `0x${string}`;
+    const weth = chainConfigs[chain.name].addresses.shared.weth.toLowerCase() as `0x${string}`;
     v2isToken0 = baseToken.toLowerCase() < weth.toLowerCase();
   }
 

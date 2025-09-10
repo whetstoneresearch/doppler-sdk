@@ -1,4 +1,4 @@
-import { configs, PoolKey } from "@app/types";
+import { PoolKey } from "@app/types";
 import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
 import { computeV3Price } from "@app/utils/v3-utils";
 import { Context } from "ponder:registry";
@@ -13,7 +13,6 @@ import {
   getAmount1Delta 
 } from "@app/utils/v3-utils/computeGraduationThreshold";
 import { computeMarketCap } from "../../oracle";
-import { insertPositionIfNotExists } from "../position";
 
 /**
  * Optimized version with caching and reduced contract calls
@@ -59,7 +58,7 @@ export const insertZoraPoolV4Optimized = async ({
 
   const isToken0 = baseToken.toLowerCase() < quoteToken.toLowerCase();
   const isQuoteEth = quoteToken === zeroAddress || 
-    quoteToken === configs[chain.name].shared.weth;
+    quoteToken === chainConfigs[chain.name].addresses.shared.weth;
 
   // Optimized contract calls - single multicall instead of multiple calls
   const stateView = chainConfigs[chain.name].addresses.v4.stateView;

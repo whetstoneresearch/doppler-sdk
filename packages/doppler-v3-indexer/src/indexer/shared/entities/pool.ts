@@ -1,5 +1,5 @@
 import { DERC20ABI } from "@app/abis";
-import { configs, V4PoolData } from "@app/types";
+import { V4PoolData } from "@app/types";
 import { computeDollarLiquidity } from "@app/utils/computeDollarLiquidity";
 import { getAssetData } from "@app/utils/getAssetData";
 import { getV3PoolData } from "@app/utils/v3-utils";
@@ -10,6 +10,7 @@ import { pool } from "ponder:schema";
 import { Address } from "viem";
 import { computeMarketCap } from "../oracle";
 import { getLockableV3PoolData } from "@app/utils/v3-utils/getV3PoolData";
+import { chainConfigs } from "@app/config";
 
 export const fetchExistingPool = async ({
   poolAddress,
@@ -69,7 +70,7 @@ export const insertPoolIfNotExists = async ({
   const isQuoteEth =
     poolState.numeraire.toLowerCase() ===
     "0x0000000000000000000000000000000000000000" ||
-    poolState.numeraire.toLowerCase() === configs[chain.name].shared.weth;
+    poolState.numeraire.toLowerCase() === chainConfigs[chain.name].addresses.shared.weth;
 
   const [assetTotalSupply, assetData] = await Promise.all([
     client.readContract({
@@ -173,7 +174,7 @@ export const insertPoolIfNotExistsV4 = async ({
   const isQuoteEth =
     numeraireAddr.toLowerCase() ===
     "0x0000000000000000000000000000000000000000" ||
-    numeraireAddr.toLowerCase() === configs[chain.name].shared.weth;
+    numeraireAddr.toLowerCase() === chainConfigs[chain.name].addresses.shared.weth;
 
   const [reserves, totalSupply, assetData] = await Promise.all([
     getReservesV4({
@@ -282,7 +283,7 @@ export const insertLockableV3PoolIfNotExists = async ({
   const isQuoteEth =
     poolState.numeraire.toLowerCase() ===
     "0x0000000000000000000000000000000000000000" ||
-    poolState.numeraire.toLowerCase() === configs[chain.name].shared.weth;
+    poolState.numeraire.toLowerCase() === chainConfigs[chain.name].addresses.shared.weth;
 
   const [assetTotalSupply, assetData] = await Promise.all([
     client.readContract({
