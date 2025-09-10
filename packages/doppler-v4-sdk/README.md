@@ -238,6 +238,84 @@ const sepoliaAddresses = DOPPLER_V4_ADDRESSES[84532];
 
 ## Advanced Usage
 
+### Multicurve Initializer (V4)
+
+Create a pool with the multicurve initializer by encoding curve ranges and optional lockable fee beneficiaries. Below are two examples:
+
+1) Compact 2-curve example
+
+```typescript
+import { ReadWriteFactory } from 'doppler-v4-sdk'
+import { parseEther } from 'viem'
+
+const factory = new ReadWriteFactory(addresses.airlock, drift)
+
+const multicurve = {
+  name: 'MyToken',
+  symbol: 'MTK',
+  totalSupply: parseEther('1000000'),
+  numTokensToSell: parseEther('600000'),
+  tokenURI: 'ipfs://.../metadata.json',
+  numeraire: quoteTokenAddress,
+  pool: {
+    fee: 3000,
+    tickSpacing: 60,
+    curves: [
+      { tickLower: 170_000, tickUpper: 175_000, numPositions: 16, shares: parseEther('1') },
+      { tickLower: 175_000, tickUpper: 180_000, numPositions: 16, shares: parseEther('2') },
+    ],
+    // Optional lockable fee beneficiaries (shares in WAD)
+    lockableBeneficiaries: [
+      { beneficiary: someAddress, shares: parseEther('1.0') },
+    ],
+  },
+  integrator: integratorAddress,
+}
+
+const { createParams } = factory.buildMulticurveCreateParams(multicurve, addresses, { useGovernance: true })
+const sim = await factory.simulateCreate(createParams)
+const tx = await factory.create(createParams)
+```
+
+2) 10-curve config (matches our Base Sepolia fork test)
+
+```typescript
+import { ReadWriteFactory } from 'doppler-v4-sdk'
+import { parseEther } from 'viem'
+
+const factory = new ReadWriteFactory(addresses.airlock, drift)
+
+const multicurve10 = {
+  name: 'ForkTest Multicurve',
+  symbol: 'FTMC',
+  totalSupply: parseEther('1000000'),
+  numTokensToSell: parseEther('1000000'),
+  tokenURI: 'ipfs://example/token.json',
+  numeraire: quoteTokenAddress,
+  pool: {
+    // fee = 0, tickSpacing = 8, 10 curves stepping by 16_000 ticks
+    fee: 0,
+    tickSpacing: 8,
+    curves: Array.from({ length: 10 }, (_, i) => ({
+      tickLower: i * 16_000,
+      tickUpper: 240_000,
+      numPositions: 10,
+      shares: parseEther('0.1'),
+    })),
+    lockableBeneficiaries: [],
+  },
+  integrator: integratorAddress,
+}
+
+const { createParams } = factory.buildMulticurveCreateParams(multicurve10, addresses, { useGovernance: true })
+const sim = await factory.simulateCreate(createParams)
+const tx = await factory.create(createParams)
+```
+
+Notes:
+- Ensure `addresses.v4MulticurveInitializer` is set for your target chain (Base Sepolia is prefilled in this SDK).
+- Use `useGovernance: false` to target `noOpGovernanceFactory` when desired.
+
 ### Custom Liquidity Migration
 
 ```typescript
@@ -287,6 +365,7 @@ See the `examples/` directory for complete implementation examples:
 - Multi-chain deployment
 - Custom governance setup
 - Liquidity migration strategies
+// (For a simple usage example, see `examples/multicurve-create.ts`.)
 
 ## Important Notes
 

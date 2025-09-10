@@ -17,6 +17,8 @@ export interface DopplerV4Addresses {
   airlock: Address;
   tokenFactory: Address;
   v4Initializer: Address;
+  // Optional: multicurve initializer (V4)
+  v4MulticurveInitializer?: Address;
   v3Initializer?: Address;
   governanceFactory: Address;
   noOpGovernanceFactory: Address;
@@ -167,4 +169,47 @@ export interface V4MigratorData {
   tickSpacing: number;
   lockDuration: number; // in seconds
   beneficiaries: BeneficiaryData[];
+}
+
+// Multicurve initializer/migrator support
+
+export interface MulticurveCurve {
+  tickLower: number;
+  tickUpper: number;
+  numPositions: number; // e.g., number of segments in the curve
+  shares: bigint; // distribution weight for this curve (WAD-style)
+}
+
+export interface MulticurvePoolParams {
+  fee: number; // in bips
+  tickSpacing: number;
+  curves: MulticurveCurve[];
+  // Optional beneficiaries for lockable fees distribution (WAD shares)
+  lockableBeneficiaries?: BeneficiaryData[];
+}
+
+export interface MulticurvePreDeploymentConfig {
+  // Token details
+  name: string;
+  symbol: string;
+  totalSupply: bigint;
+  numTokensToSell: bigint;
+  tokenURI: string;
+
+  // Sale parameters
+  numeraire: Address; // quote token
+
+  // Pool parameters
+  pool: MulticurvePoolParams;
+
+  // Optional vesting parameters (treated like standard token factory vesting)
+  yearlyMintRate?: bigint;
+  vestingDuration?: bigint;
+  recipients?: Address[];
+  amounts?: bigint[];
+
+  // Misc
+  integrator: Address;
+  // Optional custom salt (CREATE2); if not provided, caller may override later
+  salt?: Hex;
 }
