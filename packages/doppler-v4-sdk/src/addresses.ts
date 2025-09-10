@@ -38,6 +38,8 @@ export const DOPPLER_V4_ADDRESSES: { [chainId: number]: DopplerV4Addresses } = {
   84532: {
     airlock: '0x3411306ce66c9469bff1535ba955503c4bde1c6e' as Address,
     tokenFactory: '0xc69ba223c617f7d936b3cf2012aa644815dbe9ff' as Address,
+    // Multicurve initializer (V4)
+    v4MulticurveInitializer: '0xdb67214d5de4b8c1bc81fd15a858072d3c451cbe' as Address,
     governanceFactory: '0x9dbfaadc8c0cb2c34ba698dd9426555336992e20' as Address,
     noOpGovernanceFactory: '0x916b8987e4ad325c10d58ed8dc2036a6ff5eb228' as Address,
     migrator: '0xb2ec6559704467306d04322a5dc082b2af4562dd' as Address,

@@ -20,7 +20,7 @@ import { CreateParams } from './types';
 import { DERC20Bytecode, DopplerBytecode } from '@/abis';
 import { DAY_SECONDS, DEFAULT_PD_SLUGS, DEAD_ADDRESS, WAD } from '@/constants';
 import { DopplerData, TokenFactoryData } from './types';
-import { DopplerPreDeploymentConfig, DopplerV4Addresses, PriceRange, TickRange, V4MigratorData, BeneficiaryData } from '@/types';
+import { DopplerPreDeploymentConfig, DopplerV4Addresses, PriceRange, TickRange, V4MigratorData, BeneficiaryData, MulticurveCurve, MulticurvePreDeploymentConfig } from '@/types';
 
 const DEFAULT_INITIAL_VOTING_DELAY = 7200;
 const DEFAULT_INITIAL_VOTING_PERIOD = 50400;
@@ -221,6 +221,60 @@ export class ReadWriteFactory extends ReadFactory {
   }
 
   /**
+   * Encodes multicurve initializer data for the Uniswap V4 multicurve initializer
+   *
+   * Layout:
+   * - uint24 fee
+   * - int24 tickSpacing
+   * - tuple[] curves: { int24 tickLower, int24 tickUpper, uint16 numPositions, uint256 shares }
+   * - tuple[] beneficiaries: { address beneficiary, uint96 shares }
+   */
+  public encodeMulticurveInitializerData(params: {
+    fee: number;
+    tickSpacing: number;
+    curves: MulticurveCurve[];
+    lockableBeneficiaries?: BeneficiaryData[];
+  }): Hex {
+    if (!params.curves || params.curves.length === 0) {
+      throw new Error('Multicurve initializer requires at least one curve');
+    }
+
+    const sortedBeneficiaries = params.lockableBeneficiaries
+      ? this.sortBeneficiaries(params.lockableBeneficiaries)
+      : [];
+    if (sortedBeneficiaries.length > 0) this.validateBeneficiaries(sortedBeneficiaries);
+
+    return encodeAbiParameters(
+      [
+        { type: 'uint24' },
+        { type: 'int24' },
+        {
+          type: 'tuple[]',
+          components: [
+            { type: 'int24', name: 'tickLower' },
+            { type: 'int24', name: 'tickUpper' },
+            { type: 'uint16', name: 'numPositions' },
+            { type: 'uint256', name: 'shares' },
+          ],
+        },
+        {
+          type: 'tuple[]',
+          components: [
+            { type: 'address', name: 'beneficiary' },
+            { type: 'uint96', name: 'shares' },
+          ],
+        },
+      ],
+      [
+        params.fee,
+        params.tickSpacing,
+        params.curves.map((c) => ({ tickLower: c.tickLower, tickUpper: c.tickUpper, numPositions: c.numPositions, shares: c.shares })),
+        sortedBeneficiaries.map((b) => ({ beneficiary: b.beneficiary, shares: b.shares })),
+      ]
+    );
+  }
+
+  /**
    * Encodes custom LP liquidity migrator data
    * @param customLPConfig - Configuration for custom LP migration
    * @param customLPConfig.customLPWad - Amount of custom LP tokens
@@ -362,6 +416,81 @@ export class ReadWriteFactory extends ReadFactory {
       const addrB = b.beneficiary.toLowerCase();
       return addrA < addrB ? -1 : addrA > addrB ? 1 : 0;
     });
+  }
+
+  // (Multicurve migrator unsupported at the moment)
+
+  /**
+   * Builds CreateParams for the multicurve initializer flow (no hook mining required).
+   * The caller can directly pass the returned createParams to simulateCreate/create.
+   */
+  public buildMulticurveCreateParams(
+    params: MulticurvePreDeploymentConfig,
+    addresses: DopplerV4Addresses,
+    options?: { useGovernance?: boolean }
+  ): { createParams: CreateParams } {
+    if (!params.pool || !params.pool.curves || params.pool.curves.length === 0) {
+      throw new Error('Multicurve pool must include at least one curve');
+    }
+
+    // Resolve initializer
+    const multicurveInitializer = addresses.v4MulticurveInitializer;
+    if (!multicurveInitializer || multicurveInitializer === DEAD_ADDRESS) {
+      throw new Error('v4MulticurveInitializer address is not configured for this chain');
+    }
+
+    // Token factory data (reusing standard token path with optional vesting)
+    const tokenFactoryData = this.encodeTokenFactoryData(
+      { name: params.name, symbol: params.symbol, tokenURI: params.tokenURI },
+      {
+        amounts: params.amounts ?? [],
+        recipients: params.recipients ?? [],
+        vestingDuration: params.vestingDuration ?? BigInt(0),
+        yearlyMintRate: params.yearlyMintRate ?? BigInt(0),
+      }
+    );
+
+    // Governance: choose governance or no-op
+    const useGovernance = options?.useGovernance ?? true;
+    const selectedGovernanceFactory = useGovernance
+      ? addresses.governanceFactory
+      : addresses.noOpGovernanceFactory;
+    const governanceFactoryData = useGovernance
+      ? encodeAbiParameters(
+          [ { type: 'string' }, { type: 'uint48' }, { type: 'uint32' }, { type: 'uint256' } ],
+          [ params.name, DEFAULT_INITIAL_VOTING_DELAY, DEFAULT_INITIAL_VOTING_PERIOD, DEFAULT_INITIAL_PROPOSAL_THRESHOLD ]
+        )
+      : ('0x' as Hex);
+
+    // Initializer data
+    const poolInitializerData = this.encodeMulticurveInitializerData({
+      fee: params.pool.fee,
+      tickSpacing: params.pool.tickSpacing,
+      curves: params.pool.curves,
+      lockableBeneficiaries: params.pool.lockableBeneficiaries,
+    });
+
+    // Resolve migrator: multicurve migrator not available, use standard migrator
+    const liquidityMigrator = addresses.migrator;
+
+    // Build CreateParams
+    const createParams: CreateParams = {
+      initialSupply: params.totalSupply,
+      numTokensToSell: params.numTokensToSell,
+      numeraire: params.numeraire,
+      tokenFactory: addresses.tokenFactory,
+      tokenFactoryData,
+      governanceFactory: selectedGovernanceFactory,
+      governanceFactoryData,
+      poolInitializer: multicurveInitializer,
+      poolInitializerData,
+      liquidityMigrator,
+      liquidityMigratorData: '0x',
+      integrator: params.integrator,
+      salt: (params.salt ?? (('0x' + '0'.repeat(64)) as Hex)),
+    };
+
+    return { createParams };
   }
 
   /**
