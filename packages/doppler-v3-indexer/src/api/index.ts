@@ -1,18 +1,7 @@
 import { Hono } from "hono";
-import {
-  and,
-  client,
-  desc,
-  eq,
-  graphql,
-  ilike,
-  inArray,
-  like,
-  or,
-  replaceBigInts,
-} from "ponder";
+import { client, graphql, replaceBigInts, sql } from "ponder";
 import { db } from "ponder:api";
-import schema, { asset, token, volumeBucket24h, pool } from "ponder:schema";
+import schema from "ponder:schema";
 
 const app = new Hono();
 
@@ -30,75 +19,31 @@ app.get("/search/:query", async (c) => {
       .map((id) => Number(id));
 
     // Normalize address queries to lowercase for case-insensitive matching
-    const normalizedQuery = query.startsWith("0x") && query.length === 42 
-      ? query.toLowerCase() 
-      : query;
+    const normalizedQuery =
+      query.startsWith("0x") && query.length === 42
+        ? query.toLowerCase()
+        : query;
 
+    if (!chainIds) return c.json([]);
     // First search tokens directly
-    const tokenResults = await db
-      .select()
-      .from(token)
-      .where(
-        or(
-          and(
-            inArray(token.chainId, chainIds || [] as number[]),
-            or(
-              ilike(token.name, `%${query}%`),
-              ilike(token.symbol, `%${query}%`)
-            )
-          ),
-          and(
-            inArray(token.chainId, chainIds || []),
-            like(token.address, normalizedQuery)
-          ),
-          and(
-            inArray(token.chainId, chainIds || []),
-            like(token.pool, normalizedQuery)
-          )
-        )
-      )
-      .orderBy(desc(token.holderCount))
-      .limit(15);
-
-    // If searching by address, also search for tokens by governance address
-    if (query.startsWith("0x") && query.length === 42) {
-      const assetResults = await db
-        .select()
-        .from(asset)
-        .where(
-          and(
-            inArray(asset.chainId, chainIds || []),
-            eq(asset.governance, normalizedQuery as `0x${string}`)
-          )
-        );
-
-      // Get tokens associated with these assets
-      if (assetResults.length > 0) {
-        const assetAddresses = assetResults.map(a => a.address);
-        const governanceTokens = await db
-          .select()
-          .from(token)
-          .where(
-            and(
-              inArray(token.chainId, chainIds || []),
-              inArray(token.derc20Data, assetAddresses)
-            )
-          )
-          .orderBy(desc(token.holderCount))
-          .limit(15);
-
-        // Combine and deduplicate results
-        const combinedResults = [...tokenResults];
-        for (const govToken of governanceTokens) {
-          if (!combinedResults.find(t => t.address === govToken.address)) {
-            combinedResults.push(govToken);
-          }
-        }
-        
-        return c.json(replaceBigInts(combinedResults.slice(0, 15), (v) => String(v)));
-      }
-    }
-
+    const tokenResults = await db.execute(sql`
+      SELECT
+       t.address,
+       t.chain_id,
+       t.symbol,
+       t.name,
+       p.market_cap_usd,
+       ohlc.percent_day_change
+      FROM token t
+      LEFT JOIN pool p ON p.address = t.pool
+      LEFT JOIN pool_day_agg_2 ohlc ohlc ON ohlc.pool = t.pool
+      WHERE
+        t.chain_id in (${chainIds.join(",")})
+      AND 
+        (t.name ILIKE ${`${normalizedQuery}%`} 
+        OR t.address ILIKE ${`${normalizedQuery}%`} 
+        OR t.symbol ILIKE ${`${normalizedQuery}%`})
+      `);
     return c.json(replaceBigInts(tokenResults, (v) => String(v)));
   } catch (error) {
     console.error("Error in /search/:query", error);
