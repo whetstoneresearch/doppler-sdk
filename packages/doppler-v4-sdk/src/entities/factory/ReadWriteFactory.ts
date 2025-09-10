@@ -18,7 +18,7 @@ import {
 import { ReadFactory, AirlockABI } from './ReadFactory';
 import { CreateParams } from './types';
 import { DERC20Bytecode, DopplerBytecode } from '@/abis';
-import { DAY_SECONDS, DEFAULT_PD_SLUGS, WAD } from '@/constants';
+import { DAY_SECONDS, DEFAULT_PD_SLUGS, WAD, DEAD_ADDRESS } from '@/constants';
 import { DopplerData, TokenFactoryData } from './types';
 import { DopplerPreDeploymentConfig, DopplerV4Addresses, PriceRange, TickRange, V4MigratorData, BeneficiaryData, MulticurveCurve, MulticurvePreDeploymentConfig } from '@/types';
 
