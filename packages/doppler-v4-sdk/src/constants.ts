@@ -1,4 +1,4 @@
-import { parseEther } from 'ethers/lib/utils';
+import { parseEther } from 'viem';
 
 export const MAX_TICK_SPACING = 30;
 export const DEFAULT_PD_SLUGS = 5;
