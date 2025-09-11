@@ -676,3 +676,70 @@ ponder.on("UniswapV4Pool2:Swap", async ({ event, context }) => {
     }),
   ]);
 });
+
+ponder.on("UniswapV4MulticurveInitializer:Create", async ({ event, context }) => {
+  const { poolOrHook, asset: assetId, numeraire } = event.args;
+  const { block } = event;
+  const timestamp = block.timestamp;
+
+  const poolAddress = poolOrHook.toLowerCase() as `0x${string}`;
+  const assetAddress = assetId.toLowerCase() as `0x${string}`;
+  const numeraireAddress = numeraire.toLowerCase() as `0x${string}`;
+
+  const creatorAddress = event.transaction.from.toLowerCase() as `0x${string}`;
+
+  const [baseToken, ethPrice, poolData] = await Promise.all([
+    insertTokenIfNotExists({
+      tokenAddress: assetAddress,
+      creatorAddress,
+      timestamp,
+      context,
+      isDerc20: true,
+      poolAddress: poolAddress,
+    }),
+    fetchEthPrice(timestamp, context),
+    getV4PoolData({
+      hook: poolAddress,
+      context,
+    }),
+    insertTokenIfNotExists({
+      tokenAddress: numeraireAddress,
+      creatorAddress,
+      timestamp,
+      context,
+      isDerc20: false,
+    }),
+  ]);
+
+  const { totalSupply } = baseToken;
+
+  const [poolEntity] = await Promise.all([
+    insertPoolIfNotExistsV4({
+      poolAddress,
+      timestamp,
+      ethPrice,
+      poolData,
+      context,
+    }),
+    insertV4ConfigIfNotExists({
+      hookAddress: poolAddress,
+      context,
+    }),
+  ]);
+
+  const price = poolEntity.price;
+  const marketCapUsd = computeMarketCap({
+    price,
+    ethPrice,
+    totalSupply,
+  });
+
+  await Promise.all([
+    insertAssetIfNotExists({
+      assetAddress: assetAddress,
+      timestamp,
+      context,
+      marketCapUsd,
+    }),
+  ]);
+});
