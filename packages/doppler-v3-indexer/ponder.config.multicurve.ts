@@ -22,7 +22,7 @@ import { UniswapV2FactoryABI } from "@app/abis/UniswapV2Factory";
 import { UniswapV4MulticurveInitializerHookABI } from "@app/abis/multicurve-abis/UniswapV4MulticurveInitializerHookABI";
 import { UniswapV4MulticurveInitializerABI } from "@app/abis/multicurve-abis/UniswapV4MulticurveInitializerABI";
 
-const { baseSepolia } = chainConfigs;
+const { base, unichain, ink, baseSepolia } = chainConfigs;
 
 export default createConfig({
   database: {
@@ -34,12 +34,44 @@ export default createConfig({
   },
   ordering: "multichain",
   chains: {
+    unichain: {
+      id: CHAIN_IDS.unichain,
+      rpc: http(process.env.PONDER_RPC_URL_130),
+    },
+    ink: {
+      id: CHAIN_IDS.ink,
+      rpc: http(process.env.PONDER_RPC_URL_130),
+    },
+    base: {
+      id: CHAIN_IDS.base,
+      rpc: http(process.env.PONDER_RPC_URL_8453),
+    },
     baseSepolia: {
       id: CHAIN_IDS.baseSepolia,
       rpc: http(process.env.PONDER_RPC_URL_84532),
     },
   },
   blocks: {
+    // BaseChainlinkEthPriceFeed: {
+    //   chain: "base",
+    //   startBlock: base.startBlock,
+    //   interval: BLOCK_INTERVALS.FIVE_MINUTES, // every 5 minutes
+    // },
+    // UnichainChainlinkEthPriceFeed: {
+    //   chain: "unichain",
+    //   startBlock: unichain.startBlock,
+    //   interval: BLOCK_INTERVALS.FIVE_MINUTES, // every 5 minutes
+    // },
+    // InkChainlinkEthPriceFeed: {
+    //   chain: "ink",
+    //   startBlock: ink.startBlock,
+    //   interval: BLOCK_INTERVALS.FIVE_MINUTES, // every 5 minutes
+    // },
+    // ZoraUsdcPrice: {
+    //   chain: "base",
+    //   startBlock: 31058549,
+    //   interval: BLOCK_INTERVALS.FIVE_MINUTES, // every 5 minutes
+    // },
     BaseSepoliaChainlinkEthPriceFeed: {
       chain: "baseSepolia",
       startBlock: baseSepolia.startBlock,
@@ -56,18 +88,89 @@ export default createConfig({
         },
       },
     },
+    UniswapV3Initializer: {
+      abi: UniswapV3InitializerABI,
+      chain: {},
+    },
+    UniswapV4Initializer: {
+      abi: UniswapV4InitializerABI,
+      chain: {},
+    },
+    UniswapV4Initializer2: {
+      abi: UniswapV4InitializerABI,
+      chain: {},
+    },
+    UniswapV4InitializerSelfCorrecting: {
+      abi: UniswapV4InitializerABI,
+      chain: {},
+    },
     DERC20: {
       abi: DERC20ABI,
-      chain: {
-        baseSepolia: {
-          startBlock: baseSepolia.startBlock,
-          address: factory({
-            address: baseSepolia.addresses.shared.airlock,
-            event: getAbiItem({ abi: AirlockABI, name: "Create" }),
-            parameter: "asset",
-          }),
-        },
-      },
+      chain: {},
+    },
+    UniswapV3MigrationPool: {
+      abi: UniswapV3PoolABI,
+      chain: {},
+    },
+    UniswapV3Migrator: {
+      abi: UniswapV3MigratorAbi,
+      chain: {},
+    },
+    UniswapV3Pool: {
+      abi: UniswapV3PoolABI,
+      chain: {},
+    },
+    LockableUniswapV3Pool: {
+      abi: UniswapV3PoolABI,
+      chain: {},
+    },
+    UniswapV2Pair: {
+      abi: UniswapV2PairABI,
+      chain: {},
+    },
+    UniswapV2PairUnichain: {
+      abi: UniswapV2PairABI,
+      chain: {},
+    },
+    PoolManager: {
+      abi: PoolManagerABI,
+      chain: {},
+    },
+    UniswapV4Pool: {
+      abi: DopplerABI,
+      chain: {},
+    },
+    UniswapV4Pool2: {
+      abi: DopplerABI,
+      chain: {},
+    },
+    UniswapV4PoolSelfCorrecting: {
+      abi: DopplerABI,
+      chain: {},
+    },
+    LockableUniswapV3Initializer: {
+      abi: LockableUniswapV3InitializerABI,
+      chain: {},
+    },
+    ZoraFactory: {
+      abi: ZoraFactoryABI,
+      chain: {},
+    },
+    ZoraCoinV4: {
+      abi: ZoraCoinABI,
+      chain: {},
+    },
+    ZoraCreatorCoinV4: {
+      abi: ZoraCreatorCoinABI,
+      chain: {},
+    },
+    ZoraV4Hook: {
+      abi: ZoraV4HookABI,
+      chain: {},
+    },
+    ZoraV4CreatorCoinHook: {
+      abi: ZoraV4HookABI,
+      chain: {},
     },
     UniswapV4MulticurveInitializer: {
       abi: UniswapV4MulticurveInitializerABI,

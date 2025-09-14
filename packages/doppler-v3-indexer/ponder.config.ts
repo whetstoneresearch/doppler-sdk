@@ -22,7 +22,7 @@ import { UniswapV2FactoryABI } from "@app/abis/UniswapV2Factory";
 import { UniswapV4MulticurveInitializerHookABI } from "@app/abis/multicurve-abis/UniswapV4MulticurveInitializerHookABI";
 import { UniswapV4MulticurveInitializerABI } from "@app/abis/multicurve-abis/UniswapV4MulticurveInitializerABI";
 
-const { base, unichain, ink } = chainConfigs;
+const { base, unichain, ink, baseSepolia } = chainConfigs;
 
 export default createConfig({
   database: {
@@ -46,6 +46,10 @@ export default createConfig({
       id: CHAIN_IDS.base,
       rpc: http(process.env.PONDER_RPC_URL_8453),
     },
+    baseSepolia: {
+      id: CHAIN_IDS.baseSepolia,
+      rpc: http(process.env.PONDER_RPC_URL_84532),
+    },
   },
   blocks: {
     BaseChainlinkEthPriceFeed: {
@@ -66,6 +70,11 @@ export default createConfig({
     ZoraUsdcPrice: {
       chain: "base",
       startBlock: 31058549,
+      interval: BLOCK_INTERVALS.FIVE_MINUTES, // every 5 minutes
+    },
+    BaseSepoliaChainlinkEthPriceFeed: {
+      chain: "baseSepolia",
+      startBlock: baseSepolia.startBlock,
       interval: BLOCK_INTERVALS.FIVE_MINUTES, // every 5 minutes
     },
   },
