@@ -14,6 +14,8 @@ export interface V4Addresses {
   dopplerLens: Address;
   v4Migrator: Address;
   v4MigratorHook: Address;
+  v4MulticurveInitializer: Address;
+  v4MulticurveInitializerHook: Address;
 }
 
 /**

@@ -6,7 +6,7 @@ import {
   V4_START_BLOCKS,
   ORACLE_ADDRESSES,
   COMMON_ADDRESSES,
-  RPC_ENV_VARS
+  RPC_ENV_VARS,
 } from "./constants";
 
 export const unichainConfig: ChainConfig = {
@@ -37,14 +37,18 @@ export const unichainConfig: ChainConfig = {
       v4MigratorHook: COMMON_ADDRESSES.ZERO_ADDRESS,
       v4InitializerSelfCorrecting: COMMON_ADDRESSES.ZERO_ADDRESS,
       v4InitializerLatest: COMMON_ADDRESSES.ZERO_ADDRESS as Address,
+      v4MulticurveInitializer: COMMON_ADDRESSES.ZERO_ADDRESS as Address,
+      v4MulticurveInitializerHook: COMMON_ADDRESSES.ZERO_ADDRESS as Address,
     },
     shared: {
       airlock: "0x77EbfBAE15AD200758E9E2E61597c0B07d731254" as Address,
       tokenFactory: "0x43d0D97EC9241A8F05A264f94B82A1d2E600f2B3" as Address,
       universalRouter: "0xef740bf23acae26f6492b10de645d6b98dc8eaf3" as Address,
-      governanceFactory: "0x99C94B9Df930E1E21a4E4a2c105dBff21bF5c5aE" as Address,
+      governanceFactory:
+        "0x99C94B9Df930E1E21a4E4a2c105dBff21bF5c5aE" as Address,
       weth: COMMON_ADDRESSES.WETH_BASE,
-      chainlinkEthOracle: "0xED2B1ca5D7E246f615c2291De309643D41FeC97e" as Address,
+      chainlinkEthOracle:
+        "0xED2B1ca5D7E246f615c2291De309643D41FeC97e" as Address,
     },
     zora: {
       zoraFactory: COMMON_ADDRESSES.ZERO_ADDRESS,
