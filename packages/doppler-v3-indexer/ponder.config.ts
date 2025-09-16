@@ -23,7 +23,7 @@ import { LockableUniswapV3InitializerABI } from "@app/abis/v3-abis/LockableUnisw
 import { UniswapV3MigratorAbi } from "@app/abis/v3-abis/UniswapV3Migrator";
 import { UniswapV2FactoryABI } from "@app/abis/UniswapV2Factory";
 
-const { base, unichain, ink } = chainConfigs;
+const { base, unichain, ink, baseSepolia } = chainConfigs;
 
 export default createConfig({
   database: {
@@ -47,6 +47,10 @@ export default createConfig({
       id: CHAIN_IDS.base,
       rpc: http(process.env.PONDER_RPC_URL_8453),
     },
+    baseSepolia: {
+      id: CHAIN_IDS.baseSepolia,
+      rpc: http(process.env.PONDER_RPC_URL_84532),
+    },
   },
   blocks: {
     BaseChainlinkEthPriceFeed: {
@@ -62,6 +66,11 @@ export default createConfig({
     InkChainlinkEthPriceFeed: {
       chain: "ink",
       startBlock: ink.startBlock,
+      interval: BLOCK_INTERVALS.FIVE_MINUTES, // every 5 minutes
+    },
+    BaseSepoliaChainlinkEthPriceFeed: {
+      chain: "baseSepolia",
+      startBlock: baseSepolia.startBlock,
       interval: BLOCK_INTERVALS.FIVE_MINUTES, // every 5 minutes
     },
     ZoraUsdcPrice: {
@@ -86,6 +95,10 @@ export default createConfig({
           startBlock: ink.startBlock,
           address: ink.addresses.shared.airlock,
         },
+        baseSepolia: {
+          startBlock: baseSepolia.startBlock,
+          address: baseSepolia.addresses.shared.airlock,
+        },
       },
     },
     UniswapV3Initializer: {
@@ -103,6 +116,10 @@ export default createConfig({
           startBlock: ink.startBlock,
           address: ink.addresses.v3.v3Initializer,
         },
+        baseSepolia: {
+          startBlock: baseSepolia.startBlock,
+          address: baseSepolia.addresses.v3.v3Initializer,
+        },
       },
     },
     UniswapV4Initializer: {
@@ -119,6 +136,10 @@ export default createConfig({
         ink: {
           startBlock: ink.v4StartBlock,
           address: ink.addresses.v4.v4Initializer,
+        },
+        baseSepolia: {
+          startBlock: baseSepolia.v4StartBlock,
+          address: baseSepolia.addresses.v4.v4Initializer,
         },
       },
     },
@@ -175,6 +196,10 @@ export default createConfig({
             parameter: "asset",
           }),
         },
+        baseSepolia: {
+          startBlock: baseSepolia.startBlock,
+          address: baseSepolia.addresses.v3.v3Initializer,
+        },
       },
     },
     UniswapV3MigrationPool: {
@@ -188,6 +213,10 @@ export default createConfig({
             parameter: "pool",
           }),
         },
+        baseSepolia: {
+          startBlock: baseSepolia.startBlock,
+          address: baseSepolia.addresses.v3.v3Migrator,
+        },
       },
     },
     UniswapV3Migrator: {
@@ -196,6 +225,10 @@ export default createConfig({
         base: {
           startBlock: base.startBlock, // hardcoded for now
           address: base.addresses.v3.v3Migrator,
+        },
+        baseSepolia: {
+          startBlock: baseSepolia.startBlock,
+          address: baseSepolia.addresses.v3.v3Migrator,
         },
       },
     },
@@ -226,6 +259,14 @@ export default createConfig({
             parameter: "poolOrHook",
           }),
         },
+        baseSepolia: {
+          startBlock: baseSepolia.startBlock,
+          address: factory({
+            address: baseSepolia.addresses.v3.v3Initializer,
+            event: getAbiItem({ abi: UniswapV3InitializerABI, name: "Create" }),
+            parameter: "poolOrHook",
+          }),
+        },
       },
     },
     LockableUniswapV3Pool: {
@@ -235,6 +276,14 @@ export default createConfig({
           startBlock: base.startBlock,
           address: factory({
             address: base.addresses.v3.lockableV3Initializer,
+            event: getAbiItem({ abi: LockableUniswapV3InitializerABI, name: "Create" }),
+            parameter: "poolOrHook",
+          }),
+        },
+        baseSepolia: {
+          startBlock: baseSepolia.startBlock,
+          address: factory({
+            address: baseSepolia.addresses.v3.lockableV3Initializer,
             event: getAbiItem({ abi: LockableUniswapV3InitializerABI, name: "Create" }),
             parameter: "poolOrHook",
           }),
@@ -264,6 +313,14 @@ export default createConfig({
               name: "Migrate",
             }),
             parameter: "pool",
+          }),
+        },
+        baseSepolia: {
+          startBlock: baseSepolia.startBlock,
+          address: factory({
+            address: baseSepolia.addresses.v2.factory,
+            event: getAbiItem({ abi: UniswapV2FactoryABI, name: "PairCreated" }),
+            parameter: "pair",
           }),
         },
       },
@@ -299,6 +356,10 @@ export default createConfig({
           startBlock: ink.v4StartBlock,
           address: ink.addresses.v4.poolManager,
         },
+        baseSepolia: {
+          startBlock: baseSepolia.v4StartBlock,
+          address: baseSepolia.addresses.v4.poolManager,
+        },
       },
     },
     UniswapV4Pool: {
@@ -324,6 +385,14 @@ export default createConfig({
           startBlock: ink.v4StartBlock,
           address: factory({
             address: ink.addresses.v4.v4Initializer,
+            event: getAbiItem({ abi: UniswapV4InitializerABI, name: "Create" }),
+            parameter: "poolOrHook",
+          }),
+        },
+        baseSepolia: {
+          startBlock: baseSepolia.v4StartBlock,
+          address: factory({
+            address: baseSepolia.addresses.v4.v4Initializer,
             event: getAbiItem({ abi: UniswapV4InitializerABI, name: "Create" }),
             parameter: "poolOrHook",
           }),
@@ -378,6 +447,10 @@ export default createConfig({
         base: {
           startBlock: base.startBlock,
           address: base.addresses.v3.lockableV3Initializer,
+        },
+        baseSepolia: {
+          startBlock: baseSepolia.startBlock,
+          address: baseSepolia.addresses.zora.zoraFactory,
         },
       },
     },

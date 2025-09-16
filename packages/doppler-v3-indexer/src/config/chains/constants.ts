@@ -13,7 +13,7 @@ export const CHAIN_IDS = {
 export const START_BLOCKS = {
   mainnet: 21781000,
   unichain: 8536880,
-  baseSepolia: 27805302,
+  baseSepolia: 27471070,
   ink: 9508011,
   base: 28415520,
 } as const;

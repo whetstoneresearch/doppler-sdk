@@ -36,6 +36,7 @@ export const insertAssetIfNotExists = async ({
   return await db.insert(asset).values({
     ...assetData,
     poolAddress,
+    token: assetAddress,
     address,
     chainId: chain.id,
     isToken0,

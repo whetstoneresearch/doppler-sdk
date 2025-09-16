@@ -80,6 +80,7 @@ export const asset = onchainTable(
   "asset",
   (t) => ({
     address: t.hex().notNull(),
+    token: t.hex().notNull(),
     isToken0: t.boolean().notNull(),
     poolAddress: t.hex().notNull(),
     chainId: t.integer().notNull(),
@@ -514,6 +515,7 @@ export const assetRelations = relations(asset, ({ one, many }) => ({
   userAssets: many(userAsset),
   swaps: many(swap),
   volumeBuckets24h: many(volumeBucket24h),
+  token: one(token, { fields: [asset.token], references: [token.address] }),
 }));
 
 export const swapRelations = relations(swap, ({ one }) => ({
