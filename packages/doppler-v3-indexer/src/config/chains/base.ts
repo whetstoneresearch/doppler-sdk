@@ -37,7 +37,7 @@ export const baseSepoliaConfig: ChainConfig = {
     v4: {
       poolManager: "0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408" as Address,
       dopplerDeployer: "0x82d727ffda3f874da802663fc2f3f4b83dc3aaba" as Address,
-      v4Initializer2: COMMON_ADDRESSES.ZERO_ADDRESS,
+      v4Initializer2: "0x8E891d249f1ECbfFA6143c03EB1B12843aef09d3" as Address,
       dopplerLens: "0x4a8d81db741248a36d9eb3bc6ef648bf798b47a7" as Address,
       stateView: "0x571291b572ed32ce6751a2cb2486ebee8defb9b4" as Address,
       v4Initializer: "0x832e4763deecb9941a768f2bbd18583219f018cc" as Address,

@@ -77,11 +77,21 @@ export default createConfig({
     },
     UniswapV4Initializer2: {
       abi: UniswapV4InitializerABI,
-      chain: {},
+      chain: {
+        baseSepolia: {
+          startBlock: baseSepolia.v4StartBlock,
+          address: baseSepolia.addresses.v4.v4Initializer2,
+        }
+      },
     },
     UniswapV4InitializerSelfCorrecting: {
       abi: UniswapV4InitializerABI,
-      chain: {},
+      chain: {
+        baseSepolia: {
+          startBlock: baseSepolia.v4StartBlock,
+          address: baseSepolia.addresses.v4.v4InitializerSelfCorrecting,
+        }
+      },
     },
     DERC20: {
       abi: DERC20ABI,
