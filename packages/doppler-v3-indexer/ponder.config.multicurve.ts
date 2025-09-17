@@ -34,18 +34,6 @@ export default createConfig({
   },
   ordering: "multichain",
   chains: {
-    unichain: {
-      id: CHAIN_IDS.unichain,
-      rpc: http(process.env.PONDER_RPC_URL_130),
-    },
-    ink: {
-      id: CHAIN_IDS.ink,
-      rpc: http(process.env.PONDER_RPC_URL_130),
-    },
-    base: {
-      id: CHAIN_IDS.base,
-      rpc: http(process.env.PONDER_RPC_URL_8453),
-    },
     baseSepolia: {
       id: CHAIN_IDS.baseSepolia,
       rpc: http(process.env.PONDER_RPC_URL_84532),

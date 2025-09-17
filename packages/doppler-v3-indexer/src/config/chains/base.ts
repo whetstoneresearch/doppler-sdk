@@ -46,8 +46,10 @@ export const baseSepoliaConfig: ChainConfig = {
       v4InitializerSelfCorrecting:
         "0x8e891d249f1ecbffa6143c03eb1b12843aef09d3" as Address,
       v4InitializerLatest: COMMON_ADDRESSES.ZERO_ADDRESS as Address,
-      v4MulticurveInitializer: COMMON_ADDRESSES.ZERO_ADDRESS as Address,
-      v4MulticurveInitializerHook: COMMON_ADDRESSES.ZERO_ADDRESS as Address,
+      v4MulticurveInitializer:
+        "0x359b5952a254baaa0105381825daedb8986bb55c" as Address,
+      v4MulticurveInitializerHook:
+        "0x06f5bbb7e503c87d78b6811077d6572fd8a3ed40" as Address,
     },
     shared: {
       airlock: "0x3411306ce66c9469bff1535ba955503c4bde1c6e" as Address,
