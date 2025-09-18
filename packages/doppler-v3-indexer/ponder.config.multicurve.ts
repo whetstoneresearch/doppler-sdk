@@ -40,26 +40,6 @@ export default createConfig({
     },
   },
   blocks: {
-    // BaseChainlinkEthPriceFeed: {
-    //   chain: "base",
-    //   startBlock: base.startBlock,
-    //   interval: BLOCK_INTERVALS.FIVE_MINUTES, // every 5 minutes
-    // },
-    // UnichainChainlinkEthPriceFeed: {
-    //   chain: "unichain",
-    //   startBlock: unichain.startBlock,
-    //   interval: BLOCK_INTERVALS.FIVE_MINUTES, // every 5 minutes
-    // },
-    // InkChainlinkEthPriceFeed: {
-    //   chain: "ink",
-    //   startBlock: ink.startBlock,
-    //   interval: BLOCK_INTERVALS.FIVE_MINUTES, // every 5 minutes
-    // },
-    // ZoraUsdcPrice: {
-    //   chain: "base",
-    //   startBlock: 31058549,
-    //   interval: BLOCK_INTERVALS.FIVE_MINUTES, // every 5 minutes
-    // },
     BaseSepoliaChainlinkEthPriceFeed: {
       chain: "baseSepolia",
       startBlock: baseSepolia.startBlock,
