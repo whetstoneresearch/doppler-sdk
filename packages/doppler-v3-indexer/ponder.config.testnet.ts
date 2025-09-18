@@ -20,7 +20,7 @@ import { LockableUniswapV3InitializerABI } from "@app/abis/v3-abis/LockableUnisw
 import { UniswapV3MigratorAbi } from "@app/abis/v3-abis/UniswapV3Migrator";
 import { UniswapV4MulticurveInitializerABI, UniswapV4MulticurveInitializerHookABI } from "@app/abis/multicurve-abis";
 
-const { baseSepolia } = chainConfigs;
+const { base, unichain, ink, baseSepolia } = chainConfigs;
 
 export default createConfig({
   database: {
@@ -36,12 +36,44 @@ export default createConfig({
       id: CHAIN_IDS.baseSepolia,
       rpc: http(process.env.PONDER_RPC_URL_84532),
     },
+    base: {
+      id: CHAIN_IDS.base,
+      rpc: http(process.env.PONDER_RPC_URL_8453),
+    },
+    unichain: {
+      id: CHAIN_IDS.unichain,
+      rpc: http(process.env.PONDER_RPC_URL_130),
+    },
+    ink: {
+      id: CHAIN_IDS.ink,
+      rpc: http(process.env.PONDER_RPC_URL_130),
+    },
   },
   blocks: {
     BaseSepoliaChainlinkEthPriceFeed: {
       chain: "baseSepolia",
       startBlock: baseSepolia.startBlock,
       interval: BLOCK_INTERVALS.FIVE_MINUTES, // every 5 minutes
+    },
+    BaseChainlinkEthPriceFeed: {
+      chain: "base",
+      startBlock: base.startBlock,
+      interval: 99999999999, // never run on testnet, just need this otherwise build fails...
+    },
+    UnichainChainlinkEthPriceFeed: {
+      chain: "unichain",
+      startBlock: unichain.startBlock,
+      interval: 99999999999, // never run on testnet, just need this otherwise build fails...
+    },
+    InkChainlinkEthPriceFeed: {
+      chain: "ink",
+      startBlock: ink.startBlock,
+      interval: 99999999999, // never run on testnet, just need this otherwise build fails...
+    },
+    ZoraUsdcPrice: {
+      chain: "base",
+      startBlock: 31058549,
+      interval: 99999999999, // never run on testnet, just need this otherwise build fails...
     },
   },
   contracts: {
