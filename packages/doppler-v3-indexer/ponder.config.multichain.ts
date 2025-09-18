@@ -19,8 +19,9 @@ import { chainConfigs, CHAIN_IDS } from "./src/config/chains";
 import { LockableUniswapV3InitializerABI } from "@app/abis/v3-abis/LockableUniswapV3InitializerABI";
 import { UniswapV3MigratorAbi } from "@app/abis/v3-abis/UniswapV3Migrator";
 import { UniswapV2FactoryABI } from "@app/abis/UniswapV2Factory";
+import { UniswapV4MulticurveInitializerABI, UniswapV4MulticurveInitializerHookABI } from "@app/abis/multicurve-abis";
 
-const { base, unichain, ink } = chainConfigs;
+const { base, unichain, ink, baseSepolia } = chainConfigs;
 
 export default createConfig({
   database: {
@@ -44,6 +45,10 @@ export default createConfig({
       id: CHAIN_IDS.base,
       rpc: http(process.env.PONDER_RPC_URL_8453),
     },
+    baseSepolia: {
+      id: CHAIN_IDS.baseSepolia,
+      rpc: http(process.env.PONDER_RPC_URL_84532),
+    }
   },
   blocks: {
     BaseChainlinkEthPriceFeed: {
@@ -60,6 +65,11 @@ export default createConfig({
       chain: "ink",
       startBlock: ink.startBlock,
       interval: BLOCK_INTERVALS.FIVE_MINUTES, // every 5 minutes
+    },
+    BaseSepoliaChainlinkEthPriceFeed: {
+      chain: "baseSepolia",
+      startBlock: baseSepolia.startBlock,
+      interval: 9999999999, // never run on production, just need this otherwise build fails...
     },
     ZoraUsdcPrice: {
       chain: "base",
@@ -379,6 +389,15 @@ export default createConfig({
           }),
         },
       },
+    },
+    // neither of these are deployed to prod yet
+    UniswapV4MulticurveInitializer: {
+      abi: UniswapV4MulticurveInitializerABI,
+      chain: {},
+    },
+    UniswapV4MulticurveInitializerHook: {
+      abi: UniswapV4MulticurveInitializerHookABI,
+      chain: {},
     },
   },
 });
