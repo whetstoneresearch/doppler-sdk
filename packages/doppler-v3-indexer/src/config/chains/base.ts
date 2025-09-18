@@ -45,6 +45,7 @@ export const baseSepoliaConfig: ChainConfig = {
       v4MigratorHook: "0x508812fcdd4972a59b66eb2cad3772279c052000" as Address,
       v4InitializerSelfCorrecting:
         "0x8e891d249f1ecbffa6143c03eb1b12843aef09d3" as Address,
+      v4InitializerLatest: COMMON_ADDRESSES.ZERO_ADDRESS as Address,
     },
     shared: {
       airlock: "0x3411306ce66c9469bff1535ba955503c4bde1c6e" as Address,
@@ -89,6 +90,7 @@ export const baseConfig: ChainConfig = {
       v4MigratorHook: "0x1370ad7fda3b054eca3532a066b968433e736000" as Address,
       v4InitializerSelfCorrecting:
         "0x82Ac010C67f70BACf7655cd8948a4AD92A173CAC" as Address,
+      v4InitializerLatest: "0xED344444633B965cd148F8fFCE3765938A179094" as Address,
     },
     zora: {
       zoraFactory: "0x777777751622c0d3258f214F9DF38E35BF45baF3" as Address,

@@ -110,41 +110,15 @@ export default createConfig({
       chain: {
         unichain: {
           startBlock: unichain.v4StartBlock,
-          address: unichain.addresses.v4.v4Initializer,
+          address: [unichain.addresses.v4.v4Initializer, unichain.addresses.v4.v4Initializer2, unichain.addresses.v4.v4InitializerLatest, unichain.addresses.v4.v4InitializerSelfCorrecting],
         },
         base: {
           startBlock: base.v4StartBlock,
-          address: base.addresses.v4.v4Initializer,
+          address: [base.addresses.v4.v4Initializer, base.addresses.v4.v4Initializer2, base.addresses.v4.v4InitializerLatest, base.addresses.v4.v4InitializerSelfCorrecting],
         },
         ink: {
           startBlock: ink.v4StartBlock,
-          address: ink.addresses.v4.v4Initializer,
-        },
-      },
-    },
-    UniswapV4Initializer2: {
-      abi: UniswapV4InitializerABI,
-      chain: {
-        base: {
-          startBlock: base.v4StartBlock,
-          address: base.addresses.v4.v4Initializer2,
-        },
-        unichain: {
-          startBlock: unichain.v4StartBlock,
-          address: unichain.addresses.v4.v4Initializer2,
-        },
-        ink: {
-          startBlock: ink.v4StartBlock,
-          address: ink.addresses.v4.v4Initializer2,
-        },
-      },
-    },
-    UniswapV4InitializerSelfCorrecting: {
-      abi: UniswapV4InitializerABI,
-      chain: {
-        base: {
-          startBlock: base.v4StartBlock,
-          address: base.addresses.v4.v4InitializerSelfCorrecting,
+          address: [ink.addresses.v4.v4Initializer, ink.addresses.v4.v4Initializer2, ink.addresses.v4.v4InitializerLatest, ink.addresses.v4.v4InitializerSelfCorrecting],
         },
       },
     },
@@ -307,7 +281,7 @@ export default createConfig({
         base: {
           startBlock: base.v4StartBlock,
           address: factory({
-            address: base.addresses.v4.v4Initializer,
+            address: [base.addresses.v4.v4Initializer, base.addresses.v4.v4Initializer2, base.addresses.v4.v4InitializerLatest, base.addresses.v4.v4InitializerSelfCorrecting],
             event: getAbiItem({ abi: UniswapV4InitializerABI, name: "Create" }),
             parameter: "poolOrHook",
           }),
@@ -315,7 +289,7 @@ export default createConfig({
         unichain: {
           startBlock: unichain.v4StartBlock,
           address: factory({
-            address: unichain.addresses.v4.v4Initializer,
+            address: [unichain.addresses.v4.v4Initializer, unichain.addresses.v4.v4Initializer2, unichain.addresses.v4.v4InitializerLatest, unichain.addresses.v4.v4InitializerSelfCorrecting],
             event: getAbiItem({ abi: UniswapV4InitializerABI, name: "Create" }),
             parameter: "poolOrHook",
           }),
@@ -323,49 +297,7 @@ export default createConfig({
         ink: {
           startBlock: ink.v4StartBlock,
           address: factory({
-            address: ink.addresses.v4.v4Initializer,
-            event: getAbiItem({ abi: UniswapV4InitializerABI, name: "Create" }),
-            parameter: "poolOrHook",
-          }),
-        },
-      },
-    },
-    UniswapV4Pool2: {
-      abi: DopplerABI,
-      chain: {
-        base: {
-          startBlock: base.v4StartBlock,
-          address: factory({
-            address: base.addresses.v4.v4Initializer2,
-            event: getAbiItem({ abi: UniswapV4InitializerABI, name: "Create" }),
-            parameter: "poolOrHook",
-          }),
-        },
-        unichain: {
-          startBlock: unichain.v4StartBlock,
-          address: factory({
-            address: unichain.addresses.v4.v4Initializer2,
-            event: getAbiItem({ abi: UniswapV4InitializerABI, name: "Create" }),
-            parameter: "poolOrHook",
-          }),
-        },
-        ink: {
-          startBlock: ink.v4StartBlock,
-          address: factory({
-            address: ink.addresses.v4.v4Initializer2,
-            event: getAbiItem({ abi: UniswapV4InitializerABI, name: "Create" }),
-            parameter: "poolOrHook",
-          }),
-        },
-      },
-    },
-    UniswapV4PoolSelfCorrecting: {
-      abi: DopplerABI,
-      chain: {
-        base: {
-          startBlock: base.v4StartBlock,
-          address: factory({
-            address: base.addresses.v4.v4InitializerSelfCorrecting,
+            address: [ink.addresses.v4.v4Initializer, ink.addresses.v4.v4Initializer2, ink.addresses.v4.v4InitializerLatest, ink.addresses.v4.v4InitializerSelfCorrecting],
             event: getAbiItem({ abi: UniswapV4InitializerABI, name: "Create" }),
             parameter: "poolOrHook",
           }),

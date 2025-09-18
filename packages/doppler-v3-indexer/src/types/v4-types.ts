@@ -9,6 +9,7 @@ export interface V4Addresses {
   v4Initializer: Address;
   v4Initializer2: Address;
   v4InitializerSelfCorrecting: Address;
+  v4InitializerLatest: Address;
   stateView: Address;
   dopplerLens: Address;
   v4Migrator: Address;

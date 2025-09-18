@@ -36,6 +36,7 @@ export const inkConfig: ChainConfig = {
       v4Migrator: COMMON_ADDRESSES.ZERO_ADDRESS,
       v4MigratorHook: COMMON_ADDRESSES.ZERO_ADDRESS,
       v4InitializerSelfCorrecting: COMMON_ADDRESSES.ZERO_ADDRESS as Address,
+      v4InitializerLatest: COMMON_ADDRESSES.ZERO_ADDRESS as Address,
     },
     shared: {
       airlock: "0x660eAaEdEBc968f8f3694354FA8EC0b4c5Ba8D12" as Address,
