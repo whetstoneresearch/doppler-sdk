@@ -18,7 +18,9 @@ import { insertMulticurvePoolV4Optimized } from "./shared/entities/multicurve/po
 import { getAmount1Delta } from "@app/utils/v3-utils/computeGraduationThreshold";
 import { getAmount0Delta } from "@app/utils/v3-utils/computeGraduationThreshold";
 import { computeV3Price } from "@app/utils/v3-utils/computeV3Price";
-import { token } from "ponder:schema";
+import { pool, token } from "ponder:schema";
+import { handleOptimizedSwap } from "./shared/swap-optimizer";
+import { StateViewABI } from "@app/abis";
 
 ponder.on("UniswapV4Initializer:Create", async ({ event, context }) => {
   const { poolOrHook, asset: assetId, numeraire } = event.args;
@@ -383,3 +385,48 @@ ponder.on(
     });
   }
 );
+
+ponder.on("UniswapV4MulticurveInitializerHook:Swap", async ({ event, context }) => {
+  const { poolId, sender, amount0, amount1 } = event.args;
+  const timestamp = event.block.timestamp;
+
+  const poolEntity = await context.db.find(pool, {
+    address: poolId,
+    chainId: context.chain.id,
+  });
+
+  console.log("here?")
+
+  if (!poolEntity) {
+    return;
+  }
+
+  const slot0 = await context.client.readContract({
+    abi: StateViewABI,
+    address: chainConfigs[context.chain.name].addresses.v4.stateView,
+    functionName: "getSlot0",
+    args: [poolId],
+  });
+
+  console.log(slot0)
+
+  const sqrtPriceX96 = slot0?.[0] ?? 0n;
+
+  const isCoinBuy = poolEntity.isToken0 ? amount0 > amount1 : amount1 > amount0;
+
+  await handleOptimizedSwap(
+    {
+      poolAddress: poolId,
+      swapSender: sender,
+      amount0,
+      amount1,
+      sqrtPriceX96,
+      isCoinBuy,
+      timestamp,
+      transactionHash: event.transaction.hash,
+      transactionFrom: event.transaction.from,
+      blockNumber: event.block.number,
+      context,
+    },
+  );
+});
