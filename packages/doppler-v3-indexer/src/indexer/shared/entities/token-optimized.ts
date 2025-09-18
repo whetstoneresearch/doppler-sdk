@@ -31,10 +31,10 @@ export const upsertTokenWithPool = async ({
 }): Promise<typeof token.$inferSelect> => {
   const { db, chain, client } = context;
   const address = tokenAddress.toLowerCase() as `0x${string}`;
-  
+
   const wethAddress = chainConfigs[chain.name]?.addresses?.shared?.weth;
   const zoraAddress = chainConfigs[chain.name]?.addresses?.zora?.zoraToken;
-  
+
   let tokenData: Partial<typeof token.$inferInsert> = {
     address,
     chainId: chain.id,
@@ -48,7 +48,10 @@ export const upsertTokenWithPool = async ({
     lastSeenAt: timestamp,
   };
 
-  if (address === zeroAddress || (wethAddress && address === wethAddress.toLowerCase())) {
+  if (
+    address === zeroAddress ||
+    (wethAddress && address === wethAddress.toLowerCase())
+  ) {
     tokenData = {
       ...tokenData,
       name: address === zeroAddress ? "Ethereum" : "Wrapped Ether",
@@ -67,7 +70,7 @@ export const upsertTokenWithPool = async ({
   } else {
     // Fetch token metadata for regular tokens
     const multicallOptions = getMulticallOptions(chain);
-    const [nameResult, symbolResult, decimalsResult, totalSupplyResult] = 
+    const [nameResult, symbolResult, decimalsResult, totalSupplyResult] =
       await client.multicall({
         contracts: [
           { abi: DERC20ABI, address, functionName: "name" },
@@ -77,7 +80,6 @@ export const upsertTokenWithPool = async ({
         ],
         ...multicallOptions,
       });
-
 
     tokenData = {
       ...tokenData,
@@ -89,30 +91,32 @@ export const upsertTokenWithPool = async ({
     };
 
     if (process.env.NODE_ENV !== "local") {
-      fetch(`${process.env.METADATA_UPDATER_ENDPOINT}?tokenAddress=${address}&chainId=${chain.id}`);
+      void fetch(
+        `${process.env.METADATA_UPDATER_ENDPOINT}?tokenAddress=${address}&chainId=${chain.id}`
+      );
     }
   }
 
   if (poolAddress) {
-  return await db
-    .insert(token)
-    .values(tokenData as typeof token.$inferInsert)
-    .onConflictDoUpdate((existing) => ({
-      pool: poolAddress,
-      isDerc20,
-      isCreatorCoin,
-      isContentCoin,
-      creatorCoinPid,
-      lastSeenAt: timestamp,
-      // Keep existing totalSupply if it's already set
-      totalSupply: existing.totalSupply || tokenData.totalSupply,
-    }));
+    return await db
+      .insert(token)
+      .values(tokenData as typeof token.$inferInsert)
+      .onConflictDoUpdate((existing) => ({
+        pool: poolAddress,
+        isDerc20,
+        isCreatorCoin,
+        isContentCoin,
+        creatorCoinPid,
+        lastSeenAt: timestamp,
+        // Keep existing totalSupply if it's already set
+        totalSupply: existing.totalSupply || tokenData.totalSupply,
+      }));
   } else {
-  return await db
-    .insert(token)
-    .values(tokenData as typeof token.$inferInsert)
-    .onConflictDoUpdate(() => ({
-      lastSeenAt: timestamp,
-    }));
+    return await db
+      .insert(token)
+      .values(tokenData as typeof token.$inferInsert)
+      .onConflictDoUpdate(() => ({
+        lastSeenAt: timestamp,
+      }));
   }
 };

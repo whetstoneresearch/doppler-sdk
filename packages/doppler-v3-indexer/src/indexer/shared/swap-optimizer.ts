@@ -181,12 +181,15 @@ export function processSwapCalculations(
  */
 export async function handleOptimizedSwap(
   params: SwapHandlerParams,
+  isZora?: boolean,
 ): Promise<void> {
   const { context, timestamp } = params;
   const { db, chain } = context;
   const poolAddress = params.poolAddress;
 
-  const [zoraPrice, ethPrice, poolEntity] = await Promise.all([
+  let zoraPrice, ethPrice, poolEntity;
+  if (isZora) {
+    [zoraPrice, ethPrice, poolEntity] = await Promise.all([
     fetchZoraPrice(timestamp, context),
     fetchEthPrice(timestamp, context),
     db.find(pool, {
@@ -194,13 +197,23 @@ export async function handleOptimizedSwap(
       chainId: chain.id,
     }),
   ]);
+  } else {
+    [ethPrice, poolEntity] = await Promise.all([
+      fetchEthPrice(timestamp, context),
+      db.find(pool, {
+        address: poolAddress,
+        chainId: chain.id,
+      }),
+    ]);
+  }
+
   
   if (!poolEntity) {
     return;
   }
   
   // Get USD price efficiently
-  const usdPrice = await getPoolUsdPrice(poolEntity, zoraPrice, ethPrice, context);
+  const usdPrice = await getPoolUsdPrice(poolEntity, zoraPrice ?? 1n, ethPrice, context);
 
   if (!usdPrice) {
     return;

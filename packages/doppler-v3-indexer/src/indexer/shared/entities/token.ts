@@ -126,41 +126,37 @@ export const insertTokenIfNotExists = async ({
       isDerc20: false,
     });
   } else {
-    const [
-      nameResult,
-      symbolResult,
-      decimalsResult,
-      totalSupplyResult,
-    ] = await context.client.multicall({
-      contracts: [
-        {
-          abi: DERC20ABI,
-          address,
-          functionName: "name",
-        },
-        {
-          abi: DERC20ABI,
-          address,
-          functionName: "symbol",
-        },
-        {
-          abi: DERC20ABI,
-          address,
-          functionName: "decimals",
-        },
-        {
-          abi: DERC20ABI,
-          address,
-          functionName: "totalSupply",
-        },
-      ],
-      ...multicallOptions,
-    });
+    const [nameResult, symbolResult, decimalsResult, totalSupplyResult] =
+      await context.client.multicall({
+        contracts: [
+          {
+            abi: DERC20ABI,
+            address,
+            functionName: "name",
+          },
+          {
+            abi: DERC20ABI,
+            address,
+            functionName: "symbol",
+          },
+          {
+            abi: DERC20ABI,
+            address,
+            functionName: "decimals",
+          },
+          {
+            abi: DERC20ABI,
+            address,
+            functionName: "totalSupply",
+          },
+        ],
+        ...multicallOptions,
+      });
 
     if (process.env.NODE_ENV !== "local") {
-      fetch(
+      void fetch(
         `${process.env.METADATA_UPDATER_ENDPOINT}?tokenAddress=${address}&chainId=${chain.id}`
-      ) as unknown;
+      );
     }
 
     return await context.db

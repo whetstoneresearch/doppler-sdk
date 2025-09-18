@@ -13,7 +13,7 @@ export const CHAIN_IDS = {
 export const START_BLOCKS = {
   mainnet: 21781000,
   unichain: 8536880,
-  baseSepolia: 27805302,
+  baseSepolia: 31004617,
   ink: 9508011,
   base: 28415520,
 } as const;
@@ -60,7 +60,7 @@ export const RPC_ENV_VARS = {
 
 export const BLOCK_INTERVALS = {
   FIVE_MINUTES: (60 * 5) / 12, // every 5 minutes
-  FIFTY_BLOCKS: 50,             // every 50 blocks  
-  THOUSAND_BLOCKS: 1000,        // every 1000 blocks
+  FIFTY_BLOCKS: 50, // every 50 blocks
+  THOUSAND_BLOCKS: 1000, // every 1000 blocks
   FIVE_THOUSAND_BLOCKS: 5000,
 } as const;

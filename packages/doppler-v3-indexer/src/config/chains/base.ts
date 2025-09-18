@@ -46,6 +46,10 @@ export const baseSepoliaConfig: ChainConfig = {
       v4InitializerSelfCorrecting:
         "0x8e891d249f1ecbffa6143c03eb1b12843aef09d3" as Address,
       v4InitializerLatest: COMMON_ADDRESSES.ZERO_ADDRESS as Address,
+      v4MulticurveInitializer:
+        "0x359b5952a254baaa0105381825daedb8986bb55c" as Address,
+      v4MulticurveInitializerHook:
+        "0x06f5bbb7e503c87d78b6811077d6572fd8a3ed40" as Address,
     },
     shared: {
       airlock: "0x3411306ce66c9469bff1535ba955503c4bde1c6e" as Address,
@@ -54,7 +58,8 @@ export const baseSepoliaConfig: ChainConfig = {
       governanceFactory:
         "0x9dbfaadc8c0cb2c34ba698dd9426555336992e20" as Address,
       weth: COMMON_ADDRESSES.WETH_BASE,
-      chainlinkEthOracle: ORACLE_ADDRESSES.chainlinkEth,
+      chainlinkEthOracle:
+        "0x5b0cf2b36a65a6BB085D501B971e4c102B9Cd473" as Address,
     },
     oracle: ORACLE_ADDRESSES,
   },
@@ -91,6 +96,10 @@ export const baseConfig: ChainConfig = {
       v4InitializerSelfCorrecting:
         "0x82Ac010C67f70BACf7655cd8948a4AD92A173CAC" as Address,
       v4InitializerLatest: "0xED344444633B965cd148F8fFCE3765938A179094" as Address,
+      v4MulticurveInitializer:
+        "0x359b5952a254baaa0105381825daedb8986bb55c" as Address,
+      v4MulticurveInitializerHook:
+        "0x06f5bbb7e503c87d78b6811077d6572fd8a3ed40" as Address,
     },
     zora: {
       zoraFactory: "0x777777751622c0d3258f214F9DF38E35BF45baF3" as Address,
@@ -106,7 +115,8 @@ export const baseConfig: ChainConfig = {
       governanceFactory:
         "0xb4deE32EB70A5E55f3D2d861F49Fb3D79f7a14d9" as Address,
       weth: COMMON_ADDRESSES.WETH_BASE,
-      chainlinkEthOracle: "0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70" as Address,
+      chainlinkEthOracle:
+        "0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70" as Address,
     },
     stables: {
       usdc: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" as Address,

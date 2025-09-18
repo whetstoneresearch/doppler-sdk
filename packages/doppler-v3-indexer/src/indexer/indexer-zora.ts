@@ -212,6 +212,7 @@ ponder.on("ZoraV4Hook:Swapped", async ({ event, context }) => {
       blockNumber: event.block.number,
       context,
     },
+    true,
   );
 });
 
@@ -233,6 +234,7 @@ ponder.on("ZoraV4CreatorCoinHook:Swapped", async ({ event, context }) => {
       blockNumber: event.block.number,
       context,
     },
+    true,
   );
 });
 
