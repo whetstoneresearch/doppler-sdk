@@ -164,6 +164,48 @@ export const insertTokenIfNotExists = async ({
       );
     }
 
+    const tokenURI = tokenURIResult?.result;
+    let tokenUriData;
+    let image: string | undefined;
+    const shouldFetchImage = process.env.ENABLE_IMAGE_FETCHING === "true";
+    if (tokenURI?.startsWith("ipfs://") && shouldFetchImage) {
+      try {
+        if (
+          !tokenURI.startsWith("ipfs://")
+        ) {
+          console.error(`Invalid tokenURI for token ${address}: ${tokenURI}`);
+        }
+        const cid = tokenURI.replace("ipfs://", "");
+        const url = `https://${process.env.PINATA_GATEWAY_URL}/ipfs/${cid}?pinataGatewayToken=${process.env.PINATA_GATEWAY_KEY}`;
+        const response = await fetch(url);
+        tokenUriData = await response.json();
+
+        if (
+          tokenUriData &&
+          typeof tokenUriData === "object" &&
+          "image" in tokenUriData &&
+          typeof tokenUriData.image === "string"
+        ) {
+          if (tokenUriData.image.startsWith("ipfs://")) {
+            image = tokenUriData.image;
+          }
+        } else if (
+          tokenUriData &&
+          typeof tokenUriData === "object" &&
+          "image_hash" in tokenUriData &&
+          typeof tokenUriData.image_hash === "string"
+        ) {
+          if (tokenUriData.image_hash.startsWith("ipfs://")) {
+            image = tokenUriData.image_hash;
+          }
+        }
+      } catch (error) {
+        console.error(
+          `Failed to fetch IPFS metadata for token ${address}:`,
+          error
+        );
+      }
+    } 
     return await context.db
       .insert(token)
       .values({
@@ -180,6 +222,7 @@ export const insertTokenIfNotExists = async ({
         pool: poolAddress,
         derc20Data: isDerc20 ? address : undefined,
         tokenUri: tokenURIResult?.result ?? "",
+        image: image ?? "",
       })
       .onConflictDoUpdate((row) => ({
         pool: row.pool,
