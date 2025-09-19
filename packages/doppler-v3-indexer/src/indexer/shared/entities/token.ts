@@ -126,7 +126,7 @@ export const insertTokenIfNotExists = async ({
       isDerc20: false,
     });
   } else {
-    const [nameResult, symbolResult, decimalsResult, totalSupplyResult] =
+    const [nameResult, symbolResult, decimalsResult, totalSupplyResult, tokenURIResult] =
       await context.client.multicall({
         contracts: [
           {
@@ -149,6 +149,11 @@ export const insertTokenIfNotExists = async ({
             address,
             functionName: "totalSupply",
           },
+          {
+            abi: DERC20ABI,
+            address,
+            functionName: "tokenURI",
+          }
         ],
         ...multicallOptions,
       });
@@ -174,6 +179,7 @@ export const insertTokenIfNotExists = async ({
         isDerc20,
         pool: poolAddress,
         derc20Data: isDerc20 ? address : undefined,
+        tokenUri: tokenURIResult?.result ?? "",
       })
       .onConflictDoUpdate((row) => ({
         pool: row.pool,
