@@ -10,6 +10,31 @@ export const MAX_TICK = 887272
 export const MIN_SQRT_RATIO = 4295128739n
 export const MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970342n
 export const Q96 = 2n ** 96n
+export const Q192 = Q96 * Q96
+
+// Precision constant for price calculations (10^18 for high precision)
+const PRICE_PRECISION = 10n ** 18n
+
+/**
+ * Integer square root using Newton's method (for BigInt)
+ * @param n The number to take the square root of
+ * @returns The floor of the square root
+ */
+function bigIntSqrt(n: bigint): bigint {
+  if (n < 0n) throw new Error('Square root of negative number')
+  if (n === 0n) return 0n
+  if (n === 1n) return 1n
+
+  let x = n
+  let y = (x + 1n) / 2n
+
+  while (y < x) {
+    x = y
+    y = (x + n / x) / 2n
+  }
+
+  return x
+}
 
 /**
  * Get the sqrt ratio at a given tick
@@ -55,6 +80,8 @@ export function getSqrtRatioAtTick(tick: number): bigint {
 
 /**
  * Get the tick at a given sqrt ratio
+ * Based on Uniswap v3 TickMath.sol with corrected BigInt handling
+ *
  * @param sqrtRatioX96 The sqrt price as a Q64.96 fixed point number
  * @returns The tick value
  */
@@ -63,11 +90,14 @@ export function getTickAtSqrtRatio(sqrtRatioX96: bigint): number {
     throw new Error('sqrt ratio out of bounds')
   }
 
+  // Shift to Q128.128 format
   const ratio = sqrtRatioX96 << 32n
 
+  // Find MSB (most significant bit position)
   let r = ratio
   let msb = 0n
 
+  // Binary search for MSB
   let f = r > 0xffffffffffffffffffffffffffffffffn ? 1n : 0n
   msb = msb | (f << 7n)
   r = r >> (f * 128n)
@@ -99,9 +129,16 @@ export function getTickAtSqrtRatio(sqrtRatioX96: bigint): number {
   f = r > 0x1n ? 1n : 0n
   msb = msb | f
 
+  // Calculate log2 in Q64.64 format
   let log2 = (msb - 128n) << 64n
-  
-  r = ratio >> msb
+
+  // CRITICAL FIX: Shift ratio to normalize to [1, 2) range in Q127 format
+  // This is equivalent to Solidity's: r := shr(msb, shl(127, ratio))
+  // Which normalizes ratio so the MSB is at position 127
+  r = (ratio << 127n) >> msb
+
+  // Now compute fractional bits of log2 through repeated squaring
+  // Each iteration computes one more bit of precision
   r = (r * r) >> 127n
   f = r >> 128n
   log2 = log2 | (f << 63n)
@@ -171,16 +208,21 @@ export function getTickAtSqrtRatio(sqrtRatioX96: bigint): number {
   f = r >> 128n
   log2 = log2 | (f << 50n)
 
+  // Convert log2 to log_sqrt(1.0001) = log2 * log_sqrt(1.0001) / log(2)
   const log_sqrt10001 = log2 * 255738958999603826347141n
 
+  // Calculate tick bounds with magic numbers for rounding
   const tickLow = Number((log_sqrt10001 - 3402992956809132418596140100660247210n) >> 128n)
   const tickHigh = Number((log_sqrt10001 + 291339464771989622907027621153398088495n) >> 128n)
 
+  // Return the correct tick by checking which one is valid
   return tickLow === tickHigh ? tickLow : getSqrtRatioAtTick(tickHigh) <= sqrtRatioX96 ? tickHigh : tickLow
 }
 
 /**
  * Convert sqrtPriceX96 to a human-readable price
+ * Uses BigInt arithmetic throughout to avoid precision loss with Q96
+ *
  * @param sqrtPriceX96 The sqrt price as a Q64.96 fixed point number
  * @param decimals0 Decimals of token0
  * @param decimals1 Decimals of token1
@@ -193,18 +235,34 @@ export function sqrtPriceX96ToPrice(
   decimals1: number,
   token0IsBase = true
 ): number {
-  const price = Number(sqrtPriceX96) / Number(Q96)
-  const priceSquared = price * price
-  
-  // Adjust for decimals
-  const decimalAdjustment = 10 ** (decimals1 - decimals0)
-  const adjustedPrice = priceSquared * decimalAdjustment
-  
-  return token0IsBase ? adjustedPrice : 1 / adjustedPrice
+  // Calculate price using BigInt: price = (sqrtPriceX96)^2 / Q192 * 10^(decimals1 - decimals0)
+  // We scale by PRICE_PRECISION to maintain precision before converting to Number
+  const sqrtPriceSquared = sqrtPriceX96 * sqrtPriceX96
+
+  // Apply decimal adjustment using BigInt
+  const decimalDiff = decimals1 - decimals0
+  let adjustedPrice: bigint
+
+  if (decimalDiff >= 0) {
+    // Multiply by 10^decimalDiff, scale by PRICE_PRECISION
+    const decimalMultiplier = 10n ** BigInt(decimalDiff)
+    adjustedPrice = (sqrtPriceSquared * decimalMultiplier * PRICE_PRECISION) / Q192
+  } else {
+    // Divide by 10^|decimalDiff|, scale by PRICE_PRECISION
+    const decimalDivisor = 10n ** BigInt(-decimalDiff)
+    adjustedPrice = (sqrtPriceSquared * PRICE_PRECISION) / (Q192 * decimalDivisor)
+  }
+
+  // Convert to Number, accounting for precision scaling
+  const price = Number(adjustedPrice) / Number(PRICE_PRECISION)
+
+  return token0IsBase ? price : 1 / price
 }
 
 /**
  * Convert a human-readable price to sqrtPriceX96
+ * Uses BigInt arithmetic throughout to avoid precision loss with Q96
+ *
  * @param price The price (token1/token0)
  * @param decimals0 Decimals of token0
  * @param decimals1 Decimals of token1
@@ -215,13 +273,50 @@ export function priceToSqrtPriceX96(
   decimals0: number,
   decimals1: number
 ): bigint {
-  // Adjust for decimals
-  const decimalAdjustment = 10 ** (decimals1 - decimals0)
-  const adjustedPrice = price / decimalAdjustment
-  
-  // Calculate sqrt and convert to X96
-  const sqrtPrice = Math.sqrt(adjustedPrice)
-  return BigInt(Math.floor(sqrtPrice * Number(Q96)))
+  if (price <= 0) {
+    throw new Error('Price must be positive')
+  }
+
+  // We want: sqrtPriceX96 = sqrt(price / 10^(decimals1 - decimals0)) * Q96
+  //                       = sqrt(price * 10^(decimals0 - decimals1)) * Q96
+  //
+  // Strategy: Scale price to BigInt, compute sqrt in BigInt, then scale result
+  // Using PRICE_PRECISION^2 as scaling factor so sqrt gives us PRICE_PRECISION scaling
+
+  const SQRT_PRECISION = 10n ** 9n // sqrt(PRICE_PRECISION) = sqrt(10^18) = 10^9
+  const PRICE_SCALE = PRICE_PRECISION * PRICE_PRECISION // 10^36 for maximum precision
+
+  // Convert price to scaled BigInt
+  // price_scaled = price * 10^36
+  const priceScaled = BigInt(Math.floor(price * 1e18)) * PRICE_PRECISION
+
+  // Apply decimal adjustment
+  const decimalDiff = decimals0 - decimals1
+  let adjustedPriceScaled: bigint
+
+  if (decimalDiff >= 0) {
+    const decimalMultiplier = 10n ** BigInt(decimalDiff)
+    adjustedPriceScaled = priceScaled * decimalMultiplier
+  } else {
+    const decimalDivisor = 10n ** BigInt(-decimalDiff)
+    adjustedPriceScaled = priceScaled / decimalDivisor
+  }
+
+  // Compute sqrt: sqrt(adjustedPriceScaled) has scale of 10^18
+  const sqrtPriceScaled = bigIntSqrt(adjustedPriceScaled)
+
+  // sqrtPriceX96 = sqrtPriceScaled * Q96 / PRICE_PRECISION
+  const sqrtPriceX96 = (sqrtPriceScaled * Q96) / PRICE_PRECISION
+
+  // Clamp to valid range
+  if (sqrtPriceX96 < MIN_SQRT_RATIO) {
+    return MIN_SQRT_RATIO
+  }
+  if (sqrtPriceX96 >= MAX_SQRT_RATIO) {
+    return MAX_SQRT_RATIO - 1n
+  }
+
+  return sqrtPriceX96
 }
 
 /**

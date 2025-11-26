@@ -120,12 +120,91 @@ describe('tickMath', () => {
       const price = 10 // 10x price difference
       const tick = priceToTick(price, 18, 18)
       const recoveredPrice = tickToPrice(tick, 18, 18)
-      
+
       // Tick should be positive for price > 1
       expect(tick).toBeGreaterThan(0)
       // Recovered price should be in the right order of magnitude
       expect(recoveredPrice).toBeGreaterThan(1)
       expect(recoveredPrice).toBeLessThan(100)
+    })
+  })
+
+  describe('mixed decimals precision (issue #33)', () => {
+    // USDC has 6 decimals, WETH has 18 decimals
+    const USDC_DECIMALS = 6
+    const WETH_DECIMALS = 18
+
+    it('should handle USDC/WETH price conversions accurately', () => {
+      // Test ETH price at $2000 USDC
+      // In Uniswap terms with USDC as token0 and WETH as token1:
+      // price = token1/token0 = WETH/USDC in raw units
+      // For $2000 USDC per ETH: 1 ETH = 2000 USDC
+      // So USDC/WETH = 0.0005 (in human terms)
+
+      const price = 0.0005 // USDC per WETH (inverted)
+      const tick = priceToTick(price, USDC_DECIMALS, WETH_DECIMALS)
+      const recoveredPrice = tickToPrice(tick, USDC_DECIMALS, WETH_DECIMALS)
+
+      // Should recover the price within 0.1% (tick spacing introduces some error)
+      const relativeError = Math.abs(recoveredPrice - price) / price
+      expect(relativeError).toBeLessThan(0.001)
+    })
+
+    it('should handle very small prices with mixed decimals', () => {
+      // Very small price like a new token launch
+      const price = 0.000001 // token1 per token0
+      const tick = priceToTick(price, 6, 18)
+      const recoveredPrice = tickToPrice(tick, 6, 18)
+
+      const relativeError = Math.abs(recoveredPrice - price) / price
+      expect(relativeError).toBeLessThan(0.001)
+    })
+
+    it('should handle large prices with mixed decimals', () => {
+      // Large price scenario
+      const price = 1000000 // token1 per token0
+      const tick = priceToTick(price, 18, 6)
+      const recoveredPrice = tickToPrice(tick, 18, 6)
+
+      const relativeError = Math.abs(recoveredPrice - price) / price
+      expect(relativeError).toBeLessThan(0.001)
+    })
+
+    it('should be consistent across roundtrip conversions', () => {
+      // Test various price points
+      const testPrices = [0.0001, 0.001, 0.01, 0.1, 1, 10, 100, 1000, 10000]
+
+      for (const price of testPrices) {
+        const tick = priceToTick(price, 18, 18)
+        const recoveredPrice = tickToPrice(tick, 18, 18)
+
+        const relativeError = Math.abs(recoveredPrice - price) / price
+        expect(relativeError).toBeLessThan(0.001)
+      }
+    })
+
+    it('should handle 6/18 decimal pair roundtrip', () => {
+      const testPrices = [0.0000001, 0.000001, 0.00001, 0.0001, 0.001]
+
+      for (const price of testPrices) {
+        const tick = priceToTick(price, 6, 18)
+        const recoveredPrice = tickToPrice(tick, 6, 18)
+
+        const relativeError = Math.abs(recoveredPrice - price) / price
+        expect(relativeError).toBeLessThan(0.001)
+      }
+    })
+
+    it('should handle 18/6 decimal pair roundtrip', () => {
+      const testPrices = [1000, 10000, 100000, 1000000, 10000000]
+
+      for (const price of testPrices) {
+        const tick = priceToTick(price, 18, 6)
+        const recoveredPrice = tickToPrice(tick, 18, 6)
+
+        const relativeError = Math.abs(recoveredPrice - price) / price
+        expect(relativeError).toBeLessThan(0.001)
+      }
     })
   })
 
