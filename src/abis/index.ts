@@ -406,6 +406,9 @@ export const v4MigratorAbi = [
     outputs: [{ name: "", type: "bytes" }],
     stateMutability: "pure",
   },
+  // V4 Migrator errors
+  { type: 'error', name: 'TickOutOfRange', inputs: [] },
+  { type: 'error', name: 'ZeroLiquidity', inputs: [] },
 ] as const
 
 export const uniswapV3PoolAbi = [
@@ -707,6 +710,46 @@ export const derc20Abi = [
     outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
     stateMutability: "view",
   },
+  // DERC20 errors
+  { type: 'error', name: 'MintingNotStartedYet', inputs: [] },
+  { type: 'error', name: 'ExceedsYearlyMintCap', inputs: [] },
+  { type: 'error', name: 'NoMintableAmount', inputs: [] },
+  { type: 'error', name: 'PoolLocked', inputs: [] },
+  { type: 'error', name: 'ArrayLengthsMismatch', inputs: [] },
+  { type: 'error', name: 'ReleaseAmountInvalid', inputs: [] },
+  {
+    type: 'error',
+    name: 'MaxPreMintPerAddressExceeded',
+    inputs: [
+      { name: 'amount', type: 'uint256', internalType: 'uint256' },
+      { name: 'limit', type: 'uint256', internalType: 'uint256' },
+    ],
+  },
+  {
+    type: 'error',
+    name: 'MaxTotalPreMintExceeded',
+    inputs: [
+      { name: 'amount', type: 'uint256', internalType: 'uint256' },
+      { name: 'limit', type: 'uint256', internalType: 'uint256' },
+    ],
+  },
+  {
+    type: 'error',
+    name: 'MaxTotalVestedExceeded',
+    inputs: [
+      { name: 'amount', type: 'uint256', internalType: 'uint256' },
+      { name: 'limit', type: 'uint256', internalType: 'uint256' },
+    ],
+  },
+  { type: 'error', name: 'VestingNotStartedYet', inputs: [] },
+  {
+    type: 'error',
+    name: 'MaxYearlyMintRateExceeded',
+    inputs: [
+      { name: 'amount', type: 'uint256', internalType: 'uint256' },
+      { name: 'limit', type: 'uint256', internalType: 'uint256' },
+    ],
+  },
 ] as const
 
 export const uniswapV4InitializerAbi = [
@@ -856,6 +899,26 @@ export const dopplerHookAbi = [
     outputs: [{ name: "", type: "uint256" }],
     stateMutability: "view",
   },
+  // Doppler Hook errors
+  { type: 'error', name: 'InvalidGamma', inputs: [] },
+  { type: 'error', name: 'InvalidTimeRange', inputs: [] },
+  { type: 'error', name: 'CannotAddLiquidity', inputs: [] },
+  { type: 'error', name: 'CannotSwapBeforeStartTime', inputs: [] },
+  { type: 'error', name: 'SwapBelowRange', inputs: [] },
+  { type: 'error', name: 'InvalidStartTime', inputs: [] },
+  { type: 'error', name: 'InvalidTickRange', inputs: [] },
+  { type: 'error', name: 'InvalidTickSpacing', inputs: [] },
+  { type: 'error', name: 'InvalidEpochLength', inputs: [] },
+  { type: 'error', name: 'InvalidProceedLimits', inputs: [] },
+  { type: 'error', name: 'InvalidNumPDSlugs', inputs: [] },
+  { type: 'error', name: 'InvalidSwapAfterMaturitySufficientProceeds', inputs: [] },
+  { type: 'error', name: 'InvalidSwapAfterMaturityInsufficientProceeds', inputs: [] },
+  { type: 'error', name: 'MaximumProceedsReached', inputs: [] },
+  { type: 'error', name: 'SenderNotPoolManager', inputs: [] },
+  { type: 'error', name: 'AlreadyInitialized', inputs: [] },
+  { type: 'error', name: 'SenderNotInitializer', inputs: [] },
+  { type: 'error', name: 'CannotMigrate', inputs: [] },
+  { type: 'error', name: 'CannotDonate', inputs: [] },
 ] as const
 
 export const quoterV2Abi = [
@@ -1421,6 +1484,17 @@ export const v4MulticurveInitializerAbi = [
     anonymous: false,
   },
   { type: 'error', name: 'PoolLocked', inputs: [] },
+  { type: 'error', name: 'PoolNotLocked', inputs: [] },
+  { type: 'error', name: 'PoolAlreadyInitialized', inputs: [] },
+  { type: 'error', name: 'PoolAlreadyExited', inputs: [] },
+  {
+    type: 'error',
+    name: 'CannotMigrateInsufficientTick',
+    inputs: [
+      { name: 'targetTick', type: 'int24', internalType: 'int24' },
+      { name: 'currentTick', type: 'int24', internalType: 'int24' },
+    ],
+  },
   { type: 'error', name: 'SenderNotAirlock', inputs: [] },
   { type: 'error', name: 'UnorderedBeneficiaries', inputs: [] },
   { type: 'error', name: 'InvalidShares', inputs: [] },
@@ -1484,6 +1558,12 @@ export const streamableFeesLockerAbi = [
     ],
     stateMutability: 'view',
   },
+  // StreamableFeesLocker errors
+  { type: 'error', name: 'NonPositionManager', inputs: [] },
+  { type: 'error', name: 'NotApprovedMigrator', inputs: [] },
+  { type: 'error', name: 'PositionNotFound', inputs: [] },
+  { type: 'error', name: 'PositionAlreadyUnlocked', inputs: [] },
+  { type: 'error', name: 'InvalidBeneficiary', inputs: [] },
 ] as const
 
 export const v4MulticurveMigratorAbi = [
@@ -1545,6 +1625,8 @@ export const v4MulticurveMigratorAbi = [
     ],
     stateMutability: 'view',
   },
+  // V4 Multicurve Migrator errors
+  { type: 'error', name: 'PoolNotInitialized', inputs: [] },
 ] as const
 
 export const dopplerLensAbi = [
