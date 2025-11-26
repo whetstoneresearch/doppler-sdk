@@ -300,6 +300,54 @@ export const airlockAbi = [
       { name: 'actual', type: 'uint8', internalType: 'enum ModuleState' },
     ],
   },
+  // Pool initializer errors (included for better error decoding when calls bubble up)
+  {
+    type: 'error',
+    name: 'InvalidTickRange',
+    inputs: [
+      { name: 'tick', type: 'int24', internalType: 'int24' },
+      { name: 'tickSpacing', type: 'int24', internalType: 'int24' },
+    ],
+  },
+  {
+    type: 'error',
+    name: 'InvalidTickRangeMisordered',
+    inputs: [
+      { name: 'tickLower', type: 'int24', internalType: 'int24' },
+      { name: 'tickUpper', type: 'int24', internalType: 'int24' },
+    ],
+  },
+  {
+    type: 'error',
+    name: 'InvalidFee',
+    inputs: [{ name: 'fee', type: 'uint24', internalType: 'uint24' }],
+  },
+  {
+    type: 'error',
+    name: 'CannotMigrateInsufficientTick',
+    inputs: [
+      { name: 'targetTick', type: 'int24', internalType: 'int24' },
+      { name: 'currentTick', type: 'int24', internalType: 'int24' },
+    ],
+  },
+  { type: 'error', name: 'CannotMintZeroLiquidity', inputs: [] },
+  {
+    type: 'error',
+    name: 'MaxShareToBeSoldExceeded',
+    inputs: [
+      { name: 'value', type: 'uint256', internalType: 'uint256' },
+      { name: 'limit', type: 'uint256', internalType: 'uint256' },
+    ],
+  },
+  { type: 'error', name: 'PoolAlreadyExited', inputs: [] },
+  { type: 'error', name: 'PoolAlreadyInitialized', inputs: [] },
+  { type: 'error', name: 'PoolLocked', inputs: [] },
+  { type: 'error', name: 'SenderNotAirlock', inputs: [] },
+  { type: 'error', name: 'UnorderedBeneficiaries', inputs: [] },
+  { type: 'error', name: 'InvalidShares', inputs: [] },
+  { type: 'error', name: 'InvalidTotalShares', inputs: [] },
+  { type: 'error', name: 'InvalidProtocolOwnerShares', inputs: [] },
+  { type: 'error', name: 'InvalidProtocolOwnerBeneficiary', inputs: [] },
 ] as const
 
 export const uniswapV3InitializerAbi = [
