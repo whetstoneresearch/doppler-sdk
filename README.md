@@ -81,7 +81,54 @@ console.log('Pool address:', result.poolAddress)
 console.log('Token address:', result.tokenAddress)
 ```
 
-> **Tick spacing reminder:** When you provide ticks manually via `poolByTicks`, make sure both `startTick` and `endTick` are exact multiples of the fee tier’s tick spacing (100→1, 500→10, 3000→60, 10000→200). The SDK now validates this locally and will fail fast if the ticks are misaligned.
+> **Tick spacing reminder:** When you provide ticks manually via `poolByTicks`, make sure both `startTick` and `endTick` are exact multiples of the fee tier's tick spacing (100→1, 500→10, 3000→60, 10000→200). The SDK now validates this locally and will fail fast if the ticks are misaligned.
+
+### Static Auction with Lockable Beneficiaries (V3)
+
+When you want fee revenue to flow to specific addresses without migrating liquidity, use lockable beneficiaries. The pool enters a "Locked" state where trading fees are collected and distributed to beneficiaries:
+
+```typescript
+import { StaticAuctionBuilder, WAD, getAirlockOwner } from '@whetstone-research/doppler-sdk'
+import { parseEther } from 'viem'
+
+// Get the protocol owner (required beneficiary with min 5%)
+const protocolOwner = await getAirlockOwner(publicClient)
+
+// Define beneficiaries - shares must sum to WAD (1e18 = 100%)
+const beneficiaries = [
+  { beneficiary: protocolOwner, shares: parseEther('0.05') },  // 5% (minimum required)
+  { beneficiary: '0xTeamWallet...', shares: parseEther('0.45') },  // 45%
+  { beneficiary: '0xDAOTreasury...', shares: parseEther('0.50') }, // 50%
+]
+
+const params = new StaticAuctionBuilder(chainId)
+  .tokenConfig({ name: 'My Token', symbol: 'MTK', tokenURI: 'https://example.com/metadata.json' })
+  .saleConfig({ initialSupply: parseEther('1000000000'), numTokensToSell: parseEther('900000000'), numeraire: wethAddress })
+  .poolByTicks({
+    startTick: 174960,  // Must be multiple of 60 for fee 3000
+    endTick: 225000,
+    fee: 3000,  // Set > 0 to accumulate fees for beneficiaries
+  })
+  .withBeneficiaries(beneficiaries)  // Lock pool and enable fee streaming
+  .withMigration({ type: 'noOp' })   // Use NoOp since pool is locked
+  .withGovernance({ type: 'default' })
+  .withUserAddress('0x...')
+  .build()
+
+const result = await sdk.factory.createStaticAuction(params)
+console.log('Pool address:', result.poolAddress)  // SAVE THIS - needed to collect fees!
+```
+
+**Important Notes:**
+- **Shares must sum to exactly WAD (1e18 = 100%)**
+- **Protocol owner must receive at least 5%** of fees
+- **SDK automatically sorts beneficiaries** by address (ascending)
+- **Use `withMigration({ type: 'noOp' })`** - locked pools cannot migrate
+- **Set fee > 0** (e.g., 3000 for 0.3%) to accumulate trading fees
+- **Pool status = "Locked"** - liquidity stays permanently in the V3 pool
+- **Anyone can call `collectFees()`** to trigger distribution to beneficiaries
+
+See [examples/static-auction-lockable-beneficiaries.ts](./examples/static-auction-lockable-beneficiaries.ts) for a complete example.
 
 ### Dynamic Auction (Dutch Auction)
 

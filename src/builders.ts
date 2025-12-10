@@ -93,6 +93,7 @@ export class StaticAuctionBuilder<C extends SupportedChainId> {
   private token?: TokenConfig
   private sale?: CreateStaticAuctionParams<C>['sale']
   private pool?: CreateStaticAuctionParams<C>['pool']
+  private beneficiaries?: { beneficiary: Address; shares: bigint }[]
   private vesting?: VestingConfig
   private governance?: GovernanceOption<C>
   private migration?: MigrationConfig
@@ -189,6 +190,39 @@ export class StaticAuctionBuilder<C extends SupportedChainId> {
     })
   }
 
+  /**
+   * Configure beneficiaries for fee streaming on locked V3 pools.
+   *
+   * When beneficiaries are provided, the pool enters a "Locked" state where:
+   * - Fees are collected and distributed to beneficiaries according to their shares
+   * - Liquidity cannot be exited/migrated (pool stays locked permanently)
+   * - Anyone can call collectFees() to distribute accumulated fees
+   *
+   * IMPORTANT:
+   * - Shares must sum to exactly WAD (1e18 = 100%)
+   * - Protocol owner (Airlock.owner()) must be included with at least 5% shares
+   * - Beneficiaries will be automatically sorted by address (ascending)
+   * - Use withMigration({ type: 'noOp' }) when using beneficiaries
+   *
+   * @example
+   * ```typescript
+   * builder.withBeneficiaries([
+   *   { beneficiary: protocolOwner, shares: parseEther('0.05') },  // 5% (minimum required)
+   *   { beneficiary: teamWallet, shares: parseEther('0.45') },     // 45%
+   *   { beneficiary: daoTreasury, shares: parseEther('0.50') },    // 50%
+   * ])
+   * ```
+   */
+  withBeneficiaries(beneficiaries: { beneficiary: Address; shares: bigint }[]): this {
+    // Sort beneficiaries by address (ascending) as required by the contract
+    this.beneficiaries = [...beneficiaries].sort((a, b) => {
+      const aAddr = a.beneficiary.toLowerCase()
+      const bAddr = b.beneficiary.toLowerCase()
+      return aAddr < bAddr ? -1 : aAddr > bAddr ? 1 : 0
+    })
+    return this
+  }
+
   withVesting(params?: { duration?: bigint; cliffDuration?: number; recipients?: Address[]; amounts?: bigint[] }): this {
     if (!params) {
       this.vesting = undefined
@@ -277,10 +311,15 @@ export class StaticAuctionBuilder<C extends SupportedChainId> {
     if (!this.userAddress) throw new Error('userAddress is required')
     if (!this.governance) throw new Error("governance configuration is required; call withGovernance({ type: 'default' | 'custom' | 'noOp' })")
 
+    // Merge beneficiaries into pool config if provided
+    const poolWithBeneficiaries = this.beneficiaries
+      ? { ...this.pool, beneficiaries: this.beneficiaries }
+      : this.pool
+
     return {
       token: this.token,
       sale: this.sale,
-      pool: this.pool,
+      pool: poolWithBeneficiaries,
       vesting: this.vesting,
       governance: this.governance,
       migration: this.migration,

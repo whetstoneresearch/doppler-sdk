@@ -90,8 +90,15 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
 
     const addresses = getAddresses(this.chainId)
 
+    // Sort beneficiaries by address (ascending) as required by the contract
+    const sortedBeneficiaries = (params.pool.beneficiaries ?? []).slice().sort((a, b) => {
+      const aAddr = a.beneficiary.toLowerCase()
+      const bAddr = b.beneficiary.toLowerCase()
+      return aAddr < bAddr ? -1 : aAddr > bAddr ? 1 : 0
+    })
+
     // 1. Encode pool initializer data
-    // V3 initializer expects InitData struct with specific field order
+    // V3 initializer expects InitData struct with specific field order (including beneficiaries)
     const poolInitializerData = encodeAbiParameters(
       [
         {
@@ -101,7 +108,15 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
             { type: 'int24', name: 'tickLower' },
             { type: 'int24', name: 'tickUpper' },
             { type: 'uint16', name: 'numPositions' },
-            { type: 'uint256', name: 'maxShareToBeSold' }
+            { type: 'uint256', name: 'maxShareToBeSold' },
+            {
+              type: 'tuple[]',
+              name: 'beneficiaries',
+              components: [
+                { type: 'address', name: 'beneficiary' },
+                { type: 'uint96', name: 'shares' }
+              ]
+            }
           ]
         }
       ],
@@ -110,7 +125,11 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
         tickLower: params.pool.startTick,
         tickUpper: params.pool.endTick,
         numPositions: params.pool.numPositions ?? DEFAULT_V3_NUM_POSITIONS,
-        maxShareToBeSold: params.pool.maxShareToBeSold ?? DEFAULT_V3_MAX_SHARE_TO_BE_SOLD
+        maxShareToBeSold: params.pool.maxShareToBeSold ?? DEFAULT_V3_MAX_SHARE_TO_BE_SOLD,
+        beneficiaries: sortedBeneficiaries.map(b => ({
+          beneficiary: b.beneficiary,
+          shares: b.shares
+        }))
       }]
     )
 
@@ -1362,11 +1381,29 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       if (beneficiaries.length === 0) {
         throw new Error('At least one beneficiary is required for V4 migration')
       }
-      
+
       // Check that shares sum to 100% (WAD)
       const totalShares = beneficiaries.reduce((sum, b) => sum + b.shares, 0n)
       if (totalShares !== WAD) {
         throw new Error(`Beneficiary shares must sum to ${WAD} (100%), but got ${totalShares}`)
+      }
+    }
+
+    // Validate pool beneficiaries for V3 locked pools
+    if (params.pool.beneficiaries && params.pool.beneficiaries.length > 0) {
+      const beneficiaries = params.pool.beneficiaries
+
+      // Check that shares sum to 100% (WAD)
+      const totalShares = beneficiaries.reduce((sum, b) => sum + b.shares, 0n)
+      if (totalShares !== WAD) {
+        throw new Error(`Pool beneficiary shares must sum to ${WAD} (100%), but got ${totalShares}`)
+      }
+
+      // Validate each beneficiary has positive shares
+      for (const b of beneficiaries) {
+        if (b.shares <= 0n) {
+          throw new Error('Each beneficiary must have positive shares')
+        }
       }
     }
   }
