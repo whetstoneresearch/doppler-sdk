@@ -25,7 +25,8 @@ import type {
   CreateParams,
   MulticurveBundleExactInResult,
   MulticurveBundleExactOutResult,
-  V4PoolKey
+  V4PoolKey,
+  RehypeDopplerHookConfig
 } from '../types'
 import type { ModuleAddressOverrides } from '../types'
 import { CHAIN_IDS, getAddresses } from '../addresses'
@@ -1028,7 +1029,7 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
 
     const addresses = getAddresses(this.chainId)
 
-    // Pool initializer data: (fee, tickSpacing, curves[], beneficiaries[])
+    // Pool initializer data: (fee, tickSpacing, farTick, curves[], beneficiaries[], dopplerHook, onInitializationCalldata, graduationCalldata)
     const sortedBeneficiaries = (params.pool.beneficiaries ?? []).slice().sort((a: NonNullable<typeof params.pool.beneficiaries>[number], b: NonNullable<typeof params.pool.beneficiaries>[number]) => {
       const aAddr = a.beneficiary.toLowerCase()
       const bAddr = b.beneficiary.toLowerCase()
@@ -1036,6 +1037,7 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     })
 
     const useScheduledInitializer = params.schedule !== undefined
+    const useDopplerHook = params.dopplerHook !== undefined
 
     let scheduleStartTime: number | undefined
     if (useScheduledInitializer) {
@@ -1052,9 +1054,34 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       }
     }
 
-    const poolInitializerTupleComponents = [
+    // Validate dopplerHook fee distribution if provided
+    if (useDopplerHook) {
+      const hook = params.dopplerHook!
+      const totalDistribution = hook.assetBuybackPercentWad + hook.numeraireBuybackPercentWad + hook.beneficiaryPercentWad + hook.lpPercentWad
+      if (totalDistribution !== WAD) {
+        throw new Error(`DopplerHook fee distribution must sum to ${WAD} (100%), but got ${totalDistribution}`)
+      }
+    }
+
+    // Calculate farTick: use provided value or default to max usable tick
+    const farTick = params.pool.farTick ?? this.roundMaxTickDown(params.pool.tickSpacing)
+
+    // Build pool initializer tuple components
+    // The InitData struct for DopplerHookInitializer:
+    // struct InitData {
+    //   uint24 fee;
+    //   int24 tickSpacing;
+    //   int24 farTick;
+    //   Curve[] curves;
+    //   BeneficiaryData[] beneficiaries;
+    //   address dopplerHook;
+    //   bytes onInitializationDopplerHookCalldata;
+    //   bytes graduationDopplerHookCalldata;
+    // }
+    const poolInitializerTupleComponents: Array<{ name: string; type: string; components?: Array<{ name: string; type: string }> }> = [
       { name: 'fee', type: 'uint24' },
       { name: 'tickSpacing', type: 'int24' },
+      { name: 'farTick', type: 'int24' },
       {
         name: 'curves',
         type: 'tuple[]',
@@ -1072,16 +1099,52 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
           { type: 'address', name: 'beneficiary' },
           { type: 'uint96', name: 'shares' }
         ]
-      }
+      },
+      { name: 'dopplerHook', type: 'address' },
+      { name: 'onInitializationDopplerHookCalldata', type: 'bytes' },
+      { name: 'graduationDopplerHookCalldata', type: 'bytes' }
     ]
 
     if (useScheduledInitializer) {
       poolInitializerTupleComponents.push({ name: 'startingTime', type: 'uint32' })
     }
 
+    // Encode dopplerHook initialization calldata if provided
+    // For RehypeDopplerHook: abi.encode(numeraire, buybackDst, customFee, assetBuybackPercentWad, numeraireBuybackPercentWad, beneficiaryPercentWad, lpPercentWad)
+    let onInitializationDopplerHookCalldata: Hex = '0x'
+    let graduationDopplerHookCalldata: Hex = '0x'
+    let dopplerHookAddress: Address = ZERO_ADDRESS
+
+    if (useDopplerHook) {
+      const hook = params.dopplerHook!
+      dopplerHookAddress = hook.hookAddress
+      onInitializationDopplerHookCalldata = encodeAbiParameters(
+        [
+          { type: 'address' },  // numeraire
+          { type: 'address' },  // buybackDst
+          { type: 'uint24' },   // customFee
+          { type: 'uint256' },  // assetBuybackPercentWad
+          { type: 'uint256' },  // numeraireBuybackPercentWad
+          { type: 'uint256' },  // beneficiaryPercentWad
+          { type: 'uint256' }   // lpPercentWad
+        ],
+        [
+          params.sale.numeraire,
+          hook.buybackDestination,
+          hook.customFee,
+          hook.assetBuybackPercentWad,
+          hook.numeraireBuybackPercentWad,
+          hook.beneficiaryPercentWad,
+          hook.lpPercentWad
+        ]
+      )
+      graduationDopplerHookCalldata = hook.graduationCalldata ?? '0x'
+    }
+
     const baseInitializerParams = {
       fee: params.pool.fee,
       tickSpacing: params.pool.tickSpacing,
+      farTick,
       curves: normalizedCurves.map((c: typeof normalizedCurves[number]) => ({
         tickLower: c.tickLower,
         tickUpper: c.tickUpper,
@@ -1091,7 +1154,10 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       beneficiaries: sortedBeneficiaries.map((b: NonNullable<typeof params.pool.beneficiaries>[number]) => ({
         beneficiary: b.beneficiary,
         shares: b.shares
-      }))
+      })),
+      dopplerHook: dopplerHookAddress,
+      onInitializationDopplerHookCalldata,
+      graduationDopplerHookCalldata
     }
 
     const poolInitializerValue = useScheduledInitializer
