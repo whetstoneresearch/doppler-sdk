@@ -32,6 +32,7 @@ import type {
   MulticurveMarketCapPreset,
   VestingConfig,
   TokenConfig,
+  RehypeDopplerHookConfig,
 } from './types'
 import type { ModuleAddressOverrides } from './types'
 import { type SupportedChainId } from './addresses'
@@ -601,6 +602,7 @@ export class MulticurveBuilder<C extends SupportedChainId> {
   private sale?: CreateMulticurveParams<C>['sale']
   private pool?: CreateMulticurveParams<C>['pool']
   private schedule?: CreateMulticurveParams<C>['schedule']
+  private dopplerHook?: RehypeDopplerHookConfig
   private vesting?: VestingConfig
   private governance?: GovernanceOption<C>
   private migration?: MigrationConfig
@@ -810,6 +812,39 @@ export class MulticurveBuilder<C extends SupportedChainId> {
     return this
   }
 
+  /**
+   * Configure a DopplerHook (e.g., RehypeDopplerHook) for the pool.
+   *
+   * When configured, the hook will be initialized with the pool and will handle:
+   * - Custom swap fees
+   * - Fee distribution to beneficiaries, LPs, and buyback destinations
+   *
+   * IMPORTANT:
+   * - The hook address must be whitelisted in the DopplerHookInitializer
+   * - Fee distribution percentages must sum to exactly WAD (1e18 = 100%)
+   *
+   * @example
+   * ```typescript
+   * builder.withDopplerHook({
+   *   hookAddress: '0x...',
+   *   buybackDestination: '0x...',
+   *   customFee: 3000, // 0.3%
+   *   assetBuybackPercentWad: parseEther('0.2'),    // 20%
+   *   numeraireBuybackPercentWad: parseEther('0.2'), // 20%
+   *   beneficiaryPercentWad: parseEther('0.3'),      // 30%
+   *   lpPercentWad: parseEther('0.3'),               // 30%
+   * })
+   * ```
+   */
+  withRehyperDopplerHook(params: RehypeDopplerHookConfig): this {
+    const totalDistribution = params.assetBuybackPercentWad + params.numeraireBuybackPercentWad + params.beneficiaryPercentWad + params.lpPercentWad
+    if (totalDistribution !== WAD) {
+      throw new Error(`DopplerHook fee distribution must sum to ${WAD} (100%), but got ${totalDistribution}`)
+    }
+    this.dopplerHook = params
+    return this
+  }
+
   withGovernance(params: GovernanceOption<C>): this {
     this.governance = params
     return this
@@ -863,6 +898,7 @@ export class MulticurveBuilder<C extends SupportedChainId> {
       sale: this.sale,
       pool: this.pool,
       schedule: this.schedule,
+      dopplerHook: this.dopplerHook,
       vesting: this.vesting,
       governance: this.governance,
       migration: this.migration,
