@@ -53,3 +53,19 @@ export { computePoolId } from './poolKey'
 export { computeOptimalGamma } from "./computeOptimalGamma"
 
 export { isToken0Expected } from './isToken0Expected'
+
+// Re-export market cap conversion utilities
+export {
+  marketCapToTokenPrice,
+  tokenPriceToRatio,
+  ratioToTick,
+  isToken1,
+  marketCapToTick,
+  marketCapRangeToTicks,
+  transformTicksForAuction,
+  marketCapRangeToTicksForCurve,
+  applyTickOffsets,
+  validateMarketCapParameters,
+  tickToMarketCap,
+} from './marketCapHelpers'
+export type { MarketCapRange, MarketCapValidationResult } from './marketCapHelpers'

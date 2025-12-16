@@ -83,15 +83,15 @@ npx ts-node examples/static-auction-v2.ts
 ```typescript
 import { DopplerSDK } from 'doppler-sdk'
 import { createPublicClient, createWalletClient, http } from 'viem'
-import { base } from 'viem/chains'
+import { baseSepolia } from 'viem/chains'
 
 const publicClient = createPublicClient({
-  chain: base,
+  chain: baseSepolia,
   transport: http(process.env.RPC_URL)
 })
 
 const walletClient = createWalletClient({
-  chain: base,
+  chain: baseSepolia,
   transport: http(process.env.RPC_URL),
   account: privateKeyToAccount(process.env.PRIVATE_KEY as `0x${string}`)
 })
@@ -99,7 +99,7 @@ const walletClient = createWalletClient({
 const sdk = new DopplerSDK({
   publicClient,
   walletClient,
-  chainId: base.id
+  chainId: baseSepolia.id
 })
 ```
 

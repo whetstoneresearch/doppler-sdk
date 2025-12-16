@@ -37,12 +37,19 @@ Methods (chainable):
   - Standard: `{ name, symbol, tokenURI, yearlyMintRate? }`
     - Defaults: `yearlyMintRate = DEFAULT_V3_YEARLY_MINT_RATE (0.02e18)`
 - saleConfig({ initialSupply, numTokensToSell, numeraire })
-- Price specification methods (use one or the other, not both)
+- Price specification methods (use one, not multiple):
+  - **withMarketCapRange({ marketCap, numerairePrice, ... })** ⭐ Recommended
+    - Configure via dollar-denominated market cap targets (most intuitive)
+    - Requires `saleConfig()` to be called first (for numeraire and tokenSupply)
+    - Handles all tick math and token ordering internally
+    - Parameters: `marketCap: { start, end }`, `numerairePrice`, optional `fee`, `numPositions`, `maxShareToBeSold`, `tokenDecimals`, `numeraireDecimals`
+    - Defaults: `fee = 10000`, `numPositions = 15`, `maxShareToBeSold = 0.35e18`
   - poolByTicks({ startTick?, endTick?, fee?, numPositions?, maxShareToBeSold? })
     - Defaults: `fee = DEFAULT_V3_FEE (10000)`, `startTick = DEFAULT_V3_START_TICK`, `endTick = DEFAULT_V3_END_TICK`, `numPositions = DEFAULT_V3_NUM_POSITIONS`, `maxShareToBeSold = DEFAULT_V3_MAX_SHARE_TO_BE_SOLD`
-    - `startTick` and `endTick` must be multiples of the fee tier’s tick spacing (100→1, 500→10, 3000→60, 10000→200). The SDK enforces this before attempting a transaction.
+    - `startTick` and `endTick` must be multiples of the fee tier's tick spacing (100→1, 500→10, 3000→60, 10000→200). The SDK enforces this before attempting a transaction.
   - poolByPriceRange({ priceRange, fee?, numPositions?, maxShareToBeSold? })
     - Computes ticks from `priceRange` using inferred `tickSpacing` from `fee`
+    - @deprecated: Use `withMarketCapRange()` instead for more intuitive configuration
 - withVesting({ duration?, cliffDuration?, recipients?, amounts? } | undefined)
   - Omit to disable vesting. Default duration if provided but undefined is `DEFAULT_V3_VESTING_DURATION`.
   - `recipients`: Optional array of addresses to receive vested tokens. Defaults to `[userAddress]` if not provided.
@@ -72,8 +79,22 @@ Validation highlights:
 
 Examples:
 ```ts
-// Example 1: Single vesting beneficiary (default behavior)
-const params = new StaticAuctionBuilder()
+// Example 1: Using market cap range (recommended)
+const params = sdk.buildStaticAuction()
+  .tokenConfig({ name: 'My Token', symbol: 'MTK', tokenURI: 'https://example.com/mtk.json' })
+  .saleConfig({ initialSupply: parseEther('1_000_000_000'), numTokensToSell: parseEther('500_000_000'), numeraire: WETH })
+  .withMarketCapRange({
+    marketCap: { start: 100_000, end: 10_000_000 }, // $100k to $10M fully diluted
+    numerairePrice: 3000, // ETH = $3000 USD
+  })
+  .withVesting({ duration: BigInt(365*24*60*60) })
+  .withGovernance() // required
+  .withMigration({ type: 'uniswapV2' })
+  .withUserAddress(user)
+  .build()
+
+// Example 2: Single vesting beneficiary with price range (legacy)
+const paramsLegacy = new StaticAuctionBuilder()
   .tokenConfig({ name: 'My Token', symbol: 'MTK', tokenURI: 'https://example.com/mtk.json' })
   .saleConfig({ initialSupply: parseEther('1_000_000_000'), numTokensToSell: parseEther('900_000_000'), numeraire: weth })
   .poolByPriceRange({ priceRange: { startPrice: 0.0001, endPrice: 0.001 }, fee: 3000 })
@@ -83,11 +104,14 @@ const params = new StaticAuctionBuilder()
   .withUserAddress(user)
   .build()
 
-// Example 2: Multiple vesting beneficiaries
+// Example 3: Multiple vesting beneficiaries
 const paramsMultiVest = new StaticAuctionBuilder()
   .tokenConfig({ name: 'My Token', symbol: 'MTK', tokenURI: 'https://example.com/mtk.json' })
   .saleConfig({ initialSupply: parseEther('1_000_000_000'), numTokensToSell: parseEther('900_000_000'), numeraire: weth })
-  .poolByPriceRange({ priceRange: { startPrice: 0.0001, endPrice: 0.001 }, fee: 3000 })
+  .withMarketCapRange({
+    marketCap: { start: 50_000, end: 5_000_000 },
+    numerairePrice: 3000,
+  })
   .withVesting({
     duration: BigInt(365*24*60*60),
     cliffDuration: 0,
@@ -114,12 +138,21 @@ Methods (chainable):
 - saleConfig({ initialSupply, numTokensToSell, numeraire? })
   - Defaults: `numeraire = ZERO_ADDRESS` (token is paired against ETH)
 - poolConfig({ fee, tickSpacing })
-- Price configuration methods (use one or the other, not both)
+- Price configuration methods (use one, not multiple):
+  - **withMarketCapRange({ marketCap, numerairePrice, minProceeds, maxProceeds, ... })** ⭐ Recommended
+    - Configure via dollar-denominated market cap targets
+    - Requires both `saleConfig()` AND `poolConfig()` to be called first
+    - Handles all tick math and token ordering internally
+    - Required: `marketCap: { start, min }`, `numerairePrice`, `minProceeds`, `maxProceeds`
+      - `start` = auction launch price (high), `min` = floor price the auction descends to (low)
+    - Optional: `duration`, `epochLength`, `gamma`, `numPdSlugs`, `tokenDecimals`, `numeraireDecimals`
+    - Defaults: `duration = 7 days`, `epochLength = 1 hour`, `numPdSlugs = 5`
   - auctionByTicks({ startTick, endTick, minProceeds, maxProceeds, duration?, epochLength?, gamma?, numPdSlugs? })
     - Defaults: `duration = DEFAULT_AUCTION_DURATION (604800)`, `epochLength = DEFAULT_EPOCH_LENGTH (43200)`, `numPdSlugs` optional
     - If `gamma` omitted, computed from ticks, duration, epoch length, and `tickSpacing`
   - auctionByPriceRange({ priceRange, minProceeds, maxProceeds, duration?, epochLength?, gamma?, tickSpacing?, numPdSlugs? })
     - Uses `pool.tickSpacing` unless `tickSpacing` is provided here
+    - @deprecated: Use `withMarketCapRange()` instead for more intuitive configuration
 - withVesting({ duration?, cliffDuration?, recipients?, amounts? } | undefined)
   - Omit to disable vesting. Default duration if provided but undefined is `0` for dynamic auctions.
   - `recipients`: Optional array of addresses to receive vested tokens. Defaults to `[userAddress]` if not provided.
@@ -154,7 +187,26 @@ Validation highlights:
 
 Examples:
 ```ts
-const params = new DynamicAuctionBuilder()
+// Example 1: Using market cap range (recommended)
+const params = sdk.buildDynamicAuction()
+  .tokenConfig({ name: 'My Token', symbol: 'MTK', tokenURI: 'https://example.com/mtk.json' })
+  .saleConfig({ initialSupply: parseEther('1_000_000_000'), numTokensToSell: parseEther('500_000_000'), numeraire: WETH })
+  .poolConfig({ fee: 3000, tickSpacing: 60 }) // Required BEFORE withMarketCapRange!
+  .withMarketCapRange({
+    marketCap: { start: 500_000, min: 50_000 }, // $500k start, descends to $50k floor
+    numerairePrice: 3000, // ETH = $3000 USD
+    minProceeds: parseEther('100'), // Min 100 ETH to graduate
+    maxProceeds: parseEther('5000'), // Cap at 5000 ETH
+    // duration: 7 * DAY_SECONDS,   // Optional: defaults to 7 days
+    // epochLength: 3600,           // Optional: defaults to 1 hour
+  })
+  .withGovernance({ useDefaults: true })
+  .withMigration({ type: 'uniswapV4', fee: 3000, tickSpacing: 60, streamableFees: { ... } })
+  .withUserAddress(user)
+  .build()
+
+// Example 2: Using price range (legacy)
+const paramsLegacy = new DynamicAuctionBuilder()
   .tokenConfig({ name: 'My Token', symbol: 'MTK', tokenURI: 'https://example.com/mtk.json' })
   .saleConfig({ initialSupply: parseEther('1_000_000'), numTokensToSell: parseEther('900_000'), numeraire: weth })
   .poolConfig({ fee: 3000, tickSpacing: 60 })
@@ -177,15 +229,24 @@ Methods (chainable):
   - Standard: `{ name, symbol, tokenURI, yearlyMintRate? }`
     - Defaults: `yearlyMintRate = DEFAULT_V4_YEARLY_MINT_RATE (0.02e18)`
 - saleConfig({ initialSupply, numTokensToSell, numeraire })
-- poolConfig({ fee, tickSpacing, curves, lockableBeneficiaries? })
-  - Or use the alias `.withMulticurveAuction({...})`
-  - `curves`: Array of `{ tickLower, tickUpper, numPositions, shares }` where `shares` are WAD-based weights
-  - `lockableBeneficiaries` (optional): share-based beneficiaries for fee locking at initialization
-- withMarketCapPresets(params?)
-  - Convenience wrapper that assembles `curves` using curated market cap tiers (`'low' | 'medium' | 'high'`)
-  - Defaults: `fee = FEE_TIERS.LOW (500)`, `tickSpacing` inferred, and all three presets selected
-  - `overrides` (per preset) let you tweak ticks, numPositions, or shares while preserving tier ordering
-  - Automatically appends a filler curve when the selected presets sum to < 100%, keeping total shares at exactly 1e18
+- Curve configuration methods (use one, not multiple):
+  - **withCurves({ numerairePrice, curves, ... })** ⭐ Recommended
+    - Configure via dollar-denominated market cap ranges (no tick math required)
+    - Requires `saleConfig()` to be called first
+    - Auto-detects token ordering from numeraire address
+    - `numerairePrice`: Price of numeraire in USD (e.g., 3000 for ETH at $3000)
+    - `curves`: Array of `{ marketCap: { start, end }, numPositions, shares }` - specify market cap ranges directly
+    - Optional: `fee`, `tickSpacing`, `tokenDecimals`, `numeraireDecimals`, `beneficiaries`, `tokenSupply`
+    - Shares must sum to exactly WAD (1e18 = 100%)
+  - poolConfig({ fee, tickSpacing, curves, beneficiaries? })
+    - Low-level tick-based configuration for advanced users
+    - `curves`: Array of `{ tickLower, tickUpper, numPositions, shares }` where `shares` are WAD-based weights
+    - `beneficiaries` (optional): share-based beneficiaries for fee locking at initialization
+  - withMarketCapPresets(params?)
+    - Convenience wrapper that assembles `curves` using curated market cap tiers (`'low' | 'medium' | 'high'`)
+    - Defaults: `fee = FEE_TIERS.LOW (500)`, `tickSpacing` inferred, and all three presets selected
+    - `overrides` (per preset) let you tweak ticks, numPositions, or shares while preserving tier ordering
+    - Automatically appends a filler curve when the selected presets sum to < 100%, keeping total shares at exactly 1e18
 - withVesting({ duration?, cliffDuration?, recipients?, amounts? } | undefined)
   - `recipients`: Optional array of addresses to receive vested tokens. Defaults to `[userAddress]` if not provided.
   - `amounts`: Optional array of token amounts corresponding to each recipient. Must match `recipients` length if provided. Defaults to all unsold tokens to `userAddress` if not provided.
@@ -211,15 +272,36 @@ Validation highlights:
 - Governance selection is required
 - SDK sorts beneficiaries by address as required on-chain when encoding
 
-Example:
+Examples:
 ```ts
-import { MulticurveBuilder } from '@whetstone-research/doppler-sdk'
-import { parseEther } from 'viem'
+// Example 1: Using market cap ranges (recommended)
+const params = sdk.buildMulticurveAuction()
+  .tokenConfig({ name: 'My Token', symbol: 'MTK', tokenURI: 'https://example.com/mtk.json' })
+  .saleConfig({ initialSupply: parseEther('1_000_000_000'), numTokensToSell: parseEther('900_000_000'), numeraire: WETH })
+  .withCurves({
+    numerairePrice: 3000, // ETH = $3000 USD
+    curves: [
+      // Curve 1: Launch curve (concentrated liquidity at low market cap)
+      { marketCap: { start: 500_000, end: 1_500_000 }, numPositions: 10, shares: parseEther('0.3') }, // 30%
+      // Curve 2: Mid-range (provides depth as price rises)
+      { marketCap: { start: 1_000_000, end: 5_000_000 }, numPositions: 15, shares: parseEther('0.4') }, // 40%
+      // Curve 3: Upper range (moon bag for high market cap)
+      { marketCap: { start: 4_000_000, end: 50_000_000 }, numPositions: 10, shares: parseEther('0.3') }, // 30%
+    ],
+  })
+  .withVesting({ duration: BigInt(365*24*60*60) })
+  .withGovernance({ type: 'default' })
+  .withMigration({ type: 'uniswapV2' })
+  .withUserAddress(user)
+  .build()
 
-const params = new MulticurveBuilder(chainId)
+const { poolAddress, tokenAddress } = await sdk.factory.createMulticurve(params)
+
+// Example 2: Using raw ticks (advanced users)
+const paramsRaw = new MulticurveBuilder(chainId)
   .tokenConfig({ name: 'My Token', symbol: 'MTK', tokenURI: 'https://example.com/mtk.json' })
   .saleConfig({ initialSupply: parseEther('1_000_000'), numTokensToSell: parseEther('900_000'), numeraire: weth })
-  .withMulticurveAuction({
+  .poolConfig({
     fee: 0,
     tickSpacing: 8,
     curves: [

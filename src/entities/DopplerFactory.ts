@@ -22,7 +22,6 @@ import type {
   Doppler404TokenConfig,
   StandardTokenConfig,
   SupportedChainId,
-  DynamicAuctionConfig,
   CreateParams,
   MulticurveBundleExactInResult,
   MulticurveBundleExactOutResult,
@@ -33,7 +32,6 @@ import { CHAIN_IDS, getAddresses } from '../addresses'
 import { zeroAddress } from 'viem'
 import {
   ZERO_ADDRESS,
-  BASIS_POINTS,
   WAD,
   DEFAULT_PD_SLUGS,
   FLAG_MASK,
@@ -90,48 +88,80 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
 
     const addresses = getAddresses(this.chainId)
 
-    // Sort beneficiaries by address (ascending) as required by the contract
-    const sortedBeneficiaries = (params.pool.beneficiaries ?? []).slice().sort((a, b) => {
-      const aAddr = a.beneficiary.toLowerCase()
-      const bAddr = b.beneficiary.toLowerCase()
-      return aAddr < bAddr ? -1 : aAddr > bAddr ? 1 : 0
-    })
+    // Check if beneficiaries are provided - this determines which initializer to use
+    const hasBeneficiaries = params.pool.beneficiaries && params.pool.beneficiaries.length > 0
 
     // 1. Encode pool initializer data
-    // V3 initializer expects InitData struct with specific field order (including beneficiaries)
-    const poolInitializerData = encodeAbiParameters(
-      [
-        {
-          type: 'tuple',
-          components: [
-            { type: 'uint24', name: 'fee' },
-            { type: 'int24', name: 'tickLower' },
-            { type: 'int24', name: 'tickUpper' },
-            { type: 'uint16', name: 'numPositions' },
-            { type: 'uint256', name: 'maxShareToBeSold' },
-            {
-              type: 'tuple[]',
-              name: 'beneficiaries',
-              components: [
-                { type: 'address', name: 'beneficiary' },
-                { type: 'uint96', name: 'shares' }
-              ]
-            }
-          ]
-        }
-      ],
-      [{
-        fee: params.pool.fee,
-        tickLower: params.pool.startTick,
-        tickUpper: params.pool.endTick,
-        numPositions: params.pool.numPositions ?? DEFAULT_V3_NUM_POSITIONS,
-        maxShareToBeSold: params.pool.maxShareToBeSold ?? DEFAULT_V3_MAX_SHARE_TO_BE_SOLD,
-        beneficiaries: sortedBeneficiaries.map(b => ({
-          beneficiary: b.beneficiary,
-          shares: b.shares
-        }))
-      }]
-    )
+    // Standard V3 initializer expects InitData struct WITHOUT beneficiaries (5 fields)
+    // Lockable V3 initializer expects InitData struct WITH beneficiaries (6 fields)
+    let poolInitializerData: Hex
+    
+    if (hasBeneficiaries) {
+      // Sort beneficiaries by address (ascending) as required by the contract
+      const sortedBeneficiaries = params.pool.beneficiaries!.slice().sort((a, b) => {
+        const aAddr = a.beneficiary.toLowerCase()
+        const bAddr = b.beneficiary.toLowerCase()
+        return aAddr < bAddr ? -1 : aAddr > bAddr ? 1 : 0
+      })
+
+      // Lockable V3 initializer encoding (6 fields including beneficiaries)
+      poolInitializerData = encodeAbiParameters(
+        [
+          {
+            type: 'tuple',
+            components: [
+              { type: 'uint24', name: 'fee' },
+              { type: 'int24', name: 'tickLower' },
+              { type: 'int24', name: 'tickUpper' },
+              { type: 'uint16', name: 'numPositions' },
+              { type: 'uint256', name: 'maxShareToBeSold' },
+              {
+                type: 'tuple[]',
+                name: 'beneficiaries',
+                components: [
+                  { type: 'address', name: 'beneficiary' },
+                  { type: 'uint96', name: 'shares' }
+                ]
+              }
+            ]
+          }
+        ],
+        [{
+          fee: params.pool.fee,
+          tickLower: params.pool.startTick,
+          tickUpper: params.pool.endTick,
+          numPositions: params.pool.numPositions ?? DEFAULT_V3_NUM_POSITIONS,
+          maxShareToBeSold: params.pool.maxShareToBeSold ?? DEFAULT_V3_MAX_SHARE_TO_BE_SOLD,
+          beneficiaries: sortedBeneficiaries.map(b => ({
+            beneficiary: b.beneficiary,
+            shares: b.shares
+          }))
+        }]
+      )
+    } else {
+      // Standard V3 initializer encoding (5 fields, no beneficiaries)
+      poolInitializerData = encodeAbiParameters(
+        [
+          {
+            type: 'tuple',
+            components: [
+              { type: 'uint24', name: 'fee' },
+              { type: 'int24', name: 'tickLower' },
+              { type: 'int24', name: 'tickUpper' },
+              { type: 'uint16', name: 'numPositions' },
+              { type: 'uint256', name: 'maxShareToBeSold' }
+            ]
+          }
+        ],
+        [{
+          fee: params.pool.fee,
+          tickLower: params.pool.startTick,
+          tickUpper: params.pool.endTick,
+          numPositions: params.pool.numPositions ?? DEFAULT_V3_NUM_POSITIONS,
+          maxShareToBeSold: params.pool.maxShareToBeSold ?? DEFAULT_V3_MAX_SHARE_TO_BE_SOLD
+        }]
+      )
+    }
 
     // 2. Encode migration data based on MigrationConfig
     const liquidityMigratorData = this.encodeMigrationData(params.migration)
@@ -260,7 +290,16 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       tokenFactoryData: tokenFactoryData,
       governanceFactory: governanceFactoryAddress,
       governanceFactoryData: governanceFactoryData,
-      poolInitializer: params.modules?.v3Initializer ?? addresses.v3Initializer,
+      poolInitializer: (() => {
+        if (hasBeneficiaries) {
+          const lockableInitializer = params.modules?.lockableV3Initializer ?? addresses.lockableV3Initializer
+          if (!lockableInitializer) {
+            throw new Error('Lockable V3 initializer address not configured on this chain. Required when using beneficiaries.')
+          }
+          return lockableInitializer
+        }
+        return params.modules?.v3Initializer ?? addresses.v3Initializer
+      })(),
       poolInitializerData: poolInitializerData,
       liquidityMigrator: this.getMigratorAddress(params.migration, params.modules),
       liquidityMigratorData: liquidityMigratorData,
@@ -285,6 +324,8 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     asset: Address
     pool: Address
     gasEstimate?: bigint
+    /** Execute the create with the same params used in simulation (guarantees address match) */
+    execute: () => Promise<{ poolAddress: Address; tokenAddress: Address; transactionHash: string }>
   }> {
     const createParams = await this.encodeCreateStaticAuctionParams(params)
     const addresses = getAddresses(this.chainId)
@@ -314,6 +355,7 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       asset: simResult[0] as Address,
       pool: simResult[1] as Address,
       gasEstimate,
+      execute: () => this.createStaticAuction(params, { _createParams: createParams }),
     }
   }
 
@@ -322,12 +364,16 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
    * @param params Configuration for the static auction
    * @returns The address of the created pool and token
    */
-  async createStaticAuction(params: CreateStaticAuctionParams<C>): Promise<{
+  async createStaticAuction(
+    params: CreateStaticAuctionParams<C>,
+    options?: { _createParams?: CreateParams }
+  ): Promise<{
     poolAddress: Address
     tokenAddress: Address
     transactionHash: string
   }> {
-    const createParams = await this.encodeCreateStaticAuctionParams(params);
+    // Use provided createParams (from simulate) or generate new ones
+    const createParams = options?._createParams ?? await this.encodeCreateStaticAuctionParams(params);
 
     const addresses = getAddresses(this.chainId)
 
@@ -691,7 +737,10 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
    * @param params Configuration for the dynamic auction
    * @returns The address of the created hook and token
    */
-  async createDynamicAuction(params: CreateDynamicAuctionParams<C>): Promise<{
+  async createDynamicAuction(
+    params: CreateDynamicAuctionParams<C>,
+    options?: { _createParams?: CreateParams }
+  ): Promise<{
     hookAddress: Address
     tokenAddress: Address
     poolId: string
@@ -699,8 +748,19 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
   }> {
     const addresses = getAddresses(this.chainId)
 
-    const { createParams, hookAddress, tokenAddress } = await this.encodeCreateDynamicAuctionParams(params);
-
+    // Use provided createParams (from simulate) or generate new ones
+    let createParams: CreateParams
+    let hookAddress: Address | undefined
+    let tokenAddress: Address | undefined
+    
+    if (options?._createParams) {
+      createParams = options._createParams
+    } else {
+      const encoded = await this.encodeCreateDynamicAuctionParams(params)
+      createParams = encoded.createParams
+      hookAddress = encoded.hookAddress
+      tokenAddress = encoded.tokenAddress
+    }
 
     // Call the airlock contract to create the pool
     if (!this.walletClient) {
@@ -730,8 +790,8 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     const receipt = await (this.publicClient as PublicClient).waitForTransactionReceipt({ hash })
     
     // Get actual addresses from the return value or event logs
-    let actualHookAddress: Address = hookAddress
-    let actualTokenAddress: Address = tokenAddress
+    let actualHookAddress: Address = hookAddress ?? ('' as Address)
+    let actualTokenAddress: Address = tokenAddress ?? ('' as Address)
     
     if (simResult && Array.isArray(simResult) && simResult.length >= 2) {
       // Tests expect [asset, poolOrHook]
@@ -793,6 +853,8 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     tokenAddress: Address
     poolId: string
     gasEstimate?: bigint
+    /** Execute the create with the same params used in simulation (guarantees address match) */
+    execute: () => Promise<{ hookAddress: Address; tokenAddress: Address; poolId: string; transactionHash: string }>
   }> {
     const { createParams } = await this.encodeCreateDynamicAuctionParams(params)
     const addresses = getAddresses(this.chainId)
@@ -828,7 +890,14 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       hooks: hookAddress,
     })
 
-    return { createParams, hookAddress, tokenAddress, poolId, gasEstimate }
+    return {
+      createParams,
+      hookAddress,
+      tokenAddress,
+      poolId,
+      gasEstimate,
+      execute: () => this.createDynamicAuction(params, { _createParams: createParams }),
+    }
   }
 
   private async resolveCreateGasEstimate(args: {
@@ -1169,6 +1238,8 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     asset: Address
     pool: Address
     gasEstimate?: bigint
+    /** Execute the create with the same params used in simulation (guarantees address match) */
+    execute: () => Promise<{ poolAddress: Address; tokenAddress: Address; transactionHash: string }>
   }> {
     const createParams = this.encodeCreateMulticurveParams(params)
     const addresses = getAddresses(this.chainId)
@@ -1195,11 +1266,16 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       asset: simResult[0] as Address,
       pool: simResult[1] as Address,
       gasEstimate,
+      execute: () => this.createMulticurve(params, { _createParams: createParams }),
     }
   }
 
-  async createMulticurve(params: CreateMulticurveParams<C>): Promise<{ poolAddress: Address; tokenAddress: Address; transactionHash: string }> {
-    const createParams = this.encodeCreateMulticurveParams(params)
+  async createMulticurve(
+    params: CreateMulticurveParams<C>,
+    options?: { _createParams?: CreateParams }
+  ): Promise<{ poolAddress: Address; tokenAddress: Address; transactionHash: string }> {
+    // Use provided createParams (from simulate) or generate new ones
+    const createParams = options?._createParams ?? this.encodeCreateMulticurveParams(params)
     const addresses = getAddresses(this.chainId)
     if (!this.walletClient) throw new Error('Wallet client required for write operations')
     const airlockAddress = params.modules?.airlock ?? addresses.airlock

@@ -17,12 +17,12 @@ import {
   type Address,
   createPublicClient,
 } from 'viem';
-import { base } from 'viem/chains';
+import { baseSepolia } from 'viem/chains';
 
 // Example addresses - replace with your actual auction addresses
 const staticPoolAddress = process.env.STATIC_POOL_ADDRESS as `0x${string}`;
 const dynamicHookAddress = process.env.DYNAMIC_HOOK_ADDRESS as `0x${string}`;
-const rpcUrl = process.env.RPC_URL || ('https://mainnet.base.org' as string);
+const rpcUrl = process.env.RPC_URL || baseSepolia.rpcUrls.default.http[0];
 
 async function monitorStaticAuction(sdk: DopplerSDK, poolAddress: Address) {
   console.log('\n📊 Monitoring Static Auction...');
@@ -134,13 +134,13 @@ async function monitorDynamicAuction(sdk: DopplerSDK, hookAddress: Address) {
 async function main() {
   // Initialize SDK in read-only mode
   const publicClient = createPublicClient({
-    chain: base,
+    chain: baseSepolia,
     transport: http(rpcUrl),
   });
 
   const sdk = new DopplerSDK({
     publicClient,
-    chainId: base.id,
+    chainId: baseSepolia.id,
   });
 
   console.log('🔍 Doppler Auction Monitor');

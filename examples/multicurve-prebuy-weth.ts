@@ -12,20 +12,20 @@ import { DopplerSDK, WAD, getAddresses } from '../src'
 import { CommandBuilder, V4ActionBuilder, V4ActionType, getPermitSignature } from 'doppler-router'
 import { createPublicClient, createWalletClient, http, parseEther, maxUint256 } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
-import { base } from 'viem/chains'
+import { baseSepolia } from 'viem/chains'
 
 const privateKey = process.env.PRIVATE_KEY as `0x${string}`
-const rpcUrl = (process.env.RPC_URL || 'https://mainnet.base.org') as string
+const rpcUrl = process.env.RPC_URL ?? baseSepolia.rpcUrls.default.http[0]
 
 if (!privateKey) throw new Error('PRIVATE_KEY is not set')
 
 async function main() {
   // 1. Set up clients and SDK
   const account = privateKeyToAccount(privateKey)
-  const publicClient = createPublicClient({ chain: base, transport: http(rpcUrl) })
-  const walletClient = createWalletClient({ chain: base, transport: http(rpcUrl), account })
-  const sdk = new DopplerSDK({ publicClient, walletClient, chainId: base.id })
-  const addresses = getAddresses(base.id)
+  const publicClient = createPublicClient({ chain: baseSepolia, transport: http(rpcUrl) })
+  const walletClient = createWalletClient({ chain: baseSepolia, transport: http(rpcUrl), account })
+  const sdk = new DopplerSDK({ publicClient, walletClient, chainId: baseSepolia.id })
+  const addresses = getAddresses(baseSepolia.id)
 
   console.log('🚀 Creating Multicurve Auction with WETH Pre-Buy')
   console.log('User address:', account.address)
@@ -47,7 +47,7 @@ async function main() {
       numTokensToSell: 900_000n * WAD,
       numeraire: addresses.weth, // Using WETH as the trading pair
     })
-    .withMulticurveAuction({
+    .poolConfig({
       fee: 0,
       tickSpacing: 8,
       curves: [
@@ -132,7 +132,7 @@ async function main() {
 
   const signature = await getPermitSignature(
     permit,
-    base.id,
+    baseSepolia.id,
     addresses.permit2,
     publicClient,
     walletClient

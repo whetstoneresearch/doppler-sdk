@@ -7,9 +7,13 @@ import { parseEther, type Address, decodeAbiParameters } from 'viem'
 import { isToken0Expected } from '../../utils'
 import { DAY_SECONDS } from '../../constants'
 
-vi.mock('../../addresses', () => ({
-  getAddresses: vi.fn(() => mockAddresses)
-}))
+vi.mock('../../addresses', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../addresses')>()
+  return {
+    ...actual,
+    getAddresses: vi.fn(() => mockAddresses)
+  }
+})
 
 describe('DopplerFactory - Token Ordering Mining', () => {
   let factory: DopplerFactory

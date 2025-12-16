@@ -14,8 +14,9 @@ export { Quoter } from './entities/quoter'
 // Export token entities
 export { Derc20, Eth } from './entities/token'
 
-// Export builders
+// Export builders and common interface
 export { StaticAuctionBuilder, DynamicAuctionBuilder, MulticurveBuilder } from './builders'
+export type { BaseAuctionBuilder } from './builders'
 
 // Export all types
 export type {
@@ -56,8 +57,21 @@ export type {
 
   // Governance helper types
   NoOpEnabledChainId,
+  NO_OP_ENABLED_CHAIN_IDS,
+  isNoOpEnabledChain,
   GovernanceOption,
   
+  // Market cap configuration types
+  MarketCapRange,
+  DynamicMarketCapRange,
+  MarketCapConfig,
+  StaticAuctionMarketCapConfig,
+  DynamicAuctionMarketCapConfig,
+  MulticurveMarketCapRangeCurve,
+  MulticurveMarketCapCurvesConfig,
+  MarketCapValidationResult,
+  
+
   // Internal create() param shape (advanced)
   CreateParams,
 } from './types'

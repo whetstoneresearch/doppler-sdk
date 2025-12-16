@@ -12,10 +12,10 @@
 import { DopplerSDK } from '../src';
 
 import { createPublicClient, http, parseEther, formatEther, type Address } from 'viem'
-import { base } from 'viem/chains'
+import { baseSepolia } from 'viem/chains'
 
 const token = process.env.TOKEN as `0x${string}`;
-const rpcUrl = process.env.RPC_URL || 'https://mainnet.base.org' as string;
+const rpcUrl = process.env.RPC_URL || baseSepolia.rpcUrls.default.http[0];
 
 if (!token) throw new Error('TOKEN is not set');
 
@@ -26,13 +26,13 @@ const usdc = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' as Address // USDC on 
 async function main() {
   // Initialize SDK
   const publicClient = createPublicClient({
-    chain: base,
+    chain: baseSepolia,
     transport: http(rpcUrl)
   })
 
   const sdk = new DopplerSDK({
     publicClient,
-    chainId: base.id
+    chainId: baseSepolia.id
   })
 
   const quoter = sdk.quoter

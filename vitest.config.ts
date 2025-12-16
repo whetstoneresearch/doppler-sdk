@@ -11,6 +11,10 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
+    // Reduce concurrency to avoid rate limiting on public RPCs
+    maxConcurrency: 1,
+    // Run test files sequentially to further reduce RPC load
+    fileParallelism: false,
     coverage: {
       reporter: ['text', 'json', 'html'],
       exclude: [

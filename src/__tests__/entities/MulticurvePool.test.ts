@@ -6,9 +6,13 @@ import type { Address } from 'viem'
 import { LockablePoolStatus } from '../../types'
 import { computePoolId } from '../../utils/poolKey'
 
-vi.mock('../../addresses', () => ({
-  getAddresses: vi.fn(() => mockAddresses)
-}))
+vi.mock('../../addresses', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../addresses')>()
+  return {
+    ...actual,
+    getAddresses: vi.fn(() => mockAddresses)
+  }
+})
 
 describe('MulticurvePool', () => {
   const mockPoolAddress = '0x1234567890123456789012345678901234567890' as Address
@@ -80,7 +84,7 @@ describe('MulticurvePool', () => {
       } as any)
 
       await expect(multicurvePool.getState()).rejects.toThrow(
-        'V4 multicurve initializer address not configured for this chain'
+        'V4 multicurve initializer or scheduled multicurve initializer address not configured for this chain'
       )
     })
   })
@@ -220,7 +224,7 @@ describe('MulticurvePool', () => {
       } as any)
 
       await expect(multicurvePool.collectFees()).rejects.toThrow(
-        'V4 multicurve initializer address not configured for this chain'
+        'V4 multicurve initializer and scheduled multicurve initializer address not configured for this chain'
       )
     })
 
