@@ -72,7 +72,23 @@ export interface VestingConfig {
 }
 
 // Chains where no-op governance is enabled
-export type NoOpEnabledChainId = typeof CHAIN_IDS.BASE | typeof CHAIN_IDS.BASE_SEPOLIA;
+export const NO_OP_ENABLED_CHAIN_IDS = [
+  CHAIN_IDS.BASE,
+  CHAIN_IDS.BASE_SEPOLIA,
+  CHAIN_IDS.UNICHAIN,
+  CHAIN_IDS.UNICHAIN_SEPOLIA,
+  CHAIN_IDS.MONAD_TESTNET,
+  CHAIN_IDS.MONAD_MAINNET,
+] as const;
+
+export type NoOpEnabledChainId = (typeof NO_OP_ENABLED_CHAIN_IDS)[number];
+
+/**
+ * Check if a chain supports no-op governance
+ */
+export function isNoOpEnabledChain(chainId: number): chainId is NoOpEnabledChainId {
+  return (NO_OP_ENABLED_CHAIN_IDS as readonly number[]).includes(chainId);
+}
 
 // Governance configuration (discriminated union)
 export type GovernanceDefault = { type: 'default' };
@@ -234,6 +250,156 @@ export interface PriceRange {
 export interface TickRange {
   startTick: number;
   endTick: number;
+}
+
+// ============================================================================
+// Market Cap Configuration Types
+// ============================================================================
+
+/**
+ * Market cap range in USD for price configurations.
+ * Used to define start and end market caps for bonding curves.
+ */
+export interface MarketCapRange {
+  /** Starting market cap in USD (e.g., 100_000 for $100k) */
+  start: number;
+  /** Ending market cap in USD (e.g., 10_000_000 for $10M) */
+  end: number;
+}
+
+/**
+ * Base configuration for market cap-based tick calculations.
+ * Used by builder methods to convert market caps to ticks.
+ */
+export interface MarketCapConfig {
+  /** Target market cap range in USD */
+  marketCap: MarketCapRange;
+  /** Price of numeraire in USD (e.g., 3000 for ETH at $3000) */
+  numerairePrice: number;
+  /** 
+   * Token supply override. If not provided, inferred from saleConfig.initialSupply.
+   * Must include decimals (e.g., parseEther('1000000000') for 1B tokens).
+   */
+  tokenSupply?: bigint;
+  /** Token decimals (default: 18) */
+  tokenDecimals?: number;
+  /** Numeraire decimals (default: 18) */
+  numeraireDecimals?: number;
+}
+
+/**
+ * Market cap configuration for V3 Static Auctions.
+ * Extends base config with V3-specific parameters.
+ */
+export interface StaticAuctionMarketCapConfig extends MarketCapConfig {
+  /** Fee tier in basis points (e.g., 10000 for 1%). Default: 10000 */
+  fee?: number;
+  /** Number of liquidity positions. Default: 15 */
+  numPositions?: number;
+  /** Maximum share of tokens to sell per position (WAD). Default: 35% */
+  maxShareToBeSold?: bigint;
+}
+
+/**
+ * Market cap range for V4 Dynamic Auctions (Dutch auctions).
+ * Uses start/min because price descends from start to minimum.
+ */
+export interface DynamicMarketCapRange {
+  /** Starting market cap in USD - auction begins here (e.g., 500_000 for $500k) */
+  start: number;
+  /** Minimum market cap in USD - floor price the auction descends to (e.g., 50_000 for $50k) */
+  min: number;
+}
+
+/**
+ * Market cap configuration for V4 Dynamic Auctions.
+ * Uses start/min (not start/end) because Dutch auctions descend from start to minimum.
+ */
+export interface DynamicAuctionMarketCapConfig {
+  /** Target market cap range (start = launch price, min = floor price) */
+  marketCap: DynamicMarketCapRange;
+  /** Price of numeraire in USD (e.g., 3000 for ETH at $3000) */
+  numerairePrice: number;
+  /** 
+   * Token supply override. If not provided, inferred from saleConfig.initialSupply.
+   * Must include decimals (e.g., parseEther('1000000000') for 1B tokens).
+   */
+  tokenSupply?: bigint;
+  /** Token decimals (default: 18) */
+  tokenDecimals?: number;
+  /** Numeraire decimals (default: 18) */
+  numeraireDecimals?: number;
+  /** Minimum proceeds required for successful auction */
+  minProceeds: bigint;
+  /** Maximum proceeds cap for the auction */
+  maxProceeds: bigint;
+  /** Auction duration in seconds. Default: 7 days */
+  duration?: number;
+  /** Epoch length in seconds. Default: 3600 (1 hour) */
+  epochLength?: number;
+  /** Gamma (tick decay per epoch). Auto-calculated if not provided */
+  gamma?: number;
+  /** Number of price discovery slugs. Default: 5 */
+  numPdSlugs?: number;
+}
+
+/**
+ * Result of market cap parameter validation.
+ */
+export interface MarketCapValidationResult {
+  /** Whether all parameters are within normal bounds */
+  valid: boolean;
+  /** Warning messages for unusual but technically valid values */
+  warnings: string[];
+}
+
+// ============================================================================
+// New Multicurve Market Cap API (no tick math required)
+// ============================================================================
+
+/**
+ * Curve configuration for Multicurve pools using market cap ranges.
+ * Each curve defines a market cap range and liquidity distribution.
+ */
+export interface MulticurveMarketCapRangeCurve {
+  /** Market cap range for this curve */
+  marketCap: {
+    /** Start market cap in USD (for the first curve, this is the launch price) */
+    start: number;
+    /** End market cap in USD */
+    end: number;
+  };
+  /** Number of liquidity positions in this curve */
+  numPositions: number;
+  /** Share of total supply allocated to this curve (WAD, e.g., parseEther('0.3') = 30%) */
+  shares: bigint;
+}
+
+/**
+ * Market cap-based configuration for Multicurve pools.
+ * No tick math required - just specify market caps in USD.
+ */
+export interface MulticurveMarketCapCurvesConfig {
+  /** Price of numeraire in USD (e.g., 3000 for ETH at $3000) */
+  numerairePrice: number;
+  /** 
+   * Array of curves defining market cap ranges and liquidity distribution.
+   * The first curve's marketCap.start is the launch price.
+   * Curves must be contiguous (no gaps allowed).
+   */
+  curves: MulticurveMarketCapRangeCurve[];
+  /** Token supply override */
+  tokenSupply?: bigint;
+  /** Token decimals (default: 18) */
+  tokenDecimals?: number;
+  /** Numeraire decimals (default: 18) */
+  numeraireDecimals?: number;
+  /** Fee tier (default: FEE_TIERS.LOW) */
+  fee?: number;
+  /** Tick spacing (derived from fee if not provided) */
+  tickSpacing?: number;
+  /** Optional beneficiaries for fee streaming */
+  beneficiaries?: BeneficiaryData[];
 }
 
 // Build configuration for static auctions (V3-style)
@@ -466,6 +632,7 @@ export interface ModuleAddressOverrides {
 
   // Initializers
   v3Initializer?: Address;
+  lockableV3Initializer?: Address;
   v4Initializer?: Address;
   v4MulticurveInitializer?: Address;
   v4ScheduledMulticurveInitializer?: Address;

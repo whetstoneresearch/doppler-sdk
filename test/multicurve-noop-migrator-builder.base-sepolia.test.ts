@@ -71,7 +71,7 @@ describe('Multicurve Builder with NoOpMigrator helper (Base Sepolia fork)', () =
         numTokensToSell: 1_000_000n * WAD,
         numeraire: addresses.weth
       })
-      .withMulticurveAuction({
+      .poolConfig({
         fee: 0,
         tickSpacing: 8,
         curves: Array.from({ length: 10 }, (_, i) => ({
@@ -136,7 +136,7 @@ describe('Multicurve Builder with NoOpMigrator helper (Base Sepolia fork)', () =
         numTokensToSell: 1_000_000n * WAD,
         numeraire: addresses.weth
       })
-      .withMulticurveAuction({
+      .poolConfig({
         fee: 0,
         tickSpacing: 8,
         curves: Array.from({ length: 5 }, (_, i) => ({
@@ -193,7 +193,7 @@ describe('Multicurve Builder with NoOpMigrator helper (Base Sepolia fork)', () =
         numTokensToSell: 1_000_000n * WAD,
         numeraire: addresses.weth
       })
-      .withMulticurveAuction({
+      .poolConfig({
         fee: 0,
         tickSpacing: 8,
         curves: Array.from({ length: 3 }, (_, i) => ({

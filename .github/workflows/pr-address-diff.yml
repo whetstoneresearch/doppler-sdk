@@ -19,7 +19,7 @@ jobs:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           owner: whetstoneresearch
-          repositories: doppler-sdk-alpha
+          repositories: doppler-sdk
       
       - name: Post initial comment
         id: timestamp

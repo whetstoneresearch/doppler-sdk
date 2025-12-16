@@ -18,13 +18,13 @@ import {
   parseEther,
   formatEther,
 } from 'viem';
-import { base } from 'viem/chains';
+import { baseSepolia } from 'viem/chains';
 import { privateKeyToAccount } from 'viem/accounts';
 
 // Configuration
 const spender = process.env.SPENDER as `0x${string}`;
 const privateKey = process.env.PRIVATE_KEY as `0x${string}`;
-const rpcUrl = process.env.RPC_URL || 'https://mainnet.base.org' as string;
+const rpcUrl = process.env.RPC_URL || baseSepolia.rpcUrls.default.http[0];
 const tokenAddress = process.env.TOKEN_ADDRESS as `0x${string}`;
 
 if (!privateKey) throw new Error('PRIVATE_KEY is not set');
@@ -36,12 +36,12 @@ async function main() {
   const account = privateKeyToAccount(privateKey);
 
   const publicClient = createPublicClient({
-    chain: base,
+    chain: baseSepolia,
     transport: http(rpcUrl),
   });
 
   const walletClient = createWalletClient({
-    chain: base,
+    chain: baseSepolia,
     transport: http(rpcUrl),
     account,
   });

@@ -199,7 +199,7 @@ import { base } from 'viem/chains'
 const params = new MulticurveBuilder(base.id)
   .tokenConfig({ name: 'My Token', symbol: 'MTK', tokenURI: 'https://example.com/metadata.json' })
   .saleConfig({ initialSupply: parseEther('1000000'), numTokensToSell: parseEther('900000'), numeraire: '0x...' })
-  .withMulticurveAuction({
+  .poolConfig({
     fee: 0,
     tickSpacing: 8,
     curves: [
@@ -260,7 +260,7 @@ const startTime = Math.floor(Date.now() / 1000) + 3600 // one hour from now
 const scheduled = new MulticurveBuilder(base.id)
   .tokenConfig({ name: 'My Token', symbol: 'MTK', tokenURI: 'ipfs://scheduled.json' })
   .saleConfig({ initialSupply: parseEther('1000000'), numTokensToSell: parseEther('900000'), numeraire: '0x4200000000000000000000000000000000000006' })
-  .withMulticurveAuction({
+  .poolConfig({
     fee: 0,
     tickSpacing: 8,
     curves: [
@@ -299,14 +299,14 @@ const lockableBeneficiaries = [
 const params = new MulticurveBuilder(base.id)
   .tokenConfig({ name: 'My Token', symbol: 'MTK', tokenURI: 'https://example.com/metadata.json' })
   .saleConfig({ initialSupply: parseEther('1000000'), numTokensToSell: parseEther('900000'), numeraire: '0x...' })
-  .withMulticurveAuction({
+  .poolConfig({
     fee: 3000, // 0.3% fee tier - set > 0 to accumulate fees for beneficiaries
     tickSpacing: 8,
     curves: [
       { tickLower: 0, tickUpper: 240000, numPositions: 10, shares: parseEther('0.5') },
       { tickLower: 16000, tickUpper: 240000, numPositions: 10, shares: parseEther('0.5') },
     ],
-    lockableBeneficiaries // Add beneficiaries for fee streaming
+    beneficiaries: lockableBeneficiaries, // Add beneficiaries for fee streaming
   })
   .withGovernance({ type: 'default' })
   .withMigration({ type: 'noOp' }) // Use NoOp migration with lockable beneficiaries
@@ -954,7 +954,7 @@ const builder = new MulticurveBuilder(base.id)
     numTokensToSell: parseEther('900000'),
     numeraire: '0x...',
   })
-  .withMulticurveAuction({
+  .poolConfig({
     fee: 3000,
     tickSpacing: 60,
     curves: [

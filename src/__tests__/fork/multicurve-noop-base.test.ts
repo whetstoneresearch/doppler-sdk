@@ -96,7 +96,7 @@ maybeDescribe('Fork/Live - Multicurve NoOp Migration on Base', () => {
         numTokensToSell: MULTICURVE_NUM_TOKENS_TO_SELL,
         numeraire: addresses.weth
       })
-      .withMulticurveAuction({
+      .poolConfig({
         fee: 0,
         tickSpacing: MULTICURVE_TICK_SPACING,
         curves: [{
@@ -160,7 +160,7 @@ maybeDescribe('Fork/Live - Multicurve NoOp Migration on Base', () => {
         numTokensToSell: MULTICURVE_NUM_TOKENS_TO_SELL,
         numeraire: addresses.weth
       })
-      .withMulticurveAuction({
+      .poolConfig({
         fee: 0,
         tickSpacing: MULTICURVE_TICK_SPACING,
         curves: [{

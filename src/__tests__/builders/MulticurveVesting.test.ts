@@ -20,7 +20,7 @@ describe('MulticurveBuilder - Vesting with multiple beneficiaries', () => {
         numTokensToSell: parseEther('800000'),
         numeraire: '0x4200000000000000000000000000000000000006' as `0x${string}`
       })
-      .withMulticurveAuction({
+      .poolConfig({
         fee: 0,
         tickSpacing: 8,
         curves: [
@@ -77,7 +77,7 @@ describe('MulticurveBuilder - Vesting with multiple beneficiaries', () => {
         numTokensToSell: parseEther('700000'),
         numeraire: '0x4200000000000000000000000000000000000006' as `0x${string}`
       })
-      .withMulticurveAuction({
+      .poolConfig({
         fee: 0,
         tickSpacing: 8,
         curves: [
@@ -133,7 +133,7 @@ describe('MulticurveBuilder - Vesting with multiple beneficiaries', () => {
         numTokensToSell: parseEther('800000'),
         numeraire: '0x4200000000000000000000000000000000000006' as `0x${string}`
       })
-      .withMulticurveAuction({
+      .poolConfig({
         fee: 0,
         tickSpacing: 8,
         curves: [
@@ -173,7 +173,7 @@ describe('MulticurveBuilder - Vesting with multiple beneficiaries', () => {
         numTokensToSell: parseEther('700000'),
         numeraire: '0x4200000000000000000000000000000000000006' as `0x${string}`
       })
-      .withMulticurveAuction({
+      .poolConfig({
         fee: 0,
         tickSpacing: 8,
         curves: [

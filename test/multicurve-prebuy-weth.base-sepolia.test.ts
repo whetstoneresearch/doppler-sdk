@@ -74,7 +74,7 @@ describe('Multicurve Pre-Buy with WETH (Base Sepolia fork)', () => {
         numTokensToSell: 900_000n * WAD,
         numeraire: addresses.weth,
       })
-      .withMulticurveAuction({
+      .poolConfig({
         fee: 0,
         tickSpacing: 8,
         curves: [
@@ -129,7 +129,7 @@ describe('Multicurve Pre-Buy with WETH (Base Sepolia fork)', () => {
         numTokensToSell: 900_000n * WAD,
         numeraire: addresses.weth,
       })
-      .withMulticurveAuction({
+      .poolConfig({
         fee: 0,
         tickSpacing: 8,
         curves: [
@@ -183,7 +183,7 @@ describe('Multicurve Pre-Buy with WETH (Base Sepolia fork)', () => {
         numTokensToSell: 900_000n * WAD,
         numeraire: addresses.weth,
       })
-      .withMulticurveAuction({
+      .poolConfig({
         fee: 0,
         tickSpacing: 8,
         curves: [
@@ -240,7 +240,7 @@ describe('Multicurve Pre-Buy with WETH (Base Sepolia fork)', () => {
         numTokensToSell: 900_000n * WAD,
         numeraire: addresses.weth,
       })
-      .withMulticurveAuction({
+      .poolConfig({
         fee: 0,
         tickSpacing: 8,
         curves: [

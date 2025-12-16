@@ -4,11 +4,16 @@ import { createMockPublicClient, createMockWalletClient } from '../mocks/clients
 import { mockAddresses, mockTokenAddress, mockPoolAddress, mockHookAddress } from '../mocks/addresses'
 import { parseEther, type Address } from 'viem'
 import type { CreateStaticAuctionParams, CreateMulticurveParams } from '../../types'
+import { CHAIN_IDS } from '../../addresses'
 
 // Ensure addresses include a Bundler for these tests
-vi.mock('../../addresses', () => ({
-  getAddresses: vi.fn(() => mockAddresses)
-}))
+vi.mock('../../addresses', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../addresses')>()
+  return {
+    ...actual,
+    getAddresses: vi.fn(() => mockAddresses)
+  }
+})
 
 describe('Bundler integration', () => {
   let sdk: DopplerSDK
@@ -21,7 +26,7 @@ describe('Bundler integration', () => {
     sdk = new DopplerSDK({
       publicClient,
       walletClient,
-      chainId: 1,
+      chainId: CHAIN_IDS.BASE,
     })
     vi.clearAllMocks()
   })
@@ -43,7 +48,7 @@ describe('Bundler integration', () => {
         endTick: 225000,
         fee: 10000,
       },
-      governance: { noOp: true },
+      governance: { type: 'noOp' },
       migration: { type: 'uniswapV2' },
       userAddress: '0x1234567890123456789012345678901234567890' as Address,
     }

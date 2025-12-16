@@ -27,10 +27,10 @@
 import { DopplerSDK, WAD } from '../src'
 import { createPublicClient, createWalletClient, http, type Address, formatUnits } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
-import { base } from 'viem/chains'
+import { baseSepolia } from 'viem/chains'
 
 const privateKey = process.env.PRIVATE_KEY as `0x${string}`
-const rpcUrl = (process.env.RPC_URL || 'https://mainnet.base.org') as string
+const rpcUrl = process.env.RPC_URL ?? baseSepolia.rpcUrls.default.http[0]
 
 // REPLACE with your actual multicurve pool ASSET address (the token address)
 // This is the address returned from creating the multicurve auction
@@ -42,10 +42,10 @@ if (!ASSET_ADDRESS) throw new Error('ASSET_ADDRESS is not set. Run multicurve-lo
 async function main() {
   const account = privateKeyToAccount(privateKey)
 
-  const publicClient = createPublicClient({ chain: base, transport: http(rpcUrl) })
-  const walletClient = createWalletClient({ chain: base, transport: http(rpcUrl), account })
+  const publicClient = createPublicClient({ chain: baseSepolia, transport: http(rpcUrl) })
+  const walletClient = createWalletClient({ chain: baseSepolia, transport: http(rpcUrl), account })
 
-  const sdk = new DopplerSDK({ publicClient, walletClient, chainId: base.id })
+  const sdk = new DopplerSDK({ publicClient, walletClient, chainId: baseSepolia.id })
 
   console.log('🔍 Fetching pool information...')
   console.log('   Asset address (token):', ASSET_ADDRESS)

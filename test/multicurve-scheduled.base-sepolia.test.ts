@@ -96,7 +96,7 @@ describe('Scheduled Multicurve (Base Sepolia fork) smoke test', () => {
       .buildMulticurveAuction()
       .tokenConfig({ type: 'standard', name: 'ScheduledMultiCurve', symbol: 'SMC', tokenURI: 'ipfs://scheduled' })
       .saleConfig({ initialSupply: 1_000_000n * WAD, numTokensToSell: 1_000_000n * WAD, numeraire: addresses.weth })
-      .withMulticurveAuction({
+      .poolConfig({
         fee: 0,
         tickSpacing: 8,
         curves: Array.from({ length: 10 }, (_, i) => ({

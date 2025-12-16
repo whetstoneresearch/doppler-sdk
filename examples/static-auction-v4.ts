@@ -1,10 +1,10 @@
 import { DopplerSDK, getAirlockOwner } from '../src';
 import { parseEther, createPublicClient, createWalletClient, http } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import { base } from 'viem/chains';
+import { baseSepolia } from 'viem/chains';
 
 const privateKey = process.env.PRIVATE_KEY as `0x${string}`;
-const rpcUrl = process.env.RPC_URL ?? "https://mainnet.base.org";
+const rpcUrl = process.env.RPC_URL ?? baseSepolia.rpcUrls.default.http[0];
 const account = privateKeyToAccount(privateKey);
 
 if (!privateKey) throw new Error('PRIVATE_KEY must be set');
@@ -13,12 +13,12 @@ if (!privateKey) throw new Error('PRIVATE_KEY must be set');
 async function createStaticAuctionExample() {
   // Create viem clients
   const publicClient = createPublicClient({
-    chain: base,
+    chain: baseSepolia,
     transport: http(rpcUrl),
   });
 
   const walletClient = createWalletClient({
-    chain: base,
+    chain: baseSepolia,
     transport: http(rpcUrl),
     account: account,
   });
@@ -31,7 +31,7 @@ async function createStaticAuctionExample() {
   const sdk = new DopplerSDK({
     publicClient,
     walletClient,
-    chainId: 8453, // Base mainnet
+    chainId: baseSepolia.id,
   });
 
   const airlockOwner = await getAirlockOwner(publicClient);

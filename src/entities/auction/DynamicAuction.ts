@@ -1,4 +1,4 @@
-import { type Address, type PublicClient, encodePacked, keccak256, encodeAbiParameters, zeroAddress } from 'viem'
+import { type Address, type PublicClient, type Hex, encodePacked, keccak256, encodeAbiParameters, zeroAddress } from 'viem'
 import type { HookInfo, SupportedPublicClient } from '../../types'
 import { dopplerHookAbi, airlockAbi } from '../../abis'
 import { getAddresses } from '../../addresses'
@@ -19,6 +19,15 @@ export class DynamicAuction {
   constructor(client: SupportedPublicClient, hookAddress: Address) {
     this.client = client
     this.hookAddress = hookAddress
+  }
+
+  /**
+   * Wait for a transaction to be confirmed and the contract to be ready for reads
+   * @param hash - Transaction hash to wait for
+   * @param confirmations - Number of block confirmations to wait for (default: 2)
+   */
+  async waitForDeployment(hash: Hex, confirmations: number = 2): Promise<void> {
+    await this.rpc.waitForTransactionReceipt({ hash, confirmations })
   }
   
   /**

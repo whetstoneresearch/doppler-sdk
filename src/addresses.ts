@@ -183,7 +183,7 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     v4Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.UNICHAIN].UniswapV2Migrator as Address, // Same as v2/v3 migrator
     noOpMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.UNICHAIN].NoOpMigrator as Address,
     governanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.UNICHAIN].GovernanceFactory as Address,
-    noOpGovernanceFactory: ZERO_ADDRESS, // Not yet deployed
+    noOpGovernanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.UNICHAIN].NoOpGovernanceFactory as Address,
     streamableFeesLocker: ZERO_ADDRESS, // Not yet deployed
     universalRouter: '0xef740bf23acae26f6492b10de645d6b98dc8eaf3' as Address,
     univ2Router02: '0x284f11109359a7e1306c3e447ef14d38400063ff' as Address,
@@ -206,7 +206,7 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     v4Migrator: '0x44C448E38A2C3D206c9132E7f645510dFbBC946b' as Address, // Same as v2/v3 migrator
     noOpMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.UNICHAIN_SEPOLIA].NoOpMigrator as Address,
     governanceFactory: '0x1E4332EEfAE9e4967C2D186f7b2d439D778e81cC' as Address,
-    noOpGovernanceFactory: ZERO_ADDRESS, // Not yet deployed
+    noOpGovernanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.UNICHAIN_SEPOLIA].NoOpGovernanceFactory as Address,
     streamableFeesLocker: ZERO_ADDRESS, // Not yet deployed
     universalRouter: '0xf70536B3bcC1bD1a972dc186A2cf84cC6da6Be5D' as Address,
     univ2Router02: '0x284f11109359a7e1306c3e447ef14d38400063ff' as Address,
@@ -229,7 +229,7 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     v4Migrator: '0xBEd386a1Fc62B6598c9b8d2BF634471B6Fe75EB7' as Address, // Same as v2/v3 migrator
     noOpMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_TESTNET].NoOpMigrator as Address,
     governanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_TESTNET].GovernanceFactory as Address,
-    noOpGovernanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_TESTNET].NoOpGovernanceFactory as Address, // Not yet deployed
+    noOpGovernanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_TESTNET].NoOpGovernanceFactory as Address,
     streamableFeesLocker: '0x91231cDdD8d6C86Df602070a3081478e074b97b7' as Address, // Not yet deployed
     universalRouter: ZERO_ADDRESS,
     univ2Router02: ZERO_ADDRESS,
@@ -252,7 +252,7 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     v4Migrator: ZERO_ADDRESS, // Same as v2/v3 migrator
     noOpMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_MAINNET].NoOpMigrator as Address,
     governanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_MAINNET].GovernanceFactory as Address,
-    noOpGovernanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_MAINNET].NoOpGovernanceFactory as Address, // Not yet deployed
+    noOpGovernanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_MAINNET].NoOpGovernanceFactory as Address,
     v4ScheduledMulticurveInitializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_MAINNET].UniswapV4ScheduledMulticurveInitializer as Address,
     streamableFeesLocker: ZERO_ADDRESS, // Not yet deployed
     universalRouter: "0x0d97dc33264bfc1c226207428a79b26757fb9dc3" as Address,

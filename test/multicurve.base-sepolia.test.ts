@@ -82,7 +82,7 @@ describe('Multicurve (Base Sepolia fork) smoke test', () => {
       .buildMulticurveAuction()
       .tokenConfig({ type: 'standard', name: 'MultiCurveTest', symbol: 'MCT', tokenURI: 'ipfs://test' })
       .saleConfig({ initialSupply: 1_000_000n * WAD, numTokensToSell: 1_000_000n * WAD, numeraire: addresses.weth })
-      .withMulticurveAuction({
+      .poolConfig({
         // Match doppler multicurve tests: fee = 0, tickSpacing = 8, 10 curves stepping by 16_000
         fee: 0,
         tickSpacing: 8,
@@ -115,7 +115,7 @@ describe('Multicurve (Base Sepolia fork) smoke test', () => {
       .buildMulticurveAuction()
       .tokenConfig({ type: 'standard', name: 'MultiCurveFeeZero', symbol: 'MC0', tokenURI: 'ipfs://fee-zero' })
       .saleConfig({ initialSupply: 1_000_000n * WAD, numTokensToSell: 1_000_000n * WAD, numeraire: addresses.weth })
-      .withMulticurveAuction({
+      .poolConfig({
         fee: 0,
         tickSpacing: 8,
         curves: Array.from({ length: 10 }, (_, i) => ({
@@ -139,7 +139,7 @@ describe('Multicurve (Base Sepolia fork) smoke test', () => {
       .buildMulticurveAuction()
       .tokenConfig({ type: 'standard', name: 'MultiCurveFee', symbol: 'MCF', tokenURI: 'ipfs://fee-test' })
       .saleConfig({ initialSupply: 1_000_000n * WAD, numTokensToSell: 1_000_000n * WAD, numeraire: addresses.weth })
-      .withMulticurveAuction({
+      .poolConfig({
         fee: 500,
         tickSpacing: 8,
         curves: Array.from({ length: 10 }, (_, i) => ({
@@ -178,7 +178,7 @@ describe('Multicurve (Base Sepolia fork) smoke test', () => {
       .buildMulticurveAuction()
       .tokenConfig({ type: 'standard', name: 'MultiCurveFee3000', symbol: 'MCF3', tokenURI: 'ipfs://fee-3000' })
       .saleConfig({ initialSupply: 1_000_000n * WAD, numTokensToSell: 1_000_000n * WAD, numeraire: addresses.weth })
-      .withMulticurveAuction({
+      .poolConfig({
         fee: 3_000,
         tickSpacing: 8,
         curves: Array.from({ length: 10 }, (_, i) => ({
@@ -213,7 +213,7 @@ describe('Multicurve (Base Sepolia fork) smoke test', () => {
         numTokensToSell: 500_000n * WAD,
         numeraire: addresses.weth,
       })
-      .withMulticurveAuction({
+      .poolConfig({
         fee: 0,
         tickSpacing: 8,
         curves: Array.from({ length: 8 }, (_, i) => ({

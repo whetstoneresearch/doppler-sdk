@@ -90,7 +90,7 @@ describe('Multicurve with multiple vesting beneficiaries (Base Sepolia fork)', (
         numTokensToSell: tokensToSell,
         numeraire: addresses.weth
       })
-      .withMulticurveAuction({
+      .poolConfig({
         fee: 0,
         tickSpacing: 8,
         curves: Array.from({ length: 5 }, (_, i) => ({
@@ -154,7 +154,7 @@ describe('Multicurve with multiple vesting beneficiaries (Base Sepolia fork)', (
         numTokensToSell: tokensToSell,
         numeraire: addresses.weth
       })
-      .withMulticurveAuction({
+      .poolConfig({
         fee: 0,
         tickSpacing: 8,
         curves: Array.from({ length: 5 }, (_, i) => ({
@@ -204,7 +204,7 @@ describe('Multicurve with multiple vesting beneficiaries (Base Sepolia fork)', (
         numTokensToSell: 700_000n * WAD,
         numeraire: addresses.weth
       })
-      .withMulticurveAuction({
+      .poolConfig({
         fee: 0,
         tickSpacing: 8,
         curves: Array.from({ length: 5 }, (_, i) => ({
@@ -251,7 +251,7 @@ describe('Multicurve with multiple vesting beneficiaries (Base Sepolia fork)', (
         numTokensToSell: tokensToSell,
         numeraire: addresses.weth
       })
-      .withMulticurveAuction({
+      .poolConfig({
         fee: 0,
         tickSpacing: 8,
         curves: Array.from({ length: 5 }, (_, i) => ({
@@ -294,7 +294,7 @@ describe('Multicurve with multiple vesting beneficiaries (Base Sepolia fork)', (
         numTokensToSell: 700_000n * WAD,
         numeraire: addresses.weth
       })
-      .withMulticurveAuction({
+      .poolConfig({
         fee: 0,
         tickSpacing: 8,
         curves: Array.from({ length: 5 }, (_, i) => ({

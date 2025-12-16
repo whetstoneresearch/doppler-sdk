@@ -1,5 +1,5 @@
 import { createPublicClient, createWalletClient, http, encodeAbiParameters } from 'viem'
-import { base } from 'viem/chains'
+import { baseSepolia } from 'viem/chains'
 import { privateKeyToAccount } from 'viem/accounts'
 import {
   DopplerSDK,
@@ -64,14 +64,14 @@ const customMigrationEncoder: MigrationEncoder = (config: MigrationConfig) => {
 async function main() {
   // Setup clients
   const publicClient = createPublicClient({
-    chain: base,
+    chain: baseSepolia,
     transport: http()
   })
 
   const account = privateKeyToAccount(process.env.PRIVATE_KEY as `0x${string}`)
   const walletClient = createWalletClient({
     account,
-    chain: base,
+    chain: baseSepolia,
     transport: http()
   })
 
@@ -79,7 +79,7 @@ async function main() {
   const sdk = new DopplerSDK({
     publicClient,
     walletClient,
-    chainId: base.id
+    chainId: baseSepolia.id
   })
 
   // Set custom migration encoder on the factory using fluent API
@@ -121,19 +121,19 @@ async function main() {
 // Example of a factory-only approach (without SDK)
 function factoryOnlyExample() {
   const publicClient = createPublicClient({
-    chain: base,
+    chain: baseSepolia,
     transport: http()
   })
 
   const account = privateKeyToAccount(process.env.PRIVATE_KEY as `0x${string}`)
   const walletClient = createWalletClient({
     account,
-    chain: base,
+    chain: baseSepolia,
     transport: http()
   })
 
   // Create factory directly and configure with fluent API (method chaining)
-  const factory = new DopplerFactory(publicClient, walletClient, base.id)
+  const factory = new DopplerFactory(publicClient, walletClient, baseSepolia.id)
     .withCustomMigrationEncoder(customMigrationEncoder)
 
   console.log('DopplerFactory created with custom migration encoder!')

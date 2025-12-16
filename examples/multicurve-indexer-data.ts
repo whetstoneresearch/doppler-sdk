@@ -14,9 +14,9 @@
 import { DopplerSDK, getAddresses } from '../src'
 import { GraphQLClient } from 'graphql-request'
 import { createPublicClient, http, formatEther, formatUnits, type Address } from 'viem'
-import { base } from 'viem/chains'
+import { baseSepolia } from 'viem/chains'
 
-const rpcUrl = (process.env.RPC_URL || 'https://mainnet.base.org') as string
+const rpcUrl = process.env.RPC_URL ?? baseSepolia.rpcUrls.default.http[0]
 const indexerUrl = process.env.INDEXER_URL || 'https://testnet-indexer.doppler.lol/'
 
 // GraphQL query for fetching pool data
@@ -127,14 +127,14 @@ interface Pool {
 
 async function main() {
   // 1. Set up clients
-  const publicClient = createPublicClient({ chain: base, transport: http(rpcUrl) })
-  const sdk = new DopplerSDK({ publicClient, chainId: base.id })
-  const addresses = getAddresses(base.id)
+  const publicClient = createPublicClient({ chain: baseSepolia, transport: http(rpcUrl) })
+  const sdk = new DopplerSDK({ publicClient, chainId: baseSepolia.id })
+  const addresses = getAddresses(baseSepolia.id)
   const graphqlClient = new GraphQLClient(indexerUrl)
 
   console.log('📊 Multicurve Indexer Data Processing Example')
   console.log('Indexer URL:', indexerUrl)
-  console.log('Chain ID:', base.id)
+  console.log('Chain ID:', baseSepolia.id)
   console.log()
 
   // 2. Fetch recent multicurve pools
@@ -175,7 +175,7 @@ async function main() {
     pools: { items: Pool[] }
   }>(GET_POOL_QUERY, {
     address: targetPool.address,
-    chainId: base.id,
+    chainId: baseSepolia.id,
   })
 
   const poolData = poolResponse.pools.items[0]

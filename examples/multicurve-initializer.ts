@@ -13,20 +13,20 @@
 import { DopplerSDK, FEE_TIERS, WAD } from '../src'
 import { createPublicClient, createWalletClient, http } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
-import { base } from 'viem/chains'
+import { baseSepolia } from 'viem/chains'
 
 const privateKey = process.env.PRIVATE_KEY as `0x${string}`
-const rpcUrl = (process.env.RPC_URL || 'https://mainnet.base.org') as string
+const rpcUrl = process.env.RPC_URL ?? baseSepolia.rpcUrls.default.http[0]
 
 if (!privateKey) throw new Error('PRIVATE_KEY is not set')
 
 async function main() {
   const account = privateKeyToAccount(privateKey)
 
-  const publicClient = createPublicClient({ chain: base, transport: http(rpcUrl) })
-  const walletClient = createWalletClient({ chain: base, transport: http(rpcUrl), account })
+  const publicClient = createPublicClient({ chain: baseSepolia, transport: http(rpcUrl) })
+  const walletClient = createWalletClient({ chain: baseSepolia, transport: http(rpcUrl), account })
 
-  const sdk = new DopplerSDK({ publicClient, walletClient, chainId: base.id })
+  const sdk = new DopplerSDK({ publicClient, walletClient, chainId: baseSepolia.id })
 
   // Build multicurve initializer parameters
   const params = sdk
