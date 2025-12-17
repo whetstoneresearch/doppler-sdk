@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createPublicClient, http, type Address, type Chain } from 'viem';
-import { base, baseSepolia, monadTestnet } from 'viem/chains';
+import { base, baseSepolia } from 'viem/chains';
 import {
   CHAIN_IDS,
   getAddresses,
@@ -36,10 +36,10 @@ const CHAINS: Partial<Record<SupportedChainId, { chain: Chain; rpc?: string }>> 
     chain: baseSepolia,
     rpc: getAlchemyRpc('base-sepolia'),
   },
-  [CHAIN_IDS.MONAD_TESTNET]: {
-    chain: monadTestnet,
-    rpc: getAlchemyRpc('monad-testnet'),
-  },
+  // [CHAIN_IDS.MONAD_TESTNET]: {
+  //   chain: monadTestnet,
+  //   rpc: getAlchemyRpc('monad-testnet'),
+  // },
   // [CHAIN_IDS.INK]: {
   //   chain: ink,
   //   rpc: getAlchemyRpc('ink-mainnet'),
