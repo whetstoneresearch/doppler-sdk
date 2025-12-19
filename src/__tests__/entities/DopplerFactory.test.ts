@@ -111,7 +111,7 @@ describe('DopplerFactory', () => {
       expect(Number(fallback.numPositions)).toBe(params.pool.curves[params.pool.curves.length - 1]!.numPositions)
     })
 
-    it('allows curves with non-positive ticks and logs warning', () => {
+    it('allows curves with non-positive ticks and logs warning if token0 expected (Mainnet WETH)', () => {
       const params = multicurveParams()
       params.pool.curves = [
         {
@@ -121,10 +121,58 @@ describe('DopplerFactory', () => {
           shares: parseEther('0.5'),
         },
       ]
+      // mockAddresses.weth is 0xC02... > halfMaxUint160 => token0 expected => positive ticks expected
+      // We provide negative ticks => SHOULD warn
 
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
       expect(() => factory.encodeCreateMulticurveParams(params)).not.toThrow()
-      expect(consoleSpy).toHaveBeenCalledWith('Warning: Using negative or zero ticks in multicurve configuration. Please verify this is intentional before proceeding.')
+      
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Warning: Negative ticks detected (-120000, 0) but token is expected to be token0')
+      )
+      consoleSpy.mockRestore()
+    })
+
+    it('does NOT warn for negative ticks when token1 expected (Base WETH)', () => {
+      const params = multicurveParams()
+      params.sale.numeraire = '0x4200000000000000000000000000000000000006' // Base WETH (< halfMaxUint160)
+      params.pool.curves = [
+        {
+          tickLower: -120000,
+          tickUpper: -60000,
+          numPositions: 2,
+          shares: parseEther('1'), // 100%
+        },
+      ]
+      // Base WETH => token1 expected => negative ticks expected
+      // We provide negative ticks => SHOULD NOT warn
+
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      expect(() => factory.encodeCreateMulticurveParams(params)).not.toThrow()
+      expect(consoleSpy).not.toHaveBeenCalled()
+      consoleSpy.mockRestore()
+    })
+
+    it('warns for positive ticks when token1 expected (Base WETH)', () => {
+      const params = multicurveParams()
+      params.sale.numeraire = '0x4200000000000000000000000000000000000006' // Base WETH
+      params.pool.curves = [
+        {
+          tickLower: 60000,
+          tickUpper: 120000,
+          numPositions: 2,
+          shares: parseEther('1'),
+        },
+      ]
+      // Base WETH => token1 expected => negative ticks expected
+      // We provide positive ticks => SHOULD warn
+
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      expect(() => factory.encodeCreateMulticurveParams(params)).not.toThrow()
+      
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Warning: Positive ticks detected (60000, 120000) but token is expected to be token1')
+      )
       consoleSpy.mockRestore()
     })
   })
