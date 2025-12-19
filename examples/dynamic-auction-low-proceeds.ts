@@ -1,0 +1,128 @@
+import { createPublicClient, createWalletClient, http, parseEther, formatEther } from 'viem';
+import { DopplerSDK, DAY_SECONDS } from '../src';
+import { baseSepolia } from 'viem/chains';
+import { privateKeyToAccount } from 'viem/accounts';
+
+const privateKey = process.env.PRIVATE_KEY as `0x${string}`;
+const rpcUrl = process.env.RPC_URL ?? baseSepolia.rpcUrls.default.http[0];
+
+if (!privateKey) throw new Error('PRIVATE_KEY must be set');
+if (!rpcUrl) throw new Error('RPC_URL must be set');
+
+/**
+ * Fetch current ETH price in USD from CoinGecko
+ */
+async function getEthPriceUsd(): Promise<number> {
+  const response = await fetch(
+    'https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd'
+  )
+  const data = await response.json()
+  return data.ethereum.usd
+}
+
+export const main = async () => {
+  const account = privateKeyToAccount(privateKey);
+  const publicClient = createPublicClient({
+    chain: baseSepolia,
+    transport: http(rpcUrl),
+  });
+  const walletClient = createWalletClient({
+    chain: baseSepolia,
+    transport: http(rpcUrl),
+    account,
+  });
+  const sdk = new DopplerSDK({ publicClient, walletClient, chainId: baseSepolia.id });
+
+  // Fetch current ETH price from CoinGecko
+  console.log('Fetching current ETH price from CoinGecko...')
+  const ethPriceUsd = await getEthPriceUsd();
+  console.log(`Current ETH price: $${ethPriceUsd.toLocaleString()}`)
+  console.log('')
+
+  const params = sdk.buildDynamicAuction()
+    .tokenConfig({
+      name: 'TEST',
+      symbol: 'TEST',
+      tokenURI: 'ipfs://test',
+    })
+    .saleConfig({
+      initialSupply: parseEther('1000000000'), // 1 billion tokens
+      numTokensToSell: parseEther('500000000'), // 500 million for sale
+      numeraire: '0x4200000000000000000000000000000000000006',
+    })
+    .poolConfig({ fee: 3000, tickSpacing: 10 })
+    .withMarketCapRange({
+      marketCap: { start: 5_000_000, min: 500_000 }, // $5M start, $500k floor
+      numerairePrice: ethPriceUsd,
+      minProceeds: parseEther('0.005'), // Min 100 ETH to graduate
+      maxProceeds: parseEther('0.01'), // Cap at 5000 ETH
+      numPdSlugs: 15,                 // Price discovery slugs
+    })
+    .withMigration({
+      type: 'uniswapV4',
+      fee: 3000,
+      tickSpacing: 10,
+      streamableFees: {
+        lockDuration: 365 * 24 * 60 * 60, // 1 year
+        beneficiaries: [
+          { beneficiary: account.address, shares: parseEther('0.95') }, // 95%
+          await sdk.getAirlockBeneficiary(), // 5% to protocol (default)
+        ],
+      },
+    })
+    .withGovernance({ type: 'default' })
+    .withUserAddress(account.address)
+    .build();
+
+  console.log('Build params:')
+  console.log(JSON.stringify(params, (_, v) => typeof v === 'bigint' ? v.toString() : v, 2))
+  console.log('')
+
+  console.log('Creating dynamic auction with low proceeds targets...')
+  console.log('Token:', params.token.name, `(${params.token.symbol})`)
+  console.log(`Market cap range: $5,000,000 start → $500,000 floor (at ETH = $${ethPriceUsd.toLocaleString()})`)
+  console.log('Selling:', formatEther(params.sale.numTokensToSell), 'tokens')
+  console.log('Computed ticks:', params.auction.startTick, '→', params.auction.endTick)
+  console.log('Duration:', params.auction.duration / DAY_SECONDS, 'days')
+  console.log('Epochs:', params.auction.duration / params.auction.epochLength, 'total')
+  console.log('Proceeds range:', formatEther(params.auction.minProceeds), '→', formatEther(params.auction.maxProceeds), 'ETH')
+
+  try {
+    const result = await sdk.factory.createDynamicAuction(params)
+
+    console.log('\n✅ Dynamic auction created successfully!')
+    console.log('Hook address:', result.hookAddress)
+    console.log('Token address:', result.tokenAddress)
+    console.log('Pool ID:', result.poolId)
+    console.log('Transaction:', result.transactionHash)
+
+    // Monitor the auction
+    const auction = await sdk.getDynamicAuction(result.hookAddress)
+
+    // Wait for the transaction to be confirmed before reading contract state
+    await auction.waitForDeployment(result.transactionHash as `0x${string}`)
+
+    const hookInfo = await auction.getHookInfo()
+    console.log('\nAuction Status:')
+    console.log('Current epoch:', hookInfo.currentEpoch)
+    console.log('Total proceeds:', formatEther(hookInfo.totalProceeds), 'ETH')
+    console.log('Tokens sold:', formatEther(hookInfo.totalTokensSold))
+
+    const hasEndedEarly = await auction.hasEndedEarly()
+    if (hasEndedEarly) {
+      console.log('\n🎯 Auction ended early - reached max proceeds!')
+    } else {
+      console.log('\nAuction is active. Will end when:')
+      console.log('- All epochs complete')
+      console.log('- OR max proceeds reached (5 ETH)')
+    }
+
+    const hasGraduated = await auction.hasGraduated()
+    console.log('\nHas graduated:', hasGraduated)
+  } catch (error) {
+    console.error('\n❌ Error creating auction:', error)
+    process.exit(1)
+  }
+};
+
+main();
