@@ -1023,7 +1023,7 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       throw new Error('Multicurve pool must include at least one curve')
     }
 
-    const normalizedCurves = this.normalizeMulticurveCurves(params.pool.curves, params.pool.tickSpacing)
+    const normalizedCurves = this.normalizeMulticurveCurves(params.pool.curves, params.pool.tickSpacing, params.sale.numeraire)
 
     const addresses = getAddresses(this.chainId)
 
@@ -1307,7 +1307,8 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
    */
   private normalizeMulticurveCurves(
     curves: CreateMulticurveParams['pool']['curves'],
-    tickSpacing: number
+    tickSpacing: number,
+    numeraire: Address
   ): CreateMulticurveParams['pool']['curves'] {
     if (tickSpacing <= 0) {
       throw new Error('Tick spacing must be positive')
@@ -1319,6 +1320,8 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     let totalShares = 0n
     let mostPositiveTickUpper: number | undefined
 
+    const tokenIsToken0 = isToken0Expected(numeraire)
+
     const sanitizedCurves = curves.map(curve => {
       const sanitized = { ...curve }
 
@@ -1328,9 +1331,28 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       if (sanitized.tickLower >= sanitized.tickUpper) {
         throw new Error('Multicurve curve tickLower must be less than tickUpper')
       }
-      if (sanitized.tickLower <= 0 || sanitized.tickUpper <= 0) {
-        console.warn('Warning: Using negative or zero ticks in multicurve configuration. Please verify this is intentional before proceeding.')
+      
+      // Warn if ticks violate expected sign based on token ordering
+      if (tokenIsToken0) {
+        // Token is token0 (rare case - high numeraire address): expect positive ticks
+        if (sanitized.tickLower < 0 || sanitized.tickUpper < 0) {
+          console.warn(
+            `Warning: Negative ticks detected (${sanitized.tickLower}, ${sanitized.tickUpper}) ` +
+            `but token is expected to be token0 with numeraire ${numeraire}. ` +
+            `Ticks should typically be positive for this token ordering.`
+          )
+        }
+      } else {
+        // Token is token1 (common case - WETH): expect negative ticks
+        if (sanitized.tickLower > 0 && sanitized.tickUpper > 0) {
+          console.warn(
+            `Warning: Positive ticks detected (${sanitized.tickLower}, ${sanitized.tickUpper}) ` +
+            `but token is expected to be token1 with numeraire ${numeraire}. ` +
+            `Ticks should typically be negative for this token ordering.`
+          )
+        }
       }
+
       if (!Number.isInteger(sanitized.numPositions) || sanitized.numPositions <= 0) {
         throw new Error('Multicurve curve numPositions must be a positive integer')
       }
