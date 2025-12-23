@@ -29,7 +29,6 @@ export const GENERATED_DOPPLER_DEPLOYMENTS = {
   },
   "143": {
     "Airlock": "0x660eAaEdEBc968f8f3694354FA8EC0b4c5Ba8D12",
-    "AirlockMultisig": "0x9916Ec1c1E0462F6F8f7514e414F06bf001Ac82A",
     "Bundler": "0xC99b485499f78995C6F1640dbB1413c57f8BA684",
     "GovernanceFactory": "0xFAafdE6a5b658684cC5eb0C5c2c755B00A246F45",
     "LaunchpadGovernanceFactory": "0x5FBe931dc4B923A7abe4c47aD68d5bF9Eda5B76D",
@@ -43,7 +42,6 @@ export const GENERATED_DOPPLER_DEPLOYMENTS = {
   },
   "1301": {
     "Airlock": "0x0d2f38d807bfAd5C18e430516e10ab560D300caF",
-    "AirlockMultisig": "0x40Bcb4dDA3BcF7dba30C5d10c31EE2791ed9ddCa",
     "Bundler": "0xED344444633B965cd148F8fFCE3765938A179094",
     "DopplerDeployer": "0x77B5F559EE9cf3bfcf2fFf5731a84332D8eECAC9",
     "DopplerLensQuoter": "0x917da361072ce968acD810BbfC9B64079426ebf0",
@@ -93,7 +91,6 @@ export const GENERATED_DOPPLER_DEPLOYMENTS = {
   },
   "10143": {
     "Airlock": "0xa82c66b6ddEb92089015C3565E05B5c9750b2d4B",
-    "AirlockMultisig": "0x3AD727ee0FBBb8Ee0920933FdB96F23fD56f1299",
     "Bundler": "0xf6023127f6E937091D5B605680056A6D27524bad",
     "DopplerDeployer": "0x166109C4EE7fE69164631Caa937dAA5F5cEbFef0",
     "DopplerLensQuoter": "0x2F2BAcd46d3F5c9EE052Ab392b73711dB89129DB",
@@ -125,7 +122,6 @@ export const GENERATED_DOPPLER_DEPLOYMENTS = {
   },
   "84532": {
     "Airlock": "0x3411306Ce66c9469BFF1535BA955503c4Bde1C6e",
-    "AirlockMultisig": "0x852a09C89463D236eea2f097623574f23E225769",
     "BasicMultisig": "0x6f645FA08B7eadAD620CEC85634204b1d7A46DC2",
     "Bundler": "0xab7BACB0d5C2C10152f92D34e07F530EB3CB0Fb1",
     "DopplerDeployer": "0x82D727ffda3F874da802663fC2f3f4b83dC3AAbA",
