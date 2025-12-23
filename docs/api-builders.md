@@ -295,7 +295,7 @@ const params = sdk.buildMulticurveAuction()
   .withUserAddress(user)
   .build()
 
-const { poolAddress, tokenAddress } = await sdk.factory.createMulticurve(params)
+const { tokenAddress, poolId } = await sdk.factory.createMulticurve(params)
 
 // Example 2: Using raw ticks (advanced users)
 const paramsRaw = new MulticurveBuilder(chainId)
@@ -314,7 +314,7 @@ const paramsRaw = new MulticurveBuilder(chainId)
   .withUserAddress(user)
   .build()
 
-const { poolAddress, tokenAddress } = await sdk.factory.createMulticurve(params)
+const { tokenAddress, poolId } = await sdk.factory.createMulticurve(params)
 ```
 
 Preset helper usage:
@@ -355,7 +355,7 @@ Pass the built object directly to the factory:
 ```ts
 const { poolAddress, tokenAddress } = await sdk.factory.createStaticAuction(staticParams)
 const { hookAddress, tokenAddress: token2, poolId } = await sdk.factory.createDynamicAuction(dynamicParams)
-const { poolAddress: pool3, tokenAddress: token3 } = await sdk.factory.createMulticurve(multicurveParams)
+const { tokenAddress: token3, poolId: poolId3 } = await sdk.factory.createMulticurve(multicurveParams)
 ```
 
 Notes:

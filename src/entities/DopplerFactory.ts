@@ -50,7 +50,7 @@ import {
   TICK_SPACINGS,
 } from '../constants'
 import { computeOptimalGamma, MIN_TICK, MAX_TICK, isToken0Expected } from '../utils'
-import { airlockAbi, bundlerAbi, DERC20Bytecode, DopplerBytecode, DopplerDN404Bytecode } from '../abis'
+import { airlockAbi, bundlerAbi, DERC20Bytecode, DopplerBytecode, DopplerDN404Bytecode, v4MulticurveInitializerAbi } from '../abis'
 import { DopplerBytecodeBaseMainnet } from '@/abis/bytecodes'
 
 // Type definition for the custom migration encoder function
@@ -1235,11 +1235,11 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
 
   async simulateCreateMulticurve(params: CreateMulticurveParams<C>): Promise<{
     createParams: CreateParams
-    asset: Address
-    pool: Address
+    tokenAddress: Address
+    poolId: Hex
     gasEstimate?: bigint
     /** Execute the create with the same params used in simulation (guarantees address match) */
-    execute: () => Promise<{ poolAddress: Address; tokenAddress: Address; transactionHash: string }>
+    execute: () => Promise<{ tokenAddress: Address; poolId: Hex; transactionHash: string }>
   }> {
     const createParams = this.encodeCreateMulticurveParams(params)
     const addresses = getAddresses(this.chainId)
@@ -1261,10 +1261,15 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     if (!simResult || !Array.isArray(simResult) || simResult.length < 2) {
       throw new Error('Failed to simulate multicurve create')
     }
+    
+    // simResult[0] is "asset" in contract terminology, we call it tokenAddress for SDK consistency
+    const tokenAddress = simResult[0] as Address
+    const poolId = await this.computeMulticurvePoolId(params, tokenAddress)
+    
     return {
       createParams,
-      asset: simResult[0] as Address,
-      pool: simResult[1] as Address,
+      tokenAddress,
+      poolId,
       gasEstimate,
       execute: () => this.createMulticurve(params, { _createParams: createParams }),
     }
@@ -1273,7 +1278,7 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
   async createMulticurve(
     params: CreateMulticurveParams<C>,
     options?: { _createParams?: CreateParams }
-  ): Promise<{ poolAddress: Address; tokenAddress: Address; transactionHash: string }> {
+  ): Promise<{ tokenAddress: Address; poolId: Hex; transactionHash: string }> {
     // Use provided createParams (from simulate) or generate new ones
     const createParams = options?._createParams ?? this.encodeCreateMulticurveParams(params)
     const addresses = getAddresses(this.chainId)
@@ -1297,9 +1302,15 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     const hash = await this.walletClient.writeContract({ ...request, gas })
     await (this.publicClient as PublicClient).waitForTransactionReceipt({ hash, confirmations: 2 })
     if (simResult && Array.isArray(simResult) && simResult.length >= 2) {
-      return { tokenAddress: simResult[0] as Address, poolAddress: simResult[1] as Address, transactionHash: hash }
+      // simResult[0] is "asset" in contract terminology, we call it tokenAddress for SDK consistency
+      const tokenAddress = simResult[0] as Address
+      
+      // Compute poolId from the PoolKey (V4 pools don't have addresses, they have poolIds)
+      const poolId = await this.computeMulticurvePoolId(params, tokenAddress)
+      
+      return { tokenAddress, poolId, transactionHash: hash }
     }
-    throw new Error('Failed to get pool/token addresses from multicurve create')
+    throw new Error('Failed to get token address from multicurve create')
   }
 
   /**
@@ -2234,6 +2245,43 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       ]
     )
     return keccak256(encoded)
+  }
+
+  /**
+   * Compute the V4 poolId for a multicurve pool by reading the hook address from the initializer
+   */
+  private async computeMulticurvePoolId(params: CreateMulticurveParams<C>, tokenAddress: Address): Promise<Hex> {
+    const addresses = getAddresses(this.chainId)
+    
+    // Determine which initializer to use (scheduled vs regular)
+    const useScheduledInitializer = params.schedule !== undefined
+    const initializerAddress = useScheduledInitializer
+      ? (params.modules?.v4ScheduledMulticurveInitializer ?? addresses.v4ScheduledMulticurveInitializer)
+      : (params.modules?.v4MulticurveInitializer ?? addresses.v4MulticurveInitializer)
+    
+    if (!initializerAddress) {
+      throw new Error('Multicurve initializer address not configured')
+    }
+    
+    // Read the HOOK address from the initializer contract
+    const hookAddress = await (this.publicClient as PublicClient).readContract({
+      address: initializerAddress,
+      abi: v4MulticurveInitializerAbi,
+      functionName: 'HOOK',
+    }) as Address
+    
+    // Construct the pool key and compute poolId
+    const numeraire = params.sale.numeraire
+    const currency0 = tokenAddress < numeraire ? tokenAddress : numeraire
+    const currency1 = tokenAddress < numeraire ? numeraire : tokenAddress
+    
+    return this.computePoolId({
+      currency0,
+      currency1,
+      fee: params.pool.fee,
+      tickSpacing: params.pool.tickSpacing,
+      hooks: hookAddress,
+    }) as Hex
   }
 
   private async ensureMulticurveBundlerSupport(bundler: Address): Promise<void> {

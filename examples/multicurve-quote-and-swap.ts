@@ -76,12 +76,12 @@ async function main() {
 
   // 3. Create the pool
   console.log('🔨 Creating pool...')
-  const { poolAddress, tokenAddress, transactionHash } = await sdk.factory.createMulticurve(params)
+  const { tokenAddress, poolId, transactionHash } = await sdk.factory.createMulticurve(params)
 
   console.log('  ✅ Pool created!')
   console.log('  Transaction:', transactionHash)
   console.log('  Token address:', tokenAddress)
-  console.log('  Pool address:', poolAddress)
+  console.log('  Pool ID:', poolId)
   console.log()
 
   // Wait for transaction to be mined

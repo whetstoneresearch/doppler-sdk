@@ -15,12 +15,12 @@ vi.mock('../../addresses', async (importOriginal) => {
 })
 
 describe('MulticurvePool', () => {
-  const mockPoolAddress = '0x1234567890123456789012345678901234567890' as Address
+  const mockTokenAddress = '0x1234567890123456789012345678901234567890' as Address
   const mockNumeraire = '0x4200000000000000000000000000000000000006' as Address
   const mockHook = '0xcccccccccccccccccccccccccccccccccccccccc' as Address
   const mockMigratorHook = '0xdddddddddddddddddddddddddddddddddddddddd' as Address
   const mockPoolKey = {
-    currency0: mockPoolAddress,
+    currency0: mockTokenAddress,
     currency1: mockNumeraire,
     fee: 3000,
     tickSpacing: 60,
@@ -35,20 +35,20 @@ describe('MulticurvePool', () => {
   beforeEach(() => {
     publicClient = createMockPublicClient()
     walletClient = createMockWalletClient()
-    multicurvePool = new MulticurvePool(publicClient, walletClient, mockPoolAddress)
+    multicurvePool = new MulticurvePool(publicClient, walletClient, mockTokenAddress)
     vi.clearAllMocks()
   })
 
-  describe('getAddress', () => {
-    it('should return the pool address', () => {
-      expect(multicurvePool.getAddress()).toBe(mockPoolAddress)
+  describe('getTokenAddress', () => {
+    it('should return the token address', () => {
+      expect(multicurvePool.getTokenAddress()).toBe(mockTokenAddress)
     })
   })
 
   describe('getState', () => {
     it('should fetch and return pool state', async () => {
       const mockState = {
-        asset: mockPoolAddress,
+        asset: mockTokenAddress,
         numeraire: mockNumeraire,
         fee: 3000,
         tickSpacing: 60,
@@ -71,7 +71,7 @@ describe('MulticurvePool', () => {
         expect.objectContaining({
           address: mockAddresses.v4MulticurveInitializer,
           functionName: 'getState',
-          args: [mockPoolAddress],
+          args: [mockTokenAddress],
         })
       )
     })
@@ -164,14 +164,14 @@ describe('MulticurvePool', () => {
           [],
           [
             {
-              beneficiary: mockPoolAddress,
+              beneficiary: mockTokenAddress,
               shares: 10n,
             },
           ],
         ] as any)
         .mockResolvedValueOnce([
           migratedPoolKey,
-          mockPoolAddress,
+          mockTokenAddress,
           123,
           3600,
           false,
@@ -209,7 +209,7 @@ describe('MulticurvePool', () => {
     })
 
     it('should throw error if wallet client is not provided', async () => {
-      const multicurvePoolWithoutWallet = new MulticurvePool(publicClient, undefined, mockPoolAddress)
+      const multicurvePoolWithoutWallet = new MulticurvePool(publicClient, undefined, mockTokenAddress)
 
       await expect(multicurvePoolWithoutWallet.collectFees()).rejects.toThrow(
         'Wallet client required to collect fees'
@@ -293,14 +293,14 @@ describe('MulticurvePool', () => {
           [],
           [
             {
-              beneficiary: mockPoolAddress,
+              beneficiary: mockTokenAddress,
               shares: 10n,
             },
           ],
         ] as any)
         .mockResolvedValueOnce([
           migratedPoolKey,
-          mockPoolAddress,
+          mockTokenAddress,
           0,
           3600,
           false,
@@ -344,7 +344,7 @@ describe('MulticurvePool', () => {
           [],
           [
             {
-              beneficiary: mockPoolAddress,
+              beneficiary: mockTokenAddress,
               shares: 10n,
             },
           ],
@@ -352,7 +352,7 @@ describe('MulticurvePool', () => {
         .mockResolvedValueOnce(mockLockerAddress as any)
         .mockResolvedValueOnce([
           migratedPoolKey,
-          mockPoolAddress,
+          mockTokenAddress,
           123,
           3600,
           false,
@@ -413,7 +413,7 @@ describe('MulticurvePool', () => {
 
       const tokenAddress = await multicurvePool.getTokenAddress()
 
-      expect(tokenAddress).toBe(mockPoolAddress)
+      expect(tokenAddress).toBe(mockTokenAddress)
     })
   })
 

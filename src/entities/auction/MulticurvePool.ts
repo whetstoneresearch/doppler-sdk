@@ -12,26 +12,34 @@ import { computePoolId } from '../../utils/poolKey'
  * - Multiple bonding curves with different price ranges
  * - Fee collection for configured beneficiaries
  * - No-migration lockable liquidity
+ *
+ * Note: V4 pools don't have their own contract addresses. The token address
+ * is used as the lookup key to retrieve pool state from the initializer contract.
+ *
+ * Terminology: The contracts call the created token "asset" (paired against "numeraire", e.g., WETH).
+ * We use "tokenAddress" in the SDK for consistency.
  */
 export class MulticurvePool {
   private client: SupportedPublicClient
   private walletClient?: WalletClient
-  private poolAddress: Address
+  private tokenAddress: Address
   private get rpc(): PublicClient {
     return this.client as PublicClient
   }
 
-  constructor(client: SupportedPublicClient, walletClient: WalletClient | undefined, poolAddress: Address) {
+  constructor(client: SupportedPublicClient, walletClient: WalletClient | undefined, tokenAddress: Address) {
     this.client = client
     this.walletClient = walletClient
-    this.poolAddress = poolAddress
+    this.tokenAddress = tokenAddress
   }
 
   /**
-   * Get the pool address
+   * Get the token address for this pool
+   * This is also the lookup key used to retrieve pool state from the initializer
+   * (Called "asset" in the contracts, but we use "tokenAddress" for SDK consistency)
    */
-  getAddress(): Address {
-    return this.poolAddress
+  getTokenAddress(): Address {
+    return this.tokenAddress
   }
 
   /**
@@ -51,7 +59,7 @@ export class MulticurvePool {
       address: initializerAddress,
       abi: v4MulticurveInitializerAbi,
       functionName: 'getState',
-      args: [this.poolAddress],
+      args: [this.tokenAddress],
     })
 
     // Parse the returned tuple into a strongly typed PoolKey
@@ -71,7 +79,7 @@ export class MulticurvePool {
     const poolKey = this.parsePoolKey(rawPoolKey)
 
     return {
-      asset: this.poolAddress,
+      asset: this.tokenAddress,
       numeraire,
       fee: poolKey.fee,
       tickSpacing: poolKey.tickSpacing,
@@ -155,14 +163,6 @@ export class MulticurvePool {
     }
 
     throw new Error('Multicurve pool is not locked or migrated')
-  }
-
-  /**
-   * Get the token address for this pool
-   */
-  async getTokenAddress(): Promise<Address> {
-    const state = await this.getState()
-    return state.asset
   }
 
   /**
