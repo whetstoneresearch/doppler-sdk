@@ -125,9 +125,9 @@ maybeDescribe('Fork/Live - Multicurve NoOp Migration on Base', () => {
     expect(createParams.liquidityMigratorData).toBe('0x')
 
     // Simulate the create operation
-    const { asset, pool } = await sdk.factory.simulateCreateMulticurve(params)
-    expect(asset).toMatch(/^0x[a-fA-F0-9]{40}$/)
-    expect(pool).toMatch(/^0x[a-fA-F0-9]{40}$/)
+    const { tokenAddress, poolId } = await sdk.factory.simulateCreateMulticurve(params)
+    expect(tokenAddress).toMatch(/^0x[a-fA-F0-9]{40}$/)
+    expect(poolId).toMatch(/^0x[a-fA-F0-9]{64}$/)
   }, 30_000)
 
   it('creates multicurve auction with negative ticks (-202000 to -188000)', async () => {
@@ -189,9 +189,9 @@ maybeDescribe('Fork/Live - Multicurve NoOp Migration on Base', () => {
     expect(createParams.liquidityMigratorData).toBe('0x')
 
     // Simulate the create operation
-    const { asset, pool } = await sdk.factory.simulateCreateMulticurve(params)
-    expect(asset).toMatch(/^0x[a-fA-F0-9]{40}$/)
-    expect(pool).toMatch(/^0x[a-fA-F0-9]{40}$/)
+    const { tokenAddress, poolId } = await sdk.factory.simulateCreateMulticurve(params)
+    expect(tokenAddress).toMatch(/^0x[a-fA-F0-9]{40}$/)
+    expect(poolId).toMatch(/^0x[a-fA-F0-9]{64}$/)
   }, 30_000)
 
   it('creates multicurve auction using market cap presets', async () => {
@@ -254,8 +254,8 @@ maybeDescribe('Fork/Live - Multicurve NoOp Migration on Base', () => {
     expect(createParams.liquidityMigrator).toBe(addresses.noOpMigrator)
     expect(createParams.liquidityMigratorData).toBe('0x')
 
-    const { asset, pool } = await sdk.factory.simulateCreateMulticurve(params)
-    expect(asset).toMatch(/^0x[a-fA-F0-9]{40}$/)
-    expect(pool).toMatch(/^0x[a-fA-F0-9]{40}$/)
+    const { tokenAddress, poolId } = await sdk.factory.simulateCreateMulticurve(params)
+    expect(tokenAddress).toMatch(/^0x[a-fA-F0-9]{40}$/)
+    expect(poolId).toMatch(/^0x[a-fA-F0-9]{64}$/)
   }, 30_000)
 })

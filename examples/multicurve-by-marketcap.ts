@@ -134,20 +134,20 @@ async function main() {
     // Simulate to preview addresses and get executable
     const simulation = await sdk.factory.simulateCreateMulticurve(params)
     console.log('\nPredicted addresses:')
-    console.log('Token:', simulation.asset)
-    console.log('Pool:', simulation.pool)
+    console.log('Token:', simulation.tokenAddress)
+    console.log('Pool ID:', simulation.poolId)
     console.log('Gas estimate:', simulation.gasEstimate)
 
     // Execute with guaranteed same addresses (uses same salt from simulation)
     const result = await simulation.execute()
 
     console.log('\nMulticurve pool created successfully!')
-    console.log('Token address:', result.tokenAddress, result.tokenAddress === simulation.asset ? '(matches)' : '(MISMATCH)')
-    console.log('Pool address:', result.poolAddress, result.poolAddress === simulation.pool ? '(matches)' : '(MISMATCH)')
+    console.log('Token address:', result.tokenAddress, result.tokenAddress === simulation.tokenAddress ? '(matches)' : '(MISMATCH)')
+    console.log('Pool ID:', result.poolId, result.poolId === simulation.poolId ? '(matches)' : '(MISMATCH)')
     console.log('Transaction:', result.transactionHash)
 
-    // Get the pool instance for monitoring
-    const poolInstance = await sdk.getMulticurvePool(result.poolAddress)
+    // Get the pool instance for monitoring (use token address as the lookup key)
+    const poolInstance = await sdk.getMulticurvePool(result.tokenAddress)
     const state = await poolInstance.getState()
 
     console.log('\nPool Info:')

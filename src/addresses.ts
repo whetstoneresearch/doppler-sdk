@@ -127,7 +127,7 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     v3Quoter: '0xC5290058841028F1614F3A6F0F5816cAd0df5E27' as Address,
     lockableV3Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA].LockableUniswapV3Initializer as Address,
     v4Initializer: '0x8e891d249f1ecbffa6143c03eb1b12843aef09d3' as Address,
-    v4MulticurveInitializer: '0x359b5952a254baaa0105381825daedb8986bb55c' as Address, // From doppler multicurve deployments (Base Sepolia)
+    v4MulticurveInitializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA].UniswapV4MulticurveInitializer as Address,
     v4ScheduledMulticurveInitializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA].UniswapV4ScheduledMulticurveInitializer as Address, // From Doppler scheduled multicurve deployments (Base Sepolia)
     dopplerLens: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA].DopplerLensQuoter as Address,
     dopplerDeployer: '0x60a039e4add40ca95e0475c11e8a4182d06c9aa0' as Address,

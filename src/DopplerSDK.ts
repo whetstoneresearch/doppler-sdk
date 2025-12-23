@@ -59,10 +59,10 @@ export class DopplerSDK<C extends SupportedChainId = SupportedChainId> {
 
   /**
    * Get a MulticurvePool instance for interacting with a V4 multicurve pool
-   * @param poolAddress The address of the V4 pool
+   * @param tokenAddress The address of the token created by the auction (called "asset" in contracts; V4 pools don't have addresses, so the token is used as the lookup key)
    */
-  async getMulticurvePool(poolAddress: Address): Promise<MulticurvePool> {
-    return new MulticurvePool(this.publicClient, this.walletClient, poolAddress)
+  async getMulticurvePool(tokenAddress: Address): Promise<MulticurvePool> {
+    return new MulticurvePool(this.publicClient, this.walletClient, tokenAddress)
   }
 
   /**
