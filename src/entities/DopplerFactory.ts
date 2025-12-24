@@ -1961,7 +1961,7 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     };
   }
 
-  private normalizePoolKey(value: any): V4PoolKey {
+  private normalizePoolKey(value: unknown): V4PoolKey {
     if (Array.isArray(value)) {
       const [currency0, currency1, feeRaw, tickSpacingRaw, hooks] = value as [
         Address,

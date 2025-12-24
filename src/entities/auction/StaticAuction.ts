@@ -76,11 +76,12 @@ export class StaticAuction {
     // Handle both tuple and object return shapes from getAssetData.
     // Tuple (legacy): [numeraire, timelock, governance, liquidityMigrator, poolInitializer, pool, ...]
     // Object (unified): { poolOrHook, liquidityMigrator, numeraire, ... }
-    let poolOrHook0: any;
+    let poolOrHook0: unknown;
     if (Array.isArray(assetData)) {
       poolOrHook0 = assetData[5];
     } else if (assetData && typeof assetData === "object") {
-      poolOrHook0 = (assetData as any).poolOrHook ?? (assetData as any).pool;
+      const data = assetData as unknown as Record<string, unknown>;
+      poolOrHook0 = data.poolOrHook ?? data.pool;
     }
     const isToken0AuctionToken = poolOrHook0 && poolOrHook0 !== zeroAddress;
 
@@ -118,8 +119,8 @@ export class StaticAuction {
     });
     // Check if the asset is graduated (liquidityMigrator is zero)
     const liquidityMigrator = Array.isArray(assetData)
-      ? (assetData as any)[3]
-      : (assetData as any)?.liquidityMigrator;
+      ? assetData[3]
+      : (assetData as unknown as Record<string, unknown>)?.liquidityMigrator;
     return liquidityMigrator === zeroAddress;
   }
 

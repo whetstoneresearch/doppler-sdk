@@ -71,6 +71,7 @@
     "oxc/only-used-in-recursion": "warn",
     "oxc/uninvoked-array-callback": "error",
     "typescript/await-thenable": "error",
+    "typescript/no-explicit-any": "error",
     "typescript/no-array-delete": "error",
     "typescript/no-base-to-string": "warn",
     "typescript/no-duplicate-enum-values": "error",

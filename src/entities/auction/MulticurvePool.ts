@@ -157,12 +157,13 @@ export class MulticurvePool {
         args: [state.poolKey.currency0, state.poolKey.currency1],
       });
 
+      const assetRecord = assetData as unknown as Record<string, unknown>;
       const migratorPoolKey = this.parsePoolKey(
-        (assetData as any).poolKey ?? (assetData as any)[1],
+        assetRecord.poolKey ?? (assetData as readonly unknown[])[1],
       );
       const poolId = computePoolId(migratorPoolKey);
 
-      const beneficiaries = (assetData as any).beneficiaries ?? (assetData as any)[4] ?? [];
+      const beneficiaries = assetRecord.beneficiaries ?? (assetData as readonly unknown[])[4] ?? [];
       if (!Array.isArray(beneficiaries) || beneficiaries.length === 0) {
         throw new Error("Migrated multicurve pool has no beneficiaries configured");
       }
@@ -179,7 +180,8 @@ export class MulticurvePool {
         args: [poolId],
       });
 
-      const startDate = Number((streamData as any).startDate ?? (streamData as any)[2] ?? 0);
+      const streamRecord = streamData as unknown as Record<string, unknown>;
+      const startDate = Number(streamRecord.startDate ?? (streamData as readonly unknown[])[2] ?? 0);
       if (startDate === 0) {
         throw new Error("Migrated multicurve stream not initialized");
       }
@@ -199,7 +201,7 @@ export class MulticurvePool {
   }
 
   private parsePoolKey(rawPoolKey: unknown): V4PoolKey {
-    const poolKeyStruct = rawPoolKey as any;
+    const poolKeyStruct = rawPoolKey as Record<string, unknown> & readonly unknown[];
     return {
       currency0: (poolKeyStruct.currency0 ?? poolKeyStruct[0]) as Address,
       currency1: (poolKeyStruct.currency1 ?? poolKeyStruct[1]) as Address,

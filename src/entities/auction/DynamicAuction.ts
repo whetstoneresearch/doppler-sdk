@@ -10,6 +10,15 @@ import type { HookInfo, SupportedPublicClient } from "../../types";
 import { dopplerHookAbi, airlockAbi } from "../../abis";
 import { getAddresses } from "../../addresses";
 
+interface HookState {
+  lastEpoch: bigint;
+  tickAccumulator: bigint;
+  totalTokensSold: bigint;
+  totalProceeds: bigint;
+  totalTokensSoldLastEpoch: bigint;
+  feesAccrued: bigint;
+}
+
 /**
  * DynamicAuction class for interacting with dynamic auctions (Uniswap V4 hook based)
  *
@@ -109,7 +118,7 @@ export class DynamicAuction {
     const currentEpoch = epochLength > 0n ? Number(elapsedTime / epochLength) : 0;
 
     // Determine token addresses from poolKey
-    const poolKey = this.normalizePoolKey(poolKeyRaw as any);
+    const poolKey = this.normalizePoolKey(poolKeyRaw);
     const isToken0 = poolKey.currency0 !== zeroAddress;
     const tokenAddress = isToken0 ? poolKey.currency0 : poolKey.currency1;
     const numeraireAddress = isToken0 ? poolKey.currency1 : poolKey.currency0;
@@ -123,8 +132,8 @@ export class DynamicAuction {
       numeraireAddress,
       poolId,
       currentEpoch,
-      totalProceeds: (state as any).totalProceeds,
-      totalTokensSold: (state as any).totalTokensSold,
+      totalProceeds: state.totalProceeds,
+      totalTokensSold: state.totalTokensSold,
       earlyExit,
       insufficientProceeds,
       startingTime,
@@ -144,7 +153,7 @@ export class DynamicAuction {
       abi: dopplerHookAbi,
       functionName: "poolKey",
     });
-    const poolKey = this.normalizePoolKey(poolKeyRaw as any);
+    const poolKey = this.normalizePoolKey(poolKeyRaw);
 
     const isToken0 = await this.rpc.readContract({
       address: this.hookAddress,
@@ -164,7 +173,7 @@ export class DynamicAuction {
       abi: dopplerHookAbi,
       functionName: "poolKey",
     });
-    const poolKey = this.normalizePoolKey(poolKeyRaw as any);
+    const poolKey = this.normalizePoolKey(poolKeyRaw);
     return this.computePoolId(poolKey);
   }
 
@@ -184,8 +193,8 @@ export class DynamicAuction {
     });
     // Check if the asset is graduated (liquidityMigrator is zero)
     const liquidityMigrator = Array.isArray(assetData)
-      ? (assetData as any)[3]
-      : (assetData as any)?.liquidityMigrator;
+      ? assetData[3]
+      : (assetData as unknown as Record<string, unknown>)?.liquidityMigrator;
     return liquidityMigrator === zeroAddress;
   }
 
@@ -270,7 +279,7 @@ export class DynamicAuction {
   async getTotalProceeds(): Promise<bigint> {
     const state = await this.readHookState();
 
-    return (state as any).totalProceeds;
+    return state.totalProceeds;
   }
 
   /**
@@ -312,8 +321,8 @@ export class DynamicAuction {
    * Read hook state with backward-compatible decoding.
    * Falls back to legacy state() ABI if the latest ABI fails to decode.
    */
-  private async readHookState(): Promise<any> {
-    const result: any = await this.rpc.readContract({
+  private async readHookState(): Promise<HookState> {
+    const result = await this.rpc.readContract({
       address: this.hookAddress,
       abi: dopplerHookAbi,
       functionName: "state",
@@ -326,9 +335,9 @@ export class DynamicAuction {
         totalProceeds,
         totalTokensSoldLastEpoch,
         feesAccrued,
-      ] = result as any[];
+      ] = result;
       return {
-        lastEpoch,
+        lastEpoch: BigInt(lastEpoch),
         tickAccumulator,
         totalTokensSold,
         totalProceeds,
@@ -336,10 +345,10 @@ export class DynamicAuction {
         feesAccrued,
       };
     }
-    return result;
+    return result as unknown as HookState;
   }
 
-  private normalizePoolKey(value: any): {
+  private normalizePoolKey(value: unknown): {
     currency0: Address;
     currency1: Address;
     fee: number;
@@ -356,6 +365,12 @@ export class DynamicAuction {
       ];
       return { currency0, currency1, fee, tickSpacing, hooks };
     }
-    return value as any;
+    return value as {
+      currency0: Address;
+      currency1: Address;
+      fee: number;
+      tickSpacing: number;
+      hooks: Address;
+    };
   }
 }
