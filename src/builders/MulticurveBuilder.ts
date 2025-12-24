@@ -423,7 +423,7 @@ export class MulticurveBuilder<C extends SupportedChainId> implements BaseAuctio
     address: NonNullable<ModuleAddressOverrides[K]>,
   ): this {
     this.moduleAddresses = {
-      ...(this.moduleAddresses ?? {}),
+      ...this.moduleAddresses,
       [key]: address,
     } as ModuleAddressOverrides;
     return this;

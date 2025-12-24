@@ -318,7 +318,7 @@ export class DynamicAuctionBuilder<C extends SupportedChainId> implements BaseAu
     address: NonNullable<ModuleAddressOverrides[K]>,
   ): this {
     this.moduleAddresses = {
-      ...(this.moduleAddresses ?? {}),
+      ...this.moduleAddresses,
       [key]: address,
     } as ModuleAddressOverrides;
     return this;

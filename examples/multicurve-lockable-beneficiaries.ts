@@ -61,15 +61,12 @@ async function main() {
     .poolConfig({
       fee: 0,
       tickSpacing: 8,
-      curves: [
-        // Create 10 curves with equal shares
-        ...Array.from({ length: 10 }, (_, i) => ({
+      curves: Array.from({ length: 10 }, (_, i) => ({
           tickLower: 8 + i * 16_000,
           tickUpper: 240_000,
           numPositions: 10,
           shares: WAD / 10n, // 10% per curve
         })),
-      ],
       // Specify beneficiaries for fee collection
       beneficiaries,
     })
