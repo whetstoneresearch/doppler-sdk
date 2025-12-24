@@ -1,4 +1,4 @@
-import { type Address, getAddress, zeroAddress, type PublicClient } from "viem";
+import { type Address, zeroAddress, type PublicClient } from "viem";
 import type { PoolInfo, SupportedPublicClient } from "../../types";
 import { uniswapV3PoolAbi, airlockAbi } from "../../abis";
 import { getAddresses } from "../../addresses";
@@ -131,7 +131,7 @@ export class StaticAuction {
     const poolInfo = await this.getPoolInfo();
 
     // Get token ordering
-    const [token0, token1] = await Promise.all([
+    const [token0] = await Promise.all([
       this.rpc.readContract({
         address: this.poolAddress,
         abi: uniswapV3PoolAbi,

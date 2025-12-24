@@ -2,7 +2,6 @@ import {
   type Address,
   type PublicClient,
   type Hex,
-  encodePacked,
   keccak256,
   encodeAbiParameters,
   zeroAddress,
@@ -60,7 +59,6 @@ export class DynamicAuction {
       epochLength,
       minimumProceeds,
       maximumProceeds,
-      numTokensToSell,
     ] = await Promise.all([
       this.readHookState(),
       this.rpc.readContract({
@@ -102,11 +100,6 @@ export class DynamicAuction {
         address: this.hookAddress,
         abi: dopplerHookAbi,
         functionName: "maximumProceeds",
-      }),
-      this.rpc.readContract({
-        address: this.hookAddress,
-        abi: dopplerHookAbi,
-        functionName: "numTokensToSell",
       }),
     ]);
 

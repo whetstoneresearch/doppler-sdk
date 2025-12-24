@@ -1,5 +1,3 @@
-import { DAY_SECONDS } from "../constants";
-
 /**
  * Compute optimal gamma parameter based on price range and time parameters
  * Gamma determines how much the price can move per epoch during the sale.

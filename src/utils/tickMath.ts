@@ -284,9 +284,6 @@ export function priceToSqrtPriceX96(price: number, decimals0: number, decimals1:
   // Strategy: Scale price to BigInt, compute sqrt in BigInt, then scale result
   // Using PRICE_PRECISION^2 as scaling factor so sqrt gives us PRICE_PRECISION scaling
 
-  const SQRT_PRECISION = 10n ** 9n; // sqrt(PRICE_PRECISION) = sqrt(10^18) = 10^9
-  const PRICE_SCALE = PRICE_PRECISION * PRICE_PRECISION; // 10^36 for maximum precision
-
   // Convert price to scaled BigInt
   // price_scaled = price * 10^36
   const priceScaled = BigInt(Math.floor(price * 1e18)) * PRICE_PRECISION;

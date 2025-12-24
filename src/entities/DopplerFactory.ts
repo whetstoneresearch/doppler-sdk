@@ -46,7 +46,6 @@ import {
   DEFAULT_V4_INITIAL_VOTING_PERIOD,
   DEFAULT_V4_INITIAL_PROPOSAL_THRESHOLD,
   DEFAULT_CREATE_GAS_LIMIT,
-  DEFAULT_V3_FEE,
   TICK_SPACINGS,
 } from "../constants";
 import { computeOptimalGamma, MIN_TICK, MAX_TICK, isToken0Expected } from "../utils";
@@ -2057,8 +2056,6 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     customDerc20Bytecode?: `0x${string}`;
     tokenVariant?: "standard" | "doppler404";
   }): [Hash, Address, Address, Hex, Hex] {
-    const addresses = getAddresses(this.chainId);
-
     const isToken0 = isToken0Expected(params.numeraire);
 
     const {
@@ -2192,8 +2189,6 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
               [name, symbol, yearlyMintRate, vestingDuration, recipients, amounts, tokenURI],
             );
           })();
-
-    const { airlock, initialSupply } = params;
 
     // Compute token init hash; use DN404 bytecode if tokenVariant is doppler404
     let tokenInitHash: Hash | undefined;

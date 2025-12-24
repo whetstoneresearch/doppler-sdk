@@ -1,4 +1,4 @@
-import { encodeAbiParameters, keccak256, type Address, type Hex } from "viem";
+import { encodeAbiParameters, keccak256, type Hex } from "viem";
 import type { V4PoolKey } from "../types";
 
 /**

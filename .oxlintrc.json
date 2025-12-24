@@ -140,5 +140,5 @@
     "builtin": true
   },
   "globals": {},
-  "ignorePatterns": []
+  "ignorePatterns": ["src/__tests__/**", "test/**", "examples/**", "scripts/**"]
 }

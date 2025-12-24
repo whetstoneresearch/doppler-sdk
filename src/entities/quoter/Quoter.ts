@@ -1,6 +1,5 @@
 import {
   type Address,
-  encodeFunctionData,
   decodeAbiParameters,
   type Hex,
   type PublicClient,
@@ -85,7 +84,7 @@ export class Quoter {
             initializedTicksCrossed: 0,
             gasEstimate: 0n,
           };
-        } catch (_) {
+        } catch {
           // fall through
         }
       }
@@ -150,7 +149,7 @@ export class Quoter {
             initializedTicksCrossed: 0,
             gasEstimate: 0n,
           };
-        } catch (_) {
+        } catch {
           // fall through
         }
       }
@@ -230,31 +229,24 @@ export class Quoter {
       throw new Error("No V4 quoter available on this chain");
     }
 
-    try {
-      // First try simulateContract for better gas estimation
-      const { result } = await this.rpc.simulateContract({
-        address: quoterAddress,
-        abi: v4QuoterAbi,
-        functionName: "quoteExactInputSingle",
-        args: [
-          {
-            poolKey: params.poolKey,
-            zeroForOne: params.zeroForOne,
-            exactAmount: params.exactAmount,
-            hookData: (params.hookData ?? "0x") as `0x${string}`,
-          },
-        ],
-      });
+    const { result } = await this.rpc.simulateContract({
+      address: quoterAddress,
+      abi: v4QuoterAbi,
+      functionName: "quoteExactInputSingle",
+      args: [
+        {
+          poolKey: params.poolKey,
+          zeroForOne: params.zeroForOne,
+          exactAmount: params.exactAmount,
+          hookData: (params.hookData ?? "0x") as `0x${string}`,
+        },
+      ],
+    });
 
-      return {
-        amountOut: result[0],
-        gasEstimate: result[1],
-      };
-    } catch (simulateError) {
-      // If simulation fails, throw the error
-      // Most V4 quoters need simulation, not direct reads
-      throw simulateError;
-    }
+    return {
+      amountOut: result[0],
+      gasEstimate: result[1],
+    };
   }
 
   /**
