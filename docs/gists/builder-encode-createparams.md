@@ -83,5 +83,6 @@ console.log('Multicurve CreateParams:', multicurveCreateParams)
 ```
 
 Notes
+
 - Builder overrides are optional; if omitted, chain defaults are used.
 - `CreateParams` produced here match the structures returned by the legacy `encode*` helpers in the old v3 and v4 SDKs.

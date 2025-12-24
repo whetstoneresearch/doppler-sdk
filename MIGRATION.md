@@ -21,6 +21,7 @@ npm install @doppler/sdk
 ## Import Changes
 
 ### V4 SDK
+
 ```typescript
 import { ReadWriteFactory, ReadDoppler, ReadDerc20 } from 'doppler-v4-sdk';
 import { DOPPLER_V4_ADDRESSES } from 'doppler-v4-sdk/addresses';
@@ -28,6 +29,7 @@ import { createDrift } from '@delvtech/drift';
 ```
 
 ### Unified SDK
+
 ```typescript
 import { DopplerSDK, Derc20 } from '@doppler/sdk';
 // No need to import addresses or drift - they're handled internally
@@ -36,6 +38,7 @@ import { DopplerSDK, Derc20 } from '@doppler/sdk';
 ## Initialization
 
 ### V4 SDK
+
 ```typescript
 import { createDrift } from '@delvtech/drift';
 import { ReadWriteFactory } from 'doppler-v4-sdk';
@@ -53,6 +56,7 @@ const factory = new ReadWriteFactory(
 ```
 
 ### Unified SDK
+
 ```typescript
 import { DopplerSDK } from '@doppler/sdk';
 
@@ -69,6 +73,7 @@ const factory = sdk.factory;
 ## Creating Auctions with Builders
 
 ### V4 SDK
+
 ```typescript
 import { DOPPLER_V4_ADDRESSES } from 'doppler-v4-sdk/addresses';
 import { parseEther } from 'viem';
@@ -82,32 +87,32 @@ const { createParams, hook, token } = factory.buildConfig({
   totalSupply: parseEther("1000000"),
   numTokensToSell: parseEther("500000"),
   tokenURI: "https://example.com/metadata.json",
-  
+
   // Time parameters
   blockTimestamp: Math.floor(Date.now() / 1000),
   startTimeOffset: 0,
   duration: 30, // 30 days
   epochLength: 3600, // 1 hour
-  
+
   // Price parameters
   numeraire: wethAddress,
   priceRange: { startPrice: 0.001, endPrice: 0.01 },
   tickSpacing: 60,
   fee: 3000,
-  
+
   // Sale parameters
   minProceeds: parseEther("100"),
   maxProceeds: parseEther("10000"),
-  
+
   // Vesting
   yearlyMintRate: parseEther("0.02"),
   vestingDuration: BigInt(365 * 24 * 60 * 60),
   recipients: [recipient1, recipient2],
   amounts: [parseEther("50000"), parseEther("50000")],
-  
+
   // Migration
   liquidityMigratorData: encodedMigratorData,
-  
+
   integrator: integratorAddress,
 }, addresses);
 
@@ -116,6 +121,7 @@ const txHash = await factory.create(createParams);
 ```
 
 ### Unified SDK (Recommended: Builder Pattern)
+
 ```typescript
 import { parseEther } from 'viem'
 import { DynamicAuctionBuilder } from '@whetstone-research/doppler-sdk'
@@ -162,16 +168,20 @@ console.log('Pool ID:', result.poolId)
 ## Builder Defaults and Differences
 
 ### 1. Simplified Time Parameters
+
 - **V4 SDK**: Required `blockTimestamp` and `startTimeOffset`
 - **Unified SDK**: Optional `blockTimestamp`, no `startTimeOffset` needed
 
 **IMPORTANT: Duration Unit Change**
+
 - **V4 SDK**: `duration` is specified in **days**
 - **Unified SDK**: `duration` is specified in **seconds**
 - To migrate: multiply your V4 duration by `DAY_SECONDS` (86400) or use the constant
 
 ### 2. Default Values
+
 The unified SDK provides more defaults:
+
 - `duration`: 604800 seconds = 7 days (vs required in V4)
 - `epochLength`: 3600 seconds (vs required in V4)
 - `numeraire`: Zero address (vs required in V4)
@@ -179,16 +189,19 @@ The unified SDK provides more defaults:
 - `numPdSlugs`: 5 (same as V4)
 
 ### 3. Migration Configuration
+
 - **V4 SDK**: Raw `liquidityMigratorData` bytes
 - **Unified SDK**: Structured `MigrationConfig` with type safety
 
 ### 4. Return Values
+
 - **V4 SDK**: Returns `{ createParams, hook, token }`
 - **Unified SDK**: Builder returns typed params; `create*Auction` returns addresses and poolId
 
 ## Direct Creation (Without Builders)
 
 ### V4 SDK
+
 ```typescript
 // Manual parameter encoding required
 const poolInitializerData = encodeAbiParameters([...], [...]);
@@ -215,6 +228,7 @@ await factory.create(createParams);
 ```
 
 ### Unified SDK
+
 ```typescript
 // Structured parameters, no manual encoding needed
 await sdk.factory.createDynamicAuction({
@@ -264,6 +278,7 @@ await sdk.factory.createDynamicAuction({
 ## Interacting with Deployed Pools
 
 ### V4 SDK
+
 ```typescript
 import { ReadDoppler } from 'doppler-v4-sdk';
 
@@ -273,6 +288,7 @@ const currentEpoch = await doppler.currentEpoch();
 ```
 
 ### Unified SDK
+
 ```typescript
 const auction = await sdk.getDynamicAuction(hookAddress);
 const hookInfo = await auction.getHookInfo();
@@ -286,6 +302,7 @@ console.log('Current epoch:', hookInfo.currentEpoch);
 ## Token Interactions
 
 ### V4 SDK
+
 ```typescript
 import { ReadWriteDerc20 } from 'doppler-v4-sdk';
 
@@ -295,6 +312,7 @@ await token.transfer(recipient, amount);
 ```
 
 ### Unified SDK
+
 ```typescript
 import { Derc20 } from '@doppler/sdk';
 
@@ -310,6 +328,7 @@ await token.release(vestableAmount);
 ## Price Quotes
 
 ### V4 SDK
+
 ```typescript
 import { ReadQuoter } from 'doppler-v4-sdk';
 
@@ -318,6 +337,7 @@ const quoter = new ReadQuoter(quoterAddress, drift);
 ```
 
 ### Unified SDK
+
 ```typescript
 const quoter = sdk.quoter;
 
@@ -340,6 +360,7 @@ const quoteV2 = await quoter.quoteV2ExactInputSingle({
 ## Migration Data Encoding
 
 ### V4 SDK
+
 ```typescript
 // Manual encoding for V4 migrator
 const v4MigratorData = await factory.encodeV4MigratorData({
@@ -354,6 +375,7 @@ const v4MigratorData = await factory.encodeV4MigratorData({
 ```
 
 ### Unified SDK
+
 ```typescript
 // Structured migration config (no manual encoding)
 const migration: MigrationConfig = {
@@ -375,6 +397,7 @@ const migration: MigrationConfig = {
 Both SDKs throw similar errors, but the unified SDK provides more descriptive messages:
 
 ### V4 SDK
+
 ```typescript
 try {
   await factory.create(params);
@@ -384,6 +407,7 @@ try {
 ```
 
 ### Unified SDK
+
 ```typescript
 try {
   await sdk.factory.createDynamicAuction(params);
@@ -400,6 +424,7 @@ try {
 Here's a complete example migrating a typical V4 SDK pool creation:
 
 ### Before (V4 SDK)
+
 ```typescript
 import { ReadWriteFactory } from 'doppler-v4-sdk';
 import { DOPPLER_V4_ADDRESSES } from 'doppler-v4-sdk/addresses';
@@ -439,6 +464,7 @@ const txHash = await factory.create(createParams);
 ```
 
 ### After (Unified SDK)
+
 ```typescript
 import { DopplerSDK, DynamicAuctionBuilder } from '@whetstone-research/doppler-sdk'
 import { parseEther } from 'viem'

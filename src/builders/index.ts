@@ -1,6 +1,6 @@
-export { StaticAuctionBuilder } from './StaticAuctionBuilder'
-export { DynamicAuctionBuilder } from './DynamicAuctionBuilder'
-export { MulticurveBuilder } from './MulticurveBuilder'
+export { StaticAuctionBuilder } from "./StaticAuctionBuilder";
+export { DynamicAuctionBuilder } from "./DynamicAuctionBuilder";
+export { MulticurveBuilder } from "./MulticurveBuilder";
 
 // Re-export shared utilities and interfaces for advanced usage
 export {
@@ -11,4 +11,4 @@ export {
   type BaseAuctionBuilder,
   type MarketCapPresetConfig,
   type MarketCapPresetOverrides,
-} from './shared'
+} from "./shared";

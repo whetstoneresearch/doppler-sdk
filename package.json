@@ -1,12 +1,18 @@
 {
   "name": "@whetstone-research/doppler-sdk",
-  "author": "Whetstone Research",
   "version": "0.0.2",
   "license": "MIT",
+  "author": "Whetstone Research",
+  "directories": {
+    "lib": "src"
+  },
+  "files": [
+    "dist"
+  ],
   "main": "dist/index.js",
   "module": "dist/index.mjs",
-  "typings": "dist/index.d.ts",
   "types": "dist/index.d.ts",
+  "typings": "dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -14,12 +20,6 @@
       "require": "./dist/index.js"
     }
   },
-  "directories": {
-    "lib": "src"
-  },
-  "files": [
-    "dist"
-  ],
   "scripts": {
     "start": "tsc watch ./src/**",
     "test": "vitest run",
@@ -37,11 +37,8 @@
     "generate:addresses": "node ./scripts/generate-addresses.mjs --source ../doppler/Deployments.json --out src/deployments.generated.ts",
     "generate-snapshot": "tsx ./scripts/snapshot-addresses.ts"
   },
-  "prettier": {
-    "printWidth": 80,
-    "semi": true,
-    "singleQuote": true,
-    "trailingComma": "es5"
+  "dependencies": {
+    "viem": "^2.33.3"
   },
   "devDependencies": {
     "@size-limit/preset-small-lib": "^11.2.0",
@@ -60,8 +57,11 @@
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^2.1.9"
   },
-  "dependencies": {
-    "viem": "^2.33.3"
+  "prettier": {
+    "printWidth": 80,
+    "semi": true,
+    "singleQuote": true,
+    "trailingComma": "es5"
   },
   "engines": {
     "node": ">=18.0.0"

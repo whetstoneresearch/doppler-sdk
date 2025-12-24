@@ -10,14 +10,8 @@
 // UNCOMMENT IF RUNNING LOCALLY
 // import { DopplerSDK, StaticAuctionBuilder } from '@whetstone-research/doppler-sdk';
 
-import { DopplerSDK } from '../src';
-import {
-  createPublicClient,
-  createWalletClient,
-  http,
-  parseEther,
-  formatEther,
-} from "viem";
+import { DopplerSDK } from "../src";
+import { createPublicClient, createWalletClient, http, parseEther, formatEther } from "viem";
 import { base } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
 
@@ -48,7 +42,8 @@ async function main() {
   });
 
   // 3. Define auction parameters via builder
-  const params = sdk.buildStaticAuction()
+  const params = sdk
+    .buildStaticAuction()
     .tokenConfig({
       name: "TEST",
       symbol: "TEST",
@@ -62,7 +57,7 @@ async function main() {
     .poolByTicks({ startTick: 175000, endTick: 225000, fee: 10000 })
     .withMigration({ type: "uniswapV2" })
     .withUserAddress(account.address)
-    .withGovernance({ type: 'default' })
+    .withGovernance({ type: "default" })
     .build();
 
   console.log("Creating static auction...");

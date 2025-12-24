@@ -9,13 +9,13 @@
  * Based on reference implementation: plan/priceMultiCurve.py
  */
 
-import type { Address } from 'viem'
-import type { MarketCapRange, MarketCapValidationResult } from '../types'
-import { MIN_TICK, MAX_TICK } from './tickMath'
-import { isToken0Expected } from './isToken0Expected'
+import type { Address } from "viem";
+import type { MarketCapRange, MarketCapValidationResult } from "../types";
+import { MIN_TICK, MAX_TICK } from "./tickMath";
+import { isToken0Expected } from "./isToken0Expected";
 
 // Re-export types from types.ts for convenience
-export type { MarketCapRange, MarketCapValidationResult } from '../types'
+export type { MarketCapRange, MarketCapValidationResult } from "../types";
 
 /**
  * Convert market cap to token price
@@ -35,18 +35,18 @@ export type { MarketCapRange, MarketCapValidationResult } from '../types'
 export function marketCapToTokenPrice(
   marketCapUSD: number,
   tokenSupply: bigint,
-  tokenDecimals: number = 18
+  tokenDecimals: number = 18,
 ): number {
   if (marketCapUSD <= 0) {
-    throw new Error('Market cap must be positive')
+    throw new Error("Market cap must be positive");
   }
   if (tokenSupply <= 0n) {
-    throw new Error('Token supply must be positive')
+    throw new Error("Token supply must be positive");
   }
 
   // Convert supply from bigint with decimals to human-readable number
-  const supplyNum = Number(tokenSupply) / 10 ** tokenDecimals
-  return marketCapUSD / supplyNum
+  const supplyNum = Number(tokenSupply) / 10 ** tokenDecimals;
+  return marketCapUSD / supplyNum;
 }
 
 /**
@@ -69,24 +69,24 @@ export function tokenPriceToRatio(
   tokenPriceUSD: number,
   numerairePriceUSD: number,
   tokenDecimals: number = 18,
-  numeraireDecimals: number = 18
+  numeraireDecimals: number = 18,
 ): number {
   if (tokenPriceUSD <= 0) {
-    throw new Error('Token price must be positive')
+    throw new Error("Token price must be positive");
   }
   if (numerairePriceUSD <= 0) {
-    throw new Error('Numeraire price must be positive')
+    throw new Error("Numeraire price must be positive");
   }
 
   // How much numeraire per token (in USD terms first)
   // tokenPriceUSD / numerairePriceUSD = numeraire per token
-  const ratio = numerairePriceUSD / tokenPriceUSD
+  const ratio = numerairePriceUSD / tokenPriceUSD;
 
   // Adjust for decimal differences
   // Formula: (numeraire / tokenPrice) * (10 ** (assetDecimals - numeraireDecimals))
-  const decimalAdjustment = 10 ** (tokenDecimals - numeraireDecimals)
+  const decimalAdjustment = 10 ** (tokenDecimals - numeraireDecimals);
 
-  return ratio * decimalAdjustment
+  return ratio * decimalAdjustment;
 }
 
 /**
@@ -104,11 +104,11 @@ export function tokenPriceToRatio(
  */
 export function ratioToTick(ratio: number): number {
   if (ratio <= 0) {
-    throw new Error('Ratio must be positive')
+    throw new Error("Ratio must be positive");
   }
 
   // Uniswap tick formula: tick = log(price) / log(1.0001)
-  return Math.log(ratio) / Math.log(1.0001)
+  return Math.log(ratio) / Math.log(1.0001);
 }
 
 /**
@@ -127,11 +127,8 @@ export function ratioToTick(ratio: number): number {
  * isToken1('0xA000...', '0xB000...') // false (A < B)
  * ```
  */
-export function isToken1(
-  tokenAddress: string,
-  numeraireAddress: string
-): boolean {
-  return tokenAddress.toLowerCase() > numeraireAddress.toLowerCase()
+export function isToken1(tokenAddress: string, numeraireAddress: string): boolean {
+  return tokenAddress.toLowerCase() > numeraireAddress.toLowerCase();
 }
 
 /**
@@ -184,48 +181,43 @@ export function marketCapToTick(
   tokenDecimals: number = 18,
   numeraireDecimals: number = 18,
   tickSpacing: number,
-  numeraire: Address
+  numeraire: Address,
 ): number {
   // Determine token ordering from numeraire address
-  const tokenIsToken1 = !isToken0Expected(numeraire)
+  const tokenIsToken1 = !isToken0Expected(numeraire);
 
   // Step 1: Market cap → token price
-  const tokenPrice = marketCapToTokenPrice(marketCapUSD, tokenSupply, tokenDecimals)
+  const tokenPrice = marketCapToTokenPrice(marketCapUSD, tokenSupply, tokenDecimals);
 
   // Step 2: Token price → ratio
-  const ratio = tokenPriceToRatio(
-    tokenPrice,
-    numerairePriceUSD,
-    tokenDecimals,
-    numeraireDecimals
-  )
+  const ratio = tokenPriceToRatio(tokenPrice, numerairePriceUSD, tokenDecimals, numeraireDecimals);
 
   // Step 3: Ratio → raw tick
-  const rawTick = ratioToTick(ratio)
+  const rawTick = ratioToTick(ratio);
 
   // Step 4: Round to tick spacing using floor division
-  let tick = Math.floor(rawTick / tickSpacing) * tickSpacing
+  let tick = Math.floor(rawTick / tickSpacing) * tickSpacing;
 
   // Step 5: Handle token ordering
   // When token is token1: negate tick (V4 multicurve convention)
   // When token is token0: keep tick as-is
   // Note: V3 static auctions handle this differently and negate at the builder level
   if (tokenIsToken1) {
-    tick = -tick
+    tick = -tick;
   }
 
   // Normalize -0 to 0 (JavaScript quirk: -0 !== 0 in Object.is)
-  if (tick === 0) tick = 0
+  if (tick === 0) tick = 0;
 
   // Step 6: Validate bounds
   if (tick < MIN_TICK || tick > MAX_TICK) {
     throw new Error(
       `Calculated tick ${tick} is out of bounds [${MIN_TICK}, ${MAX_TICK}]. ` +
-        `Market cap ${marketCapUSD.toLocaleString()} may be too extreme for the given parameters.`
-    )
+        `Market cap ${marketCapUSD.toLocaleString()} may be too extreme for the given parameters.`,
+    );
   }
 
-  return tick
+  return tick;
 }
 
 /**
@@ -281,14 +273,14 @@ export function marketCapRangeToTicks(
   tokenDecimals: number = 18,
   numeraireDecimals: number = 18,
   tickSpacing: number,
-  numeraire: Address
+  numeraire: Address,
 ): { startTick: number; endTick: number } {
   if (marketCapRange.start <= 0 || marketCapRange.end <= 0) {
-    throw new Error('Market cap values must be positive')
+    throw new Error("Market cap values must be positive");
   }
 
   if (marketCapRange.start >= marketCapRange.end) {
-    throw new Error('Start market cap must be less than end market cap')
+    throw new Error("Start market cap must be less than end market cap");
   }
 
   const tickStart = marketCapToTick(
@@ -298,8 +290,8 @@ export function marketCapRangeToTicks(
     tokenDecimals,
     numeraireDecimals,
     tickSpacing,
-    numeraire
-  )
+    numeraire,
+  );
 
   const tickEnd = marketCapToTick(
     marketCapRange.end,
@@ -308,21 +300,21 @@ export function marketCapRangeToTicks(
     tokenDecimals,
     numeraireDecimals,
     tickSpacing,
-    numeraire
-  )
+    numeraire,
+  );
 
   // Ensure startTick < endTick (Uniswap requirement)
-  const startTick = Math.min(tickStart, tickEnd)
-  const endTick = Math.max(tickStart, tickEnd)
+  const startTick = Math.min(tickStart, tickEnd);
+  const endTick = Math.max(tickStart, tickEnd);
 
   if (startTick === endTick) {
     throw new Error(
       `Market cap range ${marketCapRange.start.toLocaleString()} - ${marketCapRange.end.toLocaleString()} ` +
-        `resulted in same tick (${startTick}). Try a wider range or smaller tick spacing.`
-    )
+        `resulted in same tick (${startTick}). Try a wider range or smaller tick spacing.`,
+    );
   }
 
-  return { startTick, endTick }
+  return { startTick, endTick };
 }
 
 /**
@@ -346,9 +338,9 @@ export function marketCapRangeToTicks(
 export function transformTicksForAuction(
   rawStartTick: number,
   rawEndTick: number,
-  numeraire: Address
+  numeraire: Address,
 ): { startTick: number; endTick: number } {
-  const tokenIsToken1 = !isToken0Expected(numeraire)
+  const tokenIsToken1 = !isToken0Expected(numeraire);
 
   if (tokenIsToken1) {
     // For token1: negate and swap to satisfy contract requirements
@@ -356,11 +348,11 @@ export function transformTicksForAuction(
     return {
       startTick: -rawEndTick,
       endTick: -rawStartTick,
-    }
+    };
   }
 
   // For token0: use raw ticks as-is
-  return { startTick: rawStartTick, endTick: rawEndTick }
+  return { startTick: rawStartTick, endTick: rawEndTick };
 }
 
 /**
@@ -393,22 +385,22 @@ export function applyTickOffsets(
   pegTick: number,
   offsetLower: number,
   offsetUpper: number,
-  numeraire: Address
+  numeraire: Address,
 ): { tickLower: number; tickUpper: number } {
-  const tokenIsToken1 = !isToken0Expected(numeraire)
+  const tokenIsToken1 = !isToken0Expected(numeraire);
 
   if (tokenIsToken1) {
     // For token1, add offsets directly
     return {
       tickLower: pegTick + offsetLower,
       tickUpper: pegTick + offsetUpper,
-    }
+    };
   } else {
     // For token0, subtract offsets in reverse order
     return {
       tickLower: pegTick - offsetUpper,
       tickUpper: pegTick - offsetLower,
-    }
+    };
   }
 }
 
@@ -450,14 +442,14 @@ export function marketCapRangeToTicksForCurve(
   tokenDecimals: number = 18,
   numeraireDecimals: number = 18,
   tickSpacing: number,
-  numeraire: Address
+  numeraire: Address,
 ): { tickLower: number; tickUpper: number } {
   if (marketCapLower <= 0 || marketCapUpper <= 0) {
-    throw new Error('Market cap values must be positive')
+    throw new Error("Market cap values must be positive");
   }
 
   if (marketCapLower >= marketCapUpper) {
-    throw new Error('Lower market cap must be less than upper market cap')
+    throw new Error("Lower market cap must be less than upper market cap");
   }
 
   // Get ticks for both bounds
@@ -468,8 +460,8 @@ export function marketCapRangeToTicksForCurve(
     tokenDecimals,
     numeraireDecimals,
     tickSpacing,
-    numeraire
-  )
+    numeraire,
+  );
 
   const tickAtUpper = marketCapToTick(
     marketCapUpper,
@@ -478,21 +470,21 @@ export function marketCapRangeToTicksForCurve(
     tokenDecimals,
     numeraireDecimals,
     tickSpacing,
-    numeraire
-  )
+    numeraire,
+  );
 
   // Ensure tickLower < tickUpper (may need to swap depending on token ordering)
-  const tickLower = Math.min(tickAtLower, tickAtUpper)
-  const tickUpper = Math.max(tickAtLower, tickAtUpper)
+  const tickLower = Math.min(tickAtLower, tickAtUpper);
+  const tickUpper = Math.max(tickAtLower, tickAtUpper);
 
   if (tickLower === tickUpper) {
     throw new Error(
       `Market cap range $${marketCapLower.toLocaleString()} - $${marketCapUpper.toLocaleString()} ` +
-        `resulted in same tick (${tickLower}). Try a wider range or smaller tick spacing.`
-    )
+        `resulted in same tick (${tickLower}). Try a wider range or smaller tick spacing.`,
+    );
   }
 
-  return { tickLower, tickUpper }
+  return { tickLower, tickUpper };
 }
 
 /**
@@ -519,47 +511,47 @@ export function marketCapRangeToTicksForCurve(
 export function validateMarketCapParameters(
   marketCap: number,
   tokenSupply: bigint,
-  tokenDecimals: number = 18
+  tokenDecimals: number = 18,
 ): MarketCapValidationResult {
-  const warnings: string[] = []
+  const warnings: string[] = [];
 
   // Check for unreasonably small market caps
   if (marketCap < 1000) {
     warnings.push(
-      `Market cap $${marketCap.toLocaleString()} is very small. Consider if this is intentional.`
-    )
+      `Market cap $${marketCap.toLocaleString()} is very small. Consider if this is intentional.`,
+    );
   }
 
   // Check for unreasonably large market caps
   if (marketCap > 1_000_000_000_000) {
     warnings.push(
-      `Market cap $${marketCap.toLocaleString()} is very large (> $1T). Verify this is correct.`
-    )
+      `Market cap $${marketCap.toLocaleString()} is very large (> $1T). Verify this is correct.`,
+    );
   }
 
   // Calculate implied token price
-  const tokenPrice = marketCapToTokenPrice(marketCap, tokenSupply, tokenDecimals)
+  const tokenPrice = marketCapToTokenPrice(marketCap, tokenSupply, tokenDecimals);
 
   // Check for extremely small token prices
   if (tokenPrice < 0.000001) {
     warnings.push(
       `Implied token price $${tokenPrice.toExponential(2)} is very small. ` +
-        `This may cause precision issues.`
-    )
+        `This may cause precision issues.`,
+    );
   }
 
   // Check for extremely large token prices
   if (tokenPrice > 1_000_000) {
     warnings.push(
       `Implied token price $${tokenPrice.toLocaleString()} is very large. ` +
-        `Verify your token supply and market cap values.`
-    )
+        `Verify your token supply and market cap values.`,
+    );
   }
 
   return {
     valid: warnings.length === 0,
     warnings,
-  }
+  };
 }
 
 /**
@@ -592,28 +584,27 @@ export function tickToMarketCap(
   numerairePriceUSD: number,
   tokenDecimals: number = 18,
   numeraireDecimals: number = 18,
-  numeraire: Address
+  numeraire: Address,
 ): number {
-  const tokenIsToken1 = !isToken0Expected(numeraire)
+  const tokenIsToken1 = !isToken0Expected(numeraire);
 
   // Reverse the token ordering adjustment
   // When token IS token1, the tick was negated, so negate again to reverse
-  let adjustedTick = tick
+  let adjustedTick = tick;
   if (tokenIsToken1) {
-    adjustedTick = -tick
+    adjustedTick = -tick;
   }
 
   // Tick → ratio (reverse of ratioToTick)
-  const ratio = Math.pow(1.0001, adjustedTick)
+  const ratio = Math.pow(1.0001, adjustedTick);
 
   // Ratio → token price (reverse of tokenPriceToRatio)
   // ratio = (numerairePriceUSD / tokenPriceUSD) * 10^(tokenDecimals - numeraireDecimals)
   // tokenPriceUSD = numerairePriceUSD / (ratio / decimalAdjustment)
-  const decimalAdjustment = 10 ** (tokenDecimals - numeraireDecimals)
-  const tokenPriceUSD = numerairePriceUSD / (ratio / decimalAdjustment)
+  const decimalAdjustment = 10 ** (tokenDecimals - numeraireDecimals);
+  const tokenPriceUSD = numerairePriceUSD / (ratio / decimalAdjustment);
 
   // Token price → market cap (reverse of marketCapToTokenPrice)
-  const supplyNum = Number(tokenSupply) / 10 ** tokenDecimals
-  return tokenPriceUSD * supplyNum
+  const supplyNum = Number(tokenSupply) / 10 ** tokenDecimals;
+  return tokenPriceUSD * supplyNum;
 }
-

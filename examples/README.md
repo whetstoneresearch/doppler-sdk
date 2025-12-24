@@ -5,39 +5,51 @@ This directory contains practical examples demonstrating how to use the Doppler 
 ## Examples
 
 ### 1. [Static Auction with V2 Migration](./static-auction-v2.ts)
+
 Create a simple token launch using a static price range on Uniswap V3, then migrate to Uniswap V2.
 
 ### 2. [Dynamic Auction with V4 Migration](./dynamic-auction-v4.ts)
+
 Create a gradual Dutch auction that adjusts price over time based on demand.
 
 ### 3. [Multicurve Initializer (V4)](./multicurve-initializer.ts)
+
 Create a pool seeded with the low/medium/high market cap presets in one initializer call. Use any standard migration path (V2/V3/V4) and optionally tailor individual tiers.
 
 ### 4. [Multicurve with Lockable Beneficiaries](./multicurve-lockable-beneficiaries.ts)
+
 Create a multicurve auction with fee streaming to multiple beneficiaries. Uses NoOp migration (no post-auction migration) to keep liquidity locked while distributing fees.
 
 ### 5. [Multicurve Fee Collection](./multicurve-collect-fees.ts)
+
 Collect and distribute trading fees from a multicurve pool with lockable beneficiaries. Demonstrates how beneficiaries can claim accumulated fees from swap activity.
 
 ### 6. [Multicurve Pre-Buy with WETH](./multicurve-prebuy-weth.ts)
+
 Atomically create a multicurve auction and pre-buy tokens using WETH (not ETH) with Permit2 signatures. Demonstrates using `doppler-router` to build Universal Router commands for V4 swaps.
 
 ### 7. [Multicurve Quote & Swap](./multicurve-quote-and-swap.ts)
+
 Create a multicurve auction with market cap presets, quote a swap using the SDK quoter, and execute the swap via Universal Router. Shows the complete flow of quoting and swapping on V4 pools.
 
 ### 8. [Multicurve Indexer Data](./multicurve-indexer-data.ts)
+
 Query and process pool data from the Doppler indexer. Demonstrates fetching pool metrics, parsing PoolKey data, monitoring migration status, and using indexer data with the SDK for quoting. **Note:** Requires `graphql-request` package.
 
 ### 9. [Auction Monitoring](./auction-monitoring.ts)
+
 Monitor an existing auction for graduation status and key metrics.
 
 ### 10. [Token Interaction](./token-interaction.ts)
+
 Interact with launched tokens - check balances, approve spending, and release vested tokens.
 
 ### 11. [Price Quoter](./price-quoter.ts)
+
 Get price quotes across different Uniswap versions for optimal trading.
 
 ### 12. [Scheduled Multicurve Launch](./multicurve-scheduled-launch.ts)
+
 Create a multicurve auction that queues until a future start time using the scheduled initializer on Base.
 
 ## Prerequisites
@@ -52,6 +64,7 @@ Before running these examples, ensure you have:
 ## Setup
 
 1. Install dependencies:
+
 ```bash
 npm install doppler-sdk viem
 
@@ -63,6 +76,7 @@ npm install graphql-request
 ```
 
 2. Set up environment variables:
+
 ```bash
 # Create a .env file
 cp .env.example .env
@@ -73,6 +87,7 @@ RPC_URL=https://your-rpc-endpoint
 ```
 
 3. Run an example:
+
 ```bash
 npx ts-node examples/static-auction-v2.ts
 ```
@@ -80,6 +95,7 @@ npx ts-node examples/static-auction-v2.ts
 ## Common Patterns
 
 ### SDK Initialization
+
 ```typescript
 import { DopplerSDK } from 'doppler-sdk'
 import { createPublicClient, createWalletClient, http } from 'viem'
@@ -104,6 +120,7 @@ const sdk = new DopplerSDK({
 ```
 
 ### Error Handling
+
 All SDK methods can throw errors. Always wrap calls in try-catch blocks:
 
 ```typescript
@@ -116,7 +133,9 @@ try {
 ```
 
 ### Gas & Overrides
+
 The SDK automatically simulates transactions before executing.
+
 - For factory `create()` transactions, the SDK uses a default gas limit of 13,500,000. You can override via the `gas` field on `CreateStaticAuctionParams`/`CreateDynamicAuctionParams`.
 - For other writes (e.g., token `approve`/`release`), you can pass an optional `{ gas }` to the method.
 
@@ -162,6 +181,7 @@ The following examples have corresponding fork tests:
 - **Pre-buy with WETH**: `test/multicurve-prebuy-weth.test.ts`
 
 Fork tests validate:
+
 - Contract module whitelisting on target chain
 - Transaction simulation without spending gas
 - Correct parameter encoding
@@ -170,6 +190,7 @@ Fork tests validate:
 ## Support
 
 For questions or issues:
+
 - Read the [SDK documentation](../README.md)
 - Check the [migration guide](../docs/MIGRATION.md)
 - Open an issue on [GitHub](https://github.com/doppler-sdk/issues)

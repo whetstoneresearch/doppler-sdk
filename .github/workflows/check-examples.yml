@@ -19,8 +19,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'pnpm'
+          node-version: "18"
+          cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm install
@@ -28,26 +28,22 @@ jobs:
       - name: Run price-quoter
         env:
           RPC_URL: https://base-mainnet.g.alchemy.com/v2/${{ env.ALCHEMY_API_KEY }}
-        run:
-          pnpx tsx examples/price-quoter.ts
+        run: pnpx tsx examples/price-quoter.ts
 
       - name: Run static auction v2
         env:
           PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
           RPC_URL: https://base-mainnet.g.alchemy.com/v2/${{ env.ALCHEMY_API_KEY }}
-        run:
-          pnpx tsx examples/static-auction-v2.ts
+        run: pnpx tsx examples/static-auction-v2.ts
 
       - name: Run static auction v4
         env:
           PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
           RPC_URL: https://base-mainnet.g.alchemy.com/v2/${{ env.ALCHEMY_API_KEY }}
-        run:
-          pnpx tsx examples/static-auction-v4.ts
+        run: pnpx tsx examples/static-auction-v4.ts
 
       - name: Run dynamic auction v4
         env:
           PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
           RPC_URL: https://base-mainnet.g.alchemy.com/v2/${{ env.ALCHEMY_API_KEY }}
-        run:
-          pnpx tsx examples/dynamic-auction-v4.ts
+        run: pnpx tsx examples/dynamic-auction-v4.ts

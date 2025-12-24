@@ -104,6 +104,7 @@ saleConfig() → withMarketCapRange()
 ```
 
 `saleConfig()` provides:
+
 - `numeraire` address (for token ordering auto-detection)
 - `initialSupply` (for market cap calculations)
 
@@ -114,6 +115,7 @@ saleConfig() → poolConfig() → withMarketCapRange()
 ```
 
 `poolConfig()` provides:
+
 - `tickSpacing` (required for tick calculations)
 
 ### Multicurve
@@ -216,10 +218,10 @@ Curve 3: $4M - $50M market cap → tickLower/tickUpper calculated
   curves: [
     // Launch curve (early buyers)
     { marketCap: { start: 500_000, end: 1_500_000 }, numPositions: 10, shares: parseEther('0.3') },
-    
+
     // Mid-range with overlap at $1M-$1.5M
     { marketCap: { start: 1_000_000, end: 5_000_000 }, numPositions: 15, shares: parseEther('0.4') },
-    
+
     // Upper range with overlap at $4M-$5M
     { marketCap: { start: 4_000_000, end: 50_000_000 }, numPositions: 10, shares: parseEther('0.3') },
   ]
@@ -232,14 +234,14 @@ Curve 3: $4M - $50M market cap → tickLower/tickUpper calculated
 
 ## Static vs Dynamic: Key Differences
 
-| Aspect | Static (V3) | Dynamic (V4) |
-|--------|-------------|--------------|
-| Format | `marketCap: { start, end }` | `marketCap: { start, min }` |
-| Semantics | Price ascends from start to end | Dutch auction descends from start to min |
-| Proceeds | Not configurable | `minProceeds`, `maxProceeds` required |
-| Duration | N/A | `duration`, `epochLength` |
-| Pre-requisite | `saleConfig()` only | `saleConfig()` + `poolConfig()` |
-| Protocol | Uniswap V3 | Uniswap V4 Hook |
+| Aspect        | Static (V3)                     | Dynamic (V4)                             |
+| ------------- | ------------------------------- | ---------------------------------------- |
+| Format        | `marketCap: { start, end }`     | `marketCap: { start, min }`              |
+| Semantics     | Price ascends from start to end | Dutch auction descends from start to min |
+| Proceeds      | Not configurable                | `minProceeds`, `maxProceeds` required    |
+| Duration      | N/A                             | `duration`, `epochLength`                |
+| Pre-requisite | `saleConfig()` only             | `saleConfig()` + `poolConfig()`          |
+| Protocol      | Uniswap V3                      | Uniswap V4 Hook                          |
 
 ---
 
@@ -356,11 +358,11 @@ The conversion follows these steps:
 
 Each auction type has different price movement semantics:
 
-| Type | Price Movement |
-|------|---------------|
-| Static (V3) | Ascending from start to end market cap |
+| Type         | Price Movement                                          |
+| ------------ | ------------------------------------------------------- |
+| Static (V3)  | Ascending from start to end market cap                  |
 | Dynamic (V4) | Descending from start to min market cap (Dutch auction) |
-| Multicurve | Multiple curves across market cap ranges |
+| Multicurve   | Multiple curves across market cap ranges                |
 
 ### Debugging Tips
 
@@ -381,5 +383,3 @@ Use `tickToMarketCap()` to reverse-check what market cap a tick represents.
   - `examples/static-auction-by-marketcap.ts`
   - `examples/dynamic-auction-by-marketcap.ts`
   - `examples/multicurve-by-marketcap.ts`
-
-

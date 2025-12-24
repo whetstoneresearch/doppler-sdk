@@ -1,8 +1,8 @@
-import { base, baseSepolia, ink, unichain } from 'viem/chains';
-import { CHAIN_IDS, type SupportedChainId } from './addresses';
+import { base, baseSepolia, ink, unichain } from "viem/chains";
+import { CHAIN_IDS, type SupportedChainId } from "./addresses";
 // Re-export SupportedChainId so consumers can import from this module
-export { type SupportedChainId } from './addresses';
-import type { Address, WalletClient } from 'viem';
+export { type SupportedChainId } from "./addresses";
+import type { Address, WalletClient } from "viem";
 
 export type SupportedChain =
   | typeof base
@@ -16,7 +16,7 @@ export type SupportedPublicClient = unknown;
 // Core configuration types
 // Token configuration (discriminated union)
 export interface StandardTokenConfig {
-  type?: 'standard'; // default behavior (backwards compatible)
+  type?: "standard"; // default behavior (backwards compatible)
   name: string;
   symbol: string;
   tokenURI: string;
@@ -24,7 +24,7 @@ export interface StandardTokenConfig {
 }
 
 export interface Doppler404TokenConfig {
-  type: 'doppler404';
+  type: "doppler404";
   name: string;
   symbol: string;
   baseURI: string;
@@ -91,14 +91,14 @@ export function isNoOpEnabledChain(chainId: number): chainId is NoOpEnabledChain
 }
 
 // Governance configuration (discriminated union)
-export type GovernanceDefault = { type: 'default' };
+export type GovernanceDefault = { type: "default" };
 export interface GovernanceCustom {
-  type: 'custom';
+  type: "custom";
   initialVotingDelay: number;
   initialVotingPeriod: number;
   initialProposalThreshold: bigint;
 }
-export type GovernanceNoOp = { type: 'noOp' };
+export type GovernanceNoOp = { type: "noOp" };
 
 export type GovernanceOption<C extends SupportedChainId> =
   | GovernanceDefault
@@ -144,14 +144,14 @@ export interface MulticurvePoolState {
 
 // Migration configuration (discriminated union)
 export type MigrationConfig =
-  | { type: 'uniswapV2' } // Basic migration to a new Uniswap v2 pool
+  | { type: "uniswapV2" } // Basic migration to a new Uniswap v2 pool
   | {
-      type: 'uniswapV3';
+      type: "uniswapV3";
       fee: number;
       tickSpacing: number;
     }
   | {
-      type: 'uniswapV4';
+      type: "uniswapV4";
       fee: number;
       tickSpacing: number;
       // Configuration for fee streaming via StreamableFeesLocker (optional)
@@ -162,7 +162,7 @@ export type MigrationConfig =
         beneficiaries: BeneficiaryData[]; // Uses shares in WAD (1e18 = 100%)
       };
     }
-  | { type: 'noOp' }; // No migration - used with lockable beneficiaries
+  | { type: "noOp" }; // No migration - used with lockable beneficiaries
 
 // Create Static Auction parameters
 export interface CreateStaticAuctionParams<C extends SupportedChainId = SupportedChainId> {
@@ -276,7 +276,7 @@ export interface MarketCapConfig {
   marketCap: MarketCapRange;
   /** Price of numeraire in USD (e.g., 3000 for ETH at $3000) */
   numerairePrice: number;
-  /** 
+  /**
    * Token supply override. If not provided, inferred from saleConfig.initialSupply.
    * Must include decimals (e.g., parseEther('1000000000') for 1B tokens).
    */
@@ -320,7 +320,7 @@ export interface DynamicAuctionMarketCapConfig {
   marketCap: DynamicMarketCapRange;
   /** Price of numeraire in USD (e.g., 3000 for ETH at $3000) */
   numerairePrice: number;
-  /** 
+  /**
    * Token supply override. If not provided, inferred from saleConfig.initialSupply.
    * Must include decimals (e.g., parseEther('1000000000') for 1B tokens).
    */
@@ -382,7 +382,7 @@ export interface MulticurveMarketCapRangeCurve {
 export interface MulticurveMarketCapCurvesConfig {
   /** Price of numeraire in USD (e.g., 3000 for ETH at $3000) */
   numerairePrice: number;
-  /** 
+  /**
    * Array of curves defining market cap ranges and liquidity distribution.
    * The first curve's marketCap.start is the launch price.
    * Curves must be contiguous (no gaps allowed).
@@ -540,7 +540,7 @@ export interface MulticurveCurve {
   shares: bigint; // uint256 (WAD)
 }
 
-export type MulticurveMarketCapPreset = 'low' | 'medium' | 'high';
+export type MulticurveMarketCapPreset = "low" | "medium" | "high";
 
 export interface V4PoolKey {
   currency0: Address;
@@ -608,19 +608,19 @@ export interface CreateMulticurveParams<C extends SupportedChainId = SupportedCh
 
 // Final Params object that gets passed as arg to create
 export interface CreateParams {
-    initialSupply: bigint,
-    numTokensToSell: bigint,
-    numeraire: Address,
-    tokenFactory: Address,
-    tokenFactoryData: `0x${string}`,
-    governanceFactory: Address,
-    governanceFactoryData: `0x${string}`,
-    poolInitializer: Address,
-    poolInitializerData: `0x${string}`,
-    liquidityMigrator: Address,
-    liquidityMigratorData: `0x${string}`,
-    integrator: Address,
-    salt: `0x${string}`,
+  initialSupply: bigint;
+  numTokensToSell: bigint;
+  numeraire: Address;
+  tokenFactory: Address;
+  tokenFactoryData: `0x${string}`;
+  governanceFactory: Address;
+  governanceFactoryData: `0x${string}`;
+  poolInitializer: Address;
+  poolInitializerData: `0x${string}`;
+  liquidityMigrator: Address;
+  liquidityMigratorData: `0x${string}`;
+  integrator: Address;
+  salt: `0x${string}`;
 }
 
 // Optional per-call module address overrides. When provided, these take precedence
