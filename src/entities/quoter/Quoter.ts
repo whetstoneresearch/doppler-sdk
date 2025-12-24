@@ -85,7 +85,7 @@ export class Quoter {
             gasEstimate: 0n,
           };
         } catch {
-          // fall through
+          // Revert data doesn't match expected format, rethrow original error
         }
       }
       throw err;
@@ -150,7 +150,7 @@ export class Quoter {
             gasEstimate: 0n,
           };
         } catch {
-          // fall through
+          // Revert data doesn't match expected format, rethrow original error
         }
       }
       throw err;
