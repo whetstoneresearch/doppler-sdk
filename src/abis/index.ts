@@ -1959,4 +1959,4 @@ export const weth9Abi = [
 ] as const
 
 // Export bytecodes for CREATE2 address calculation
-export { DERC20Bytecode, DopplerBytecode, DopplerDN404Bytecode } from './bytecodes'
+export { DERC20Bytecode, DopplerBytecode, DopplerDN404Bytecode, DopplerBytecodeBaseMainnet } from './bytecodes'
