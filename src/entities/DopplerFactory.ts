@@ -47,6 +47,7 @@ import {
   DEFAULT_V4_INITIAL_PROPOSAL_THRESHOLD,
   DEFAULT_CREATE_GAS_LIMIT,
   DEFAULT_V3_FEE,
+  DYNAMIC_FEE_FLAG,
   TICK_SPACINGS,
 } from '../constants'
 import { computeOptimalGamma, MIN_TICK, MAX_TICK, isToken0Expected } from '../utils'
@@ -830,7 +831,7 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     const poolId = this.computePoolId({
       currency0: actualTokenAddress < params.sale.numeraire ? actualTokenAddress : params.sale.numeraire,
       currency1: actualTokenAddress < params.sale.numeraire ? params.sale.numeraire : actualTokenAddress,
-      fee: params.pool.fee,
+      fee: DYNAMIC_FEE_FLAG,
       tickSpacing: params.pool.tickSpacing,
       hooks: actualHookAddress
     })
@@ -885,7 +886,7 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     const poolId = this.computePoolId({
       currency0: tokenAddress < params.sale.numeraire ? tokenAddress : params.sale.numeraire,
       currency1: tokenAddress < params.sale.numeraire ? params.sale.numeraire : tokenAddress,
-      fee: params.pool.fee,
+      fee: DYNAMIC_FEE_FLAG,
       tickSpacing: params.pool.tickSpacing,
       hooks: hookAddress,
     })
