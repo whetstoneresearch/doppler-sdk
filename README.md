@@ -120,6 +120,7 @@ console.log('Pool address:', result.poolAddress)  // SAVE THIS - needed to colle
 ```
 
 **Important Notes:**
+
 - **Shares must sum to exactly WAD (1e18 = 100%)**
 - **Protocol owner must receive at least 5%** of fees
 - **SDK automatically sorts beneficiaries** by address (ascending)
@@ -191,6 +192,7 @@ console.log('Token address:', result.tokenAddress)
 Multicurve auctions use a Uniswap V4-style initializer that seeds liquidity across multiple curves in a single pool. This enables richer distributions and can be combined with any supported migration path (V2, V3, V4, or NoOp).
 
 **Standard Multicurve with Migration:**
+
 ```typescript
 import { MulticurveBuilder } from '@whetstone-research/doppler-sdk'
 import { parseEther } from 'viem'
@@ -219,6 +221,7 @@ console.log('Token address:', result.tokenAddress)
 ```
 
 **Market Cap Presets (Low / Medium / High):**
+
 ```typescript
 import { MulticurveBuilder, FEE_TIERS } from '@whetstone-research/doppler-sdk'
 import { parseEther } from 'viem'
@@ -243,6 +246,7 @@ console.log('Token address:', presetResult.tokenAddress)
 ```
 
 The preset helper seeds three curated curve buckets sized for ~1B token supply targets:
+
 - `low`: ~5% of the sale allocated to a $7.5k-$30k market cap window.
 - `medium`: ~12.5% targeting roughly $50k-$150k market caps.
 - `high`: ~20% aimed at $250k-$750k market caps.
@@ -250,6 +254,7 @@ The preset helper seeds three curated curve buckets sized for ~1B token supply t
 Pass `presets` to pick a subset (e.g. `['medium', 'high']`) or provide `overrides` to adjust ticks, positions, or shares for a specific tier. When the selected presets sum to less than 100%, the builder automatically appends a filler curve (using the highest selected tier's shape) so liquidity always covers the full sale. Shares must stay within 0-1e18 and the helper will throw if the total ever exceeds 100%.
 
 **Scheduled Multicurve Launch:**
+
 ```typescript
 import { MulticurveBuilder } from '@whetstone-research/doppler-sdk'
 import { parseEther } from 'viem'
@@ -323,6 +328,7 @@ console.log('Asset address:', assetAddress)
 ```
 
 **Important Notes:**
+
 - Set `fee` > 0 (e.g., 3000 for 0.3%) to accumulate trading fees for beneficiaries
 - **Save the asset address** (token address) returned from creation - you need it to collect fees later
 - Beneficiaries receive fees proportional to their shares when `collectFees()` is called
@@ -333,12 +339,11 @@ console.log('Asset address:', assetAddress)
 See [examples/multicurve-lockable-beneficiaries.ts](./examples/multicurve-lockable-beneficiaries.ts) for a complete example.
 
 #### Transaction gas override
+
 - You can pass a gas limit to factory create calls via the `gas` field on `CreateStaticAuctionParams` / `CreateDynamicAuctionParams` / `CreateMulticurveParams`.
 - If omitted, the SDK uses the simulation's gas estimate when available, falling back to 13,500,000 gas for the `create()` transaction.
 - `simulateCreate*` helpers now return `gasEstimate` so you can tune overrides before sending.
 - Builders expose `.withGasLimit(gas: bigint)` so you can set overrides fluently.
-
-
 
 ### Builder Pattern (Recommended)
 
@@ -479,6 +484,7 @@ const numeraireAddress = await pool.getNumeraireAddress();
 **Fee Collection Technical Details:**
 
 The SDK handles the complexity of fee collection by:
+
 1. **Retrieving pool configuration** from the multicurve initializer contract
 2. **Detecting migration status** and, if the pool has migrated, resolving the shared `StreamableFeesLockerV2`
    address via the multicurve migrator (no manual lookup required)
@@ -487,6 +493,7 @@ The SDK handles the complexity of fee collection by:
 5. **Distributing fees** proportionally to all configured beneficiaries
 
 **Important Notes:**
+
 - Fees accumulate from swap activity on the pool (only if fee tier > 0)
 - Anyone can call `collectFees()`, but fees are distributed to beneficiaries only
 - Fees are automatically split according to configured beneficiary shares
@@ -498,6 +505,7 @@ The SDK handles the complexity of fee collection by:
 - Beneficiaries must be configured at pool creation time and cannot be changed
 
 **Common Use Cases:**
+
 - Set up periodic fee collection (e.g., daily or weekly)
 - Integrate with a bot that automatically collects fees when threshold is reached
 - Allow any beneficiary to trigger collection after significant trading activity
@@ -530,6 +538,7 @@ await token.release();
 ```
 
 Alternatively, you can instantiate directly if needed:
+
 ```typescript
 import { Derc20 } from '@whetstone-research/doppler-sdk'
 const tokenDirect = new Derc20(publicClient, walletClient, tokenAddress)
@@ -540,6 +549,7 @@ const tokenDirect = new Derc20(publicClient, walletClient, tokenAddress)
 DERC20 extends OpenZeppelin's ERC20Votes. Voting power is tracked via checkpoints and only updates once an address delegates voting power (typically to itself). The SDK exposes simple read/write helpers for delegation.
 
 Basics:
+
 ```ts
 import { Derc20 } from '@whetstone-research/doppler-sdk'
 
@@ -557,6 +567,7 @@ await token.delegate('0xDelegatee...')
 ```
 
 Historical votes:
+
 ```ts
 // OZ v5 uses timepoints (block numbers for block‑based clocks)
 const blockNumber = await publicClient.getBlockNumber()
@@ -564,6 +575,7 @@ const pastVotes = await token.getPastVotes(userAddress, blockNumber - 1n)
 ```
 
 Signature‑based delegation (delegateBySig):
+
 ```ts
 // Signs an EIP‑712 message and submits a transaction calling delegateBySig
 // Note: This still submits a transaction from the connected wallet.
@@ -572,10 +584,12 @@ await token.delegateBySig('0xDelegatee...', expiry)
 ```
 
 Advanced: gasless delegation via relayer
+
 - The token supports `delegateBySig(delegatee, nonce, expiry, v, r, s)`. A relayer can submit this on behalf of the user if it holds ETH for gas.
 - To do this, have the user sign typed data, then send the signature to your backend that calls the contract.
 
 Client (sign only):
+
 ```ts
 const [nonce, name] = await Promise.all([
   publicClient.readContract({ address: tokenAddress, abi: derc20Abi, functionName: 'nonces', args: [userAddress] }),
@@ -597,6 +611,7 @@ const signature = await walletClient.signTypedData({
 ```
 
 Relayer (submit tx):
+
 ```ts
 function splitSig(sig: `0x${string}`) {
   const r = `0x${sig.slice(2, 66)}` as `0x${string}`
@@ -615,6 +630,7 @@ await relayerWallet.writeContract({
 ```
 
 Notes
+
 - Users must delegate (even to themselves) before votes appear in `getVotes`.
 - `getPastVotes`/`getPastTotalSupply` expect a timepoint; for block‑based clocks, pass a block number that has already been mined.
 - Events you may track: `DelegateChanged` and `DelegateVotesChanged` for live updates.
@@ -655,6 +671,7 @@ console.log('Price after swap:', quote.sqrtPriceX96After);
 For static auctions, you can create the pool and execute a pre‑buy in a single transaction via the Bundler.
 
 High‑level flow:
+
 - Simulate create to get `CreateParams` and the predicted token address
 - Decide `amountOut` to buy, simulate `amountIn` with `simulateBundleExactOutput(...)`
 - Build Universal Router commands (e.g., via `doppler-router`)
@@ -696,6 +713,7 @@ hash the result when collecting fees, so consumers no longer need to manually as
 The SDK supports flexible migration paths after auction completion:
 
 ### Migrate to Uniswap V2
+
 ```typescript
 migration: {
   type: 'uniswapV2',
@@ -703,6 +721,7 @@ migration: {
 ```
 
 ### Migrate to Uniswap V3
+
 ```typescript
 migration: {
   type: 'uniswapV3',
@@ -712,6 +731,7 @@ migration: {
 ```
 
 ### Migrate to Uniswap V4
+
 ```typescript
 migration: {
   type: 'uniswapV4',
@@ -756,8 +776,6 @@ const migration = {
   },
 }
 ```
-
- 
 
 ## Supported Chains
 
@@ -1027,11 +1045,11 @@ The main SDK class providing access to all functionality.
 ```typescript
 class DopplerSDK {
   constructor(config: DopplerSDKConfig)
-  
+
   // Properties
   factory: DopplerFactory
   quoter: Quoter
-  
+
   // Methods
   getStaticAuction(poolAddress: Address): Promise<StaticAuction>
   getDynamicAuction(hookAddress: Address): Promise<DynamicAuction>

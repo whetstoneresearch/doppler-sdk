@@ -20,6 +20,7 @@ All types referenced are exported from `src/types.ts`.
 - Fee tiers and tick spacing: 100→1, 500→10, 3000→60, 10000→200
 
 Price → Ticks conversion used by builders:
+
 ```
 startTick = floor(log(startPrice)/log(1.0001)/tickSpacing) * tickSpacing
 endTick   =  ceil(log(endPrice) /log(1.0001)/tickSpacing) * tickSpacing
@@ -71,6 +72,7 @@ Methods (chainable):
   - Throws if required sections are missing
 
 Validation highlights:
+
 - token name/symbol non‑empty
 - `startTick < endTick`
 - `initialSupply > 0`, `numTokensToSell > 0`, and `numTokensToSell <= initialSupply`
@@ -78,6 +80,7 @@ Validation highlights:
 - For V4 migration config (if chosen), beneficiary percentages must sum to 10000
 
 Examples:
+
 ```ts
 // Example 1: Using market cap range (recommended)
 const params = sdk.buildStaticAuction()
@@ -178,6 +181,7 @@ Methods (chainable):
   - Ensures `gamma` finalized, fills defaults, and throws if required sections are missing
 
 Validation highlights:
+
 - token name/symbol non‑empty
 - `startTick < endTick`
 - `initialSupply > 0`, `numTokensToSell > 0`, and `numTokensToSell <= initialSupply`
@@ -186,6 +190,7 @@ Validation highlights:
 - For V4 migration config (if chosen), beneficiary percentages must sum to 10000
 
 Examples:
+
 ```ts
 // Example 1: Using market cap range (recommended)
 const params = sdk.buildDynamicAuction()
@@ -267,12 +272,14 @@ Methods (chainable):
 - build(): CreateMulticurveParams
 
 Validation highlights:
+
 - At least one curve required
 - `initialSupply > 0`, `numTokensToSell > 0`, and `numTokensToSell <= initialSupply`
 - Governance selection is required
 - SDK sorts beneficiaries by address as required on-chain when encoding
 
 Examples:
+
 ```ts
 // Example 1: Using market cap ranges (recommended)
 const params = sdk.buildMulticurveAuction()
@@ -318,6 +325,7 @@ const { tokenAddress, poolId } = await sdk.factory.createMulticurve(params)
 ```
 
 Preset helper usage:
+
 ```ts
 import { MulticurveBuilder, FEE_TIERS } from '@whetstone-research/doppler-sdk'
 import { parseEther } from 'viem'
@@ -337,6 +345,7 @@ const presetParams = new MulticurveBuilder(chainId)
 ```
 
 Preset tiers map to approximate market cap bands (assuming ~1B supply, $4,500 reference numeraire):
+
 - `low`: 5% allocation targeting $7.5k-$30k launches
 - `medium`: 12.5% allocation targeting $50k-$150k
 - `high`: 20% allocation targeting $250k-$750k
@@ -352,6 +361,7 @@ All presets use the curated tick ranges from `DEFAULT_MULTICURVE_*` constants. S
 - Multicurve: `CreateMulticurveParams` with fields: `token`, `sale`, `pool` (with `curves`), optional `vesting`, `governance`, `migration`, `integrator`, `userAddress`
 
 Pass the built object directly to the factory:
+
 ```ts
 const { poolAddress, tokenAddress } = await sdk.factory.createStaticAuction(staticParams)
 const { hookAddress, tokenAddress: token2, poolId } = await sdk.factory.createDynamicAuction(dynamicParams)
@@ -359,6 +369,7 @@ const { tokenAddress: token3, poolId: poolId3 } = await sdk.factory.createMultic
 ```
 
 Notes:
+
 - For doppler404 tokens, ensure `doppler404Factory` is configured on your target chain (see `src/addresses.ts`).
 - Doppler404 tokenConfig supports optional `unit?: bigint` which defaults to `1000` when omitted.
 - `integrator` defaults to zero address when omitted.

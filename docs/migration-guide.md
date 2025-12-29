@@ -27,6 +27,7 @@ npm install @whetstone-research/doppler-sdk viem
 ## Initialization Changes
 
 ### Before (V3 SDK)
+
 ```typescript
 import { ReadWriteFactory } from '@doppler/v3-sdk';
 import { ethers } from 'ethers';
@@ -38,6 +39,7 @@ const factory = new ReadWriteFactory(signer, chainId);
 ```
 
 ### Before (V4 SDK)
+
 ```typescript
 import { ReadWriteFactory } from '@doppler/v4-sdk';
 import { ethers } from 'ethers';
@@ -49,6 +51,7 @@ const factory = new ReadWriteFactory(signer, chainId);
 ```
 
 ### After (Unified SDK)
+
 ```typescript
 import { DopplerSDK } from '@whetstone-research/doppler-sdk';
 import { createPublicClient, createWalletClient, http } from 'viem';
@@ -78,6 +81,7 @@ const sdk = new DopplerSDK({
 ### Static Auctions (Previously V3)
 
 #### Before
+
 ```typescript
 // Manually encode migration data
 const liquidityMigratorData = await factory.encodeV4MigratorData({
@@ -114,6 +118,7 @@ const { poolAddress, tokenAddress } = await factory.create({
 ```
 
 #### After (Builder pattern)
+
 ```typescript
 import { StaticAuctionBuilder } from '@whetstone-research/doppler-sdk'
 
@@ -147,6 +152,7 @@ const result = await sdk.factory.createStaticAuction(params)
 ### Dynamic Auctions (Previously V4)
 
 #### Before
+
 ```typescript
 // Calculate gamma manually
 const gamma = calculateGamma(...);
@@ -180,6 +186,7 @@ const { hookAddress, tokenAddress } = await factory.create({
 ```
 
 #### After (Builder pattern)
+
 ```typescript
 import { DynamicAuctionBuilder, DAY_SECONDS } from '@whetstone-research/doppler-sdk'
 
@@ -209,6 +216,7 @@ const result = await sdk.factory.createDynamicAuction(params)
 ## Interacting with Auctions
 
 ### Before (Both SDKs)
+
 ```typescript
 // Manual contract calls with ethers
 const pool = new ethers.Contract(poolAddress, poolAbi, provider);
@@ -217,6 +225,7 @@ const liquidity = await pool.liquidity();
 ```
 
 ### After (Unified SDK)
+
 ```typescript
 // Static Auction
 const staticAuction = await sdk.getStaticAuction(poolAddress);
@@ -232,6 +241,7 @@ const currentEpoch = await dynamicAuction.getCurrentEpoch();
 ## Token Interactions
 
 ### Before
+
 ```typescript
 import { Derc20 } from 'doppler-v3-sdk';
 
@@ -240,6 +250,7 @@ const balance = await token.balanceOf(address);
 ```
 
 ### After (Unified SDK)
+
 ```typescript
 import { Derc20 } from '@whetstone-research/doppler-sdk';
 
@@ -251,6 +262,7 @@ const vestingData = await token.getVestingData(address);
 ## Quoter Changes
 
 ### Before
+
 ```typescript
 import { Quoter } from 'doppler-v3-sdk';
 
@@ -265,6 +277,7 @@ const quote = await quoter.quoteExactInputSingle({
 ```
 
 ### After
+
 ```typescript
 const quoter = sdk.quoter;
 const quote = await quoter.quoteV3ExactInputSingle({

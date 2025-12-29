@@ -10,14 +10,9 @@
 // UNCOMMENT IF RUNNING LOCALLY
 // import { DopplerSDK } from '@whetstone-research/doppler-sdk';
 
-import { DopplerSDK } from '../src';
-import {
-  http,
-  formatEther,
-  type Address,
-  createPublicClient,
-} from 'viem';
-import { baseSepolia } from 'viem/chains';
+import { DopplerSDK } from "../src";
+import { http, formatEther, type Address, createPublicClient } from "viem";
+import { baseSepolia } from "viem/chains";
 
 // Example addresses - replace with your actual auction addresses
 const staticPoolAddress = process.env.STATIC_POOL_ADDRESS as `0x${string}`;
@@ -25,79 +20,61 @@ const dynamicHookAddress = process.env.DYNAMIC_HOOK_ADDRESS as `0x${string}`;
 const rpcUrl = process.env.RPC_URL || baseSepolia.rpcUrls.default.http[0];
 
 async function monitorStaticAuction(sdk: DopplerSDK, poolAddress: Address) {
-  console.log('\n📊 Monitoring Static Auction...');
-  console.log('Pool address:', poolAddress);
+  console.log("\n📊 Monitoring Static Auction...");
+  console.log("Pool address:", poolAddress);
 
   try {
     const auction = await sdk.getStaticAuction(poolAddress);
 
     // Get pool information
     const poolInfo = await auction.getPoolInfo();
-    console.log('\nPool Information:');
-    console.log('- Token:', poolInfo.tokenAddress);
-    console.log('- Numeraire:', poolInfo.numeraireAddress);
-    console.log('- Fee tier:', poolInfo.fee / 10000, '%');
-    console.log('- Liquidity:', formatEther(poolInfo.liquidity));
-    console.log('- SqrtPriceX96:', poolInfo.sqrtPriceX96.toString());
+    console.log("\nPool Information:");
+    console.log("- Token:", poolInfo.tokenAddress);
+    console.log("- Numeraire:", poolInfo.numeraireAddress);
+    console.log("- Fee tier:", poolInfo.fee / 10000, "%");
+    console.log("- Liquidity:", formatEther(poolInfo.liquidity));
+    console.log("- SqrtPriceX96:", poolInfo.sqrtPriceX96.toString());
 
     // Get current price
     const currentPrice = await auction.getCurrentPrice();
-    console.log('\nCurrent tick price:', currentPrice.toString());
+    console.log("\nCurrent tick price:", currentPrice.toString());
 
     // Check graduation status
     const hasGraduated = await auction.hasGraduated();
-    console.log(
-      '\nGraduation status:',
-      hasGraduated ? '✅ Graduated' : '⏳ Active'
-    );
+    console.log("\nGraduation status:", hasGraduated ? "✅ Graduated" : "⏳ Active");
 
     // Get token address for further info
     const tokenAddress = await auction.getTokenAddress();
-    console.log('Token contract:', tokenAddress);
+    console.log("Token contract:", tokenAddress);
   } catch (error) {
-    console.error('Error monitoring static auction:', error);
+    console.error("Error monitoring static auction:", error);
   }
 }
 
 async function monitorDynamicAuction(sdk: DopplerSDK, hookAddress: Address) {
-  console.log('\n📊 Monitoring Dynamic Auction...');
-  console.log('Hook address:', hookAddress);
+  console.log("\n📊 Monitoring Dynamic Auction...");
+  console.log("Hook address:", hookAddress);
 
   try {
     const auction = await sdk.getDynamicAuction(hookAddress);
 
     // Get comprehensive hook information
     const hookInfo = await auction.getHookInfo();
-    console.log('\nHook Information:');
-    console.log('- Token:', hookInfo.tokenAddress);
-    console.log('- Numeraire:', hookInfo.numeraireAddress);
-    console.log('- Pool ID:', hookInfo.poolId);
-    console.log('- Current epoch:', hookInfo.currentEpoch);
+    console.log("\nHook Information:");
+    console.log("- Token:", hookInfo.tokenAddress);
+    console.log("- Numeraire:", hookInfo.numeraireAddress);
+    console.log("- Pool ID:", hookInfo.poolId);
+    console.log("- Current epoch:", hookInfo.currentEpoch);
 
-    console.log('\nSale Progress:');
-    console.log(
-      '- Total proceeds:',
-      formatEther(hookInfo.totalProceeds),
-      'ETH'
-    );
-    console.log('- Tokens sold:', formatEther(hookInfo.totalTokensSold));
-    console.log(
-      '- Min proceeds:',
-      formatEther(hookInfo.minimumProceeds),
-      'ETH'
-    );
-    console.log(
-      '- Max proceeds:',
-      formatEther(hookInfo.maximumProceeds),
-      'ETH'
-    );
+    console.log("\nSale Progress:");
+    console.log("- Total proceeds:", formatEther(hookInfo.totalProceeds), "ETH");
+    console.log("- Tokens sold:", formatEther(hookInfo.totalTokensSold));
+    console.log("- Min proceeds:", formatEther(hookInfo.minimumProceeds), "ETH");
+    console.log("- Max proceeds:", formatEther(hookInfo.maximumProceeds), "ETH");
 
-    console.log('\nAuction Status:');
-    console.log('- Early exit:', hookInfo.earlyExit ? '✅ Yes' : '❌ No');
-    console.log(
-      '- Insufficient proceeds:',
-      hookInfo.insufficientProceeds ? '⚠️ Yes' : '✅ No'
-    );
+    console.log("\nAuction Status:");
+    console.log("- Early exit:", hookInfo.earlyExit ? "✅ Yes" : "❌ No");
+    console.log("- Insufficient proceeds:", hookInfo.insufficientProceeds ? "⚠️ Yes" : "✅ No");
 
     // Calculate time remaining
     const now = BigInt(Math.floor(Date.now() / 1000));
@@ -105,29 +82,26 @@ async function monitorDynamicAuction(sdk: DopplerSDK, hookAddress: Address) {
       const remaining = Number(hookInfo.endingTime - now);
       const hours = Math.floor(remaining / 3600);
       const minutes = Math.floor((remaining % 3600) / 60);
-      console.log('- Time remaining:', `${hours}h ${minutes}m`);
+      console.log("- Time remaining:", `${hours}h ${minutes}m`);
     } else {
-      console.log('- Time remaining: Auction ended');
+      console.log("- Time remaining: Auction ended");
     }
 
     // Get current price tick
     const currentTick = await auction.getCurrentPrice();
-    console.log('\nCurrent tick:', currentTick.toString());
+    console.log("\nCurrent tick:", currentTick.toString());
 
     // Check if ended early
     const hasEndedEarly = await auction.hasEndedEarly();
     if (hasEndedEarly) {
-      console.log('\n🎯 Auction ended early due to reaching max proceeds');
+      console.log("\n🎯 Auction ended early due to reaching max proceeds");
     }
 
     // Check graduation
     const hasGraduated = await auction.hasGraduated();
-    console.log(
-      'Graduation status:',
-      hasGraduated ? '✅ Graduated' : '⏳ Active'
-    );
+    console.log("Graduation status:", hasGraduated ? "✅ Graduated" : "⏳ Active");
   } catch (error) {
-    console.error('Error monitoring dynamic auction:', error);
+    console.error("Error monitoring dynamic auction:", error);
   }
 }
 
@@ -143,24 +117,24 @@ async function main() {
     chainId: baseSepolia.id,
   });
 
-  console.log('🔍 Doppler Auction Monitor');
-  console.log('=======================');
+  console.log("🔍 Doppler Auction Monitor");
+  console.log("=======================");
 
   // Monitor static auction if address provided
   if (staticPoolAddress) {
     await monitorStaticAuction(sdk, staticPoolAddress);
   } else {
-    console.log('\n⚠️  No static auction address provided');
+    console.log("\n⚠️  No static auction address provided");
   }
 
   // Monitor dynamic auction if address provided
   if (dynamicHookAddress) {
     await monitorDynamicAuction(sdk, dynamicHookAddress);
   } else {
-    console.log('\n⚠️  No dynamic auction address provided');
+    console.log("\n⚠️  No dynamic auction address provided");
   }
 
-  console.log('\n✨ Monitoring complete!');
+  console.log("\n✨ Monitoring complete!");
 }
 
-main()
+main();

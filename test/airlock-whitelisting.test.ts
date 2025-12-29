@@ -1,17 +1,12 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { createPublicClient, http, type Address, type Chain } from 'viem';
-import { base, baseSepolia } from 'viem/chains';
-import {
-  CHAIN_IDS,
-  getAddresses,
-  airlockAbi,
-  type SupportedChainId,
-} from '../src';
+import { describe, it, expect, beforeEach } from "vitest";
+import { createPublicClient, http, type Address, type Chain } from "viem";
+import { base, baseSepolia } from "viem/chains";
+import { CHAIN_IDS, getAddresses, airlockAbi, type SupportedChainId } from "../src";
 
-const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as Address;
+const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000" as Address;
 
 // Helper to add delay between RPC calls to avoid rate limiting
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const RPC_DELAY_MS = 300; // 300ms delay between requests
 
 enum ModuleState {
@@ -30,11 +25,11 @@ const getAlchemyRpc = (network: string) =>
 const CHAINS: Partial<Record<SupportedChainId, { chain: Chain; rpc?: string }>> = {
   [CHAIN_IDS.BASE]: {
     chain: base,
-    rpc: getAlchemyRpc('base-mainnet'),
+    rpc: getAlchemyRpc("base-mainnet"),
   },
   [CHAIN_IDS.BASE_SEPOLIA]: {
     chain: baseSepolia,
-    rpc: getAlchemyRpc('base-sepolia'),
+    rpc: getAlchemyRpc("base-sepolia"),
   },
   // [CHAIN_IDS.MONAD_TESTNET]: {
   //   chain: monadTestnet,
@@ -54,7 +49,7 @@ const CHAINS: Partial<Record<SupportedChainId, { chain: Chain; rpc?: string }>> 
   // },
 };
 
-describe('Airlock Module Whitelisting', () => {
+describe("Airlock Module Whitelisting", () => {
   const supportedChainIds = Object.values(CHAIN_IDS) as SupportedChainId[];
 
   for (const chainId of supportedChainIds) {
@@ -83,70 +78,67 @@ describe('Airlock Module Whitelisting', () => {
       });
 
       (addresses.tokenFactory === ZERO_ADDRESS ? it.skip : it)(
-        'should have TokenFactory whitelisted',
+        "should have TokenFactory whitelisted",
         async () => {
           const state = (await publicClient.readContract({
             address: addresses.airlock,
             abi: airlockAbi,
-            functionName: 'getModuleState',
+            functionName: "getModuleState",
             args: [addresses.tokenFactory],
           })) as unknown as number;
 
           expect(Number(state)).toBe(ModuleState.TokenFactory);
-        }
+        },
       );
 
       (addresses.governanceFactory === ZERO_ADDRESS ? it.skip : it)(
-        'should have GovernanceFactory whitelisted',
+        "should have GovernanceFactory whitelisted",
         async () => {
           const state = (await publicClient.readContract({
             address: addresses.airlock,
             abi: airlockAbi,
-            functionName: 'getModuleState',
+            functionName: "getModuleState",
             args: [addresses.governanceFactory],
           })) as unknown as number;
 
           expect(Number(state)).toBe(ModuleState.GovernanceFactory);
-        }
+        },
       );
 
       (addresses.v3Initializer === ZERO_ADDRESS ? it.skip : it)(
-        'should have V3Initializer whitelisted',
+        "should have V3Initializer whitelisted",
         async () => {
           const state = (await publicClient.readContract({
             address: addresses.airlock,
             abi: airlockAbi,
-            functionName: 'getModuleState',
+            functionName: "getModuleState",
             args: [addresses.v3Initializer],
           })) as unknown as number;
 
           expect(Number(state)).toBe(ModuleState.PoolInitializer);
-        }
+        },
       );
 
       (addresses.v4Initializer === ZERO_ADDRESS ? it.skip : it)(
-        'should have V4Initializer whitelisted',
+        "should have V4Initializer whitelisted",
         async () => {
           const state = (await publicClient.readContract({
             address: addresses.airlock,
             abi: airlockAbi,
-            functionName: 'getModuleState',
+            functionName: "getModuleState",
             args: [addresses.v4Initializer],
           })) as unknown as number;
 
           expect(Number(state)).toBe(ModuleState.PoolInitializer);
-        }
+        },
       );
 
-      if (
-        addresses.lockableV3Initializer &&
-        addresses.lockableV3Initializer !== ZERO_ADDRESS
-      ) {
-        it('should have LockableV3Initializer whitelisted', async () => {
+      if (addresses.lockableV3Initializer && addresses.lockableV3Initializer !== ZERO_ADDRESS) {
+        it("should have LockableV3Initializer whitelisted", async () => {
           const state = (await publicClient.readContract({
             address: addresses.airlock,
             abi: airlockAbi,
-            functionName: 'getModuleState',
+            functionName: "getModuleState",
             args: [addresses.lockableV3Initializer!],
           })) as unknown as number;
 
@@ -154,15 +146,12 @@ describe('Airlock Module Whitelisting', () => {
         });
       }
 
-      if (
-        addresses.v4MulticurveInitializer &&
-        addresses.v4MulticurveInitializer !== ZERO_ADDRESS
-      ) {
-        it('should have V4MulticurveInitializer whitelisted', async () => {
+      if (addresses.v4MulticurveInitializer && addresses.v4MulticurveInitializer !== ZERO_ADDRESS) {
+        it("should have V4MulticurveInitializer whitelisted", async () => {
           const state = (await publicClient.readContract({
             address: addresses.airlock,
             abi: airlockAbi,
-            functionName: 'getModuleState',
+            functionName: "getModuleState",
             args: [addresses.v4MulticurveInitializer!],
           })) as unknown as number;
 
@@ -174,11 +163,11 @@ describe('Airlock Module Whitelisting', () => {
         addresses.v4ScheduledMulticurveInitializer &&
         addresses.v4ScheduledMulticurveInitializer !== ZERO_ADDRESS
       ) {
-        it('should have V4ScheduledMulticurveInitializer whitelisted', async () => {
+        it("should have V4ScheduledMulticurveInitializer whitelisted", async () => {
           const state = (await publicClient.readContract({
             address: addresses.airlock,
             abi: airlockAbi,
-            functionName: 'getModuleState',
+            functionName: "getModuleState",
             args: [addresses.v4ScheduledMulticurveInitializer!],
           })) as unknown as number;
 
@@ -187,53 +176,53 @@ describe('Airlock Module Whitelisting', () => {
       }
 
       (addresses.v2Migrator === ZERO_ADDRESS ? it.skip : it)(
-        'should have V2Migrator whitelisted',
+        "should have V2Migrator whitelisted",
         async () => {
           const state = (await publicClient.readContract({
             address: addresses.airlock,
             abi: airlockAbi,
-            functionName: 'getModuleState',
+            functionName: "getModuleState",
             args: [addresses.v2Migrator],
           })) as unknown as number;
 
           expect(Number(state)).toBe(ModuleState.LiquidityMigrator);
-        }
+        },
       );
 
       (addresses.v3Migrator === ZERO_ADDRESS ? it.skip : it)(
-        'should have V3Migrator whitelisted',
+        "should have V3Migrator whitelisted",
         async () => {
           const state = (await publicClient.readContract({
             address: addresses.airlock,
             abi: airlockAbi,
-            functionName: 'getModuleState',
+            functionName: "getModuleState",
             args: [addresses.v3Migrator],
           })) as unknown as number;
 
           expect(Number(state)).toBe(ModuleState.LiquidityMigrator);
-        }
+        },
       );
 
       (addresses.v4Migrator === ZERO_ADDRESS ? it.skip : it)(
-        'should have V4Migrator whitelisted',
+        "should have V4Migrator whitelisted",
         async () => {
           const state = (await publicClient.readContract({
             address: addresses.airlock,
             abi: airlockAbi,
-            functionName: 'getModuleState',
+            functionName: "getModuleState",
             args: [addresses.v4Migrator],
           })) as unknown as number;
 
           expect(Number(state)).toBe(ModuleState.LiquidityMigrator);
-        }
+        },
       );
 
       if (addresses.noOpMigrator && addresses.noOpMigrator !== ZERO_ADDRESS) {
-        it('should have NoOpMigrator whitelisted', async () => {
+        it("should have NoOpMigrator whitelisted", async () => {
           const state = (await publicClient.readContract({
             address: addresses.airlock,
             abi: airlockAbi,
-            functionName: 'getModuleState',
+            functionName: "getModuleState",
             args: [addresses.noOpMigrator!],
           })) as unknown as number;
 
@@ -241,15 +230,12 @@ describe('Airlock Module Whitelisting', () => {
         });
       }
 
-      if (
-        addresses.noOpGovernanceFactory &&
-        addresses.noOpGovernanceFactory !== ZERO_ADDRESS
-      ) {
-        it('should have NoOpGovernanceFactory whitelisted', async () => {
+      if (addresses.noOpGovernanceFactory && addresses.noOpGovernanceFactory !== ZERO_ADDRESS) {
+        it("should have NoOpGovernanceFactory whitelisted", async () => {
           const state = (await publicClient.readContract({
             address: addresses.airlock,
             abi: airlockAbi,
-            functionName: 'getModuleState',
+            functionName: "getModuleState",
             args: [addresses.noOpGovernanceFactory!],
           })) as unknown as number;
 

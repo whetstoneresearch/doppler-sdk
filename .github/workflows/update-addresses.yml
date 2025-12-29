@@ -44,8 +44,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'pnpm'
+          node-version: "20"
+          cache: "pnpm"
           cache-dependency-path: doppler-sdk/pnpm-lock.yaml
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -74,9 +74,9 @@ jobs:
           title: "chore: update generated addresses"
           body: |
             ## Automated Address Update
-            
+
             This PR updates `deployments.generated.ts` from the latest `Deployments.json` in the doppler repo.
-            
+
             See the automated comment below for detailed address changes.
           commit-message: "chore: update generated addresses"
           branch: chore/update-addresses

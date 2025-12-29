@@ -1,13 +1,13 @@
-import { DopplerSDK, getAirlockOwner } from '../src';
-import { parseEther, createPublicClient, createWalletClient, http } from 'viem';
-import { privateKeyToAccount } from 'viem/accounts';
-import { baseSepolia } from 'viem/chains';
+import { DopplerSDK, getAirlockOwner } from "../src";
+import { parseEther, createPublicClient, createWalletClient, http } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { baseSepolia } from "viem/chains";
 
 const privateKey = process.env.PRIVATE_KEY as `0x${string}`;
 const rpcUrl = process.env.RPC_URL ?? baseSepolia.rpcUrls.default.http[0];
 const account = privateKeyToAccount(privateKey);
 
-if (!privateKey) throw new Error('PRIVATE_KEY must be set');
+if (!privateKey) throw new Error("PRIVATE_KEY must be set");
 
 // Example: Creating a static auction that migrates to Uniswap V4
 async function createStaticAuctionExample() {
@@ -24,7 +24,7 @@ async function createStaticAuctionExample() {
   });
 
   if (!publicClient || !walletClient) {
-    throw new Error('Failed to create viem clients');
+    throw new Error("Failed to create viem clients");
   }
 
   // Initialize the SDK
@@ -40,14 +40,14 @@ async function createStaticAuctionExample() {
   const params = sdk
     .buildStaticAuction()
     .tokenConfig({
-      name: 'My Token',
-      symbol: 'MTK',
-      tokenURI: 'https://example.com/token-metadata.json',
+      name: "My Token",
+      symbol: "MTK",
+      tokenURI: "https://example.com/token-metadata.json",
     })
     .saleConfig({
-      initialSupply: parseEther('1000000000'), // 1 billion tokens
-      numTokensToSell: parseEther('900000000'), // 900 million for sale
-      numeraire: '0x4200000000000000000000000000000000000006', // WETH on Base
+      initialSupply: parseEther("1000000000"), // 1 billion tokens
+      numTokensToSell: parseEther("900000000"), // 900 million for sale
+      numeraire: "0x4200000000000000000000000000000000000006", // WETH on Base
     })
     .poolByTicks({
       startTick: 174960, // fee 3000 → tickSpacing 60, so ticks must be multiples of 60
@@ -62,14 +62,14 @@ async function createStaticAuctionExample() {
       // amounts: [parseEther('50000000'), parseEther('30000000'), parseEther('20000000')]
     })
     .withMigration({
-      type: 'uniswapV4',
+      type: "uniswapV4",
       fee: 3000,
       tickSpacing: 60,
       streamableFees: {
         lockDuration: 365 * 24 * 60 * 60, // 1 year
         beneficiaries: [
-          { beneficiary: account.address, shares: parseEther('0.95') }, // 95%
-          { beneficiary: airlockOwner, shares: parseEther('0.05') }, // 5%
+          { beneficiary: account.address, shares: parseEther("0.95") }, // 95%
+          { beneficiary: airlockOwner, shares: parseEther("0.05") }, // 5%
         ],
       },
     })
@@ -80,16 +80,16 @@ async function createStaticAuctionExample() {
   // Create the static auction
   const result = await sdk.factory.createStaticAuction(params);
 
-  console.log('Pool created:', result.poolAddress);
-  console.log('Token created:', result.tokenAddress);
-  console.log('Transaction:', result.transactionHash);
+  console.log("Pool created:", result.poolAddress);
+  console.log("Token created:", result.tokenAddress);
+  console.log("Transaction:", result.transactionHash);
 
   // Later, interact with the auction
   const auction = await sdk.getStaticAuction(result.poolAddress);
   const hasGraduated = await auction.hasGraduated();
 
   if (hasGraduated) {
-    console.log('Auction is ready for migration!');
+    console.log("Auction is ready for migration!");
   }
 }
 

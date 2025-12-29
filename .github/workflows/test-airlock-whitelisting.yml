@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
   schedule:
     # Run twice daily at 00:00 and 12:00 UTC to catch any whitelisting issues
-    - cron: '0 0,12 * * *'
+    - cron: "0 0,12 * * *"
 
 jobs:
   test-whitelisting:
@@ -27,8 +27,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'pnpm'
+          node-version: "20"
+          cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm install
@@ -42,4 +42,3 @@ jobs:
           echo "## Airlock Whitelisting Test Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Verified that all Doppler modules (TokenFactory, GovernanceFactory, Initializers, Migrators) are properly whitelisted on Airlock contracts across all deployed chains." >> $GITHUB_STEP_SUMMARY
-

@@ -89,6 +89,7 @@ const { amountOut } = await quoter.quoteExactInputV4({
 ```
 
 Notes:
+
 - Use your pool’s actual `tickSpacing` if available from the indexer or hook config.
 - `hookData` is typically `0x` for Doppler swaps.
 
@@ -157,12 +158,14 @@ const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash })
 ```
 
 Tips:
+
 - For ERC20 inputs, ensure allowance (Permit2 or token approve). See `doppler-router` `getPermitSignature` helper.
 - Use a non‑zero `minAmountOut` based on a prior quote and desired slippage.
 
 ### V3 and V2 Swaps
 
 The Universal Router also supports V3/V2 swaps. You can:
+
 - Use the `CommandBuilder` to add V3/V2 swap commands similarly, or
 - Call the respective pool routers directly (outside the scope of this doc).
 
@@ -173,6 +176,7 @@ The unified SDK’s `Quoter` covers price discovery for all of V2/V3/V4 regardle
 ## End‑to‑End Pattern (Miniapp)
 
 The `doppler-v4-miniapp` in this repo demonstrates:
+
 - Building V4 `poolKey` and `zeroForOne` from base/quote tokens
 - Quoting via `quoter.quoteExactInputV4`
 - Executing via Universal Router using `doppler-router` builders
@@ -186,6 +190,7 @@ Look at `src/pages/PoolDetails.tsx` for a complete reference implementation.
 For static (V3‑style) auctions you can atomically create the pool and execute a pre‑buy in the same transaction via the Bundler. This mirrors the older V3 SDK’s `bundle(...)` flow.
 
 Steps:
+
 - Simulate create to get the predicted token (asset) address and `CreateParams`.
 - Decide the amount of tokens to pre‑buy (`amountOut`).
 - Use `factory.simulateBundleExactOutput(...)` to learn the required ETH/WETH input (`amountIn`).
@@ -242,5 +247,6 @@ const txHash = await sdk.factory.bundle(createParams, commands, inputs, {
 ```
 
 Notes:
+
 - Bundling is supported for static (V3‑style) auctions. Dynamic (V4) auctions use the Universal Router directly after creation.
 - If buying with ERC‑20 input instead of native ETH, approve/permit as needed and omit `value`.
