@@ -284,36 +284,6 @@ describe('DopplerFactory', () => {
       expect((call as any).args[0].liquidityMigratorData).toBe('0x')
     })
 
-    it('should encode migration data correctly for V3', async () => {
-      const params = {
-        ...validParams,
-        migration: { type: 'uniswapV3' as const, fee: 3000, tickSpacing: 65 },
-      }
-      const mockTxHash = '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef'
-      const eventSignature = keccak256(toHex('Create(address,address,address,address,address,address,address)'))
-      
-      vi.mocked(publicClient.simulateContract).mockResolvedValueOnce({
-        request: { address: mockAddresses.airlock, functionName: 'create', args: [{}, {}] },
-        result: [mockTokenAddress, mockPoolAddress],
-      } as any)
-      vi.mocked(walletClient.writeContract).mockResolvedValueOnce(mockTxHash as `0x${string}`)
-      vi.mocked(publicClient.waitForTransactionReceipt).mockResolvedValueOnce(
-        createMockTransactionReceipt([{
-          address: mockAddresses.airlock,
-          topics: [eventSignature, `0x000000000000000000000000${mockPoolAddress.slice(2)}`, `0x000000000000000000000000${mockTokenAddress.slice(2)}`, `0x000000000000000000000000${mockAddresses.weth.slice(2)}`],
-          data: '0x' as `0x${string}`,
-        }])
-      )
-
-      await factory.createStaticAuction(params)
-
-      const call = vi.mocked(publicClient.simulateContract).mock.calls[0][0]
-      expect((call as any).args[0].liquidityMigrator).toBe(mockAddresses.v3Migrator)
-      // Should contain encoded V3 migration data
-      expect((call as any).args[0].liquidityMigratorData).toMatch(/^0x[a-fA-F0-9]+$/)
-      expect((call as any).args[0].liquidityMigratorData).not.toBe('0x')
-    })
-
     it('should include gas estimate when simulating static auction', async () => {
       vi.mocked(publicClient.estimateContractGas).mockImplementationOnce(async () => 11_000_000n)
       vi.mocked(publicClient.simulateContract).mockResolvedValueOnce({

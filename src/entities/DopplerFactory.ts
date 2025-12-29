@@ -953,21 +953,6 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
         // NoOp migrator expects empty data
         return '0x' as Hex
 
-      case 'uniswapV3':
-        // Encode V3 migration data: fee and tick spacing
-        const expectedSpacing = (TICK_SPACINGS as Record<number, number>)[config.fee]
-        if (expectedSpacing !== undefined && config.tickSpacing === expectedSpacing) {
-          // Match legacy behaviour: default configuration emits empty payload
-          return '0x'
-        }
-        return encodeAbiParameters(
-          [
-            { type: 'uint24' }, // fee
-            { type: 'int24' }   // tickSpacing
-          ],
-          [config.fee, config.tickSpacing]
-        )
-
       case 'uniswapV4':
         // Encode V4 migration data with optional streamable fees config
         // When streamableFees is omitted, mirror legacy SDK behaviour by emitting an empty payload
@@ -1593,10 +1578,13 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     switch (config.type) {
       case 'uniswapV2':
         return overrides?.v2Migrator ?? addresses.v2Migrator
-      case 'uniswapV3':
-        return overrides?.v3Migrator ?? addresses.v3Migrator
-      case 'uniswapV4':
-        return overrides?.v4Migrator ?? addresses.v4Migrator
+      case 'uniswapV4': {
+        const v4Address = overrides?.v4Migrator ?? addresses.v4Migrator
+        if (v4Address === '0x0000000000000000000000000000000000000000') {
+          throw new Error('UniswapV4Migrator not deployed on this chain. Use uniswapV2 migration or provide override via modules.v4Migrator.')
+        }
+        return v4Address
+      }
       case 'noOp': {
         const noOpAddress = overrides?.noOpMigrator ?? addresses.noOpMigrator
         if (!noOpAddress) {
