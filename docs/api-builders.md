@@ -191,12 +191,12 @@ Examples:
 const params = sdk.buildDynamicAuction()
   .tokenConfig({ name: 'My Token', symbol: 'MTK', tokenURI: 'https://example.com/mtk.json' })
   .saleConfig({ initialSupply: parseEther('1_000_000_000'), numTokensToSell: parseEther('500_000_000'), numeraire: WETH })
-  .poolConfig({ fee: 3000, tickSpacing: 60 }) // Required BEFORE withMarketCapRange!
   .withMarketCapRange({
     marketCap: { start: 500_000, min: 50_000 }, // $500k start, descends to $50k floor
     numerairePrice: 3000, // ETH = $3000 USD
     minProceeds: parseEther('100'), // Min 100 ETH to graduate
     maxProceeds: parseEther('5000'), // Cap at 5000 ETH
+    fee: 3000, // 0.3% fee tier (tickSpacing=60 derived automatically)
     // duration: 7 * DAY_SECONDS,   // Optional: defaults to 7 days
     // epochLength: 3600,           // Optional: defaults to 1 hour
   })
@@ -205,12 +205,12 @@ const params = sdk.buildDynamicAuction()
   .withUserAddress(user)
   .build()
 
-// Example 2: Using price range (legacy)
-const paramsLegacy = new DynamicAuctionBuilder()
+// Example 2: Using raw ticks (for advanced users or custom fee/tickSpacing)
+const paramsManual = new DynamicAuctionBuilder()
   .tokenConfig({ name: 'My Token', symbol: 'MTK', tokenURI: 'https://example.com/mtk.json' })
   .saleConfig({ initialSupply: parseEther('1_000_000'), numTokensToSell: parseEther('900_000'), numeraire: weth })
-  .poolConfig({ fee: 3000, tickSpacing: 60 })
-  .auctionByPriceRange({ priceRange: { startPrice: 0.0001, endPrice: 0.001 }, minProceeds: parseEther('100'), maxProceeds: parseEther('1000') })
+  .poolConfig({ fee: 3000, tickSpacing: 60 }) // Use poolConfig() + auctionByTicks() for manual config
+  .auctionByTicks({ startTick: 100000, endTick: 200000, minProceeds: parseEther('100'), maxProceeds: parseEther('1000') })
   .withGovernance({ useDefaults: true })
   .withMigration({ type: 'uniswapV2' })
   .withUserAddress(user)

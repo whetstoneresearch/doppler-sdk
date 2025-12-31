@@ -3,6 +3,8 @@ import {
   DEFAULT_AUCTION_DURATION,
   DEFAULT_EPOCH_LENGTH,
   DEFAULT_V4_YEARLY_MINT_RATE,
+  FEE_TIERS,
+  TICK_SPACINGS,
   ZERO_ADDRESS,
 } from '../constants'
 import {
@@ -89,6 +91,14 @@ export class DynamicAuctionBuilder<C extends SupportedChainId>
   }
 
   poolConfig(params: { fee: number; tickSpacing: number }): this {
+    // Mutual exclusion: cannot use poolConfig() after withMarketCapRange()
+    if (this.auction) {
+      throw new Error(
+        'Cannot use poolConfig() after withMarketCapRange(). ' +
+        'Use withMarketCapRange() for market cap-based configuration, ' +
+        'or poolConfig() + auctionByTicks() for manual tick configuration.'
+      )
+    }
     this.pool = { fee: params.fee, tickSpacing: params.tickSpacing }
     return this
   }
@@ -154,6 +164,7 @@ export class DynamicAuctionBuilder<C extends SupportedChainId>
   /**
    * Configure auction using target market cap range.
    * Converts market cap values (in USD) to Uniswap ticks.
+   * Automatically derives tickSpacing from fee tier.
    *
    * @param params - Market cap configuration with auction parameters
    * @returns Builder instance for chaining
@@ -162,12 +173,12 @@ export class DynamicAuctionBuilder<C extends SupportedChainId>
    * ```ts
    * builder
    *   .saleConfig({ initialSupply, numTokensToSell, numeraire: WETH })
-   *   .poolConfig({ fee: 3000, tickSpacing: 60 })
    *   .withMarketCapRange({
    *     marketCap: { start: 500_000, min: 50_000 }, // $500k start, $50k floor
    *     numerairePrice: 3000, // ETH = $3000
    *     minProceeds: parseEther('10'),
    *     maxProceeds: parseEther('1000'),
+   *     fee: 3000, // optional, defaults to 3000 (0.3%)
    *   })
    * ```
    */
@@ -175,6 +186,15 @@ export class DynamicAuctionBuilder<C extends SupportedChainId>
     // Validate required config
     if (!this.sale?.numeraire) {
       throw new Error('Must call saleConfig() before withMarketCapRange()')
+    }
+
+    // Mutual exclusion: cannot use both poolConfig() and withMarketCapRange()
+    if (this.pool) {
+      throw new Error(
+        'Cannot use both poolConfig() and withMarketCapRange(). ' +
+        'Use withMarketCapRange() for market cap-based configuration, ' +
+        'or poolConfig() + auctionByTicks() for manual tick configuration.'
+      )
     }
 
     // Get token supply
@@ -185,13 +205,17 @@ export class DynamicAuctionBuilder<C extends SupportedChainId>
       )
     }
 
-    // Get tick spacing
-    const tickSpacing = this.pool?.tickSpacing
-    if (!tickSpacing) {
+    // Derive fee and tickSpacing
+    const fee = params.fee ?? FEE_TIERS.MEDIUM
+    const tickSpacing = (TICK_SPACINGS as Record<number, number>)[fee]
+    if (tickSpacing === undefined) {
       throw new Error(
-        'tickSpacing is required (set via poolConfig() before calling withMarketCapRange())'
+        `No standard tickSpacing for fee ${fee}. Use poolConfig() + auctionByTicks() for custom fee tiers.`
       )
     }
+
+    // Set pool config internally
+    this.pool = { fee, tickSpacing }
 
     // Validate market cap parameters
     const startValidation = validateMarketCapParameters(
