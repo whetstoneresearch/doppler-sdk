@@ -1038,6 +1038,8 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
 
     const useScheduledInitializer = params.schedule !== undefined
     const useDopplerHook = params.dopplerHook !== undefined
+    // Allow using DopplerHookInitializer even without a hook if explicitly overridden
+    const useDopplerHookInitializer = useDopplerHook || params.modules?.dopplerHookInitializer !== undefined
 
     let scheduleStartTime: number | undefined
     if (useScheduledInitializer) {
@@ -1230,12 +1232,18 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     }
 
     const resolvedInitializer: Address | undefined = (() => {
+      if (useDopplerHookInitializer) {
+        return params.modules?.dopplerHookInitializer ?? addresses.dopplerHookInitializer
+      }
       if (useScheduledInitializer) {
         return params.modules?.v4ScheduledMulticurveInitializer ?? addresses.v4ScheduledMulticurveInitializer
       }
       return params.modules?.v4MulticurveInitializer ?? addresses.v4MulticurveInitializer
     })()
     if (!resolvedInitializer || resolvedInitializer === ZERO_ADDRESS) {
+      if (useDopplerHookInitializer) {
+        throw new Error('DopplerHookInitializer address not configured on this chain. Override via builder.withDopplerHookInitializer() or update chain config.')
+      }
       throw new Error(
         useScheduledInitializer
           ? 'Scheduled multicurve initializer address not configured on this chain. Override via builder or update chain config.'

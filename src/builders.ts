@@ -650,7 +650,7 @@ export class MulticurveBuilder<C extends SupportedChainId> {
     return this
   }
 
-  poolConfig(params: { fee: number; tickSpacing: number; curves: { tickLower: number; tickUpper: number; numPositions: number; shares: bigint }[]; beneficiaries?: { beneficiary: Address; shares: bigint }[] }): this {
+  poolConfig(params: { fee: number; tickSpacing: number; curves: { tickLower: number; tickUpper: number; numPositions: number; shares: bigint }[]; beneficiaries?: { beneficiary: Address; shares: bigint }[]; farTick?: number }): this {
     const sortedBeneficiaries = params.beneficiaries
       ? [...params.beneficiaries].sort((a, b) => {
           const aAddr = a.beneficiary.toLowerCase()
@@ -659,7 +659,7 @@ export class MulticurveBuilder<C extends SupportedChainId> {
         })
       : undefined
 
-    this.pool = { fee: params.fee, tickSpacing: params.tickSpacing, curves: params.curves, beneficiaries: sortedBeneficiaries }
+    this.pool = { fee: params.fee, tickSpacing: params.tickSpacing, curves: params.curves, beneficiaries: sortedBeneficiaries, farTick: params.farTick }
     return this
   }
 
@@ -768,7 +768,7 @@ export class MulticurveBuilder<C extends SupportedChainId> {
   }
 
   // Alias for clarity: indicate use of V4 multicurve initializer
-  withMulticurveAuction(params: { fee: number; tickSpacing: number; curves: { tickLower: number; tickUpper: number; numPositions: number; shares: bigint }[]; beneficiaries?: { beneficiary: Address; shares: bigint }[] }): this {
+  withMulticurveAuction(params: { fee: number; tickSpacing: number; curves: { tickLower: number; tickUpper: number; numPositions: number; shares: bigint }[]; beneficiaries?: { beneficiary: Address; shares: bigint }[]; farTick?: number }): this {
     return this.poolConfig(params)
   }
 
@@ -884,6 +884,8 @@ export class MulticurveBuilder<C extends SupportedChainId> {
   withV3Migrator(address: Address): this { return this.overrideModule('v3Migrator', address) }
   withV4Migrator(address: Address): this { return this.overrideModule('v4Migrator', address) }
   withNoOpMigrator(address: Address): this { return this.overrideModule('noOpMigrator', address) }
+  withDopplerHookInitializer(address: Address): this { return this.overrideModule('dopplerHookInitializer', address) }
+  withRehypeDopplerHook(address: Address): this { return this.overrideModule('rehypeDopplerHook', address) }
 
   build(): CreateMulticurveParams<C> {
     if (!this.token) throw new Error('tokenConfig is required')

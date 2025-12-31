@@ -612,9 +612,7 @@ export interface CreateMulticurveParams<C extends SupportedChainId = SupportedCh
     startTime: number;
   };
 
-  // Optional DopplerHook configuration (e.g., RehypeDopplerHook)
-  // When provided, the hook will be initialized with the pool
-  rehypeDopplerHook?: RehypeDopplerHookConfig;
+  dopplerHook?: RehypeDopplerHookConfig;
 
   // Vesting configuration (optional)
   vesting?: VestingConfig;
@@ -666,6 +664,10 @@ export interface ModuleAddressOverrides {
   v4Initializer?: Address;
   v4MulticurveInitializer?: Address;
   v4ScheduledMulticurveInitializer?: Address;
+  dopplerHookInitializer?: Address;
+
+  // DopplerHooks
+  rehypeDopplerHook?: Address;
 
   // Governance
   governanceFactory?: Address;
