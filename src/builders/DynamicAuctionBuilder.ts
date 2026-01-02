@@ -4,7 +4,6 @@ import {
   DEFAULT_EPOCH_LENGTH,
   DEFAULT_V4_YEARLY_MINT_RATE,
   DOPPLER_MAX_TICK_SPACING,
-  DYNAMIC_AUCTION_TICK_SPACINGS,
   FEE_TIERS,
   ZERO_ADDRESS,
 } from '../constants'
@@ -175,7 +174,7 @@ export class DynamicAuctionBuilder<C extends SupportedChainId>
   /**
    * Configure auction using target market cap range.
    * Converts market cap values (in USD) to Uniswap ticks.
-   * Automatically derives tickSpacing from fee tier.
+   * Uses fixed tickSpacing of 30 (max allowed) for optimal price granularity.
    *
    * @param params - Market cap configuration with auction parameters
    * @returns Builder instance for chaining
@@ -189,7 +188,7 @@ export class DynamicAuctionBuilder<C extends SupportedChainId>
    *     numerairePrice: 3000, // ETH = $3000
    *     minProceeds: parseEther('10'),
    *     maxProceeds: parseEther('1000'),
-   *     fee: 3000, // optional, defaults to 3000 (0.3%)
+   *     fee: 10000, // optional, defaults to 10000 (1%)
    *   })
    * ```
    */
@@ -216,14 +215,11 @@ export class DynamicAuctionBuilder<C extends SupportedChainId>
       )
     }
 
-    // Derive fee and tickSpacing (using dynamic auction-specific mappings)
-    const fee = params.fee ?? FEE_TIERS.MEDIUM
-    const tickSpacing = (DYNAMIC_AUCTION_TICK_SPACINGS as Record<number, number>)[fee]
-    if (tickSpacing === undefined) {
-      throw new Error(
-        `No standard tickSpacing for fee ${fee}. Use poolConfig() + auctionByTicks() for custom fee tiers.`
-      )
-    }
+    // Derive fee and tickSpacing
+    // Default fee is HIGH (1%) for Dutch auctions
+    // tickSpacing is always MAX (30) for withMarketCapRange convenience method
+    const fee = params.fee ?? FEE_TIERS.HIGH
+    const tickSpacing = DOPPLER_MAX_TICK_SPACING
 
     // Set pool config internally
     this.pool = { fee, tickSpacing }

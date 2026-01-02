@@ -329,7 +329,7 @@ export interface DynamicAuctionMarketCapConfig {
   tokenDecimals?: number;
   /** Numeraire decimals (default: 18) */
   numeraireDecimals?: number;
-  /** Fee tier in basis points (e.g., 3000 for 0.3%). Default: 3000 */
+  /** Fee tier in basis points (e.g., 10000 for 1%). Default: 10000 (1%) */
   fee?: number;
   /** Minimum proceeds required for successful auction */
   minProceeds: bigint;

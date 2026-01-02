@@ -120,10 +120,10 @@ describe('Builder withMarketCapRange ordering', () => {
       expect(params.auction.startTick).toBeDefined()
       expect(params.auction.endTick).toBeDefined()
       expect(params.auction.startTick).toBeLessThan(params.auction.endTick)
-      // Verify fee was derived (default is MEDIUM = 3000)
-      // tickSpacing is clamped to 10 for dynamic auctions (Doppler.sol MAX_TICK_SPACING = 30)
-      expect(params.pool.fee).toBe(3000)
-      expect(params.pool.tickSpacing).toBe(10)
+      // Verify fee was derived (default is HIGH = 10000 / 1%)
+      // tickSpacing is always 30 (max) for withMarketCapRange
+      expect(params.pool.fee).toBe(10000)
+      expect(params.pool.tickSpacing).toBe(30)
     })
 
     it('allows specifying custom fee in withMarketCapRange', () => {
@@ -148,8 +148,8 @@ describe('Builder withMarketCapRange ordering', () => {
       const params = builder.build()
 
       expect(params.pool.fee).toBe(10000)
-      // tickSpacing is clamped to 10 for dynamic auctions (Doppler.sol MAX_TICK_SPACING = 30)
-      expect(params.pool.tickSpacing).toBe(10)
+      // tickSpacing is always 30 (max) for withMarketCapRange
+      expect(params.pool.tickSpacing).toBe(30)
     })
   })
 
