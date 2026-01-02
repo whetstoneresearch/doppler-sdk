@@ -125,7 +125,9 @@ export {
   FLAG_MASK,
   DOPPLER_FLAGS,
   DYNAMIC_FEE_FLAG,
-  FEE_AMOUNT_MASK
+  FEE_AMOUNT_MASK,
+  DOPPLER_MAX_TICK_SPACING,
+  DYNAMIC_AUCTION_TICK_SPACINGS,
 } from './constants'
 
 // Export utility functions (includes MIN_SQRT_RATIO and MAX_SQRT_RATIO from tickMath)

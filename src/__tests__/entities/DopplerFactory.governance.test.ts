@@ -92,13 +92,13 @@ describe('DopplerFactory governance encoding', () => {
       },
       pool: {
         fee: 3000,
-        tickSpacing: 60,
+        tickSpacing: 10, // Must be <= 30 for dynamic auctions (Doppler.sol MAX_TICK_SPACING)
       },
       governance: { type: 'noOp' },
       migration: {
         type: 'uniswapV4',
         fee: 3000,
-        tickSpacing: 60,
+        tickSpacing: 10, // Must be <= 30 for dynamic auctions (Doppler.sol MAX_TICK_SPACING)
         streamableFees: {
           lockDuration: 7 * 24 * 60 * 60,
           beneficiaries: [{ beneficiary: account.address, shares: parseEther('1') }],

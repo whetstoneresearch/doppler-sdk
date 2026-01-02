@@ -93,7 +93,7 @@ async function main() {
     .withMigration({
       type: 'uniswapV4',
       fee: 3000,
-      tickSpacing: 60,  // Must match pool tickSpacing (derived from fee: 3000)
+      tickSpacing: 60,  // Post-migration pool tickSpacing (standard Uniswap V4, no MAX_TICK_SPACING constraint)
       streamableFees: {
         lockDuration: 365 * 24 * 60 * 60, // 1 year
         beneficiaries: [

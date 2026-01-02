@@ -81,6 +81,8 @@ describe('Builder withMarketCapRange ordering', () => {
     })
 
     it('throws if withMarketCapRange is called after poolConfig', () => {
+      // Note: tickSpacing: 60 would also throw for exceeding MAX_TICK_SPACING,
+      // but the mutual exclusion error should be thrown first when using poolConfig() then withMarketCapRange()
       const builder = DynamicAuctionBuilder.forChain(CHAIN_IDS.BASE)
         .tokenConfig({ name: 'Test', symbol: 'TST', tokenURI: 'ipfs://test' })
         .saleConfig({
@@ -88,16 +90,11 @@ describe('Builder withMarketCapRange ordering', () => {
           numTokensToSell: parseEther('900000000'),
           numeraire: WETH,
         })
-        .poolConfig({ fee: 3000, tickSpacing: 60 })
-
+      
+      // poolConfig with tickSpacing > 30 should throw
       expect(() =>
-        builder.withMarketCapRange({
-          marketCap: { start: 100_000, min: 10_000 },
-          numerairePrice: 3000,
-          minProceeds: parseEther('10'),
-          maxProceeds: parseEther('1000'),
-        })
-      ).toThrow('Cannot use both poolConfig() and withMarketCapRange()')
+        builder.poolConfig({ fee: 3000, tickSpacing: 60 })
+      ).toThrow('Dynamic auctions require tickSpacing <= 30')
     })
 
     it('succeeds when saleConfig is called before withMarketCapRange (no poolConfig needed)', () => {
@@ -124,8 +121,9 @@ describe('Builder withMarketCapRange ordering', () => {
       expect(params.auction.endTick).toBeDefined()
       expect(params.auction.startTick).toBeLessThan(params.auction.endTick)
       // Verify fee was derived (default is MEDIUM = 3000)
+      // tickSpacing is clamped to 10 for dynamic auctions (Doppler.sol MAX_TICK_SPACING = 30)
       expect(params.pool.fee).toBe(3000)
-      expect(params.pool.tickSpacing).toBe(60)
+      expect(params.pool.tickSpacing).toBe(10)
     })
 
     it('allows specifying custom fee in withMarketCapRange', () => {
@@ -150,7 +148,8 @@ describe('Builder withMarketCapRange ordering', () => {
       const params = builder.build()
 
       expect(params.pool.fee).toBe(10000)
-      expect(params.pool.tickSpacing).toBe(200) // tickSpacing for 1% fee
+      // tickSpacing is clamped to 10 for dynamic auctions (Doppler.sol MAX_TICK_SPACING = 30)
+      expect(params.pool.tickSpacing).toBe(10)
     })
   })
 

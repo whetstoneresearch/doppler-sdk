@@ -3,8 +3,9 @@ import {
   DEFAULT_AUCTION_DURATION,
   DEFAULT_EPOCH_LENGTH,
   DEFAULT_V4_YEARLY_MINT_RATE,
+  DOPPLER_MAX_TICK_SPACING,
+  DYNAMIC_AUCTION_TICK_SPACINGS,
   FEE_TIERS,
-  TICK_SPACINGS,
   ZERO_ADDRESS,
 } from '../constants'
 import {
@@ -99,6 +100,16 @@ export class DynamicAuctionBuilder<C extends SupportedChainId>
         'or poolConfig() + auctionByTicks() for manual tick configuration.'
       )
     }
+    
+    // Validate tick spacing against Doppler contract constraint
+    if (params.tickSpacing > DOPPLER_MAX_TICK_SPACING) {
+      throw new Error(
+        `Dynamic auctions require tickSpacing <= ${DOPPLER_MAX_TICK_SPACING} (Doppler.sol MAX_TICK_SPACING). ` +
+        `Got tickSpacing=${params.tickSpacing}. ` +
+        `Use a smaller tickSpacing, or use withMarketCapRange() which handles this automatically.`
+      )
+    }
+    
     this.pool = { fee: params.fee, tickSpacing: params.tickSpacing }
     return this
   }
@@ -205,9 +216,9 @@ export class DynamicAuctionBuilder<C extends SupportedChainId>
       )
     }
 
-    // Derive fee and tickSpacing
+    // Derive fee and tickSpacing (using dynamic auction-specific mappings)
     const fee = params.fee ?? FEE_TIERS.MEDIUM
-    const tickSpacing = (TICK_SPACINGS as Record<number, number>)[fee]
+    const tickSpacing = (DYNAMIC_AUCTION_TICK_SPACINGS as Record<number, number>)[fee]
     if (tickSpacing === undefined) {
       throw new Error(
         `No standard tickSpacing for fee ${fee}. Use poolConfig() + auctionByTicks() for custom fee tiers.`
