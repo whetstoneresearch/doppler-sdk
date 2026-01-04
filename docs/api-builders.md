@@ -141,12 +141,13 @@ Methods (chainable):
 - Price configuration methods (use one, not multiple):
   - **withMarketCapRange({ marketCap, numerairePrice, minProceeds, maxProceeds, ... })** ⭐ Recommended
     - Configure via dollar-denominated market cap targets
-    - Requires both `saleConfig()` AND `poolConfig()` to be called first
+    - Requires `saleConfig()` to be called first (for numeraire and tokenSupply)
     - Handles all tick math and token ordering internally
+    - Uses fixed tickSpacing of 30 (max allowed by Doppler contract)
     - Required: `marketCap: { start, min }`, `numerairePrice`, `minProceeds`, `maxProceeds`
       - `start` = auction launch price (high), `min` = floor price the auction descends to (low)
-    - Optional: `duration`, `epochLength`, `gamma`, `numPdSlugs`, `tokenDecimals`, `numeraireDecimals`
-    - Defaults: `duration = 7 days`, `epochLength = 1 hour`, `numPdSlugs = 5`
+    - Optional: `fee`, `duration`, `epochLength`, `gamma`, `numPdSlugs`, `tokenDecimals`, `numeraireDecimals`
+    - Defaults: `fee = 10000 (1%)`, `duration = 7 days`, `epochLength = 1 hour`, `numPdSlugs = 5`
   - auctionByTicks({ startTick, endTick, minProceeds, maxProceeds, duration?, epochLength?, gamma?, numPdSlugs? })
     - Defaults: `duration = DEFAULT_AUCTION_DURATION (604800)`, `epochLength = DEFAULT_EPOCH_LENGTH (43200)`, `numPdSlugs` optional
     - If `gamma` omitted, computed from ticks, duration, epoch length, and `tickSpacing`
@@ -196,7 +197,7 @@ const params = sdk.buildDynamicAuction()
     numerairePrice: 3000, // ETH = $3000 USD
     minProceeds: parseEther('100'), // Min 100 ETH to graduate
     maxProceeds: parseEther('5000'), // Cap at 5000 ETH
-    fee: 3000, // 0.3% fee tier (tickSpacing=60 derived automatically)
+    // fee: 10000,                  // Optional: defaults to 1% (tickSpacing is always 30)
     // duration: 7 * DAY_SECONDS,   // Optional: defaults to 7 days
     // epochLength: 3600,           // Optional: defaults to 1 hour
   })
@@ -209,7 +210,7 @@ const params = sdk.buildDynamicAuction()
 const paramsManual = new DynamicAuctionBuilder()
   .tokenConfig({ name: 'My Token', symbol: 'MTK', tokenURI: 'https://example.com/mtk.json' })
   .saleConfig({ initialSupply: parseEther('1_000_000'), numTokensToSell: parseEther('900_000'), numeraire: weth })
-  .poolConfig({ fee: 3000, tickSpacing: 60 }) // Use poolConfig() + auctionByTicks() for manual config
+  .poolConfig({ fee: 3000, tickSpacing: 10 }) // Use poolConfig() + auctionByTicks() for manual config (tickSpacing <= 30)
   .auctionByTicks({ startTick: 100000, endTick: 200000, minProceeds: parseEther('100'), maxProceeds: parseEther('1000') })
   .withGovernance({ useDefaults: true })
   .withMigration({ type: 'uniswapV2' })

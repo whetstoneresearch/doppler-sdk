@@ -139,7 +139,7 @@ describe('Builder withMarketCapRange ordering', () => {
           numerairePrice: 3000,
           minProceeds: parseEther('10'),
           maxProceeds: parseEther('1000'),
-          fee: 10000, // 1% fee tier
+          fee: 500, // 0.05% fee tier
         })
         .withGovernance({ type: 'default' })
         .withMigration({ type: 'uniswapV2' })
@@ -147,9 +147,29 @@ describe('Builder withMarketCapRange ordering', () => {
 
       const params = builder.build()
 
-      expect(params.pool.fee).toBe(10000)
+      expect(params.pool.fee).toBe(500)
       // tickSpacing is always 30 (max) for withMarketCapRange
       expect(params.pool.tickSpacing).toBe(30)
+    })
+
+    it('throws for invalid fee tier in withMarketCapRange', () => {
+      const builder = DynamicAuctionBuilder.forChain(CHAIN_IDS.BASE)
+        .tokenConfig({ name: 'Test', symbol: 'TST', tokenURI: 'ipfs://test' })
+        .saleConfig({
+          initialSupply: parseEther('1000000000'),
+          numTokensToSell: parseEther('900000000'),
+          numeraire: WETH,
+        })
+
+      expect(() =>
+        builder.withMarketCapRange({
+          marketCap: { start: 100_000, min: 10_000 },
+          numerairePrice: 3000,
+          minProceeds: parseEther('10'),
+          maxProceeds: parseEther('1000'),
+          fee: 1234 as any, // invalid fee tier
+        })
+      ).toThrow('Invalid fee tier: 1234. Must be one of: 100, 500, 3000, 10000')
     })
   })
 

@@ -3,6 +3,7 @@ import { CHAIN_IDS, type SupportedChainId } from './addresses';
 // Re-export SupportedChainId so consumers can import from this module
 export { type SupportedChainId } from './addresses';
 import type { Address, WalletClient } from 'viem';
+import type { FeeTier } from './constants';
 
 export type SupportedChain =
   | typeof base
@@ -329,8 +330,8 @@ export interface DynamicAuctionMarketCapConfig {
   tokenDecimals?: number;
   /** Numeraire decimals (default: 18) */
   numeraireDecimals?: number;
-  /** Fee tier in basis points (e.g., 10000 for 1%). Default: 10000 (1%) */
-  fee?: number;
+  /** Fee tier (100, 500, 3000, or 10000). Default: 10000 (1%) */
+  fee?: FeeTier;
   /** Minimum proceeds required for successful auction */
   minProceeds: bigint;
   /** Maximum proceeds cap for the auction */

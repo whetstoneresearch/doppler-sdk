@@ -5,6 +5,7 @@ import {
   DEFAULT_V4_YEARLY_MINT_RATE,
   DOPPLER_MAX_TICK_SPACING,
   FEE_TIERS,
+  VALID_FEE_TIERS,
   ZERO_ADDRESS,
 } from '../constants'
 import {
@@ -219,6 +220,14 @@ export class DynamicAuctionBuilder<C extends SupportedChainId>
     // Default fee is HIGH (1%) for Dutch auctions
     // tickSpacing is always MAX (30) for withMarketCapRange convenience method
     const fee = params.fee ?? FEE_TIERS.HIGH
+    
+    // Validate fee is a standard tier
+    if (!VALID_FEE_TIERS.includes(fee)) {
+      throw new Error(
+        `Invalid fee tier: ${fee}. Must be one of: ${VALID_FEE_TIERS.join(', ')}`
+      )
+    }
+    
     const tickSpacing = DOPPLER_MAX_TICK_SPACING
 
     // Set pool config internally
