@@ -200,20 +200,6 @@ describe('Airlock Module Whitelisting', () => {
         }
       );
 
-      (addresses.v3Migrator === ZERO_ADDRESS ? it.skip : it)(
-        'should have V3Migrator whitelisted',
-        async () => {
-          const state = (await publicClient.readContract({
-            address: addresses.airlock,
-            abi: airlockAbi,
-            functionName: 'getModuleState',
-            args: [addresses.v3Migrator],
-          })) as unknown as number;
-
-          expect(Number(state)).toBe(ModuleState.LiquidityMigrator);
-        }
-      );
-
       (addresses.v4Migrator === ZERO_ADDRESS ? it.skip : it)(
         'should have V4Migrator whitelisted',
         async () => {

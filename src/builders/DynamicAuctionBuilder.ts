@@ -370,10 +370,6 @@ export class DynamicAuctionBuilder<C extends SupportedChainId>
     return this.overrideModule('v2Migrator', address)
   }
 
-  withV3Migrator(address: Address): this {
-    return this.overrideModule('v3Migrator', address)
-  }
-
   withV4Migrator(address: Address): this {
     return this.overrideModule('v4Migrator', address)
   }

@@ -84,32 +84,15 @@ describe('DopplerFactory Custom Migration Encoder', () => {
 
   it('returns empty migration payload for default V3 config', async () => {
     const defaultFactory = new DopplerFactory(publicClient, undefined, CHAIN_IDS.BASE_SEPOLIA)
-    const paramsWithDefaultV3 = {
+    const paramsWithDefaultV2 = {
       ...mockCreateParams,
       migration: {
-        type: 'uniswapV3' as const,
-        fee: DEFAULT_V3_FEE,
-        tickSpacing: (TICK_SPACINGS as Record<number, number>)[DEFAULT_V3_FEE],
+        type: 'uniswapV2' as const,
       },
     }
 
-    const result = await defaultFactory.encodeCreateStaticAuctionParams(paramsWithDefaultV3)
+    const result = await defaultFactory.encodeCreateStaticAuctionParams(paramsWithDefaultV2)
     expect(result.liquidityMigratorData).toBe('0x')
-  })
-
-  it('encodes migration payload for non-standard V3 spacing', async () => {
-    const defaultFactory = new DopplerFactory(publicClient, undefined, CHAIN_IDS.BASE_SEPOLIA)
-    const paramsWithOverride = {
-      ...mockCreateParams,
-      migration: {
-        type: 'uniswapV3' as const,
-        fee: DEFAULT_V3_FEE,
-        tickSpacing: (TICK_SPACINGS as Record<number, number>)[DEFAULT_V3_FEE] + 1,
-      },
-    }
-
-    const result = await defaultFactory.encodeCreateStaticAuctionParams(paramsWithOverride)
-    expect(result.liquidityMigratorData).not.toBe('0x')
   })
 
   it('returns empty migration payload for default V4 config', async () => {
@@ -146,22 +129,20 @@ describe('DopplerFactory Custom Migration Encoder', () => {
     expect(result.liquidityMigratorData).not.toBe('0x')
   })
 
-  it('should handle V3 migration with custom encoder', async () => {
-    const v3Migration: MigrationConfig = {
-      type: 'uniswapV3',
-      fee: 3000,
-      tickSpacing: 60
+  it('should handle V2 migration with custom encoder', async () => {
+    const v2Migration: MigrationConfig = {
+      type: 'uniswapV2',
     }
 
-    const paramsWithV3 = {
+    const paramsWithV2 = {
       ...mockCreateParams,
-      migration: v3Migration
+      migration: v2Migration
     }
 
-    const result = await factory.encodeCreateStaticAuctionParams(paramsWithV3)
+    const result = await factory.encodeCreateStaticAuctionParams(paramsWithV2)
 
-    // Verify custom encoder was called with V3 migration config
-    expect(customEncoder).toHaveBeenCalledWith(v3Migration)
+    // Verify custom encoder was called with V2 migration config
+    expect(customEncoder).toHaveBeenCalledWith(v2Migration)
     expect(result.liquidityMigratorData).toBe(`0x${'custom'.padEnd(64, '0')}`)
   })
 

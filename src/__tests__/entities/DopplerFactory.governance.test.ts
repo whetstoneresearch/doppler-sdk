@@ -54,9 +54,7 @@ describe('DopplerFactory governance encoding', () => {
       },
       governance: { type: 'noOp' },
       migration: {
-        type: 'uniswapV3',
-        fee: 10000,
-        tickSpacing: 200,
+        type: 'uniswapV2',
       },
       userAddress: account.address,
     }

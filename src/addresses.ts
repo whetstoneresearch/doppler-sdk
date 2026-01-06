@@ -47,7 +47,6 @@ export interface ChainAddresses {
   
   // Migration contracts
   v2Migrator: Address
-  v3Migrator: Address
   v4Migrator: Address
   v4MigratorHook?: Address
   noOpMigrator?: Address
@@ -86,7 +85,6 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     dopplerLens: ZERO_ADDRESS,
     dopplerDeployer: ZERO_ADDRESS,
     v2Migrator: ZERO_ADDRESS,
-    v3Migrator: ZERO_ADDRESS,
     v4Migrator: ZERO_ADDRESS,
     poolManager: ZERO_ADDRESS,
     governanceFactory: ZERO_ADDRESS,
@@ -110,7 +108,6 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     dopplerDeployer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE].DopplerDeployer as Address,
     poolManager: '0x498581ff718922c3f8e6a244956af099b2652b2b' as Address,
     v2Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE].UniswapV2Migrator as Address,
-    v3Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE].UniswapV2Migrator as Address,
     v4Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE].UniswapV4Migrator as Address,
     noOpMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE].NoOpMigrator as Address,
     governanceFactory: '0xb4deE32EB70A5E55f3D2d861F49Fb3D79f7a14d9' as Address,
@@ -139,7 +136,6 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     dopplerDeployer: '0x60a039e4add40ca95e0475c11e8a4182d06c9aa0' as Address,
     poolManager: '0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408' as Address,
     v2Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA].UniswapV2Migrator as Address,
-    v3Migrator: '0xb2ec6559704467306d04322a5dc082b2af4562dd' as Address,
     v4Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA].UniswapV4Migrator as Address,
     v4MigratorHook: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA].UniswapV4MigratorHook as Address,
     noOpMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA].NoOpMigrator as Address,
@@ -163,8 +159,7 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     dopplerDeployer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.INK].DopplerDeployer as Address,
     poolManager: '0x360e68faccca8ca495c1b759fd9eee466db9fb32' as Address,
     v2Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.INK].UniswapV2Migrator as Address,
-    v3Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.INK].UniswapV2Migrator as Address,
-    v4Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.INK].UniswapV2Migrator as Address, // Same as v2/v3 migrator
+    v4Migrator: ZERO_ADDRESS,
     governanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.INK].GovernanceFactory as Address,
     noOpGovernanceFactory: ZERO_ADDRESS, // Not yet deployed
     streamableFeesLocker: ZERO_ADDRESS, // Not yet deployed
@@ -185,8 +180,7 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     dopplerDeployer: '0x06FEFD02F0b6d9f57F52cfacFc113665Dfa20F0f' as Address,
     poolManager: '0x1f98400000000000000000000000000000000004' as Address,
     v2Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.UNICHAIN].UniswapV2Migrator as Address,
-    v3Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.UNICHAIN].UniswapV2Migrator as Address,
-    v4Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.UNICHAIN].UniswapV2Migrator as Address, // Same as v2/v3 migrator
+    v4Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.UNICHAIN].UniswapV4Migrator as Address,
     noOpMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.UNICHAIN].NoOpMigrator as Address,
     governanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.UNICHAIN].GovernanceFactory as Address,
     noOpGovernanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.UNICHAIN].NoOpGovernanceFactory as Address,
@@ -208,8 +202,7 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     dopplerDeployer: '0x2f2bacd46d3f5c9ee052ab392b73711db89129db' as Address,
     poolManager: '0x00B036B58a818B1BC34d502D3fE730Db729e62AC' as Address,
     v2Migrator: '0x44C448E38A2C3D206c9132E7f645510dFbBC946b' as Address,
-    v3Migrator: '0x44C448E38A2C3D206c9132E7f645510dFbBC946b' as Address,
-    v4Migrator: '0x44C448E38A2C3D206c9132E7f645510dFbBC946b' as Address, // Same as v2/v3 migrator
+    v4Migrator: '0x44C448E38A2C3D206c9132E7f645510dFbBC946b' as Address,
     noOpMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.UNICHAIN_SEPOLIA].NoOpMigrator as Address,
     governanceFactory: '0x1E4332EEfAE9e4967C2D186f7b2d439D778e81cC' as Address,
     noOpGovernanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.UNICHAIN_SEPOLIA].NoOpGovernanceFactory as Address,
@@ -231,8 +224,7 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     dopplerDeployer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_TESTNET].DopplerDeployer as Address,
     poolManager: '0xe93882f395B0b24180855c68Ab19B2d78573ceBc' as Address,
     v2Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_TESTNET].UniswapV2Migrator as Address,
-    v3Migrator: ZERO_ADDRESS,
-    v4Migrator: '0xBEd386a1Fc62B6598c9b8d2BF634471B6Fe75EB7' as Address, // Same as v2/v3 migrator
+    v4Migrator: '0xBEd386a1Fc62B6598c9b8d2BF634471B6Fe75EB7' as Address,
     noOpMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_TESTNET].NoOpMigrator as Address,
     governanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_TESTNET].GovernanceFactory as Address,
     noOpGovernanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_TESTNET].NoOpGovernanceFactory as Address,
@@ -254,8 +246,7 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     dopplerDeployer: ZERO_ADDRESS,
     poolManager: '0x188d586ddcf52439676ca21a244753fa19f9ea8e' as Address,
     v2Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_MAINNET].UniswapV2Migrator as Address,
-    v3Migrator: ZERO_ADDRESS,
-    v4Migrator: ZERO_ADDRESS, // Same as v2/v3 migrator
+    v4Migrator: ZERO_ADDRESS,
     noOpMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_MAINNET].NoOpMigrator as Address,
     governanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_MAINNET].GovernanceFactory as Address,
     noOpGovernanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_MAINNET].NoOpGovernanceFactory as Address,
