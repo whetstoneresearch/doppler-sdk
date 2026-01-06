@@ -34,6 +34,10 @@ export interface ChainAddresses {
   // Multicurve initializer (V4) — optional per chain
   v4MulticurveInitializer?: Address
   v4ScheduledMulticurveInitializer?: Address
+  
+  // DopplerHook system (for RehypeDopplerHook support)
+  dopplerHookInitializer?: Address
+  rehypeDopplerHook?: Address
   dopplerLens: Address
   dopplerDeployer: Address
   poolManager: Address
@@ -129,6 +133,8 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     v4Initializer: '0x8e891d249f1ecbffa6143c03eb1b12843aef09d3' as Address,
     v4MulticurveInitializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA].UniswapV4MulticurveInitializer as Address,
     v4ScheduledMulticurveInitializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA].UniswapV4ScheduledMulticurveInitializer as Address, // From Doppler scheduled multicurve deployments (Base Sepolia)
+    dopplerHookInitializer: '0x98CD6478DeBe443069dB863Abb9626d94de9A544' as Address,
+    rehypeDopplerHook: '0x636a756cee08775cc18780f52dd90b634f18ad37' as Address,
     dopplerLens: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA].DopplerLensQuoter as Address,
     dopplerDeployer: '0x60a039e4add40ca95e0475c11e8a4182d06c9aa0' as Address,
     poolManager: '0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408' as Address,

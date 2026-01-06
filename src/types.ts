@@ -567,6 +567,27 @@ export interface MulticurveBundleExactInResult {
   gasEstimate: bigint;
 }
 
+// RehypeDopplerHook configuration for fee distribution and buyback
+export interface RehypeDopplerHookConfig {
+  // The hook contract address (must be whitelisted in the initializer)
+  hookAddress: Address;
+  // Destination address for buyback tokens
+  buybackDestination: Address;
+  // Custom swap fee in basis points (e.g., 3000 = 0.3%)
+  customFee: number;
+  // Fee distribution percentages (must sum to 100% / WAD)
+  // Percentage of fees used for asset buyback (in WAD, e.g., 0.2e18 = 20%)
+  assetBuybackPercentWad: bigint;
+  // Percentage of fees used for numeraire buyback (in WAD, e.g., 0.2e18 = 20%)
+  numeraireBuybackPercentWad: bigint;
+  // Percentage of fees distributed to beneficiaries (in WAD, e.g., 0.3e18 = 30%)
+  beneficiaryPercentWad: bigint;
+  // Percentage of fees distributed to LPs (in WAD, e.g., 0.3e18 = 30%)
+  lpPercentWad: bigint;
+  // Optional graduation calldata (called when pool graduates)
+  graduationCalldata?: `0x${string}`;
+}
+
 // Create Multicurve initializer parameters
 export interface CreateMulticurveParams<C extends SupportedChainId = SupportedChainId> {
   // Token configuration
@@ -582,12 +603,16 @@ export interface CreateMulticurveParams<C extends SupportedChainId = SupportedCh
     curves: MulticurveCurve[];
     // Optional beneficiaries to lock the pool (fee collection only, no migration)
     beneficiaries?: BeneficiaryData[];
+    // Optional far tick for the pool (defaults to max usable tick based on tickSpacing)
+    farTick?: number;
   };
 
   // Optional scheduled launch configuration
   schedule?: {
     startTime: number;
   };
+
+  dopplerHook?: RehypeDopplerHookConfig;
 
   // Vesting configuration (optional)
   vesting?: VestingConfig;
@@ -639,6 +664,10 @@ export interface ModuleAddressOverrides {
   v4Initializer?: Address;
   v4MulticurveInitializer?: Address;
   v4ScheduledMulticurveInitializer?: Address;
+  dopplerHookInitializer?: Address;
+
+  // DopplerHooks
+  rehypeDopplerHook?: Address;
 
   // Governance
   governanceFactory?: Address;

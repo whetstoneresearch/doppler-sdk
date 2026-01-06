@@ -34,7 +34,10 @@ export type {
   LockableV3InitializerParams,
   MulticurvePoolState,
   MulticurveMarketCapPreset,
-  
+
+  // DopplerHook types (e.g., RehypeDopplerHook)
+  RehypeDopplerHookConfig,
+
   // Parameter types
   CreateStaticAuctionParams,
   CreateDynamicAuctionParams,
@@ -42,10 +45,10 @@ export type {
   V4PoolKey,
   MulticurveBundleExactOutResult,
   MulticurveBundleExactInResult,
-  
+
   // Configuration types
   DopplerSDKConfig,
-  
+
   // Information types
   PoolInfo,
   HookInfo,
