@@ -403,6 +403,13 @@ export interface MulticurveMarketCapCurvesConfig {
   tickSpacing?: number;
   /** Optional beneficiaries for fee streaming */
   beneficiaries?: BeneficiaryData[];
+  /** 
+   * Maximum market cap the pool can reach (in USD).
+   * Converted to farTick internally.
+   * Must be >= the highest curve's end market cap.
+   * If not specified, defaults to the maximum possible tick.
+   */
+  maxMarketCap?: number;
 }
 
 // Build configuration for static auctions (V3-style)
