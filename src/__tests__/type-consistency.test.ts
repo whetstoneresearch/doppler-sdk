@@ -26,7 +26,7 @@ describe('Type Consistency', () => {
       },
       pool: {
         fee: 3000,
-        tickSpacing: 60
+        tickSpacing: 10 // Must be <= 30 for dynamic auctions (Doppler.sol MAX_TICK_SPACING)
       },
       governance: { noOp: true },
       migration: {
@@ -37,7 +37,7 @@ describe('Type Consistency', () => {
 
     // Verify pool parameters are in the pool object
     expect(params.pool.fee).toBe(3000)
-    expect(params.pool.tickSpacing).toBe(60)
+    expect(params.pool.tickSpacing).toBe(10)
     
     // Verify auction config doesn't have fee or tickSpacing
     const auctionConfig: DynamicAuctionConfig = params.auction

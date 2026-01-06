@@ -13,13 +13,25 @@ export const FEE_TIERS = {
   HIGH: 10000     // 1.00%
 } as const
 
-// Tick spacings for different fee tiers
+/** Valid fee tier values (100, 500, 3000, 10000) */
+export type FeeTier = typeof FEE_TIERS[keyof typeof FEE_TIERS]
+
+/** Array of valid fee tiers for validation */
+export const VALID_FEE_TIERS: readonly FeeTier[] = [100, 500, 3000, 10000] as const
+
+// Tick spacings for different fee tiers (standard Uniswap mapping)
 export const TICK_SPACINGS = {
   100: 1,
   500: 10,
   3000: 60,
   10000: 200
 } as const
+
+/** 
+ * Maximum tick spacing allowed by Doppler.sol for dynamic (Dutch) auctions.
+ * @see Doppler.sol line 159: `int24 constant MAX_TICK_SPACING = 30`
+ */
+export const DOPPLER_MAX_TICK_SPACING = 30
 
 // Time constants
 export const SECONDS_PER_DAY = 86400
@@ -89,3 +101,6 @@ export const DOPPLER_FLAGS = BigInt(
 // V4 Dynamic Fee Flag
 export const DYNAMIC_FEE_FLAG = 0x800000 // 8388608 in decimal
 export const FEE_AMOUNT_MASK = 0xFFFFFF // Mask to extract actual fee from dynamic fee
+
+// Valid fee tiers for dynamic auctions (those with tickSpacing <= DOPPLER_MAX_TICK_SPACING)
+export const DYNAMIC_AUCTION_VALID_FEES = [100, 500, 3000, 10000] as const

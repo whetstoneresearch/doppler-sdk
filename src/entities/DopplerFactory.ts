@@ -48,6 +48,7 @@ import {
   DEFAULT_CREATE_GAS_LIMIT,
   DEFAULT_V3_FEE,
   TICK_SPACINGS,
+  DOPPLER_MAX_TICK_SPACING,
 } from '../constants'
 import { computeOptimalGamma, MIN_TICK, MAX_TICK, isToken0Expected } from '../utils'
 import { airlockAbi, bundlerAbi, DERC20Bytecode, DopplerBytecode, DopplerDN404Bytecode, v4MulticurveInitializerAbi } from '../abis'
@@ -1536,6 +1537,16 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     }
     if (params.pool.tickSpacing <= 0) {
       throw new Error('Tick spacing must be positive')
+    }
+    
+    // Validate tick spacing against Doppler contract constraint
+    // @see Doppler.sol line 159: `int24 constant MAX_TICK_SPACING = 30`
+    if (params.pool.tickSpacing > DOPPLER_MAX_TICK_SPACING) {
+      throw new Error(
+        `Dynamic auctions require tickSpacing <= ${DOPPLER_MAX_TICK_SPACING} (Doppler.sol MAX_TICK_SPACING). ` +
+        `Got tickSpacing=${params.pool.tickSpacing}. ` +
+        `Use withMarketCapRange() which handles this automatically, or use a smaller tickSpacing with poolConfig().`
+      )
     }
     
     // Validate that total duration is divisible by epoch length

@@ -35,16 +35,16 @@ describe('V4 SDK Compatibility', () => {
       auction: {
         duration: 7 * DAY_SECONDS,
         epochLength: 43200, // 12 hours
-        startTick: -92203,
-        endTick: -91003,
-        gamma: 60, // Must be divisible by tick spacing (60)
+        startTick: -92200, // Aligned to tickSpacing 10
+        endTick: -91000,   // Aligned to tickSpacing 10
+        gamma: 10, // Must be divisible by tick spacing (10) and <= 30
         minProceeds: parseEther("100"),
         maxProceeds: parseEther("1000"),
         numPdSlugs: 3,
       },
       pool: {
         fee: 3000,
-        tickSpacing: 60,
+        tickSpacing: 10, // Must be <= 30 for dynamic auctions (Doppler.sol MAX_TICK_SPACING)
       },
       governance: { noOp: true },
       migration: {
@@ -92,15 +92,15 @@ describe('V4 SDK Compatibility', () => {
     // This is a simplified check - in reality we'd decode the full ABI
     const poolInitData = createParams.poolInitializerData
     expect(poolInitData).toBeDefined()
-    expect(poolInitData).toContain('3c') // hex for 60
+    expect(poolInitData).toContain('0a') // hex for 10 (gamma)
   })
 
   it('should use correct defaults when not explicitly provided', () => {
     const builder = new DynamicAuctionBuilder()
       .tokenConfig({ name: 'Test', symbol: 'TST', tokenURI: 'https://test.com' })
       .saleConfig({ initialSupply: parseEther('1000000'), numTokensToSell: parseEther('500000'), numeraire: mockAddresses.weth })
-      .poolConfig({ fee: 3000, tickSpacing: 60 })
-      .auctionByTicks({ startTick: 92203, endTick: 91003, minProceeds: parseEther('100'), maxProceeds: parseEther('1000') })
+      .poolConfig({ fee: 3000, tickSpacing: 10 }) // Must be <= 30 for dynamic auctions
+      .auctionByTicks({ startTick: 92200, endTick: 91000, minProceeds: parseEther('100'), maxProceeds: parseEther('1000') })
       .withGovernance({ type: 'default' })
       .withMigration({ type: 'uniswapV2' as const })
       .withUserAddress(mockAddressesWithExtras.user)
@@ -112,7 +112,9 @@ describe('V4 SDK Compatibility', () => {
     expect(result.integrator).toBe("0x0000000000000000000000000000000000000000") // ZERO_ADDRESS
     
     // Check gamma calculation with new epoch length
-    const expectedGamma = 120 // With 12 hour epochs and the tick range (1200 ticks / 14 epochs ~= 86, rounded up to 120)
+    // With 12 hour epochs, 7 days = 14 epochs, tick range = 1200, so ~86 ticks/epoch
+    // Quantized up to nearest tickSpacing (10) = 90
+    const expectedGamma = 90
     expect(result.auction.gamma).toBe(expectedGamma)
   })
 })

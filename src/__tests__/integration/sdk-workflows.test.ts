@@ -182,13 +182,13 @@ describe('SDK Workflows Integration Tests', () => {
         },
         pool: {
           fee: 3000,
-          tickSpacing: 60,
+          tickSpacing: 10, // Must be <= 30 for dynamic auctions (Doppler.sol MAX_TICK_SPACING)
         },
         governance: { noOp: true },
         migration: {
           type: 'uniswapV4',
           fee: 3000,
-          tickSpacing: 60,
+          tickSpacing: 10, // Must be <= 30 for dynamic auctions (Doppler.sol MAX_TICK_SPACING)
           streamableFees: {
             lockDuration: 365 * 24 * 60 * 60,
             beneficiaries: [

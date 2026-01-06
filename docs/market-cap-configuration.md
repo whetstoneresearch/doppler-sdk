@@ -53,12 +53,12 @@ const params = sdk.buildDynamicAuction()
     numTokensToSell: parseEther('500000000'),
     numeraire: WETH_ADDRESS
   })
-  .poolConfig({ fee: 3000, tickSpacing: 60 })  // Required before withMarketCapRange!
   .withMarketCapRange({
     marketCap: { start: 500_000, min: 50_000 }, // $500k start, descends to $50k floor
     numerairePrice: 3000,
     minProceeds: parseEther('100'),   // Min 100 ETH to graduate
-    maxProceeds: parseEther('5000')   // Cap at 5000 ETH
+    maxProceeds: parseEther('5000'),  // Cap at 5000 ETH
+    fee: 3000                         // 0.3% fee (tickSpacing derived automatically)
   })
   .withGovernance()
   .withMigration({ type: 'uniswapV4', ... })
@@ -110,11 +110,11 @@ saleConfig() → withMarketCapRange()
 ### Dynamic Auction
 
 ```
-saleConfig() → poolConfig() → withMarketCapRange()
+saleConfig() → withMarketCapRange()
 ```
 
-`poolConfig()` provides:
-- `tickSpacing` (required for tick calculations)
+`withMarketCapRange()` accepts an optional `fee` parameter (default: 3000).
+The `tickSpacing` is automatically derived from the fee tier.
 
 ### Multicurve
 
@@ -154,6 +154,7 @@ interface DynamicAuctionMarketCapConfig {
   tokenSupply?: bigint;                        // Override (defaults to initialSupply)
   tokenDecimals?: number;                      // Default: 18
   numeraireDecimals?: number;                  // Default: 18
+  fee?: number;                                // Default: 3000 (0.3%), tickSpacing derived
   duration?: number;                           // Default: 7 days (604800)
   epochLength?: number;                        // Default: 1 hour (3600)
   gamma?: number;                              // Auto-calculated if not provided
@@ -238,7 +239,7 @@ Curve 3: $4M - $50M market cap → tickLower/tickUpper calculated
 | Semantics | Price ascends from start to end | Dutch auction descends from start to min |
 | Proceeds | Not configurable | `minProceeds`, `maxProceeds` required |
 | Duration | N/A | `duration`, `epochLength` |
-| Pre-requisite | `saleConfig()` only | `saleConfig()` + `poolConfig()` |
+| Pre-requisite | `saleConfig()` only | `saleConfig()` only (fee optional) |
 | Protocol | Uniswap V3 | Uniswap V4 Hook |
 
 ---
@@ -299,7 +300,7 @@ The SDK validates market cap configurations automatically:
 ### Errors (will throw)
 
 - `saleConfig()` not called before `withMarketCapRange()` / `withCurves()`
-- `poolConfig()` not called before `withMarketCapRange()` (Dynamic only)
+- `poolConfig()` and `withMarketCapRange()` both called (Dynamic only - mutually exclusive)
 - `start >= end` market cap
 - Missing required fields (`minProceeds`/`maxProceeds` for Dynamic)
 - Curve shares don't sum to exactly 1e18 (Multicurve)

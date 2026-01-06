@@ -9,7 +9,7 @@
  *
  * Key requirements:
  * - saleConfig() must be called before withMarketCapRange()
- * - poolConfig() must also be called before withMarketCapRange() (for tickSpacing)
+ * - tickSpacing is automatically derived from fee (no need to call poolConfig())
  */
 
 import { DopplerSDK, DAY_SECONDS } from '../src'
@@ -60,7 +60,8 @@ async function main() {
   console.log('')
 
   // Build dynamic auction using market cap range instead of raw ticks
-  // Note: both saleConfig() AND poolConfig() are required before withMarketCapRange()
+  // Note: saleConfig() must be called before withMarketCapRange()
+  // tickSpacing is automatically derived from fee (no poolConfig() needed!)
   const params = sdk
     .buildDynamicAuction()
     .tokenConfig({
@@ -73,7 +74,6 @@ async function main() {
       numTokensToSell: parseEther('500000000'), // 500 million for sale
       numeraire: '0x4200000000000000000000000000000000000006', // WETH on Base
     })
-    .poolConfig({ fee: 3000, tickSpacing: 10 }) // Required before withMarketCapRange!
     // Use market cap range - converts to ticks internally
     // Dutch auction: starts at high price (start), descends to floor (min)
     .withMarketCapRange({
@@ -81,6 +81,7 @@ async function main() {
       numerairePrice: ethPriceUsd, // Live ETH price from CoinGecko
       minProceeds: parseEther('100'), // Min 100 ETH to graduate
       maxProceeds: parseEther('5000'), // Cap at 5000 ETH
+      fee: 3000,                      // 0.3% fee tier (tickSpacing=60 derived automatically)
       numPdSlugs: 15,                 // Price discovery slugs
       // Optional overrides (defaults shown):
       // duration: 7 * DAY_SECONDS,   // 7 day auction
@@ -92,7 +93,7 @@ async function main() {
     .withMigration({
       type: 'uniswapV4',
       fee: 3000,
-      tickSpacing: 10,
+      tickSpacing: 60,  // Post-migration pool tickSpacing (standard Uniswap V4, no MAX_TICK_SPACING constraint)
       streamableFees: {
         lockDuration: 365 * 24 * 60 * 60, // 1 year
         beneficiaries: [

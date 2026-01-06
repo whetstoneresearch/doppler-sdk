@@ -49,11 +49,10 @@ describe('Builder withMarketCapRange ordering', () => {
     it('throws if withMarketCapRange is called before saleConfig', () => {
       const builder = DynamicAuctionBuilder.forChain(CHAIN_IDS.BASE)
         .tokenConfig({ name: 'Test', symbol: 'TST', tokenURI: 'ipfs://test' })
-        .poolConfig({ fee: 3000, tickSpacing: 60 })
 
       expect(() =>
         builder.withMarketCapRange({
-          marketCap: { start: 100_000, end: 10_000_000 },
+          marketCap: { start: 100_000, min: 10_000 },
           numerairePrice: 3000,
           minProceeds: parseEther('10'),
           maxProceeds: parseEther('1000'),
@@ -61,7 +60,7 @@ describe('Builder withMarketCapRange ordering', () => {
       ).toThrow('Must call saleConfig() before withMarketCapRange()')
     })
 
-    it('throws if withMarketCapRange is called before poolConfig', () => {
+    it('throws if poolConfig is called after withMarketCapRange', () => {
       const builder = DynamicAuctionBuilder.forChain(CHAIN_IDS.BASE)
         .tokenConfig({ name: 'Test', symbol: 'TST', tokenURI: 'ipfs://test' })
         .saleConfig({
@@ -69,18 +68,21 @@ describe('Builder withMarketCapRange ordering', () => {
           numTokensToSell: parseEther('900000000'),
           numeraire: WETH,
         })
-
-      expect(() =>
-        builder.withMarketCapRange({
-          marketCap: { start: 100_000, end: 10_000_000 },
+        .withMarketCapRange({
+          marketCap: { start: 100_000, min: 10_000 },
           numerairePrice: 3000,
           minProceeds: parseEther('10'),
           maxProceeds: parseEther('1000'),
         })
-      ).toThrow('tickSpacing is required (set via poolConfig() before calling withMarketCapRange())')
+
+      expect(() =>
+        builder.poolConfig({ fee: 3000, tickSpacing: 60 })
+      ).toThrow('Cannot use poolConfig() after withMarketCapRange()')
     })
 
-    it('succeeds when saleConfig and poolConfig are called before withMarketCapRange', () => {
+    it('throws if withMarketCapRange is called after poolConfig', () => {
+      // Note: tickSpacing: 60 would also throw for exceeding MAX_TICK_SPACING,
+      // but the mutual exclusion error should be thrown first when using poolConfig() then withMarketCapRange()
       const builder = DynamicAuctionBuilder.forChain(CHAIN_IDS.BASE)
         .tokenConfig({ name: 'Test', symbol: 'TST', tokenURI: 'ipfs://test' })
         .saleConfig({
@@ -88,9 +90,23 @@ describe('Builder withMarketCapRange ordering', () => {
           numTokensToSell: parseEther('900000000'),
           numeraire: WETH,
         })
-        .poolConfig({ fee: 3000, tickSpacing: 60 })
+      
+      // poolConfig with tickSpacing > 30 should throw
+      expect(() =>
+        builder.poolConfig({ fee: 3000, tickSpacing: 60 })
+      ).toThrow('Dynamic auctions require tickSpacing <= 30')
+    })
+
+    it('succeeds when saleConfig is called before withMarketCapRange (no poolConfig needed)', () => {
+      const builder = DynamicAuctionBuilder.forChain(CHAIN_IDS.BASE)
+        .tokenConfig({ name: 'Test', symbol: 'TST', tokenURI: 'ipfs://test' })
+        .saleConfig({
+          initialSupply: parseEther('1000000000'),
+          numTokensToSell: parseEther('900000000'),
+          numeraire: WETH,
+        })
         .withMarketCapRange({
-          marketCap: { start: 100_000, end: 10_000_000 },
+          marketCap: { start: 100_000, min: 10_000 },
           numerairePrice: 3000,
           minProceeds: parseEther('10'),
           maxProceeds: parseEther('1000'),
@@ -104,6 +120,56 @@ describe('Builder withMarketCapRange ordering', () => {
       expect(params.auction.startTick).toBeDefined()
       expect(params.auction.endTick).toBeDefined()
       expect(params.auction.startTick).toBeLessThan(params.auction.endTick)
+      // Verify fee was derived (default is HIGH = 10000 / 1%)
+      // tickSpacing is always 30 (max) for withMarketCapRange
+      expect(params.pool.fee).toBe(10000)
+      expect(params.pool.tickSpacing).toBe(30)
+    })
+
+    it('allows specifying custom fee in withMarketCapRange', () => {
+      const builder = DynamicAuctionBuilder.forChain(CHAIN_IDS.BASE)
+        .tokenConfig({ name: 'Test', symbol: 'TST', tokenURI: 'ipfs://test' })
+        .saleConfig({
+          initialSupply: parseEther('1000000000'),
+          numTokensToSell: parseEther('900000000'),
+          numeraire: WETH,
+        })
+        .withMarketCapRange({
+          marketCap: { start: 100_000, min: 10_000 },
+          numerairePrice: 3000,
+          minProceeds: parseEther('10'),
+          maxProceeds: parseEther('1000'),
+          fee: 500, // 0.05% fee tier
+        })
+        .withGovernance({ type: 'default' })
+        .withMigration({ type: 'uniswapV2' })
+        .withUserAddress(USER)
+
+      const params = builder.build()
+
+      expect(params.pool.fee).toBe(500)
+      // tickSpacing is always 30 (max) for withMarketCapRange
+      expect(params.pool.tickSpacing).toBe(30)
+    })
+
+    it('throws for invalid fee tier in withMarketCapRange', () => {
+      const builder = DynamicAuctionBuilder.forChain(CHAIN_IDS.BASE)
+        .tokenConfig({ name: 'Test', symbol: 'TST', tokenURI: 'ipfs://test' })
+        .saleConfig({
+          initialSupply: parseEther('1000000000'),
+          numTokensToSell: parseEther('900000000'),
+          numeraire: WETH,
+        })
+
+      expect(() =>
+        builder.withMarketCapRange({
+          marketCap: { start: 100_000, min: 10_000 },
+          numerairePrice: 3000,
+          minProceeds: parseEther('10'),
+          maxProceeds: parseEther('1000'),
+          fee: 1234 as any, // invalid fee tier
+        })
+      ).toThrow('Invalid fee tier: 1234. Must be one of: 100, 500, 3000, 10000')
     })
   })
 
