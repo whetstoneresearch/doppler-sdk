@@ -75,7 +75,7 @@ export interface BaseAuctionBuilder<C extends SupportedChainId> {
 
   /**
    * Configure post-auction liquidity migration.
-   * @param migration - Migration target (uniswapV2, uniswapV3, uniswapV4, or noOp)
+   * @param migration - Migration target (uniswapV2, uniswapV4, or noOp)
    */
   withMigration(migration: MigrationConfig): this
 
@@ -101,7 +101,6 @@ export interface BaseAuctionBuilder<C extends SupportedChainId> {
   withAirlock(address: Address): this
   withGovernanceFactory(address: Address): this
   withV2Migrator(address: Address): this
-  withV3Migrator(address: Address): this
   withV4Migrator(address: Address): this
   withNoOpMigrator(address: Address): this
 }

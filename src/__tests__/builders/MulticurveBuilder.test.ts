@@ -121,7 +121,7 @@ describe('MulticurveBuilder', () => {
         },
       })
       .withGovernance({ type: 'default' })
-      .withMigration({ type: 'uniswapV3', fee: 3000, tickSpacing: 60 })
+      .withMigration({ type: 'uniswapV2' })
       .withUserAddress('0x00000000000000000000000000000000000000AB' as Address)
 
     const params = builder.build()

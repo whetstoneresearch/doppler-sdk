@@ -147,11 +147,6 @@ export interface MulticurvePoolState {
 export type MigrationConfig =
   | { type: 'uniswapV2' } // Basic migration to a new Uniswap v2 pool
   | {
-      type: 'uniswapV3';
-      fee: number;
-      tickSpacing: number;
-    }
-  | {
       type: 'uniswapV4';
       fee: number;
       tickSpacing: number;
@@ -678,7 +673,6 @@ export interface ModuleAddressOverrides {
 
   // Migrators
   v2Migrator?: Address;
-  v3Migrator?: Address;
   v4Migrator?: Address;
   noOpMigrator?: Address;
 }
