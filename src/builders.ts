@@ -37,6 +37,22 @@ import type {
 import type { ModuleAddressOverrides } from './types'
 import { type SupportedChainId } from './addresses'
 
+export interface BaseAuctionBuilder<C extends SupportedChainId> {
+  readonly chainId: C
+  tokenConfig(
+    params:
+      | { type?: 'standard'; name: string; symbol: string; tokenURI: string; yearlyMintRate?: bigint }
+      | { type: 'doppler404'; name: string; symbol: string; baseURI: string; unit?: bigint }
+  ): this
+  saleConfig(params: { initialSupply: bigint; numTokensToSell: bigint; numeraire?: Address }): this
+  withGovernance(params: GovernanceOption<C>): this
+  withMigration(migration: MigrationConfig): this
+  withUserAddress(address: Address): this
+  withIntegrator(address?: Address): this
+  withGasLimit(gas?: bigint): this
+  build(): unknown
+}
+
 function computeTicks(priceRange: PriceRange, tickSpacing: number): TickRange {
   const startTick =
     Math.floor(Math.log(priceRange.startPrice) / Math.log(1.0001) / tickSpacing) *
