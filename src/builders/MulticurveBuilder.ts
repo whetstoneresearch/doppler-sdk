@@ -261,7 +261,7 @@ export class MulticurveBuilder<C extends SupportedChainId>
       })
     }
 
-    // Convert maxMarketCap to farTick if provided
+    // Convert maxMarketCap to farTick if provided, otherwise auto-calculate from curves
     let farTick: number | undefined
     if (params.maxMarketCap !== undefined) {
       if (params.maxMarketCap <= 0) {
@@ -296,6 +296,14 @@ export class MulticurveBuilder<C extends SupportedChainId>
         tickSpacing,
         numeraire
       )
+    } else {
+      // Auto-calculate farTick based on curve tick direction
+      // farTick should be beyond the furthest tickUpper (the highest market cap point)
+      // For negative ticks: the "furthest" is the least negative (closest to 0) = max
+      // For positive ticks: the "furthest" is the most positive = max
+      // In both cases, we want the maximum tickUpper value
+      const allTickUppers = curves.map(c => c.tickUpper)
+      farTick = Math.max(...allTickUppers)
     }
 
     // Delegate to existing poolConfig method
