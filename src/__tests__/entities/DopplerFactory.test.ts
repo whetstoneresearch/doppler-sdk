@@ -65,6 +65,7 @@ describe('DopplerFactory', () => {
       const params = multicurveParams()
       const createParams = factory.encodeCreateMulticurveParams(params)
 
+      // Basic UniswapV4MulticurveInitializer expects 4-field InitData struct
       const [poolInitData] = decodeAbiParameters(
         [
           {
@@ -72,7 +73,6 @@ describe('DopplerFactory', () => {
             components: [
               { name: 'fee', type: 'uint24' },
               { name: 'tickSpacing', type: 'int24' },
-              { name: 'farTick', type: 'int24' },
               {
                 name: 'curves',
                 type: 'tuple[]',
@@ -91,9 +91,6 @@ describe('DopplerFactory', () => {
                   { name: 'shares', type: 'uint96' },
                 ],
               },
-              { name: 'dopplerHook', type: 'address' },
-              { name: 'onInitializationDopplerHookCalldata', type: 'bytes' },
-              { name: 'graduationDopplerHookCalldata', type: 'bytes' },
             ],
           },
         ],
