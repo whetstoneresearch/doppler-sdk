@@ -1,18 +1,17 @@
 import { describe, it, expect, beforeAll } from 'vitest'
-import { createPublicClient, http, type Address } from 'viem'
-import { baseSepolia } from 'viem/chains'
+import { type Address } from 'viem'
 import { DopplerSDK, getAddresses, CHAIN_IDS, airlockAbi, WAD } from '../src'
+import { getTestClient, hasRpcUrl, getRpcEnvVar } from './utils'
 
 describe('Multicurve with lockable beneficiaries using NoOpMigrator (Base Sepolia fork)', () => {
-  const rpcUrl = process.env.BASE_SEPOLIA_RPC_URL
-  if (!rpcUrl) {
-    it.skip('requires BASE_SEPOLIA_RPC_URL env var')
+  if (!hasRpcUrl(CHAIN_IDS.BASE_SEPOLIA)) {
+    it.skip(`requires ${getRpcEnvVar(CHAIN_IDS.BASE_SEPOLIA)} env var`)
     return
   }
 
   const chainId = CHAIN_IDS.BASE_SEPOLIA
   const addresses = getAddresses(chainId)
-  const publicClient = createPublicClient({ chain: baseSepolia, transport: http(rpcUrl) })
+  const publicClient = getTestClient(chainId)
   const sdk = new DopplerSDK({ publicClient, chainId })
 
   let initializerWhitelisted = false

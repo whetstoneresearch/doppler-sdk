@@ -1,18 +1,17 @@
 import { describe, it, expect, beforeAll } from 'vitest'
-import { createPublicClient, http, parseEther, type Address } from 'viem'
-import { baseSepolia } from 'viem/chains'
+import { parseEther, type Address } from 'viem'
 import { DopplerSDK, getAddresses, CHAIN_IDS, airlockAbi, WAD, FEE_TIERS } from '../src'
+import { getTestClient, hasRpcUrl, getRpcEnvVar } from './utils'
 
 describe('Multicurve Quote & Swap (Base Sepolia fork)', () => {
-  const rpcUrl = process.env.BASE_SEPOLIA_RPC_URL
-  if (!rpcUrl) {
-    it.skip('requires BASE_SEPOLIA_RPC_URL env var')
+  if (!hasRpcUrl(CHAIN_IDS.BASE_SEPOLIA)) {
+    it.skip(`requires ${getRpcEnvVar(CHAIN_IDS.BASE_SEPOLIA)} env var`)
     return
   }
 
   const chainId = CHAIN_IDS.BASE_SEPOLIA
   const addresses = getAddresses(chainId)
-  const publicClient = createPublicClient({ chain: baseSepolia, transport: http(rpcUrl) })
+  const publicClient = getTestClient(chainId)
   const sdk = new DopplerSDK({ publicClient, chainId })
 
   let modulesWhitelisted = false

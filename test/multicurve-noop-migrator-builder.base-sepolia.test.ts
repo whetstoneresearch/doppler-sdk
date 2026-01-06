@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll } from 'vitest'
-import { createPublicClient, http, type Address } from 'viem'
-import { baseSepolia } from 'viem/chains'
+import { type Address } from 'viem'
 import { DopplerSDK, getAddresses, CHAIN_IDS, airlockAbi, WAD } from '../src'
+import { getTestClient, hasRpcUrl, getRpcEnvVar } from './utils'
 
 /**
  * This test demonstrates using migration type 'noOp' with the MulticurveBuilder
@@ -13,15 +13,14 @@ import { DopplerSDK, getAddresses, CHAIN_IDS, airlockAbi, WAD } from '../src'
  * Use .withMigration({ type: 'noOp' }) when using lockable beneficiaries.
  */
 describe('Multicurve Builder with NoOpMigrator helper (Base Sepolia fork)', () => {
-  const rpcUrl = process.env.BASE_SEPOLIA_RPC_URL
-  if (!rpcUrl) {
-    it.skip('requires BASE_SEPOLIA_RPC_URL env var')
+  if (!hasRpcUrl(CHAIN_IDS.BASE_SEPOLIA)) {
+    it.skip(`requires ${getRpcEnvVar(CHAIN_IDS.BASE_SEPOLIA)} env var`)
     return
   }
 
   const chainId = CHAIN_IDS.BASE_SEPOLIA
   const addresses = getAddresses(chainId)
-  const publicClient = createPublicClient({ chain: baseSepolia, transport: http(rpcUrl) })
+  const publicClient = getTestClient(chainId)
   const sdk = new DopplerSDK({ publicClient, chainId })
 
   // Protocol owner on Base Sepolia (Airlock.owner())

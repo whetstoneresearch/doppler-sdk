@@ -15,6 +15,14 @@ export default defineConfig({
     maxConcurrency: 1,
     // Run test files sequentially to further reduce RPC load
     fileParallelism: false,
+    // Increase test timeout for network tests with retries
+    testTimeout: 60_000,
+    // Add hook timeout for beforeAll/afterAll with network calls
+    hookTimeout: 60_000,
+    // Sequence tests within a file to run sequentially
+    sequence: {
+      shuffle: false,
+    },
     coverage: {
       reporter: ['text', 'json', 'html'],
       exclude: [

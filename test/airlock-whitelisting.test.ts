@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { createPublicClient, http, type Address, type Chain } from 'viem';
+import { type Address, type Chain } from 'viem';
 import { base, baseSepolia } from 'viem/chains';
 import {
   CHAIN_IDS,
@@ -7,12 +7,12 @@ import {
   airlockAbi,
   type SupportedChainId,
 } from '../src';
+import { createRateLimitedClient, delay } from './utils/rpc';
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as Address;
 
-// Helper to add delay between RPC calls to avoid rate limiting
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-const RPC_DELAY_MS = 300; // 300ms delay between requests
+// Use more conservative delay for this test file (many sequential RPC calls)
+const RPC_DELAY_MS = 500;
 
 enum ModuleState {
   NotWhitelisted = 0,
@@ -36,22 +36,6 @@ const CHAINS: Partial<Record<SupportedChainId, { chain: Chain; rpc?: string }>> 
     chain: baseSepolia,
     rpc: getAlchemyRpc('base-sepolia'),
   },
-  // [CHAIN_IDS.MONAD_TESTNET]: {
-  //   chain: monadTestnet,
-  //   rpc: getAlchemyRpc('monad-testnet'),
-  // },
-  // [CHAIN_IDS.INK]: {
-  //   chain: ink,
-  //   rpc: getAlchemyRpc('ink-mainnet'),
-  // },
-  // [CHAIN_IDS.UNICHAIN]: {
-  //   chain: unichain,
-  //   rpc: getAlchemyRpc('unichain-mainnet'),
-  // },
-  // [CHAIN_IDS.UNICHAIN_SEPOLIA]: {
-  //   chain: unichainSepolia,
-  //   rpc: getAlchemyRpc('unichain-sepolia'),
-  // },
 };
 
 describe('Airlock Module Whitelisting', () => {
@@ -72,10 +56,11 @@ describe('Airlock Module Whitelisting', () => {
         return;
       }
 
-      const publicClient = createPublicClient({
-        chain: config.chain,
-        transport: http(config.rpc || config.chain.rpcUrls.default.http[0]),
-      });
+      const publicClient = createRateLimitedClient(
+        config.chain,
+        config.rpc,
+        { retryCount: 5, retryDelay: 2000 }
+      );
 
       // Add delay before each test to avoid rate limiting
       beforeEach(async () => {

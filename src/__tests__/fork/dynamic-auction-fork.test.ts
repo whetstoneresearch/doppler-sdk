@@ -4,16 +4,15 @@ import { base } from 'viem/chains'
 import { DopplerSDK } from '../../index'
 
 // Only run when explicitly enabled to avoid flaky network tests in CI
-const RUN = process.env.RUN_FORK_TESTS === '1'
-const maybeDescribe = RUN ? describe : describe.skip
+const RUN_FORK_TESTS = process.env.RUN_FORK_TESTS === '1'
+const BASE_RPC_URL = process.env.BASE_RPC_URL
+
+const shouldRun = RUN_FORK_TESTS && Boolean(BASE_RPC_URL)
+const maybeDescribe = shouldRun ? describe : describe.skip
 
 maybeDescribe('Fork/Live - DynamicAuction state() decoding is backward compatible', () => {
-  const RPC_URL = process.env.BASE_RPC_URL || 'https://mainnet.base.org'
-
-  const publicClient = createPublicClient({
-    chain: base,
-    transport: http(RPC_URL),
-  })
+  // Use raw client for fork tests (they run with dedicated RPC)
+  const publicClient = createPublicClient({ chain: base, transport: http(BASE_RPC_URL!) })
 
   const sdk = new DopplerSDK({ publicClient, chainId: base.id })
 

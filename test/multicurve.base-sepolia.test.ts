@@ -1,18 +1,16 @@
 import { describe, it, expect, beforeAll } from 'vitest'
-import { createPublicClient, http } from 'viem'
-import { baseSepolia } from 'viem/chains'
 import { DopplerSDK, getAddresses, CHAIN_IDS, airlockAbi, WAD } from '../src'
+import { getTestClient, hasRpcUrl, getRpcEnvVar, delay } from './utils'
 
 describe('Multicurve (Base Sepolia fork) smoke test', () => {
-  const rpcUrl = process.env.BASE_SEPOLIA_RPC_URL
-  if (!rpcUrl) {
-    it.skip('requires BASE_SEPOLIA_RPC_URL env var')
+  if (!hasRpcUrl(CHAIN_IDS.BASE_SEPOLIA)) {
+    it.skip(`requires ${getRpcEnvVar(CHAIN_IDS.BASE_SEPOLIA)} env var`)
     return
   }
 
   const chainId = CHAIN_IDS.BASE_SEPOLIA
   const addresses = getAddresses(chainId)
-  const publicClient = createPublicClient({ chain: baseSepolia, transport: http(rpcUrl) })
+  const publicClient = getTestClient(chainId)
   const sdk = new DopplerSDK({ publicClient, chainId })
 
   let initializerWhitelisted = false
@@ -22,6 +20,7 @@ describe('Multicurve (Base Sepolia fork) smoke test', () => {
   let states: { tokenFactory?: number; governanceFactory?: number; initializer?: number; migrator?: number } = {}
 
   beforeAll(async () => {
+    // Add delays between RPC calls to avoid rate limiting
     try {
       const initState = await publicClient.readContract({
         address: addresses.airlock,
@@ -33,6 +32,8 @@ describe('Multicurve (Base Sepolia fork) smoke test', () => {
       states.initializer = Number(initState)
       initializerWhitelisted = states.initializer === 3
     } catch {}
+
+    await delay(500)
 
     try {
       const migratorState = await publicClient.readContract({
@@ -46,6 +47,8 @@ describe('Multicurve (Base Sepolia fork) smoke test', () => {
       migratorWhitelisted = states.migrator === 4
     } catch {}
 
+    await delay(500)
+
     try {
       const tokenFactoryState = await publicClient.readContract({
         address: addresses.airlock,
@@ -57,6 +60,8 @@ describe('Multicurve (Base Sepolia fork) smoke test', () => {
       states.tokenFactory = Number(tokenFactoryState)
       tokenFactoryWhitelisted = states.tokenFactory === 1
     } catch {}
+
+    await delay(500)
 
     try {
       const governanceFactoryState = await publicClient.readContract({
