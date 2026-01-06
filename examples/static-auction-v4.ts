@@ -1,3 +1,5 @@
+import './env'
+
 import { DopplerSDK, getAirlockOwner } from '../src';
 import { parseEther, createPublicClient, createWalletClient, http } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';

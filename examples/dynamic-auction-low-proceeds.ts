@@ -1,3 +1,5 @@
+import './env'
+
 import { createPublicClient, createWalletClient, http, parseEther, formatEther } from 'viem';
 import { DopplerSDK, DAY_SECONDS } from '../src';
 import { baseSepolia } from 'viem/chains';

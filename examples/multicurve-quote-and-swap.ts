@@ -6,6 +6,7 @@
  * - Quoting a swap on the V4 pool using the SDK quoter
  * - Executing the swap via Universal Router
  */
+import './env'
 
 import { DopplerSDK, WAD, getAddresses, FEE_TIERS } from '../src'
 import { CommandBuilder, V4ActionBuilder, V4ActionType } from 'doppler-router'

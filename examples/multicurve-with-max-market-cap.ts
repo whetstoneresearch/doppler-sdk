@@ -15,6 +15,7 @@
  * Use case: When you want to limit how high the token price can go,
  * for example to prevent extreme price discovery beyond your target range.
  */
+import './env'
 
 import { DopplerSDK } from '../src'
 import { parseEther, createPublicClient, createWalletClient, http } from 'viem'

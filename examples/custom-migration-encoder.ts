@@ -1,3 +1,5 @@
+import './env'
+
 import { createPublicClient, createWalletClient, http, encodeAbiParameters } from 'viem'
 import { baseSepolia } from 'viem/chains'
 import { privateKeyToAccount } from 'viem/accounts'

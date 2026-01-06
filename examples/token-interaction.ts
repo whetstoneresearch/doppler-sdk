@@ -6,6 +6,7 @@
  * - Checking balances and vesting data
  * - Approving spending and releasing vested tokens
  */
+import './env'
 
 // UNCOMMENT IF RUNNING LOCALLY
 // import { Derc20, Eth } from '@whetstone-research/doppler-sdk';

@@ -6,6 +6,7 @@
  * - Configuring dynamic price movement with epochs
  * - Setting up V4 migration with fee streaming
  */
+import './env'
 
 // UNCOMMENT IF RUNNING LOCALLY
 // import { DopplerSDK, DynamicAuctionBuilder } from '@whetstone-research/doppler-sdk';

@@ -7,6 +7,7 @@
  * - Using Permit2 for gas-efficient token approvals
  * - Building Universal Router commands with doppler-router
  */
+import './env'
 
 import { DopplerSDK, WAD, getAddresses } from '../src'
 import { CommandBuilder, V4ActionBuilder, V4ActionType, getPermitSignature } from 'doppler-router'

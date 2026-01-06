@@ -13,6 +13,7 @@
  * For power-user configuration with raw ticks, see:
  * - examples/multicurve-with-rehype-hook.ts
  */
+import './env'
 
 import { DopplerSDK, getAddresses } from '../src'
 import { parseEther, createPublicClient, createWalletClient, http, type Address } from 'viem'

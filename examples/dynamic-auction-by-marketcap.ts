@@ -11,6 +11,7 @@
  * - saleConfig() must be called before withMarketCapRange()
  * - tickSpacing is automatically derived from fee (no need to call poolConfig())
  */
+import './env'
 
 import { DopplerSDK, DAY_SECONDS } from '../src'
 import { parseEther, formatEther, createPublicClient, createWalletClient, http } from 'viem'

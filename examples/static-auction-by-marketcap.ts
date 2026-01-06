@@ -9,6 +9,7 @@
  *
  * Key requirement: saleConfig() must be called before withMarketCapRange()
  */
+import './env'
 
 import { DopplerSDK, getAirlockOwner } from '../src'
 import { parseEther, createPublicClient, createWalletClient, http } from 'viem'

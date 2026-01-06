@@ -6,6 +6,7 @@
  * - Migrating liquidity to Uniswap V2 after graduation
  * - Monitoring auction progress
  */
+import './env'
 
 // UNCOMMENT IF RUNNING LOCALLY
 // import { DopplerSDK, StaticAuctionBuilder } from '@whetstone-research/doppler-sdk';

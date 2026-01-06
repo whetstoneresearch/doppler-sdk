@@ -23,6 +23,7 @@
  * For easier configuration using market cap ranges (no tick math), see:
  * - examples/multicurve-rehype-by-marketcap.ts
  */
+import './env'
 
 import { DopplerSDK, WAD, getAddresses } from '../src'
 import { createPublicClient, createWalletClient, http, type Address } from 'viem'
