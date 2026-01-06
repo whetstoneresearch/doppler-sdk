@@ -73,8 +73,8 @@ describe('Multicurve with multiple vesting beneficiaries (Base Sepolia fork)', (
     expect(states.migrator).toBe(4)
 
     const totalSupply = 1_000_000n * WAD
-    const tokensToSell = 800_000n * WAD
-    const expectedVestedAmount = totalSupply - tokensToSell // 200k tokens
+    const tokensToSell = 910_000n * WAD // Leave 90k for vesting (under 100k per-address limit)
+    const expectedVestedAmount = totalSupply - tokensToSell // 90k tokens
 
     const builder = sdk
       .buildMulticurveAuction()
@@ -115,9 +115,9 @@ describe('Multicurve with multiple vesting beneficiaries (Base Sepolia fork)', (
     expect(params.vesting).toBeDefined()
     expect(params.vesting?.duration).toBe(365 * 24 * 60 * 60)
 
-    const { asset, pool } = await sdk.factory.simulateCreateMulticurve(params)
-    expect(asset).toMatch(/^0x[a-fA-F0-9]{40}$/)
-    expect(pool).toMatch(/^0x[a-fA-F0-9]{40}$/)
+    const { tokenAddress, poolId } = await sdk.factory.simulateCreateMulticurve(params)
+    expect(tokenAddress).toMatch(/^0x[a-fA-F0-9]{40}$/)
+    expect(poolId).toMatch(/^0x[a-fA-F0-9]{64}$/)
   })
 
   it('can simulate multicurve with multiple vesting beneficiaries', async () => {
@@ -127,18 +127,18 @@ describe('Multicurve with multiple vesting beneficiaries (Base Sepolia fork)', (
     expect(states.migrator).toBe(4)
 
     const totalSupply = 1_000_000n * WAD
-    const tokensToSell = 700_000n * WAD
-    const availableForVesting = totalSupply - tokensToSell // 300k tokens
+    const tokensToSell = 910_000n * WAD // Leave 90k for vesting (under 100k limit)
+    const availableForVesting = totalSupply - tokensToSell // 90k tokens
 
-    // Define multiple beneficiaries
+    // Define multiple beneficiaries (each under 100k per-address limit)
     const recipient1 = '0x1234567890123456789012345678901234567890'
     const recipient2 = '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
     const recipient3 = '0x9876543210987654321098765432109876543210'
 
-    const amount1 = parseEther('100000') // 100k tokens
-    const amount2 = parseEther('100000') // 100k tokens
-    const amount3 = parseEther('100000') // 100k tokens
-    // Total: 300k tokens = exactly the available amount
+    const amount1 = parseEther('30000') // 30k tokens
+    const amount2 = parseEther('30000') // 30k tokens
+    const amount3 = parseEther('30000') // 30k tokens
+    // Total: 90k tokens = exactly the available amount
 
     const builder = sdk
       .buildMulticurveAuction()
@@ -184,9 +184,9 @@ describe('Multicurve with multiple vesting beneficiaries (Base Sepolia fork)', (
     expect(params.vesting?.recipients).toEqual([recipient1, recipient2, recipient3])
     expect(params.vesting?.amounts).toEqual([amount1, amount2, amount3])
 
-    const { asset, pool } = await sdk.factory.simulateCreateMulticurve(params)
-    expect(asset).toMatch(/^0x[a-fA-F0-9]{40}$/)
-    expect(pool).toMatch(/^0x[a-fA-F0-9]{40}$/)
+    const { tokenAddress, poolId } = await sdk.factory.simulateCreateMulticurve(params)
+    expect(tokenAddress).toMatch(/^0x[a-fA-F0-9]{40}$/)
+    expect(poolId).toMatch(/^0x[a-fA-F0-9]{64}$/)
   })
 
   it('validates that recipients and amounts arrays match in length', async () => {

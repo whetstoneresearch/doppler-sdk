@@ -18,6 +18,7 @@ describe('Multicurve with lockable beneficiaries using NoOpMigrator (Base Sepoli
   let noOpMigratorWhitelisted = false
   let tokenFactoryWhitelisted = false
   let governanceFactoryWhitelisted = false
+  let airlockOwner: Address | undefined
   let states: {
     tokenFactory?: number
     governanceFactory?: number
@@ -26,6 +27,21 @@ describe('Multicurve with lockable beneficiaries using NoOpMigrator (Base Sepoli
   } = {}
 
   beforeAll(async () => {
+    // Fetch the protocol owner dynamically from Airlock.owner()
+    const airlockOwnerAbi = [
+      { name: 'owner', type: 'function', stateMutability: 'view', inputs: [], outputs: [{ name: '', type: 'address' }] }
+    ] as const
+    
+    try {
+      airlockOwner = await publicClient.readContract({
+        address: addresses.airlock,
+        abi: airlockOwnerAbi,
+        functionName: 'owner',
+      }) as Address
+    } catch (e) {
+      console.log('Failed to get airlock owner:', e)
+    }
+
     try {
       const initState = await publicClient.readContract({
         address: addresses.airlock,
@@ -81,6 +97,10 @@ describe('Multicurve with lockable beneficiaries using NoOpMigrator (Base Sepoli
       console.warn('NoOpMigrator not whitelisted on Base Sepolia (state=%d), skipping test', states.noOpMigrator)
       return
     }
+    if (!airlockOwner) {
+      console.warn('Could not fetch airlock owner, skipping test')
+      return
+    }
 
     // Assert module states explicitly; these must be whitelisted
     expect(states.tokenFactory).toBe(1)
@@ -90,8 +110,7 @@ describe('Multicurve with lockable beneficiaries using NoOpMigrator (Base Sepoli
 
     // Define beneficiaries with shares that sum to WAD (1e18)
     // IMPORTANT: Protocol owner (Airlock.owner()) must be included with at least 5% shares
-    const protocolOwner = '0x852a09C89463D236eea2f097623574f23E225769' as Address // Airlock owner on Base Sepolia
-    const beneficiary1 = protocolOwner // Protocol owner (required)
+    const beneficiary1 = airlockOwner // Protocol owner (required)
     const beneficiary2 = '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as Address
     const beneficiary3 = '0x9876543210987654321098765432109876543210' as Address
 
@@ -151,9 +170,9 @@ describe('Multicurve with lockable beneficiaries using NoOpMigrator (Base Sepoli
     expect(createParams.liquidityMigratorData).toBe('0x')
 
     // Simulate the create operation
-    const { asset, pool } = await sdk.factory.simulateCreateMulticurve(params)
-    expect(asset).toMatch(/^0x[a-fA-F0-9]{40}$/)
-    expect(pool).toMatch(/^0x[a-fA-F0-9]{40}$/)
+    const { tokenAddress, poolId } = await sdk.factory.simulateCreateMulticurve(params)
+    expect(tokenAddress).toMatch(/^0x[a-fA-F0-9]{40}$/)
+    expect(poolId).toMatch(/^0x[a-fA-F0-9]{64}$/)
   })
 
   it('uses standard migrator when no lockable beneficiaries are provided', async () => {
@@ -211,14 +230,17 @@ describe('Multicurve with lockable beneficiaries using NoOpMigrator (Base Sepoli
       console.warn('NoOpMigrator not whitelisted on Base Sepolia (state=%d), skipping test', states.noOpMigrator)
       return
     }
+    if (!airlockOwner) {
+      console.warn('Could not fetch airlock owner, skipping test')
+      return
+    }
 
     expect(states.tokenFactory).toBe(1)
     expect(states.governanceFactory).toBe(2)
     expect(states.initializer).toBe(3)
     expect(states.noOpMigrator).toBe(4)
 
-    const protocolOwner = '0x852a09C89463D236eea2f097623574f23E225769' as Address // Airlock owner on Base Sepolia
-    const beneficiary1 = protocolOwner // Protocol owner (required)
+    const beneficiary1 = airlockOwner // Protocol owner (required)
     const beneficiary2 = '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as Address
 
     // Shares that DON'T sum to WAD (only 60%)
@@ -273,6 +295,10 @@ describe('Multicurve with lockable beneficiaries using NoOpMigrator (Base Sepoli
       console.warn('NoOpMigrator not whitelisted on Base Sepolia (state=%d), skipping test', states.noOpMigrator)
       return
     }
+    if (!airlockOwner) {
+      console.warn('Could not fetch airlock owner, skipping test')
+      return
+    }
 
     expect(states.tokenFactory).toBe(1)
     expect(states.governanceFactory).toBe(2)
@@ -281,9 +307,8 @@ describe('Multicurve with lockable beneficiaries using NoOpMigrator (Base Sepoli
 
     // Beneficiaries NOT in sorted order
     // We need to include Airlock owner, so let's put it out of order with another address
-    const protocolOwner = '0x852a09C89463D236eea2f097623574f23E225769' as Address // Airlock owner on Base Sepolia
     const beneficiary1 = '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as Address // Higher address
-    const beneficiary2 = protocolOwner // Protocol owner - will be sorted by SDK
+    const beneficiary2 = airlockOwner // Protocol owner - will be sorted by SDK
     const beneficiary3 = '0x9876543210987654321098765432109876543210' as Address // Another address
 
     const share1 = WAD / 2n // 50%
@@ -331,8 +356,8 @@ describe('Multicurve with lockable beneficiaries using NoOpMigrator (Base Sepoli
     const createParams = sdk.factory.encodeCreateMulticurveParams(params)
     expect(createParams.liquidityMigrator).toBe(addresses.noOpMigrator)
 
-    const { asset, pool } = await sdk.factory.simulateCreateMulticurve(params)
-    expect(asset).toMatch(/^0x[a-fA-F0-9]{40}$/)
-    expect(pool).toMatch(/^0x[a-fA-F0-9]{40}$/)
+    const { tokenAddress, poolId } = await sdk.factory.simulateCreateMulticurve(params)
+    expect(tokenAddress).toMatch(/^0x[a-fA-F0-9]{40}$/)
+    expect(poolId).toMatch(/^0x[a-fA-F0-9]{64}$/)
   })
 })

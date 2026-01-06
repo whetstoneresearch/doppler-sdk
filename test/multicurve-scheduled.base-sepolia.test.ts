@@ -156,8 +156,8 @@ describe('Scheduled Multicurve (Base Sepolia fork) smoke test', () => {
 
     expect(decoded.startingTime).toBe(oneHourFromNow)
 
-    const { asset, pool } = await sdk.factory.simulateCreateMulticurve(params)
-    expect(asset).toMatch(/^0x[a-fA-F0-9]{40}$/)
-    expect(pool).toMatch(/^0x[a-fA-F0-9]{40}$/)
+    const { tokenAddress, poolId } = await sdk.factory.simulateCreateMulticurve(params)
+    expect(tokenAddress).toMatch(/^0x[a-fA-F0-9]{40}$/)
+    expect(poolId).toMatch(/^0x[a-fA-F0-9]{64}$/)
   })
 })

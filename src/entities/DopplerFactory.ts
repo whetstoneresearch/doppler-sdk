@@ -1005,6 +1005,9 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
    * Encode create params for Uniswap V4 Multicurve initializer/migrator flow
    */
   encodeCreateMulticurveParams(params: CreateMulticurveParams<C>): CreateParams {
+    // Validate parameters
+    this.validateMulticurveParams(params)
+
     // Basic validation
     if (!params.pool || params.pool.curves.length === 0) {
       throw new Error('Multicurve pool must include at least one curve')
@@ -1661,6 +1664,75 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       }
       
       // Check that shares sum to 100% (WAD)
+      const totalShares = beneficiaries.reduce((sum, b) => sum + b.shares, 0n)
+      if (totalShares !== WAD) {
+        throw new Error(`Beneficiary shares must sum to ${WAD} (100%), but got ${totalShares}`)
+      }
+    }
+  }
+
+  /**
+   * Validate multicurve auction parameters
+   */
+  private validateMulticurveParams(params: CreateMulticurveParams<C>): void {
+    // Validate token parameters
+    if (!params.token.name || params.token.name.trim().length === 0) {
+      throw new Error('Token name is required')
+    }
+    if (!params.token.symbol || params.token.symbol.trim().length === 0) {
+      throw new Error('Token symbol is required')
+    }
+
+    // Validate sale config
+    if (params.sale.initialSupply <= BigInt(0)) {
+      throw new Error('Initial supply must be positive')
+    }
+    if (params.sale.numTokensToSell <= BigInt(0)) {
+      throw new Error('Number of tokens to sell must be positive')
+    }
+    if (params.sale.numTokensToSell > params.sale.initialSupply) {
+      throw new Error('Cannot sell more tokens than initial supply')
+    }
+
+    // Validate vesting if provided
+    if (params.vesting) {
+      // Validate recipients and amounts arrays match
+      if (params.vesting.recipients && params.vesting.amounts) {
+        if (params.vesting.recipients.length !== params.vesting.amounts.length) {
+          throw new Error('Vesting recipients and amounts arrays must have the same length')
+        }
+        if (params.vesting.recipients.length === 0) {
+          throw new Error('Vesting recipients array cannot be empty')
+        }
+        // Validate total vested amount doesn't exceed available tokens
+        const totalVested = params.vesting.amounts.reduce((sum, amt) => sum + amt, BigInt(0))
+        const availableForVesting = params.sale.initialSupply - params.sale.numTokensToSell
+        if (totalVested > availableForVesting) {
+          throw new Error(`Total vesting amount (${totalVested}) exceeds available tokens (${availableForVesting})`)
+        }
+      }
+    }
+
+    // Validate pool beneficiaries if provided
+    if (params.pool.beneficiaries && params.pool.beneficiaries.length > 0) {
+      const beneficiaries = params.pool.beneficiaries
+      const totalShares = beneficiaries.reduce((sum, b) => sum + b.shares, 0n)
+      if (totalShares !== WAD) {
+        throw new Error(`Pool beneficiary shares must sum to ${WAD} (100%), but got ${totalShares}`)
+      }
+      for (const b of beneficiaries) {
+        if (b.shares <= 0n) {
+          throw new Error('Each beneficiary must have positive shares')
+        }
+      }
+    }
+
+    // Validate migration config for V4
+    if (params.migration.type === 'uniswapV4' && params.migration.streamableFees) {
+      const beneficiaries = params.migration.streamableFees.beneficiaries
+      if (beneficiaries.length === 0) {
+        throw new Error('At least one beneficiary is required for V4 migration')
+      }
       const totalShares = beneficiaries.reduce((sum, b) => sum + b.shares, 0n)
       if (totalShares !== WAD) {
         throw new Error(`Beneficiary shares must sum to ${WAD} (100%), but got ${totalShares}`)

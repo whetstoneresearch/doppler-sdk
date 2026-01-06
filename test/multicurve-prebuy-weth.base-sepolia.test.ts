@@ -88,10 +88,10 @@ describe('Multicurve Pre-Buy with WETH (Base Sepolia fork)', () => {
       .withV2Migrator(addresses.v2Migrator)
       .build()
 
-    const { createParams, asset, pool } = await sdk.factory.simulateCreateMulticurve(params)
+    const { createParams, tokenAddress, poolId } = await sdk.factory.simulateCreateMulticurve(params)
 
-    expect(asset).toMatch(/^0x[a-fA-F0-9]{40}$/)
-    expect(pool).toMatch(/^0x[a-fA-F0-9]{40}$/)
+    expect(tokenAddress).toMatch(/^0x[a-fA-F0-9]{40}$/)
+    expect(poolId).toMatch(/^0x[a-fA-F0-9]{64}$/)
 
     // Get poolKey from bundle quote to verify WETH
     const quote = await sdk.factory.simulateMulticurveBundleExactOut(createParams, {
@@ -106,8 +106,8 @@ describe('Multicurve Pre-Buy with WETH (Base Sepolia fork)', () => {
     expect(hasWETH).toBe(true)
 
     console.log('  ✓ Simulated creation with WETH numeraire')
-    console.log(`    Asset: ${asset}`)
-    console.log(`    Pool: ${pool}`)
+    console.log(`    Asset: ${tokenAddress}`)
+    console.log(`    Pool: ${poolId}`)
   })
 
   it('simulates bundle exact output quote for WETH prebuy', async () => {
@@ -143,7 +143,7 @@ describe('Multicurve Pre-Buy with WETH (Base Sepolia fork)', () => {
       .withV2Migrator(addresses.v2Migrator)
       .build()
 
-    const { createParams, asset } = await sdk.factory.simulateCreateMulticurve(params)
+    const { createParams, tokenAddress } = await sdk.factory.simulateCreateMulticurve(params)
 
     // Quote for buying 1% of tokens
     const exactAmountOut = params.sale.numTokensToSell / 100n
@@ -153,7 +153,7 @@ describe('Multicurve Pre-Buy with WETH (Base Sepolia fork)', () => {
       hookData: '0x' as `0x${string}`,
     })
 
-    expect(quote.asset).toBe(asset)
+    expect(quote.asset).toBe(tokenAddress)
     expect(quote.amountIn).toBeGreaterThan(0n)
     expect(quote.gasEstimate).toBeGreaterThanOrEqual(0n)
     expect(quote.poolKey.hooks).toMatch(/^0x[a-fA-F0-9]{40}$/)
@@ -253,7 +253,7 @@ describe('Multicurve Pre-Buy with WETH (Base Sepolia fork)', () => {
       .withV2Migrator(addresses.v2Migrator)
       .build()
 
-    const { createParams, asset } = await sdk.factory.simulateCreateMulticurve(params)
+    const { createParams, tokenAddress } = await sdk.factory.simulateCreateMulticurve(params)
 
     const exactAmountIn = parseEther('1') // 1 WETH
 
@@ -262,7 +262,7 @@ describe('Multicurve Pre-Buy with WETH (Base Sepolia fork)', () => {
       hookData: '0x' as `0x${string}`,
     })
 
-    expect(quote.asset).toBe(asset)
+    expect(quote.asset).toBe(tokenAddress)
     expect(quote.amountOut).toBeGreaterThan(0n)
     expect(quote.gasEstimate).toBeGreaterThanOrEqual(0n)
 
