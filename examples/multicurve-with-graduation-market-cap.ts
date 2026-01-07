@@ -87,19 +87,17 @@ async function main() {
           shares: parseEther('0.3'), // 30%
         },
       ],
-      // Set the graduation market cap at $100M
+      // Set the graduation market cap at $40M (must be within curve boundaries)
       // This is when the pool can graduate/migrate, NOT a price cap
-      graduationMarketCap: 100_000_000, // $100M graduation target
+      graduationMarketCap: 40_000_000, // $40M graduation target (before max)
 
       // Validation notes:
-      // - Setting graduationMarketCap: 40_000_000 would THROW ERROR
-      //   (must be >= highest curve end of $50M)
-      //
-      // - Setting graduationMarketCap: 300_000_000 would LOG WARNING
-      //   ($300M is 6x > $50M, exceeds 5x threshold)
-      //
-      // - Setting graduationMarketCap: 100_000_000 is fine
-      //   ($100M is 2x > $50M, within 5x threshold)
+      // - graduationMarketCap must be within curve range [$500k, $50M]
+      // - Setting graduationMarketCap: 100_000_000 would THROW ERROR
+      //   (must be <= highest curve end of $50M)
+      // - Setting graduationMarketCap: 400_000 would THROW ERROR
+      //   (must be >= lowest curve start of $500k)
+      // - If not specified, defaults to the highest curve's tickUpper
     })
     .withVesting({
       duration: BigInt(365 * 24 * 60 * 60), // 1 year vesting
@@ -118,7 +116,7 @@ async function main() {
   console.log('\nMarket Cap Targets:')
   console.log('  Launch price: $500,000 market cap')
   console.log('  Highest curve end: $50,000,000')
-  console.log('  Graduation target: $100,000,000')
+  console.log('  Graduation target: $40,000,000 (before max)')
 
   // Log curve details
   console.log('\nCurve Details (converted to ticks):')

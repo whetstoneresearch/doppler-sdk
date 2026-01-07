@@ -7,12 +7,7 @@ import {
   ZERO_ADDRESS,
 } from '../constants'
 
-/**
- * Warning threshold multiplier for graduationMarketCap vs highest curve end.
- * If graduationMarketCap exceeds highest curve end by more than this factor, a warning is logged.
- * Set to 5 = 500% (e.g., highest curve at $10M, graduationMarketCap > $50M triggers warning)
- */
-const GRADUATION_MARKET_CAP_WARNING_THRESHOLD = 5
+
 import {
   marketCapRangeToTicksForCurve,
   marketCapToTick,
@@ -268,23 +263,18 @@ export class MulticurveBuilder<C extends SupportedChainId>
         throw new Error('graduationMarketCap must be greater than 0')
       }
 
-      // Validate graduationMarketCap >= highest curve end
+      // Validate graduationMarketCap is within curve boundaries
+      const lowestCurveMarketCap = sortedCurves[0].marketCap.start
       const highestCurveMarketCap = sortedCurves[sortedCurves.length - 1].marketCap.end
-      if (params.graduationMarketCap < highestCurveMarketCap) {
+      if (params.graduationMarketCap < lowestCurveMarketCap) {
         throw new Error(
-          `graduationMarketCap ($${params.graduationMarketCap.toLocaleString()}) must be >= the highest curve's end market cap ($${highestCurveMarketCap.toLocaleString()})`
+          `graduationMarketCap ($${params.graduationMarketCap.toLocaleString()}) must be >= the lowest curve's start market cap ($${lowestCurveMarketCap.toLocaleString()})`
         )
       }
-
-      // Warn if graduationMarketCap is significantly higher than highest curve
-      if (GRADUATION_MARKET_CAP_WARNING_THRESHOLD > 0) {
-        const ratio = params.graduationMarketCap / highestCurveMarketCap
-        if (ratio > GRADUATION_MARKET_CAP_WARNING_THRESHOLD) {
-          console.warn(
-            `graduationMarketCap ($${params.graduationMarketCap.toLocaleString()}) is ${ratio.toFixed(1)}x higher than the highest curve's end ($${highestCurveMarketCap.toLocaleString()}). ` +
-            `This may be unintentional.`
-          )
-        }
+      if (params.graduationMarketCap > highestCurveMarketCap) {
+        throw new Error(
+          `graduationMarketCap ($${params.graduationMarketCap.toLocaleString()}) must be <= the highest curve's end market cap ($${highestCurveMarketCap.toLocaleString()})`
+        )
       }
 
       farTick = marketCapToTick(

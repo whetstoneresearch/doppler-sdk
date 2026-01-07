@@ -109,7 +109,7 @@ async function main() {
           shares: parseEther('0.3'), // 30%
         },
       ],
-      graduationMarketCap: 100_000_000, // $100M graduation target (converted to farTick internally)
+      graduationMarketCap: 40_000_000, // $40M graduation target (within curve range, before max)
       beneficiaries, // Required for RehypeDopplerHook
     })
     // Configure fee distribution (must sum to 100%)
@@ -138,7 +138,7 @@ async function main() {
   console.log('\nMarket Cap Targets:')
   console.log('  Launch price: $500,000')
   console.log('  Highest curve end: $50,000,000')
-  console.log('  Graduation target: $100,000,000')
+  console.log('  Graduation target: $40,000,000 (before max, demonstrating flexibility)')
 
   console.log('\nRehypeDopplerHook Fee Distribution:')
   console.log('  Custom fee: 3000 (0.3%)')

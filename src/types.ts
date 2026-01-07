@@ -402,7 +402,7 @@ export interface MulticurveMarketCapCurvesConfig {
    * Market cap at which the pool can graduate (migrate or change status).
    * Converted to farTick internally.
    * Note: This is NOT a cap - prices can exceed this value after graduation.
-   * Must be >= the highest curve's end market cap.
+   * Must be within the curve boundaries (>= lowest start, <= highest end).
    * If not specified, defaults to the highest curve's tickUpper.
    */
   graduationMarketCap?: number;
