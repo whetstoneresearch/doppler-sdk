@@ -8,11 +8,11 @@ import {
 } from '../constants'
 
 /**
- * Warning threshold multiplier for maxMarketCap vs highest curve end.
- * If maxMarketCap exceeds highest curve end by more than this factor, a warning is logged.
- * Set to 5 = 500% (e.g., highest curve at $10M, maxMarketCap > $50M triggers warning)
+ * Warning threshold multiplier for graduationMarketCap vs highest curve end.
+ * If graduationMarketCap exceeds highest curve end by more than this factor, a warning is logged.
+ * Set to 5 = 500% (e.g., highest curve at $10M, graduationMarketCap > $50M triggers warning)
  */
-const MAX_MARKET_CAP_WARNING_THRESHOLD = 5
+const GRADUATION_MARKET_CAP_WARNING_THRESHOLD = 5
 import {
   marketCapRangeToTicksForCurve,
   marketCapToTick,
@@ -261,34 +261,34 @@ export class MulticurveBuilder<C extends SupportedChainId>
       })
     }
 
-    // Convert maxMarketCap to farTick if provided, otherwise auto-calculate from curves
+    // Convert graduationMarketCap to farTick if provided, otherwise auto-calculate from curves
     let farTick: number | undefined
-    if (params.maxMarketCap !== undefined) {
-      if (params.maxMarketCap <= 0) {
-        throw new Error('maxMarketCap must be greater than 0')
+    if (params.graduationMarketCap !== undefined) {
+      if (params.graduationMarketCap <= 0) {
+        throw new Error('graduationMarketCap must be greater than 0')
       }
 
-      // Validate maxMarketCap >= highest curve end
+      // Validate graduationMarketCap >= highest curve end
       const highestCurveMarketCap = sortedCurves[sortedCurves.length - 1].marketCap.end
-      if (params.maxMarketCap < highestCurveMarketCap) {
+      if (params.graduationMarketCap < highestCurveMarketCap) {
         throw new Error(
-          `maxMarketCap ($${params.maxMarketCap.toLocaleString()}) must be >= the highest curve's end market cap ($${highestCurveMarketCap.toLocaleString()})`
+          `graduationMarketCap ($${params.graduationMarketCap.toLocaleString()}) must be >= the highest curve's end market cap ($${highestCurveMarketCap.toLocaleString()})`
         )
       }
 
-      // Warn if maxMarketCap is significantly higher than highest curve
-      if (MAX_MARKET_CAP_WARNING_THRESHOLD > 0) {
-        const ratio = params.maxMarketCap / highestCurveMarketCap
-        if (ratio > MAX_MARKET_CAP_WARNING_THRESHOLD) {
+      // Warn if graduationMarketCap is significantly higher than highest curve
+      if (GRADUATION_MARKET_CAP_WARNING_THRESHOLD > 0) {
+        const ratio = params.graduationMarketCap / highestCurveMarketCap
+        if (ratio > GRADUATION_MARKET_CAP_WARNING_THRESHOLD) {
           console.warn(
-            `maxMarketCap ($${params.maxMarketCap.toLocaleString()}) is ${ratio.toFixed(1)}x higher than the highest curve's end ($${highestCurveMarketCap.toLocaleString()}). ` +
+            `graduationMarketCap ($${params.graduationMarketCap.toLocaleString()}) is ${ratio.toFixed(1)}x higher than the highest curve's end ($${highestCurveMarketCap.toLocaleString()}). ` +
             `This may be unintentional.`
           )
         }
       }
 
       farTick = marketCapToTick(
-        params.maxMarketCap,
+        params.graduationMarketCap,
         tokenSupply,
         params.numerairePrice,
         params.tokenDecimals ?? 18,
@@ -505,6 +505,17 @@ export class MulticurveBuilder<C extends SupportedChainId>
     if (!this.pool) throw new Error('poolConfig is required')
     if (!this.migration) throw new Error('migration configuration is required')
     if (!this.userAddress) throw new Error('userAddress is required')
+
+    // Validate noOp migration requires beneficiaries
+    if (this.migration.type === 'noOp') {
+      const hasBeneficiaries = this.pool.beneficiaries && this.pool.beneficiaries.length > 0
+      if (!hasBeneficiaries) {
+        throw new Error(
+          'noOp migration requires beneficiaries. Without beneficiaries, the pool cannot graduate. ' +
+          'Either add beneficiaries or use a different migration type (uniswapV2, uniswapV4).'
+        )
+      }
+    }
 
     // Default governance: noOp on supported chains, default on others (e.g., Ink)
     const governance = this.governance ?? (

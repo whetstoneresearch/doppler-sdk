@@ -3,7 +3,7 @@
  *
  * This example demonstrates the recommended way to configure a RehypeDopplerHook:
  * - Using withCurves() with market cap ranges (no tick math required)
- * - Setting maxMarketCap to cap the pool's price range
+ * - Setting graduationMarketCap to define when the pool can graduate
  * - Configuring advanced fee distribution (buybacks, beneficiaries, LPs)
  * - Live ETH price fetching for accurate market cap calculations
  *
@@ -109,7 +109,7 @@ async function main() {
           shares: parseEther('0.3'), // 30%
         },
       ],
-      maxMarketCap: 100_000_000, // $100M ceiling (converted to farTick internally)
+      graduationMarketCap: 100_000_000, // $100M graduation target (converted to farTick internally)
       beneficiaries, // Required for RehypeDopplerHook
     })
     // Configure fee distribution (must sum to 100%)
@@ -132,13 +132,13 @@ async function main() {
   console.log('\nMulticurve Configuration:')
   console.log('  Token:', params.token.name, '(' + params.token.symbol + ')')
   console.log('  Curves:', params.pool.curves.length)
-  console.log('  Far tick (from maxMarketCap):', params.pool.farTick)
+  console.log('  Far tick (from graduationMarketCap):', params.pool.farTick)
   console.log('  Beneficiaries:', params.pool.beneficiaries?.length)
 
   console.log('\nMarket Cap Targets:')
   console.log('  Launch price: $500,000')
   console.log('  Highest curve end: $50,000,000')
-  console.log('  Maximum ceiling: $100,000,000')
+  console.log('  Graduation target: $100,000,000')
 
   console.log('\nRehypeDopplerHook Fee Distribution:')
   console.log('  Custom fee: 3000 (0.3%)')

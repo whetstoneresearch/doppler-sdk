@@ -346,6 +346,17 @@ export class StaticAuctionBuilder<C extends SupportedChainId>
       ? { ...this.pool, beneficiaries: this.beneficiaries }
       : this.pool
 
+    // Validate noOp migration requires beneficiaries
+    if (this.migration.type === 'noOp') {
+      const hasBeneficiaries = poolWithBeneficiaries.beneficiaries && poolWithBeneficiaries.beneficiaries.length > 0
+      if (!hasBeneficiaries) {
+        throw new Error(
+          'noOp migration requires beneficiaries. Without beneficiaries, the pool cannot graduate. ' +
+          'Either add beneficiaries via withBeneficiaries() or use a different migration type (uniswapV2, uniswapV4).'
+        )
+      }
+    }
+
     return {
       token: this.token,
       sale: this.sale,

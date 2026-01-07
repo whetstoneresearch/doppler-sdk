@@ -1,19 +1,19 @@
 /**
- * Example: Create a Multicurve Pool with Maximum Market Cap Ceiling
+ * Example: Create a Multicurve Pool with Graduation Market Cap
  *
  * This example demonstrates:
  * - Using withCurves() with market cap ranges (no tick math required)
- * - Setting maxMarketCap to cap the pool's maximum price range
+ * - Setting graduationMarketCap to define when the pool can graduate/migrate
  * - Live ETH price fetching for accurate market cap calculations
  *
- * maxMarketCap behavior:
+ * graduationMarketCap behavior:
  * - Must be >= the highest curve's end market cap (throws error otherwise)
  * - Warns if > 5x the highest curve's end (may be unintentional)
  * - Converts to farTick internally for the pool configuration
- * - If not specified, defaults to maximum possible tick
+ * - If not specified, defaults to the highest curve's tickUpper
  *
- * Use case: When you want to limit how high the token price can go,
- * for example to prevent extreme price discovery beyond your target range.
+ * Note: This is NOT a price cap - prices can exceed this value after graduation.
+ * This is the market cap at which the pool can graduate (migrate or change status).
  */
 import './env'
 
@@ -51,13 +51,13 @@ async function main() {
   const ethPriceUsd = await getEthPriceUsd()
   console.log('Current ETH price: $' + ethPriceUsd.toLocaleString())
 
-  // Build multicurve using market cap ranges with a ceiling
+  // Build multicurve using market cap ranges with a graduation target
   const params = sdk
     .buildMulticurveAuction()
     .tokenConfig({
-      name: 'Capped Market Cap Token',
-      symbol: 'CMC',
-      tokenURI: 'https://example.com/capped-token.json',
+      name: 'Graduation Market Cap Token',
+      symbol: 'GMC',
+      tokenURI: 'https://example.com/graduation-token.json',
     })
     .saleConfig({
       initialSupply: parseEther('1000000000'), // 1 billion tokens
@@ -87,18 +87,18 @@ async function main() {
           shares: parseEther('0.3'), // 30%
         },
       ],
-      // Set a maximum market cap ceiling of $100M
-      // This caps the pool's maximum price range
-      maxMarketCap: 100_000_000, // $100M ceiling
+      // Set the graduation market cap at $100M
+      // This is when the pool can graduate/migrate, NOT a price cap
+      graduationMarketCap: 100_000_000, // $100M graduation target
 
       // Validation notes:
-      // - Setting maxMarketCap: 40_000_000 would THROW ERROR
+      // - Setting graduationMarketCap: 40_000_000 would THROW ERROR
       //   (must be >= highest curve end of $50M)
       //
-      // - Setting maxMarketCap: 300_000_000 would LOG WARNING
+      // - Setting graduationMarketCap: 300_000_000 would LOG WARNING
       //   ($300M is 6x > $50M, exceeds 5x threshold)
       //
-      // - Setting maxMarketCap: 100_000_000 is fine
+      // - Setting graduationMarketCap: 100_000_000 is fine
       //   ($100M is 2x > $50M, within 5x threshold)
     })
     .withVesting({
@@ -113,12 +113,12 @@ async function main() {
   console.log('\nMulticurve Configuration:')
   console.log('  Token:', params.token.name, '(' + params.token.symbol + ')')
   console.log('  Curves:', params.pool.curves.length)
-  console.log('  Far tick (from maxMarketCap):', params.pool.farTick)
+  console.log('  Far tick (from graduationMarketCap):', params.pool.farTick)
 
   console.log('\nMarket Cap Targets:')
   console.log('  Launch price: $500,000 market cap')
   console.log('  Highest curve end: $50,000,000')
-  console.log('  Maximum ceiling: $100,000,000')
+  console.log('  Graduation target: $100,000,000')
 
   // Log curve details
   console.log('\nCurve Details (converted to ticks):')
@@ -152,8 +152,8 @@ async function main() {
     console.log('  Far tick:', state.farTick)
     console.log('  Status:', state.status)
 
-    console.log('\nThe pool is now capped at $100M market cap.')
-    console.log('Price discovery beyond this ceiling is not possible.')
+    console.log('\nThe pool can graduate when it reaches $100M market cap.')
+    console.log('After graduation/migration, prices can continue to rise.')
   } catch (error) {
     console.error('\nError creating multicurve:', error)
     process.exit(1)

@@ -399,12 +399,13 @@ export interface MulticurveMarketCapCurvesConfig {
   /** Optional beneficiaries for fee streaming */
   beneficiaries?: BeneficiaryData[];
   /** 
-   * Maximum market cap the pool can reach (in USD).
+   * Market cap at which the pool can graduate (migrate or change status).
    * Converted to farTick internally.
+   * Note: This is NOT a cap - prices can exceed this value after graduation.
    * Must be >= the highest curve's end market cap.
-   * If not specified, defaults to the maximum possible tick.
+   * If not specified, defaults to the highest curve's tickUpper.
    */
-  maxMarketCap?: number;
+  graduationMarketCap?: number;
 }
 
 // Build configuration for static auctions (V3-style)
