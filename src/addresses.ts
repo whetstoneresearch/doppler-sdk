@@ -97,7 +97,7 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
   },
   [CHAIN_IDS.BASE]: {
     airlock: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE].Airlock as Address,
-    tokenFactory: '0xFAafdE6a5b658684cC5eb0C5c2c755B00A246F45' as Address,
+    tokenFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE].TokenFactory as Address,
     v3Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE].UniswapV3Initializer as Address,
     v3Quoter: '0x3d4e44Eb1374240CE5F1B871ab261CD16335B76a' as Address,
     lockableV3Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE].LockableUniswapV3Initializer as Address,
@@ -122,7 +122,7 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
   },
   [CHAIN_IDS.BASE_SEPOLIA]: {
     airlock: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA].Airlock as Address,
-    tokenFactory: '0xc69ba223c617f7d936b3cf2012aa644815dbe9ff' as Address,
+    tokenFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA].TokenFactory as Address,
     doppler404Factory: '0xdd8cea2890f1b3498436f19ec8da8fecc2cb7af7' as Address,
     v3Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA].UniswapV3Initializer as Address,
     v3Quoter: '0xC5290058841028F1614F3A6F0F5816cAd0df5E27' as Address,
@@ -194,7 +194,7 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
   },
   [CHAIN_IDS.UNICHAIN_SEPOLIA]: {
     airlock: '0x651ab94B4777e2e4cdf96082d90C65bd947b73A4' as Address,
-    tokenFactory: '0xC5E5a19a2ee32831Fcb8a81546979AF43936EbaA' as Address,
+    tokenFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.UNICHAIN_SEPOLIA].TokenFactory as Address,
     v3Initializer: '0x7Fb9a622186B4660A5988C223ebb9d3690dD5007' as Address,
     v3Quoter: '0x6Dd37329A1A225a6Fca658265D460423DCafBF89' as Address,
     v4Initializer: '0x992375478626E67F4e639d3298EbCAaE51C3dF0b' as Address,
