@@ -6,6 +6,7 @@
  * initializer is whitelisted on the target chain (Base mainnet or Base
  * Sepolia at the time of writing).
  */
+import './env'
 
 import { DopplerSDK, WAD } from '../src'
 import { createPublicClient, createWalletClient, http, parseEther } from 'viem'

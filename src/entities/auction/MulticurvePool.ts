@@ -1,9 +1,15 @@
-import { type Address, type PublicClient, type WalletClient, type Hash, type Hex } from 'viem'
+import { type Address, type PublicClient, type WalletClient, type Hash, type Hex, zeroAddress } from 'viem'
 import { LockablePoolStatus, type MulticurvePoolState, type SupportedPublicClient, type V4PoolKey } from '../../types'
 import { v4MulticurveInitializerAbi, v4MulticurveMigratorAbi, streamableFeesLockerAbi } from '../../abis'
 import { getAddresses } from '../../addresses'
 import type { SupportedChainId } from '../../addresses'
 import { computePoolId } from '../../utils/poolKey'
+
+/** Result from finding which initializer contains the pool */
+interface InitializerDiscoveryResult {
+  initializerAddress: Address
+  state: MulticurvePoolState
+}
 
 /**
  * MulticurvePool class for interacting with V4 multicurve pools
@@ -44,49 +50,83 @@ export class MulticurvePool {
 
   /**
    * Get current pool state from the multicurve initializer
+   * 
+   * Automatically discovers which initializer (standard or scheduled) contains the pool.
    */
   async getState(): Promise<MulticurvePoolState> {
+    const { state } = await this.findInitializerForPool()
+    return state
+  }
+
+  /**
+   * Find which initializer contains this pool and return both the address and state.
+   * 
+   * Tries v4MulticurveInitializer first (more common), then falls back to 
+   * v4ScheduledMulticurveInitializer if the pool isn't found.
+   */
+  private async findInitializerForPool(): Promise<InitializerDiscoveryResult> {
     const chainId = await this.rpc.getChainId()
     const addresses = getAddresses(chainId as SupportedChainId)
 
-    const initializerAddress = addresses.v4ScheduledMulticurveInitializer ?? addresses.v4MulticurveInitializer
+    // Build list of initializers to try, preferring non-scheduled (more common)
+    const initializersToTry: Address[] = [
+      addresses.v4MulticurveInitializer,
+      addresses.v4ScheduledMulticurveInitializer,
+    ].filter((addr): addr is Address => addr !== undefined && addr !== zeroAddress)
 
-    if (!initializerAddress) {
-      throw new Error('V4 multicurve initializer or scheduled multicurve initializer address not configured for this chain')
+    if (initializersToTry.length === 0) {
+      throw new Error('No V4 multicurve initializer addresses configured for this chain')
     }
 
-    const stateData = await this.rpc.readContract({
-      address: initializerAddress,
-      abi: v4MulticurveInitializerAbi,
-      functionName: 'getState',
-      args: [this.tokenAddress],
-    })
+    const triedInitializers: Address[] = []
 
-    // Parse the returned tuple into a strongly typed PoolKey
-    const [numeraire, status, rawPoolKey, farTick] = stateData as readonly [
-      Address,
-      number,
-      {
-        currency0: Address
-        currency1: Address
-        fee: number
-        tickSpacing: number
-        hooks: Address
-      } & readonly [Address, Address, number, number, Address],
-      number
-    ]
+    for (const initializerAddress of initializersToTry) {
+      triedInitializers.push(initializerAddress)
+      
+      const stateData = await this.rpc.readContract({
+        address: initializerAddress,
+        abi: v4MulticurveInitializerAbi,
+        functionName: 'getState',
+        args: [this.tokenAddress],
+      })
 
-    const poolKey = this.parsePoolKey(rawPoolKey)
+      // Parse the returned tuple into a strongly typed PoolKey
+      const [numeraire, status, rawPoolKey, farTick] = stateData as readonly [
+        Address,
+        number,
+        {
+          currency0: Address
+          currency1: Address
+          fee: number
+          tickSpacing: number
+          hooks: Address
+        } & readonly [Address, Address, number, number, Address],
+        number
+      ]
 
-    return {
-      asset: this.tokenAddress,
-      numeraire,
-      fee: poolKey.fee,
-      tickSpacing: poolKey.tickSpacing,
-      status,
-      poolKey,
-      farTick: Number(farTick),
+      const poolKey = this.parsePoolKey(rawPoolKey)
+
+      // Check if pool exists in this initializer
+      // A non-existent pool will have zeroed hooks and tickSpacing
+      if (poolKey.hooks !== zeroAddress && poolKey.tickSpacing !== 0) {
+        const state: MulticurvePoolState = {
+          asset: this.tokenAddress,
+          numeraire,
+          fee: poolKey.fee,
+          tickSpacing: poolKey.tickSpacing,
+          status,
+          poolKey,
+          farTick: Number(farTick),
+        }
+        return { initializerAddress, state }
+      }
     }
+
+    // Pool not found in any initializer
+    throw new Error(
+      `Pool not found for token ${this.tokenAddress}. ` +
+      `Tried initializers: ${triedInitializers.join(', ')}`
+    )
   }
 
   /**
@@ -106,18 +146,8 @@ export class MulticurvePool {
     const chainId = await this.rpc.getChainId()
     const addresses = getAddresses(chainId as SupportedChainId)
 
-    if (!addresses.v4MulticurveInitializer && !addresses.v4ScheduledMulticurveInitializer) {
-      throw new Error('V4 multicurve initializer and scheduled multicurve initializer address not configured for this chain')
-    }
-
-    // Get pool state to retrieve pool parameters
-    const state = await this.getState()
-
-    const initializerAddress = addresses.v4ScheduledMulticurveInitializer ??  addresses.v4MulticurveInitializer
-
-    if (!initializerAddress) {
-      throw new Error('V4 multicurve initializer or scheduled multicurve initializer address not configured for this chain')
-    }
+    // Discover which initializer has this pool and get state in one call
+    const { initializerAddress, state } = await this.findInitializerForPool()
 
     if (state.status === LockablePoolStatus.Locked) {
       const poolId = computePoolId(state.poolKey)

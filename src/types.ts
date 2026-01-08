@@ -398,6 +398,14 @@ export interface MulticurveMarketCapCurvesConfig {
   tickSpacing?: number;
   /** Optional beneficiaries for fee streaming */
   beneficiaries?: BeneficiaryData[];
+  /** 
+   * Market cap at which the pool can graduate (migrate or change status).
+   * Converted to farTick internally.
+   * Note: This is NOT a cap - prices can exceed this value after graduation.
+   * Must be within the curve boundaries (>= lowest start, <= highest end).
+   * If not specified, defaults to the highest curve's tickUpper.
+   */
+  graduationMarketCap?: number;
 }
 
 // Build configuration for static auctions (V3-style)

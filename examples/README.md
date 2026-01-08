@@ -51,9 +51,29 @@ Before running these examples, ensure you have:
 
 ## Setup
 
+### For SDK Development (this repo)
+
+1. Install dependencies from the repo root:
+```bash
+pnpm install
+```
+
+2. Set up environment variables:
+```bash
+cp .env.example .env
+# Edit .env with your values
+```
+
+3. Run an example:
+```bash
+pnpm tsx examples/multicurve-initializer.ts
+```
+
+### For SDK Consumers (using the published package)
+
 1. Install dependencies:
 ```bash
-npm install doppler-sdk viem
+npm install @whetstone-research/doppler-sdk viem
 
 # For multicurve pre-buy and quote/swap examples (optional)
 npm install doppler-router
@@ -62,19 +82,15 @@ npm install doppler-router
 npm install graphql-request
 ```
 
-2. Set up environment variables:
+2. Set environment variables (use your preferred method):
 ```bash
-# Create a .env file
-cp .env.example .env
-
-# Add your configuration
-PRIVATE_KEY=your_private_key_here
-RPC_URL=https://your-rpc-endpoint
+export PRIVATE_KEY=your_private_key_here
+export RPC_URL=https://your-rpc-endpoint
 ```
 
 3. Run an example:
 ```bash
-npx ts-node examples/static-auction-v2.ts
+npx tsx examples/static-auction-v2.ts
 ```
 
 ## Common Patterns

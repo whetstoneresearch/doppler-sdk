@@ -1,18 +1,17 @@
 import { describe, it, expect, beforeAll } from 'vitest'
-import { createPublicClient, http, parseEther, type Address } from 'viem'
-import { baseSepolia } from 'viem/chains'
+import { parseEther, type Address } from 'viem'
 import { DopplerSDK, getAddresses, CHAIN_IDS, airlockAbi, WAD, FEE_TIERS } from '../src'
+import { getTestClient, hasRpcUrl, getRpcEnvVar } from './utils'
 
 describe('Multicurve Quote & Swap (Base Sepolia fork)', () => {
-  const rpcUrl = process.env.BASE_SEPOLIA_RPC_URL
-  if (!rpcUrl) {
-    it.skip('requires BASE_SEPOLIA_RPC_URL env var')
+  if (!hasRpcUrl(CHAIN_IDS.BASE_SEPOLIA)) {
+    it.skip(`requires ${getRpcEnvVar(CHAIN_IDS.BASE_SEPOLIA)} env var`)
     return
   }
 
   const chainId = CHAIN_IDS.BASE_SEPOLIA
   const addresses = getAddresses(chainId)
-  const publicClient = createPublicClient({ chain: baseSepolia, transport: http(rpcUrl) })
+  const publicClient = getTestClient(chainId)
   const sdk = new DopplerSDK({ publicClient, chainId })
 
   let modulesWhitelisted = false
@@ -87,10 +86,10 @@ describe('Multicurve Quote & Swap (Base Sepolia fork)', () => {
       .withV2Migrator(addresses.v2Migrator)
 
     const params = builder.build()
-    const { asset, pool } = await sdk.factory.simulateCreateMulticurve(params)
+    const { tokenAddress, poolId } = await sdk.factory.simulateCreateMulticurve(params)
 
-    expect(asset).toMatch(/^0x[a-fA-F0-9]{40}$/)
-    expect(pool).toMatch(/^0x[a-fA-F0-9]{40}$/)
+    expect(tokenAddress).toMatch(/^0x[a-fA-F0-9]{40}$/)
+    expect(poolId).toMatch(/^0x[a-fA-F0-9]{64}$/)
 
     // Verify market cap presets generated multiple curves
     expect(params.pool.curves.length).toBeGreaterThan(3) // low, medium, high + filler
@@ -223,7 +222,7 @@ describe('Multicurve Quote & Swap (Base Sepolia fork)', () => {
       .withV2Migrator(addresses.v2Migrator)
 
     const params = builder.build()
-    const { createParams, asset } = await sdk.factory.simulateCreateMulticurve(params)
+    const { createParams, tokenAddress } = await sdk.factory.simulateCreateMulticurve(params)
 
     const exactAmountOut = params.sale.numTokensToSell / 10n
 
@@ -232,7 +231,7 @@ describe('Multicurve Quote & Swap (Base Sepolia fork)', () => {
       hookData: '0x' as `0x${string}`,
     })
 
-    expect(quote.asset).toBe(asset)
+    expect(quote.asset).toBe(tokenAddress)
     expect(quote.amountIn).toBeGreaterThan(0n)
     expect(quote.gasEstimate).toBeGreaterThanOrEqual(0n)
     expect(quote.poolKey.hooks).toMatch(/^0x[a-fA-F0-9]{40}$/)
@@ -268,7 +267,7 @@ describe('Multicurve Quote & Swap (Base Sepolia fork)', () => {
       .withV2Migrator(addresses.v2Migrator)
 
     const params = builder.build()
-    const { createParams, asset } = await sdk.factory.simulateCreateMulticurve(params)
+    const { createParams, tokenAddress } = await sdk.factory.simulateCreateMulticurve(params)
 
     const exactAmountIn = parseEther('1')
 
@@ -278,7 +277,7 @@ describe('Multicurve Quote & Swap (Base Sepolia fork)', () => {
         hookData: '0x' as `0x${string}`,
       })
 
-      expect(quote.asset).toBe(asset)
+      expect(quote.asset).toBe(tokenAddress)
       expect(quote.amountOut).toBeGreaterThan(0n)
       expect(quote.gasEstimate).toBeGreaterThanOrEqual(0n)
       expect(quote.poolKey.currency0).toMatch(/^0x[a-fA-F0-9]{40}$/)

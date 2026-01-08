@@ -21,6 +21,7 @@
  * - Beneficiaries are automatically sorted by address by the SDK
  * - Use withMigration({ type: 'noOp' }) when using beneficiaries
  */
+import './env'
 
 import { DopplerSDK, getAirlockOwner, WAD } from '../src'
 import { parseEther, createPublicClient, createWalletClient, http } from 'viem'

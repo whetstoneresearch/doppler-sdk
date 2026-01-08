@@ -11,6 +11,7 @@
  * - saleConfig() must be called before withMarketCapRange()
  * - tickSpacing is automatically derived from fee (no need to call poolConfig())
  */
+import './env'
 
 import { DopplerSDK, DAY_SECONDS } from '../src'
 import { parseEther, formatEther, createPublicClient, createWalletClient, http } from 'viem'
@@ -29,7 +30,7 @@ async function getEthPriceUsd(): Promise<number> {
   const response = await fetch(
     'https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd'
   )
-  const data = await response.json()
+  const data = await response.json() as { ethereum: { usd: number } }
   return data.ethereum.usd
 }
 

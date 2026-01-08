@@ -6,6 +6,7 @@
  * - Comparing quotes to find best prices
  * - Handling different swap types (exact input/output)
  */
+import './env'
 
 // UNCOMMENT IF RUNNING LOCALLY
 // import { DopplerSDK } from '@whetstone-research/doppler-sdk';

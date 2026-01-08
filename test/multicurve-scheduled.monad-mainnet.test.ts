@@ -1,27 +1,12 @@
 import { describe, it, expect, beforeAll } from 'vitest'
-import { createPublicClient, http, decodeAbiParameters, defineChain } from 'viem'
+import { decodeAbiParameters } from 'viem'
 
 import { DopplerSDK, getAddresses, CHAIN_IDS, airlockAbi, WAD } from '../src'
-
-const monadMainnet = defineChain({
-  id: 143,
-  name: 'Monad Mainnet',
-  nativeCurrency: {
-    decimals: 18,
-    name: 'Monad',
-    symbol: 'MONAD',
-  },
-  rpcUrls: {
-    default: {
-      http: [],
-    },
-  },
-})
+import { getTestClient, hasRpcUrl, getRpcEnvVar } from './utils'
 
 describe('Scheduled Multicurve (Monad Mainnet) smoke test', () => {
-  const rpcUrl = process.env.MONAD_MAINNET_RPC_URL
-  if (!rpcUrl) {
-    it.skip('requires MONAD_MAINNET_RPC_URL env var')
+  if (!hasRpcUrl(CHAIN_IDS.MONAD_MAINNET)) {
+    it.skip(`requires ${getRpcEnvVar(CHAIN_IDS.MONAD_MAINNET)} env var`)
     return
   }
 
@@ -33,7 +18,7 @@ describe('Scheduled Multicurve (Monad Mainnet) smoke test', () => {
     return
   }
 
-  const publicClient = createPublicClient({ chain: monadMainnet, transport: http(rpcUrl) })
+  const publicClient = getTestClient(chainId)
   const sdk = new DopplerSDK({ publicClient, chainId })
 
   let scheduledInitializerWhitelisted = false

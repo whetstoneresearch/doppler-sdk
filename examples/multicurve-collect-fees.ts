@@ -23,6 +23,7 @@
  * Note: This example requires an existing multicurve pool asset address (token address).
  * See multicurve-lockable-beneficiaries.ts for creating a pool with fee streaming.
  */
+import './env'
 
 import { DopplerSDK, WAD } from '../src'
 import { createPublicClient, createWalletClient, http, type Address, formatUnits } from 'viem'

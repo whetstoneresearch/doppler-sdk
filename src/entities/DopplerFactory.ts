@@ -1005,6 +1005,9 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
    * Encode create params for Uniswap V4 Multicurve initializer/migrator flow
    */
   encodeCreateMulticurveParams(params: CreateMulticurveParams<C>): CreateParams {
+    // Validate parameters
+    this.validateMulticurveParams(params)
+
     // Basic validation
     if (!params.pool || params.pool.curves.length === 0) {
       throw new Error('Multicurve pool must include at least one curve')
@@ -1050,111 +1053,144 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       }
     }
 
-    // Calculate farTick: use provided value or default to max usable tick
-    const farTick = params.pool.farTick ?? this.roundMaxTickDown(params.pool.tickSpacing)
-
-    // Build pool initializer tuple components
-    // The InitData struct for DopplerHookInitializer:
-    // struct InitData {
-    //   uint24 fee;
-    //   int24 tickSpacing;
-    //   int24 farTick;
-    //   Curve[] curves;
-    //   BeneficiaryData[] beneficiaries;
-    //   address dopplerHook;
-    //   bytes onInitializationDopplerHookCalldata;
-    //   bytes graduationDopplerHookCalldata;
-    // }
-    const poolInitializerTupleComponents: Array<{ name: string; type: string; components?: Array<{ name: string; type: string }> }> = [
-      { name: 'fee', type: 'uint24' },
-      { name: 'tickSpacing', type: 'int24' },
-      { name: 'farTick', type: 'int24' },
-      {
-        name: 'curves',
-        type: 'tuple[]',
-        components: [
-          { type: 'int24', name: 'tickLower' },
-          { type: 'int24', name: 'tickUpper' },
-          { type: 'uint16', name: 'numPositions' },
-          { type: 'uint256', name: 'shares' }
-        ]
-      },
-      {
-        name: 'beneficiaries',
-        type: 'tuple[]',
-        components: [
-          { type: 'address', name: 'beneficiary' },
-          { type: 'uint96', name: 'shares' }
-        ]
-      },
-      { name: 'dopplerHook', type: 'address' },
-      { name: 'onInitializationDopplerHookCalldata', type: 'bytes' },
-      { name: 'graduationDopplerHookCalldata', type: 'bytes' }
+    // Shared curve and beneficiary component definitions for ABI encoding
+    const curveComponents = [
+      { type: 'int24', name: 'tickLower' },
+      { type: 'int24', name: 'tickUpper' },
+      { type: 'uint16', name: 'numPositions' },
+      { type: 'uint256', name: 'shares' }
+    ]
+    const beneficiaryComponents = [
+      { type: 'address', name: 'beneficiary' },
+      { type: 'uint96', name: 'shares' }
     ]
 
-    if (useScheduledInitializer) {
-      poolInitializerTupleComponents.push({ name: 'startingTime', type: 'uint32' })
-    }
+    // Prepare curve and beneficiary data (shared across all initializer formats)
+    const curvesData = normalizedCurves.map((c: typeof normalizedCurves[number]) => ({
+      tickLower: c.tickLower,
+      tickUpper: c.tickUpper,
+      numPositions: c.numPositions,
+      shares: c.shares
+    }))
+    const beneficiariesData = sortedBeneficiaries.map((b: NonNullable<typeof params.pool.beneficiaries>[number]) => ({
+      beneficiary: b.beneficiary,
+      shares: b.shares
+    }))
 
-    // Encode dopplerHook initialization calldata if provided
-    // For RehypeDopplerHook: abi.encode(numeraire, buybackDst, customFee, assetBuybackPercentWad, numeraireBuybackPercentWad, beneficiaryPercentWad, lpPercentWad)
-    let onInitializationDopplerHookCalldata: Hex = '0x'
-    let graduationDopplerHookCalldata: Hex = '0x'
-    let dopplerHookAddress: Address = ZERO_ADDRESS
+    // Encode pool initializer data based on which initializer is being used
+    // Each initializer expects a different InitData struct format:
+    //
+    // UniswapV4MulticurveInitializer (basic):
+    //   struct InitData { uint24 fee; int24 tickSpacing; Curve[] curves; BeneficiaryData[] beneficiaries; }
+    //
+    // UniswapV4ScheduledMulticurveInitializer:
+    //   struct InitData { uint24 fee; int24 tickSpacing; Curve[] curves; BeneficiaryData[] beneficiaries; uint32 startingTime; }
+    //
+    // DopplerHookInitializer:
+    //   struct InitData { uint24 fee; int24 tickSpacing; int24 farTick; Curve[] curves; BeneficiaryData[] beneficiaries;
+    //                     address dopplerHook; bytes onInitializationDopplerHookCalldata; bytes graduationDopplerHookCalldata; }
 
-    if (useDopplerHook) {
-      const hook = params.dopplerHook!
-      dopplerHookAddress = hook.hookAddress
-      onInitializationDopplerHookCalldata = encodeAbiParameters(
-        [
-          { type: 'address' },  // numeraire
-          { type: 'address' },  // buybackDst
-          { type: 'uint24' },   // customFee
-          { type: 'uint256' },  // assetBuybackPercentWad
-          { type: 'uint256' },  // numeraireBuybackPercentWad
-          { type: 'uint256' },  // beneficiaryPercentWad
-          { type: 'uint256' }   // lpPercentWad
-        ],
-        [
-          params.sale.numeraire,
-          hook.buybackDestination,
-          hook.customFee,
-          hook.assetBuybackPercentWad,
-          hook.numeraireBuybackPercentWad,
-          hook.beneficiaryPercentWad,
-          hook.lpPercentWad
-        ]
+    let poolInitializerData: Hex
+
+    if (useDopplerHookInitializer) {
+      // DopplerHookInitializer format (8 fields)
+      // Calculate farTick: use provided value or default to max usable tick
+      const farTick = params.pool.farTick ?? this.roundMaxTickDown(params.pool.tickSpacing)
+
+      // Encode dopplerHook initialization calldata if provided
+      let onInitializationDopplerHookCalldata: Hex = '0x'
+      let graduationDopplerHookCalldata: Hex = '0x'
+      let dopplerHookAddress: Address = ZERO_ADDRESS
+
+      if (useDopplerHook) {
+        const hook = params.dopplerHook!
+        dopplerHookAddress = hook.hookAddress
+        onInitializationDopplerHookCalldata = encodeAbiParameters(
+          [
+            { type: 'address' },  // numeraire
+            { type: 'address' },  // buybackDst
+            { type: 'uint24' },   // customFee
+            { type: 'uint256' },  // assetBuybackPercentWad
+            { type: 'uint256' },  // numeraireBuybackPercentWad
+            { type: 'uint256' },  // beneficiaryPercentWad
+            { type: 'uint256' }   // lpPercentWad
+          ],
+          [
+            params.sale.numeraire,
+            hook.buybackDestination,
+            hook.customFee,
+            hook.assetBuybackPercentWad,
+            hook.numeraireBuybackPercentWad,
+            hook.beneficiaryPercentWad,
+            hook.lpPercentWad
+          ]
+        )
+        graduationDopplerHookCalldata = hook.graduationCalldata ?? '0x'
+      }
+
+      const dopplerHookTupleComponents = [
+        { name: 'fee', type: 'uint24' },
+        { name: 'tickSpacing', type: 'int24' },
+        { name: 'farTick', type: 'int24' },
+        { name: 'curves', type: 'tuple[]', components: curveComponents },
+        { name: 'beneficiaries', type: 'tuple[]', components: beneficiaryComponents },
+        { name: 'dopplerHook', type: 'address' },
+        { name: 'onInitializationDopplerHookCalldata', type: 'bytes' },
+        { name: 'graduationDopplerHookCalldata', type: 'bytes' }
+      ]
+
+      poolInitializerData = encodeAbiParameters(
+        [{ type: 'tuple', components: dopplerHookTupleComponents }],
+        [{
+          fee: params.pool.fee,
+          tickSpacing: params.pool.tickSpacing,
+          farTick,
+          curves: curvesData,
+          beneficiaries: beneficiariesData,
+          dopplerHook: dopplerHookAddress,
+          onInitializationDopplerHookCalldata,
+          graduationDopplerHookCalldata
+        }]
       )
-      graduationDopplerHookCalldata = hook.graduationCalldata ?? '0x'
+    } else if (useScheduledInitializer) {
+      // UniswapV4ScheduledMulticurveInitializer format (5 fields)
+      const scheduledTupleComponents = [
+        { name: 'fee', type: 'uint24' },
+        { name: 'tickSpacing', type: 'int24' },
+        { name: 'curves', type: 'tuple[]', components: curveComponents },
+        { name: 'beneficiaries', type: 'tuple[]', components: beneficiaryComponents },
+        { name: 'startingTime', type: 'uint32' }
+      ]
+
+      poolInitializerData = encodeAbiParameters(
+        [{ type: 'tuple', components: scheduledTupleComponents }],
+        [{
+          fee: params.pool.fee,
+          tickSpacing: params.pool.tickSpacing,
+          curves: curvesData,
+          beneficiaries: beneficiariesData,
+          startingTime: scheduleStartTime!
+        }]
+      )
+    } else {
+      // UniswapV4MulticurveInitializer format (4 fields - basic)
+      const basicTupleComponents = [
+        { name: 'fee', type: 'uint24' },
+        { name: 'tickSpacing', type: 'int24' },
+        { name: 'curves', type: 'tuple[]', components: curveComponents },
+        { name: 'beneficiaries', type: 'tuple[]', components: beneficiaryComponents }
+      ]
+
+      poolInitializerData = encodeAbiParameters(
+        [{ type: 'tuple', components: basicTupleComponents }],
+        [{
+          fee: params.pool.fee,
+          tickSpacing: params.pool.tickSpacing,
+          curves: curvesData,
+          beneficiaries: beneficiariesData
+        }]
+      )
     }
-
-    const baseInitializerParams = {
-      fee: params.pool.fee,
-      tickSpacing: params.pool.tickSpacing,
-      farTick,
-      curves: normalizedCurves.map((c: typeof normalizedCurves[number]) => ({
-        tickLower: c.tickLower,
-        tickUpper: c.tickUpper,
-        numPositions: c.numPositions,
-        shares: c.shares
-      })),
-      beneficiaries: sortedBeneficiaries.map((b: NonNullable<typeof params.pool.beneficiaries>[number]) => ({
-        beneficiary: b.beneficiary,
-        shares: b.shares
-      })),
-      dopplerHook: dopplerHookAddress,
-      onInitializationDopplerHookCalldata,
-      graduationDopplerHookCalldata
-    }
-
-    const poolInitializerValue = useScheduledInitializer
-      ? { ...baseInitializerParams, startingTime: scheduleStartTime! }
-      : baseInitializerParams
-
-    const poolInitializerData = encodeAbiParameters(
-      [{ type: 'tuple', components: poolInitializerTupleComponents }],
-      [poolInitializerValue]
-    )
 
     // Token factory data (standard vs 404)
     let tokenFactoryData: Hex
@@ -1628,6 +1664,75 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       }
       
       // Check that shares sum to 100% (WAD)
+      const totalShares = beneficiaries.reduce((sum, b) => sum + b.shares, 0n)
+      if (totalShares !== WAD) {
+        throw new Error(`Beneficiary shares must sum to ${WAD} (100%), but got ${totalShares}`)
+      }
+    }
+  }
+
+  /**
+   * Validate multicurve auction parameters
+   */
+  private validateMulticurveParams(params: CreateMulticurveParams<C>): void {
+    // Validate token parameters
+    if (!params.token.name || params.token.name.trim().length === 0) {
+      throw new Error('Token name is required')
+    }
+    if (!params.token.symbol || params.token.symbol.trim().length === 0) {
+      throw new Error('Token symbol is required')
+    }
+
+    // Validate sale config
+    if (params.sale.initialSupply <= BigInt(0)) {
+      throw new Error('Initial supply must be positive')
+    }
+    if (params.sale.numTokensToSell <= BigInt(0)) {
+      throw new Error('Number of tokens to sell must be positive')
+    }
+    if (params.sale.numTokensToSell > params.sale.initialSupply) {
+      throw new Error('Cannot sell more tokens than initial supply')
+    }
+
+    // Validate vesting if provided
+    if (params.vesting) {
+      // Validate recipients and amounts arrays match
+      if (params.vesting.recipients && params.vesting.amounts) {
+        if (params.vesting.recipients.length !== params.vesting.amounts.length) {
+          throw new Error('Vesting recipients and amounts arrays must have the same length')
+        }
+        if (params.vesting.recipients.length === 0) {
+          throw new Error('Vesting recipients array cannot be empty')
+        }
+        // Validate total vested amount doesn't exceed available tokens
+        const totalVested = params.vesting.amounts.reduce((sum, amt) => sum + amt, BigInt(0))
+        const availableForVesting = params.sale.initialSupply - params.sale.numTokensToSell
+        if (totalVested > availableForVesting) {
+          throw new Error(`Total vesting amount (${totalVested}) exceeds available tokens (${availableForVesting})`)
+        }
+      }
+    }
+
+    // Validate pool beneficiaries if provided
+    if (params.pool.beneficiaries && params.pool.beneficiaries.length > 0) {
+      const beneficiaries = params.pool.beneficiaries
+      const totalShares = beneficiaries.reduce((sum, b) => sum + b.shares, 0n)
+      if (totalShares !== WAD) {
+        throw new Error(`Pool beneficiary shares must sum to ${WAD} (100%), but got ${totalShares}`)
+      }
+      for (const b of beneficiaries) {
+        if (b.shares <= 0n) {
+          throw new Error('Each beneficiary must have positive shares')
+        }
+      }
+    }
+
+    // Validate migration config for V4
+    if (params.migration.type === 'uniswapV4' && params.migration.streamableFees) {
+      const beneficiaries = params.migration.streamableFees.beneficiaries
+      if (beneficiaries.length === 0) {
+        throw new Error('At least one beneficiary is required for V4 migration')
+      }
       const totalShares = beneficiaries.reduce((sum, b) => sum + b.shares, 0n)
       if (totalShares !== WAD) {
         throw new Error(`Beneficiary shares must sum to ${WAD} (100%), but got ${totalShares}`)

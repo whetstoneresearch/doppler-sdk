@@ -16,7 +16,7 @@ export { Derc20, Eth } from './entities/token'
 
 // Export builders and common interface
 export { StaticAuctionBuilder, DynamicAuctionBuilder, MulticurveBuilder } from './builders'
-export type { BaseAuctionBuilder } from './builders'
+export type { BaseAuctionBuilder } from './builders/shared'
 
 // Export all types
 export type {

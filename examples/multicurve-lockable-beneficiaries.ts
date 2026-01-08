@@ -10,6 +10,7 @@
  * Use case: When you want fee revenue to flow to specific addresses without
  * migrating liquidity after the auction completes.
  */
+import './env'
 
 import { DopplerSDK, WAD, getAddresses } from '../src'
 import { createPublicClient, createWalletClient, http, type Address } from 'viem'

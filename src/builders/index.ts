@@ -8,7 +8,10 @@ export {
   MARKET_CAP_PRESETS,
   MARKET_CAP_PRESET_ORDER,
   buildCurvesFromPresets,
-  type BaseAuctionBuilder,
-  type MarketCapPresetConfig,
-  type MarketCapPresetOverrides,
+} from './shared'
+
+export type {
+  BaseAuctionBuilder,
+  MarketCapPresetConfig,
+  MarketCapPresetOverrides,
 } from './shared'

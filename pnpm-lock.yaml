@@ -24,6 +24,9 @@ importers:
       doppler-router:
         specifier: ^1.0.15
         version: 1.0.15(viem@2.36.0(typescript@5.8.3))
+      dotenv:
+        specifier: ^17.2.3
+        version: 17.2.3
       glob:
         specifier: ^10.4.5
         version: 10.4.5
@@ -698,6 +701,10 @@ packages:
     engines: {node: '>=18.0.0'}
     peerDependencies:
       viem: ^2.22.15
+
+  dotenv@17.2.3:
+    resolution: {integrity: sha512-JVUnt+DUIzu87TABbhPmNfVdBDt18BLOWjMUFJMSi/Qqg7NTYtabbvSNJGOJ7afbRuv9D/lngizHtP7QyLQ+9w==}
+    engines: {node: '>=12'}
 
   eastasianwidth@0.2.0:
     resolution: {integrity: sha512-I88TYZWc9XiYHRQ4/3c5rjjfgkjhLyW2luGIheGERbNQ6OY7yTybanSpDXZa8y7VUP9YmDcYa+eyq4ca7iLqWA==}
@@ -1767,6 +1774,8 @@ snapshots:
   doppler-router@1.0.15(viem@2.36.0(typescript@5.8.3)):
     dependencies:
       viem: 2.36.0(typescript@5.8.3)
+
+  dotenv@17.2.3: {}
 
   eastasianwidth@0.2.0: {}
 

@@ -12,6 +12,7 @@
  *
  * Key requirement: saleConfig() must be called before withCurves()
  */
+import './env'
 
 import { DopplerSDK } from '../src'
 import { parseEther, createPublicClient, createWalletClient, http } from 'viem'

@@ -1,18 +1,16 @@
 import { describe, it, expect, beforeAll } from 'vitest'
-import { createPublicClient, http } from 'viem'
-import { baseSepolia } from 'viem/chains'
 import { DopplerSDK, getAddresses, CHAIN_IDS, airlockAbi, WAD } from '../src'
+import { getTestClient, hasRpcUrl, getRpcEnvVar } from './utils'
 
 describe('Multicurve with RehypeDopplerHook (Base Sepolia) test', () => {
-  const rpcUrl = process.env.BASE_SEPOLIA_RPC_URL
-  if (!rpcUrl) {
-    it.skip('requires BASE_SEPOLIA_RPC_URL env var')
+  if (!hasRpcUrl(CHAIN_IDS.BASE_SEPOLIA)) {
+    it.skip(`requires ${getRpcEnvVar(CHAIN_IDS.BASE_SEPOLIA)} env var`)
     return
   }
 
   const chainId = CHAIN_IDS.BASE_SEPOLIA
   const addresses = getAddresses(chainId)
-  const publicClient = createPublicClient({ chain: baseSepolia, transport: http(rpcUrl) })
+  const publicClient = getTestClient(chainId)
   const sdk = new DopplerSDK({ publicClient, chainId })
 
   const REHYPE_DOPPLER_HOOK_ADDRESS = '0x636a756cee08775cc18780f52dd90b634f18ad37' as `0x${string}`
@@ -133,14 +131,14 @@ describe('Multicurve with RehypeDopplerHook (Base Sepolia) test', () => {
     console.log('DopplerHookInitializer:', addresses.dopplerHookInitializer)
     console.log('NoOpMigrator:', addresses.noOpMigrator)
     
-    const { asset, pool, gasEstimate } = await sdk.factory.simulateCreateMulticurve(params)
+    const { tokenAddress, poolId, gasEstimate } = await sdk.factory.simulateCreateMulticurve(params)
     
-    console.log('Asset:', asset)
-    console.log('Pool:', pool)
+    console.log('Asset:', tokenAddress)
+    console.log('Pool:', poolId)
     console.log('Gas estimate:', gasEstimate?.toString())
     
-    expect(asset).toMatch(/^0x[a-fA-F0-9]{40}$/)
-    expect(pool).toMatch(/^0x[a-fA-F0-9]{40}$/)
+    expect(tokenAddress).toMatch(/^0x[a-fA-F0-9]{40}$/)
+    expect(poolId).toMatch(/^0x[a-fA-F0-9]{64}$/)
   })
 
   it('can simulate create() for multicurve with RehypeDopplerHook', { timeout: 60000 }, async () => {
@@ -180,7 +178,7 @@ describe('Multicurve with RehypeDopplerHook (Base Sepolia) test', () => {
           { beneficiary: airlockOwner!, shares: 50_000_000_000_000_000n },
         ],
       })
-      .withRehyperDopplerHook({
+      .withRehypeDopplerHook({
         hookAddress: REHYPE_DOPPLER_HOOK_ADDRESS,
         buybackDestination: BUYBACK_DST,
         customFee: 3000,
@@ -201,13 +199,13 @@ describe('Multicurve with RehypeDopplerHook (Base Sepolia) test', () => {
     console.log('RehypeDopplerHook:', REHYPE_DOPPLER_HOOK_ADDRESS)
     console.log('NoOpMigrator:', addresses.noOpMigrator)
     
-    const { asset, pool, gasEstimate } = await sdk.factory.simulateCreateMulticurve(params)
+    const { tokenAddress, poolId, gasEstimate } = await sdk.factory.simulateCreateMulticurve(params)
     
-    console.log('Asset:', asset)
-    console.log('Pool:', pool)
+    console.log('Asset:', tokenAddress)
+    console.log('Pool:', poolId)
     console.log('Gas estimate:', gasEstimate?.toString())
     
-    expect(asset).toMatch(/^0x[a-fA-F0-9]{40}$/)
-    expect(pool).toMatch(/^0x[a-fA-F0-9]{40}$/)
+    expect(tokenAddress).toMatch(/^0x[a-fA-F0-9]{40}$/)
+    expect(poolId).toMatch(/^0x[a-fA-F0-9]{64}$/)
   })
 })

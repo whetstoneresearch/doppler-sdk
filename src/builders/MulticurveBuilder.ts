@@ -6,8 +6,11 @@ import {
   WAD,
   ZERO_ADDRESS,
 } from '../constants'
+
+
 import {
   marketCapRangeToTicksForCurve,
+  marketCapToTick,
   validateMarketCapParameters,
 } from '../utils'
 import {
@@ -20,6 +23,7 @@ import {
   type MulticurveMarketCapCurvesConfig,
   type MulticurveMarketCapPreset,
   type ModuleAddressOverrides,
+  type RehypeDopplerHookConfig,
 } from '../types'
 import { type SupportedChainId } from '../addresses'
 import {
@@ -34,6 +38,7 @@ export class MulticurveBuilder<C extends SupportedChainId>
   private sale?: CreateMulticurveParams<C>['sale']
   private pool?: CreateMulticurveParams<C>['pool']
   private schedule?: CreateMulticurveParams<C>['schedule']
+  private dopplerHook?: RehypeDopplerHookConfig
   private vesting?: VestingConfig
   private governance?: GovernanceOption<C>
   private migration?: MigrationConfig
@@ -81,7 +86,7 @@ export class MulticurveBuilder<C extends SupportedChainId>
     return this
   }
 
-  poolConfig(params: { fee: number; tickSpacing: number; curves: { tickLower: number; tickUpper: number; numPositions: number; shares: bigint }[]; beneficiaries?: { beneficiary: Address; shares: bigint }[] }): this {
+  poolConfig(params: { fee: number; tickSpacing: number; curves: { tickLower: number; tickUpper: number; numPositions: number; shares: bigint }[]; beneficiaries?: { beneficiary: Address; shares: bigint }[]; farTick?: number }): this {
     const sortedBeneficiaries = params.beneficiaries
       ? [...params.beneficiaries].sort((a, b) => {
           const aAddr = a.beneficiary.toLowerCase()
@@ -90,7 +95,13 @@ export class MulticurveBuilder<C extends SupportedChainId>
         })
       : undefined
 
-    this.pool = { fee: params.fee, tickSpacing: params.tickSpacing, curves: params.curves, beneficiaries: sortedBeneficiaries }
+    this.pool = { 
+      fee: params.fee, 
+      tickSpacing: params.tickSpacing, 
+      curves: params.curves, 
+      beneficiaries: sortedBeneficiaries,
+      farTick: params.farTick,
+    }
     return this
   }
 
@@ -245,12 +256,53 @@ export class MulticurveBuilder<C extends SupportedChainId>
       })
     }
 
+    // Convert graduationMarketCap to farTick if provided, otherwise auto-calculate from curves
+    let farTick: number | undefined
+    if (params.graduationMarketCap !== undefined) {
+      if (params.graduationMarketCap <= 0) {
+        throw new Error('graduationMarketCap must be greater than 0')
+      }
+
+      // Validate graduationMarketCap is within curve boundaries
+      const lowestCurveMarketCap = sortedCurves[0].marketCap.start
+      const highestCurveMarketCap = sortedCurves[sortedCurves.length - 1].marketCap.end
+      if (params.graduationMarketCap < lowestCurveMarketCap) {
+        throw new Error(
+          `graduationMarketCap ($${params.graduationMarketCap.toLocaleString()}) must be >= the lowest curve's start market cap ($${lowestCurveMarketCap.toLocaleString()})`
+        )
+      }
+      if (params.graduationMarketCap > highestCurveMarketCap) {
+        throw new Error(
+          `graduationMarketCap ($${params.graduationMarketCap.toLocaleString()}) must be <= the highest curve's end market cap ($${highestCurveMarketCap.toLocaleString()})`
+        )
+      }
+
+      farTick = marketCapToTick(
+        params.graduationMarketCap,
+        tokenSupply,
+        params.numerairePrice,
+        params.tokenDecimals ?? 18,
+        params.numeraireDecimals ?? 18,
+        tickSpacing,
+        numeraire
+      )
+    } else {
+      // Auto-calculate farTick based on curve tick direction
+      // farTick should be beyond the furthest tickUpper (the highest market cap point)
+      // For negative ticks: the "furthest" is the least negative (closest to 0) = max
+      // For positive ticks: the "furthest" is the most positive = max
+      // In both cases, we want the maximum tickUpper value
+      const allTickUppers = curves.map(c => c.tickUpper)
+      farTick = Math.max(...allTickUppers)
+    }
+
     // Delegate to existing poolConfig method
     return this.poolConfig({
       fee,
       tickSpacing,
       curves,
       beneficiaries: params.beneficiaries,
+      farTick,
     })
   }
 
@@ -320,6 +372,39 @@ export class MulticurveBuilder<C extends SupportedChainId>
         )
       }
     }
+  }
+
+  /**
+   * Configure a RehypeDopplerHook for the pool.
+   *
+   * When configured, the hook will be initialized with the pool and will handle:
+   * - Custom swap fees
+   * - Fee distribution to beneficiaries, LPs, and buyback destinations
+   *
+   * IMPORTANT:
+   * - The hook address must be whitelisted in the DopplerHookInitializer
+   * - Fee distribution percentages must sum to exactly WAD (1e18 = 100%)
+   *
+   * @example
+   * ```typescript
+   * builder.withRehypeDopplerHook({
+   *   hookAddress: '0x...',
+   *   buybackDestination: '0x...',
+   *   customFee: 3000, // 0.3%
+   *   assetBuybackPercentWad: parseEther('0.2'),    // 20%
+   *   numeraireBuybackPercentWad: parseEther('0.2'), // 20%
+   *   beneficiaryPercentWad: parseEther('0.3'),      // 30%
+   *   lpPercentWad: parseEther('0.3'),               // 30%
+   * })
+   * ```
+   */
+  withRehypeDopplerHook(params: RehypeDopplerHookConfig): this {
+    const totalDistribution = params.assetBuybackPercentWad + params.numeraireBuybackPercentWad + params.beneficiaryPercentWad + params.lpPercentWad
+    if (totalDistribution !== WAD) {
+      throw new Error(`DopplerHook fee distribution must sum to ${WAD} (100%), but got ${totalDistribution}`)
+    }
+    this.dopplerHook = params
+    return this
   }
 
   withVesting(params?: { duration?: bigint; cliffDuration?: number; recipients?: Address[]; amounts?: bigint[] }): this {
@@ -401,6 +486,8 @@ export class MulticurveBuilder<C extends SupportedChainId>
 
   withV4Migrator(address: Address): this { return this.overrideModule('v4Migrator', address) }
   withNoOpMigrator(address: Address): this { return this.overrideModule('noOpMigrator', address) }
+  withDopplerHookInitializer(address: Address): this { return this.overrideModule('dopplerHookInitializer', address) }
+  withRehypeDopplerHook(address: Address): this { return this.overrideModule('rehypeDopplerHook', address) }
 
   build(): CreateMulticurveParams<C> {
     if (!this.token) throw new Error('tokenConfig is required')
@@ -408,6 +495,17 @@ export class MulticurveBuilder<C extends SupportedChainId>
     if (!this.pool) throw new Error('poolConfig is required')
     if (!this.migration) throw new Error('migration configuration is required')
     if (!this.userAddress) throw new Error('userAddress is required')
+
+    // Validate noOp migration requires beneficiaries
+    if (this.migration.type === 'noOp') {
+      const hasBeneficiaries = this.pool.beneficiaries && this.pool.beneficiaries.length > 0
+      if (!hasBeneficiaries) {
+        throw new Error(
+          'noOp migration requires beneficiaries. Without beneficiaries, the pool cannot graduate. ' +
+          'Either add beneficiaries or use a different migration type (uniswapV2, uniswapV4).'
+        )
+      }
+    }
 
     // Default governance: noOp on supported chains, default on others (e.g., Ink)
     const governance = this.governance ?? (
@@ -421,6 +519,7 @@ export class MulticurveBuilder<C extends SupportedChainId>
       sale: this.sale,
       pool: this.pool,
       schedule: this.schedule,
+      dopplerHook: this.dopplerHook,
       vesting: this.vesting,
       governance: governance as GovernanceOption<C>,
       migration: this.migration,

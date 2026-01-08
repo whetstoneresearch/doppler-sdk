@@ -9,6 +9,7 @@
  * For lockable beneficiaries with NoOp migration, see:
  * - examples/multicurve-lockable-beneficiaries.ts
  */
+import './env'
 
 import { DopplerSDK, FEE_TIERS, WAD } from '../src'
 import { createPublicClient, createWalletClient, http } from 'viem'

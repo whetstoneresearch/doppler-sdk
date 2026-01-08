@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll } from 'vitest'
-import { createPublicClient, http, type Address } from 'viem'
-import { baseSepolia } from 'viem/chains'
+import { type Address } from 'viem'
 import { DopplerSDK, getAddresses, CHAIN_IDS, airlockAbi, WAD } from '../src'
+import { getTestClient, hasRpcUrl, getRpcEnvVar } from './utils'
 
 /**
  * Integration tests for V3 Static Auction with Lockable Beneficiaries
@@ -15,21 +15,21 @@ import { DopplerSDK, getAddresses, CHAIN_IDS, airlockAbi, WAD } from '../src'
  * - NoOp migrator should be used (no actual migration occurs)
  */
 describe('Static Auction with lockable beneficiaries (Base Sepolia)', () => {
-  const rpcUrl = process.env.BASE_SEPOLIA_RPC_URL
-  if (!rpcUrl) {
-    it.skip('requires BASE_SEPOLIA_RPC_URL env var')
+  if (!hasRpcUrl(CHAIN_IDS.BASE_SEPOLIA)) {
+    it.skip(`requires ${getRpcEnvVar(CHAIN_IDS.BASE_SEPOLIA)} env var`)
     return
   }
 
   const chainId = CHAIN_IDS.BASE_SEPOLIA
   const addresses = getAddresses(chainId)
-  const publicClient = createPublicClient({ chain: baseSepolia, transport: http(rpcUrl) })
+  const publicClient = getTestClient(chainId)
   const sdk = new DopplerSDK({ publicClient, chainId })
 
   let v3InitializerWhitelisted = false
   let noOpMigratorWhitelisted = false
   let tokenFactoryWhitelisted = false
   let governanceFactoryWhitelisted = false
+  let airlockOwner: Address | undefined
   let states: {
     tokenFactory?: number
     governanceFactory?: number
@@ -38,6 +38,21 @@ describe('Static Auction with lockable beneficiaries (Base Sepolia)', () => {
   } = {}
 
   beforeAll(async () => {
+    // Fetch the protocol owner dynamically from Airlock.owner()
+    const airlockOwnerAbi = [
+      { name: 'owner', type: 'function', stateMutability: 'view', inputs: [], outputs: [{ name: '', type: 'address' }] }
+    ] as const
+    
+    try {
+      airlockOwner = await publicClient.readContract({
+        address: addresses.airlock,
+        abi: airlockOwnerAbi,
+        functionName: 'owner',
+      }) as Address
+    } catch (e) {
+      console.log('Failed to get airlock owner:', e)
+    }
+
     // Check module whitelisting states
     try {
       const initState = await publicClient.readContract({
@@ -94,6 +109,10 @@ describe('Static Auction with lockable beneficiaries (Base Sepolia)', () => {
       console.warn('V3 initializer not whitelisted on Base Sepolia (state=%d), skipping test', states.v3Initializer)
       return
     }
+    if (!airlockOwner) {
+      console.warn('Could not fetch airlock owner, skipping test')
+      return
+    }
 
     // Assert module states explicitly
     expect(states.tokenFactory).toBe(1)
@@ -102,8 +121,7 @@ describe('Static Auction with lockable beneficiaries (Base Sepolia)', () => {
 
     // Define beneficiaries with shares that sum to WAD (1e18 = 100%)
     // IMPORTANT: Protocol owner (Airlock.owner()) must be included with at least 5% shares
-    const protocolOwner = '0x852a09C89463D236eea2f097623574f23E225769' as Address // Airlock owner on Base Sepolia
-    const beneficiary1 = protocolOwner // Protocol owner (required)
+    const beneficiary1 = airlockOwner // Protocol owner (required)
     const beneficiary2 = '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as Address
     const beneficiary3 = '0x9876543210987654321098765432109876543210' as Address
 
@@ -178,14 +196,17 @@ describe('Static Auction with lockable beneficiaries (Base Sepolia)', () => {
       )
       return
     }
+    if (!airlockOwner) {
+      console.warn('Could not fetch airlock owner, skipping test')
+      return
+    }
 
     expect(states.tokenFactory).toBe(1)
     expect(states.governanceFactory).toBe(2)
     expect(states.v3Initializer).toBe(3)
     expect(states.noOpMigrator).toBe(4)
 
-    const protocolOwner = '0x852a09C89463D236eea2f097623574f23E225769' as Address
-    const beneficiary1 = protocolOwner
+    const beneficiary1 = airlockOwner
     const beneficiary2 = '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as Address
 
     const builder = sdk
@@ -273,8 +294,12 @@ describe('Static Auction with lockable beneficiaries (Base Sepolia)', () => {
   })
 
   it('validates that beneficiary shares must sum to WAD (100%)', async () => {
-    const protocolOwner = '0x852a09C89463D236eea2f097623574f23E225769' as Address
-    const beneficiary1 = protocolOwner
+    if (!airlockOwner) {
+      console.warn('Could not fetch airlock owner, skipping test')
+      return
+    }
+
+    const beneficiary1 = airlockOwner
     const beneficiary2 = '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as Address
 
     // Shares that DON'T sum to WAD (only 60%)
@@ -323,12 +348,14 @@ describe('Static Auction with lockable beneficiaries (Base Sepolia)', () => {
       console.warn('V3 initializer not whitelisted on Base Sepolia (state=%d), skipping test', states.v3Initializer)
       return
     }
-
-    const protocolOwner = '0x852a09C89463D236eea2f097623574f23E225769' as Address
+    if (!airlockOwner) {
+      console.warn('Could not fetch airlock owner, skipping test')
+      return
+    }
 
     // Beneficiaries NOT in sorted order
     const beneficiary1 = '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as Address // Higher address
-    const beneficiary2 = protocolOwner // Protocol owner - will be sorted by SDK
+    const beneficiary2 = airlockOwner // Protocol owner - will be sorted by SDK
     const beneficiary3 = '0x1234567890123456789012345678901234567890' as Address // Lower address
 
     const share1 = WAD / 2n // 50%

@@ -386,6 +386,14 @@ export class DynamicAuctionBuilder<C extends SupportedChainId>
     if (!this.migration) throw new Error('migration configuration is required')
     if (!this.userAddress) throw new Error('userAddress is required')
 
+    // Validate noOp migration is not supported for dynamic auctions
+    if (this.migration.type === 'noOp') {
+      throw new Error(
+        'noOp migration is not supported for dynamic auctions. ' +
+        'Use uniswapV2 or uniswapV4 migration instead.'
+      )
+    }
+
     // Default governance: noOp on supported chains, default on others (e.g., Ink)
     const governance = this.governance ?? (
       isNoOpEnabledChain(this.chainId)

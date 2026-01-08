@@ -10,6 +10,7 @@
  * Prerequisites:
  * - Install graphql-request: npm install graphql-request
  */
+import './env'
 
 import { DopplerSDK, getAddresses } from '../src'
 import { GraphQLClient } from 'graphql-request'

@@ -6,6 +6,7 @@
  * - Checking graduation status
  * - Tracking key metrics and progress
  */
+import './env'
 
 // UNCOMMENT IF RUNNING LOCALLY
 // import { DopplerSDK } from '@whetstone-research/doppler-sdk';

@@ -4,14 +4,10 @@ import { base } from 'viem/chains'
 import { DopplerSDK, getAddresses, CHAIN_IDS, airlockAbi, WAD, DEFAULT_MULTICURVE_MAX_SUPPLY_SHARES } from '../../index'
 
 // Only run when explicitly enabled to avoid flaky network tests in CI
-const RUN = process.env.RUN_FORK_TESTS === '1'
+const RUN_FORK_TESTS = process.env.RUN_FORK_TESTS === '1'
 const BASE_RPC_URL = process.env.BASE_RPC_URL
 
-if (RUN && !BASE_RPC_URL) {
-  console.warn('RUN_FORK_TESTS=1 but BASE_RPC_URL is not set; skipping fork tests')
-}
-
-const shouldRun = RUN && Boolean(BASE_RPC_URL)
+const shouldRun = RUN_FORK_TESTS && Boolean(BASE_RPC_URL)
 const maybeDescribe = shouldRun ? describe : describe.skip
 
 /**
@@ -19,15 +15,10 @@ const maybeDescribe = shouldRun ? describe : describe.skip
  * Each auction has a single curve with different tick ranges (one positive, one negative).
  */
 maybeDescribe('Fork/Live - Multicurve NoOp Migration on Base', () => {
-  if (!BASE_RPC_URL) {
-    throw new Error('BASE_RPC_URL must be provided when running fork tests')
-  }
-
-  const RPC_URL = BASE_RPC_URL
-
   const chainId = CHAIN_IDS.BASE
   const addresses = getAddresses(chainId)
-  const publicClient = createPublicClient({ chain: base, transport: http(RPC_URL) })
+  // Use raw client for fork tests (they run with dedicated RPC)
+  const publicClient = createPublicClient({ chain: base, transport: http(BASE_RPC_URL!) })
   const sdk = new DopplerSDK({ publicClient, chainId })
 
   let protocolOwner: Address

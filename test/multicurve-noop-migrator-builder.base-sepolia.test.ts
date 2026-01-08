@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll } from 'vitest'
-import { createPublicClient, http, type Address } from 'viem'
-import { baseSepolia } from 'viem/chains'
+import { type Address } from 'viem'
 import { DopplerSDK, getAddresses, CHAIN_IDS, airlockAbi, WAD } from '../src'
+import { getTestClient, hasRpcUrl, getRpcEnvVar } from './utils'
 
 /**
  * This test demonstrates using migration type 'noOp' with the MulticurveBuilder
@@ -13,23 +13,35 @@ import { DopplerSDK, getAddresses, CHAIN_IDS, airlockAbi, WAD } from '../src'
  * Use .withMigration({ type: 'noOp' }) when using lockable beneficiaries.
  */
 describe('Multicurve Builder with NoOpMigrator helper (Base Sepolia fork)', () => {
-  const rpcUrl = process.env.BASE_SEPOLIA_RPC_URL
-  if (!rpcUrl) {
-    it.skip('requires BASE_SEPOLIA_RPC_URL env var')
+  if (!hasRpcUrl(CHAIN_IDS.BASE_SEPOLIA)) {
+    it.skip(`requires ${getRpcEnvVar(CHAIN_IDS.BASE_SEPOLIA)} env var`)
     return
   }
 
   const chainId = CHAIN_IDS.BASE_SEPOLIA
   const addresses = getAddresses(chainId)
-  const publicClient = createPublicClient({ chain: baseSepolia, transport: http(rpcUrl) })
+  const publicClient = getTestClient(chainId)
   const sdk = new DopplerSDK({ publicClient, chainId })
 
-  // Protocol owner on Base Sepolia (Airlock.owner())
-  const protocolOwner = '0x852a09C89463D236eea2f097623574f23E225769' as Address
-
   let noOpMigratorWhitelisted = false
+  let airlockOwner: Address | undefined
 
   beforeAll(async () => {
+    // Fetch the protocol owner dynamically from Airlock.owner()
+    const airlockOwnerAbi = [
+      { name: 'owner', type: 'function', stateMutability: 'view', inputs: [], outputs: [{ name: '', type: 'address' }] }
+    ] as const
+    
+    try {
+      airlockOwner = await publicClient.readContract({
+        address: addresses.airlock,
+        abi: airlockOwnerAbi,
+        functionName: 'owner',
+      }) as Address
+    } catch (e) {
+      console.log('Failed to get airlock owner:', e)
+    }
+
     try {
       const noOpMigratorState = await publicClient.readContract({
         address: addresses.airlock,
@@ -47,11 +59,15 @@ describe('Multicurve Builder with NoOpMigrator helper (Base Sepolia fork)', () =
       console.warn('NoOpMigrator not whitelisted on Base Sepolia, skipping test')
       return
     }
+    if (!airlockOwner) {
+      console.warn('Could not fetch airlock owner, skipping test')
+      return
+    }
 
     // Define beneficiaries with shares that sum to WAD (1e18)
     // IMPORTANT: Protocol owner must be included with at least 5% shares
     const beneficiaries = [
-      { beneficiary: protocolOwner, shares: WAD / 10n },              // 10% for protocol owner (required)
+      { beneficiary: airlockOwner, shares: WAD / 10n },              // 10% for protocol owner (required)
       { beneficiary: '0x1234567890123456789012345678901234567890' as Address, shares: (WAD * 3n) / 10n },  // 30%
       { beneficiary: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as Address, shares: (WAD * 6n) / 10n },  // 60%
     ]
@@ -104,9 +120,9 @@ describe('Multicurve Builder with NoOpMigrator helper (Base Sepolia fork)', () =
     expect(createParams.liquidityMigratorData).toBe('0x')
 
     // Simulate the create operation
-    const { asset, pool } = await sdk.factory.simulateCreateMulticurve(params)
-    expect(asset).toMatch(/^0x[a-fA-F0-9]{40}$/)
-    expect(pool).toMatch(/^0x[a-fA-F0-9]{40}$/)
+    const { tokenAddress, poolId } = await sdk.factory.simulateCreateMulticurve(params)
+    expect(tokenAddress).toMatch(/^0x[a-fA-F0-9]{40}$/)
+    expect(poolId).toMatch(/^0x[a-fA-F0-9]{64}$/)
   })
 
   it('demonstrates migration type "noOp" without explicit withNoOpMigrator() call', async () => {
@@ -114,10 +130,14 @@ describe('Multicurve Builder with NoOpMigrator helper (Base Sepolia fork)', () =
       console.warn('NoOpMigrator not whitelisted on Base Sepolia, skipping test')
       return
     }
+    if (!airlockOwner) {
+      console.warn('Could not fetch airlock owner, skipping test')
+      return
+    }
 
     // Define beneficiaries
     const beneficiaries = [
-      { beneficiary: protocolOwner, shares: WAD / 20n },              // 5% for protocol owner (minimum required)
+      { beneficiary: airlockOwner, shares: WAD / 20n },              // 5% for protocol owner (minimum required)
       { beneficiary: '0x9876543210987654321098765432109876543210' as Address, shares: (WAD * 95n) / 100n }, // 95%
     ]
 
@@ -161,9 +181,9 @@ describe('Multicurve Builder with NoOpMigrator helper (Base Sepolia fork)', () =
     expect(createParams.liquidityMigratorData).toBe('0x')
 
     // Simulate the create operation
-    const { asset, pool } = await sdk.factory.simulateCreateMulticurve(params)
-    expect(asset).toMatch(/^0x[a-fA-F0-9]{40}$/)
-    expect(pool).toMatch(/^0x[a-fA-F0-9]{40}$/)
+    const { tokenAddress, poolId } = await sdk.factory.simulateCreateMulticurve(params)
+    expect(tokenAddress).toMatch(/^0x[a-fA-F0-9]{40}$/)
+    expect(poolId).toMatch(/^0x[a-fA-F0-9]{64}$/)
   })
 
   it('demonstrates explicit migrator override with withNoOpMigrator() for custom deployment', async () => {
@@ -171,12 +191,16 @@ describe('Multicurve Builder with NoOpMigrator helper (Base Sepolia fork)', () =
       console.warn('NoOpMigrator not whitelisted on Base Sepolia, skipping test')
       return
     }
+    if (!airlockOwner) {
+      console.warn('Could not fetch airlock owner, skipping test')
+      return
+    }
 
     // SCENARIO: You have a custom NoOpMigrator deployment you want to use
     const customNoOpMigrator = addresses.noOpMigrator! // In practice, this would be your custom address
 
     const beneficiaries = [
-      { beneficiary: protocolOwner, shares: WAD / 4n },  // 25%
+      { beneficiary: airlockOwner, shares: WAD / 4n },  // 25%
       { beneficiary: '0x1111111111111111111111111111111111111111' as Address, shares: (WAD * 3n) / 4n }, // 75%
     ]
 
@@ -219,8 +243,8 @@ describe('Multicurve Builder with NoOpMigrator helper (Base Sepolia fork)', () =
     expect(createParams.liquidityMigratorData).toBe('0x')
 
     // Simulate the create operation
-    const { asset, pool } = await sdk.factory.simulateCreateMulticurve(params)
-    expect(asset).toMatch(/^0x[a-fA-F0-9]{40}$/)
-    expect(pool).toMatch(/^0x[a-fA-F0-9]{40}$/)
+    const { tokenAddress, poolId } = await sdk.factory.simulateCreateMulticurve(params)
+    expect(tokenAddress).toMatch(/^0x[a-fA-F0-9]{40}$/)
+    expect(poolId).toMatch(/^0x[a-fA-F0-9]{64}$/)
   })
 })

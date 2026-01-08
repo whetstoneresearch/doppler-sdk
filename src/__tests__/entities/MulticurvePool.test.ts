@@ -32,11 +32,14 @@ describe('MulticurvePool', () => {
   let walletClient: ReturnType<typeof createMockWalletClient>
   let multicurvePool: MulticurvePool
 
-  beforeEach(() => {
+  beforeEach(async () => {
     publicClient = createMockPublicClient()
     walletClient = createMockWalletClient()
     multicurvePool = new MulticurvePool(publicClient, walletClient, mockTokenAddress)
     vi.clearAllMocks()
+    // Reset getAddresses mock to default behavior
+    const { getAddresses } = await import('../../addresses')
+    vi.mocked(getAddresses).mockReturnValue(mockAddresses)
   })
 
   describe('getTokenAddress', () => {
@@ -76,15 +79,85 @@ describe('MulticurvePool', () => {
       )
     })
 
-    it('should throw error if v4MulticurveInitializer address is not configured', async () => {
+    it('should throw error if no initializer addresses are configured', async () => {
       const { getAddresses } = await import('../../addresses')
-      vi.mocked(getAddresses).mockReturnValueOnce({
+      vi.mocked(getAddresses).mockReturnValue({
         ...mockAddresses,
         v4MulticurveInitializer: undefined,
+        v4ScheduledMulticurveInitializer: undefined,
       } as any)
 
       await expect(multicurvePool.getState()).rejects.toThrow(
-        'V4 multicurve initializer or scheduled multicurve initializer address not configured for this chain'
+        'No V4 multicurve initializer addresses configured for this chain'
+      )
+    })
+
+    it('should fallback to scheduled initializer when pool not found in standard initializer', async () => {
+      const mockScheduledInitializer = '0x8888888888888888888888888888888888888888' as Address
+      const { getAddresses } = await import('../../addresses')
+      vi.mocked(getAddresses).mockReturnValue({
+        ...mockAddresses,
+        v4ScheduledMulticurveInitializer: mockScheduledInitializer,
+      } as any)
+
+      // First call returns zeroed data (pool not found in standard initializer)
+      vi.mocked(publicClient.readContract)
+        .mockResolvedValueOnce([
+          '0x0000000000000000000000000000000000000000',
+          0,
+          {
+            currency0: '0x0000000000000000000000000000000000000000',
+            currency1: '0x0000000000000000000000000000000000000000',
+            fee: 0,
+            tickSpacing: 0,
+            hooks: '0x0000000000000000000000000000000000000000',
+          },
+          0,
+        ] as any)
+        // Second call returns valid data (pool found in scheduled initializer)
+        .mockResolvedValueOnce([
+          mockNumeraire,
+          LockablePoolStatus.Initialized,
+          mockPoolKey,
+          mockFarTick,
+        ] as any)
+
+      const state = await multicurvePool.getState()
+
+      expect(state.poolKey).toEqual(mockPoolKey)
+      expect(publicClient.readContract).toHaveBeenCalledTimes(2)
+      expect(publicClient.readContract).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          address: mockScheduledInitializer,
+        })
+      )
+    })
+
+    it('should throw error with tried initializers when pool not found in any', async () => {
+      const mockScheduledInitializer = '0x8888888888888888888888888888888888888888' as Address
+      const { getAddresses } = await import('../../addresses')
+      vi.mocked(getAddresses).mockReturnValue({
+        ...mockAddresses,
+        v4ScheduledMulticurveInitializer: mockScheduledInitializer,
+      } as any)
+
+      // Both calls return zeroed data (pool not found)
+      vi.mocked(publicClient.readContract)
+        .mockResolvedValue([
+          '0x0000000000000000000000000000000000000000',
+          0,
+          {
+            currency0: '0x0000000000000000000000000000000000000000',
+            currency1: '0x0000000000000000000000000000000000000000',
+            fee: 0,
+            tickSpacing: 0,
+            hooks: '0x0000000000000000000000000000000000000000',
+          },
+          0,
+        ] as any)
+
+      await expect(multicurvePool.getState()).rejects.toThrow(
+        `Pool not found for token ${mockTokenAddress}. Tried initializers:`
       )
     })
   })
@@ -216,15 +289,16 @@ describe('MulticurvePool', () => {
       )
     })
 
-    it('should throw error if v4MulticurveInitializer address is not configured', async () => {
+    it('should throw error if no initializer addresses are configured', async () => {
       const { getAddresses } = await import('../../addresses')
-      vi.mocked(getAddresses).mockReturnValueOnce({
+      vi.mocked(getAddresses).mockReturnValue({
         ...mockAddresses,
         v4MulticurveInitializer: undefined,
+        v4ScheduledMulticurveInitializer: undefined,
       } as any)
 
       await expect(multicurvePool.collectFees()).rejects.toThrow(
-        'V4 multicurve initializer and scheduled multicurve initializer address not configured for this chain'
+        'No V4 multicurve initializer addresses configured for this chain'
       )
     })
 
