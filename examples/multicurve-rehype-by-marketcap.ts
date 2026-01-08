@@ -113,7 +113,7 @@ async function main() {
       beneficiaries, // Required for RehypeDopplerHook
     })
     // Configure fee distribution (must sum to 100%)
-    .withRehyperDopplerHook({
+    .withRehypeDopplerHook({
       hookAddress: REHYPE_DOPPLER_HOOK_ADDRESS,
       buybackDestination: BUYBACK_DESTINATION,
       customFee: 3000, // 0.3% swap fee

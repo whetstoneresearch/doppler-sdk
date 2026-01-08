@@ -178,7 +178,7 @@ describe('Multicurve with RehypeDopplerHook (Base Sepolia) test', () => {
           { beneficiary: airlockOwner!, shares: 50_000_000_000_000_000n },
         ],
       })
-      .withRehyperDopplerHook({
+      .withRehypeDopplerHook({
         hookAddress: REHYPE_DOPPLER_HOOK_ADDRESS,
         buybackDestination: BUYBACK_DST,
         customFee: 3000,

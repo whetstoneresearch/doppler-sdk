@@ -101,7 +101,7 @@ async function main() {
     })
     // Configure the RehypeDopplerHook for fee distribution
     // All percentages must sum to exactly WAD (1e18 = 100%)
-    .withRehyperDopplerHook({
+    .withRehypeDopplerHook({
       hookAddress: REHYPE_DOPPLER_HOOK_ADDRESS,
       buybackDestination: BUYBACK_DESTINATION,
       customFee: 3000, // 0.3% swap fee

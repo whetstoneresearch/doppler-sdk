@@ -387,7 +387,7 @@ export class MulticurveBuilder<C extends SupportedChainId>
    *
    * @example
    * ```typescript
-   * builder.withRehyperDopplerHook({
+   * builder.withRehypeDopplerHook({
    *   hookAddress: '0x...',
    *   buybackDestination: '0x...',
    *   customFee: 3000, // 0.3%
@@ -398,7 +398,7 @@ export class MulticurveBuilder<C extends SupportedChainId>
    * })
    * ```
    */
-  withRehyperDopplerHook(params: RehypeDopplerHookConfig): this {
+  withRehypeDopplerHook(params: RehypeDopplerHookConfig): this {
     const totalDistribution = params.assetBuybackPercentWad + params.numeraireBuybackPercentWad + params.beneficiaryPercentWad + params.lpPercentWad
     if (totalDistribution !== WAD) {
       throw new Error(`DopplerHook fee distribution must sum to ${WAD} (100%), but got ${totalDistribution}`)
