@@ -487,7 +487,6 @@ export class MulticurveBuilder<C extends SupportedChainId>
   withV4Migrator(address: Address): this { return this.overrideModule('v4Migrator', address) }
   withNoOpMigrator(address: Address): this { return this.overrideModule('noOpMigrator', address) }
   withDopplerHookInitializer(address: Address): this { return this.overrideModule('dopplerHookInitializer', address) }
-  withRehypeDopplerHook(address: Address): this { return this.overrideModule('rehypeDopplerHook', address) }
 
   build(): CreateMulticurveParams<C> {
     if (!this.token) throw new Error('tokenConfig is required')
