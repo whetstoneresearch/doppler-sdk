@@ -352,6 +352,71 @@ export interface MarketCapValidationResult {
 }
 
 // ============================================================================
+// Market Cap Helper Function Parameter Types
+// ============================================================================
+
+/**
+ * Parameters for converting market cap range to ticks for V3 Static Auctions.
+ */
+export interface StaticAuctionTickParams {
+  marketCapRange: MarketCapRange;
+  tokenSupply: bigint;
+  numerairePriceUSD: number;
+  tickSpacing: number;
+  tokenDecimals?: number;
+  numeraireDecimals?: number;
+}
+
+/**
+ * Parameters for converting market cap range to ticks for V4 Dynamic Auctions.
+ */
+export interface DynamicAuctionTickParams {
+  marketCapRange: MarketCapRange;
+  tokenSupply: bigint;
+  numerairePriceUSD: number;
+  numeraire: Address;
+  tickSpacing: number;
+  tokenDecimals?: number;
+  numeraireDecimals?: number;
+}
+
+/**
+ * Parameters for converting market cap range to ticks for V4 Multicurve pools.
+ */
+export interface MulticurveTickRangeParams {
+  marketCapLower: number;
+  marketCapUpper: number;
+  tokenSupply: bigint;
+  numerairePriceUSD: number;
+  tickSpacing: number;
+  tokenDecimals?: number;
+  numeraireDecimals?: number;
+}
+
+/**
+ * Parameters for converting a single market cap to a tick for Multicurve.
+ */
+export interface MulticurveTickParams {
+  marketCapUSD: number;
+  tokenSupply: bigint;
+  numerairePriceUSD: number;
+  tickSpacing: number;
+  tokenDecimals?: number;
+  numeraireDecimals?: number;
+}
+
+/**
+ * Parameters for converting a tick to market cap (reverse conversion).
+ */
+export interface TickToMarketCapParams {
+  tick: number;
+  tokenSupply: bigint;
+  numerairePriceUSD: number;
+  tokenDecimals?: number;
+  numeraireDecimals?: number;
+}
+
+// ============================================================================
 // New Multicurve Market Cap API (no tick math required)
 // ============================================================================
 

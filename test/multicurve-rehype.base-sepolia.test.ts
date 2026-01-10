@@ -95,19 +95,20 @@ describe('Multicurve with RehypeDopplerHook (Base Sepolia) test', () => {
     expect(states.governanceFactory).toBe(2)
     expect(states.initializer).toBe(3)
     expect(states.migrator).toBe(4)
+    expect(airlockOwner).toBeDefined()
 
     const builder = sdk
       .buildMulticurveAuction()
-      .tokenConfig({ 
-        type: 'standard', 
-        name: 'BasicDHI', 
-        symbol: 'BDHI', 
-        tokenURI: 'ipfs://basic-dhi-test' 
+      .tokenConfig({
+        type: 'standard',
+        name: 'BasicDHI',
+        symbol: 'BDHI',
+        tokenURI: 'ipfs://basic-dhi-test'
       })
-      .saleConfig({ 
+      .saleConfig({
         initialSupply: 1_000_000_000_000_000_000_000_000_000n,
         numTokensToSell: 1_000_000_000_000_000_000_000_000_000n,
-        numeraire: addresses.weth 
+        numeraire: addresses.weth
       })
       .poolConfig({
         fee: 0,
@@ -119,6 +120,10 @@ describe('Multicurve with RehypeDopplerHook (Base Sepolia) test', () => {
           shares: WAD / 10n,
         })),
         farTick: 200_000,
+        beneficiaries: [
+          { beneficiary: airlockOwner!, shares: WAD / 10n },  // 10% protocol owner
+          { beneficiary: '0x0000000000000000000000000000000000000001' as `0x${string}`, shares: (WAD * 9n) / 10n },  // 90%
+        ],
       })
       .withGovernance({ type: 'noOp' })
       .withMigration({ type: 'noOp' })

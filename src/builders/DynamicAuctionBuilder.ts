@@ -10,8 +10,7 @@ import {
 } from '../constants'
 import {
   computeOptimalGamma,
-  marketCapRangeToTicks,
-  transformTicksForAuction,
+  marketCapToTicksForDynamicAuction,
   validateMarketCapParameters,
 } from '../utils'
 import {
@@ -251,24 +250,18 @@ export class DynamicAuctionBuilder<C extends SupportedChainId>
       allWarnings.forEach(w => console.warn(`  - ${w}`))
     }
 
-    // Convert market cap range to ticks and transform for auction contract
+    // Convert market cap range to ticks for V4 Dynamic auction
     // Pass min as start, start as end (ascending order for validation)
     // Dutch auction price semantics are handled by the contract, not tick ordering
-    const { startTick: rawStartTick, endTick: rawEndTick } = marketCapRangeToTicks(
-      { start: params.marketCap.min, end: params.marketCap.start },
+    const { startTick, endTick } = marketCapToTicksForDynamicAuction({
+      marketCapRange: { start: params.marketCap.min, end: params.marketCap.start },
       tokenSupply,
-      params.numerairePrice,
-      params.tokenDecimals ?? 18,
-      params.numeraireDecimals ?? 18,
+      numerairePriceUSD: params.numerairePrice,
+      numeraire: this.sale.numeraire,
       tickSpacing,
-      this.sale.numeraire
-    )
-
-    const { startTick, endTick } = transformTicksForAuction(
-      rawStartTick,
-      rawEndTick,
-      this.sale.numeraire
-    )
+      tokenDecimals: params.tokenDecimals ?? 18,
+      numeraireDecimals: params.numeraireDecimals ?? 18,
+    })
 
     // Delegate to existing auctionByTicks method
     return this.auctionByTicks({

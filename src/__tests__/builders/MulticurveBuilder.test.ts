@@ -162,7 +162,7 @@ describe('MulticurveBuilder', () => {
           ],
         })
         .withGovernance({ type: 'noOp' })
-        .withMigration({ type: 'noOp' })
+        .withMigration({ type: 'uniswapV2' })
         .withUserAddress('0x00000000000000000000000000000000000000AA' as Address)
 
       const params = builder.build()
@@ -200,7 +200,7 @@ describe('MulticurveBuilder', () => {
           ],
         })
         .withGovernance({ type: 'noOp' })
-        .withMigration({ type: 'noOp' })
+        .withMigration({ type: 'uniswapV2' })
         .withUserAddress('0x00000000000000000000000000000000000000AA' as Address)
 
       const params = builder.build()
@@ -306,7 +306,7 @@ describe('MulticurveBuilder', () => {
           ],
         })
         .withGovernance({ type: 'noOp' })
-        .withMigration({ type: 'noOp' })
+        .withMigration({ type: 'uniswapV2' })
         .withUserAddress('0x00000000000000000000000000000000000000AA' as Address)
 
       const params = builder.build()
@@ -435,7 +435,7 @@ describe('MulticurveBuilder', () => {
           ],
         })
         .withGovernance({ type: 'noOp' })
-        .withMigration({ type: 'noOp' })
+        .withMigration({ type: 'uniswapV2' })
         .withUserAddress('0x00000000000000000000000000000000000000AA' as Address)
 
       const params = builder.build()
@@ -471,7 +471,7 @@ describe('MulticurveBuilder', () => {
           ],
         })
         .withGovernance({ type: 'noOp' })
-        .withMigration({ type: 'noOp' })
+        .withMigration({ type: 'uniswapV2' })
         .withUserAddress('0x00000000000000000000000000000000000000AA' as Address)
 
       const params = builder.build()
@@ -520,7 +520,7 @@ describe('MulticurveBuilder', () => {
           ],
         })
         .withGovernance({ type: 'noOp' })
-        .withMigration({ type: 'noOp' })
+        .withMigration({ type: 'uniswapV2' })
         .withUserAddress('0x00000000000000000000000000000000000000AA' as Address)
 
       const params = builder.build()
