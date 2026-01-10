@@ -9,8 +9,8 @@ import {
 
 
 import {
-  marketCapRangeToTicksForCurve,
-  marketCapToTick,
+  marketCapToTicksForMulticurve,
+  marketCapToTickForMulticurve,
   validateMarketCapParameters,
 } from '../utils'
 import {
@@ -237,16 +237,15 @@ export class MulticurveBuilder<C extends SupportedChainId>
     const curves: { tickLower: number; tickUpper: number; numPositions: number; shares: bigint }[] = []
 
     for (const curve of sortedCurves) {
-      const curveTicks = marketCapRangeToTicksForCurve(
-        curve.marketCap.start,
-        curve.marketCap.end,
+      const curveTicks = marketCapToTicksForMulticurve({
+        marketCapLower: curve.marketCap.start,
+        marketCapUpper: curve.marketCap.end,
         tokenSupply,
-        params.numerairePrice,
-        params.tokenDecimals ?? 18,
-        params.numeraireDecimals ?? 18,
+        numerairePriceUSD: params.numerairePrice,
         tickSpacing,
-        numeraire
-      )
+        tokenDecimals: params.tokenDecimals ?? 18,
+        numeraireDecimals: params.numeraireDecimals ?? 18,
+      })
 
       curves.push({
         tickLower: curveTicks.tickLower,
@@ -277,15 +276,14 @@ export class MulticurveBuilder<C extends SupportedChainId>
         )
       }
 
-      farTick = marketCapToTick(
-        params.graduationMarketCap,
+      farTick = marketCapToTickForMulticurve({
+        marketCapUSD: params.graduationMarketCap,
         tokenSupply,
-        params.numerairePrice,
-        params.tokenDecimals ?? 18,
-        params.numeraireDecimals ?? 18,
+        numerairePriceUSD: params.numerairePrice,
         tickSpacing,
-        numeraire
-      )
+        tokenDecimals: params.tokenDecimals ?? 18,
+        numeraireDecimals: params.numeraireDecimals ?? 18,
+      })
     } else {
       // Auto-calculate farTick based on curve tick direction
       // farTick should be beyond the furthest tickUpper (the highest market cap point)
@@ -496,12 +494,17 @@ export class MulticurveBuilder<C extends SupportedChainId>
     if (!this.userAddress) throw new Error('userAddress is required')
 
     // Validate noOp migration requires beneficiaries
+    // NoOpMigrator is designed for locked pools with beneficiaries. Without beneficiaries,
+    // the pool status is "Initialized" (not "Locked"), meaning exitLiquidity() can be called.
+    // But NoOpMigrator.migrate() always reverts, so the entire graduation transaction fails
+    // and liquidity becomes trapped.
     if (this.migration.type === 'noOp') {
       const hasBeneficiaries = this.pool.beneficiaries && this.pool.beneficiaries.length > 0
       if (!hasBeneficiaries) {
         throw new Error(
-          'noOp migration requires beneficiaries. Without beneficiaries, the pool cannot graduate. ' +
-          'Either add beneficiaries or use a different migration type (uniswapV2, uniswapV4).'
+          'noOp migration requires beneficiaries. Without beneficiaries, the pool would be stuck after reaching ' +
+          'graduation - exitLiquidity() succeeds but NoOpMigrator.migrate() always reverts, causing the entire ' +
+          'transaction to fail. Either add beneficiaries or use a different migration type (uniswapV2, uniswapV4).'
         )
       }
     }

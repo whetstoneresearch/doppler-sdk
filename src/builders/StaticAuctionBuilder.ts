@@ -11,8 +11,7 @@ import {
   ZERO_ADDRESS,
 } from '../constants'
 import {
-  marketCapRangeToTicks,
-  transformTicksForAuction,
+  marketCapToTicksForStaticAuction,
   validateMarketCapParameters,
 } from '../utils'
 import {
@@ -191,22 +190,15 @@ export class StaticAuctionBuilder<C extends SupportedChainId>
       allWarnings.forEach(w => console.warn(`  - ${w}`))
     }
 
-    // Convert market cap range to ticks and transform for auction contract
-    const { startTick: rawStartTick, endTick: rawEndTick } = marketCapRangeToTicks(
-      params.marketCap,
+    // Convert market cap range to ticks for V3 Static auction
+    const { startTick, endTick } = marketCapToTicksForStaticAuction({
+      marketCapRange: params.marketCap,
       tokenSupply,
-      params.numerairePrice,
-      params.tokenDecimals ?? 18,
-      params.numeraireDecimals ?? 18,
+      numerairePriceUSD: params.numerairePrice,
       tickSpacing,
-      this.sale.numeraire
-    )
-
-    const { startTick, endTick } = transformTicksForAuction(
-      rawStartTick,
-      rawEndTick,
-      this.sale.numeraire
-    )
+      tokenDecimals: params.tokenDecimals ?? 18,
+      numeraireDecimals: params.numeraireDecimals ?? 18,
+    })
 
     // Delegate to existing poolByTicks method
     return this.poolByTicks({
@@ -347,12 +339,17 @@ export class StaticAuctionBuilder<C extends SupportedChainId>
       : this.pool
 
     // Validate noOp migration requires beneficiaries
+    // NoOpMigrator is designed for locked pools with beneficiaries. Without beneficiaries,
+    // the pool status is "Initialized" (not "Locked"), meaning exitLiquidity() can be called.
+    // But NoOpMigrator.migrate() always reverts, so the entire graduation transaction fails
+    // and liquidity becomes trapped.
     if (this.migration.type === 'noOp') {
       const hasBeneficiaries = poolWithBeneficiaries.beneficiaries && poolWithBeneficiaries.beneficiaries.length > 0
       if (!hasBeneficiaries) {
         throw new Error(
-          'noOp migration requires beneficiaries. Without beneficiaries, the pool cannot graduate. ' +
-          'Either add beneficiaries via withBeneficiaries() or use a different migration type (uniswapV2, uniswapV4).'
+          'noOp migration requires beneficiaries. Without beneficiaries, the pool would be stuck after reaching ' +
+          'graduation - exitLiquidity() succeeds but NoOpMigrator.migrate() always reverts, causing the entire ' +
+          'transaction to fail. Either add beneficiaries via withBeneficiaries() or use a different migration type (uniswapV2, uniswapV4).'
         )
       }
     }

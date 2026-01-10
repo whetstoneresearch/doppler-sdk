@@ -1337,8 +1337,8 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     /** Execute the create with the same params used in simulation (guarantees address match) */
     execute: () => Promise<{ tokenAddress: Address; poolId: Hex; transactionHash: string }>
   }> {
-    const createParams = this.encodeCreateMulticurveParams(params)
     const addresses = getAddresses(this.chainId)
+    const createParams = this.encodeCreateMulticurveParams(params)
     const airlockAddress = params.modules?.airlock ?? addresses.airlock
     const { request, result } = await (this.publicClient as PublicClient).simulateContract({
       address: airlockAddress,
@@ -1357,11 +1357,11 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     if (!simResult || !Array.isArray(simResult) || simResult.length < 2) {
       throw new Error('Failed to simulate multicurve create')
     }
-    
+
     // simResult[0] is "asset" in contract terminology, we call it tokenAddress for SDK consistency
     const tokenAddress = simResult[0] as Address
     const poolId = await this.computeMulticurvePoolId(params, tokenAddress)
-    
+
     return {
       createParams,
       tokenAddress,
@@ -1375,10 +1375,11 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     params: CreateMulticurveParams<C>,
     options?: { _createParams?: CreateParams }
   ): Promise<{ tokenAddress: Address; poolId: Hex; transactionHash: string }> {
-    // Use provided createParams (from simulate) or generate new ones
-    const createParams = options?._createParams ?? this.encodeCreateMulticurveParams(params)
     const addresses = getAddresses(this.chainId)
     if (!this.walletClient) throw new Error('Wallet client required for write operations')
+
+    // Use provided createParams (from simulate) or generate new ones
+    const createParams = options?._createParams ?? this.encodeCreateMulticurveParams(params)
     const airlockAddress = params.modules?.airlock ?? addresses.airlock
     const { request, result } = await (this.publicClient as PublicClient).simulateContract({
       address: airlockAddress,
