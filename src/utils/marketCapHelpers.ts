@@ -492,12 +492,6 @@ export function marketCapToTickForMulticurve(
   return rawTick === 0 ? 0 : rawTick
 }
 
-// OLD FUNCTIONS REMOVED - use auction-specific functions above:
-// - marketCapToTicksForStaticAuction() for V3 Static
-// - marketCapToTicksForDynamicAuction() for V4 Dynamic
-// - marketCapToTicksForMulticurve() for V4 Multicurve
-// - marketCapToTickForMulticurve() for single tick (farTick, pegTick)
-
 /**
  * Apply curvature offsets to a peg tick for Multicurve positions.
  *
