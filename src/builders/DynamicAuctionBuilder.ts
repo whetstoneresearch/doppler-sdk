@@ -5,9 +5,7 @@ import {
   DEFAULT_V4_YEARLY_MINT_RATE,
   DOPPLER_MAX_TICK_SPACING,
   FEE_TIERS,
-  TICK_SPACINGS,
   V4_MAX_FEE,
-  VALID_FEE_TIERS,
   ZERO_ADDRESS,
 } from '../constants'
 import {
@@ -247,27 +245,10 @@ export class DynamicAuctionBuilder<C extends SupportedChainId>
     }
 
     // Determine tickSpacing:
-    // - If explicitly provided, use it (for custom fees)
-    // - If standard fee tier, can auto-derive but cap at DOPPLER_MAX_TICK_SPACING
-    // - If custom fee without tickSpacing, require it to be provided
-    let tickSpacing: number
-    const isStandardFee = (VALID_FEE_TIERS as readonly number[]).includes(fee)
-
-    if (params.tickSpacing !== undefined) {
-      // Explicit tickSpacing provided
-      tickSpacing = params.tickSpacing
-    } else if (isStandardFee) {
-      // Standard fee tier - use DOPPLER_MAX_TICK_SPACING for best granularity
-      // (standard tick spacings like 60, 200 exceed MAX_TICK_SPACING anyway)
-      tickSpacing = DOPPLER_MAX_TICK_SPACING
-    } else {
-      // Custom fee requires explicit tickSpacing
-      throw new Error(
-        `Custom fee ${fee} requires explicit tickSpacing. ` +
-        `Standard fees (${VALID_FEE_TIERS.join(', ')}) auto-derive tickSpacing. ` +
-        `For custom fees, provide tickSpacing (max: ${DOPPLER_MAX_TICK_SPACING}).`
-      )
-    }
+    // - If explicitly provided, use it
+    // - Otherwise default to DOPPLER_MAX_TICK_SPACING (30) for all fees
+    // Standard tick spacings (60, 200) exceed Doppler's max anyway
+    const tickSpacing = params.tickSpacing ?? DOPPLER_MAX_TICK_SPACING
 
     // Validate tickSpacing doesn't exceed Doppler maximum
     if (tickSpacing > DOPPLER_MAX_TICK_SPACING) {

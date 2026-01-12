@@ -178,7 +178,7 @@ describe('Builder withMarketCapRange ordering', () => {
       expect(params.pool.tickSpacing).toBe(10)
     })
 
-    it('throws for custom fee without tickSpacing', () => {
+    it('auto-derives tickSpacing for custom fee', () => {
       const builder = DynamicAuctionBuilder.forChain(CHAIN_IDS.BASE)
         .tokenConfig({ name: 'Test', symbol: 'TST', tokenURI: 'ipfs://test' })
         .saleConfig({
@@ -186,16 +186,21 @@ describe('Builder withMarketCapRange ordering', () => {
           numTokensToSell: parseEther('900000000'),
           numeraire: WETH,
         })
-
-      expect(() =>
-        builder.withMarketCapRange({
+        .withMarketCapRange({
           marketCap: { start: 100_000, min: 10_000 },
           numerairePrice: 3000,
           minProceeds: parseEther('10'),
           maxProceeds: parseEther('1000'),
-          fee: 2500, // Custom fee without tickSpacing
+          fee: 2500, // Custom fee without explicit tickSpacing
         })
-      ).toThrow('Custom fee 2500 requires explicit tickSpacing')
+        .withGovernance({ type: 'default' })
+        .withMigration({ type: 'uniswapV2' })
+        .withUserAddress(USER)
+
+      const params = builder.build()
+      expect(params.pool.fee).toBe(2500)
+      // Should default to DOPPLER_MAX_TICK_SPACING (30)
+      expect(params.pool.tickSpacing).toBe(30)
     })
 
     it('throws for fee exceeding V4_MAX_FEE', () => {
