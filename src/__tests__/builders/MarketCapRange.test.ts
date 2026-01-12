@@ -152,7 +152,33 @@ describe('Builder withMarketCapRange ordering', () => {
       expect(params.pool.tickSpacing).toBe(30)
     })
 
-    it('throws for invalid fee tier in withMarketCapRange', () => {
+    it('allows custom fee with explicit tickSpacing', () => {
+      const builder = DynamicAuctionBuilder.forChain(CHAIN_IDS.BASE)
+        .tokenConfig({ name: 'Test', symbol: 'TST', tokenURI: 'ipfs://test' })
+        .saleConfig({
+          initialSupply: parseEther('1000000000'),
+          numTokensToSell: parseEther('900000000'),
+          numeraire: WETH,
+        })
+        .withMarketCapRange({
+          marketCap: { start: 100_000, min: 10_000 },
+          numerairePrice: 3000,
+          minProceeds: parseEther('10'),
+          maxProceeds: parseEther('1000'),
+          fee: 2500, // Custom 0.25% fee
+          tickSpacing: 10, // Required for custom fees
+        })
+        .withGovernance({ type: 'default' })
+        .withMigration({ type: 'uniswapV2' })
+        .withUserAddress(USER)
+
+      const params = builder.build()
+
+      expect(params.pool.fee).toBe(2500)
+      expect(params.pool.tickSpacing).toBe(10)
+    })
+
+    it('throws for custom fee without tickSpacing', () => {
       const builder = DynamicAuctionBuilder.forChain(CHAIN_IDS.BASE)
         .tokenConfig({ name: 'Test', symbol: 'TST', tokenURI: 'ipfs://test' })
         .saleConfig({
@@ -167,9 +193,51 @@ describe('Builder withMarketCapRange ordering', () => {
           numerairePrice: 3000,
           minProceeds: parseEther('10'),
           maxProceeds: parseEther('1000'),
-          fee: 1234 as any, // invalid fee tier
+          fee: 2500, // Custom fee without tickSpacing
         })
-      ).toThrow('Invalid fee tier: 1234. Must be one of: 100, 500, 3000, 10000')
+      ).toThrow('Custom fee 2500 requires explicit tickSpacing')
+    })
+
+    it('throws for fee exceeding V4_MAX_FEE', () => {
+      const builder = DynamicAuctionBuilder.forChain(CHAIN_IDS.BASE)
+        .tokenConfig({ name: 'Test', symbol: 'TST', tokenURI: 'ipfs://test' })
+        .saleConfig({
+          initialSupply: parseEther('1000000000'),
+          numTokensToSell: parseEther('900000000'),
+          numeraire: WETH,
+        })
+
+      expect(() =>
+        builder.withMarketCapRange({
+          marketCap: { start: 100_000, min: 10_000 },
+          numerairePrice: 3000,
+          minProceeds: parseEther('10'),
+          maxProceeds: parseEther('1000'),
+          fee: 200000, // Exceeds V4_MAX_FEE (100_000)
+          tickSpacing: 10,
+        })
+      ).toThrow('Fee 200000 exceeds maximum allowed for V4 pools')
+    })
+
+    it('throws for tickSpacing exceeding DOPPLER_MAX_TICK_SPACING', () => {
+      const builder = DynamicAuctionBuilder.forChain(CHAIN_IDS.BASE)
+        .tokenConfig({ name: 'Test', symbol: 'TST', tokenURI: 'ipfs://test' })
+        .saleConfig({
+          initialSupply: parseEther('1000000000'),
+          numTokensToSell: parseEther('900000000'),
+          numeraire: WETH,
+        })
+
+      expect(() =>
+        builder.withMarketCapRange({
+          marketCap: { start: 100_000, min: 10_000 },
+          numerairePrice: 3000,
+          minProceeds: parseEther('10'),
+          maxProceeds: parseEther('1000'),
+          fee: 2500,
+          tickSpacing: 60, // Exceeds DOPPLER_MAX_TICK_SPACING (30)
+        })
+      ).toThrow('tickSpacing 60 exceeds maximum allowed for Doppler pools')
     })
   })
 

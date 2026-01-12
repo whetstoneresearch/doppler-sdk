@@ -3,6 +3,7 @@ import {
   DEFAULT_V3_YEARLY_MINT_RATE,
   FEE_TIERS,
   TICK_SPACINGS,
+  V4_MAX_FEE,
   WAD,
   ZERO_ADDRESS,
 } from '../constants'
@@ -137,20 +138,32 @@ export class MulticurveBuilder<C extends SupportedChainId>
    * by market cap (ascending) before validation and processing. Curves must
    * be contiguous or overlapping (no gaps allowed).
    *
+   * V4 pools support custom fees (0-100,000). Standard fee tiers auto-derive
+   * tickSpacing; custom fees require explicit tickSpacing parameter.
+   *
    * @param params - Market cap configuration with curves defined by market cap ranges
    * @returns Builder instance for chaining
    *
-   * @example
+   * @example Standard fee tier
    * ```ts
    * builder
    *   .saleConfig({ initialSupply, numTokensToSell, numeraire: WETH })
    *   .withCurves({
-   *     numerairePrice: 3000, // ETH = $3000
-   *     curves: [
-   *       { marketCap: { start: 500_000, end: 1_000_000 }, numPositions: 10, shares: parseEther('0.3') },
-   *       { marketCap: { start: 1_000_000, end: 5_000_000 }, numPositions: 20, shares: parseEther('0.5') },
-   *       { marketCap: { start: 5_000_000, end: 50_000_000 }, numPositions: 10, shares: parseEther('0.2') },
-   *     ],
+   *     numerairePrice: 3000,
+   *     curves: [...],
+   *     fee: 500, // Standard tier, tickSpacing auto-derived
+   *   })
+   * ```
+   *
+   * @example Custom fee
+   * ```ts
+   * builder
+   *   .saleConfig({ initialSupply, numTokensToSell, numeraire: WETH })
+   *   .withCurves({
+   *     numerairePrice: 3000,
+   *     curves: [...],
+   *     fee: 2500,      // Custom 0.25% fee
+   *     tickSpacing: 10, // Required for custom fees
    *   })
    * ```
    */
@@ -205,12 +218,25 @@ export class MulticurveBuilder<C extends SupportedChainId>
     }
 
     // Get fee and tick spacing
-    const fee = params.fee ?? FEE_TIERS.LOW
+    // V4 pools support any fee 0-100,000, but standard tiers auto-derive tickSpacing
+    const fee = params.fee ?? FEE_TIERS.MEDIUM
+
+    // Validate fee doesn't exceed V4 maximum
+    if (fee > V4_MAX_FEE) {
+      throw new Error(
+        `Fee ${fee} exceeds maximum allowed for V4 pools (${V4_MAX_FEE} = 10%). ` +
+        `Use a fee between 0 and ${V4_MAX_FEE}.`
+      )
+    }
+
     const tickSpacing = params.tickSpacing ??
       (TICK_SPACINGS as Record<number, number>)[fee]
 
     if (tickSpacing === undefined) {
-      throw new Error('tickSpacing must be provided when using a custom fee tier')
+      throw new Error(
+        `Custom fee ${fee} requires explicit tickSpacing. ` +
+        `Standard fees (100, 500, 3000, 10000) auto-derive tickSpacing.`
+      )
     }
 
     const numeraire = this.sale.numeraire

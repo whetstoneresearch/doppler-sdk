@@ -5,6 +5,8 @@ import {
   DEFAULT_V4_YEARLY_MINT_RATE,
   DOPPLER_MAX_TICK_SPACING,
   FEE_TIERS,
+  TICK_SPACINGS,
+  V4_MAX_FEE,
   VALID_FEE_TIERS,
   ZERO_ADDRESS,
 } from '../constants'
@@ -174,21 +176,37 @@ export class DynamicAuctionBuilder<C extends SupportedChainId>
   /**
    * Configure auction using target market cap range.
    * Converts market cap values (in USD) to Uniswap ticks.
-   * Uses fixed tickSpacing of 30 (max allowed) for optimal price granularity.
+   *
+   * V4 pools support custom fees (0-100,000). Standard fee tiers auto-derive
+   * tickSpacing; custom fees require explicit tickSpacing (max: 30).
    *
    * @param params - Market cap configuration with auction parameters
    * @returns Builder instance for chaining
    *
-   * @example
+   * @example Standard fee tier (auto tickSpacing)
    * ```ts
    * builder
    *   .saleConfig({ initialSupply, numTokensToSell, numeraire: WETH })
    *   .withMarketCapRange({
-   *     marketCap: { start: 500_000, min: 50_000 }, // $500k start, $50k floor
-   *     numerairePrice: 3000, // ETH = $3000
+   *     marketCap: { start: 500_000, min: 50_000 },
+   *     numerairePrice: 3000,
    *     minProceeds: parseEther('10'),
    *     maxProceeds: parseEther('1000'),
-   *     fee: 10000, // optional, defaults to 10000 (1%)
+   *     fee: 10000, // Standard tier, tickSpacing auto = 30
+   *   })
+   * ```
+   *
+   * @example Custom fee (requires explicit tickSpacing)
+   * ```ts
+   * builder
+   *   .saleConfig({ initialSupply, numTokensToSell, numeraire: WETH })
+   *   .withMarketCapRange({
+   *     marketCap: { start: 500_000, min: 50_000 },
+   *     numerairePrice: 3000,
+   *     minProceeds: parseEther('10'),
+   *     maxProceeds: parseEther('1000'),
+   *     fee: 2500,      // Custom 0.25% fee
+   *     tickSpacing: 10, // Required for custom fees
    *   })
    * ```
    */
@@ -217,17 +235,47 @@ export class DynamicAuctionBuilder<C extends SupportedChainId>
 
     // Derive fee and tickSpacing
     // Default fee is HIGH (1%) for Dutch auctions
-    // tickSpacing is always MAX (30) for withMarketCapRange convenience method
+    // V4 pools support any fee 0-100,000, but standard tiers auto-derive tickSpacing
     const fee = params.fee ?? FEE_TIERS.HIGH
-    
-    // Validate fee is a standard tier
-    if (!VALID_FEE_TIERS.includes(fee)) {
+
+    // Validate fee doesn't exceed V4 maximum
+    if (fee > V4_MAX_FEE) {
       throw new Error(
-        `Invalid fee tier: ${fee}. Must be one of: ${VALID_FEE_TIERS.join(', ')}`
+        `Fee ${fee} exceeds maximum allowed for V4 pools (${V4_MAX_FEE} = 10%). ` +
+        `Use a fee between 0 and ${V4_MAX_FEE}.`
       )
     }
-    
-    const tickSpacing = DOPPLER_MAX_TICK_SPACING
+
+    // Determine tickSpacing:
+    // - If explicitly provided, use it (for custom fees)
+    // - If standard fee tier, can auto-derive but cap at DOPPLER_MAX_TICK_SPACING
+    // - If custom fee without tickSpacing, require it to be provided
+    let tickSpacing: number
+    const isStandardFee = (VALID_FEE_TIERS as readonly number[]).includes(fee)
+
+    if (params.tickSpacing !== undefined) {
+      // Explicit tickSpacing provided
+      tickSpacing = params.tickSpacing
+    } else if (isStandardFee) {
+      // Standard fee tier - use DOPPLER_MAX_TICK_SPACING for best granularity
+      // (standard tick spacings like 60, 200 exceed MAX_TICK_SPACING anyway)
+      tickSpacing = DOPPLER_MAX_TICK_SPACING
+    } else {
+      // Custom fee requires explicit tickSpacing
+      throw new Error(
+        `Custom fee ${fee} requires explicit tickSpacing. ` +
+        `Standard fees (${VALID_FEE_TIERS.join(', ')}) auto-derive tickSpacing. ` +
+        `For custom fees, provide tickSpacing (max: ${DOPPLER_MAX_TICK_SPACING}).`
+      )
+    }
+
+    // Validate tickSpacing doesn't exceed Doppler maximum
+    if (tickSpacing > DOPPLER_MAX_TICK_SPACING) {
+      throw new Error(
+        `tickSpacing ${tickSpacing} exceeds maximum allowed for Doppler pools (${DOPPLER_MAX_TICK_SPACING}). ` +
+        `Use tickSpacing <= ${DOPPLER_MAX_TICK_SPACING}.`
+      )
+    }
 
     // Set pool config internally
     this.pool = { fee, tickSpacing }

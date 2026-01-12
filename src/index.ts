@@ -131,6 +131,8 @@ export {
   FEE_AMOUNT_MASK,
   DOPPLER_MAX_TICK_SPACING,
   VALID_FEE_TIERS,
+  V3_FEE_TIERS,
+  V4_MAX_FEE,
   type FeeTier,
 } from './constants'
 
