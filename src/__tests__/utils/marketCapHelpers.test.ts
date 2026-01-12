@@ -200,15 +200,13 @@ describe('marketCapHelpers', () => {
         numeraireDecimals: 18,
       })
 
-      // Multicurve ticks are always negative
-      expect(tick).toBeLessThan(0)
       // Should be aligned to tick spacing
       expect(Math.abs(tick % tickSpacing)).toBe(0)
       expect(tick).toBeGreaterThanOrEqual(-887272)
       expect(tick).toBeLessThanOrEqual(887272)
     })
 
-    it('should always produce negative ticks', () => {
+    it('should produce valid ticks within range', () => {
       const tick = marketCapToTickForMulticurve({
         marketCapUSD: 1_000_000,
         tokenSupply,
@@ -218,7 +216,9 @@ describe('marketCapHelpers', () => {
         numeraireDecimals: 18,
       })
 
-      expect(tick).toBeLessThan(0)
+      // Tick can be positive or negative depending on price ratio
+      expect(tick).toBeGreaterThanOrEqual(-887272)
+      expect(tick).toBeLessThanOrEqual(887272)
     })
 
     it('should align to tick spacing', () => {
@@ -247,8 +247,7 @@ describe('marketCapHelpers', () => {
         numeraireDecimals: 18,
       })
 
-      // Tick should be around -34500
-      expect(tick).toBeLessThan(0)
+      // Tick is around -34500 (negative because ratio = 0.032/1 < 1)
       expect(Math.abs(tick + 34500)).toBeLessThan(200)
     })
   })
@@ -268,10 +267,8 @@ describe('marketCapHelpers', () => {
         numeraireDecimals: 18,
       })
 
-      // Multicurve ticks are always negative, tickLower < tickUpper
+      // tickLower < tickUpper (tick sign depends on price ratio)
       expect(tickLower).toBeLessThan(tickUpper)
-      expect(tickLower).toBeLessThan(0)
-      expect(tickUpper).toBeLessThan(0)
       expect(Math.abs(tickLower % tickSpacing)).toBe(0)
       expect(Math.abs(tickUpper % tickSpacing)).toBe(0)
     })
@@ -731,8 +728,7 @@ describe('marketCapHelpers', () => {
         numeraireDecimals: 18,
       })
 
-      // tick is negative for Multicurve
-      expect(tick).toBeLessThan(0)
+      // tick can be positive or negative depending on price ratio
 
       const recoveredMarketCap = tickToMarketCap({
         tick,
@@ -767,14 +763,12 @@ describe('marketCapHelpers', () => {
         numeraireDecimals: 18,
       })
 
-      // Multicurve tick is always negative
-      // ratio = 0.032/1 = 0.032, rawTick ≈ 34500, negated → tick ≈ -34500
-      expect(pegTick).toBeLessThan(0)
+      // ratio = 0.032/1 = 0.032 < 1, so tick is negative ≈ -34500
       expect(Math.abs(pegTick + 34500)).toBeLessThan(200)
     })
 
     it('should produce expected curve ranges', () => {
-      // Use calculated pegTick (negative for Multicurve)
+      // Use calculated pegTick (negative since ratio < 1 for this scenario)
       const pegTick = -34500
 
       // pidsLower = [0, 8_000, 10_000], pidsUpper = [10_000, 22_000, 22_000]
@@ -784,8 +778,8 @@ describe('marketCapHelpers', () => {
         { lower: 10_000, upper: 22_000 },
       ]
 
-      // Expected with pegTick = -34500 and token as token1 (WETH numeraire):
-      // For token1, applyTickOffsets ADDS offsets:
+      // Expected with pegTick = -34500:
+      // applyTickOffsets ADDS offsets:
       // curvesLower = [-34500 + 0, -34500 + 8000, -34500 + 10000] = [-34500, -26500, -24500]
       // curvesUpper = [-34500 + 10000, -34500 + 22000, -34500 + 22000] = [-24500, -12500, -12500]
       const expectedLower = [-34500, -26500, -24500]

@@ -379,14 +379,11 @@ export function marketCapToTicksForDynamicAuction(
 /**
  * Convert market cap range to ticks for V4 Multicurve pools.
  *
- * Multicurve ALWAYS uses negative ticks with tickLower < tickUpper.
- * The contract's adjustCurves() handles the flip for token1 pairs.
- *
- * This avoids extreme positive ticks (250k+) with stablecoin numeraires
- * that would cause sqrtPrice overflow in liquidity calculations.
+ * Tick sign depends on the underlying price ratio - can be positive or negative.
+ * The contract's adjustCurves() handles token ordering internally.
  *
  * @param params - Configuration object with market cap range and token parameters
- * @returns { tickLower, tickUpper } - negative ticks, tickLower < tickUpper
+ * @returns { tickLower, tickUpper } - tick range where tickLower < tickUpper
  *
  * @example
  * ```ts
@@ -397,7 +394,6 @@ export function marketCapToTicksForDynamicAuction(
  *   numerairePriceUSD: 3000,
  *   tickSpacing: 60,
  * })
- * // Returns: { tickLower: -156000, tickUpper: -110000 } (both negative)
  * ```
  */
 export function marketCapToTicksForMulticurve(
@@ -438,9 +434,9 @@ export function marketCapToTicksForMulticurve(
     tickSpacing
   )
 
-  // Multicurve: Always negative ticks, tickLower < tickUpper
-  const tickLower = -Math.max(Math.abs(tickAtLower), Math.abs(tickAtUpper))
-  const tickUpper = -Math.min(Math.abs(tickAtLower), Math.abs(tickAtUpper))
+  // Use natural tick ordering (lower market cap = lower tick value)
+  const tickLower = Math.min(tickAtLower, tickAtUpper)
+  const tickUpper = Math.max(tickAtLower, tickAtUpper)
 
   if (tickLower === tickUpper) {
     throw new Error(
@@ -455,11 +451,11 @@ export function marketCapToTicksForMulticurve(
 /**
  * Convert a single market cap to a tick for Multicurve use cases.
  *
- * Always returns a negative tick (same convention as marketCapToTicksForMulticurve).
  * Used for farTick and pegTick calculations.
+ * Tick sign depends on the underlying price ratio - can be positive or negative.
  *
  * @param params - Configuration object with market cap and token parameters
- * @returns Negative tick value
+ * @returns Tick value (sign depends on price ratio)
  *
  * @example
  * ```ts
@@ -469,7 +465,6 @@ export function marketCapToTicksForMulticurve(
  *   numerairePriceUSD: 3000,
  *   tickSpacing: 60,
  * })
- * // Returns: -110000 (negative)
  * ```
  */
 export function marketCapToTickForMulticurve(
@@ -493,13 +488,8 @@ export function marketCapToTickForMulticurve(
     tickSpacing
   )
 
-  // Multicurve: Always negative
-  let tick = -Math.abs(rawTick)
-
   // Normalize -0 to 0
-  if (tick === 0) tick = 0
-
-  return tick
+  return rawTick === 0 ? 0 : rawTick
 }
 
 // OLD FUNCTIONS REMOVED - use auction-specific functions above:
@@ -511,15 +501,14 @@ export function marketCapToTickForMulticurve(
 /**
  * Apply curvature offsets to a peg tick for Multicurve positions.
  *
- * ## V4 MULTICURVE
- * Ticks: ALWAYS NEGATIVE (e.g., -156000 → -110000)
- * Reason: Contract's adjustCurves() handles the flip for token1 pairs
+ * Tick sign depends on the underlying price ratio - can be positive or negative.
+ * The contract's adjustCurves() handles token ordering internally.
  *
  * @example
  * ```ts
- * // Peg at -200000, curve extends 10000 ticks toward higher market cap
- * applyTickOffsets(-200000, 0, 10000, WETH)
- * // Returns: { tickLower: -200000, tickUpper: -190000 }
+ * // Peg at 200000, curve extends 10000 ticks toward higher market cap
+ * applyTickOffsets(200000, 0, 10000, WETH)
+ * // Returns: { tickLower: 200000, tickUpper: 210000 }
  * ```
  */
 export function applyTickOffsets(

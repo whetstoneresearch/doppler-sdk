@@ -448,9 +448,10 @@ describe('MulticurveBuilder', () => {
       expect(params.pool.curves[1].shares).toBe(parseEther('0.5'))
       expect(params.pool.curves[2].shares).toBe(parseEther('0.2'))
 
-      // Ticks should be in ascending order (lower market cap = lower tick values for token1)
-      expect(params.pool.curves[0].tickLower).toBeLessThan(params.pool.curves[1].tickLower)
-      expect(params.pool.curves[1].tickLower).toBeLessThan(params.pool.curves[2].tickLower)
+      // With positive ticks (ETH numeraire), lower market cap = higher tick (more ETH per token)
+      // So curves are ordered by market cap ascending, but ticks are descending
+      expect(params.pool.curves[0].tickLower).toBeGreaterThan(params.pool.curves[1].tickLower)
+      expect(params.pool.curves[1].tickLower).toBeGreaterThan(params.pool.curves[2].tickLower)
     })
 
     it('accepts curves in random order and outputs in ascending market cap order', () => {

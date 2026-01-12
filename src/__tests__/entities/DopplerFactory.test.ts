@@ -112,7 +112,7 @@ describe('DopplerFactory', () => {
       expect(Number(fallback.numPositions)).toBe(params.pool.curves[params.pool.curves.length - 1]!.numPositions)
     })
 
-    it('allows curves with non-positive ticks and logs warning', () => {
+    it('allows curves with non-positive ticks', () => {
       const params = multicurveParams()
       params.pool.curves = [
         {
@@ -123,10 +123,8 @@ describe('DopplerFactory', () => {
         },
       ]
 
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      // Non-positive ticks are valid - tick sign depends on price ratio
       expect(() => factory.encodeCreateMulticurveParams(params)).not.toThrow()
-      expect(consoleSpy).toHaveBeenCalledWith('Warning: Using negative or zero ticks in multicurve configuration. Please verify this is intentional before proceeding.')
-      consoleSpy.mockRestore()
     })
   })
 

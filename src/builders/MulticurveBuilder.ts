@@ -285,11 +285,7 @@ export class MulticurveBuilder<C extends SupportedChainId>
         numeraireDecimals: params.numeraireDecimals ?? 18,
       })
     } else {
-      // Auto-calculate farTick based on curve tick direction
-      // farTick should be beyond the furthest tickUpper (the highest market cap point)
-      // For negative ticks: the "furthest" is the least negative (closest to 0) = max
-      // For positive ticks: the "furthest" is the most positive = max
-      // In both cases, we want the maximum tickUpper value
+      // Auto-calculate farTick as the maximum tickUpper (highest market cap point)
       const allTickUppers = curves.map(c => c.tickUpper)
       farTick = Math.max(...allTickUppers)
     }
