@@ -8,6 +8,7 @@ import {
   DEFAULT_V3_VESTING_DURATION,
   DEFAULT_V3_YEARLY_MINT_RATE,
   TICK_SPACINGS,
+  V3_FEE_TIERS,
   ZERO_ADDRESS,
 } from '../constants'
 import {
@@ -90,7 +91,13 @@ export class StaticAuctionBuilder<C extends SupportedChainId>
     return this
   }
 
-  // Provide pool ticks directly
+  /**
+   * Provide pool ticks directly.
+   *
+   * Note: Static Auctions use Uniswap V3, which only supports 4 fee tiers:
+   * 100 (0.01%), 500 (0.05%), 3000 (0.3%), 10000 (1%).
+   * For custom fees, use Dynamic or Multicurve auctions (V4).
+   */
   poolByTicks(params: {
     startTick?: number
     endTick?: number
@@ -99,6 +106,15 @@ export class StaticAuctionBuilder<C extends SupportedChainId>
     maxShareToBeSold?: bigint
   }): this {
     const fee = params.fee ?? DEFAULT_V3_FEE
+
+    // Validate fee is a V3-supported tier
+    if (!(V3_FEE_TIERS as readonly number[]).includes(fee)) {
+      throw new Error(
+        `Static auctions (Uniswap V3) require standard fee tiers: ${V3_FEE_TIERS.join(', ')}. ` +
+        `Got: ${fee}. For custom fees, use Dynamic or Multicurve auctions (Uniswap V4).`
+      )
+    }
+
     const startTick = params.startTick ?? DEFAULT_V3_START_TICK
     const endTick = params.endTick ?? DEFAULT_V3_END_TICK
     this.pool = {
@@ -165,7 +181,19 @@ export class StaticAuctionBuilder<C extends SupportedChainId>
     }
 
     // Determine fee and tick spacing
+    // IMPORTANT: Static Auctions use Uniswap V3, which REQUIRES one of 4 standard fee tiers.
+    // Unlike V4 (Dynamic/Multicurve), V3 does NOT support custom fees.
+    // This is a Uniswap V3 protocol constraint, not a Doppler limitation.
     const fee = params.fee ?? DEFAULT_V3_FEE
+
+    // Validate fee is a V3-supported tier
+    if (!(V3_FEE_TIERS as readonly number[]).includes(fee)) {
+      throw new Error(
+        `Static auctions (Uniswap V3) require standard fee tiers: ${V3_FEE_TIERS.join(', ')}. ` +
+        `Got: ${fee}. For custom fees, use Dynamic or Multicurve auctions (Uniswap V4).`
+      )
+    }
+
     const tickSpacing =
       fee === 100 ? TICK_SPACINGS[100] :
       fee === 500 ? TICK_SPACINGS[500] :

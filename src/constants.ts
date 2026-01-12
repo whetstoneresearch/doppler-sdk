@@ -5,7 +5,17 @@ export const WAD = 10n ** 18n
 export const DEAD_ADDRESS = '0x000000000000000000000000000000000000dEaD' as Address
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as Address
 
-// Fee tiers
+// =============================================================================
+// Fee Tiers - V3 vs V4 Distinction
+// =============================================================================
+//
+// Uniswap V3 (Static Auctions): Fees are COUPLED to tick spacings. Only 4 tiers allowed.
+// Uniswap V4 (Dynamic/Multicurve): Fees are DECOUPLED. Any fee 0-100,000 is valid.
+//
+// The standard fee tiers below are recognized by both V3 and V4, but V4 pools
+// can use ANY fee value as long as you provide an explicit tickSpacing.
+
+/** Standard fee tiers recognized by both Uniswap V3 and V4 */
 export const FEE_TIERS = {
   LOWEST: 100,    // 0.01%
   LOW: 500,       // 0.05%
@@ -16,10 +26,27 @@ export const FEE_TIERS = {
 /** Valid fee tier values (100, 500, 3000, 10000) */
 export type FeeTier = typeof FEE_TIERS[keyof typeof FEE_TIERS]
 
-/** Array of valid fee tiers for validation */
+/**
+ * Standard fee tiers - REQUIRED for V3 (Static Auctions).
+ * V4 pools can use custom fees but these are the recommended defaults.
+ */
 export const VALID_FEE_TIERS: readonly FeeTier[] = [100, 500, 3000, 10000] as const
 
-// Tick spacings for different fee tiers (standard Uniswap mapping)
+/**
+ * V3 fee tiers - These are the ONLY valid fees for Uniswap V3 pools.
+ * Static Auctions use V3 and must use one of these tiers.
+ */
+export const V3_FEE_TIERS = VALID_FEE_TIERS
+
+/**
+ * Maximum LP fee for V4 pools (from DopplerHookInitializer.sol).
+ * V4 pools can use any fee from 0 to this value.
+ * @see DopplerHookInitializer.sol line 171: `uint24 constant MAX_LP_FEE = 100_000`
+ */
+export const V4_MAX_FEE = 100_000 // 10%
+
+// Tick spacings for different fee tiers (standard Uniswap V3 mapping)
+// In V4, tickSpacing is independent of fee - you can use any combination
 export const TICK_SPACINGS = {
   100: 1,
   500: 10,
@@ -27,7 +54,7 @@ export const TICK_SPACINGS = {
   10000: 200
 } as const
 
-/** 
+/**
  * Maximum tick spacing allowed by Doppler.sol for dynamic (Dutch) auctions.
  * @see Doppler.sol line 159: `int24 constant MAX_TICK_SPACING = 30`
  */
@@ -102,5 +129,9 @@ export const DOPPLER_FLAGS = BigInt(
 export const DYNAMIC_FEE_FLAG = 0x800000 // 8388608 in decimal
 export const FEE_AMOUNT_MASK = 0xFFFFFF // Mask to extract actual fee from dynamic fee
 
-// Valid fee tiers for dynamic auctions (those with tickSpacing <= DOPPLER_MAX_TICK_SPACING)
+/**
+ * @deprecated Dynamic auctions (V4) support ANY fee 0-100,000 with explicit tickSpacing.
+ * This constant is kept for backwards compatibility but is no longer enforced.
+ * Standard fee tiers still auto-derive tickSpacing; custom fees require explicit tickSpacing.
+ */
 export const DYNAMIC_AUCTION_VALID_FEES = [100, 500, 3000, 10000] as const
