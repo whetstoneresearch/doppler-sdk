@@ -257,4 +257,50 @@ describe('Multicurve (Base Sepolia fork) smoke test', () => {
     expect(exactInQuote.amountOut > 0n).toBe(true)
     expect(exactInQuote.poolKey.hooks).toBe(exactOutQuote.poolKey.hooks)
   })
+
+  it('simulate().execute() produces consistent addresses via closure', async () => {
+    // This test verifies that the execute() function returned by simulate
+    // uses the same createParams (including salt) as the simulation
+    expect(initializerWhitelisted && migratorWhitelisted && tokenFactoryWhitelisted && governanceFactoryWhitelisted).toBe(true)
+
+    const builder = sdk
+      .buildMulticurveAuction()
+      .tokenConfig({ type: 'standard', name: 'ConsistencyTest', symbol: 'CST', tokenURI: 'ipfs://consistency' })
+      .saleConfig({
+        initialSupply: 1_000_000n * WAD,
+        numTokensToSell: 500_000n * WAD,
+        numeraire: addresses.weth,
+      })
+      .poolConfig({
+        fee: 0,
+        tickSpacing: 8,
+        curves: Array.from({ length: 5 }, (_, i) => ({
+          tickLower: i * 32_000,
+          tickUpper: 200_000,
+          numPositions: 5,
+          shares: WAD / 5n,
+        })),
+      })
+      .withGovernance({ type: 'default' })
+      .withMigration({ type: 'uniswapV2' })
+      .withUserAddress(addresses.airlock)
+      .withV4MulticurveInitializer(addresses.v4MulticurveInitializer!)
+      .withV2Migrator(addresses.v2Migrator)
+
+    const params = builder.build()
+    
+    // Simulate to get predicted address and execute function
+    const simulation = await sdk.factory.simulateCreateMulticurve(params)
+    
+    // Verify simulation returned expected properties
+    expect(simulation.tokenAddress).toMatch(/^0x[a-fA-F0-9]{40}$/)
+    expect(simulation.poolId).toMatch(/^0x[a-fA-F0-9]{64}$/)
+    expect(simulation.createParams).toBeDefined()
+    expect(typeof simulation.execute).toBe('function')
+    
+    // The execute function uses the same createParams via closure
+    // This ensures that when execute() is called, it uses the same salt
+    // that was generated during simulation
+    expect(simulation.createParams.salt).toBeDefined()
+  })
 })

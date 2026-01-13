@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { DopplerFactory } from '../../entities/DopplerFactory'
-import { createMockPublicClient, createMockWalletClient, createMockTransactionReceipt } from '../mocks/clients'
+import { createMockPublicClient, createMockWalletClient, createMockTransactionReceipt, createMockTransactionReceiptWithCreateEvent } from '../mocks/clients'
 import { mockAddresses, mockTokenAddress, mockPoolAddress } from '../mocks/addresses'
 import type { CreateStaticAuctionParams, CreateDynamicAuctionParams, CreateMulticurveParams } from '../../types'
 import { parseEther, keccak256, toHex, decodeAbiParameters, type Address } from 'viem'
@@ -112,7 +112,7 @@ describe('DopplerFactory', () => {
       expect(Number(fallback.numPositions)).toBe(params.pool.curves[params.pool.curves.length - 1]!.numPositions)
     })
 
-    it('allows curves with non-positive ticks and logs warning', () => {
+    it('allows curves with non-positive ticks', () => {
       const params = multicurveParams()
       params.pool.curves = [
         {
@@ -123,10 +123,8 @@ describe('DopplerFactory', () => {
         },
       ]
 
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      // Non-positive ticks are valid - tick sign depends on price ratio
       expect(() => factory.encodeCreateMulticurveParams(params)).not.toThrow()
-      expect(consoleSpy).toHaveBeenCalledWith('Warning: Using negative or zero ticks in multicurve configuration. Please verify this is intentional before proceeding.')
-      consoleSpy.mockRestore()
     })
   })
 
@@ -184,20 +182,6 @@ describe('DopplerFactory', () => {
 
     it('should create a static auction successfully', async () => {
       const mockTxHash = '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890'
-      // Create proper event signature for Create event
-      const eventSignature = keccak256(toHex('Create(address,address,address,address,address,address,address)'))
-      const mockLogs = [
-        {
-          address: mockAddresses.airlock,
-          topics: [
-            eventSignature, // Event signature
-            `0x000000000000000000000000${mockPoolAddress.slice(2)}`, // poolOrHook
-            `0x000000000000000000000000${mockTokenAddress.slice(2)}`, // asset
-            `0x000000000000000000000000${mockAddresses.weth.slice(2)}`, // numeraire
-          ],
-          data: '0x' as `0x${string}`,
-        },
-      ]
 
       // Mock the contract calls
       vi.mocked(publicClient.estimateContractGas).mockImplementationOnce(async () => 9_500_000n)
@@ -213,7 +197,7 @@ describe('DopplerFactory', () => {
       vi.mocked(walletClient.writeContract).mockResolvedValueOnce(mockTxHash as `0x${string}`)
 
       vi.mocked(publicClient.waitForTransactionReceipt).mockResolvedValueOnce(
-        createMockTransactionReceipt(mockLogs)
+        createMockTransactionReceiptWithCreateEvent()
       )
 
       const result = await factory.createStaticAuction(validParams)
@@ -250,7 +234,7 @@ describe('DopplerFactory', () => {
       } as any)
       vi.mocked(walletClient.writeContract).mockResolvedValueOnce(mockTxHash as `0x${string}`)
       vi.mocked(publicClient.waitForTransactionReceipt).mockResolvedValueOnce(
-        createMockTransactionReceipt([])
+        createMockTransactionReceiptWithCreateEvent()
       )
 
       await factory.createStaticAuction({ ...validParams, gas: 21_000_000n })
@@ -263,19 +247,14 @@ describe('DopplerFactory', () => {
     it('should encode migration data correctly for V2', async () => {
       const params = { ...validParams, migration: { type: 'uniswapV2' as const } }
       const mockTxHash = '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef'
-      const eventSignature = keccak256(toHex('Create(address,address,address,address,address,address,address)'))
-      
+
       vi.mocked(publicClient.simulateContract).mockResolvedValueOnce({
         request: { address: mockAddresses.airlock, functionName: 'create', args: [{}, {}] },
         result: [mockTokenAddress, mockPoolAddress],
       } as any)
       vi.mocked(walletClient.writeContract).mockResolvedValueOnce(mockTxHash as `0x${string}`)
       vi.mocked(publicClient.waitForTransactionReceipt).mockResolvedValueOnce(
-        createMockTransactionReceipt([{
-          address: mockAddresses.airlock,
-          topics: [eventSignature, `0x000000000000000000000000${mockPoolAddress.slice(2)}`, `0x000000000000000000000000${mockTokenAddress.slice(2)}`, `0x000000000000000000000000${mockAddresses.weth.slice(2)}`],
-          data: '0x' as `0x${string}`,
-        }])
+        createMockTransactionReceiptWithCreateEvent()
       )
 
       await factory.createStaticAuction(params)
@@ -393,19 +372,14 @@ describe('DopplerFactory', () => {
 
     it('should calculate gamma if not provided', async () => {
       const mockTxHash = '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890'
-      const eventSignature = keccak256(toHex('Create(address,address,address,address,address,address,address)'))
-      
+
       vi.mocked(publicClient.simulateContract).mockResolvedValueOnce({
         request: { address: mockAddresses.airlock, functionName: 'create', args: [{}, {}] },
         result: [mockTokenAddress, mockPoolAddress],
       } as any)
       vi.mocked(walletClient.writeContract).mockResolvedValueOnce(mockTxHash as `0x${string}`)
       vi.mocked(publicClient.waitForTransactionReceipt).mockResolvedValueOnce(
-        createMockTransactionReceipt([{
-          address: mockAddresses.airlock,
-          topics: [eventSignature, `0x000000000000000000000000${mockPoolAddress.slice(2)}`, `0x000000000000000000000000${mockTokenAddress.slice(2)}`, `0x000000000000000000000000${mockAddresses.weth.slice(2)}`],
-          data: '0x' as `0x${string}`,
-        }])
+        createMockTransactionReceiptWithCreateEvent()
       )
 
       await factory.createDynamicAuction(validParams)
@@ -420,19 +394,6 @@ describe('DopplerFactory', () => {
 
     it('should create a dynamic auction successfully', async () => {
       const mockTxHash = '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef'
-      const eventSignature = keccak256(toHex('Create(address,address,address,address,address,address,address)'))
-      const mockLogs = [
-        {
-          address: mockAddresses.airlock,
-          topics: [
-            eventSignature,
-            `0x000000000000000000000000${mockPoolAddress.slice(2)}`,
-            `0x000000000000000000000000${mockTokenAddress.slice(2)}`,
-            `0x000000000000000000000000${mockAddresses.weth.slice(2)}`,
-          ],
-          data: '0x' as `0x${string}`,
-        },
-      ]
 
       vi.mocked(publicClient.simulateContract).mockResolvedValueOnce({
         request: { address: mockAddresses.airlock, functionName: 'create', args: [{}, {}] },
@@ -440,7 +401,7 @@ describe('DopplerFactory', () => {
       } as any)
       vi.mocked(walletClient.writeContract).mockResolvedValueOnce(mockTxHash as `0x${string}`)
       vi.mocked(publicClient.waitForTransactionReceipt).mockResolvedValueOnce(
-        createMockTransactionReceipt(mockLogs)
+        createMockTransactionReceiptWithCreateEvent()
       )
 
       const result = await factory.createDynamicAuction(validParams)
@@ -488,7 +449,7 @@ describe('DopplerFactory', () => {
         result: [mockTokenAddress, mockPoolAddress],
       } as any)
       vi.mocked(walletClient.writeContract).mockResolvedValueOnce(mockTxHash as `0x${string}`)
-      vi.mocked(publicClient.waitForTransactionReceipt).mockResolvedValueOnce(createMockTransactionReceipt([]))
+      vi.mocked(publicClient.waitForTransactionReceipt).mockResolvedValueOnce(createMockTransactionReceiptWithCreateEvent())
 
       await factory.createDynamicAuction({ ...validParams, gas: 18_000_000n })
 
@@ -520,9 +481,9 @@ describe('DopplerFactory', () => {
       )
     })
 
-    it('should handle transaction receipt without Create event', async () => {
+    it('should throw error when transaction receipt has no Create event', async () => {
       const mockTxHash = '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef'
-      
+
       vi.mocked(publicClient.simulateContract).mockResolvedValueOnce({
         request: { address: mockAddresses.airlock, functionName: 'create', args: [{}, {}] },
         result: [mockTokenAddress, mockPoolAddress],
@@ -545,14 +506,10 @@ describe('DopplerFactory', () => {
         userAddress: '0x1234567890123456789012345678901234567890',
       }
 
-      const result = await factory.createStaticAuction(params)
-      
-      // Should fall back to using simulation result
-      expect(result).toEqual({
-        poolAddress: mockPoolAddress,
-        tokenAddress: mockTokenAddress,
-        transactionHash: mockTxHash,
-      })
+      // Should throw error when Create event is missing (no more fallback to simulation)
+      await expect(factory.createStaticAuction(params)).rejects.toThrow(
+        'Failed to extract addresses from Create event in transaction logs'
+      )
     })
   })
 })

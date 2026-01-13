@@ -3,14 +3,15 @@ import {
   DEFAULT_V3_YEARLY_MINT_RATE,
   FEE_TIERS,
   TICK_SPACINGS,
+  V4_MAX_FEE,
   WAD,
   ZERO_ADDRESS,
 } from '../constants'
 
 
 import {
-  marketCapRangeToTicksForCurve,
-  marketCapToTick,
+  marketCapToTicksForMulticurve,
+  marketCapToTickForMulticurve,
   validateMarketCapParameters,
 } from '../utils'
 import {
@@ -137,20 +138,32 @@ export class MulticurveBuilder<C extends SupportedChainId>
    * by market cap (ascending) before validation and processing. Curves must
    * be contiguous or overlapping (no gaps allowed).
    *
+   * V4 pools support custom fees (0-100,000). Standard fee tiers auto-derive
+   * tickSpacing; custom fees require explicit tickSpacing parameter.
+   *
    * @param params - Market cap configuration with curves defined by market cap ranges
    * @returns Builder instance for chaining
    *
-   * @example
+   * @example Standard fee tier
    * ```ts
    * builder
    *   .saleConfig({ initialSupply, numTokensToSell, numeraire: WETH })
    *   .withCurves({
-   *     numerairePrice: 3000, // ETH = $3000
-   *     curves: [
-   *       { marketCap: { start: 500_000, end: 1_000_000 }, numPositions: 10, shares: parseEther('0.3') },
-   *       { marketCap: { start: 1_000_000, end: 5_000_000 }, numPositions: 20, shares: parseEther('0.5') },
-   *       { marketCap: { start: 5_000_000, end: 50_000_000 }, numPositions: 10, shares: parseEther('0.2') },
-   *     ],
+   *     numerairePrice: 3000,
+   *     curves: [...],
+   *     fee: 500, // Standard tier, tickSpacing auto-derived
+   *   })
+   * ```
+   *
+   * @example Custom fee
+   * ```ts
+   * builder
+   *   .saleConfig({ initialSupply, numTokensToSell, numeraire: WETH })
+   *   .withCurves({
+   *     numerairePrice: 3000,
+   *     curves: [...],
+   *     fee: 2500,      // Custom 0.25% fee
+   *     tickSpacing: 10, // Required for custom fees
    *   })
    * ```
    */
@@ -205,12 +218,25 @@ export class MulticurveBuilder<C extends SupportedChainId>
     }
 
     // Get fee and tick spacing
-    const fee = params.fee ?? FEE_TIERS.LOW
+    // V4 pools support any fee 0-100,000, but standard tiers auto-derive tickSpacing
+    const fee = params.fee ?? FEE_TIERS.MEDIUM
+
+    // Validate fee doesn't exceed V4 maximum
+    if (fee > V4_MAX_FEE) {
+      throw new Error(
+        `Fee ${fee} exceeds maximum allowed for V4 pools (${V4_MAX_FEE} = 10%). ` +
+        `Use a fee between 0 and ${V4_MAX_FEE}.`
+      )
+    }
+
     const tickSpacing = params.tickSpacing ??
       (TICK_SPACINGS as Record<number, number>)[fee]
 
     if (tickSpacing === undefined) {
-      throw new Error('tickSpacing must be provided when using a custom fee tier')
+      throw new Error(
+        `Custom fee ${fee} requires explicit tickSpacing. ` +
+        `Standard fees (100, 500, 3000, 10000) auto-derive tickSpacing.`
+      )
     }
 
     const numeraire = this.sale.numeraire
@@ -237,16 +263,15 @@ export class MulticurveBuilder<C extends SupportedChainId>
     const curves: { tickLower: number; tickUpper: number; numPositions: number; shares: bigint }[] = []
 
     for (const curve of sortedCurves) {
-      const curveTicks = marketCapRangeToTicksForCurve(
-        curve.marketCap.start,
-        curve.marketCap.end,
+      const curveTicks = marketCapToTicksForMulticurve({
+        marketCapLower: curve.marketCap.start,
+        marketCapUpper: curve.marketCap.end,
         tokenSupply,
-        params.numerairePrice,
-        params.tokenDecimals ?? 18,
-        params.numeraireDecimals ?? 18,
+        numerairePriceUSD: params.numerairePrice,
         tickSpacing,
-        numeraire
-      )
+        tokenDecimals: params.tokenDecimals ?? 18,
+        numeraireDecimals: params.numeraireDecimals ?? 18,
+      })
 
       curves.push({
         tickLower: curveTicks.tickLower,
@@ -277,21 +302,16 @@ export class MulticurveBuilder<C extends SupportedChainId>
         )
       }
 
-      farTick = marketCapToTick(
-        params.graduationMarketCap,
+      farTick = marketCapToTickForMulticurve({
+        marketCapUSD: params.graduationMarketCap,
         tokenSupply,
-        params.numerairePrice,
-        params.tokenDecimals ?? 18,
-        params.numeraireDecimals ?? 18,
+        numerairePriceUSD: params.numerairePrice,
         tickSpacing,
-        numeraire
-      )
+        tokenDecimals: params.tokenDecimals ?? 18,
+        numeraireDecimals: params.numeraireDecimals ?? 18,
+      })
     } else {
-      // Auto-calculate farTick based on curve tick direction
-      // farTick should be beyond the furthest tickUpper (the highest market cap point)
-      // For negative ticks: the "furthest" is the least negative (closest to 0) = max
-      // For positive ticks: the "furthest" is the most positive = max
-      // In both cases, we want the maximum tickUpper value
+      // Auto-calculate farTick as the maximum tickUpper (highest market cap point)
       const allTickUppers = curves.map(c => c.tickUpper)
       farTick = Math.max(...allTickUppers)
     }
@@ -496,12 +516,17 @@ export class MulticurveBuilder<C extends SupportedChainId>
     if (!this.userAddress) throw new Error('userAddress is required')
 
     // Validate noOp migration requires beneficiaries
+    // NoOpMigrator is designed for locked pools with beneficiaries. Without beneficiaries,
+    // the pool status is "Initialized" (not "Locked"), meaning exitLiquidity() can be called.
+    // But NoOpMigrator.migrate() always reverts, so the entire graduation transaction fails
+    // and liquidity becomes trapped.
     if (this.migration.type === 'noOp') {
       const hasBeneficiaries = this.pool.beneficiaries && this.pool.beneficiaries.length > 0
       if (!hasBeneficiaries) {
         throw new Error(
-          'noOp migration requires beneficiaries. Without beneficiaries, the pool cannot graduate. ' +
-          'Either add beneficiaries or use a different migration type (uniswapV2, uniswapV4).'
+          'noOp migration requires beneficiaries. Without beneficiaries, the pool would be stuck after reaching ' +
+          'graduation - exitLiquidity() succeeds but NoOpMigrator.migrate() always reverts, causing the entire ' +
+          'transaction to fail. Either add beneficiaries or use a different migration type (uniswapV2, uniswapV4).'
         )
       }
     }

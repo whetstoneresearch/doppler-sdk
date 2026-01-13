@@ -5,13 +5,12 @@ import {
   DEFAULT_V4_YEARLY_MINT_RATE,
   DOPPLER_MAX_TICK_SPACING,
   FEE_TIERS,
-  VALID_FEE_TIERS,
+  V4_MAX_FEE,
   ZERO_ADDRESS,
 } from '../constants'
 import {
   computeOptimalGamma,
-  marketCapRangeToTicks,
-  transformTicksForAuction,
+  marketCapToTicksForDynamicAuction,
   validateMarketCapParameters,
 } from '../utils'
 import {
@@ -175,21 +174,37 @@ export class DynamicAuctionBuilder<C extends SupportedChainId>
   /**
    * Configure auction using target market cap range.
    * Converts market cap values (in USD) to Uniswap ticks.
-   * Uses fixed tickSpacing of 30 (max allowed) for optimal price granularity.
+   *
+   * V4 pools support custom fees (0-100,000). Standard fee tiers auto-derive
+   * tickSpacing; custom fees require explicit tickSpacing (max: 30).
    *
    * @param params - Market cap configuration with auction parameters
    * @returns Builder instance for chaining
    *
-   * @example
+   * @example Standard fee tier (auto tickSpacing)
    * ```ts
    * builder
    *   .saleConfig({ initialSupply, numTokensToSell, numeraire: WETH })
    *   .withMarketCapRange({
-   *     marketCap: { start: 500_000, min: 50_000 }, // $500k start, $50k floor
-   *     numerairePrice: 3000, // ETH = $3000
+   *     marketCap: { start: 500_000, min: 50_000 },
+   *     numerairePrice: 3000,
    *     minProceeds: parseEther('10'),
    *     maxProceeds: parseEther('1000'),
-   *     fee: 10000, // optional, defaults to 10000 (1%)
+   *     fee: 10000, // Standard tier, tickSpacing auto = 30
+   *   })
+   * ```
+   *
+   * @example Custom fee (requires explicit tickSpacing)
+   * ```ts
+   * builder
+   *   .saleConfig({ initialSupply, numTokensToSell, numeraire: WETH })
+   *   .withMarketCapRange({
+   *     marketCap: { start: 500_000, min: 50_000 },
+   *     numerairePrice: 3000,
+   *     minProceeds: parseEther('10'),
+   *     maxProceeds: parseEther('1000'),
+   *     fee: 2500,      // Custom 0.25% fee
+   *     tickSpacing: 10, // Required for custom fees
    *   })
    * ```
    */
@@ -218,17 +233,30 @@ export class DynamicAuctionBuilder<C extends SupportedChainId>
 
     // Derive fee and tickSpacing
     // Default fee is HIGH (1%) for Dutch auctions
-    // tickSpacing is always MAX (30) for withMarketCapRange convenience method
+    // V4 pools support any fee 0-100,000, but standard tiers auto-derive tickSpacing
     const fee = params.fee ?? FEE_TIERS.HIGH
-    
-    // Validate fee is a standard tier
-    if (!VALID_FEE_TIERS.includes(fee)) {
+
+    // Validate fee doesn't exceed V4 maximum
+    if (fee > V4_MAX_FEE) {
       throw new Error(
-        `Invalid fee tier: ${fee}. Must be one of: ${VALID_FEE_TIERS.join(', ')}`
+        `Fee ${fee} exceeds maximum allowed for V4 pools (${V4_MAX_FEE} = 10%). ` +
+        `Use a fee between 0 and ${V4_MAX_FEE}.`
       )
     }
-    
-    const tickSpacing = DOPPLER_MAX_TICK_SPACING
+
+    // Determine tickSpacing:
+    // - If explicitly provided, use it
+    // - Otherwise default to DOPPLER_MAX_TICK_SPACING (30) for all fees
+    // Standard tick spacings (60, 200) exceed Doppler's max anyway
+    const tickSpacing = params.tickSpacing ?? DOPPLER_MAX_TICK_SPACING
+
+    // Validate tickSpacing doesn't exceed Doppler maximum
+    if (tickSpacing > DOPPLER_MAX_TICK_SPACING) {
+      throw new Error(
+        `tickSpacing ${tickSpacing} exceeds maximum allowed for Doppler pools (${DOPPLER_MAX_TICK_SPACING}). ` +
+        `Use tickSpacing <= ${DOPPLER_MAX_TICK_SPACING}.`
+      )
+    }
 
     // Set pool config internally
     this.pool = { fee, tickSpacing }
@@ -251,24 +279,18 @@ export class DynamicAuctionBuilder<C extends SupportedChainId>
       allWarnings.forEach(w => console.warn(`  - ${w}`))
     }
 
-    // Convert market cap range to ticks and transform for auction contract
+    // Convert market cap range to ticks for V4 Dynamic auction
     // Pass min as start, start as end (ascending order for validation)
     // Dutch auction price semantics are handled by the contract, not tick ordering
-    const { startTick: rawStartTick, endTick: rawEndTick } = marketCapRangeToTicks(
-      { start: params.marketCap.min, end: params.marketCap.start },
+    const { startTick, endTick } = marketCapToTicksForDynamicAuction({
+      marketCapRange: { start: params.marketCap.min, end: params.marketCap.start },
       tokenSupply,
-      params.numerairePrice,
-      params.tokenDecimals ?? 18,
-      params.numeraireDecimals ?? 18,
+      numerairePriceUSD: params.numerairePrice,
+      numeraire: this.sale.numeraire,
       tickSpacing,
-      this.sale.numeraire
-    )
-
-    const { startTick, endTick } = transformTicksForAuction(
-      rawStartTick,
-      rawEndTick,
-      this.sale.numeraire
-    )
+      tokenDecimals: params.tokenDecimals ?? 18,
+      numeraireDecimals: params.numeraireDecimals ?? 18,
+    })
 
     // Delegate to existing auctionByTicks method
     return this.auctionByTicks({

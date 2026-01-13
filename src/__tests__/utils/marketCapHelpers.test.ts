@@ -4,9 +4,10 @@ import {
   marketCapToTokenPrice,
   tokenPriceToRatio,
   ratioToTick,
-  marketCapToTick,
-  marketCapRangeToTicks,
-  transformTicksForAuction,
+  marketCapToTicksForStaticAuction,
+  marketCapToTicksForDynamicAuction,
+  marketCapToTicksForMulticurve,
+  marketCapToTickForMulticurve,
   applyTickOffsets,
   isToken1,
   validateMarketCapParameters,
@@ -21,6 +22,9 @@ import {
 
 // WETH on Base (0x4200...) is < halfMaxUint160, so isToken0Expected returns false → token is token1
 const WETH_BASE: Address = '0x4200000000000000000000000000000000000006'
+
+// USDC on Base (0x8335...) is > halfMaxUint160, so isToken0Expected returns true → token is token0
+const USDC_BASE: Address = '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913'
 
 // A numeraire > halfMaxUint160 makes isToken0Expected return true → token is token0
 // halfMaxUint160 ≈ 0x8000000000000000000000000000000000000000, so use something larger
@@ -182,207 +186,321 @@ describe('marketCapHelpers', () => {
     })
   })
 
-  describe('marketCapToTick', () => {
+  describe('marketCapToTickForMulticurve', () => {
     const tokenSupply = parseEther('1000000000') // 1B tokens
     const tickSpacing = 100
 
     it('should calculate tick for basic case', () => {
-      const tick = marketCapToTick(
-        1_000_000, // $1M market cap
+      const tick = marketCapToTickForMulticurve({
+        marketCapUSD: 1_000_000, // $1M market cap
         tokenSupply,
-        3000, // ETH = $3000
-        18,
-        18,
+        numerairePriceUSD: 3000, // ETH = $3000
         tickSpacing,
-        WETH_BASE
-      )
+        tokenDecimals: 18,
+        numeraireDecimals: 18,
+      })
 
-      // Should return a valid tick aligned to spacing
-      // Note: use Math.abs because (-149100 % 100) returns -0 in JS
+      // Should be aligned to tick spacing
       expect(Math.abs(tick % tickSpacing)).toBe(0)
       expect(tick).toBeGreaterThanOrEqual(-887272)
       expect(tick).toBeLessThanOrEqual(887272)
     })
 
-    it('should negate tick when token is token1 (WETH numeraire)', () => {
-      const tickToken1 = marketCapToTick(
-        1_000_000,
+    it('should produce valid ticks within range', () => {
+      const tick = marketCapToTickForMulticurve({
+        marketCapUSD: 1_000_000,
         tokenSupply,
-        3000,
-        18,
-        18,
+        numerairePriceUSD: 3000,
         tickSpacing,
-        WETH_BASE // token is token1
-      )
+        tokenDecimals: 18,
+        numeraireDecimals: 18,
+      })
 
-      const tickToken0 = marketCapToTick(
-        1_000_000,
-        tokenSupply,
-        3000,
-        18,
-        18,
-        tickSpacing,
-        HIGH_NUMERAIRE // token is token0
-      )
-
-      // Ticks should be negatives of each other (approximately, due to rounding)
-      expect(Math.abs(tickToken1 + tickToken0)).toBeLessThanOrEqual(tickSpacing)
+      // Tick can be positive or negative depending on price ratio
+      expect(tick).toBeGreaterThanOrEqual(-887272)
+      expect(tick).toBeLessThanOrEqual(887272)
     })
 
     it('should align to tick spacing', () => {
       const spacings = [1, 10, 60, 100, 200]
 
       for (const spacing of spacings) {
-        const tick = marketCapToTick(
-          1_000_000,
+        const tick = marketCapToTickForMulticurve({
+          marketCapUSD: 1_000_000,
           tokenSupply,
-          3000,
-          18,
-          18,
-          spacing,
-          WETH_BASE
-        )
+          numerairePriceUSD: 3000,
+          tickSpacing: spacing,
+          tokenDecimals: 18,
+          numeraireDecimals: 18,
+        })
         expect(Math.abs(tick % spacing)).toBe(0)
       }
     })
 
     it('should calculate peg tick correctly', () => {
-      const tick = marketCapToTick(
-        1_000_000_000, // $1B market cap
-        parseEther('1000000000'), // 1B tokens
-        0.032, // $0.032 numeraire
-        18,
-        18,
-        100,
-        WETH_BASE
-      )
+      const tick = marketCapToTickForMulticurve({
+        marketCapUSD: 1_000_000_000, // $1B market cap
+        tokenSupply: parseEther('1000000000'), // 1B tokens
+        numerairePriceUSD: 0.032, // $0.032 numeraire
+        tickSpacing: 100,
+        tokenDecimals: 18,
+        numeraireDecimals: 18,
+      })
 
-      expect(Math.abs(tick - 34500)).toBeLessThan(200)
-    })
-
-    it('should handle extreme but valid inputs without throwing', () => {
-      // Very small market cap with huge supply produces large tick, but still valid
-      // Tick bounds are ±887272. To exceed that, ratio would need to be ~10^38.5
-      // This extreme case produces tick ~632715, which is within bounds
-      const tick = marketCapToTick(
-        0.000001, // Very small market cap
-        parseEther('1000000000000000000'), // Huge supply (1e18 tokens)
-        3000,
-        18,
-        18,
-        1,
-        WETH_BASE
-      )
-
-      // Should produce a large negative tick (tiny price = huge ratio, negated for token1)
-      // With extremely small market cap and huge supply, ratio is huge → large positive raw tick → negated
-      expect(tick).toBeLessThan(0)
-      expect(tick).toBeGreaterThanOrEqual(-887272)
+      // Tick is around -34500 (negative because ratio = 0.032/1 < 1)
+      expect(Math.abs(tick + 34500)).toBeLessThan(200)
     })
   })
 
-  describe('marketCapRangeToTicks', () => {
+  describe('marketCapToTicksForMulticurve', () => {
     const tokenSupply = parseEther('1000000000')
     const tickSpacing = 60
 
     it('should convert market cap range to tick range', () => {
-      const { startTick, endTick } = marketCapRangeToTicks(
-        { start: 100_000, end: 10_000_000 },
+      const { tickLower, tickUpper } = marketCapToTicksForMulticurve({
+        marketCapLower: 100_000,
+        marketCapUpper: 10_000_000,
         tokenSupply,
-        3000,
-        18,
-        18,
+        numerairePriceUSD: 3000,
         tickSpacing,
-        WETH_BASE
-      )
+        tokenDecimals: 18,
+        numeraireDecimals: 18,
+      })
 
-      expect(startTick).toBeLessThan(endTick)
-      // Note: use Math.abs because negative tick % spacing returns -0 in JS
-      expect(Math.abs(startTick % tickSpacing)).toBe(0)
-      expect(Math.abs(endTick % tickSpacing)).toBe(0)
+      // tickLower < tickUpper (tick sign depends on price ratio)
+      expect(tickLower).toBeLessThan(tickUpper)
+      expect(Math.abs(tickLower % tickSpacing)).toBe(0)
+      expect(Math.abs(tickUpper % tickSpacing)).toBe(0)
     })
 
-    it('should ensure startTick < endTick regardless of token ordering', () => {
-      // Test with token as token1 (WETH numeraire)
-      const result1 = marketCapRangeToTicks(
-        { start: 100_000, end: 10_000_000 },
+    it('should ensure tickLower < tickUpper', () => {
+      const { tickLower, tickUpper } = marketCapToTicksForMulticurve({
+        marketCapLower: 100_000,
+        marketCapUpper: 10_000_000,
         tokenSupply,
-        3000,
-        18,
-        18,
+        numerairePriceUSD: 3000,
         tickSpacing,
-        WETH_BASE
-      )
-      expect(result1.startTick).toBeLessThan(result1.endTick)
-
-      // Test with token as token0 (low numeraire)
-      const result2 = marketCapRangeToTicks(
-        { start: 100_000, end: 10_000_000 },
-        tokenSupply,
-        3000,
-        18,
-        18,
-        tickSpacing,
-        HIGH_NUMERAIRE
-      )
-      expect(result2.startTick).toBeLessThan(result2.endTick)
+        tokenDecimals: 18,
+        numeraireDecimals: 18,
+      })
+      expect(tickLower).toBeLessThan(tickUpper)
     })
 
-    it('should throw on invalid range (start >= end)', () => {
+    it('should throw on invalid range (lower >= upper)', () => {
       expect(() => {
-        marketCapRangeToTicks(
-          { start: 10_000_000, end: 100_000 }, // Backwards
+        marketCapToTicksForMulticurve({
+          marketCapLower: 10_000_000, // Backwards - higher as "lower"
+          marketCapUpper: 100_000,
           tokenSupply,
-          3000,
-          18,
-          18,
+          numerairePriceUSD: 3000,
           tickSpacing,
-          WETH_BASE
-        )
-      }).toThrow('Start market cap must be less than end market cap')
+          tokenDecimals: 18,
+          numeraireDecimals: 18,
+        })
+      }).toThrow('Lower market cap must be less than upper market cap')
     })
 
     it('should throw on negative market caps', () => {
       expect(() => {
-        marketCapRangeToTicks(
-          { start: -100_000, end: 10_000_000 },
+        marketCapToTicksForMulticurve({
+          marketCapLower: -100_000,
+          marketCapUpper: 10_000_000,
           tokenSupply,
-          3000,
-          18,
-          18,
+          numerairePriceUSD: 3000,
           tickSpacing,
-          WETH_BASE
-        )
+          tokenDecimals: 18,
+          numeraireDecimals: 18,
+        })
       }).toThrow('Market cap values must be positive')
     })
 
     it('should throw on zero market caps', () => {
       expect(() => {
-        marketCapRangeToTicks(
-          { start: 0, end: 10_000_000 },
+        marketCapToTicksForMulticurve({
+          marketCapLower: 0,
+          marketCapUpper: 10_000_000,
           tokenSupply,
-          3000,
-          18,
-          18,
+          numerairePriceUSD: 3000,
           tickSpacing,
-          WETH_BASE
-        )
+          tokenDecimals: 18,
+          numeraireDecimals: 18,
+        })
       }).toThrow('Market cap values must be positive')
     })
 
     it('should throw when range is too narrow', () => {
       // Very close market caps with large tick spacing
       expect(() => {
-        marketCapRangeToTicks(
-          { start: 1_000_000, end: 1_000_001 }, // Nearly identical
+        marketCapToTicksForMulticurve({
+          marketCapLower: 1_000_000,
+          marketCapUpper: 1_000_001, // Nearly identical
           tokenSupply,
-          3000,
-          18,
-          18,
-          10000, // Large tick spacing
-          WETH_BASE
-        )
+          numerairePriceUSD: 3000,
+          tickSpacing: 10000, // Large tick spacing
+          tokenDecimals: 18,
+          numeraireDecimals: 18,
+        })
       }).toThrow('resulted in same tick')
+    })
+  })
+
+  describe('marketCapToTicksForStaticAuction', () => {
+    const tokenSupply = parseEther('1000000000')
+    const tickSpacing = 200 // V3 tick spacing for 1% fee
+
+    it('should produce POSITIVE ticks for any market cap range', () => {
+      const { startTick, endTick } = marketCapToTicksForStaticAuction({
+        marketCapRange: { start: 100_000, end: 10_000_000 },
+        tokenSupply,
+        numerairePriceUSD: 3000,
+        tickSpacing,
+        tokenDecimals: 18,
+        numeraireDecimals: 18,
+      })
+
+      // V3 static: always positive, startTick < endTick
+      expect(startTick).toBeGreaterThan(0)
+      expect(endTick).toBeGreaterThan(0)
+      expect(startTick).toBeLessThan(endTick)
+    })
+
+    it('should align to tick spacing', () => {
+      const { startTick, endTick } = marketCapToTicksForStaticAuction({
+        marketCapRange: { start: 100_000, end: 10_000_000 },
+        tokenSupply,
+        numerairePriceUSD: 3000,
+        tickSpacing,
+        tokenDecimals: 18,
+        numeraireDecimals: 18,
+      })
+
+      expect(startTick % tickSpacing).toBe(0)
+      expect(endTick % tickSpacing).toBe(0)
+    })
+
+    it('should throw on invalid range (start >= end)', () => {
+      expect(() => {
+        marketCapToTicksForStaticAuction({
+          marketCapRange: { start: 10_000_000, end: 100_000 }, // Backwards
+          tokenSupply,
+          numerairePriceUSD: 3000,
+          tickSpacing,
+          tokenDecimals: 18,
+          numeraireDecimals: 18,
+        })
+      }).toThrow('Start market cap must be less than end market cap')
+    })
+
+    it('should throw on negative market caps', () => {
+      expect(() => {
+        marketCapToTicksForStaticAuction({
+          marketCapRange: { start: -100_000, end: 10_000_000 },
+          tokenSupply,
+          numerairePriceUSD: 3000,
+          tickSpacing,
+          tokenDecimals: 18,
+          numeraireDecimals: 18,
+        })
+      }).toThrow('Market cap values must be positive')
+    })
+
+    it('should handle ETH numeraire scenario', () => {
+      const { startTick, endTick } = marketCapToTicksForStaticAuction({
+        marketCapRange: { start: 100_000, end: 10_000_000 },
+        tokenSupply,
+        numerairePriceUSD: 3000,
+        tickSpacing,
+        tokenDecimals: 18,
+        numeraireDecimals: 18,
+      })
+
+      expect(startTick).toBeGreaterThan(0)
+      expect(endTick).toBeGreaterThan(0)
+      expect(startTick).toBeLessThan(endTick)
+    })
+
+    it('should handle USDC numeraire scenario', () => {
+      const { startTick, endTick } = marketCapToTicksForStaticAuction({
+        marketCapRange: { start: 100_000, end: 10_000_000 },
+        tokenSupply,
+        numerairePriceUSD: 1, // USDC = $1
+        tickSpacing,
+        tokenDecimals: 18,
+        numeraireDecimals: 6, // USDC has 6 decimals
+      })
+
+      // V3 static always positive, even for USDC
+      expect(startTick).toBeGreaterThan(0)
+      expect(endTick).toBeGreaterThan(0)
+      expect(startTick).toBeLessThan(endTick)
+    })
+  })
+
+  describe('marketCapToTicksForDynamicAuction', () => {
+    const tokenSupply = parseEther('1000000000')
+    const tickSpacing = 30 // DOPPLER_MAX_TICK_SPACING for dynamic
+
+    it('should produce POSITIVE ticks for ETH numeraire (token1)', () => {
+      const { startTick, endTick } = marketCapToTicksForDynamicAuction({
+        marketCapRange: { start: 50_000, end: 500_000 },
+        tokenSupply,
+        numerairePriceUSD: 3000, // ETH = $3000
+        numeraire: WETH_BASE,
+        tickSpacing,
+        tokenDecimals: 18,
+        numeraireDecimals: 18,
+      })
+
+      // For token1: positive ticks, startTick < endTick
+      expect(startTick).toBeGreaterThan(0)
+      expect(endTick).toBeGreaterThan(0)
+      expect(startTick).toBeLessThan(endTick)
+    })
+
+    it('should produce NEGATIVE ticks for USDC numeraire (token0)', () => {
+      const { startTick, endTick } = marketCapToTicksForDynamicAuction({
+        marketCapRange: { start: 50_000, end: 500_000 },
+        tokenSupply,
+        numerairePriceUSD: 1, // USDC = $1
+        numeraire: USDC_BASE,
+        tickSpacing,
+        tokenDecimals: 18,
+        numeraireDecimals: 6, // USDC has 6 decimals
+      })
+
+      // For token0: negative ticks, startTick > endTick
+      expect(startTick).toBeLessThan(0)
+      expect(endTick).toBeLessThan(0)
+      expect(startTick).toBeGreaterThan(endTick) // Swapped for token0
+    })
+
+    it('should align to tick spacing', () => {
+      const { startTick, endTick } = marketCapToTicksForDynamicAuction({
+        marketCapRange: { start: 50_000, end: 500_000 },
+        tokenSupply,
+        numerairePriceUSD: 3000,
+        numeraire: WETH_BASE,
+        tickSpacing,
+        tokenDecimals: 18,
+        numeraireDecimals: 18,
+      })
+
+      expect(startTick % tickSpacing).toBe(0)
+      expect(endTick % tickSpacing).toBe(0)
+    })
+
+    it('should throw on invalid range (start >= end)', () => {
+      expect(() => {
+        marketCapToTicksForDynamicAuction({
+          marketCapRange: { start: 500_000, end: 50_000 }, // Backwards
+          tokenSupply,
+          numerairePriceUSD: 3000,
+          numeraire: WETH_BASE,
+          tickSpacing,
+          tokenDecimals: 18,
+          numeraireDecimals: 18,
+        })
+      }).toThrow('Start market cap must be less than end market cap')
     })
   })
 
@@ -399,13 +517,14 @@ describe('marketCapHelpers', () => {
         WETH_BASE // token is token1
       )
 
-      // For token1, add offsets: pegTick + offset
+      // Add offsets to pegTick (higher offset = less negative = higher market cap)
       expect(tickLower).toBe(-200000) // -200000 + 0
       expect(tickUpper).toBe(-190000) // -200000 + 10000
     })
 
-    it('should correctly apply offsets for token0 (low numeraire)', () => {
-      const pegTick = 200000
+    it('should correctly apply offsets for token0 (high numeraire)', () => {
+      // With always-negative ticks, token0 pegTick is also negative
+      const pegTick = -200000
       const offsetLower = 0
       const offsetUpper = 10000
 
@@ -416,14 +535,14 @@ describe('marketCapHelpers', () => {
         HIGH_NUMERAIRE // token is token0
       )
 
-      // For token0, subtract in reverse: pegTick - offsetUpper, pegTick - offsetLower
-      expect(tickLower).toBe(190000) // 200000 - 10000
-      expect(tickUpper).toBe(200000) // 200000 - 0
+      // With always-negative ticks, add offsets for both token orderings
+      expect(tickLower).toBe(-200000) // -200000 + 0
+      expect(tickUpper).toBe(-190000) // -200000 + 10000
     })
 
     it('should match reference values for multiple curves', () => {
-      // Reference values:
-      // pegTick = -192100 (after negation for token1)
+      // Reference values with always-negative ticks:
+      // pegTick = -192100
       // pidsLower = [0, 8_000, 10_000]
       // pidsUpper = [10_000, 22_000, 22_000]
       // Expected curvesLower = [-192100, -184100, -182100]
@@ -451,53 +570,9 @@ describe('marketCapHelpers', () => {
     })
 
     it('should maintain tickLower <= tickUpper for token0', () => {
-      const pegTick = 200000
+      const pegTick = -200000 // Now negative with always-negate
       const { tickLower, tickUpper } = applyTickOffsets(pegTick, 0, 10000, HIGH_NUMERAIRE)
       expect(tickLower).toBeLessThanOrEqual(tickUpper)
-    })
-  })
-
-  describe('transformTicksForAuction', () => {
-    it('should negate and swap ticks for token1 (WETH numeraire)', () => {
-      // Raw ticks from marketCapRangeToTicks are negative for token1
-      const rawStartTick = -170000 // lower market cap
-      const rawEndTick = -120000   // higher market cap
-
-      const { startTick, endTick } = transformTicksForAuction(
-        rawStartTick,
-        rawEndTick,
-        WETH_BASE
-      )
-
-      // Should negate and swap: startTick = -rawEndTick, endTick = -rawStartTick
-      expect(startTick).toBe(120000)
-      expect(endTick).toBe(170000)
-      expect(startTick).toBeLessThan(endTick)
-    })
-
-    it('should pass through ticks unchanged for token0 (high numeraire)', () => {
-      const rawStartTick = 120000
-      const rawEndTick = 170000
-
-      const { startTick, endTick } = transformTicksForAuction(
-        rawStartTick,
-        rawEndTick,
-        HIGH_NUMERAIRE
-      )
-
-      // Should be unchanged
-      expect(startTick).toBe(rawStartTick)
-      expect(endTick).toBe(rawEndTick)
-    })
-
-    it('should maintain startTick < endTick for both token orderings', () => {
-      // Test token1 case
-      const result1 = transformTicksForAuction(-170000, -120000, WETH_BASE)
-      expect(result1.startTick).toBeLessThan(result1.endTick)
-
-      // Test token0 case
-      const result2 = transformTicksForAuction(120000, 170000, HIGH_NUMERAIRE)
-      expect(result2.startTick).toBeLessThan(result2.endTick)
     })
   })
 
@@ -551,29 +626,27 @@ describe('marketCapHelpers', () => {
     const tokenSupply = parseEther('1000000000')
     const numerairePrice = 3000
 
-    it('should reverse marketCapToTick conversion', () => {
+    it('should reverse marketCapToTickForMulticurve conversion', () => {
       const originalMarketCap = 1_000_000 // $1M
 
       // Convert to tick
-      const tick = marketCapToTick(
-        originalMarketCap,
+      const tick = marketCapToTickForMulticurve({
+        marketCapUSD: originalMarketCap,
         tokenSupply,
-        numerairePrice,
-        18,
-        18,
-        100,
-        WETH_BASE
-      )
+        numerairePriceUSD: numerairePrice,
+        tickSpacing: 100,
+        tokenDecimals: 18,
+        numeraireDecimals: 18,
+      })
 
-      // Convert back
-      const recoveredMarketCap = tickToMarketCap(
+      // Convert back (tickToMarketCap uses Math.abs internally)
+      const recoveredMarketCap = tickToMarketCap({
         tick,
         tokenSupply,
-        numerairePrice,
-        18,
-        18,
-        WETH_BASE
-      )
+        numerairePriceUSD: numerairePrice,
+        tokenDecimals: 18,
+        numeraireDecimals: 18,
+      })
 
       // Should be close (some precision loss due to tick spacing)
       const relativeError = Math.abs(recoveredMarketCap - originalMarketCap) / originalMarketCap
@@ -584,35 +657,86 @@ describe('marketCapHelpers', () => {
       const testCaps = [100_000, 1_000_000, 10_000_000, 100_000_000]
 
       for (const cap of testCaps) {
-        const tick = marketCapToTick(cap, tokenSupply, numerairePrice, 18, 18, 100, WETH_BASE)
-        const recovered = tickToMarketCap(tick, tokenSupply, numerairePrice, 18, 18, WETH_BASE)
+        const tick = marketCapToTickForMulticurve({
+          marketCapUSD: cap,
+          tokenSupply,
+          numerairePriceUSD: numerairePrice,
+          tickSpacing: 100,
+          tokenDecimals: 18,
+          numeraireDecimals: 18,
+        })
+        const recovered = tickToMarketCap({
+          tick,
+          tokenSupply,
+          numerairePriceUSD: numerairePrice,
+          tokenDecimals: 18,
+          numeraireDecimals: 18,
+        })
 
         const relativeError = Math.abs(recovered - cap) / cap
         expect(relativeError).toBeLessThan(0.01)
       }
     })
 
-    it('should handle token0 ordering', () => {
+    it('should work with positive ticks from Static auction', () => {
+      const startMarketCap = 1_000_000
+      const endMarketCap = 10_000_000
+
+      const { startTick, endTick } = marketCapToTicksForStaticAuction({
+        marketCapRange: { start: startMarketCap, end: endMarketCap },
+        tokenSupply,
+        numerairePriceUSD: numerairePrice,
+        tickSpacing: 100,
+        tokenDecimals: 18,
+        numeraireDecimals: 18,
+      })
+
+      // Note: In V3 static, startTick (tickLower) corresponds to higher market cap (end),
+      // and endTick (tickUpper) corresponds to lower market cap (start).
+      // This is because: lower market cap → lower price → higher ratio → higher tick
+      const recoveredEndMC = tickToMarketCap({
+        tick: startTick,
+        tokenSupply,
+        numerairePriceUSD: numerairePrice,
+        tokenDecimals: 18,
+        numeraireDecimals: 18,
+      })
+      const recoveredStartMC = tickToMarketCap({
+        tick: endTick,
+        tokenSupply,
+        numerairePriceUSD: numerairePrice,
+        tokenDecimals: 18,
+        numeraireDecimals: 18,
+      })
+
+      // Verify both market caps round-trip correctly
+      const startError = Math.abs(recoveredStartMC - startMarketCap) / startMarketCap
+      const endError = Math.abs(recoveredEndMC - endMarketCap) / endMarketCap
+      expect(startError).toBeLessThan(0.01)
+      expect(endError).toBeLessThan(0.01)
+    })
+
+    it('should work with negative ticks from Multicurve', () => {
       const originalMarketCap = 1_000_000
 
-      const tick = marketCapToTick(
-        originalMarketCap,
+      const tick = marketCapToTickForMulticurve({
+        marketCapUSD: originalMarketCap,
         tokenSupply,
-        numerairePrice,
-        18,
-        18,
-        100,
-        HIGH_NUMERAIRE // token is token0
-      )
+        numerairePriceUSD: numerairePrice,
+        tickSpacing: 100,
+        tokenDecimals: 18,
+        numeraireDecimals: 18,
+      })
 
-      const recoveredMarketCap = tickToMarketCap(
+      // tick can be positive or negative depending on price ratio
+
+      const recoveredMarketCap = tickToMarketCap({
         tick,
         tokenSupply,
-        numerairePrice,
-        18,
-        18,
-        HIGH_NUMERAIRE
-      )
+        numerairePriceUSD: numerairePrice,
+        tokenDecimals: 18,
+        numeraireDecimals: 18,
+      })
 
       const relativeError = Math.abs(recoveredMarketCap - originalMarketCap) / originalMarketCap
       expect(relativeError).toBeLessThan(0.01)
@@ -628,29 +752,24 @@ describe('marketCapHelpers', () => {
      * numeraireUSD = 0.032
      * tokenSupply = 1_000_000_000 (human readable)
      * tickSpacing = 100
-     * assetIsToken1 = true (WETH numeraire)
-     *
-     * Math produces pegTick = 34500 (see detailed trace in earlier test)
      */
     it('should produce expected peg tick', () => {
-      const pegTick = marketCapToTick(
-        1_000_000_000, // $1B
-        parseEther('1000000000'), // 1B tokens
-        0.032, // $0.032 numeraire
-        18,
-        18,
-        100,
-        WETH_BASE
-      )
+      const pegTick = marketCapToTickForMulticurve({
+        marketCapUSD: 1_000_000_000, // $1B
+        tokenSupply: parseEther('1000000000'), // 1B tokens
+        numerairePriceUSD: 0.032, // $0.032 numeraire
+        tickSpacing: 100,
+        tokenDecimals: 18,
+        numeraireDecimals: 18,
+      })
 
-      // With token as token1, tick is negated
-      // ratio = 0.032/1 = 0.032, rawTick ≈ -34500, negated → tick ≈ +34500
-      expect(Math.abs(pegTick - 34500)).toBeLessThan(200)
+      // ratio = 0.032/1 = 0.032 < 1, so tick is negative ≈ -34500
+      expect(Math.abs(pegTick + 34500)).toBeLessThan(200)
     })
 
     it('should produce expected curve ranges', () => {
-      // Use calculated pegTick (positive due to negation for token1)
-      const pegTick = 34500
+      // Use calculated pegTick (negative since ratio < 1 for this scenario)
+      const pegTick = -34500
 
       // pidsLower = [0, 8_000, 10_000], pidsUpper = [10_000, 22_000, 22_000]
       const curves = [
@@ -659,11 +778,12 @@ describe('marketCapHelpers', () => {
         { lower: 10_000, upper: 22_000 },
       ]
 
-      // Expected with pegTick = 34500 and token as token1 (WETH numeraire):
-      // curvesLower = [34500 + 0, 34500 + 8000, 34500 + 10000] = [34500, 42500, 44500]
-      // curvesUpper = [34500 + 10000, 34500 + 22000, 34500 + 22000] = [44500, 56500, 56500]
-      const expectedLower = [34500, 42500, 44500]
-      const expectedUpper = [44500, 56500, 56500]
+      // Expected with pegTick = -34500:
+      // applyTickOffsets ADDS offsets:
+      // curvesLower = [-34500 + 0, -34500 + 8000, -34500 + 10000] = [-34500, -26500, -24500]
+      // curvesUpper = [-34500 + 10000, -34500 + 22000, -34500 + 22000] = [-24500, -12500, -12500]
+      const expectedLower = [-34500, -26500, -24500]
+      const expectedUpper = [-24500, -12500, -12500]
 
       curves.forEach((curve, i) => {
         const { tickLower, tickUpper } = applyTickOffsets(
@@ -679,4 +799,3 @@ describe('marketCapHelpers', () => {
     })
   })
 })
-

@@ -56,14 +56,17 @@ export { isToken0Expected } from './isToken0Expected'
 
 // Re-export market cap conversion utilities
 export {
+  // Core conversion functions (pure math)
   marketCapToTokenPrice,
   tokenPriceToRatio,
   ratioToTick,
   isToken1,
-  marketCapToTick,
-  marketCapRangeToTicks,
-  transformTicksForAuction,
-  marketCapRangeToTicksForCurve,
+  // Auction-specific tick functions
+  marketCapToTicksForStaticAuction,
+  marketCapToTicksForDynamicAuction,
+  marketCapToTicksForMulticurve,
+  marketCapToTickForMulticurve,
+  // Utility functions
   applyTickOffsets,
   validateMarketCapParameters,
   tickToMarketCap,

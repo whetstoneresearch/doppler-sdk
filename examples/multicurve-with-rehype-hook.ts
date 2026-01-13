@@ -133,15 +133,8 @@ async function main() {
   console.log('  Beneficiaries:', '30%')
   console.log('  LPs:', '30%')
 
-  // Simulate to preview addresses
-  console.log('\nSimulating...')
-  const { tokenAddress, poolId, gasEstimate } = await sdk.factory.simulateCreateMulticurve(params)
-  console.log('Simulation successful')
-  console.log('  Predicted token address:', tokenAddress)
-  console.log('  Predicted pool ID:', poolId)
-  console.log('  Gas estimate:', gasEstimate?.toString())
-
   // Create the multicurve pool + token
+  // Note: createMulticurve internally simulates first, ensuring consistent addresses
   console.log('\nCreating multicurve with RehypeDopplerHook...')
   const result = await sdk.factory.createMulticurve(params)
   console.log('Multicurve created successfully!')

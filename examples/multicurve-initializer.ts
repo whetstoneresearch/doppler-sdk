@@ -46,17 +46,18 @@ async function main() {
     .withUserAddress(account.address)
     .build()
 
-  // Simulate to preview addresses
-  const { asset, pool } = await sdk.factory.simulateCreateMulticurve(params)
-  console.log('Predicted token address:', asset)
-  console.log('Predicted pool address:', pool)
-
   // Create the multicurve pool + token
+  // Note: createMulticurve internally simulates first, ensuring consistent addresses
   const result = await sdk.factory.createMulticurve(params)
   console.log('✅ Multicurve created')
   console.log('Token address:', result.tokenAddress)
-  console.log('Pool address:', result.poolAddress)
+  console.log('Pool ID:', result.poolId)
   console.log('Transaction:', result.transactionHash)
+  
+  // If you need to preview the address BEFORE executing, use simulate().execute():
+  // const simulation = await sdk.factory.simulateCreateMulticurve(params)
+  // console.log('Predicted:', simulation.tokenAddress)
+  // const result = await simulation.execute()
 }
 
 main().catch((err) => {

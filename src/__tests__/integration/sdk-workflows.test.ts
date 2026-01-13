@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { DopplerSDK } from '../../DopplerSDK'
-import { createMockPublicClient, createMockWalletClient } from '../mocks/clients'
+import { createMockPublicClient, createMockWalletClient, createMockCreateEventLog } from '../mocks/clients'
 import { mockAddresses, mockTokenAddress, mockPoolAddress } from '../mocks/addresses'
 import { parseEther, keccak256, toHex, type Address } from 'viem'
 import type { CreateStaticAuctionParams, CreateDynamicAuctionParams } from '../../types'
@@ -58,8 +58,7 @@ describe('SDK Workflows Integration Tests', () => {
 
       // 2. Mock the factory creation
       const mockTxHash = '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890'
-      const eventSignature = keccak256(toHex('Create(address,address,address,address,address,address,address)'))
-      
+
       vi.mocked(publicClient.simulateContract).mockResolvedValueOnce({
         request: {
           address: mockAddresses.airlock,
@@ -72,16 +71,7 @@ describe('SDK Workflows Integration Tests', () => {
       vi.mocked(walletClient.writeContract).mockResolvedValueOnce(mockTxHash as `0x${string}`)
 
       vi.mocked(publicClient.waitForTransactionReceipt).mockResolvedValueOnce({
-        logs: [{
-          address: mockAddresses.airlock,
-          topics: [
-            eventSignature,
-            `0x000000000000000000000000${mockPoolAddress.slice(2)}`,
-            `0x000000000000000000000000${mockTokenAddress.slice(2)}`,
-            `0x000000000000000000000000${mockAddresses.weth.slice(2)}`,
-          ],
-          data: '0x' as `0x${string}`,
-        }],
+        logs: [createMockCreateEventLog(mockTokenAddress, mockPoolAddress)],
       } as any)
 
       // 3. Create the auction
@@ -202,8 +192,7 @@ describe('SDK Workflows Integration Tests', () => {
       // 2. Mock the factory creation
       const mockHookAddress = '0x9876543210987654321098765432109876543210' as Address
       const mockTxHash = '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef'
-      const eventSignature = keccak256(toHex('Create(address,address,address,address,address,address,address)'))
-      
+
       vi.mocked(publicClient.simulateContract).mockResolvedValueOnce({
         request: {
           address: mockAddresses.airlock,
@@ -216,16 +205,7 @@ describe('SDK Workflows Integration Tests', () => {
       vi.mocked(walletClient.writeContract).mockResolvedValueOnce(mockTxHash as `0x${string}`)
 
       vi.mocked(publicClient.waitForTransactionReceipt).mockResolvedValueOnce({
-        logs: [{
-          address: mockAddresses.airlock,
-          topics: [
-            eventSignature,
-            `0x000000000000000000000000${mockHookAddress.slice(2)}`,
-            `0x000000000000000000000000${mockTokenAddress.slice(2)}`,
-            `0x000000000000000000000000${mockAddresses.weth.slice(2)}`,
-          ],
-          data: '0x' as `0x${string}`,
-        }],
+        logs: [createMockCreateEventLog(mockTokenAddress, mockHookAddress)],
       } as any)
 
       // 3. Create the auction
@@ -435,7 +415,7 @@ describe('SDK Workflows Integration Tests', () => {
 
       vi.mocked(walletClient.writeContract).mockResolvedValueOnce('0x123' as `0x${string}`)
       vi.mocked(publicClient.waitForTransactionReceipt).mockResolvedValueOnce({
-        logs: [],
+        logs: [createMockCreateEventLog(mockTokenAddress, mockPoolAddress)],
       } as any)
 
       const result = await baseSDK.factory.createStaticAuction(params)

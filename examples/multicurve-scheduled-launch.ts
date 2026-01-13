@@ -46,15 +46,14 @@ async function main() {
     .withUserAddress(account.address)
     .build()
 
-  const { asset, pool } = await sdk.factory.simulateCreateMulticurve(params)
-  console.log('Predicted token address:', asset)
-  console.log('Predicted pool address:', pool)
   console.log('Scheduled start time:', startTime)
 
+  // Create the scheduled multicurve pool + token
+  // Note: createMulticurve internally simulates first, ensuring consistent addresses
   const result = await sdk.factory.createMulticurve(params)
   console.log('✅ Scheduled multicurve created')
   console.log('Token address:', result.tokenAddress)
-  console.log('Pool address:', result.poolAddress)
+  console.log('Pool ID:', result.poolId)
   console.log('Transaction:', result.transactionHash)
 }
 

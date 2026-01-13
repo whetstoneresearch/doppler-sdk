@@ -10,12 +10,28 @@
  */
 
 import type { Address } from 'viem'
-import type { MarketCapRange, MarketCapValidationResult } from '../types'
+import type {
+  MarketCapRange,
+  MarketCapValidationResult,
+  StaticAuctionTickParams,
+  DynamicAuctionTickParams,
+  MulticurveTickRangeParams,
+  MulticurveTickParams,
+  TickToMarketCapParams,
+} from '../types'
 import { MIN_TICK, MAX_TICK } from './tickMath'
 import { isToken0Expected } from './isToken0Expected'
 
 // Re-export types from types.ts for convenience
-export type { MarketCapRange, MarketCapValidationResult } from '../types'
+export type {
+  MarketCapRange,
+  MarketCapValidationResult,
+  StaticAuctionTickParams,
+  DynamicAuctionTickParams,
+  MulticurveTickRangeParams,
+  MulticurveTickParams,
+  TickToMarketCapParams,
+} from '../types'
 
 /**
  * Convert market cap to token price
@@ -79,7 +95,7 @@ export function tokenPriceToRatio(
   }
 
   // How much numeraire per token (in USD terms first)
-  // tokenPriceUSD / numerairePriceUSD = numeraire per token
+  // numerairePriceUSD / tokenPriceUSD = numeraire units per token
   const ratio = numerairePriceUSD / tokenPriceUSD
 
   // Adjust for decimal differences
@@ -134,186 +150,116 @@ export function isToken1(
   return tokenAddress.toLowerCase() > numeraireAddress.toLowerCase()
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// CORE TICK COMPUTATION (Internal)
+// ═══════════════════════════════════════════════════════════════════════════════
+
 /**
- * Complete conversion from market cap to usable tick
+ * Core tick computation - NO sign manipulation.
+ * Returns the raw mathematical tick for a given market cap.
  *
- * This is the main entry point combining all conversion steps:
- * 1. Market cap → Token price
- * 2. Token price → Ratio
- * 3. Ratio → Raw tick
- * 4. Raw tick → Nearest usable tick (aligned to spacing)
- * 5. Handle token ordering (negate if token is token1)
- *
- * **Important**: The returned tick includes token ordering adjustment.
- * When the token is token1 (determined from numeraire address), the tick is NEGATED:
- * - Higher market cap → smaller (more negative) tick
- * - Lower market cap → larger (less negative) tick
- *
- * Builders apply additional transformations based on auction type.
- * See builder implementations for auction-specific tick conventions.
- *
- * @param marketCapUSD - Target market cap in USD
- * @param tokenSupply - Total token supply (with decimals, as bigint)
- * @param numerairePriceUSD - Price of numeraire in USD (e.g., ETH = 3000)
- * @param tokenDecimals - Token decimals (default: 18)
- * @param numeraireDecimals - Numeraire decimals (default: 18)
- * @param tickSpacing - Tick spacing of the pool (e.g., 60, 100)
- * @param numeraire - Address of the numeraire token (e.g., WETH). Used to determine token ordering.
- * @returns Nearest usable tick (negated when token is token1)
- *
- * @throws Error if calculated tick is out of bounds [-887272, 887272]
- *
- * @example
- * ```ts
- * // With WETH numeraire on Base:
- * const tick = marketCapToTick(
- *   1_000_000,             // $1M market cap
- *   parseEther('1000000000'), // 1B tokens
- *   3000,                  // ETH = $3000
- *   18, 18,                // both 18 decimals
- *   60,                    // tick spacing
- *   '0x4200000000000000000000000000000000000006' // WETH address
- * )
- * // Returns negative tick (e.g., -149100) because token will be token1
- * ```
+ * @internal Not exported - use auction-specific functions instead.
  */
-export function marketCapToTick(
+function _computeRawTick(
   marketCapUSD: number,
   tokenSupply: bigint,
   numerairePriceUSD: number,
-  tokenDecimals: number = 18,
-  numeraireDecimals: number = 18,
-  tickSpacing: number,
-  numeraire: Address
+  tokenDecimals: number,
+  numeraireDecimals: number,
+  tickSpacing: number
 ): number {
-  // Determine token ordering from numeraire address
-  const tokenIsToken1 = !isToken0Expected(numeraire)
+  if (marketCapUSD <= 0) {
+    throw new Error('Market cap must be positive')
+  }
 
   // Step 1: Market cap → token price
   const tokenPrice = marketCapToTokenPrice(marketCapUSD, tokenSupply, tokenDecimals)
 
   // Step 2: Token price → ratio
-  const ratio = tokenPriceToRatio(
-    tokenPrice,
-    numerairePriceUSD,
-    tokenDecimals,
-    numeraireDecimals
-  )
+  const ratio = tokenPriceToRatio(tokenPrice, numerairePriceUSD, tokenDecimals, numeraireDecimals)
 
   // Step 3: Ratio → raw tick
   const rawTick = ratioToTick(ratio)
 
-  // Step 4: Round to tick spacing using floor division
-  let tick = Math.floor(rawTick / tickSpacing) * tickSpacing
+  // Step 4: Align to tick spacing (floor division)
+  const alignedTick = Math.floor(rawTick / tickSpacing) * tickSpacing
 
-  // Step 5: Handle token ordering
-  // When token is token1: negate tick (V4 multicurve convention)
-  // When token is token0: keep tick as-is
-  // Note: V3 static auctions handle this differently and negate at the builder level
-  if (tokenIsToken1) {
-    tick = -tick
-  }
-
-  // Normalize -0 to 0 (JavaScript quirk: -0 !== 0 in Object.is)
-  if (tick === 0) tick = 0
-
-  // Step 6: Validate bounds
-  if (tick < MIN_TICK || tick > MAX_TICK) {
+  // Step 5: Bounds check
+  if (alignedTick < MIN_TICK || alignedTick > MAX_TICK) {
     throw new Error(
-      `Calculated tick ${tick} is out of bounds [${MIN_TICK}, ${MAX_TICK}]. ` +
+      `Calculated tick ${alignedTick} is out of bounds [${MIN_TICK}, ${MAX_TICK}]. ` +
         `Market cap ${marketCapUSD.toLocaleString()} may be too extreme for the given parameters.`
     )
   }
 
-  return tick
+  return alignedTick
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// AUCTION-SPECIFIC TICK FUNCTIONS
+// ═══════════════════════════════════════════════════════════════════════════════
+
 /**
- * Convert a market cap range to tick range
+ * Convert market cap range to ticks for V3 Static Auctions.
  *
- * Used for V3 Static Auctions and V4 Dynamic Auctions where you need
- * a start and end tick for the bonding curve.
+ * V3 Static auctions ALWAYS use positive ticks with startTick < endTick.
+ * This is because CREATE2 mining ensures token address > numeraire (token1).
  *
- * **Important**: This function applies token ordering via marketCapToTick
- * (negates ticks when token is token1), then normalizes so startTick < endTick.
- *
- * Due to the negation + normalization:
- * - When token is token1: both ticks are NEGATIVE
- *   - startTick = more negative (corresponds to LOWER market cap)
- *   - endTick = less negative (corresponds to HIGHER market cap)
- * - When token is token0: both ticks are POSITIVE
- *   - startTick = smaller positive (corresponds to LOWER market cap)
- *   - endTick = larger positive (corresponds to HIGHER market cap)
- *
- * Builders apply additional transformations based on auction type semantics.
- * See builder implementations for auction-specific tick handling.
- *
- * @param marketCapRange - Start and end market caps in USD (start < end required)
- * @param tokenSupply - Total token supply (with decimals)
- * @param numerairePriceUSD - Price of numeraire in USD
- * @param tokenDecimals - Token decimals (default: 18)
- * @param numeraireDecimals - Numeraire decimals (default: 18)
- * @param tickSpacing - Tick spacing
- * @param numeraire - Address of the numeraire token. Used to determine token ordering.
- * @returns Object with startTick and endTick (startTick < endTick numerically)
- *
- * @throws Error if start >= end market cap or if ticks are out of bounds
+ * @param params - Configuration object with market cap range and token parameters
+ * @returns { startTick, endTick } - positive ticks, startTick < endTick
  *
  * @example
  * ```ts
- * // With WETH numeraire on Base:
- * const { startTick, endTick } = marketCapRangeToTicks(
- *   { start: 500_000, end: 50_000_000 },  // $500k → $50M
- *   parseEther('1000000000'),
- *   3000,
- *   18, 18,
- *   60,
- *   '0x4200000000000000000000000000000000000006' // WETH address
- * )
- * // Returns: startTick=-156080 (500k), endTick=-110020 (50M)
- * // Note: startTick < endTick, but startTick corresponds to LOWER market cap
+ * const { startTick, endTick } = marketCapToTicksForStaticAuction({
+ *   marketCapRange: { start: 100_000, end: 10_000_000 },
+ *   tokenSupply: parseEther('1000000000'),
+ *   numerairePriceUSD: 3000,
+ *   tickSpacing: 60,
+ * })
+ * // Returns: { startTick: 120000, endTick: 170000 } (both positive)
  * ```
  */
-export function marketCapRangeToTicks(
-  marketCapRange: MarketCapRange,
-  tokenSupply: bigint,
-  numerairePriceUSD: number,
-  tokenDecimals: number = 18,
-  numeraireDecimals: number = 18,
-  tickSpacing: number,
-  numeraire: Address
+export function marketCapToTicksForStaticAuction(
+  params: StaticAuctionTickParams
 ): { startTick: number; endTick: number } {
+  const {
+    marketCapRange,
+    tokenSupply,
+    numerairePriceUSD,
+    tickSpacing,
+    tokenDecimals = 18,
+    numeraireDecimals = 18,
+  } = params
+
   if (marketCapRange.start <= 0 || marketCapRange.end <= 0) {
     throw new Error('Market cap values must be positive')
   }
-
   if (marketCapRange.start >= marketCapRange.end) {
     throw new Error('Start market cap must be less than end market cap')
   }
 
-  const tickStart = marketCapToTick(
+  // Compute raw ticks
+  const tickAtStart = _computeRawTick(
     marketCapRange.start,
     tokenSupply,
     numerairePriceUSD,
     tokenDecimals,
     numeraireDecimals,
-    tickSpacing,
-    numeraire
+    tickSpacing
   )
-
-  const tickEnd = marketCapToTick(
+  const tickAtEnd = _computeRawTick(
     marketCapRange.end,
     tokenSupply,
     numerairePriceUSD,
     tokenDecimals,
     numeraireDecimals,
-    tickSpacing,
-    numeraire
+    tickSpacing
   )
 
-  // Ensure startTick < endTick (Uniswap requirement)
-  const startTick = Math.min(tickStart, tickEnd)
-  const endTick = Math.max(tickStart, tickEnd)
+  // V3 Static: Always positive ticks, startTick < endTick
+  // Take absolute value and ensure proper ordering
+  const startTick = Math.min(Math.abs(tickAtStart), Math.abs(tickAtEnd))
+  const endTick = Math.max(Math.abs(tickAtStart), Math.abs(tickAtEnd))
 
   if (startTick === endTick) {
     throw new Error(
@@ -326,162 +272,169 @@ export function marketCapRangeToTicks(
 }
 
 /**
- * Transform ticks from marketCapRangeToTicks format to auction contract format.
+ * Convert market cap range to ticks for V4 Dynamic Auctions (Doppler).
  *
- * For range-based auctions (Static V3, Dynamic V4), the contracts expect ticks
- * in a specific format based on token ordering. This function handles the
- * negation and swapping required when the token is token1.
+ * Dynamic auctions compute tick sign based on expected token ordering:
+ * - Token1 (ETH numeraire): positive ticks, startTick < endTick
+ * - Token0 (stablecoin numeraire): negative ticks, startTick > endTick
  *
- * @param rawStartTick - Start tick from marketCapRangeToTicks (lower market cap)
- * @param rawEndTick - End tick from marketCapRangeToTicks (higher market cap)
- * @param numeraire - Address of the numeraire token. Used to determine token ordering.
- * @returns Transformed ticks ready for auction contract
+ * Unlike Multicurve, Doppler contract does NOT auto-flip ticks.
+ *
+ * @param params - Configuration object with market cap range and token parameters
+ * @returns { startTick, endTick } with correct sign and ordering for Doppler contract
  *
  * @example
  * ```ts
- * const { startTick: raw1, endTick: raw2 } = marketCapRangeToTicks(...)
- * const { startTick, endTick } = transformTicksForAuction(raw1, raw2, WETH_ADDRESS)
+ * // ETH numeraire (token1) - positive ticks
+ * const eth = marketCapToTicksForDynamicAuction({
+ *   marketCapRange: { start: 50_000, end: 500_000 },
+ *   tokenSupply: parseEther('1000000000'),
+ *   numerairePriceUSD: 3000,
+ *   numeraire: WETH_ADDRESS,
+ *   tickSpacing: 30,
+ * })
+ * // Returns: { startTick: 120000, endTick: 170000 } (positive, ascending)
+ *
+ * // USDC numeraire (token0) - negative ticks
+ * const usdc = marketCapToTicksForDynamicAuction({
+ *   marketCapRange: { start: 50_000, end: 500_000 },
+ *   tokenSupply: parseEther('1000000000'),
+ *   numerairePriceUSD: 1,
+ *   numeraire: USDC_ADDRESS,
+ *   tickSpacing: 30,
+ *   tokenDecimals: 18,
+ *   numeraireDecimals: 6,
+ * })
+ * // Returns: { startTick: -120000, endTick: -170000 } (negative, descending)
  * ```
  */
-export function transformTicksForAuction(
-  rawStartTick: number,
-  rawEndTick: number,
-  numeraire: Address
+export function marketCapToTicksForDynamicAuction(
+  params: DynamicAuctionTickParams
 ): { startTick: number; endTick: number } {
-  const tokenIsToken1 = !isToken0Expected(numeraire)
+  const {
+    marketCapRange,
+    tokenSupply,
+    numerairePriceUSD,
+    numeraire,
+    tickSpacing,
+    tokenDecimals = 18,
+    numeraireDecimals = 18,
+  } = params
 
-  if (tokenIsToken1) {
-    // For token1: negate and swap to satisfy contract requirements
-    // Raw ticks are negative, negating makes them positive, swapping maintains startTick < endTick
-    return {
-      startTick: -rawEndTick,
-      endTick: -rawStartTick,
-    }
+  if (marketCapRange.start <= 0 || marketCapRange.end <= 0) {
+    throw new Error('Market cap values must be positive')
+  }
+  if (marketCapRange.start >= marketCapRange.end) {
+    throw new Error('Start market cap must be less than end market cap')
   }
 
-  // For token0: use raw ticks as-is
-  return { startTick: rawStartTick, endTick: rawEndTick }
-}
+  // Compute raw ticks
+  const tickAtStart = _computeRawTick(
+    marketCapRange.start,
+    tokenSupply,
+    numerairePriceUSD,
+    tokenDecimals,
+    numeraireDecimals,
+    tickSpacing
+  )
+  const tickAtEnd = _computeRawTick(
+    marketCapRange.end,
+    tokenSupply,
+    numerairePriceUSD,
+    tokenDecimals,
+    numeraireDecimals,
+    tickSpacing
+  )
 
-/**
- * Apply curvature offsets to a peg tick for Multicurve positions
- *
- * Multicurve positions are defined relative to a "peg" tick (starting market cap).
- * Offsets define how far above/below the peg each curve extends.
- *
- * Token ordering (determined from numeraire address) affects how offsets are applied:
- * - token1: tickLower = pegTick + offsetLower, tickUpper = pegTick + offsetUpper
- * - token0: tickLower = pegTick - offsetUpper, tickUpper = pegTick - offsetLower
- *
- * @param pegTick - Base tick calculated from starting market cap
- * @param offsetLower - Lower offset in ticks (distance from peg)
- * @param offsetUpper - Upper offset in ticks (distance from peg)
- * @param numeraire - Address of the numeraire token. Used to determine token ordering.
- * @returns Tick range with offsets applied
- *
- * @example
- * ```ts
- * // Peg at -200000, curve from peg to 10000 ticks above (WETH numeraire)
- * const { tickLower, tickUpper } = applyTickOffsets(
- *   -200000, 0, 10000,
- *   '0x4200000000000000000000000000000000000006'
- * )
- * // Returns: { tickLower: -200000, tickUpper: -190000 }
- * ```
- */
-export function applyTickOffsets(
-  pegTick: number,
-  offsetLower: number,
-  offsetUpper: number,
-  numeraire: Address
-): { tickLower: number; tickUpper: number } {
-  const tokenIsToken1 = !isToken0Expected(numeraire)
+  // Determine token ordering from numeraire address
+  const tokenIsToken0 = isToken0Expected(numeraire)
 
-  if (tokenIsToken1) {
-    // For token1, add offsets directly
-    return {
-      tickLower: pegTick + offsetLower,
-      tickUpper: pegTick + offsetUpper,
+  if (tokenIsToken0) {
+    // Token0 (stablecoin numeraire): negative ticks, startTick > endTick
+    const startTick = -Math.min(Math.abs(tickAtStart), Math.abs(tickAtEnd))
+    const endTick = -Math.max(Math.abs(tickAtStart), Math.abs(tickAtEnd))
+
+    if (startTick === endTick) {
+      throw new Error(
+        `Market cap range resulted in same tick (${startTick}). Try a wider range.`
+      )
     }
+
+    return { startTick, endTick } // e.g., { -120000, -170000 }
   } else {
-    // For token0, subtract offsets in reverse order
-    return {
-      tickLower: pegTick - offsetUpper,
-      tickUpper: pegTick - offsetLower,
+    // Token1 (ETH numeraire): positive ticks, startTick < endTick
+    const startTick = Math.min(Math.abs(tickAtStart), Math.abs(tickAtEnd))
+    const endTick = Math.max(Math.abs(tickAtStart), Math.abs(tickAtEnd))
+
+    if (startTick === endTick) {
+      throw new Error(
+        `Market cap range resulted in same tick (${startTick}). Try a wider range.`
+      )
     }
+
+    return { startTick, endTick } // e.g., { 120000, 170000 }
   }
 }
 
 /**
- * Convert a market cap range to tick range for Multicurve curves.
+ * Convert market cap range to ticks for V4 Multicurve pools.
  *
- * Unlike range-based auctions, Multicurve curves use ticks directly without
- * the negate-and-swap transformation. This function converts market cap
- * bounds to the appropriate tick bounds based on token ordering.
+ * Tick sign depends on the underlying price ratio - can be positive or negative.
+ * The contract's adjustCurves() handles token ordering internally.
  *
- * @param marketCapLower - Lower market cap bound in USD
- * @param marketCapUpper - Upper market cap bound in USD
- * @param tokenSupply - Total token supply (with decimals)
- * @param numerairePriceUSD - Price of numeraire in USD
- * @param tokenDecimals - Token decimals (default: 18)
- * @param numeraireDecimals - Numeraire decimals (default: 18)
- * @param tickSpacing - Tick spacing
- * @param numeraire - Address of the numeraire token
- * @returns Tick range { tickLower, tickUpper } where tickLower < tickUpper
+ * @param params - Configuration object with market cap range and token parameters
+ * @returns { tickLower, tickUpper } - tick range where tickLower < tickUpper
  *
  * @example
  * ```ts
- * const { tickLower, tickUpper } = marketCapRangeToTicksForCurve(
- *   500_000,    // $500k lower
- *   1_000_000,  // $1M upper
- *   parseEther('1000000000'),
- *   3000,
- *   18, 18,
- *   60,
- *   WETH_ADDRESS
- * )
+ * const { tickLower, tickUpper } = marketCapToTicksForMulticurve({
+ *   marketCapLower: 500_000,
+ *   marketCapUpper: 5_000_000,
+ *   tokenSupply: parseEther('1000000000'),
+ *   numerairePriceUSD: 3000,
+ *   tickSpacing: 60,
+ * })
  * ```
  */
-export function marketCapRangeToTicksForCurve(
-  marketCapLower: number,
-  marketCapUpper: number,
-  tokenSupply: bigint,
-  numerairePriceUSD: number,
-  tokenDecimals: number = 18,
-  numeraireDecimals: number = 18,
-  tickSpacing: number,
-  numeraire: Address
+export function marketCapToTicksForMulticurve(
+  params: MulticurveTickRangeParams
 ): { tickLower: number; tickUpper: number } {
+  const {
+    marketCapLower,
+    marketCapUpper,
+    tokenSupply,
+    numerairePriceUSD,
+    tickSpacing,
+    tokenDecimals = 18,
+    numeraireDecimals = 18,
+  } = params
+
   if (marketCapLower <= 0 || marketCapUpper <= 0) {
     throw new Error('Market cap values must be positive')
   }
-
   if (marketCapLower >= marketCapUpper) {
     throw new Error('Lower market cap must be less than upper market cap')
   }
 
-  // Get ticks for both bounds
-  const tickAtLower = marketCapToTick(
+  // Compute raw ticks
+  const tickAtLower = -_computeRawTick(
     marketCapLower,
     tokenSupply,
     numerairePriceUSD,
     tokenDecimals,
     numeraireDecimals,
-    tickSpacing,
-    numeraire
+    tickSpacing
   )
-
-  const tickAtUpper = marketCapToTick(
+  const tickAtUpper = -_computeRawTick(
     marketCapUpper,
     tokenSupply,
     numerairePriceUSD,
     tokenDecimals,
     numeraireDecimals,
-    tickSpacing,
-    numeraire
+    tickSpacing
   )
 
-  // Ensure tickLower < tickUpper (may need to swap depending on token ordering)
+  // Use natural tick ordering (lower market cap = lower tick value)
   const tickLower = Math.min(tickAtLower, tickAtUpper)
   const tickUpper = Math.max(tickAtLower, tickAtUpper)
 
@@ -494,6 +447,77 @@ export function marketCapRangeToTicksForCurve(
 
   return { tickLower, tickUpper }
 }
+
+/**
+ * Convert a single market cap to a tick for Multicurve use cases.
+ *
+ * Used for farTick and pegTick calculations.
+ * Tick sign depends on the underlying price ratio - can be positive or negative.
+ *
+ * @param params - Configuration object with market cap and token parameters
+ * @returns Tick value (sign depends on price ratio)
+ *
+ * @example
+ * ```ts
+ * const farTick = marketCapToTickForMulticurve({
+ *   marketCapUSD: 50_000_000,
+ *   tokenSupply: supply,
+ *   numerairePriceUSD: 3000,
+ *   tickSpacing: 60,
+ * })
+ * ```
+ */
+export function marketCapToTickForMulticurve(
+  params: MulticurveTickParams
+): number {
+  const {
+    marketCapUSD,
+    tokenSupply,
+    numerairePriceUSD,
+    tickSpacing,
+    tokenDecimals = 18,
+    numeraireDecimals = 18,
+  } = params
+
+  const rawTick = _computeRawTick(
+    marketCapUSD,
+    tokenSupply,
+    numerairePriceUSD,
+    tokenDecimals,
+    numeraireDecimals,
+    tickSpacing
+  )
+
+  // Normalize -0 to 0
+  return rawTick === 0 ? 0 : rawTick
+}
+
+/**
+ * Apply curvature offsets to a peg tick for Multicurve positions.
+ *
+ * Tick sign depends on the underlying price ratio - can be positive or negative.
+ * The contract's adjustCurves() handles token ordering internally.
+ *
+ * @example
+ * ```ts
+ * // Peg at 200000, curve extends 10000 ticks toward higher market cap
+ * applyTickOffsets(200000, 0, 10000, WETH)
+ * // Returns: { tickLower: 200000, tickUpper: 210000 }
+ * ```
+ */
+export function applyTickOffsets(
+  pegTick: number,
+  offsetLower: number,
+  offsetUpper: number,
+  numeraire: Address
+): { tickLower: number; tickUpper: number } {
+  void numeraire // Kept for API compatibility
+  return {
+    tickLower: pegTick + offsetLower,
+    tickUpper: pegTick + offsetUpper,
+  }
+}
+
 
 /**
  * Validate market cap parameters and return warnings for unusual values
@@ -566,42 +590,42 @@ export function validateMarketCapParameters(
  * Calculate market cap from a tick (reverse conversion)
  *
  * Useful for displaying what market cap a given tick represents.
+ * Works with ticks from any auction type (Static, Dynamic, Multicurve).
  *
- * @param tick - Uniswap tick value
- * @param tokenSupply - Total token supply (with decimals)
- * @param numerairePriceUSD - Price of numeraire in USD
- * @param tokenDecimals - Token decimals (default: 18)
- * @param numeraireDecimals - Numeraire decimals (default: 18)
- * @param numeraire - Address of the numeraire token. Used to determine token ordering.
+ * @param params - Configuration object with tick and token parameters
  * @returns Market cap in USD
  *
  * @example
  * ```ts
- * const marketCap = tickToMarketCap(
- *   -192100,
- *   parseEther('1000000000'),
- *   3000,
- *   18, 18,
- *   '0x4200000000000000000000000000000000000006' // WETH address
- * )
+ * // Works with negative ticks (Multicurve)
+ * tickToMarketCap({
+ *   tick: -156000,
+ *   tokenSupply: supply,
+ *   numerairePriceUSD: 3000,
+ * })
+ *
+ * // Works with positive ticks (Static/Dynamic)
+ * tickToMarketCap({
+ *   tick: 156000,
+ *   tokenSupply: supply,
+ *   numerairePriceUSD: 3000,
+ * })
  * ```
  */
 export function tickToMarketCap(
-  tick: number,
-  tokenSupply: bigint,
-  numerairePriceUSD: number,
-  tokenDecimals: number = 18,
-  numeraireDecimals: number = 18,
-  numeraire: Address
+  params: TickToMarketCapParams
 ): number {
-  const tokenIsToken1 = !isToken0Expected(numeraire)
+  const {
+    tick,
+    tokenSupply,
+    numerairePriceUSD,
+    tokenDecimals = 18,
+    numeraireDecimals = 18,
+  } = params
 
-  // Reverse the token ordering adjustment
-  // When token IS token1, the tick was negated, so negate again to reverse
-  let adjustedTick = tick
-  if (tokenIsToken1) {
-    adjustedTick = -tick
-  }
+  // Use absolute value since tick sign varies by auction type
+  // but the underlying ratio is always positive
+  const adjustedTick = Math.abs(tick)
 
   // Tick → ratio (reverse of ratioToTick)
   const ratio = Math.pow(1.0001, adjustedTick)
@@ -616,4 +640,3 @@ export function tickToMarketCap(
   const supplyNum = Number(tokenSupply) / 10 ** tokenDecimals
   return tokenPriceUSD * supplyNum
 }
-

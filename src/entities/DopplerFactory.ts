@@ -374,8 +374,8 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     tokenAddress: Address
     transactionHash: string
   }> {
-    // Use provided createParams (from simulate) or generate new ones
-    const createParams = options?._createParams ?? await this.encodeCreateStaticAuctionParams(params);
+    // Use provided createParams (from simulate) or auto-simulate to get consistent params
+    const createParams = options?._createParams ?? (await this.simulateCreateStaticAuction(params)).createParams;
 
     const addresses = getAddresses(this.chainId)
 
@@ -405,48 +405,37 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     
     // Wait for transaction and get the receipt
     const receipt = await (this.publicClient as PublicClient).waitForTransactionReceipt({ hash, confirmations: 2 })
-    
-    // The create function returns [asset, pool, governance, timelock, migrationPool]
-    // We can get these from the simulation result or parse from logs
+
+    // Always extract actual addresses from event logs (source of truth)
+    const actualAddresses = this.extractAddressesFromCreateEvent(receipt)
+
+    if (!actualAddresses) {
+      throw new Error('Failed to extract addresses from Create event in transaction logs')
+    }
+
+    // Warn if simulation predicted different addresses (helps debugging state divergence)
     if (simResult && Array.isArray(simResult) && simResult.length >= 2) {
-      return {
-        tokenAddress: simResult[0] as Address, // asset
-        poolAddress: simResult[1] as Address,  // pool
-        transactionHash: hash
+      const simulatedToken = simResult[0] as Address
+      const simulatedPool = simResult[1] as Address
+      if (simulatedToken.toLowerCase() !== actualAddresses.tokenAddress.toLowerCase()) {
+        console.warn(
+          `[DopplerSDK] Simulation predicted token ${simulatedToken} but actual is ${actualAddresses.tokenAddress}. ` +
+          `This may indicate state divergence between simulation and execution.`
+        )
+      }
+      if (simulatedPool.toLowerCase() !== actualAddresses.poolOrHookAddress.toLowerCase()) {
+        console.warn(
+          `[DopplerSDK] Simulation predicted pool ${simulatedPool} but actual is ${actualAddresses.poolOrHookAddress}. ` +
+          `This may indicate state divergence between simulation and execution.`
+        )
       }
     }
-    
-    // Fallback: Parse the Create event from logs
-    const createEvent = (receipt.logs as readonly unknown[]).find((log: unknown) => {
-      try {
-        const decoded = decodeEventLog({
-          abi: airlockAbi,
-          data: (log as { data: Hex }).data,
-          topics: (log as { topics: readonly `0x${string}`[] }).topics as [`0x${string}`, ...`0x${string}`[]],
-        })
-        return decoded.eventName === 'Create'
-      } catch {
-        return false
-      }
-    })
-    
-    if (createEvent) {
-      const decoded = decodeEventLog({
-        abi: airlockAbi,
-        data: (createEvent as { data: Hex }).data,
-        topics: (createEvent as { topics: readonly `0x${string}`[] }).topics as [`0x${string}`, ...`0x${string}`[]],
-      })
-      
-      if (decoded.eventName === 'Create') {
-        return {
-          poolAddress: (decoded as { args: { poolOrHook: Address } }).args.poolOrHook,
-          tokenAddress: (decoded as { args: { asset: Address } }).args.asset,
-          transactionHash: hash
-        }
-      }
+
+    return {
+      tokenAddress: actualAddresses.tokenAddress,
+      poolAddress: actualAddresses.poolOrHookAddress,
+      transactionHash: hash
     }
-    
-    throw new Error('Failed to get pool and token addresses from transaction')
   }
   
   /**
@@ -492,6 +481,44 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     return `0x${Array.from(array)
       .map((b) => b.toString(16).padStart(2, '0'))
       .join('')}` as Hex
+  }
+
+  /**
+   * Extract actual deployed addresses from Create event logs.
+   * This is the source of truth - what actually deployed on-chain.
+   * @param receipt Transaction receipt containing logs
+   * @returns Token and pool/hook addresses from the Create event, or null if not found
+   */
+  private extractAddressesFromCreateEvent(
+    receipt: { logs: readonly unknown[] }
+  ): { tokenAddress: Address; poolOrHookAddress: Address } | null {
+    const createEvent = receipt.logs.find((log: unknown) => {
+      try {
+        const decoded = decodeEventLog({
+          abi: airlockAbi,
+          data: (log as { data: Hex }).data,
+          topics: (log as { topics: readonly `0x${string}`[] }).topics as [`0x${string}`, ...`0x${string}`[]],
+        })
+        return decoded.eventName === 'Create'
+      } catch {
+        return false
+      }
+    })
+
+    if (!createEvent) return null
+
+    const decoded = decodeEventLog({
+      abi: airlockAbi,
+      data: (createEvent as { data: Hex }).data,
+      topics: (createEvent as { topics: readonly `0x${string}`[] }).topics as [`0x${string}`, ...`0x${string}`[]],
+    })
+
+    if (decoded.eventName === 'Create') {
+      const args = decoded.args as { asset: Address; poolOrHook: Address }
+      return { tokenAddress: args.asset, poolOrHookAddress: args.poolOrHook }
+    }
+
+    return null
   }
 
   /**
@@ -750,18 +777,14 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
   }> {
     const addresses = getAddresses(this.chainId)
 
-    // Use provided createParams (from simulate) or generate new ones
+    // Use provided createParams (from simulate) or auto-simulate to get consistent params
     let createParams: CreateParams
-    let hookAddress: Address | undefined
-    let tokenAddress: Address | undefined
     
     if (options?._createParams) {
       createParams = options._createParams
     } else {
-      const encoded = await this.encodeCreateDynamicAuctionParams(params)
-      createParams = encoded.createParams
-      hookAddress = encoded.hookAddress
-      tokenAddress = encoded.tokenAddress
+      const simulation = await this.simulateCreateDynamicAuction(params)
+      createParams = simulation.createParams
     }
 
     // Call the airlock contract to create the pool
@@ -790,44 +813,35 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     
     // Wait for transaction and get the receipt
     const receipt = await (this.publicClient as PublicClient).waitForTransactionReceipt({ hash })
-    
-    // Get actual addresses from the return value or event logs
-    let actualHookAddress: Address = hookAddress ?? ('' as Address)
-    let actualTokenAddress: Address = tokenAddress ?? ('' as Address)
-    
+
+    // Always extract actual addresses from event logs (source of truth)
+    const actualAddresses = this.extractAddressesFromCreateEvent(receipt)
+
+    if (!actualAddresses) {
+      throw new Error('Failed to extract addresses from Create event in transaction logs')
+    }
+
+    const actualTokenAddress = actualAddresses.tokenAddress
+    const actualHookAddress = actualAddresses.poolOrHookAddress
+
+    // Warn if simulation predicted different addresses (helps debugging state divergence)
     if (simResult && Array.isArray(simResult) && simResult.length >= 2) {
-      // Tests expect [asset, poolOrHook]
-      actualTokenAddress = simResult[0] as Address
-      actualHookAddress = simResult[1] as Address
-    } else {
-      // Fallback: Parse the Create event from logs
-      const createEvent = (receipt.logs as readonly unknown[]).find((log: unknown) => {
-        try {
-          const decoded = decodeEventLog({
-            abi: airlockAbi,
-            data: (log as { data: Hex }).data,
-            topics: (log as { topics: readonly `0x${string}`[] }).topics as [`0x${string}`, ...`0x${string}`[]],
-          })
-          return decoded.eventName === 'Create'
-        } catch {
-          return false
-        }
-      })
-      
-      if (createEvent) {
-        const decoded = decodeEventLog({
-          abi: airlockAbi,
-          data: (createEvent as { data: Hex }).data,
-          topics: (createEvent as { topics: readonly `0x${string}`[] }).topics as [`0x${string}`, ...`0x${string}`[]],
-        })
-        
-        if (decoded.eventName === 'Create') {
-          actualHookAddress = (decoded as { args: { poolOrHook: Address } }).args.poolOrHook
-          actualTokenAddress = (decoded as { args: { asset: Address } }).args.asset
-        }
+      const simulatedToken = simResult[0] as Address
+      const simulatedHook = simResult[1] as Address
+      if (simulatedToken.toLowerCase() !== actualTokenAddress.toLowerCase()) {
+        console.warn(
+          `[DopplerSDK] Simulation predicted token ${simulatedToken} but actual is ${actualTokenAddress}. ` +
+          `This may indicate state divergence between simulation and execution.`
+        )
+      }
+      if (simulatedHook.toLowerCase() !== actualHookAddress.toLowerCase()) {
+        console.warn(
+          `[DopplerSDK] Simulation predicted hook ${simulatedHook} but actual is ${actualHookAddress}. ` +
+          `This may indicate state divergence between simulation and execution.`
+        )
       }
     }
-    
+
     // Calculate pool ID for V4 using actual addresses
     const poolId = this.computePoolId({
       currency0: actualTokenAddress < params.sale.numeraire ? actualTokenAddress : params.sale.numeraire,
@@ -836,7 +850,7 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       tickSpacing: params.pool.tickSpacing,
       hooks: actualHookAddress
     })
-    
+
     return {
       hookAddress: actualHookAddress,
       tokenAddress: actualTokenAddress,
@@ -1337,8 +1351,8 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     /** Execute the create with the same params used in simulation (guarantees address match) */
     execute: () => Promise<{ tokenAddress: Address; poolId: Hex; transactionHash: string }>
   }> {
-    const createParams = this.encodeCreateMulticurveParams(params)
     const addresses = getAddresses(this.chainId)
+    const createParams = this.encodeCreateMulticurveParams(params)
     const airlockAddress = params.modules?.airlock ?? addresses.airlock
     const { request, result } = await (this.publicClient as PublicClient).simulateContract({
       address: airlockAddress,
@@ -1357,11 +1371,11 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     if (!simResult || !Array.isArray(simResult) || simResult.length < 2) {
       throw new Error('Failed to simulate multicurve create')
     }
-    
+
     // simResult[0] is "asset" in contract terminology, we call it tokenAddress for SDK consistency
     const tokenAddress = simResult[0] as Address
     const poolId = await this.computeMulticurvePoolId(params, tokenAddress)
-    
+
     return {
       createParams,
       tokenAddress,
@@ -1375,10 +1389,11 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     params: CreateMulticurveParams<C>,
     options?: { _createParams?: CreateParams }
   ): Promise<{ tokenAddress: Address; poolId: Hex; transactionHash: string }> {
-    // Use provided createParams (from simulate) or generate new ones
-    const createParams = options?._createParams ?? this.encodeCreateMulticurveParams(params)
     const addresses = getAddresses(this.chainId)
     if (!this.walletClient) throw new Error('Wallet client required for write operations')
+
+    // Use provided createParams (from simulate) or auto-simulate to get consistent params
+    const createParams = options?._createParams ?? (await this.simulateCreateMulticurve(params)).createParams
     const airlockAddress = params.modules?.airlock ?? addresses.airlock
     const { request, result } = await (this.publicClient as PublicClient).simulateContract({
       address: airlockAddress,
@@ -1396,17 +1411,32 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     })
     const gas = params.gas ?? gasEstimate ?? DEFAULT_CREATE_GAS_LIMIT
     const hash = await this.walletClient.writeContract({ ...request, gas })
-    await (this.publicClient as PublicClient).waitForTransactionReceipt({ hash, confirmations: 2 })
-    if (simResult && Array.isArray(simResult) && simResult.length >= 2) {
-      // simResult[0] is "asset" in contract terminology, we call it tokenAddress for SDK consistency
-      const tokenAddress = simResult[0] as Address
-      
-      // Compute poolId from the PoolKey (V4 pools don't have addresses, they have poolIds)
-      const poolId = await this.computeMulticurvePoolId(params, tokenAddress)
-      
-      return { tokenAddress, poolId, transactionHash: hash }
+    const receipt = await (this.publicClient as PublicClient).waitForTransactionReceipt({ hash, confirmations: 2 })
+
+    // Always extract actual addresses from event logs (source of truth)
+    const actualAddresses = this.extractAddressesFromCreateEvent(receipt)
+
+    if (!actualAddresses) {
+      throw new Error('Failed to extract token address from Create event in transaction logs')
     }
-    throw new Error('Failed to get token address from multicurve create')
+
+    const actualTokenAddress = actualAddresses.tokenAddress
+
+    // Warn if simulation predicted different address (helps debugging state divergence)
+    if (simResult && Array.isArray(simResult) && simResult.length >= 1) {
+      const simulatedToken = simResult[0] as Address
+      if (simulatedToken.toLowerCase() !== actualTokenAddress.toLowerCase()) {
+        console.warn(
+          `[DopplerSDK] Simulation predicted token ${simulatedToken} but actual is ${actualTokenAddress}. ` +
+          `This may indicate state divergence between simulation and execution.`
+        )
+      }
+    }
+
+    // Compute poolId from the PoolKey using actual token address
+    const poolId = await this.computeMulticurvePoolId(params, actualTokenAddress)
+
+    return { tokenAddress: actualTokenAddress, poolId, transactionHash: hash }
   }
 
   /**
@@ -1434,9 +1464,6 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       }
       if (sanitized.tickLower >= sanitized.tickUpper) {
         throw new Error('Multicurve curve tickLower must be less than tickUpper')
-      }
-      if (sanitized.tickLower <= 0 || sanitized.tickUpper <= 0) {
-        console.warn('Warning: Using negative or zero ticks in multicurve configuration. Please verify this is intentional before proceeding.')
       }
       if (!Number.isInteger(sanitized.numPositions) || sanitized.numPositions <= 0) {
         throw new Error('Multicurve curve numPositions must be a positive integer')

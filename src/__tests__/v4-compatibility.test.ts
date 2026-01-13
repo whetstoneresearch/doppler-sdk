@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { parseEther } from 'viem'
 import { DopplerFactory } from '../entities/DopplerFactory'
 import { DynamicAuctionBuilder } from '../builders'
-import { createMockPublicClient, createMockWalletClient } from './mocks/clients'
+import { createMockPublicClient, createMockWalletClient, createMockCreateEventLog } from './mocks/clients'
 import { mockAddresses, mockTokenAddress, mockHookAddress, mockGovernanceAddress, mockTimelockAddress, mockV2PoolAddress, mockAddressesWithExtras } from './mocks/addresses'
 import type { CreateDynamicAuctionParams } from '../types'
 import { DAY_SECONDS } from '../constants'
@@ -72,7 +72,7 @@ describe('V4 SDK Compatibility', () => {
 
     vi.mocked(walletClient.writeContract).mockResolvedValueOnce('0x123' as any)
     vi.mocked(publicClient.waitForTransactionReceipt).mockResolvedValueOnce({
-      logs: [],
+      logs: [createMockCreateEventLog(mockTokenAddress, mockHookAddress)],
     } as any)
 
     await factory.createDynamicAuction(params)

@@ -1,37 +1,38 @@
 import type { Address } from 'viem'
+import { getAddress } from 'viem'
 import type { ChainAddresses } from '../../addresses'
 
-// Mock addresses for testing
+// Mock addresses for testing - all checksummed for consistency with decodeEventLog
 export const mockAddresses: ChainAddresses = {
-  airlock: '0x1000000000000000000000000000000000000001' as Address,
-  tokenFactory: '0x2000000000000000000000000000000000000002' as Address,
-  v3Initializer: '0x3000000000000000000000000000000000000003' as Address,
-  dopplerDeployer: '0x4000000000000000000000000000000000000004' as Address,
-  v2Migrator: '0x5000000000000000000000000000000000000005' as Address,
-  v4Initializer: '0x7000000000000000000000000000000000000007' as Address,
-  v4MulticurveInitializer: '0x7100000000000000000000000000000000000007' as Address,
-  v4Migrator: '0x8000000000000000000000000000000000000008' as Address,
-  v4MigratorHook: '0x9000000000000000000000000000000000000009' as Address,
-  streamableFeesLocker: '0xa000000000000000000000000000000000000010' as Address,
-  poolManager: '0xb000000000000000000000000000000000000011' as Address,
-  weth: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' as Address,
-  v3Quoter: '0xd000000000000000000000000000000000000013' as Address,
-  univ2Router02: '0xf000000000000000000000000000000000000015' as Address,
-  dopplerLens: '0x1300000000000000000000000000000000000018' as Address,
-  uniswapV4Quoter: '0x1300000000000000000000000000000000000018' as Address,
-  governanceFactory: '0x1500000000000000000000000000000000000020' as Address,
-  noOpGovernanceFactory: '0x1500000000000000000000000000000000000024' as Address,
-  universalRouter: '0x1600000000000000000000000000000000000021' as Address,
-  permit2: '0x1700000000000000000000000000000000000022' as Address,
-  bundler: '0x1800000000000000000000000000000000000023' as Address,
+  airlock: getAddress('0x1000000000000000000000000000000000000001') as Address,
+  tokenFactory: getAddress('0x2000000000000000000000000000000000000002') as Address,
+  v3Initializer: getAddress('0x3000000000000000000000000000000000000003') as Address,
+  dopplerDeployer: getAddress('0x4000000000000000000000000000000000000004') as Address,
+  v2Migrator: getAddress('0x5000000000000000000000000000000000000005') as Address,
+  v4Initializer: getAddress('0x7000000000000000000000000000000000000007') as Address,
+  v4MulticurveInitializer: getAddress('0x7100000000000000000000000000000000000007') as Address,
+  v4Migrator: getAddress('0x8000000000000000000000000000000000000008') as Address,
+  v4MigratorHook: getAddress('0x9000000000000000000000000000000000000009') as Address,
+  streamableFeesLocker: getAddress('0xa000000000000000000000000000000000000010') as Address,
+  poolManager: getAddress('0xb000000000000000000000000000000000000011') as Address,
+  weth: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' as Address, // Already checksummed
+  v3Quoter: getAddress('0xd000000000000000000000000000000000000013') as Address,
+  univ2Router02: getAddress('0xf000000000000000000000000000000000000015') as Address,
+  dopplerLens: getAddress('0x1300000000000000000000000000000000000018') as Address,
+  uniswapV4Quoter: getAddress('0x1300000000000000000000000000000000000018') as Address,
+  governanceFactory: getAddress('0x1500000000000000000000000000000000000020') as Address,
+  noOpGovernanceFactory: getAddress('0x1500000000000000000000000000000000000024') as Address,
+  universalRouter: getAddress('0x1600000000000000000000000000000000000021') as Address,
+  permit2: getAddress('0x1700000000000000000000000000000000000022') as Address,
+  bundler: getAddress('0x1800000000000000000000000000000000000023') as Address,
 }
 
-export const mockTokenAddress = '0xfaaa000000000000000000000000000000000001' as Address
-export const mockPoolAddress = '0xbbbb000000000000000000000000000000000002' as Address
-export const mockHookAddress = '0xcccc000000000000000000000000000000000003' as Address
-export const mockGovernanceAddress = '0xdddd000000000000000000000000000000000004' as Address
-export const mockTimelockAddress = '0xeeee000000000000000000000000000000000005' as Address
-export const mockV2PoolAddress = '0xffff000000000000000000000000000000000006' as Address
+export const mockTokenAddress = getAddress('0xfaaa000000000000000000000000000000000001') as Address
+export const mockPoolAddress = getAddress('0xbbbb000000000000000000000000000000000002') as Address
+export const mockHookAddress = getAddress('0xcccc000000000000000000000000000000000003') as Address
+export const mockGovernanceAddress = getAddress('0xdddd000000000000000000000000000000000004') as Address
+export const mockTimelockAddress = getAddress('0xeeee000000000000000000000000000000000005') as Address
+export const mockV2PoolAddress = getAddress('0xffff000000000000000000000000000000000006') as Address
 
 // Add a type extension for test use
 export const mockAddressesWithExtras = {

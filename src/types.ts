@@ -325,8 +325,21 @@ export interface DynamicAuctionMarketCapConfig {
   tokenDecimals?: number;
   /** Numeraire decimals (default: 18) */
   numeraireDecimals?: number;
-  /** Fee tier (100, 500, 3000, or 10000). Default: 10000 (1%) */
-  fee?: FeeTier;
+  /**
+   * Pool fee in basis points. Default: 10000 (1%)
+   *
+   * V4 pools support any fee from 0 to 100,000 (10%).
+   * Standard tiers (100, 500, 3000, 10000) auto-derive tickSpacing.
+   * Custom fees require explicit tickSpacing parameter.
+   */
+  fee?: number;
+  /**
+   * Tick spacing for the pool. Required for custom fees.
+   *
+   * Must be <= 30 for Doppler pools (MAX_TICK_SPACING constraint).
+   * If not provided with a standard fee tier, defaults to 30.
+   */
+  tickSpacing?: number;
   /** Minimum proceeds required for successful auction */
   minProceeds: bigint;
   /** Maximum proceeds cap for the auction */
@@ -349,6 +362,71 @@ export interface MarketCapValidationResult {
   valid: boolean;
   /** Warning messages for unusual but technically valid values */
   warnings: string[];
+}
+
+// ============================================================================
+// Market Cap Helper Function Parameter Types
+// ============================================================================
+
+/**
+ * Parameters for converting market cap range to ticks for V3 Static Auctions.
+ */
+export interface StaticAuctionTickParams {
+  marketCapRange: MarketCapRange;
+  tokenSupply: bigint;
+  numerairePriceUSD: number;
+  tickSpacing: number;
+  tokenDecimals?: number;
+  numeraireDecimals?: number;
+}
+
+/**
+ * Parameters for converting market cap range to ticks for V4 Dynamic Auctions.
+ */
+export interface DynamicAuctionTickParams {
+  marketCapRange: MarketCapRange;
+  tokenSupply: bigint;
+  numerairePriceUSD: number;
+  numeraire: Address;
+  tickSpacing: number;
+  tokenDecimals?: number;
+  numeraireDecimals?: number;
+}
+
+/**
+ * Parameters for converting market cap range to ticks for V4 Multicurve pools.
+ */
+export interface MulticurveTickRangeParams {
+  marketCapLower: number;
+  marketCapUpper: number;
+  tokenSupply: bigint;
+  numerairePriceUSD: number;
+  tickSpacing: number;
+  tokenDecimals?: number;
+  numeraireDecimals?: number;
+}
+
+/**
+ * Parameters for converting a single market cap to a tick for Multicurve.
+ */
+export interface MulticurveTickParams {
+  marketCapUSD: number;
+  tokenSupply: bigint;
+  numerairePriceUSD: number;
+  tickSpacing: number;
+  tokenDecimals?: number;
+  numeraireDecimals?: number;
+}
+
+/**
+ * Parameters for converting a tick to market cap (reverse conversion).
+ */
+export interface TickToMarketCapParams {
+  tick: number;
+  tokenSupply: bigint;
+  numerairePriceUSD: number;
+  tokenDecimals?: number;
+  numeraireDecimals?: number;
 }
 
 // ============================================================================
