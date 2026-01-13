@@ -132,3 +132,48 @@ export const createMockTransactionReceipt = (logs: any[] = []) => ({
   logsBloom: '0x' as `0x${string}`,
   type: 'legacy' as const,
 });
+
+import { keccak256, toHex, encodeAbiParameters } from 'viem';
+
+/**
+ * Create a properly formatted mock Create event log.
+ * This matches the Airlock contract's Create event structure.
+ */
+export const createMockCreateEventLog = (
+  tokenAddress: Address = mockTokenAddress,
+  poolOrHookAddress: Address = mockPoolAddress,
+  numeraire: Address = mockAddresses.weth,
+  initializer: Address = mockAddresses.v3Initializer
+) => {
+  // Event: Create(address asset, address indexed numeraire, address initializer, address poolOrHook)
+  const eventSignature = keccak256(toHex('Create(address,address,address,address)'));
+
+  // Non-indexed parameters are ABI-encoded in data
+  const data = encodeAbiParameters(
+    [{ type: 'address' }, { type: 'address' }, { type: 'address' }],
+    [tokenAddress, initializer, poolOrHookAddress]
+  );
+
+  return {
+    address: mockAddresses.airlock,
+    topics: [
+      eventSignature,
+      `0x000000000000000000000000${numeraire.slice(2).toLowerCase()}` as `0x${string}`, // indexed numeraire
+    ],
+    data,
+  };
+};
+
+/**
+ * Create a mock transaction receipt with a Create event included.
+ * This is useful for tests that need proper Create event logs.
+ */
+export const createMockTransactionReceiptWithCreateEvent = (
+  tokenAddress: Address = mockTokenAddress,
+  poolOrHookAddress: Address = mockPoolAddress,
+  numeraire: Address = mockAddresses.weth
+) => {
+  return createMockTransactionReceipt([
+    createMockCreateEventLog(tokenAddress, poolOrHookAddress, numeraire),
+  ]);
+};

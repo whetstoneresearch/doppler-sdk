@@ -97,7 +97,8 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
   },
   [CHAIN_IDS.BASE]: {
     airlock: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE].Airlock as Address,
-    tokenFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE].TokenFactory as Address,
+    // tokenFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE].TokenFactory as Address,
+    tokenFactory: '0x80a27feee1a22b9c68185ea64e7c2652286980b5' as Address,
     v3Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE].UniswapV3Initializer as Address,
     v3Quoter: '0x3d4e44Eb1374240CE5F1B871ab261CD16335B76a' as Address,
     lockableV3Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE].LockableUniswapV3Initializer as Address,
