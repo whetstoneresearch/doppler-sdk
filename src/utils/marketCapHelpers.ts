@@ -417,7 +417,7 @@ export function marketCapToTicksForMulticurve(
   }
 
   // Compute raw ticks
-  const tickAtLower = _computeRawTick(
+  const tickAtLower = -_computeRawTick(
     marketCapLower,
     tokenSupply,
     numerairePriceUSD,
@@ -425,7 +425,7 @@ export function marketCapToTicksForMulticurve(
     numeraireDecimals,
     tickSpacing
   )
-  const tickAtUpper = _computeRawTick(
+  const tickAtUpper = -_computeRawTick(
     marketCapUpper,
     tokenSupply,
     numerairePriceUSD,

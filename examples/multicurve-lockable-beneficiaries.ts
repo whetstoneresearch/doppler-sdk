@@ -89,24 +89,13 @@ async function main() {
   console.log('  Beneficiaries:', params.pool.beneficiaries?.length)
   console.log('  Migration:', params.migration.type)
 
-  // Simulate to preview addresses
-  const { asset, pool } = await sdk.factory.simulateCreateMulticurve(params)
-  console.log('\n✅ Simulation successful')
-  console.log('  Predicted token address:', asset)
-  console.log('  Predicted pool address:', pool)
-
-  // Encode params to verify NoOpMigrator is used
-  const createParams = sdk.factory.encodeCreateMulticurveParams(params)
-  console.log('\n🔍 Encoded Parameters:')
-  console.log('  Liquidity Migrator:', createParams.liquidityMigrator)
-  console.log('  Migration Data:', createParams.liquidityMigratorData)
-
   // Create the multicurve pool + token
+  // Note: createMulticurve internally simulates first, ensuring consistent addresses
   console.log('\n🚀 Creating multicurve auction with lockable beneficiaries...')
   const result = await sdk.factory.createMulticurve(params)
   console.log('✅ Multicurve created successfully!')
   console.log('  Token address:', result.tokenAddress)
-  console.log('  Pool address:', result.poolAddress)
+  console.log('  Pool ID:', result.poolId)
   console.log('  Transaction:', result.transactionHash)
   console.log('\n💡 Fee revenue will be distributed to the specified beneficiaries')
   console.log('   after liquidity is locked (no migration will occur).')

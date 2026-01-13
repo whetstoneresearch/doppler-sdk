@@ -374,8 +374,8 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     tokenAddress: Address
     transactionHash: string
   }> {
-    // Use provided createParams (from simulate) or generate new ones
-    const createParams = options?._createParams ?? await this.encodeCreateStaticAuctionParams(params);
+    // Use provided createParams (from simulate) or auto-simulate to get consistent params
+    const createParams = options?._createParams ?? (await this.simulateCreateStaticAuction(params)).createParams;
 
     const addresses = getAddresses(this.chainId)
 
@@ -777,18 +777,14 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
   }> {
     const addresses = getAddresses(this.chainId)
 
-    // Use provided createParams (from simulate) or generate new ones
+    // Use provided createParams (from simulate) or auto-simulate to get consistent params
     let createParams: CreateParams
-    let hookAddress: Address | undefined
-    let tokenAddress: Address | undefined
     
     if (options?._createParams) {
       createParams = options._createParams
     } else {
-      const encoded = await this.encodeCreateDynamicAuctionParams(params)
-      createParams = encoded.createParams
-      hookAddress = encoded.hookAddress
-      tokenAddress = encoded.tokenAddress
+      const simulation = await this.simulateCreateDynamicAuction(params)
+      createParams = simulation.createParams
     }
 
     // Call the airlock contract to create the pool
@@ -1396,8 +1392,8 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     const addresses = getAddresses(this.chainId)
     if (!this.walletClient) throw new Error('Wallet client required for write operations')
 
-    // Use provided createParams (from simulate) or generate new ones
-    const createParams = options?._createParams ?? this.encodeCreateMulticurveParams(params)
+    // Use provided createParams (from simulate) or auto-simulate to get consistent params
+    const createParams = options?._createParams ?? (await this.simulateCreateMulticurve(params)).createParams
     const airlockAddress = params.modules?.airlock ?? addresses.airlock
     const { request, result } = await (this.publicClient as PublicClient).simulateContract({
       address: airlockAddress,
