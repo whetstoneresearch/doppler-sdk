@@ -1,24 +1,42 @@
-import type { Address, WalletClient } from 'viem'
-import type { BeneficiaryData, DopplerSDKConfig, HookInfo, PoolInfo, SupportedPublicClient } from './types'
-import type { SupportedChainId } from './addresses'
-import { DopplerFactory } from './entities/DopplerFactory'
-import { StaticAuction, DynamicAuction, MulticurvePool } from './entities/auction'
-import { Quoter } from './entities/quoter'
-import { Derc20 } from './entities/token'
-import { StaticAuctionBuilder, DynamicAuctionBuilder, MulticurveBuilder } from './builders'
-import { DEFAULT_AIRLOCK_BENEFICIARY_SHARES, getAirlockBeneficiary, getAirlockOwner as fetchAirlockOwner } from './utils/airlock'
+import type { Address, WalletClient } from 'viem';
+import type {
+  BeneficiaryData,
+  DopplerSDKConfig,
+  HookInfo,
+  PoolInfo,
+  SupportedPublicClient,
+} from './types';
+import type { SupportedChainId } from './addresses';
+import { DopplerFactory } from './entities/DopplerFactory';
+import {
+  StaticAuction,
+  DynamicAuction,
+  MulticurvePool,
+} from './entities/auction';
+import { Quoter } from './entities/quoter';
+import { Derc20 } from './entities/token';
+import {
+  StaticAuctionBuilder,
+  DynamicAuctionBuilder,
+  MulticurveBuilder,
+} from './builders';
+import {
+  DEFAULT_AIRLOCK_BENEFICIARY_SHARES,
+  getAirlockBeneficiary,
+  getAirlockOwner as fetchAirlockOwner,
+} from './utils/airlock';
 
 export class DopplerSDK<C extends SupportedChainId = SupportedChainId> {
-  private publicClient: SupportedPublicClient
-  private walletClient?: WalletClient
-  public chainId: C
-  private _factory?: DopplerFactory<C>
-  private _quoter?: Quoter
+  private publicClient: SupportedPublicClient;
+  private walletClient?: WalletClient;
+  public chainId: C;
+  private _factory?: DopplerFactory<C>;
+  private _quoter?: Quoter;
 
   constructor(config: DopplerSDKConfig) {
-    this.publicClient = config.publicClient
-    this.walletClient = config.walletClient
-    this.chainId = (config.chainId as unknown) as C
+    this.publicClient = config.publicClient;
+    this.walletClient = config.walletClient;
+    this.chainId = config.chainId as unknown as C;
   }
 
   /**
@@ -26,9 +44,13 @@ export class DopplerSDK<C extends SupportedChainId = SupportedChainId> {
    */
   get factory(): DopplerFactory<C> {
     if (!this._factory) {
-      this._factory = new DopplerFactory(this.publicClient, this.walletClient, this.chainId)
+      this._factory = new DopplerFactory(
+        this.publicClient,
+        this.walletClient,
+        this.chainId,
+      );
     }
-    return this._factory
+    return this._factory;
   }
 
   /**
@@ -36,9 +58,9 @@ export class DopplerSDK<C extends SupportedChainId = SupportedChainId> {
    */
   get quoter(): Quoter {
     if (!this._quoter) {
-      this._quoter = new Quoter(this.publicClient, this.chainId)
+      this._quoter = new Quoter(this.publicClient, this.chainId);
     }
-    return this._quoter
+    return this._quoter;
   }
 
   /**
@@ -46,7 +68,7 @@ export class DopplerSDK<C extends SupportedChainId = SupportedChainId> {
    * @param poolAddress The address of the Uniswap V3 pool
    */
   async getStaticAuction(poolAddress: Address): Promise<StaticAuction> {
-    return new StaticAuction(this.publicClient, poolAddress)
+    return new StaticAuction(this.publicClient, poolAddress);
   }
 
   /**
@@ -54,7 +76,7 @@ export class DopplerSDK<C extends SupportedChainId = SupportedChainId> {
    * @param hookAddress The address of the Uniswap V4 hook
    */
   async getDynamicAuction(hookAddress: Address): Promise<DynamicAuction> {
-    return new DynamicAuction(this.publicClient, hookAddress)
+    return new DynamicAuction(this.publicClient, hookAddress);
   }
 
   /**
@@ -62,7 +84,11 @@ export class DopplerSDK<C extends SupportedChainId = SupportedChainId> {
    * @param tokenAddress The address of the token created by the auction (called "asset" in contracts; V4 pools don't have addresses, so the token is used as the lookup key)
    */
   async getMulticurvePool(tokenAddress: Address): Promise<MulticurvePool> {
-    return new MulticurvePool(this.publicClient, this.walletClient, tokenAddress)
+    return new MulticurvePool(
+      this.publicClient,
+      this.walletClient,
+      tokenAddress,
+    );
   }
 
   /**
@@ -70,7 +96,7 @@ export class DopplerSDK<C extends SupportedChainId = SupportedChainId> {
    * @param tokenAddress The address of the DERC20 token
    */
   getDerc20(tokenAddress: Address): Derc20 {
-    return new Derc20(this.publicClient, this.walletClient, tokenAddress)
+    return new Derc20(this.publicClient, this.walletClient, tokenAddress);
   }
 
   /**
@@ -78,8 +104,8 @@ export class DopplerSDK<C extends SupportedChainId = SupportedChainId> {
    * @param poolAddress The address of the pool
    */
   async getPoolInfo(poolAddress: Address): Promise<PoolInfo> {
-    const auction = new StaticAuction(this.publicClient, poolAddress)
-    return auction.getPoolInfo()
+    const auction = new StaticAuction(this.publicClient, poolAddress);
+    return auction.getPoolInfo();
   }
 
   /**
@@ -87,59 +113,64 @@ export class DopplerSDK<C extends SupportedChainId = SupportedChainId> {
    * @param hookAddress The address of the hook
    */
   async getHookInfo(hookAddress: Address): Promise<HookInfo> {
-    const auction = new DynamicAuction(this.publicClient, hookAddress)
-    return auction.getHookInfo()
+    const auction = new DynamicAuction(this.publicClient, hookAddress);
+    return auction.getHookInfo();
   }
 
   /**
    * Create a new static auction builder
    */
   buildStaticAuction(): StaticAuctionBuilder<C> {
-    return new StaticAuctionBuilder(this.chainId)
+    return new StaticAuctionBuilder(this.chainId);
   }
 
   /**
    * Create a new dynamic auction builder
    */
   buildDynamicAuction(): DynamicAuctionBuilder<C> {
-    return new DynamicAuctionBuilder(this.chainId)
+    return new DynamicAuctionBuilder(this.chainId);
   }
 
   /**
    * Create a new multicurve (V4 initializer) auction builder
    */
   buildMulticurveAuction(): MulticurveBuilder<C> {
-    return new MulticurveBuilder(this.chainId)
+    return new MulticurveBuilder(this.chainId);
   }
 
   /**
    * Get the current chain ID
    */
   getChainId(): C {
-    return this.chainId
+    return this.chainId;
   }
 
   /**
    * Get the underlying clients
    */
-  getClients(): { publicClient: SupportedPublicClient; walletClient?: WalletClient } {
+  getClients(): {
+    publicClient: SupportedPublicClient;
+    walletClient?: WalletClient;
+  } {
     return {
       publicClient: this.publicClient,
-      walletClient: this.walletClient
-    }
+      walletClient: this.walletClient,
+    };
   }
 
   /**
    * Get the airlock owner address for the configured chain
    */
   async getAirlockOwner(): Promise<Address> {
-    return fetchAirlockOwner(this.publicClient)
+    return fetchAirlockOwner(this.publicClient);
   }
 
   /**
    * Convenience helper for building the airlock beneficiary entry with the default 5% (0.05e18 WAD shares)
    */
-  async getAirlockBeneficiary(shares: bigint = DEFAULT_AIRLOCK_BENEFICIARY_SHARES): Promise<BeneficiaryData> {
-    return getAirlockBeneficiary(this.publicClient, shares)
+  async getAirlockBeneficiary(
+    shares: bigint = DEFAULT_AIRLOCK_BENEFICIARY_SHARES,
+  ): Promise<BeneficiaryData> {
+    return getAirlockBeneficiary(this.publicClient, shares);
   }
 }

@@ -1,4 +1,4 @@
-import type { Address } from 'viem'
+import type { Address } from 'viem';
 import {
   DEFAULT_V3_END_TICK,
   DEFAULT_V3_FEE,
@@ -10,11 +10,11 @@ import {
   TICK_SPACINGS,
   V3_FEE_TIERS,
   ZERO_ADDRESS,
-} from '../constants'
+} from '../constants';
 import {
   marketCapToTicksForStaticAuction,
   validateMarketCapParameters,
-} from '../utils'
+} from '../utils';
 import {
   isNoOpEnabledChain,
   type CreateStaticAuctionParams,
@@ -25,37 +25,52 @@ import {
   type TokenConfig,
   type StaticAuctionMarketCapConfig,
   type ModuleAddressOverrides,
-} from '../types'
-import { type SupportedChainId } from '../addresses'
-import { computeTicks, type BaseAuctionBuilder } from './shared'
+} from '../types';
+import { type SupportedChainId } from '../addresses';
+import { computeTicks, type BaseAuctionBuilder } from './shared';
 
-export class StaticAuctionBuilder<C extends SupportedChainId>
-  implements BaseAuctionBuilder<C> {
-  private token?: TokenConfig
-  private sale?: CreateStaticAuctionParams<C>['sale']
-  private pool?: CreateStaticAuctionParams<C>['pool']
-  private beneficiaries?: { beneficiary: Address; shares: bigint }[]
-  private vesting?: VestingConfig
-  private governance?: GovernanceOption<C>
-  private migration?: MigrationConfig
-  private integrator?: Address
-  private userAddress?: Address
-  private moduleAddresses?: ModuleAddressOverrides
-  private gasLimit?: bigint
-  public chainId: C
+export class StaticAuctionBuilder<
+  C extends SupportedChainId,
+> implements BaseAuctionBuilder<C> {
+  private token?: TokenConfig;
+  private sale?: CreateStaticAuctionParams<C>['sale'];
+  private pool?: CreateStaticAuctionParams<C>['pool'];
+  private beneficiaries?: { beneficiary: Address; shares: bigint }[];
+  private vesting?: VestingConfig;
+  private governance?: GovernanceOption<C>;
+  private migration?: MigrationConfig;
+  private integrator?: Address;
+  private userAddress?: Address;
+  private moduleAddresses?: ModuleAddressOverrides;
+  private gasLimit?: bigint;
+  public chainId: C;
 
   constructor(chainId: C) {
-    this.chainId = chainId
+    this.chainId = chainId;
   }
 
-  static forChain<C extends SupportedChainId>(chainId: C): StaticAuctionBuilder<C> {
-    return new StaticAuctionBuilder(chainId)
+  static forChain<C extends SupportedChainId>(
+    chainId: C,
+  ): StaticAuctionBuilder<C> {
+    return new StaticAuctionBuilder(chainId);
   }
 
   tokenConfig(
     params:
-      | { type?: 'standard'; name: string; symbol: string; tokenURI: string; yearlyMintRate?: bigint }
-      | { type: 'doppler404'; name: string; symbol: string; baseURI: string; unit?: bigint }
+      | {
+          type?: 'standard';
+          name: string;
+          symbol: string;
+          tokenURI: string;
+          yearlyMintRate?: bigint;
+        }
+      | {
+          type: 'doppler404';
+          name: string;
+          symbol: string;
+          baseURI: string;
+          unit?: bigint;
+        },
   ): this {
     if (params && 'type' in params && params.type === 'doppler404') {
       this.token = {
@@ -64,7 +79,7 @@ export class StaticAuctionBuilder<C extends SupportedChainId>
         symbol: params.symbol,
         baseURI: params.baseURI,
         unit: params.unit,
-      }
+      };
     } else {
       this.token = {
         type: 'standard',
@@ -72,22 +87,22 @@ export class StaticAuctionBuilder<C extends SupportedChainId>
         symbol: params.symbol,
         tokenURI: params.tokenURI,
         yearlyMintRate: params.yearlyMintRate ?? DEFAULT_V3_YEARLY_MINT_RATE,
-      }
+      };
     }
-    return this
+    return this;
   }
 
   saleConfig(params: {
-    initialSupply: bigint
-    numTokensToSell: bigint
-    numeraire: Address
+    initialSupply: bigint;
+    numTokensToSell: bigint;
+    numeraire: Address;
   }): this {
     this.sale = {
       initialSupply: params.initialSupply,
       numTokensToSell: params.numTokensToSell,
       numeraire: params.numeraire,
-    }
-    return this
+    };
+    return this;
   }
 
   /**
@@ -98,54 +113,61 @@ export class StaticAuctionBuilder<C extends SupportedChainId>
    * For custom fees, use Dynamic or Multicurve auctions (V4).
    */
   poolByTicks(params: {
-    startTick?: number
-    endTick?: number
-    fee?: number
-    numPositions?: number
-    maxShareToBeSold?: bigint
+    startTick?: number;
+    endTick?: number;
+    fee?: number;
+    numPositions?: number;
+    maxShareToBeSold?: bigint;
   }): this {
-    const fee = params.fee ?? DEFAULT_V3_FEE
+    const fee = params.fee ?? DEFAULT_V3_FEE;
 
     // Validate fee is a V3-supported tier
     if (!(V3_FEE_TIERS as readonly number[]).includes(fee)) {
       throw new Error(
         `Static auctions (Uniswap V3) require standard fee tiers: ${V3_FEE_TIERS.join(', ')}. ` +
-        `Got: ${fee}. For custom fees, use Dynamic or Multicurve auctions (Uniswap V4).`
-      )
+          `Got: ${fee}. For custom fees, use Dynamic or Multicurve auctions (Uniswap V4).`,
+      );
     }
 
-    const startTick = params.startTick ?? DEFAULT_V3_START_TICK
-    const endTick = params.endTick ?? DEFAULT_V3_END_TICK
+    const startTick = params.startTick ?? DEFAULT_V3_START_TICK;
+    const endTick = params.endTick ?? DEFAULT_V3_END_TICK;
     this.pool = {
       startTick,
       endTick,
       fee,
       numPositions: params.numPositions ?? DEFAULT_V3_NUM_POSITIONS,
-      maxShareToBeSold: params.maxShareToBeSold ?? DEFAULT_V3_MAX_SHARE_TO_BE_SOLD,
-    }
-    return this
+      maxShareToBeSold:
+        params.maxShareToBeSold ?? DEFAULT_V3_MAX_SHARE_TO_BE_SOLD,
+    };
+    return this;
   }
 
   /**
    * @deprecated Use withMarketCapRange() instead for more intuitive market cap configuration
    */
   poolByPriceRange(params: {
-    priceRange: PriceRange
-    fee?: number
-    numPositions?: number
-    maxShareToBeSold?: bigint
+    priceRange: PriceRange;
+    fee?: number;
+    numPositions?: number;
+    maxShareToBeSold?: bigint;
   }): this {
-    const fee = params.fee ?? DEFAULT_V3_FEE
+    const fee = params.fee ?? DEFAULT_V3_FEE;
     const tickSpacing =
-      fee === 100 ? TICK_SPACINGS[100] : fee === 500 ? TICK_SPACINGS[500] : fee === 3000 ? TICK_SPACINGS[3000] : TICK_SPACINGS[10000]
-    const ticks = computeTicks(params.priceRange, tickSpacing)
+      fee === 100
+        ? TICK_SPACINGS[100]
+        : fee === 500
+          ? TICK_SPACINGS[500]
+          : fee === 3000
+            ? TICK_SPACINGS[3000]
+            : TICK_SPACINGS[10000];
+    const ticks = computeTicks(params.priceRange, tickSpacing);
     return this.poolByTicks({
       startTick: ticks.startTick,
       endTick: ticks.endTick,
       fee,
       numPositions: params.numPositions,
       maxShareToBeSold: params.maxShareToBeSold,
-    })
+    });
   }
 
   /**
@@ -168,54 +190,60 @@ export class StaticAuctionBuilder<C extends SupportedChainId>
   withMarketCapRange(params: StaticAuctionMarketCapConfig): this {
     // Validate required config exists
     if (!this.sale?.numeraire) {
-      throw new Error('Must call saleConfig() before withMarketCapRange()')
+      throw new Error('Must call saleConfig() before withMarketCapRange()');
     }
 
     // Get token supply from config or param
-    const tokenSupply = params.tokenSupply ?? this.sale.initialSupply
+    const tokenSupply = params.tokenSupply ?? this.sale.initialSupply;
     if (!tokenSupply) {
       throw new Error(
-        'tokenSupply must be provided (either via saleConfig() or withMarketCapRange() params)'
-      )
+        'tokenSupply must be provided (either via saleConfig() or withMarketCapRange() params)',
+      );
     }
 
     // Determine fee and tick spacing
     // IMPORTANT: Static Auctions use Uniswap V3, which REQUIRES one of 4 standard fee tiers.
     // Unlike V4 (Dynamic/Multicurve), V3 does NOT support custom fees.
     // This is a Uniswap V3 protocol constraint, not a Doppler limitation.
-    const fee = params.fee ?? DEFAULT_V3_FEE
+    const fee = params.fee ?? DEFAULT_V3_FEE;
 
     // Validate fee is a V3-supported tier
     if (!(V3_FEE_TIERS as readonly number[]).includes(fee)) {
       throw new Error(
         `Static auctions (Uniswap V3) require standard fee tiers: ${V3_FEE_TIERS.join(', ')}. ` +
-        `Got: ${fee}. For custom fees, use Dynamic or Multicurve auctions (Uniswap V4).`
-      )
+          `Got: ${fee}. For custom fees, use Dynamic or Multicurve auctions (Uniswap V4).`,
+      );
     }
 
     const tickSpacing =
-      fee === 100 ? TICK_SPACINGS[100] :
-      fee === 500 ? TICK_SPACINGS[500] :
-      fee === 3000 ? TICK_SPACINGS[3000] :
-      TICK_SPACINGS[10000]
+      fee === 100
+        ? TICK_SPACINGS[100]
+        : fee === 500
+          ? TICK_SPACINGS[500]
+          : fee === 3000
+            ? TICK_SPACINGS[3000]
+            : TICK_SPACINGS[10000];
 
     // Validate market cap parameters
     const startValidation = validateMarketCapParameters(
       params.marketCap.start,
       tokenSupply,
-      params.tokenDecimals
-    )
+      params.tokenDecimals,
+    );
     const endValidation = validateMarketCapParameters(
       params.marketCap.end,
       tokenSupply,
-      params.tokenDecimals
-    )
+      params.tokenDecimals,
+    );
 
     // Log warnings if any
-    const allWarnings = [...startValidation.warnings, ...endValidation.warnings]
+    const allWarnings = [
+      ...startValidation.warnings,
+      ...endValidation.warnings,
+    ];
     if (allWarnings.length > 0) {
-      console.warn('Market cap validation warnings:')
-      allWarnings.forEach(w => console.warn(`  - ${w}`))
+      console.warn('Market cap validation warnings:');
+      allWarnings.forEach((w) => console.warn(`  - ${w}`));
     }
 
     // Convert market cap range to ticks for V3 Static auction
@@ -226,7 +254,7 @@ export class StaticAuctionBuilder<C extends SupportedChainId>
       tickSpacing,
       tokenDecimals: params.tokenDecimals ?? 18,
       numeraireDecimals: params.numeraireDecimals ?? 18,
-    })
+    });
 
     // Delegate to existing poolByTicks method
     return this.poolByTicks({
@@ -235,7 +263,7 @@ export class StaticAuctionBuilder<C extends SupportedChainId>
       fee,
       numPositions: params.numPositions,
       maxShareToBeSold: params.maxShareToBeSold,
-    })
+    });
   }
 
   /**
@@ -261,110 +289,120 @@ export class StaticAuctionBuilder<C extends SupportedChainId>
    * ])
    * ```
    */
-  withBeneficiaries(beneficiaries: { beneficiary: Address; shares: bigint }[]): this {
+  withBeneficiaries(
+    beneficiaries: { beneficiary: Address; shares: bigint }[],
+  ): this {
     // Sort beneficiaries by address (ascending) as required by the contract
     this.beneficiaries = [...beneficiaries].sort((a, b) => {
-      const aAddr = a.beneficiary.toLowerCase()
-      const bAddr = b.beneficiary.toLowerCase()
-      return aAddr < bAddr ? -1 : aAddr > bAddr ? 1 : 0
-    })
-    return this
+      const aAddr = a.beneficiary.toLowerCase();
+      const bAddr = b.beneficiary.toLowerCase();
+      return aAddr < bAddr ? -1 : aAddr > bAddr ? 1 : 0;
+    });
+    return this;
   }
 
-  withVesting(params?: { duration?: bigint; cliffDuration?: number; recipients?: Address[]; amounts?: bigint[] }): this {
+  withVesting(params?: {
+    duration?: bigint;
+    cliffDuration?: number;
+    recipients?: Address[];
+    amounts?: bigint[];
+  }): this {
     if (!params) {
-      this.vesting = undefined
-      return this
+      this.vesting = undefined;
+      return this;
     }
     this.vesting = {
       duration: Number(params.duration ?? DEFAULT_V3_VESTING_DURATION),
       cliffDuration: params.cliffDuration ?? 0,
       recipients: params.recipients,
       amounts: params.amounts,
-    }
-    return this
+    };
+    return this;
   }
 
   withGovernance(params: GovernanceOption<C>): this {
-    this.governance = params
-    return this
+    this.governance = params;
+    return this;
   }
 
   withMigration(migration: MigrationConfig): this {
-    this.migration = migration
-    return this
+    this.migration = migration;
+    return this;
   }
 
   withUserAddress(address: Address): this {
-    this.userAddress = address
-    return this
+    this.userAddress = address;
+    return this;
   }
 
   withIntegrator(address?: Address): this {
-    this.integrator = address ?? ZERO_ADDRESS
-    return this
+    this.integrator = address ?? ZERO_ADDRESS;
+    return this;
   }
 
   withGasLimit(gas?: bigint): this {
-    this.gasLimit = gas
-    return this
+    this.gasLimit = gas;
+    return this;
   }
 
   // Address override helpers
-  private overrideModule<K extends keyof ModuleAddressOverrides>(key: K, address: NonNullable<ModuleAddressOverrides[K]>): this {
+  private overrideModule<K extends keyof ModuleAddressOverrides>(
+    key: K,
+    address: NonNullable<ModuleAddressOverrides[K]>,
+  ): this {
     this.moduleAddresses = {
-      ...(this.moduleAddresses ?? {}),
+      ...this.moduleAddresses,
       [key]: address,
-    } as ModuleAddressOverrides
-    return this
+    } as ModuleAddressOverrides;
+    return this;
   }
 
   withTokenFactory(address: Address): this {
-    return this.overrideModule('tokenFactory', address)
+    return this.overrideModule('tokenFactory', address);
   }
 
   withAirlock(address: Address): this {
-    return this.overrideModule('airlock', address)
+    return this.overrideModule('airlock', address);
   }
 
   withV3Initializer(address: Address): this {
-    return this.overrideModule('v3Initializer', address)
+    return this.overrideModule('v3Initializer', address);
   }
 
   withGovernanceFactory(address: Address): this {
-    return this.overrideModule('governanceFactory', address)
+    return this.overrideModule('governanceFactory', address);
   }
 
   withV2Migrator(address: Address): this {
-    return this.overrideModule('v2Migrator', address)
+    return this.overrideModule('v2Migrator', address);
   }
 
   withV4Migrator(address: Address): this {
-    return this.overrideModule('v4Migrator', address)
+    return this.overrideModule('v4Migrator', address);
   }
 
   withNoOpMigrator(address: Address): this {
-    return this.overrideModule('noOpMigrator', address)
+    return this.overrideModule('noOpMigrator', address);
   }
 
   build(): CreateStaticAuctionParams<C> {
-    if (!this.token) throw new Error('tokenConfig is required')
-    if (!this.sale) throw new Error('saleConfig is required')
-    if (!this.pool) throw new Error('pool configuration is required')
-    if (!this.migration) throw new Error('migration configuration is required')
-    if (!this.userAddress) throw new Error('userAddress is required')
+    if (!this.token) throw new Error('tokenConfig is required');
+    if (!this.sale) throw new Error('saleConfig is required');
+    if (!this.pool) throw new Error('pool configuration is required');
+    if (!this.migration) throw new Error('migration configuration is required');
+    if (!this.userAddress) throw new Error('userAddress is required');
 
     // Default governance: noOp on supported chains, default on others (e.g., Ink)
-    const governance = this.governance ?? (
-      isNoOpEnabledChain(this.chainId)
+    const governance =
+      this.governance ??
+      (isNoOpEnabledChain(this.chainId)
         ? { type: 'noOp' as const }
-        : { type: 'default' as const }
-    )
+        : { type: 'default' as const });
 
     // Merge beneficiaries into pool config if provided
     const poolWithBeneficiaries = this.beneficiaries
       ? { ...this.pool, beneficiaries: this.beneficiaries }
-      : this.pool
+      : this.pool;
 
     // Validate noOp migration requires beneficiaries
     // NoOpMigrator is designed for locked pools with beneficiaries. Without beneficiaries,
@@ -372,13 +410,15 @@ export class StaticAuctionBuilder<C extends SupportedChainId>
     // But NoOpMigrator.migrate() always reverts, so the entire graduation transaction fails
     // and liquidity becomes trapped.
     if (this.migration.type === 'noOp') {
-      const hasBeneficiaries = poolWithBeneficiaries.beneficiaries && poolWithBeneficiaries.beneficiaries.length > 0
+      const hasBeneficiaries =
+        poolWithBeneficiaries.beneficiaries &&
+        poolWithBeneficiaries.beneficiaries.length > 0;
       if (!hasBeneficiaries) {
         throw new Error(
           'noOp migration requires beneficiaries. Without beneficiaries, the pool would be stuck after reaching ' +
-          'graduation - exitLiquidity() succeeds but NoOpMigrator.migrate() always reverts, causing the entire ' +
-          'transaction to fail. Either add beneficiaries via withBeneficiaries() or use a different migration type (uniswapV2, uniswapV4).'
-        )
+            'graduation - exitLiquidity() succeeds but NoOpMigrator.migrate() always reverts, causing the entire ' +
+            'transaction to fail. Either add beneficiaries via withBeneficiaries() or use a different migration type (uniswapV2, uniswapV4).',
+        );
       }
     }
 
@@ -393,6 +433,6 @@ export class StaticAuctionBuilder<C extends SupportedChainId>
       userAddress: this.userAddress,
       modules: this.moduleAddresses,
       gas: this.gasLimit,
-    }
+    };
   }
 }

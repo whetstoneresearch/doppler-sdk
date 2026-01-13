@@ -1,1 +1,1 @@
-export { Eth } from './Eth'
+export { Eth } from './Eth';

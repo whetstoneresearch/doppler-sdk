@@ -1,22 +1,30 @@
-export const VERSION = '0.0.1'
+export const VERSION = '0.0.1';
 
 // Export the main SDK class
-export { DopplerSDK } from './DopplerSDK'
+export { DopplerSDK } from './DopplerSDK';
 
 // Export factory and auction classes
-export { DopplerFactory } from './entities/DopplerFactory'
-export type { MigrationEncoder } from './entities/DopplerFactory'
-export { StaticAuction, DynamicAuction, MulticurvePool } from './entities/auction'
+export { DopplerFactory } from './entities/DopplerFactory';
+export type { MigrationEncoder } from './entities/DopplerFactory';
+export {
+  StaticAuction,
+  DynamicAuction,
+  MulticurvePool,
+} from './entities/auction';
 
 // Export quoter
-export { Quoter } from './entities/quoter'
+export { Quoter } from './entities/quoter';
 
 // Export token entities
-export { Derc20, Eth } from './entities/token'
+export { Derc20, Eth } from './entities/token';
 
 // Export builders and common interface
-export { StaticAuctionBuilder, DynamicAuctionBuilder, MulticurveBuilder } from './builders'
-export type { BaseAuctionBuilder } from './builders/shared'
+export {
+  StaticAuctionBuilder,
+  DynamicAuctionBuilder,
+  MulticurveBuilder,
+} from './builders';
+export type { BaseAuctionBuilder } from './builders/shared';
 
 // Export all types
 export type {
@@ -63,7 +71,7 @@ export type {
   NO_OP_ENABLED_CHAIN_IDS,
   isNoOpEnabledChain,
   GovernanceOption,
-  
+
   // Market cap configuration types
   MarketCapRange,
   DynamicMarketCapRange,
@@ -73,21 +81,30 @@ export type {
   MulticurveMarketCapRangeCurve,
   MulticurveMarketCapCurvesConfig,
   MarketCapValidationResult,
-  
 
   // Internal create() param shape (advanced)
   CreateParams,
-} from './types'
+} from './types';
 
 // Also export module override type for advanced usage
-export type { ModuleAddressOverrides } from './types'
+export type { ModuleAddressOverrides } from './types';
 
 // Export enums
-export { LockablePoolStatus } from './types'
+export { LockablePoolStatus } from './types';
 
 // Export addresses and utilities
-export { ADDRESSES, CHAIN_IDS, getAddresses, SUPPORTED_CHAIN_IDS, isSupportedChainId } from './addresses'
-export type { SupportedChainId, ChainAddresses, SupportedChainKey } from './addresses'
+export {
+  ADDRESSES,
+  CHAIN_IDS,
+  getAddresses,
+  SUPPORTED_CHAIN_IDS,
+  isSupportedChainId,
+} from './addresses';
+export type {
+  SupportedChainId,
+  ChainAddresses,
+  SupportedChainKey,
+} from './addresses';
 
 // Export constants (excluding MIN_SQRT_RATIO and MAX_SQRT_RATIO to avoid conflicts)
 export {
@@ -134,10 +151,10 @@ export {
   V3_FEE_TIERS,
   V4_MAX_FEE,
   type FeeTier,
-} from './constants'
+} from './constants';
 
 // Export utility functions (includes MIN_SQRT_RATIO and MAX_SQRT_RATIO from tickMath)
-export * from './utils'
+export * from './utils';
 
 // Export ABIs
-export * from './abis'
+export * from './abis';

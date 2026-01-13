@@ -1,22 +1,24 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { privateKeyToAccount } from 'viem/accounts'
-import { parseEther, type Address } from 'viem'
-import { DopplerFactory } from '../../entities/DopplerFactory'
-import { CHAIN_IDS } from '../../addresses'
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { privateKeyToAccount } from 'viem/accounts';
+import { parseEther, type Address } from 'viem';
+import { DopplerFactory } from '../../entities/DopplerFactory';
+import { CHAIN_IDS } from '../../addresses';
 import type {
   SupportedPublicClient,
   CreateStaticAuctionParams,
   CreateDynamicAuctionParams,
   CreateMulticurveParams,
-} from '../../types'
-import { isToken0Expected } from '../../utils'
+} from '../../types';
+import { isToken0Expected } from '../../utils';
 
 describe('DopplerFactory governance encoding', () => {
-  let factory: DopplerFactory
-  let publicClient: SupportedPublicClient
-  let simulateContractMock: ReturnType<typeof vi.fn>
-  let getBlockMock: ReturnType<typeof vi.fn>
-  const account = privateKeyToAccount('0x1234567890123456789012345678901234567890123456789012345678901234')
+  let factory: DopplerFactory;
+  let publicClient: SupportedPublicClient;
+  let simulateContractMock: ReturnType<typeof vi.fn>;
+  let getBlockMock: ReturnType<typeof vi.fn>;
+  const account = privateKeyToAccount(
+    '0x1234567890123456789012345678901234567890123456789012345678901234',
+  );
 
   beforeEach(() => {
     simulateContractMock = vi.fn().mockResolvedValue({
@@ -24,16 +26,20 @@ describe('DopplerFactory governance encoding', () => {
         '0xffffffffffffffffffffffffffffffffffffffff',
         '0x0000000000000000000000000000000000000001',
       ],
-    })
-    getBlockMock = vi.fn().mockResolvedValue({ timestamp: 1n })
+    });
+    getBlockMock = vi.fn().mockResolvedValue({ timestamp: 1n });
 
     publicClient = {
       simulateContract: simulateContractMock,
       getBlock: getBlockMock,
-    } as unknown as SupportedPublicClient
+    } as unknown as SupportedPublicClient;
 
-    factory = new DopplerFactory(publicClient, undefined, CHAIN_IDS.BASE_SEPOLIA)
-  })
+    factory = new DopplerFactory(
+      publicClient,
+      undefined,
+      CHAIN_IDS.BASE_SEPOLIA,
+    );
+  });
 
   it('omits governance payload for static auctions with noOp governance', async () => {
     const params: CreateStaticAuctionParams = {
@@ -57,16 +63,16 @@ describe('DopplerFactory governance encoding', () => {
         type: 'uniswapV2',
       },
       userAddress: account.address,
-    }
+    };
 
-    const result = await factory.encodeCreateStaticAuctionParams(params)
+    const result = await factory.encodeCreateStaticAuctionParams(params);
 
-    expect(result.governanceFactoryData).toBe('0x')
-  })
+    expect(result.governanceFactoryData).toBe('0x');
+  });
 
   it('omits governance payload for dynamic auctions with noOp governance', async () => {
-    const numeraire = '0x4200000000000000000000000000000000000006' as Address
-    const token0Expected = isToken0Expected(numeraire)
+    const numeraire = '0x4200000000000000000000000000000000000006' as Address;
+    const token0Expected = isToken0Expected(numeraire);
 
     const params: CreateDynamicAuctionParams = {
       token: {
@@ -99,18 +105,21 @@ describe('DopplerFactory governance encoding', () => {
         tickSpacing: 10, // Must be <= 30 for dynamic auctions (Doppler.sol MAX_TICK_SPACING)
         streamableFees: {
           lockDuration: 7 * 24 * 60 * 60,
-          beneficiaries: [{ beneficiary: account.address, shares: parseEther('1') }],
+          beneficiaries: [
+            { beneficiary: account.address, shares: parseEther('1') },
+          ],
         },
       },
       userAddress: account.address,
       startTimeOffset: 45,
       blockTimestamp: 1,
-    }
+    };
 
-    const { createParams } = await factory.encodeCreateDynamicAuctionParams(params)
+    const { createParams } =
+      await factory.encodeCreateDynamicAuctionParams(params);
 
-    expect(createParams.governanceFactoryData).toBe('0x')
-  })
+    expect(createParams.governanceFactoryData).toBe('0x');
+  });
 
   it('omits governance payload for multicurve auctions with noOp governance', () => {
     const params: CreateMulticurveParams = {
@@ -145,10 +154,10 @@ describe('DopplerFactory governance encoding', () => {
       governance: { type: 'noOp' },
       migration: { type: 'uniswapV2' },
       userAddress: account.address,
-    }
+    };
 
-    const createParams = factory.encodeCreateMulticurveParams(params)
+    const createParams = factory.encodeCreateMulticurveParams(params);
 
-    expect(createParams.governanceFactoryData).toBe('0x')
-  })
-})
+    expect(createParams.governanceFactoryData).toBe('0x');
+  });
+});

@@ -1,1 +1,1 @@
-export { Quoter } from './Quoter'
+export { Quoter } from './Quoter';

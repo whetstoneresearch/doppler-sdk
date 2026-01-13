@@ -7,38 +7,38 @@ import {
   keccak256,
   getAddress,
   decodeAbiParameters,
-} from 'viem'
-import { DERC20Bytecode, DopplerDN404Bytecode } from '../abis'
+} from 'viem';
+import { DERC20Bytecode, DopplerDN404Bytecode } from '../abis';
 
-const DEFAULT_MAX_ITERATIONS = 1_000_000
+const DEFAULT_MAX_ITERATIONS = 1_000_000;
 
-export type TokenVariant = 'standard' | 'doppler404'
+export type TokenVariant = 'standard' | 'doppler404';
 
 export interface TokenAddressHookConfig {
-  deployer: Address
-  initCodeHash: Hash
-  prefix?: string
+  deployer: Address;
+  initCodeHash: Hash;
+  prefix?: string;
 }
 
 export interface TokenAddressMiningParams {
-  prefix: string
-  tokenFactory: Address
-  initialSupply: bigint
-  recipient: Address
-  owner: Address
-  tokenData: Hex
-  tokenVariant?: TokenVariant
-  customBytecode?: Hex
-  maxIterations?: number
-  startSalt?: bigint
-  hook?: TokenAddressHookConfig
+  prefix: string;
+  tokenFactory: Address;
+  initialSupply: bigint;
+  recipient: Address;
+  owner: Address;
+  tokenData: Hex;
+  tokenVariant?: TokenVariant;
+  customBytecode?: Hex;
+  maxIterations?: number;
+  startSalt?: bigint;
+  hook?: TokenAddressHookConfig;
 }
 
 export interface TokenAddressMiningResult {
-  salt: Hash
-  tokenAddress: Address
-  iterations: number
-  hookAddress?: Address
+  salt: Hash;
+  tokenAddress: Address;
+  iterations: number;
+  hookAddress?: Address;
 }
 
 const STANDARD_TOKEN_DATA_ABI = [
@@ -49,52 +49,67 @@ const STANDARD_TOKEN_DATA_ABI = [
   { type: 'address[]' },
   { type: 'uint256[]' },
   { type: 'string' },
-] as const
+] as const;
 
 const DOPPLER404_TOKEN_DATA_ABI = [
   { type: 'string' },
   { type: 'string' },
   { type: 'string' },
   { type: 'uint256' },
-] as const
+] as const;
 
 function normalizePrefix(prefix: string): string {
-  const normalized = prefix.trim().toLowerCase().replace(/^0x/, '')
+  const normalized = prefix.trim().toLowerCase().replace(/^0x/, '');
   if (normalized.length === 0) {
-    throw new Error('TokenAddressMiner: prefix must contain at least one hex character')
+    throw new Error(
+      'TokenAddressMiner: prefix must contain at least one hex character',
+    );
   }
   if (normalized.length > 40) {
-    throw new Error('TokenAddressMiner: prefix cannot exceed 40 hex characters')
+    throw new Error(
+      'TokenAddressMiner: prefix cannot exceed 40 hex characters',
+    );
   }
   if (!/^[0-9a-f]+$/i.test(normalized)) {
-    throw new Error('TokenAddressMiner: prefix must be a hexadecimal string')
+    throw new Error('TokenAddressMiner: prefix must be a hexadecimal string');
   }
-  return normalized
+  return normalized;
 }
 
-function computeCreate2Address(salt: Hash, initCodeHash: Hash, deployer: Address): Address {
+function computeCreate2Address(
+  salt: Hash,
+  initCodeHash: Hash,
+  deployer: Address,
+): Address {
   const encoded = encodePacked(
     ['bytes1', 'address', 'bytes32', 'bytes32'],
-    ['0xff', deployer, salt, initCodeHash]
-  )
-  return getAddress(`0x${keccak256(encoded).slice(-40)}`)
+    ['0xff', deployer, salt, initCodeHash],
+  );
+  return getAddress(`0x${keccak256(encoded).slice(-40)}`);
 }
 
 function buildTokenInitHash(params: {
-  variant: TokenVariant
-  tokenData: Hex
-  initialSupply: bigint
-  recipient: Address
-  owner: Address
-  customBytecode?: Hex
+  variant: TokenVariant;
+  tokenData: Hex;
+  initialSupply: bigint;
+  recipient: Address;
+  owner: Address;
+  customBytecode?: Hex;
 }): Hash {
-  const { variant, tokenData, initialSupply, recipient, owner, customBytecode } = params
+  const {
+    variant,
+    tokenData,
+    initialSupply,
+    recipient,
+    owner,
+    customBytecode,
+  } = params;
 
   if (variant === 'doppler404') {
     const [name, symbol, baseURI] = decodeAbiParameters(
       DOPPLER404_TOKEN_DATA_ABI,
-      tokenData
-    ) as readonly [string, string, string, bigint | undefined]
+      tokenData,
+    ) as readonly [string, string, string, bigint | undefined];
 
     const initHashData = encodeAbiParameters(
       [
@@ -105,15 +120,15 @@ function buildTokenInitHash(params: {
         { type: 'address' },
         { type: 'string' },
       ],
-      [name, symbol, initialSupply, recipient, owner, baseURI]
-    )
+      [name, symbol, initialSupply, recipient, owner, baseURI],
+    );
 
     return keccak256(
       encodePacked(
         ['bytes', 'bytes'],
-        [(customBytecode ?? (DopplerDN404Bytecode as Hex)), initHashData]
-      )
-    ) as Hash
+        [customBytecode ?? (DopplerDN404Bytecode as Hex), initHashData],
+      ),
+    ) as Hash;
   }
 
   const [
@@ -131,8 +146,8 @@ function buildTokenInitHash(params: {
     bigint,
     readonly Address[],
     readonly bigint[],
-    string
-  ]
+    string,
+  ];
 
   const initHashData = encodeAbiParameters(
     [
@@ -158,18 +173,20 @@ function buildTokenInitHash(params: {
       Array.from(vestingRecipients),
       Array.from(vestingAmounts),
       tokenURI,
-    ]
-  )
+    ],
+  );
 
   return keccak256(
     encodePacked(
       ['bytes', 'bytes'],
-      [(customBytecode ?? (DERC20Bytecode as Hex)), initHashData]
-    )
-  ) as Hash
+      [customBytecode ?? (DERC20Bytecode as Hex), initHashData],
+    ),
+  ) as Hash;
 }
 
-export function mineTokenAddress(params: TokenAddressMiningParams): TokenAddressMiningResult {
+export function mineTokenAddress(
+  params: TokenAddressMiningParams,
+): TokenAddressMiningResult {
   const {
     prefix,
     tokenFactory,
@@ -182,16 +199,18 @@ export function mineTokenAddress(params: TokenAddressMiningParams): TokenAddress
     maxIterations = DEFAULT_MAX_ITERATIONS,
     startSalt = 0n,
     hook,
-  } = params
+  } = params;
 
   if (maxIterations <= 0 || !Number.isFinite(maxIterations)) {
-    throw new Error('TokenAddressMiner: maxIterations must be a positive finite number')
+    throw new Error(
+      'TokenAddressMiner: maxIterations must be a positive finite number',
+    );
   }
   if (startSalt < 0n) {
-    throw new Error('TokenAddressMiner: startSalt cannot be negative')
+    throw new Error('TokenAddressMiner: startSalt cannot be negative');
   }
 
-  const normalizedPrefix = normalizePrefix(prefix)
+  const normalizedPrefix = normalizePrefix(prefix);
   const tokenInitHash = buildTokenInitHash({
     variant: tokenVariant,
     tokenData,
@@ -199,7 +218,7 @@ export function mineTokenAddress(params: TokenAddressMiningParams): TokenAddress
     recipient,
     owner,
     customBytecode,
-  })
+  });
 
   const hookConfig = hook
     ? {
@@ -207,28 +226,32 @@ export function mineTokenAddress(params: TokenAddressMiningParams): TokenAddress
         initCodeHash: hook.initCodeHash,
         prefix: hook.prefix ? normalizePrefix(hook.prefix) : undefined,
       }
-    : undefined
+    : undefined;
 
-  const maxSalt = startSalt + BigInt(maxIterations)
-  let iterations = 0
+  const maxSalt = startSalt + BigInt(maxIterations);
+  let iterations = 0;
 
   for (let salt = startSalt; salt < maxSalt; salt++) {
-    const saltHex = `0x${salt.toString(16).padStart(64, '0')}` as Hash
-    const candidate = computeCreate2Address(saltHex, tokenInitHash, tokenFactory)
-    iterations++
+    const saltHex = `0x${salt.toString(16).padStart(64, '0')}` as Hash;
+    const candidate = computeCreate2Address(
+      saltHex,
+      tokenInitHash,
+      tokenFactory,
+    );
+    iterations++;
     if (candidate.slice(2).toLowerCase().startsWith(normalizedPrefix)) {
-      let hookAddress: Address | undefined
+      let hookAddress: Address | undefined;
       if (hookConfig) {
         hookAddress = computeCreate2Address(
           saltHex,
           hookConfig.initCodeHash,
-          hookConfig.deployer
-        )
+          hookConfig.deployer,
+        );
         if (
           hookConfig.prefix &&
           !hookAddress.slice(2).toLowerCase().startsWith(hookConfig.prefix)
         ) {
-          continue
+          continue;
         }
       }
       return {
@@ -236,11 +259,11 @@ export function mineTokenAddress(params: TokenAddressMiningParams): TokenAddress
         tokenAddress: candidate,
         iterations,
         hookAddress,
-      }
+      };
     }
   }
 
   throw new Error(
-    `TokenAddressMiner: could not find salt matching prefix ${prefix} within ${maxIterations} iterations`
-  )
+    `TokenAddressMiner: could not find salt matching prefix ${prefix} within ${maxIterations} iterations`,
+  );
 }
