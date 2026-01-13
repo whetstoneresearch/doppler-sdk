@@ -1,5 +1,5 @@
-import { encodeAbiParameters, keccak256, type Address, type Hex } from 'viem'
-import type { V4PoolKey } from '../types'
+import { encodeAbiParameters, keccak256, type Hex } from 'viem';
+import type { V4PoolKey } from '../types';
 
 /**
  * Computes the PoolId (bytes32) from a V4 PoolKey
@@ -27,9 +27,9 @@ export function computePoolId(poolKey: V4PoolKey): Hex {
       poolKey.fee,
       poolKey.tickSpacing,
       poolKey.hooks,
-    ]
-  )
+    ],
+  );
 
   // Return keccak256 hash of the encoded poolKey
-  return keccak256(encoded)
+  return keccak256(encoded);
 }

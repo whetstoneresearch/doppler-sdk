@@ -3,7 +3,6 @@ import { CHAIN_IDS, type SupportedChainId } from './addresses';
 // Re-export SupportedChainId so consumers can import from this module
 export { type SupportedChainId } from './addresses';
 import type { Address, WalletClient } from 'viem';
-import type { FeeTier } from './constants';
 
 export type SupportedChain =
   | typeof base
@@ -87,7 +86,9 @@ export type NoOpEnabledChainId = (typeof NO_OP_ENABLED_CHAIN_IDS)[number];
 /**
  * Check if a chain supports no-op governance
  */
-export function isNoOpEnabledChain(chainId: number): chainId is NoOpEnabledChainId {
+export function isNoOpEnabledChain(
+  chainId: number,
+): chainId is NoOpEnabledChainId {
   return (NO_OP_ENABLED_CHAIN_IDS as readonly number[]).includes(chainId);
 }
 
@@ -161,7 +162,9 @@ export type MigrationConfig =
   | { type: 'noOp' }; // No migration - used with lockable beneficiaries
 
 // Create Static Auction parameters
-export interface CreateStaticAuctionParams<C extends SupportedChainId = SupportedChainId> {
+export interface CreateStaticAuctionParams<
+  C extends SupportedChainId = SupportedChainId,
+> {
   // Token configuration
   token: TokenConfig;
 
@@ -194,7 +197,9 @@ export interface CreateStaticAuctionParams<C extends SupportedChainId = Supporte
 }
 
 // Create Dynamic Auction parameters
-export interface CreateDynamicAuctionParams<C extends SupportedChainId = SupportedChainId> {
+export interface CreateDynamicAuctionParams<
+  C extends SupportedChainId = SupportedChainId,
+> {
   // Token configuration
   token: TokenConfig;
 
@@ -272,7 +277,7 @@ export interface MarketCapConfig {
   marketCap: MarketCapRange;
   /** Price of numeraire in USD (e.g., 3000 for ETH at $3000) */
   numerairePrice: number;
-  /** 
+  /**
    * Token supply override. If not provided, inferred from saleConfig.initialSupply.
    * Must include decimals (e.g., parseEther('1000000000') for 1B tokens).
    */
@@ -316,7 +321,7 @@ export interface DynamicAuctionMarketCapConfig {
   marketCap: DynamicMarketCapRange;
   /** Price of numeraire in USD (e.g., 3000 for ETH at $3000) */
   numerairePrice: number;
-  /** 
+  /**
    * Token supply override. If not provided, inferred from saleConfig.initialSupply.
    * Must include decimals (e.g., parseEther('1000000000') for 1B tokens).
    */
@@ -458,7 +463,7 @@ export interface MulticurveMarketCapRangeCurve {
 export interface MulticurveMarketCapCurvesConfig {
   /** Price of numeraire in USD (e.g., 3000 for ETH at $3000) */
   numerairePrice: number;
-  /** 
+  /**
    * Array of curves defining market cap ranges and liquidity distribution.
    * The first curve's marketCap.start is the launch price.
    * Curves must be contiguous (no gaps allowed).
@@ -476,7 +481,7 @@ export interface MulticurveMarketCapCurvesConfig {
   tickSpacing?: number;
   /** Optional beneficiaries for fee streaming */
   beneficiaries?: BeneficiaryData[];
-  /** 
+  /**
    * Market cap at which the pool can graduate (migrate or change status).
    * Converted to farTick internally.
    * Note: This is NOT a cap - prices can exceed this value after graduation.
@@ -670,7 +675,9 @@ export interface RehypeDopplerHookConfig {
 }
 
 // Create Multicurve initializer parameters
-export interface CreateMulticurveParams<C extends SupportedChainId = SupportedChainId> {
+export interface CreateMulticurveParams<
+  C extends SupportedChainId = SupportedChainId,
+> {
   // Token configuration
   token: TokenConfig;
 
@@ -717,19 +724,19 @@ export interface CreateMulticurveParams<C extends SupportedChainId = SupportedCh
 
 // Final Params object that gets passed as arg to create
 export interface CreateParams {
-    initialSupply: bigint,
-    numTokensToSell: bigint,
-    numeraire: Address,
-    tokenFactory: Address,
-    tokenFactoryData: `0x${string}`,
-    governanceFactory: Address,
-    governanceFactoryData: `0x${string}`,
-    poolInitializer: Address,
-    poolInitializerData: `0x${string}`,
-    liquidityMigrator: Address,
-    liquidityMigratorData: `0x${string}`,
-    integrator: Address,
-    salt: `0x${string}`,
+  initialSupply: bigint;
+  numTokensToSell: bigint;
+  numeraire: Address;
+  tokenFactory: Address;
+  tokenFactoryData: `0x${string}`;
+  governanceFactory: Address;
+  governanceFactoryData: `0x${string}`;
+  poolInitializer: Address;
+  poolInitializerData: `0x${string}`;
+  liquidityMigrator: Address;
+  liquidityMigratorData: `0x${string}`;
+  integrator: Address;
+  salt: `0x${string}`;
 }
 
 // Optional per-call module address overrides. When provided, these take precedence

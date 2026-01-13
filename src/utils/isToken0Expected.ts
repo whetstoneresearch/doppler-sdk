@@ -1,4 +1,4 @@
-import { Address } from "viem"
+import { Address } from 'viem';
 
 /**
  * Determine token ordering based on numeraire address.
@@ -9,14 +9,14 @@ import { Address } from "viem"
  * @returns Whether base token address is expected to be generated as token0
  */
 export function isToken0Expected(numeraire: Address): boolean {
-  const numeraireBigInt = BigInt(numeraire)
-  const halfMaxUint160 = (2n ** 159n) - 1n
+  const numeraireBigInt = BigInt(numeraire);
+  const halfMaxUint160 = 2n ** 159n - 1n;
 
   if (numeraireBigInt === 0n) {
-    return false  // ETH paired, token will be > 0x0
+    return false; // ETH paired, token will be > 0x0
   } else if (numeraireBigInt > halfMaxUint160) {
-    return true   // Large numeraire, token will be < numeraire
+    return true; // Large numeraire, token will be < numeraire
   } else {
-    return false  // Normal case, token will be > numeraire
+    return false; // Normal case, token will be > numeraire
   }
 }

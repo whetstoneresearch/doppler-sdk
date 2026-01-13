@@ -1,33 +1,33 @@
-import { type Address, getAddress, zeroAddress, type PublicClient } from 'viem'
-import type { PoolInfo, SupportedPublicClient } from '../../types'
-import { uniswapV3PoolAbi, airlockAbi } from '../../abis'
-import { getAddresses } from '../../addresses'
+import { type Address, zeroAddress, type PublicClient } from 'viem';
+import type { PoolInfo, SupportedPublicClient } from '../../types';
+import { uniswapV3PoolAbi, airlockAbi } from '../../abis';
+import { getAddresses } from '../../addresses';
 
 /**
  * StaticAuction class for interacting with static auctions (Uniswap V3 based)
- * 
+ *
  * Static auctions use a fixed price range on Uniswap V3 for initial liquidity bootstrapping.
  * This is ideal for simple, predictable price discovery events.
  */
 export class StaticAuction {
-  private client: SupportedPublicClient
-  private poolAddress: Address
+  private client: SupportedPublicClient;
+  private poolAddress: Address;
   private get rpc(): PublicClient {
-    return this.client as PublicClient
+    return this.client as PublicClient;
   }
-  
+
   constructor(client: SupportedPublicClient, poolAddress: Address) {
-    this.client = client
-    this.poolAddress = poolAddress
+    this.client = client;
+    this.poolAddress = poolAddress;
   }
-  
+
   /**
    * Get the pool address
    */
   getAddress(): Address {
-    return this.poolAddress
+    return this.poolAddress;
   }
-  
+
   /**
    * Get current pool information
    */
@@ -59,31 +59,31 @@ export class StaticAuction {
         abi: uniswapV3PoolAbi,
         functionName: 'fee',
       }),
-    ])
-    
+    ]);
+
     // Determine which token is the auction token and which is numeraire
     // This requires checking with the Airlock contract
-    const chainId = await this.rpc.getChainId()
-    const addresses = getAddresses(chainId)
-    
+    const chainId = await this.rpc.getChainId();
+    const addresses = getAddresses(chainId);
+
     const assetData = await this.rpc.readContract({
       address: addresses.airlock,
       abi: airlockAbi,
       functionName: 'getAssetData',
       args: [token0],
-    })
+    });
     // Determine whether token0 is the auction token.
     // Handle both tuple and object return shapes from getAssetData.
     // Tuple (legacy): [numeraire, timelock, governance, liquidityMigrator, poolInitializer, pool, ...]
     // Object (unified): { poolOrHook, liquidityMigrator, numeraire, ... }
-    let poolOrHook0: any
+    let poolOrHook0: any;
     if (Array.isArray(assetData)) {
-      poolOrHook0 = assetData[5]
+      poolOrHook0 = assetData[5];
     } else if (assetData && typeof assetData === 'object') {
-      poolOrHook0 = (assetData as any).poolOrHook ?? (assetData as any).pool
+      poolOrHook0 = (assetData as any).poolOrHook ?? (assetData as any).pool;
     }
-    const isToken0AuctionToken = poolOrHook0 && poolOrHook0 !== zeroAddress
-    
+    const isToken0AuctionToken = poolOrHook0 && poolOrHook0 !== zeroAddress;
+
     return {
       address: this.poolAddress,
       tokenAddress: isToken0AuctionToken ? token0 : token1,
@@ -91,47 +91,47 @@ export class StaticAuction {
       fee,
       liquidity,
       sqrtPriceX96: slot0[0], // First element is sqrtPriceX96
-    }
+    };
   }
-  
+
   /**
    * Get the token address for this auction
    */
   async getTokenAddress(): Promise<Address> {
-    const poolInfo = await this.getPoolInfo()
-    return poolInfo.tokenAddress
+    const poolInfo = await this.getPoolInfo();
+    return poolInfo.tokenAddress;
   }
-  
+
   /**
    * Check if the auction has graduated (ready for migration)
    */
   async hasGraduated(): Promise<boolean> {
-    const tokenAddress = await this.getTokenAddress()
-    const chainId = await this.rpc.getChainId()
-    const addresses = getAddresses(chainId)
-    
+    const tokenAddress = await this.getTokenAddress();
+    const chainId = await this.rpc.getChainId();
+    const addresses = getAddresses(chainId);
+
     const assetData = await this.rpc.readContract({
       address: addresses.airlock,
       abi: airlockAbi,
       functionName: 'getAssetData',
       args: [tokenAddress],
-    })
+    });
     // Check if the asset is graduated (liquidityMigrator is zero)
     const liquidityMigrator = Array.isArray(assetData)
       ? (assetData as any)[3]
-      : (assetData as any)?.liquidityMigrator
-    return liquidityMigrator === zeroAddress
+      : (assetData as any)?.liquidityMigrator;
+    return liquidityMigrator === zeroAddress;
   }
-  
+
   /**
    * Get the current price in the pool
    * Returns the price of token in terms of numeraire (token/numeraire)
    */
   async getCurrentPrice(): Promise<bigint> {
-    const poolInfo = await this.getPoolInfo()
-    
+    const poolInfo = await this.getPoolInfo();
+
     // Get token ordering
-    const [token0, token1] = await Promise.all([
+    const [token0] = await Promise.all([
       this.rpc.readContract({
         address: this.poolAddress,
         abi: uniswapV3PoolAbi,
@@ -142,30 +142,30 @@ export class StaticAuction {
         abi: uniswapV3PoolAbi,
         functionName: 'token1',
       }),
-    ])
-    
+    ]);
+
     // Calculate price from sqrtPriceX96
     // sqrtPriceX96 = sqrt(price) * 2^96
     // price = (sqrtPriceX96 / 2^96)^2
-    const sqrtPriceX96 = poolInfo.sqrtPriceX96
-    const Q96 = BigInt(2) ** BigInt(96)
-    
+    const sqrtPriceX96 = poolInfo.sqrtPriceX96;
+    const Q96 = BigInt(2) ** BigInt(96);
+
     // price0 = amount of token1 per token0
-    const sqrtPriceX96Squared = sqrtPriceX96 * sqrtPriceX96
-    const Q96Squared = Q96 * Q96
-    const price0 = sqrtPriceX96Squared / Q96Squared
-    
+    const sqrtPriceX96Squared = sqrtPriceX96 * sqrtPriceX96;
+    const Q96Squared = Q96 * Q96;
+    const price0 = sqrtPriceX96Squared / Q96Squared;
+
     // Return price based on which token is the auction token
     if (poolInfo.tokenAddress === token0) {
       // Auction token is token0, return price in terms of token1 (numeraire)
-      return price0
+      return price0;
     } else {
       // Auction token is token1, return reciprocal price
       // price1 = 1 / price0 (with precision handling)
-      return Q96Squared / price0
+      return Q96Squared / price0;
     }
   }
-  
+
   /**
    * Get total liquidity in the pool
    */
@@ -174,6 +174,6 @@ export class StaticAuction {
       address: this.poolAddress,
       abi: uniswapV3PoolAbi,
       functionName: 'liquidity',
-    })
+    });
   }
 }

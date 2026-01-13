@@ -2,8 +2,8 @@
  * Price helper utilities for common token launch scenarios
  */
 
-import { parseEther, formatEther } from 'viem'
-import { priceToTick, tickToPrice, getNearestUsableTick } from './tickMath'
+import { parseEther, formatEther } from 'viem';
+import { priceToTick, tickToPrice, getNearestUsableTick } from './tickMath';
 
 /**
  * Calculate the tick range for a desired price range
@@ -19,21 +19,21 @@ export function calculateTickRange(
   maxPrice: number,
   tickSpacing: number,
   wethDecimals = 18,
-  tokenDecimals = 18
+  tokenDecimals = 18,
 ): { startTick: number; endTick: number } {
   // For token/WETH pools, we need to invert the price
   // because Uniswap orders tokens by address
   const startTick = getNearestUsableTick(
     priceToTick(1 / maxPrice, tokenDecimals, wethDecimals),
-    tickSpacing
-  )
-  
+    tickSpacing,
+  );
+
   const endTick = getNearestUsableTick(
     priceToTick(1 / minPrice, tokenDecimals, wethDecimals),
-    tickSpacing
-  )
-  
-  return { startTick, endTick }
+    tickSpacing,
+  );
+
+  return { startTick, endTick };
 }
 
 /**
@@ -44,10 +44,10 @@ export function calculateTickRange(
  */
 export function calculateTokensToSell(
   targetRaiseETH: number,
-  avgPricePerToken: number
+  avgPricePerToken: number,
 ): bigint {
-  const tokensToSell = targetRaiseETH / avgPricePerToken
-  return parseEther(tokensToSell.toFixed(18))
+  const tokensToSell = targetRaiseETH / avgPricePerToken;
+  return parseEther(tokensToSell.toFixed(18));
 }
 
 /**
@@ -62,11 +62,11 @@ export function calculateGamma(
   startTick: number,
   endTick: number,
   duration: number,
-  epochLength: number
+  epochLength: number,
 ): number {
-  const totalEpochs = duration / epochLength
-  const tickRange = Math.abs(endTick - startTick)
-  return Math.floor(tickRange / totalEpochs)
+  const totalEpochs = duration / epochLength;
+  const tickRange = Math.abs(endTick - startTick);
+  return Math.floor(tickRange / totalEpochs);
 }
 
 /**
@@ -85,16 +85,21 @@ export function estimatePriceAtEpoch(
   currentEpoch: number,
   tokenDecimals = 18,
   wethDecimals = 18,
-  isIncreasing = true
+  isIncreasing = true,
 ): number {
-  const direction = isIncreasing ? 1 : -1
-  const currentTick = startTick + (currentEpoch * gamma * direction)
-  
+  const direction = isIncreasing ? 1 : -1;
+  const currentTick = startTick + currentEpoch * gamma * direction;
+
   // Get price from tick (returns WETH/token)
-  const wethPerToken = tickToPrice(currentTick, tokenDecimals, wethDecimals, false)
-  
+  const wethPerToken = tickToPrice(
+    currentTick,
+    tokenDecimals,
+    wethDecimals,
+    false,
+  );
+
   // Invert to get ETH per token
-  return 1 / wethPerToken
+  return 1 / wethPerToken;
 }
 
 /**
@@ -111,17 +116,17 @@ export function formatTickAsPrice(
   tokenSymbol: string,
   numeraireSymbol: string,
   tokenDecimals = 18,
-  numeraireDecimals = 18
+  numeraireDecimals = 18,
 ): string {
-  const price = tickToPrice(tick, tokenDecimals, numeraireDecimals, false)
-  const ethPerToken = 1 / price
-  
+  const price = tickToPrice(tick, tokenDecimals, numeraireDecimals, false);
+  const ethPerToken = 1 / price;
+
   if (ethPerToken < 0.0001) {
-    return `${ethPerToken.toExponential(2)} ${numeraireSymbol} per ${tokenSymbol}`
+    return `${ethPerToken.toExponential(2)} ${numeraireSymbol} per ${tokenSymbol}`;
   } else if (ethPerToken < 1) {
-    return `${ethPerToken.toFixed(6)} ${numeraireSymbol} per ${tokenSymbol}`
+    return `${ethPerToken.toFixed(6)} ${numeraireSymbol} per ${tokenSymbol}`;
   } else {
-    return `${ethPerToken.toFixed(2)} ${numeraireSymbol} per ${tokenSymbol}`
+    return `${ethPerToken.toFixed(2)} ${numeraireSymbol} per ${tokenSymbol}`;
   }
 }
 
@@ -135,21 +140,21 @@ export function formatTickAsPrice(
 export function calculateMarketCap(
   totalSupply: bigint,
   pricePerToken: number,
-  ethPrice?: number
+  ethPrice?: number,
 ): { eth: string; usd?: string } {
-  const totalSupplyNumber = Number(formatEther(totalSupply))
-  const marketCapETH = totalSupplyNumber * pricePerToken
-  
+  const totalSupplyNumber = Number(formatEther(totalSupply));
+  const marketCapETH = totalSupplyNumber * pricePerToken;
+
   const result: { eth: string; usd?: string } = {
-    eth: `${marketCapETH.toFixed(2)} ETH`
-  }
-  
+    eth: `${marketCapETH.toFixed(2)} ETH`,
+  };
+
   if (ethPrice) {
-    const marketCapUSD = marketCapETH * ethPrice
-    result.usd = `$${marketCapUSD.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
+    const marketCapUSD = marketCapETH * ethPrice;
+    result.usd = `$${marketCapUSD.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
   }
-  
-  return result
+
+  return result;
 }
 
 /**
@@ -162,10 +167,10 @@ export function calculateMarketCap(
 export function calculateFDV(
   totalSupply: bigint,
   pricePerToken: number,
-  ethPrice?: number
+  ethPrice?: number,
 ): { eth: string; usd?: string } {
   // FDV is the same calculation as market cap but includes all tokens
-  return calculateMarketCap(totalSupply, pricePerToken, ethPrice)
+  return calculateMarketCap(totalSupply, pricePerToken, ethPrice);
 }
 
 /**
@@ -180,17 +185,17 @@ export function estimateSlippage(
   amountIn: bigint,
   liquidity: bigint,
   currentTick: number,
-  fee: number
+  fee: number,
 ): number {
   // Simplified slippage estimation
   // In practice, you'd need to simulate the swap through tick ranges
-  const feeMultiplier = 1 - (fee / 1000000)
-  const liquidityNumber = Number(liquidity) / 1e18
-  const amountNumber = Number(amountIn) / 1e18
-  
+  const feeMultiplier = 1 - fee / 1000000;
+  const liquidityNumber = Number(liquidity) / 1e18;
+  const amountNumber = Number(amountIn) / 1e18;
+
   // Basic approximation: slippage increases with trade size relative to liquidity
-  const impactRatio = amountNumber / liquidityNumber
-  const slippage = impactRatio * 100 * feeMultiplier
-  
-  return Math.min(slippage, 100) // Cap at 100%
+  const impactRatio = amountNumber / liquidityNumber;
+  const slippage = impactRatio * 100 * feeMultiplier;
+
+  return Math.min(slippage, 100); // Cap at 100%
 }

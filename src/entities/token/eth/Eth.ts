@@ -1,5 +1,5 @@
-import { type Address, zeroAddress, type PublicClient } from 'viem'
-import { SupportedPublicClient } from '@/types'
+import { type Address, zeroAddress, type PublicClient } from 'viem';
+import { SupportedPublicClient } from '@/types';
 
 /**
  * A class providing read-only access to Ethereum (ETH) token information and balances.
@@ -12,42 +12,42 @@ import { SupportedPublicClient } from '@/types'
  * - Querying native ETH balances through viem
  */
 export class Eth {
-  private publicClient: SupportedPublicClient
+  private publicClient: SupportedPublicClient;
   private get rpc(): PublicClient {
-    return this.publicClient as PublicClient
+    return this.publicClient as PublicClient;
   }
-  
+
   /** Static ETH address identifier (zero address) */
-  static readonly address = zeroAddress
-  
+  static readonly address = zeroAddress;
+
   constructor(publicClient: SupportedPublicClient) {
-    this.publicClient = publicClient
+    this.publicClient = publicClient;
   }
-  
+
   /**
    * Get the human-readable name of the token
    * @returns Promise resolving to "Ether" (hardcoded ETH name)
    */
   async getName(): Promise<string> {
-    return "Ether"
+    return 'Ether';
   }
-  
+
   /**
    * Get the ticker symbol of the token
    * @returns Promise resolving to "ETH" (hardcoded ETH symbol)
    */
   async getSymbol(): Promise<string> {
-    return "ETH"
+    return 'ETH';
   }
-  
+
   /**
    * Get the number of decimal places used by the token
    * @returns Promise resolving to 18 (standard ETH decimals)
    */
   async getDecimals(): Promise<number> {
-    return 18
+    return 18;
   }
-  
+
   /**
    * Get the allowance granted to a spender (always returns maximum value)
    * @returns Promise resolving to 2^256 - 1 (simulates unlimited ETH allowance)
@@ -57,9 +57,9 @@ export class Eth {
    * to represent unlimited approval in systems expecting ERC20-like interfaces
    */
   async getAllowance(): Promise<bigint> {
-    return 2n ** 256n - 1n
+    return 2n ** 256n - 1n;
   }
-  
+
   /**
    * Get the ETH balance of a specified account
    * @param account - Address of the account to query
@@ -68,6 +68,6 @@ export class Eth {
   async getBalanceOf(account: Address): Promise<bigint> {
     return await this.rpc.getBalance({
       address: account,
-    })
+    });
   }
 }
