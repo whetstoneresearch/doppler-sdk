@@ -58,7 +58,7 @@ describe('V4 SDK Compatibility', () => {
         fee: 3000,
         tickSpacing: 10, // Must be <= 30 for dynamic auctions (Doppler.sol MAX_TICK_SPACING)
       },
-      governance: { noOp: true },
+      governance: { type: 'noOp' },
       migration: {
         type: 'uniswapV2' as const,
       },
@@ -112,7 +112,7 @@ describe('V4 SDK Compatibility', () => {
   });
 
   it('should use correct defaults when not explicitly provided', () => {
-    const builder = new DynamicAuctionBuilder()
+    const builder = new DynamicAuctionBuilder(84532)
       .tokenConfig({
         name: 'Test',
         symbol: 'TST',

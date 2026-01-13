@@ -171,7 +171,7 @@ describe('DopplerFactory', () => {
         endTick: 225000,
         fee: 3000,
       },
-      governance: { noOp: true },
+      governance: { type: 'noOp' },
       migration: {
         type: 'uniswapV2',
       },
@@ -353,7 +353,7 @@ describe('DopplerFactory', () => {
         fee: 3000,
         tickSpacing: 10, // Must be <= 30 for dynamic auctions (Doppler.sol MAX_TICK_SPACING)
       },
-      governance: { noOp: true },
+      governance: { type: 'noOp' },
       migration: {
         type: 'uniswapV4',
         fee: 3000,
@@ -555,7 +555,7 @@ describe('DopplerFactory', () => {
           numeraire: mockAddresses.weth,
         },
         pool: { startTick: 174960, endTick: 225000, fee: 3000 },
-        governance: { noOp: true },
+        governance: { type: 'noOp' },
         migration: { type: 'uniswapV2' },
         userAddress: '0x1234567890123456789012345678901234567890',
       };
@@ -596,7 +596,7 @@ describe('DopplerFactory', () => {
           numeraire: mockAddresses.weth,
         },
         pool: { startTick: 174960, endTick: 225000, fee: 3000 },
-        governance: { noOp: true },
+        governance: { type: 'noOp' },
         migration: { type: 'uniswapV2' },
         userAddress: '0x1234567890123456789012345678901234567890',
       };

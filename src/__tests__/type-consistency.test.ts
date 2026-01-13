@@ -31,7 +31,7 @@ describe('Type Consistency', () => {
         fee: 3000,
         tickSpacing: 10, // Must be <= 30 for dynamic auctions (Doppler.sol MAX_TICK_SPACING)
       },
-      governance: { noOp: true },
+      governance: { type: 'noOp' },
       migration: {
         type: 'uniswapV2',
       },

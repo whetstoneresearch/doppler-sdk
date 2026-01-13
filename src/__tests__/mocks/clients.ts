@@ -5,9 +5,12 @@ import type { Address, WalletClient } from 'viem';
 import { SupportedPublicClient } from '../../types';
 import {
   mockAddresses,
+  mockGovernanceAddress,
   mockHookAddress,
   mockPoolAddress,
+  mockTimelockAddress,
   mockTokenAddress,
+  mockV2PoolAddress,
 } from './addresses';
 
 // Mock viem clients for testing
@@ -30,9 +33,9 @@ export const createMockPublicClient = (): SupportedPublicClient => {
   const defaultCreateResult: readonly Address[] = [
     mockTokenAddress,
     mockPoolAddress,
-    mockAddresses.governance,
-    mockAddresses.timelock,
-    mockAddresses.v2Pool,
+    mockGovernanceAddress,
+    mockTimelockAddress,
+    mockV2PoolAddress,
   ];
 
   client.simulateContract = vi.fn(async (call: any) => {

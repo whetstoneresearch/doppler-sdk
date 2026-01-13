@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { privateKeyToAccount } from 'viem/accounts';
-import { parseEther } from 'viem';
+import { parseEther, type Address } from 'viem';
 import {
   DopplerFactory,
   type MigrationEncoder,
@@ -244,7 +244,7 @@ describe('DopplerFactory Custom Migration Encoder', () => {
       ...mockCreateParams,
       sale: {
         ...mockCreateParams.sale,
-        numeraire: '0x0000000000000000000000000000000000000005',
+        numeraire: '0x0000000000000000000000000000000000000005' as Address,
       },
     };
 
