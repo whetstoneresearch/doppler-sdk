@@ -47,8 +47,15 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      - name: Debug env vars
+        run: |
+          echo "TEST_CHAINS: $TEST_CHAINS"
+          echo "RPC_DELAY_MS: $RPC_DELAY_MS"
+          echo "ALCHEMY_API_KEY set: $([[ -n "$ALCHEMY_API_KEY" ]] && echo 'yes' || echo 'no')"
+
       - name: Run airlock whitelisting tests
         run: pnpm test airlock-whitelisting
+        timeout-minutes: 10
 
       - name: Create summary
         if: always()
