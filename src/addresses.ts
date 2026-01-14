@@ -328,7 +328,7 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3' as Address,
     bundler: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_MAINNET]
       .Bundler as Address,
-    weth: '0xEE8c0E9f1BFFb4Eb878d8f15f368A02a35481242' as Address, // TODO: Get Monad Mainnet weth
+    weth: '0x3bd359c1119da7da1d913d1c4d2b7c461115433a' as Address, // INFO: this is wmon, but we treat it as weth because mon is native 
     uniswapV4Quoter: '0xa222dd357a9076d1091ed6aa2e16c9742dd26891' as Address,
   },
 };
