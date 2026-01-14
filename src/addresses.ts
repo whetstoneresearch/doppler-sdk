@@ -138,7 +138,7 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     airlock: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
       .Airlock as Address,
     tokenFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
-      .TokenFactory as Address,
+      .TokenFactory80 as Address,
     doppler404Factory: '0xdd8cea2890f1b3498436f19ec8da8fecc2cb7af7' as Address,
     v3Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
       .UniswapV3Initializer as Address,
