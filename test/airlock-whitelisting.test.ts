@@ -1,4 +1,7 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+
+// Set shorter timeout for individual tests (10s instead of default 60s)
+vi.setConfig({ testTimeout: 10_000 });
 import { type Address, type Chain } from 'viem';
 import {
   base,
@@ -146,7 +149,7 @@ describe('Airlock Module Whitelisting', () => {
       const publicClient = createRateLimitedClient(
         config.chain,
         config.rpc,
-        { retryCount: 5, retryDelay: 2000 }
+        { retryCount: 3, retryDelay: 1000 }
       );
 
       // Add delay before each test to avoid rate limiting

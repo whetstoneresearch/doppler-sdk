@@ -15,7 +15,7 @@ on:
       rpc_delay_ms:
         description: 'Delay between RPC calls in ms (increase if rate limited)'
         required: false
-        default: '500'
+        default: '1000'
         type: string
   schedule:
     # Run twice daily at 00:00 and 12:00 UTC to catch any whitelisting issues
@@ -32,7 +32,7 @@ jobs:
       ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
       # Default to deployed/whitelisted chains; workflow_dispatch can override
       TEST_CHAINS: ${{ github.event.inputs.chains || 'base,base-sepolia,unichain,unichain-sepolia,monad-mainnet' }}
-      RPC_DELAY_MS: ${{ github.event.inputs.rpc_delay_ms || '500' }}
+      RPC_DELAY_MS: ${{ github.event.inputs.rpc_delay_ms || '1000' }}
 
     steps:
       - uses: actions/checkout@v4
