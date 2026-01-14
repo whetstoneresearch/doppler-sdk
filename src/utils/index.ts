@@ -70,6 +70,7 @@ export {
   applyTickOffsets,
   validateMarketCapParameters,
   tickToMarketCap,
+  getMaxTickRounded,
 } from './marketCapHelpers';
 export type {
   MarketCapRange,

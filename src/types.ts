@@ -403,7 +403,7 @@ export interface DynamicAuctionTickParams {
  */
 export interface MulticurveTickRangeParams {
   marketCapLower: number;
-  marketCapUpper: number;
+  marketCapUpper: number | 'max';
   tokenSupply: bigint;
   numerairePriceUSD: number;
   tickSpacing: number;
@@ -447,8 +447,8 @@ export interface MulticurveMarketCapRangeCurve {
   marketCap: {
     /** Start market cap in USD (for the first curve, this is the launch price) */
     start: number;
-    /** End market cap in USD */
-    end: number;
+    /** End market cap in USD, or 'max' for MAX_TICK rounded to tick spacing */
+    end: number | 'max';
   };
   /** Number of liquidity positions in this curve */
   numPositions: number;
