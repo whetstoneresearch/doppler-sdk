@@ -21,6 +21,10 @@ on:
     # Run twice daily at 00:00 and 12:00 UTC to catch any whitelisting issues
     - cron: '0 0,12 * * *'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test-whitelisting:
     runs-on: ubuntu-latest
@@ -54,7 +58,7 @@ jobs:
           echo "ALCHEMY_API_KEY set: $([[ -n "$ALCHEMY_API_KEY" ]] && echo 'yes' || echo 'no')"
 
       - name: Run airlock whitelisting tests
-        run: pnpm test airlock-whitelisting
+        run: pnpm test airlock-whitelisting --reporter=verbose
         timeout-minutes: 10
 
       - name: Create summary
