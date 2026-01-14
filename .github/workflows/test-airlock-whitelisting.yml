@@ -6,6 +6,17 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      chains:
+        description: 'Chains to test (comma-separated: base,base-sepolia,mainnet,ink,unichain,unichain-sepolia,monad-testnet,monad-mainnet or "all")'
+        required: false
+        default: 'base,base-sepolia,unichain,unichain-sepolia,monad-mainnet'
+        type: string
+      rpc_delay_ms:
+        description: 'Delay between RPC calls in ms (increase if rate limited)'
+        required: false
+        default: '500'
+        type: string
   schedule:
     # Run twice daily at 00:00 and 12:00 UTC to catch any whitelisting issues
     - cron: '0 0,12 * * *'
@@ -15,6 +26,9 @@ jobs:
     runs-on: ubuntu-latest
     env:
       ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
+      # Default to deployed/whitelisted chains; workflow_dispatch can override
+      TEST_CHAINS: ${{ github.event.inputs.chains || 'base,base-sepolia,unichain,unichain-sepolia,monad-mainnet' }}
+      RPC_DELAY_MS: ${{ github.event.inputs.rpc_delay_ms || '500' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -41,5 +55,8 @@ jobs:
         run: |
           echo "## Airlock Whitelisting Test Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Verified that all Doppler modules (TokenFactory, GovernanceFactory, Initializers, Migrators) are properly whitelisted on Airlock contracts across all deployed chains." >> $GITHUB_STEP_SUMMARY
+          echo "**Chains tested:** $TEST_CHAINS" >> $GITHUB_STEP_SUMMARY
+          echo "**RPC delay:** ${RPC_DELAY_MS}ms" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Verified that all Doppler modules (TokenFactory, GovernanceFactory, Initializers, Migrators) are properly whitelisted on Airlock contracts." >> $GITHUB_STEP_SUMMARY
 

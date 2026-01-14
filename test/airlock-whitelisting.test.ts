@@ -1,6 +1,13 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { type Address, type Chain } from 'viem';
-import { base, baseSepolia } from 'viem/chains';
+import {
+  base,
+  baseSepolia,
+  mainnet,
+  ink,
+  unichain,
+  unichainSepolia,
+} from 'viem/chains';
 import {
   CHAIN_IDS,
   getAddresses,
@@ -12,7 +19,39 @@ import { createRateLimitedClient, delay } from './utils/rpc';
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as Address;
 
 // Use more conservative delay for this test file (many sequential RPC calls)
-const RPC_DELAY_MS = 500;
+// Can be overridden via RPC_DELAY_MS env var for workflow_dispatch
+const RPC_DELAY_MS = Number(process.env.RPC_DELAY_MS) || 500;
+
+// Chain name mapping for TEST_CHAINS env var filtering
+const CHAIN_NAME_TO_ID: Record<string, SupportedChainId> = {
+  base: CHAIN_IDS.BASE,
+  'base-sepolia': CHAIN_IDS.BASE_SEPOLIA,
+  mainnet: CHAIN_IDS.MAINNET,
+  ink: CHAIN_IDS.INK,
+  unichain: CHAIN_IDS.UNICHAIN,
+  'unichain-sepolia': CHAIN_IDS.UNICHAIN_SEPOLIA,
+  'monad-testnet': CHAIN_IDS.MONAD_TESTNET,
+  'monad-mainnet': CHAIN_IDS.MONAD_MAINNET,
+};
+
+// Parse TEST_CHAINS env var (comma-separated chain names or 'all')
+function getTestChainIds(): SupportedChainId[] {
+  const testChains = process.env.TEST_CHAINS?.toLowerCase().trim();
+  if (!testChains || testChains === 'all') {
+    return Object.values(CHAIN_IDS) as SupportedChainId[];
+  }
+  const chainNames = testChains.split(',').map((s) => s.trim());
+  const chainIds: SupportedChainId[] = [];
+  for (const name of chainNames) {
+    const id = CHAIN_NAME_TO_ID[name];
+    if (id !== undefined) {
+      chainIds.push(id);
+    } else {
+      console.warn(`Unknown chain name: ${name}`);
+    }
+  }
+  return chainIds;
+}
 
 enum ModuleState {
   NotWhitelisted = 0,
@@ -25,21 +64,69 @@ enum ModuleState {
 const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY;
 
 const getAlchemyRpc = (network: string) =>
-  ALCHEMY_API_KEY ? `https://${network}.g.alchemy.com/v2/${ALCHEMY_API_KEY}` : undefined;
+  ALCHEMY_API_KEY
+    ? `https://${network}.g.alchemy.com/v2/${ALCHEMY_API_KEY}`
+    : undefined;
 
-const CHAINS: Partial<Record<SupportedChainId, { chain: Chain; rpc?: string }>> = {
-  [CHAIN_IDS.BASE]: {
-    chain: base,
-    rpc: getAlchemyRpc('base-mainnet'),
-  },
-  [CHAIN_IDS.BASE_SEPOLIA]: {
-    chain: baseSepolia,
-    rpc: getAlchemyRpc('base-sepolia'),
+// Custom chain definition for Monad Testnet
+const monadTestnet: Chain = {
+  id: CHAIN_IDS.MONAD_TESTNET,
+  name: 'Monad Testnet',
+  nativeCurrency: { name: 'MON', symbol: 'MON', decimals: 18 },
+  rpcUrls: {
+    default: { http: ['https://testnet-rpc.monad.xyz'] },
   },
 };
 
+// Custom chain definition for Monad Mainnet
+const monadMainnet: Chain = {
+  id: CHAIN_IDS.MONAD_MAINNET,
+  name: 'Monad',
+  nativeCurrency: { name: 'MON', symbol: 'MON', decimals: 18 },
+  rpcUrls: {
+    default: { http: ['https://rpc.monad.xyz'] },
+  },
+};
+
+const CHAINS: Partial<Record<SupportedChainId, { chain: Chain; rpc?: string }>> =
+  {
+    [CHAIN_IDS.MAINNET]: {
+      chain: mainnet,
+      rpc: getAlchemyRpc('eth-mainnet'),
+    },
+    [CHAIN_IDS.BASE]: {
+      chain: base,
+      rpc: getAlchemyRpc('base-mainnet'),
+    },
+    [CHAIN_IDS.BASE_SEPOLIA]: {
+      chain: baseSepolia,
+      rpc: getAlchemyRpc('base-sepolia'),
+    },
+    [CHAIN_IDS.INK]: {
+      chain: ink,
+      rpc: getAlchemyRpc('ink-mainnet'),
+    },
+    [CHAIN_IDS.UNICHAIN]: {
+      chain: unichain,
+      rpc: getAlchemyRpc('unichain-mainnet'),
+    },
+    [CHAIN_IDS.UNICHAIN_SEPOLIA]: {
+      chain: unichainSepolia,
+      rpc: getAlchemyRpc('unichain-sepolia'),
+    },
+    [CHAIN_IDS.MONAD_TESTNET]: {
+      chain: monadTestnet,
+      rpc: getAlchemyRpc('monad-testnet'),
+    },
+    [CHAIN_IDS.MONAD_MAINNET]: {
+      chain: monadMainnet,
+      rpc: getAlchemyRpc('monad-mainnet'),
+    },
+  };
+
 describe('Airlock Module Whitelisting', () => {
-  const supportedChainIds = Object.values(CHAIN_IDS) as SupportedChainId[];
+  // Use filtered chain IDs from env var (defaults to all)
+  const supportedChainIds = getTestChainIds();
 
   for (const chainId of supportedChainIds) {
     describe(`Chain ${chainId}`, () => {
