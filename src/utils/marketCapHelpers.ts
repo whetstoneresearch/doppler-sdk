@@ -33,6 +33,10 @@ export type {
   TickToMarketCapParams,
 } from '../types';
 
+export function getMaxTickRounded(tickSpacing: number): number {
+  return Math.floor(MAX_TICK / tickSpacing) * tickSpacing
+}
+
 /**
  * Convert market cap to token price
  *
@@ -240,8 +244,11 @@ export function marketCapToTicksForStaticAuction(
     numeraireDecimals = 18,
   } = params;
 
-  if (marketCapRange.start <= 0 || marketCapRange.end <= 0) {
-    throw new Error('Market cap values must be positive');
+  if (marketCapRange.start <= 0) {
+    throw new Error('Start market cap must be positive');
+  }
+  if (marketCapRange.end <= 0) {
+    throw new Error('End market cap must be positive');
   }
   if (marketCapRange.start >= marketCapRange.end) {
     throw new Error('Start market cap must be less than end market cap');
@@ -418,10 +425,13 @@ export function marketCapToTicksForMulticurve(
     numeraireDecimals = 18,
   } = params;
 
-  if (marketCapLower <= 0 || marketCapUpper <= 0) {
-    throw new Error('Market cap values must be positive');
+  if (marketCapLower <= 0) {
+    throw new Error('Lower market cap must be positive');
   }
-  if (marketCapLower >= marketCapUpper) {
+  if (marketCapUpper !== 'max' && marketCapUpper <= 0) {
+    throw new Error('Upper market cap must be positive');
+  }
+  if (marketCapUpper !== 'max' && marketCapLower >= marketCapUpper) {
     throw new Error('Lower market cap must be less than upper market cap');
   }
 
@@ -434,22 +444,25 @@ export function marketCapToTicksForMulticurve(
     numeraireDecimals,
     tickSpacing,
   );
-  const tickAtUpper = -_computeRawTick(
-    marketCapUpper,
-    tokenSupply,
-    numerairePriceUSD,
-    tokenDecimals,
-    numeraireDecimals,
-    tickSpacing,
-  );
+  const tickAtUpper = marketCapUpper === 'max'
+    ? getMaxTickRounded(tickSpacing)
+    : -_computeRawTick(
+        marketCapUpper,
+        tokenSupply,
+        numerairePriceUSD,
+        tokenDecimals,
+        numeraireDecimals,
+        tickSpacing,
+      );
 
   // Use natural tick ordering (lower market cap = lower tick value)
   const tickLower = Math.min(tickAtLower, tickAtUpper);
   const tickUpper = Math.max(tickAtLower, tickAtUpper);
 
   if (tickLower === tickUpper) {
+    const upperLabel = marketCapUpper === 'max' ? 'max' : `$${marketCapUpper.toLocaleString()}`;
     throw new Error(
-      `Market cap range $${marketCapLower.toLocaleString()} - $${marketCapUpper.toLocaleString()} ` +
+      `Market cap range $${marketCapLower.toLocaleString()} - ${upperLabel} ` +
         `resulted in same tick (${tickLower}). Try a wider range or smaller tick spacing.`,
     );
   }

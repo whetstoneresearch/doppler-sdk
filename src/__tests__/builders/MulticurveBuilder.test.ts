@@ -797,5 +797,99 @@ describe('MulticurveBuilder', () => {
       expect(params.pool.curves[0].shares).toBe(parseEther('0.4'));
       expect(params.pool.curves[1].shares).toBe(parseEther('0.6'));
     });
+
+    it('accepts "max" as end market cap for last curve', () => {
+      const builder = MulticurveBuilder.forChain(CHAIN_IDS.BASE)
+        .tokenConfig({
+          type: 'standard',
+          name: 'MaxEnd',
+          symbol: 'MAX',
+          tokenURI: 'ipfs://max',
+        })
+        .saleConfig({
+          initialSupply: parseEther('1000000000'),
+          numTokensToSell: parseEther('900000000'),
+          numeraire: WETH_BASE,
+        })
+        .withCurves({
+          numerairePrice: 3000,
+          curves: [
+            {
+              marketCap: { start: 500_000, end: 1_000_000 },
+              numPositions: 10,
+              shares: parseEther('0.3'),
+            },
+            {
+              marketCap: { start: 1_000_000, end: 5_000_000 },
+              numPositions: 20,
+              shares: parseEther('0.5'),
+            },
+            {
+              marketCap: { start: 5_000_000, end: 'max' },
+              numPositions: 10,
+              shares: parseEther('0.2'),
+            },
+          ],
+        })
+        .withGovernance({ type: 'noOp' })
+        .withMigration({ type: 'uniswapV2' })
+        .withUserAddress(
+          '0x00000000000000000000000000000000000000AA' as Address,
+        );
+
+      const params = builder.build();
+
+      expect(params.pool.curves).toHaveLength(3);
+      const lastCurve = params.pool.curves[2];
+      expect(lastCurve.tickUpper).toBeGreaterThan(lastCurve.tickLower);
+      // 'max' resolves to MAX_TICK rounded down: floor(887272/60)*60 = 887220 (tickSpacing=60 for default FEE_TIERS.MEDIUM)
+      expect(lastCurve.tickUpper).toBe(887220);
+    });
+
+    it('sorts curve with "max" end to last position', () => {
+      const builder = MulticurveBuilder.forChain(CHAIN_IDS.BASE)
+        .tokenConfig({
+          type: 'standard',
+          name: 'MaxSort',
+          symbol: 'MXS',
+          tokenURI: 'ipfs://mxs',
+        })
+        .saleConfig({
+          initialSupply: parseEther('1000000000'),
+          numTokensToSell: parseEther('900000000'),
+          numeraire: WETH_BASE,
+        })
+        .withCurves({
+          numerairePrice: 3000,
+          curves: [
+            {
+              marketCap: { start: 5_000_000, end: 'max' },
+              numPositions: 10,
+              shares: parseEther('0.2'),
+            },
+            {
+              marketCap: { start: 500_000, end: 1_000_000 },
+              numPositions: 10,
+              shares: parseEther('0.3'),
+            },
+            {
+              marketCap: { start: 1_000_000, end: 5_000_000 },
+              numPositions: 20,
+              shares: parseEther('0.5'),
+            },
+          ],
+        })
+        .withGovernance({ type: 'noOp' })
+        .withMigration({ type: 'uniswapV2' })
+        .withUserAddress(
+          '0x00000000000000000000000000000000000000AA' as Address,
+        );
+
+      const params = builder.build();
+
+      expect(params.pool.curves[0].shares).toBe(parseEther('0.3'));
+      expect(params.pool.curves[1].shares).toBe(parseEther('0.5'));
+      expect(params.pool.curves[2].shares).toBe(parseEther('0.2'));
+    });
   });
 });

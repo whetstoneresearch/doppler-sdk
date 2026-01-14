@@ -279,11 +279,14 @@ export class MulticurveBuilder<
       tokenSupply,
       params.tokenDecimals,
     );
-    const endValidation = validateMarketCapParameters(
-      firstCurve.marketCap.end,
-      tokenSupply,
-      params.tokenDecimals,
-    );
+    const endValidation =
+      firstCurve.marketCap.end === 'max'
+        ? { valid: true, warnings: [] }
+        : validateMarketCapParameters(
+            firstCurve.marketCap.end,
+            tokenSupply,
+            params.tokenDecimals,
+          );
     const allWarnings = [
       ...startValidation.warnings,
       ...endValidation.warnings,
@@ -336,7 +339,10 @@ export class MulticurveBuilder<
           `graduationMarketCap ($${params.graduationMarketCap.toLocaleString()}) must be >= the lowest curve's start market cap ($${lowestCurveMarketCap.toLocaleString()})`,
         );
       }
-      if (params.graduationMarketCap > highestCurveMarketCap) {
+      if (
+        highestCurveMarketCap !== 'max' &&
+        params.graduationMarketCap > highestCurveMarketCap
+      ) {
         throw new Error(
           `graduationMarketCap ($${params.graduationMarketCap.toLocaleString()}) must be <= the highest curve's end market cap ($${highestCurveMarketCap.toLocaleString()})`,
         );
@@ -370,21 +376,20 @@ export class MulticurveBuilder<
    * Sort curves by market cap (start, then end) for deterministic ordering
    */
   private sortCurvesByMarketCap<
-    T extends { marketCap: { start: number; end: number } },
+    T extends { marketCap: { start: number; end: number | 'max' } },
   >(curves: T[]): T[] {
     return [...curves].sort((a, b) => {
       const startDiff = a.marketCap.start - b.marketCap.start;
       if (startDiff !== 0) return startDiff;
-      return a.marketCap.end - b.marketCap.end;
+      const aEnd = a.marketCap.end === 'max' ? Infinity : a.marketCap.end;
+      const bEnd = b.marketCap.end === 'max' ? Infinity : b.marketCap.end;
+      return aEnd - bEnd;
     });
   }
 
-  /**
-   * Validate a single curve's parameters
-   */
   private validateCurveRange(
     startMarketCap: number,
-    endMarketCap: number,
+    endMarketCap: number | 'max',
     numPositions: number,
     shares: bigint,
     label: string,
@@ -392,10 +397,10 @@ export class MulticurveBuilder<
     if (startMarketCap <= 0) {
       throw new Error(`${label}: marketCap.start must be greater than 0`);
     }
-    if (endMarketCap <= 0) {
+    if (endMarketCap !== 'max' && endMarketCap <= 0) {
       throw new Error(`${label}: marketCap.end must be greater than 0`);
     }
-    if (startMarketCap >= endMarketCap) {
+    if (endMarketCap !== 'max' && startMarketCap >= endMarketCap) {
       throw new Error(
         `${label}: startMarketCap ($${startMarketCap.toLocaleString()}) must be less than endMarketCap ($${endMarketCap.toLocaleString()})`,
       );
@@ -408,12 +413,8 @@ export class MulticurveBuilder<
     }
   }
 
-  /**
-   * Validate that curves are contiguous or overlapping (no gaps allowed).
-   * Expects curves to be pre-sorted by market cap.
-   */
   private validateCurveContiguity(
-    sortedCurves: { marketCap: { start: number; end: number } }[],
+    sortedCurves: { marketCap: { start: number; end: number | 'max' } }[],
   ): void {
     if (sortedCurves.length <= 1) {
       return;
@@ -422,12 +423,24 @@ export class MulticurveBuilder<
     for (let i = 1; i < sortedCurves.length; i++) {
       const prevCurve = sortedCurves[i - 1];
       const currCurve = sortedCurves[i];
+      const prevEnd =
+        prevCurve.marketCap.end === 'max'
+          ? Infinity
+          : prevCurve.marketCap.end;
+      const prevEndLabel =
+        prevCurve.marketCap.end === 'max'
+          ? 'max'
+          : `$${prevCurve.marketCap.end.toLocaleString()}`;
+      const currEndLabel =
+        currCurve.marketCap.end === 'max'
+          ? 'max'
+          : `$${currCurve.marketCap.end.toLocaleString()}`;
 
-      if (currCurve.marketCap.start > prevCurve.marketCap.end) {
+      if (currCurve.marketCap.start > prevEnd) {
         throw new Error(
           `Gap detected between market cap ranges: ` +
-            `$${prevCurve.marketCap.start.toLocaleString()}-$${prevCurve.marketCap.end.toLocaleString()} ` +
-            `and $${currCurve.marketCap.start.toLocaleString()}-$${currCurve.marketCap.end.toLocaleString()}. ` +
+            `$${prevCurve.marketCap.start.toLocaleString()}-${prevEndLabel} ` +
+            `and $${currCurve.marketCap.start.toLocaleString()}-${currEndLabel}. ` +
             `Curves must be contiguous or overlapping.`,
         );
       }

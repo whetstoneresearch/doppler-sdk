@@ -311,7 +311,7 @@ describe('marketCapHelpers', () => {
           tokenDecimals: 18,
           numeraireDecimals: 18,
         });
-      }).toThrow('Market cap values must be positive');
+      }).toThrow('Lower market cap must be positive');
     });
 
     it('should throw on zero market caps', () => {
@@ -325,7 +325,7 @@ describe('marketCapHelpers', () => {
           tokenDecimals: 18,
           numeraireDecimals: 18,
         });
-      }).toThrow('Market cap values must be positive');
+      }).toThrow('Lower market cap must be positive');
     });
 
     it('should throw when range is too narrow', () => {
@@ -401,7 +401,7 @@ describe('marketCapHelpers', () => {
           tokenDecimals: 18,
           numeraireDecimals: 18,
         });
-      }).toThrow('Market cap values must be positive');
+      }).toThrow('Start market cap must be positive');
     });
 
     it('should handle ETH numeraire scenario', () => {
