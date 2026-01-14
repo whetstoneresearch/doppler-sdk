@@ -98,7 +98,7 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
   [CHAIN_IDS.BASE]: {
     airlock: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE].Airlock as Address,
     tokenFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
-      .TokenFactory as Address,
+      .TokenFactory80 as Address,
     v3Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
       .UniswapV3Initializer as Address,
     v3Quoter: '0x3d4e44Eb1374240CE5F1B871ab261CD16335B76a' as Address,
@@ -210,7 +210,7 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     airlock: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.UNICHAIN]
       .Airlock as Address,
     tokenFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.UNICHAIN]
-      .TokenFactory as Address,
+      .TokenFactory80 as Address,
     v3Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.UNICHAIN]
       .UniswapV3Initializer as Address,
     v3Quoter: '0x385A5cf5F83e99f7BB2852b6A19C3538b9FA7658' as Address,
@@ -240,7 +240,7 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
   [CHAIN_IDS.UNICHAIN_SEPOLIA]: {
     airlock: '0x651ab94B4777e2e4cdf96082d90C65bd947b73A4' as Address,
     tokenFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.UNICHAIN_SEPOLIA]
-      .TokenFactory as Address,
+      .TokenFactory80 as Address,
     v3Initializer: '0x7Fb9a622186B4660A5988C223ebb9d3690dD5007' as Address,
     v3Quoter: '0x6Dd37329A1A225a6Fca658265D460423DCafBF89' as Address,
     v4Initializer: '0x992375478626E67F4e639d3298EbCAaE51C3dF0b' as Address,
@@ -267,7 +267,7 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     airlock: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_TESTNET]
       .Airlock as Address,
     tokenFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_TESTNET]
-      .TokenFactory as Address,
+      .TokenFactory80 as Address,
     v3Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_TESTNET]
       .UniswapV3Initializer as Address,
     v3Quoter: ZERO_ADDRESS,
@@ -302,7 +302,7 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     airlock: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_MAINNET]
       .Airlock as Address,
     tokenFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_MAINNET]
-      .TokenFactory as Address,
+      .TokenFactory80 as Address,
     v3Initializer: ZERO_ADDRESS,
     v3Quoter: '0x66266174564170519409d8853898f065c719536b' as Address,
     v4Initializer: ZERO_ADDRESS,
