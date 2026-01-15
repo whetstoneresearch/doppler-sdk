@@ -158,7 +158,7 @@ describe('Airlock Module Whitelisting', () => {
       });
 
       (addresses.tokenFactory === ZERO_ADDRESS ? it.skip : it)(
-        'should have TokenFactory whitelisted',
+        `TokenFactory (${addresses.tokenFactory}) whitelisted`,
         async () => {
           const state = (await publicClient.readContract({
             address: addresses.airlock,
@@ -172,7 +172,7 @@ describe('Airlock Module Whitelisting', () => {
       );
 
       (addresses.governanceFactory === ZERO_ADDRESS ? it.skip : it)(
-        'should have GovernanceFactory whitelisted',
+        `GovernanceFactory (${addresses.governanceFactory}) whitelisted`,
         async () => {
           const state = (await publicClient.readContract({
             address: addresses.airlock,
@@ -186,7 +186,7 @@ describe('Airlock Module Whitelisting', () => {
       );
 
       (addresses.v3Initializer === ZERO_ADDRESS ? it.skip : it)(
-        'should have V3Initializer whitelisted',
+        `V3Initializer (${addresses.v3Initializer}) whitelisted`,
         async () => {
           const state = (await publicClient.readContract({
             address: addresses.airlock,
@@ -200,7 +200,7 @@ describe('Airlock Module Whitelisting', () => {
       );
 
       (addresses.v4Initializer === ZERO_ADDRESS ? it.skip : it)(
-        'should have V4Initializer whitelisted',
+        `V4Initializer (${addresses.v4Initializer}) whitelisted`,
         async () => {
           const state = (await publicClient.readContract({
             address: addresses.airlock,
@@ -217,7 +217,7 @@ describe('Airlock Module Whitelisting', () => {
         addresses.lockableV3Initializer &&
         addresses.lockableV3Initializer !== ZERO_ADDRESS
       ) {
-        it('should have LockableV3Initializer whitelisted', async () => {
+        it(`LockableV3Initializer (${addresses.lockableV3Initializer}) whitelisted`, async () => {
           const state = (await publicClient.readContract({
             address: addresses.airlock,
             abi: airlockAbi,
@@ -233,7 +233,7 @@ describe('Airlock Module Whitelisting', () => {
         addresses.v4MulticurveInitializer &&
         addresses.v4MulticurveInitializer !== ZERO_ADDRESS
       ) {
-        it('should have V4MulticurveInitializer whitelisted', async () => {
+        it(`V4MulticurveInitializer (${addresses.v4MulticurveInitializer}) whitelisted`, async () => {
           const state = (await publicClient.readContract({
             address: addresses.airlock,
             abi: airlockAbi,
@@ -249,7 +249,7 @@ describe('Airlock Module Whitelisting', () => {
         addresses.v4ScheduledMulticurveInitializer &&
         addresses.v4ScheduledMulticurveInitializer !== ZERO_ADDRESS
       ) {
-        it('should have V4ScheduledMulticurveInitializer whitelisted', async () => {
+        it(`V4ScheduledMulticurveInitializer (${addresses.v4ScheduledMulticurveInitializer}) whitelisted`, async () => {
           const state = (await publicClient.readContract({
             address: addresses.airlock,
             abi: airlockAbi,
@@ -262,7 +262,7 @@ describe('Airlock Module Whitelisting', () => {
       }
 
       (addresses.v2Migrator === ZERO_ADDRESS ? it.skip : it)(
-        'should have V2Migrator whitelisted',
+        `V2Migrator (${addresses.v2Migrator}) whitelisted`,
         async () => {
           const state = (await publicClient.readContract({
             address: addresses.airlock,
@@ -276,7 +276,7 @@ describe('Airlock Module Whitelisting', () => {
       );
 
       (addresses.v4Migrator === ZERO_ADDRESS ? it.skip : it)(
-        'should have V4Migrator whitelisted',
+        `V4Migrator (${addresses.v4Migrator}) whitelisted`,
         async () => {
           const state = (await publicClient.readContract({
             address: addresses.airlock,
@@ -290,7 +290,7 @@ describe('Airlock Module Whitelisting', () => {
       );
 
       if (addresses.noOpMigrator && addresses.noOpMigrator !== ZERO_ADDRESS) {
-        it('should have NoOpMigrator whitelisted', async () => {
+        it(`NoOpMigrator (${addresses.noOpMigrator}) whitelisted`, async () => {
           const state = (await publicClient.readContract({
             address: addresses.airlock,
             abi: airlockAbi,
@@ -306,7 +306,7 @@ describe('Airlock Module Whitelisting', () => {
         addresses.noOpGovernanceFactory &&
         addresses.noOpGovernanceFactory !== ZERO_ADDRESS
       ) {
-        it('should have NoOpGovernanceFactory whitelisted', async () => {
+        it(`NoOpGovernanceFactory (${addresses.noOpGovernanceFactory}) whitelisted`, async () => {
           const state = (await publicClient.readContract({
             address: addresses.airlock,
             abi: airlockAbi,
