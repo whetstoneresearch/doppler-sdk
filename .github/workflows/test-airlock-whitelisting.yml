@@ -6,15 +6,34 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      chains:
+        description: 'Chains to test (comma-separated: base,base-sepolia,mainnet,ink,unichain,unichain-sepolia,monad-testnet,monad-mainnet or "all")'
+        required: false
+        default: 'base,base-sepolia,unichain,unichain-sepolia,monad-mainnet'
+        type: string
+      rpc_delay_ms:
+        description: 'Delay between RPC calls in ms (increase if rate limited)'
+        required: false
+        default: '1000'
+        type: string
   schedule:
     # Run twice daily at 00:00 and 12:00 UTC to catch any whitelisting issues
     - cron: '0 0,12 * * *'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test-whitelisting:
     runs-on: ubuntu-latest
     env:
       ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
+      # Default to deployed/whitelisted chains; workflow_dispatch can override
+      TEST_CHAINS: ${{ github.event.inputs.chains || 'base,base-sepolia,unichain,unichain-sepolia,monad-mainnet' }}
+      RPC_DELAY_MS: ${{ github.event.inputs.rpc_delay_ms || '1000' }}
+      CI: true
 
     steps:
       - uses: actions/checkout@v4
@@ -33,13 +52,41 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Run airlock whitelisting tests
-        run: pnpm test airlock-whitelisting
+      - name: Debug env vars
+        run: |
+          echo "TEST_CHAINS: $TEST_CHAINS"
+          echo "RPC_DELAY_MS: $RPC_DELAY_MS"
+          echo "ALCHEMY_API_KEY set: $([[ -n "$ALCHEMY_API_KEY" ]] && echo 'yes' || echo 'no')"
 
-      - name: Create summary
+      - name: Run airlock whitelisting tests
+        id: test
+        run: pnpm test airlock-whitelisting
+        timeout-minutes: 10
+        continue-on-error: true
+
+      - name: Generate test summary
         if: always()
         run: |
-          echo "## Airlock Whitelisting Test Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Verified that all Doppler modules (TokenFactory, GovernanceFactory, Initializers, Migrators) are properly whitelisted on Airlock contracts across all deployed chains." >> $GITHUB_STEP_SUMMARY
+          if [ -f test-results.json ]; then
+            pnpm tsx scripts/generate-test-summary.ts test-results.json
+          else
+            echo "## Airlock Whitelisting Test Results" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo ":warning: **Test results JSON not found**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Chains tested:** $TEST_CHAINS" >> $GITHUB_STEP_SUMMARY
+            echo "**RPC delay:** ${RPC_DELAY_MS}ms" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: test-results.json
+          if-no-files-found: ignore
+
+      - name: Check test outcome
+        if: steps.test.outcome == 'failure'
+        run: exit 1
 
