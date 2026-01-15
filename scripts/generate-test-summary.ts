@@ -224,10 +224,8 @@ function generateMarkdownSummary(
           const errorMsg = module.error
             ? module.error.slice(0, 80).replace(/\n/g, ' ')
             : '';
-          const shortAddr = module.address
-            ? `\`${module.address.slice(0, 10)}...${module.address.slice(-8)}\``
-            : '';
-          lines.push(`| ${module.name} | ${shortAddr} | :x: | ${errorMsg} |`);
+          const addr = module.address ? `\`${module.address}\`` : '';
+          lines.push(`| ${module.name} | ${addr} | :x: | ${errorMsg} |`);
         }
       }
       lines.push('');
