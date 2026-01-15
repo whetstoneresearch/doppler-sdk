@@ -109,10 +109,10 @@ async function main() {
           shares: parseEther('0.3'), // 30%
         },
       ],
-      graduationMarketCap: 40_000_000, // $40M graduation target (within curve range, before max)
       beneficiaries, // Required for RehypeDopplerHook
     })
     // Configure fee distribution (must sum to 100%)
+    // graduationMarketCap is now part of rehype config (uses numerairePrice from withCurves)
     .withRehypeDopplerHook({
       hookAddress: REHYPE_DOPPLER_HOOK_ADDRESS,
       buybackDestination: BUYBACK_DESTINATION,
@@ -121,6 +121,7 @@ async function main() {
       numeraireBuybackPercentWad: 200_000_000_000_000_000n, // 20%
       beneficiaryPercentWad: 300_000_000_000_000_000n,      // 30%
       lpPercentWad: 300_000_000_000_000_000n,               // 30%
+      graduationMarketCap: 40_000_000, // $40M graduation target (within curve range)
     })
     .withGovernance({ type: 'noOp' })
     .withMigration({ type: 'noOp' })
@@ -132,7 +133,7 @@ async function main() {
   console.log('\nMulticurve Configuration:')
   console.log('  Token:', params.token.name, '(' + params.token.symbol + ')')
   console.log('  Curves:', params.pool.curves.length)
-  console.log('  Far tick (from graduationMarketCap):', params.pool.farTick)
+  console.log('  Far tick (from graduationMarketCap):', params.dopplerHook?.farTick)
   console.log('  Beneficiaries:', params.pool.beneficiaries?.length)
 
   console.log('\nMarket Cap Targets:')

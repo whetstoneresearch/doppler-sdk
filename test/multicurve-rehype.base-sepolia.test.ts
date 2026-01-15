@@ -119,7 +119,6 @@ describe('Multicurve with RehypeDopplerHook (Base Sepolia) test', () => {
           numPositions: 10,
           shares: WAD / 10n,
         })),
-        farTick: 200_000,
         beneficiaries: [
           { beneficiary: airlockOwner!, shares: WAD / 10n },  // 10% protocol owner
           { beneficiary: '0x0000000000000000000000000000000000000001' as `0x${string}`, shares: (WAD * 9n) / 10n },  // 90%
@@ -177,7 +176,6 @@ describe('Multicurve with RehypeDopplerHook (Base Sepolia) test', () => {
           numPositions: 10,
           shares: WAD / 10n,
         })),
-        farTick: 200_000,
         beneficiaries: [
           { beneficiary: BUYBACK_DST, shares: 950_000_000_000_000_000n },
           { beneficiary: airlockOwner!, shares: 50_000_000_000_000_000n },
@@ -191,6 +189,7 @@ describe('Multicurve with RehypeDopplerHook (Base Sepolia) test', () => {
         numeraireBuybackPercentWad: 200_000_000_000_000_000n,
         beneficiaryPercentWad: 300_000_000_000_000_000n,
         lpPercentWad: 300_000_000_000_000_000n,
+        farTick: 200_000,
       })
       .withGovernance({ type: 'noOp' })
       .withMigration({ type: 'noOp' })

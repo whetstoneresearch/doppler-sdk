@@ -47,6 +47,10 @@ export class MulticurveBuilder<
   private userAddress?: Address;
   private moduleAddresses?: ModuleAddressOverrides;
   private gasLimit?: bigint;
+  // Stored from withCurves() for graduationMarketCap conversion in build()
+  private numerairePrice?: number;
+  private tokenDecimals?: number;
+  private numeraireDecimals?: number;
   public chainId: C;
 
   constructor(chainId: C) {
@@ -119,7 +123,6 @@ export class MulticurveBuilder<
       shares: bigint;
     }[];
     beneficiaries?: { beneficiary: Address; shares: bigint }[];
-    farTick?: number;
   }): this {
     const sortedBeneficiaries = params.beneficiaries
       ? [...params.beneficiaries].sort((a, b) => {
@@ -134,7 +137,6 @@ export class MulticurveBuilder<
       tickSpacing: params.tickSpacing,
       curves: params.curves,
       beneficiaries: sortedBeneficiaries,
-      farTick: params.farTick,
     };
     return this;
   }
@@ -210,6 +212,11 @@ export class MulticurveBuilder<
     if (params.numerairePrice <= 0) {
       throw new Error('numerairePrice must be greater than 0');
     }
+
+    // Store for later use in build() (graduationMarketCap conversion)
+    this.numerairePrice = params.numerairePrice;
+    this.tokenDecimals = params.tokenDecimals;
+    this.numeraireDecimals = params.numeraireDecimals;
 
     // Validate curves array
     if (!params.curves || params.curves.length === 0) {
@@ -323,52 +330,12 @@ export class MulticurveBuilder<
       });
     }
 
-    // Convert graduationMarketCap to farTick if provided, otherwise auto-calculate from curves
-    let farTick: number | undefined;
-    if (params.graduationMarketCap !== undefined) {
-      if (params.graduationMarketCap <= 0) {
-        throw new Error('graduationMarketCap must be greater than 0');
-      }
-
-      // Validate graduationMarketCap is within curve boundaries
-      const lowestCurveMarketCap = sortedCurves[0].marketCap.start;
-      const highestCurveMarketCap =
-        sortedCurves[sortedCurves.length - 1].marketCap.end;
-      if (params.graduationMarketCap < lowestCurveMarketCap) {
-        throw new Error(
-          `graduationMarketCap ($${params.graduationMarketCap.toLocaleString()}) must be >= the lowest curve's start market cap ($${lowestCurveMarketCap.toLocaleString()})`,
-        );
-      }
-      if (
-        highestCurveMarketCap !== 'max' &&
-        params.graduationMarketCap > highestCurveMarketCap
-      ) {
-        throw new Error(
-          `graduationMarketCap ($${params.graduationMarketCap.toLocaleString()}) must be <= the highest curve's end market cap ($${highestCurveMarketCap.toLocaleString()})`,
-        );
-      }
-
-      farTick = marketCapToTickForMulticurve({
-        marketCapUSD: params.graduationMarketCap,
-        tokenSupply,
-        numerairePriceUSD: params.numerairePrice,
-        tickSpacing,
-        tokenDecimals: params.tokenDecimals ?? 18,
-        numeraireDecimals: params.numeraireDecimals ?? 18,
-      });
-    } else {
-      // Auto-calculate farTick as the maximum tickUpper (highest market cap point)
-      const allTickUppers = curves.map((c) => c.tickUpper);
-      farTick = Math.max(...allTickUppers);
-    }
-
     // Delegate to existing poolConfig method
     return this.poolConfig({
       fee,
       tickSpacing,
       curves,
       beneficiaries: params.beneficiaries,
-      farTick,
     });
   }
 
@@ -482,6 +449,14 @@ export class MulticurveBuilder<
         `DopplerHook fee distribution must sum to ${WAD} (100%), but got ${totalDistribution}`,
       );
     }
+
+    // Validate mutual exclusivity of graduation threshold options
+    if (params.graduationMarketCap !== undefined && params.farTick !== undefined) {
+      throw new Error(
+        'Cannot specify both graduationMarketCap and farTick. Use one or the other.',
+      );
+    }
+
     this.dopplerHook = params;
     return this;
   }
@@ -635,6 +610,54 @@ export class MulticurveBuilder<
       }
     }
 
+    // Convert graduationMarketCap to farTick if using rehype
+    let dopplerHook = this.dopplerHook;
+    if (dopplerHook?.graduationMarketCap !== undefined) {
+      // Use numerairePrice from: 1) explicit in dopplerHook, 2) stored from withCurves()
+      const numerairePrice = dopplerHook.numerairePrice ?? this.numerairePrice;
+
+      if (!numerairePrice) {
+        throw new Error(
+          'graduationMarketCap requires numerairePrice. ' +
+            'Either use withCurves() (which provides numerairePrice), ' +
+            'or pass numerairePrice explicitly in withRehypeDopplerHook().',
+        );
+      }
+
+      if (dopplerHook.graduationMarketCap <= 0) {
+        throw new Error('graduationMarketCap must be greater than 0');
+      }
+
+      const farTick = marketCapToTickForMulticurve({
+        marketCapUSD: dopplerHook.graduationMarketCap,
+        tokenSupply: this.sale.initialSupply,
+        numerairePriceUSD: numerairePrice,
+        tickSpacing: this.pool.tickSpacing,
+        tokenDecimals: this.tokenDecimals ?? 18,
+        numeraireDecimals: this.numeraireDecimals ?? 18,
+      });
+
+      // Validate farTick is within curve boundaries
+      const allTickUppers = this.pool.curves.map((c) => c.tickUpper);
+      const allTickLowers = this.pool.curves.map((c) => c.tickLower);
+      const maxTickUpper = Math.max(...allTickUppers);
+      const minTickLower = Math.min(...allTickLowers);
+
+      if (farTick < minTickLower) {
+        throw new Error(
+          `graduationMarketCap converts to tick ${farTick}, which is below the lowest curve tick (${minTickLower})`,
+        );
+      }
+      if (farTick > maxTickUpper) {
+        throw new Error(
+          `graduationMarketCap converts to tick ${farTick}, which is above the highest curve tick (${maxTickUpper})`,
+        );
+      }
+
+      // Store computed farTick on dopplerHook for encoding
+      dopplerHook = { ...dopplerHook, farTick };
+    }
+
     // Default governance: noOp on supported chains, default on others (e.g., Ink)
     const governance =
       this.governance ??
@@ -647,7 +670,7 @@ export class MulticurveBuilder<
       sale: this.sale,
       pool: this.pool,
       schedule: this.schedule,
-      dopplerHook: this.dopplerHook,
+      dopplerHook,
       vesting: this.vesting,
       governance: governance as GovernanceOption<C>,
       migration: this.migration,

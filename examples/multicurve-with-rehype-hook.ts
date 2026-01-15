@@ -96,7 +96,6 @@ async function main() {
         numPositions: 10,
         shares: WAD / 10n, // 10% per curve
       })),
-      farTick: 200_000, // Maximum tick for the pool
       beneficiaries,
     })
     // Configure the RehypeDopplerHook for fee distribution
@@ -109,6 +108,7 @@ async function main() {
       numeraireBuybackPercentWad: 200_000_000_000_000_000n, // 20% - keep as WETH
       beneficiaryPercentWad: 300_000_000_000_000_000n,      // 30% - to beneficiaries
       lpPercentWad: 300_000_000_000_000_000n,               // 30% - to LPs
+      farTick: 200_000, // Maximum tick for graduation (rehype-only)
     })
     .withGovernance({ type: 'noOp' })
     // NoOp migration since we're using beneficiaries (pool stays locked)
@@ -122,7 +122,7 @@ async function main() {
   console.log('\nMulticurve Configuration:')
   console.log('  Token:', params.token.name, `(${params.token.symbol})`)
   console.log('  Curves:', params.pool.curves.length)
-  console.log('  Far tick:', params.pool.farTick)
+  console.log('  Far tick:', params.dopplerHook?.farTick)
   console.log('  Beneficiaries:', params.pool.beneficiaries?.length)
   console.log('  Migration:', params.migration.type)
 
