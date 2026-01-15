@@ -258,9 +258,7 @@ describe('Airlock Module Whitelisting', () => {
             result.status = 'FAIL';
             testResults.push(result);
             throw new Error(
-              `${moduleName} at ${moduleAddress} has wrong state.\n` +
-              `  Expected: ${MODULE_STATE_NAMES[expectedState]} (${expectedState})\n` +
-              `  Actual:   ${MODULE_STATE_NAMES[result.actual]} (${result.actual})`
+              `State=${MODULE_STATE_NAMES[result.actual]}(${result.actual}), expected ${MODULE_STATE_NAMES[expectedState]}(${expectedState}) | ${moduleAddress}`
             );
           }
 
