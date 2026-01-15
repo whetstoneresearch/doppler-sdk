@@ -70,6 +70,7 @@ interface ChainResult {
 
 interface ModuleResult {
   name: string;
+  address: string;
   status: 'pass' | 'fail' | 'skip';
   error?: string;
 }
@@ -86,6 +87,11 @@ function extractModuleName(testTitle: string): string {
     }
   }
   return testTitle;
+}
+
+function extractAddress(testTitle: string): string {
+  const match = testTitle.match(/\((0x[a-fA-F0-9]+)\)/);
+  return match ? match[1] : '';
 }
 
 function parseResults(jsonPath: string): ChainResult[] {
@@ -127,6 +133,7 @@ function parseResults(jsonPath: string): ChainResult[] {
       }
 
       const moduleName = extractModuleName(assertion.title);
+      const moduleAddress = extractAddress(assertion.title);
       const moduleStatus: 'pass' | 'fail' | 'skip' =
         assertion.status === 'passed'
           ? 'pass'
@@ -136,6 +143,7 @@ function parseResults(jsonPath: string): ChainResult[] {
 
       chain.modules.push({
         name: moduleName,
+        address: moduleAddress,
         status: moduleStatus,
         error: assertion.failureMessages?.[0],
       });
@@ -208,15 +216,18 @@ function generateMarkdownSummary(
     for (const chain of failedChains) {
       lines.push(`#### ${chain.chainName}`);
       lines.push('');
-      lines.push('| Module | Status | Error |');
-      lines.push('|--------|--------|-------|');
+      lines.push('| Module | Address | Status | Error |');
+      lines.push('|--------|---------|--------|-------|');
 
       for (const module of chain.modules) {
         if (module.status === 'fail') {
           const errorMsg = module.error
-            ? module.error.slice(0, 100).replace(/\n/g, ' ') + '...'
+            ? module.error.slice(0, 80).replace(/\n/g, ' ')
             : '';
-          lines.push(`| ${module.name} | :x: | ${errorMsg} |`);
+          const shortAddr = module.address
+            ? `\`${module.address.slice(0, 10)}...${module.address.slice(-8)}\``
+            : '';
+          lines.push(`| ${module.name} | ${shortAddr} | :x: | ${errorMsg} |`);
         }
       }
       lines.push('');
