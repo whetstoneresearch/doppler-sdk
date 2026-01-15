@@ -112,7 +112,7 @@ async function main() {
       beneficiaries, // Required for RehypeDopplerHook
     })
     // Configure fee distribution (must sum to 100%)
-    // graduationMarketCap is now part of rehype config (uses numerairePrice from withCurves)
+    // graduationMarketCap uses numerairePrice from withCurves() for tick conversion
     .withRehypeDopplerHook({
       hookAddress: REHYPE_DOPPLER_HOOK_ADDRESS,
       buybackDestination: BUYBACK_DESTINATION,
