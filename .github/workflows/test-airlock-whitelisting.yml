@@ -33,6 +33,7 @@ jobs:
       # Default to deployed/whitelisted chains; workflow_dispatch can override
       TEST_CHAINS: ${{ github.event.inputs.chains || 'base,base-sepolia,unichain,unichain-sepolia,monad-mainnet' }}
       RPC_DELAY_MS: ${{ github.event.inputs.rpc_delay_ms || '1000' }}
+      CI: true
 
     steps:
       - uses: actions/checkout@v4
@@ -58,16 +59,34 @@ jobs:
           echo "ALCHEMY_API_KEY set: $([[ -n "$ALCHEMY_API_KEY" ]] && echo 'yes' || echo 'no')"
 
       - name: Run airlock whitelisting tests
-        run: pnpm test airlock-whitelisting --reporter=verbose
+        id: test
+        run: pnpm test airlock-whitelisting
         timeout-minutes: 10
+        continue-on-error: true
 
-      - name: Create summary
+      - name: Generate test summary
         if: always()
         run: |
-          echo "## Airlock Whitelisting Test Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Chains tested:** $TEST_CHAINS" >> $GITHUB_STEP_SUMMARY
-          echo "**RPC delay:** ${RPC_DELAY_MS}ms" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Verified that all Doppler modules (TokenFactory, GovernanceFactory, Initializers, Migrators) are properly whitelisted on Airlock contracts." >> $GITHUB_STEP_SUMMARY
+          if [ -f test-results.json ]; then
+            pnpm tsx scripts/generate-test-summary.ts test-results.json
+          else
+            echo "## Airlock Whitelisting Test Results" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo ":warning: **Test results JSON not found**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Chains tested:** $TEST_CHAINS" >> $GITHUB_STEP_SUMMARY
+            echo "**RPC delay:** ${RPC_DELAY_MS}ms" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: test-results.json
+          if-no-files-found: ignore
+
+      - name: Check test outcome
+        if: steps.test.outcome == 'failure'
+        run: exit 1
 
