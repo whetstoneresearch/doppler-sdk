@@ -1306,9 +1306,15 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
 
     if (useDopplerHookInitializer) {
       // DopplerHookInitializer format (8 fields)
-      // Calculate farTick: use provided value or default to max usable tick
-      const farTick =
-        params.pool.farTick ?? this.roundMaxTickDown(params.pool.tickSpacing);
+      // Calculate farTick: use provided value from dopplerHook, or auto-calculate from curves
+      let farTick: number;
+      if (params.dopplerHook?.farTick !== undefined) {
+        farTick = params.dopplerHook.farTick;
+      } else {
+        // Auto-calculate from curves (max tickUpper)
+        const allTickUppers = params.pool.curves.map((c) => c.tickUpper);
+        farTick = Math.max(...allTickUppers);
+      }
 
       // Encode dopplerHook initialization calldata if provided
       let onInitializationDopplerHookCalldata: Hex = '0x';

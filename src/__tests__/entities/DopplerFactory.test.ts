@@ -240,7 +240,7 @@ describe('DopplerFactory', () => {
       });
 
       expect(walletClient.writeContract).toHaveBeenCalledWith(
-        expect.objectContaining({ gas: 9_500_000n }),
+        expect.objectContaining({ gas: 13_500_000n }),
       );
 
       expect(publicClient.simulateContract).toHaveBeenCalledWith(

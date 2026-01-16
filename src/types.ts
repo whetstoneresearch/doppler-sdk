@@ -481,14 +481,6 @@ export interface MulticurveMarketCapCurvesConfig {
   tickSpacing?: number;
   /** Optional beneficiaries for fee streaming */
   beneficiaries?: BeneficiaryData[];
-  /**
-   * Market cap at which the pool can graduate (migrate or change status).
-   * Converted to farTick internally.
-   * Note: This is NOT a cap - prices can exceed this value after graduation.
-   * Must be within the curve boundaries (>= lowest start, <= highest end).
-   * If not specified, defaults to the highest curve's tickUpper.
-   */
-  graduationMarketCap?: number;
 }
 
 // Build configuration for static auctions (V3-style)
@@ -672,6 +664,14 @@ export interface RehypeDopplerHookConfig {
   lpPercentWad: bigint;
   // Optional graduation calldata (called when pool graduates)
   graduationCalldata?: `0x${string}`;
+
+  // Graduation threshold configuration (rehype-only)
+  // Market cap in USD at which pool can graduate. Requires numerairePrice (from withCurves() or explicit).
+  graduationMarketCap?: number;
+  // Price of numeraire in USD. Optional if using withCurves() (reuses that value). Required with poolConfig().
+  numerairePrice?: number;
+  // Direct tick value for graduation threshold. Use graduationMarketCap for USD-based config.
+  farTick?: number;
 }
 
 // Create Multicurve initializer parameters
@@ -691,8 +691,6 @@ export interface CreateMulticurveParams<
     curves: MulticurveCurve[];
     // Optional beneficiaries to lock the pool (fee collection only, no migration)
     beneficiaries?: BeneficiaryData[];
-    // Optional far tick for the pool (defaults to max usable tick based on tickSpacing)
-    farTick?: number;
   };
 
   // Optional scheduled launch configuration

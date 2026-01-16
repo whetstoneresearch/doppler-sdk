@@ -51,8 +51,7 @@ describe('DynamicAuction', () => {
         .mockResolvedValueOnce(1641600000n) // endingTime
         .mockResolvedValueOnce(3600n) // epochLength
         .mockResolvedValueOnce(10000000000000000000n) // minimumProceeds
-        .mockResolvedValueOnce(1000000000000000000000n) // maximumProceeds
-        .mockResolvedValueOnce(500000000000000000000000n); // numTokensToSell
+        .mockResolvedValueOnce(1000000000000000000000n); // maximumProceeds
 
       const hookInfo = await auction.getHookInfo();
 
@@ -93,7 +92,7 @@ describe('DynamicAuction', () => {
       });
 
       // Verify all expected calls were made
-      expect(publicClient.readContract).toHaveBeenCalledTimes(10);
+      expect(publicClient.readContract).toHaveBeenCalledTimes(9);
     });
   });
 

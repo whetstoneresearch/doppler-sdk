@@ -94,10 +94,16 @@ async function main() {
         },
         // Curve 3: Upper range with overlap at $4-5M
         {
-          marketCap: { start: 4_000_000, end: 50_000_000 }, // $4M - $50M
+          marketCap: { start: 4_000_000, end: 6_000_000 }, // $4M - $6M
           numPositions: 10,
-          shares: parseEther('0.3'), // 30% of tokens
+          shares: parseEther('0.2'), // 20% of tokens
         },
+        // leave room for tail
+        {
+          marketCap: { start: 6_000_000, end: 'max' }, // $6M - max
+          numPositions: 1,
+          shares: parseEther('0.1'), // 10% of tokens
+        }
       ],
       // Optional overrides:
       // fee: FEE_TIERS.LOW,      // 500 (0.05%) - default
