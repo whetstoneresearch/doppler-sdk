@@ -23,6 +23,9 @@ export default defineConfig({
     sequence: {
       shuffle: false,
     },
+    // Use JSON reporter for CI to generate structured output
+    reporters: process.env.CI ? ['json', 'verbose'] : ['verbose'],
+    outputFile: process.env.CI ? { json: './test-results.json' } : undefined,
     coverage: {
       reporter: ['text', 'json', 'html'],
       exclude: [
