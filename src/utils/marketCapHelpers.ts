@@ -435,8 +435,8 @@ export function marketCapToTicksForMulticurve(
     throw new Error('Lower market cap must be less than upper market cap');
   }
 
-  // Compute raw ticks (contract handles negation based on token ordering)
-  const tickAtLower = _computeRawTick(
+  // Compute raw ticks
+  const tickAtLower = -_computeRawTick(
     marketCapLower,
     tokenSupply,
     numerairePriceUSD,
@@ -446,7 +446,7 @@ export function marketCapToTicksForMulticurve(
   );
   const tickAtUpper = marketCapUpper === 'max'
     ? getMaxTickRounded(tickSpacing)
-    : _computeRawTick(
+    : -_computeRawTick(
         marketCapUpper,
         tokenSupply,
         numerairePriceUSD,
