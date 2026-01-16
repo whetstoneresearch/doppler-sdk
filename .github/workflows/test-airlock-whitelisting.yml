@@ -30,8 +30,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
-      # Default to deployed/whitelisted chains; workflow_dispatch can override
-      TEST_CHAINS: ${{ github.event.inputs.chains || 'base,base-sepolia,unichain,unichain-sepolia,monad-mainnet' }}
+      # workflow_dispatch can specify chains; automated runs exclude unichain chains
+      TEST_CHAINS: ${{ github.event_name == 'workflow_dispatch' && (github.event.inputs.chains || 'base,base-sepolia,unichain,unichain-sepolia,monad-mainnet') || 'base,base-sepolia,monad-mainnet' }}
       RPC_DELAY_MS: ${{ github.event.inputs.rpc_delay_ms || '1000' }}
       CI: true
 
