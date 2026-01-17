@@ -59,6 +59,7 @@ import {
   airlockAbi,
   bundlerAbi,
   DERC20Bytecode,
+  DERC2080Bytecode,
   DopplerBytecode,
   DopplerDN404Bytecode,
   v4MulticurveInitializerAbi,
@@ -69,6 +70,10 @@ import { DopplerBytecodeBaseMainnet } from '@/abis/bytecodes';
 export type MigrationEncoder = (config: MigrationConfig) => Hex;
 
 const MAX_UINT128 = (1n << 128n) - 1n;
+
+// TokenFactory80 has the same deterministic CREATE2 address across all chains
+const TOKEN_FACTORY_80_ADDRESS =
+  '0xf0b5141dd9096254b2ca624dff26024f46087229' as const;
 
 export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
   private publicClient: SupportedPublicClient;
@@ -2797,14 +2802,15 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
           tokenURI,
         ],
       );
+      // Use DERC2080Bytecode for TokenFactory80, DERC20Bytecode otherwise
+      const isTokenFactory80 =
+        params.tokenFactory.toLowerCase() === TOKEN_FACTORY_80_ADDRESS;
+      const bytecode = isTokenFactory80
+        ? (DERC2080Bytecode as Hex)
+        : ((params.customDerc20Bytecode as Hex) ?? (DERC20Bytecode as Hex));
+
       tokenInitHash = keccak256(
-        encodePacked(
-          ['bytes', 'bytes'],
-          [
-            (params.customDerc20Bytecode as Hex) ?? (DERC20Bytecode as Hex),
-            initHashData,
-          ],
-        ),
+        encodePacked(['bytes', 'bytes'], [bytecode, initHashData]),
       );
     }
 

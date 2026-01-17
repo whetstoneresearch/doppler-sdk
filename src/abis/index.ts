@@ -2277,6 +2277,7 @@ export const rehypeDopplerHookAbi = [
 // Export bytecodes for CREATE2 address calculation
 export {
   DERC20Bytecode,
+  DERC2080Bytecode,
   DopplerBytecode,
   DopplerDN404Bytecode,
 } from './bytecodes';
