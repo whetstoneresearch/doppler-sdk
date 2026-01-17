@@ -664,12 +664,12 @@ describe('MulticurveBuilder', () => {
       expect(params.pool.curves[1].shares).toBe(parseEther('0.5'));
       expect(params.pool.curves[2].shares).toBe(parseEther('0.2'));
 
-      // With positive ticks, lower market cap = higher tick (more ETH per token)
-      // So curves are ordered by market cap ascending, but ticks are descending
-      expect(params.pool.curves[0].tickLower).toBeGreaterThan(
+      // With negated ticks, lower market cap = more negative tick
+      // So curves ordered by market cap ascending have ticks ascending (more negative to less negative)
+      expect(params.pool.curves[0].tickLower).toBeLessThan(
         params.pool.curves[1].tickLower,
       );
-      expect(params.pool.curves[1].tickLower).toBeGreaterThan(
+      expect(params.pool.curves[1].tickLower).toBeLessThan(
         params.pool.curves[2].tickLower,
       );
     });
