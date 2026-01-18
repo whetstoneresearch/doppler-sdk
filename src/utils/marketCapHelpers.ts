@@ -501,7 +501,9 @@ export function marketCapToTickForMulticurve(
     numeraireDecimals = 18,
   } = params;
 
-  const rawTick = _computeRawTick(
+  // Multicurve uses a canonical tick space where the contract's adjustCurves()
+  // resolves token ordering. This must match marketCapToTicksForMulticurve().
+  const rawTick = -_computeRawTick(
     marketCapUSD,
     tokenSupply,
     numerairePriceUSD,

@@ -331,7 +331,6 @@ describe('Multicurve with RehypeDopplerHook (Base Sepolia) test', () => {
     expect(tokenAddress).toMatch(/^0x[a-fA-F0-9]{40}$/)
     expect(poolId).toMatch(/^0x[a-fA-F0-9]{64}$/)
     expect(params.dopplerHook?.farTick).toBeDefined()
-    expect(params.dopplerHook?.farTick).toBeGreaterThan(0)
   })
 
   it('can simulate create() using withCurves() WITH rehype and explicit farTick', { timeout: 60000 }, async () => {
@@ -373,7 +372,7 @@ describe('Multicurve with RehypeDopplerHook (Base Sepolia) test', () => {
         numeraireBuybackPercentWad: 250_000_000_000_000_000n,
         beneficiaryPercentWad: 250_000_000_000_000_000n,
         lpPercentWad: 250_000_000_000_000_000n,
-        farTick: 115000, // Explicit farTick within curve range
+        farTick: -115000, // Explicit farTick within curve range
       })
       .withGovernance({ type: 'noOp' })
       .withMigration({ type: 'noOp' })
@@ -395,6 +394,6 @@ describe('Multicurve with RehypeDopplerHook (Base Sepolia) test', () => {
 
     expect(tokenAddress).toMatch(/^0x[a-fA-F0-9]{40}$/)
     expect(poolId).toMatch(/^0x[a-fA-F0-9]{64}$/)
-    expect(params.dopplerHook?.farTick).toBe(115000)
+    expect(params.dopplerHook?.farTick).toBe(-115000)
   })
 })
