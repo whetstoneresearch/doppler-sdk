@@ -105,7 +105,7 @@ describe('Multicurve (Base Sepolia fork) smoke test', () => {
       .withV2Migrator(addresses.v2Migrator)
 
     const params = builder.build()
-    const { tokenAddress, poolId } = await sdk.factory.simulateCreateMulticurve(params)
+    const { tokenAddress, poolId } = await sdk.multicurveFactory.simulate(params)
     expect(tokenAddress).toMatch(/^0x[a-fA-F0-9]{40}$/)
     expect(poolId).toMatch(/^0x[a-fA-F0-9]{64}$/)
   })
@@ -137,7 +137,7 @@ describe('Multicurve (Base Sepolia fork) smoke test', () => {
       .withV2Migrator(addresses.v2Migrator)
 
     const zeroFeeParams = zeroFeeBuilder.build()
-    const zeroFeeResult = await sdk.factory.simulateCreateMulticurve(zeroFeeParams)
+    const zeroFeeResult = await sdk.multicurveFactory.simulate(zeroFeeParams)
     console.info('zero-fee gas estimate', zeroFeeResult.gasEstimate?.toString() ?? 'undefined')
 
     const builder = sdk
@@ -163,7 +163,7 @@ describe('Multicurve (Base Sepolia fork) smoke test', () => {
 
     const params = builder.build()
     try {
-      const result = await sdk.factory.simulateCreateMulticurve(params)
+      const result = await sdk.multicurveFactory.simulate(params)
       console.info('non-zero fee gas estimate', result.gasEstimate?.toString() ?? 'undefined')
       expect(result.tokenAddress).toMatch(/^0x[a-fA-F0-9]{40}$/)
       expect(result.poolId).toMatch(/^0x[a-fA-F0-9]{64}$/)
@@ -201,7 +201,7 @@ describe('Multicurve (Base Sepolia fork) smoke test', () => {
       .withGasLimit(18_000_000n)
 
     const params = builder.build()
-    const result = await sdk.factory.simulateCreateMulticurve(params)
+    const result = await sdk.multicurveFactory.simulate(params)
     expect(result.tokenAddress).toMatch(/^0x[a-fA-F0-9]{40}$/)
     expect(result.poolId).toMatch(/^0x[a-fA-F0-9]{64}$/)
   })
@@ -235,10 +235,10 @@ describe('Multicurve (Base Sepolia fork) smoke test', () => {
       .withV2Migrator(addresses.v2Migrator)
 
     const params = builder.build()
-    const { createParams, tokenAddress } = await sdk.factory.simulateCreateMulticurve(params)
+    const { createParams, tokenAddress } = await sdk.multicurveFactory.simulate(params)
 
     const exactAmountOut = params.sale.numTokensToSell / 10n || 1n
-    const exactOutQuote = await sdk.factory.simulateMulticurveBundleExactOut(createParams, {
+    const exactOutQuote = await sdk.multicurveFactory.simulateBundleExactOut(createParams, {
       exactAmountOut,
       hookData: '0x' as `0x${string}`,
     })
@@ -248,7 +248,7 @@ describe('Multicurve (Base Sepolia fork) smoke test', () => {
     expect(exactOutQuote.gasEstimate >= 0n).toBe(true)
     expect(exactOutQuote.poolKey.hooks).toMatch(/^0x[a-fA-F0-9]{40}$/)
 
-    const exactInQuote = await sdk.factory.simulateMulticurveBundleExactIn(createParams, {
+    const exactInQuote = await sdk.multicurveFactory.simulateBundleExactIn(createParams, {
       exactAmountIn: exactOutQuote.amountIn,
       hookData: '0x' as `0x${string}`,
     })
@@ -290,7 +290,7 @@ describe('Multicurve (Base Sepolia fork) smoke test', () => {
     const params = builder.build()
     
     // Simulate to get predicted address and execute function
-    const simulation = await sdk.factory.simulateCreateMulticurve(params)
+    const simulation = await sdk.multicurveFactory.simulate(params)
     
     // Verify simulation returned expected properties
     expect(simulation.tokenAddress).toMatch(/^0x[a-fA-F0-9]{40}$/)

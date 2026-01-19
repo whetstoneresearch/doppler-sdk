@@ -112,7 +112,7 @@ describe('Multicurve Builder with NoOpMigrator helper (Base Sepolia fork)', () =
     expect(params.pool.beneficiaries).toHaveLength(3)
 
     // Encode the params to verify NoOpMigrator is used
-    const createParams = sdk.factory.encodeCreateMulticurveParams(params)
+    const createParams = sdk.multicurveFactory.encodeCreateParams(params)
 
     // VERIFY: The encoded params use NoOpMigrator
     expect(createParams.liquidityMigrator).toBe(addresses.noOpMigrator)
@@ -120,7 +120,7 @@ describe('Multicurve Builder with NoOpMigrator helper (Base Sepolia fork)', () =
     expect(createParams.liquidityMigratorData).toBe('0x')
 
     // Simulate the create operation
-    const { tokenAddress, poolId } = await sdk.factory.simulateCreateMulticurve(params)
+    const { tokenAddress, poolId } = await sdk.multicurveFactory.simulate(params)
     expect(tokenAddress).toMatch(/^0x[a-fA-F0-9]{40}$/)
     expect(poolId).toMatch(/^0x[a-fA-F0-9]{64}$/)
   })
@@ -174,14 +174,14 @@ describe('Multicurve Builder with NoOpMigrator helper (Base Sepolia fork)', () =
       // NOTE: Not calling withNoOpMigrator() - SDK will use default from chain addresses
 
     const params = builder.build()
-    const createParams = sdk.factory.encodeCreateMulticurveParams(params)
+    const createParams = sdk.multicurveFactory.encodeCreateParams(params)
 
     // VERIFY: NoOpMigrator address from chain config is used
     expect(createParams.liquidityMigrator).toBe(addresses.noOpMigrator)
     expect(createParams.liquidityMigratorData).toBe('0x')
 
     // Simulate the create operation
-    const { tokenAddress, poolId } = await sdk.factory.simulateCreateMulticurve(params)
+    const { tokenAddress, poolId } = await sdk.multicurveFactory.simulate(params)
     expect(tokenAddress).toMatch(/^0x[a-fA-F0-9]{40}$/)
     expect(poolId).toMatch(/^0x[a-fA-F0-9]{64}$/)
   })
@@ -236,14 +236,14 @@ describe('Multicurve Builder with NoOpMigrator helper (Base Sepolia fork)', () =
       .withNoOpMigrator(customNoOpMigrator)
 
     const params = builder.build()
-    const createParams = sdk.factory.encodeCreateMulticurveParams(params)
+    const createParams = sdk.multicurveFactory.encodeCreateParams(params)
 
     // VERIFY: Custom NoOpMigrator address is used
     expect(createParams.liquidityMigrator).toBe(customNoOpMigrator)
     expect(createParams.liquidityMigratorData).toBe('0x')
 
     // Simulate the create operation
-    const { tokenAddress, poolId } = await sdk.factory.simulateCreateMulticurve(params)
+    const { tokenAddress, poolId } = await sdk.multicurveFactory.simulate(params)
     expect(tokenAddress).toMatch(/^0x[a-fA-F0-9]{40}$/)
     expect(poolId).toMatch(/^0x[a-fA-F0-9]{64}$/)
   })

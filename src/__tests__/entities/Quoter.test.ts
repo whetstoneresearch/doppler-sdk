@@ -4,7 +4,7 @@ import { createMockPublicClient } from '../mocks/clients';
 import { mockAddresses } from '../mocks/addresses';
 import { parseEther } from 'viem';
 
-vi.mock('../../addresses', () => ({
+vi.mock('../../common/addresses', () => ({
   getAddresses: vi.fn(() => mockAddresses),
 }));
 

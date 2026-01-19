@@ -175,7 +175,7 @@ describe('Static Auction with lockable beneficiaries (Base Sepolia)', () => {
     expect(totalShares).toBe(WAD)
 
     // Encode the params to verify structure
-    const createParams = await sdk.factory.encodeCreateStaticAuctionParams(params)
+    const createParams = await sdk.staticFactory.encodeCreateParams(params)
 
     // Verify that NoOpMigrator is used when beneficiaries are provided
     expect(createParams.liquidityMigrator).toBe(addresses.noOpMigrator)
@@ -239,7 +239,7 @@ describe('Static Auction with lockable beneficiaries (Base Sepolia)', () => {
     const params = builder.build()
 
     // Simulate the create operation
-    const { asset, pool } = await sdk.factory.simulateCreateStaticAuction(params)
+    const { asset, pool } = await sdk.staticFactory.simulate(params)
     expect(asset).toMatch(/^0x[a-fA-F0-9]{40}$/)
     expect(pool).toMatch(/^0x[a-fA-F0-9]{40}$/)
   })
@@ -285,7 +285,7 @@ describe('Static Auction with lockable beneficiaries (Base Sepolia)', () => {
     expect(params.pool.beneficiaries).toBeUndefined()
 
     // Encode the params to verify standard migrator is used
-    const createParams = await sdk.factory.encodeCreateStaticAuctionParams(params)
+    const createParams = await sdk.staticFactory.encodeCreateParams(params)
 
     // Verify that V2 migrator is used when no beneficiaries
     expect(createParams.liquidityMigrator).toBe(addresses.v2Migrator)
@@ -338,7 +338,7 @@ describe('Static Auction with lockable beneficiaries (Base Sepolia)', () => {
 
     // The encoding should fail because shares don't sum to WAD
     await expect(async () => {
-      await sdk.factory.encodeCreateStaticAuctionParams(params)
+      await sdk.staticFactory.encodeCreateParams(params)
     }).rejects.toThrow(/shares must sum to/)
   })
 
@@ -398,7 +398,7 @@ describe('Static Auction with lockable beneficiaries (Base Sepolia)', () => {
     expect(beneficiaries[1].beneficiary.toLowerCase() < beneficiaries[2].beneficiary.toLowerCase()).toBe(true)
 
     // Encoding should succeed after sorting
-    const createParams = await sdk.factory.encodeCreateStaticAuctionParams(params)
+    const createParams = await sdk.staticFactory.encodeCreateParams(params)
     expect(createParams.liquidityMigrator).toBe(addresses.noOpMigrator)
   })
 })

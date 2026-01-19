@@ -7,7 +7,7 @@ import {
   mockPoolAddress,
 } from '../mocks/addresses';
 
-vi.mock('../../addresses', () => ({
+vi.mock('../../common/addresses', () => ({
   getAddresses: vi.fn(() => mockAddresses),
 }));
 

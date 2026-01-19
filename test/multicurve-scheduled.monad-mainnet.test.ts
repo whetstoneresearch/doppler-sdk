@@ -115,7 +115,7 @@ describe('Scheduled Multicurve (Monad Mainnet) smoke test', () => {
     const params = builder.build()
     expect(params.schedule?.startTime).toBe(oneHourFromNow)
 
-    const createParams = sdk.factory.encodeCreateMulticurveParams(params)
+    const createParams = sdk.multicurveFactory.encodeCreateParams(params)
     expect(createParams.poolInitializer).toEqual(addresses.v4ScheduledMulticurveInitializer)
 
     const [decoded] = decodeAbiParameters(
@@ -156,7 +156,7 @@ describe('Scheduled Multicurve (Monad Mainnet) smoke test', () => {
 
     expect(decoded.startingTime).toBe(oneHourFromNow)
 
-    const { asset, pool } = await sdk.factory.simulateCreateMulticurve(params)
+    const { asset, pool } = await sdk.multicurveFactory.simulate(params)
     expect(asset).toMatch(/^0x[a-fA-F0-9]{40}$/)
     expect(pool).toMatch(/^0x[a-fA-F0-9]{40}$/)
   })

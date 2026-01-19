@@ -8,7 +8,7 @@ import {
 } from '../mocks/addresses';
 import { encodeAbiParameters, keccak256 } from 'viem';
 
-vi.mock('../../addresses', () => ({
+vi.mock('../../common/addresses', () => ({
   getAddresses: vi.fn(() => mockAddresses),
 }));
 

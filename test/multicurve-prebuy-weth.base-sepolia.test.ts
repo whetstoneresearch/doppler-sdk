@@ -88,13 +88,13 @@ describe('Multicurve Pre-Buy with WETH (Base Sepolia fork)', () => {
       .withV2Migrator(addresses.v2Migrator)
       .build()
 
-    const { createParams, tokenAddress, poolId } = await sdk.factory.simulateCreateMulticurve(params)
+    const { createParams, tokenAddress, poolId } = await sdk.multicurveFactory.simulate(params)
 
     expect(tokenAddress).toMatch(/^0x[a-fA-F0-9]{40}$/)
     expect(poolId).toMatch(/^0x[a-fA-F0-9]{64}$/)
 
     // Get poolKey from bundle quote to verify WETH
-    const quote = await sdk.factory.simulateMulticurveBundleExactOut(createParams, {
+    const quote = await sdk.multicurveFactory.simulateBundleExactOut(createParams, {
       exactAmountOut: params.sale.numTokensToSell / 100n,
       hookData: '0x' as `0x${string}`,
     })
@@ -143,12 +143,12 @@ describe('Multicurve Pre-Buy with WETH (Base Sepolia fork)', () => {
       .withV2Migrator(addresses.v2Migrator)
       .build()
 
-    const { createParams, tokenAddress } = await sdk.factory.simulateCreateMulticurve(params)
+    const { createParams, tokenAddress } = await sdk.multicurveFactory.simulate(params)
 
     // Quote for buying 1% of tokens
     const exactAmountOut = params.sale.numTokensToSell / 100n
 
-    const quote = await sdk.factory.simulateMulticurveBundleExactOut(createParams, {
+    const quote = await sdk.multicurveFactory.simulateBundleExactOut(createParams, {
       exactAmountOut,
       hookData: '0x' as `0x${string}`,
     })
@@ -196,10 +196,10 @@ describe('Multicurve Pre-Buy with WETH (Base Sepolia fork)', () => {
       .withV2Migrator(addresses.v2Migrator)
       .build()
 
-    const { createParams } = await sdk.factory.simulateCreateMulticurve(params)
+    const { createParams } = await sdk.multicurveFactory.simulate(params)
 
     // Get poolKey from bundle quote
-    const quote = await sdk.factory.simulateMulticurveBundleExactOut(createParams, {
+    const quote = await sdk.multicurveFactory.simulateBundleExactOut(createParams, {
       exactAmountOut: params.sale.numTokensToSell / 100n,
       hookData: '0x' as `0x${string}`,
     })
@@ -253,11 +253,11 @@ describe('Multicurve Pre-Buy with WETH (Base Sepolia fork)', () => {
       .withV2Migrator(addresses.v2Migrator)
       .build()
 
-    const { createParams, tokenAddress } = await sdk.factory.simulateCreateMulticurve(params)
+    const { createParams, tokenAddress } = await sdk.multicurveFactory.simulate(params)
 
     const exactAmountIn = parseEther('1') // 1 WETH
 
-    const quote = await sdk.factory.simulateMulticurveBundleExactIn(createParams, {
+    const quote = await sdk.multicurveFactory.simulateBundleExactIn(createParams, {
       exactAmountIn,
       hookData: '0x' as `0x${string}`,
     })
@@ -272,8 +272,8 @@ describe('Multicurve Pre-Buy with WETH (Base Sepolia fork)', () => {
   })
 
   it('ensures bundle helpers exist on SDK factory', () => {
-    expect(typeof sdk.factory.simulateMulticurveBundleExactOut).toBe('function')
-    expect(typeof sdk.factory.simulateMulticurveBundleExactIn).toBe('function')
+    expect(typeof sdk.multicurveFactory.simulateBundleExactOut).toBe('function')
+    expect(typeof sdk.multicurveFactory.simulateBundleExactIn).toBe('function')
 
     console.log('  ✓ Bundle helper methods available on SDK')
   })

@@ -115,7 +115,7 @@ describe('Multicurve with multiple vesting beneficiaries (Base Sepolia fork)', (
     expect(params.vesting).toBeDefined()
     expect(params.vesting?.duration).toBe(365 * 24 * 60 * 60)
 
-    const { tokenAddress, poolId } = await sdk.factory.simulateCreateMulticurve(params)
+    const { tokenAddress, poolId } = await sdk.multicurveFactory.simulate(params)
     expect(tokenAddress).toMatch(/^0x[a-fA-F0-9]{40}$/)
     expect(poolId).toMatch(/^0x[a-fA-F0-9]{64}$/)
   })
@@ -184,7 +184,7 @@ describe('Multicurve with multiple vesting beneficiaries (Base Sepolia fork)', (
     expect(params.vesting?.recipients).toEqual([recipient1, recipient2, recipient3])
     expect(params.vesting?.amounts).toEqual([amount1, amount2, amount3])
 
-    const { tokenAddress, poolId } = await sdk.factory.simulateCreateMulticurve(params)
+    const { tokenAddress, poolId } = await sdk.multicurveFactory.simulate(params)
     expect(tokenAddress).toMatch(/^0x[a-fA-F0-9]{40}$/)
     expect(poolId).toMatch(/^0x[a-fA-F0-9]{64}$/)
   })
@@ -228,7 +228,7 @@ describe('Multicurve with multiple vesting beneficiaries (Base Sepolia fork)', (
     const params = builder.build()
 
     await expect(async () => {
-      await sdk.factory.simulateCreateMulticurve(params)
+      await sdk.multicurveFactory.simulate(params)
     }).rejects.toThrow(/recipients and amounts arrays must have the same length/i)
   })
 
@@ -275,7 +275,7 @@ describe('Multicurve with multiple vesting beneficiaries (Base Sepolia fork)', (
     const params = builder.build()
 
     await expect(async () => {
-      await sdk.factory.simulateCreateMulticurve(params)
+      await sdk.multicurveFactory.simulate(params)
     }).rejects.toThrow(/total vesting amount.*exceeds available tokens/i)
   })
 
@@ -318,7 +318,7 @@ describe('Multicurve with multiple vesting beneficiaries (Base Sepolia fork)', (
     const params = builder.build()
 
     await expect(async () => {
-      await sdk.factory.simulateCreateMulticurve(params)
+      await sdk.multicurveFactory.simulate(params)
     }).rejects.toThrow(/vesting recipients array cannot be empty/i)
   })
 })

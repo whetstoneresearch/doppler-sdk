@@ -136,7 +136,7 @@ describe('Multicurve with RehypeDopplerHook (Base Sepolia) test', () => {
     console.log('DopplerHookInitializer:', addresses.dopplerHookInitializer)
     console.log('NoOpMigrator:', addresses.noOpMigrator)
     
-    const { tokenAddress, poolId, gasEstimate } = await sdk.factory.simulateCreateMulticurve(params)
+    const { tokenAddress, poolId, gasEstimate } = await sdk.multicurveFactory.simulate(params)
     
     console.log('Asset:', tokenAddress)
     console.log('Pool:', poolId)
@@ -204,7 +204,7 @@ describe('Multicurve with RehypeDopplerHook (Base Sepolia) test', () => {
     console.log('RehypeDopplerHook:', REHYPE_DOPPLER_HOOK_ADDRESS)
     console.log('NoOpMigrator:', addresses.noOpMigrator)
     
-    const { tokenAddress, poolId, gasEstimate } = await sdk.factory.simulateCreateMulticurve(params)
+    const { tokenAddress, poolId, gasEstimate } = await sdk.multicurveFactory.simulate(params)
     
     console.log('Asset:', tokenAddress)
     console.log('Pool:', poolId)
@@ -259,7 +259,7 @@ describe('Multicurve with RehypeDopplerHook (Base Sepolia) test', () => {
     console.log('withCurves() no hook - curves:', params.pool.curves.length)
     console.log('withCurves() no hook - curve ticks:', params.pool.curves.map(c => `[${c.tickLower}, ${c.tickUpper}]`).join(', '))
 
-    const { tokenAddress, poolId, gasEstimate } = await sdk.factory.simulateCreateMulticurve(params)
+    const { tokenAddress, poolId, gasEstimate } = await sdk.multicurveFactory.simulate(params)
 
     console.log('Asset:', tokenAddress)
     console.log('Pool:', poolId)
@@ -322,7 +322,7 @@ describe('Multicurve with RehypeDopplerHook (Base Sepolia) test', () => {
     console.log('withCurves() + graduationMarketCap - farTick:', params.dopplerHook?.farTick)
     console.log('withCurves() + graduationMarketCap - curve ticks:', params.pool.curves.map(c => `[${c.tickLower}, ${c.tickUpper}]`).join(', '))
 
-    const { tokenAddress, poolId, gasEstimate } = await sdk.factory.simulateCreateMulticurve(params)
+    const { tokenAddress, poolId, gasEstimate } = await sdk.multicurveFactory.simulate(params)
 
     console.log('Asset:', tokenAddress)
     console.log('Pool:', poolId)
@@ -386,7 +386,7 @@ describe('Multicurve with RehypeDopplerHook (Base Sepolia) test', () => {
     console.log('withCurves() + explicit farTick - farTick:', params.dopplerHook?.farTick)
     console.log('withCurves() + explicit farTick - curve ticks:', params.pool.curves.map(c => `[${c.tickLower}, ${c.tickUpper}]`).join(', '))
 
-    const { tokenAddress, poolId, gasEstimate } = await sdk.factory.simulateCreateMulticurve(params)
+    const { tokenAddress, poolId, gasEstimate } = await sdk.multicurveFactory.simulate(params)
 
     console.log('Asset:', tokenAddress)
     console.log('Pool:', poolId)

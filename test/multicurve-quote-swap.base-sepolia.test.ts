@@ -86,7 +86,7 @@ describe('Multicurve Quote & Swap (Base Sepolia fork)', () => {
       .withV2Migrator(addresses.v2Migrator)
 
     const params = builder.build()
-    const { tokenAddress, poolId } = await sdk.factory.simulateCreateMulticurve(params)
+    const { tokenAddress, poolId } = await sdk.multicurveFactory.simulate(params)
 
     expect(tokenAddress).toMatch(/^0x[a-fA-F0-9]{40}$/)
     expect(poolId).toMatch(/^0x[a-fA-F0-9]{64}$/)
@@ -127,11 +127,11 @@ describe('Multicurve Quote & Swap (Base Sepolia fork)', () => {
       .withV2Migrator(addresses.v2Migrator)
 
     const params = builder.build()
-    const { createParams } = await sdk.factory.simulateCreateMulticurve(params)
+    const { createParams } = await sdk.multicurveFactory.simulate(params)
 
     // Get poolKey from bundle quote simulation instead
     const exactAmountOut = params.sale.numTokensToSell / 100n
-    const quoteResult = await sdk.factory.simulateMulticurveBundleExactOut(createParams, {
+    const quoteResult = await sdk.multicurveFactory.simulateBundleExactOut(createParams, {
       exactAmountOut,
       hookData: '0x' as `0x${string}`,
     })
@@ -222,11 +222,11 @@ describe('Multicurve Quote & Swap (Base Sepolia fork)', () => {
       .withV2Migrator(addresses.v2Migrator)
 
     const params = builder.build()
-    const { createParams, tokenAddress } = await sdk.factory.simulateCreateMulticurve(params)
+    const { createParams, tokenAddress } = await sdk.multicurveFactory.simulate(params)
 
     const exactAmountOut = params.sale.numTokensToSell / 10n
 
-    const quote = await sdk.factory.simulateMulticurveBundleExactOut(createParams, {
+    const quote = await sdk.multicurveFactory.simulateBundleExactOut(createParams, {
       exactAmountOut,
       hookData: '0x' as `0x${string}`,
     })
@@ -267,12 +267,12 @@ describe('Multicurve Quote & Swap (Base Sepolia fork)', () => {
       .withV2Migrator(addresses.v2Migrator)
 
     const params = builder.build()
-    const { createParams, tokenAddress } = await sdk.factory.simulateCreateMulticurve(params)
+    const { createParams, tokenAddress } = await sdk.multicurveFactory.simulate(params)
 
     const exactAmountIn = parseEther('1')
 
     try {
-      const quote = await sdk.factory.simulateMulticurveBundleExactIn(createParams, {
+      const quote = await sdk.multicurveFactory.simulateBundleExactIn(createParams, {
         exactAmountIn,
         hookData: '0x' as `0x${string}`,
       })

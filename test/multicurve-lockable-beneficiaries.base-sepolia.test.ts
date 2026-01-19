@@ -162,7 +162,7 @@ describe('Multicurve with lockable beneficiaries using NoOpMigrator (Base Sepoli
     expect(params.pool.beneficiaries).toHaveLength(3)
 
     // Encode the params to verify NoOpMigrator is used
-    const createParams = sdk.factory.encodeCreateMulticurveParams(params)
+    const createParams = sdk.multicurveFactory.encodeCreateParams(params)
 
     // Verify that NoOpMigrator is used when beneficiaries are provided
     expect(createParams.liquidityMigrator).toBe(addresses.noOpMigrator)
@@ -170,7 +170,7 @@ describe('Multicurve with lockable beneficiaries using NoOpMigrator (Base Sepoli
     expect(createParams.liquidityMigratorData).toBe('0x')
 
     // Simulate the create operation
-    const { tokenAddress, poolId } = await sdk.factory.simulateCreateMulticurve(params)
+    const { tokenAddress, poolId } = await sdk.multicurveFactory.simulate(params)
     expect(tokenAddress).toMatch(/^0x[a-fA-F0-9]{40}$/)
     expect(poolId).toMatch(/^0x[a-fA-F0-9]{64}$/)
   })
@@ -216,7 +216,7 @@ describe('Multicurve with lockable beneficiaries using NoOpMigrator (Base Sepoli
     expect(params.pool.beneficiaries).toBeUndefined()
 
     // Encode the params to verify standard migrator is used
-    const createParams = sdk.factory.encodeCreateMulticurveParams(params)
+    const createParams = sdk.multicurveFactory.encodeCreateParams(params)
 
     // Verify that V2 migrator is used when no beneficiaries
     expect(createParams.liquidityMigrator).toBe(addresses.v2Migrator)
@@ -285,7 +285,7 @@ describe('Multicurve with lockable beneficiaries using NoOpMigrator (Base Sepoli
 
     // The simulation should fail because shares don't sum to WAD
     await expect(async () => {
-      await sdk.factory.simulateCreateMulticurve(params)
+      await sdk.multicurveFactory.simulate(params)
     }).rejects.toThrow()
   })
 
@@ -353,10 +353,10 @@ describe('Multicurve with lockable beneficiaries using NoOpMigrator (Base Sepoli
     const params = builder.build()
 
     // The SDK should automatically sort beneficiaries, so this should succeed
-    const createParams = sdk.factory.encodeCreateMulticurveParams(params)
+    const createParams = sdk.multicurveFactory.encodeCreateParams(params)
     expect(createParams.liquidityMigrator).toBe(addresses.noOpMigrator)
 
-    const { tokenAddress, poolId } = await sdk.factory.simulateCreateMulticurve(params)
+    const { tokenAddress, poolId } = await sdk.multicurveFactory.simulate(params)
     expect(tokenAddress).toMatch(/^0x[a-fA-F0-9]{40}$/)
     expect(poolId).toMatch(/^0x[a-fA-F0-9]{64}$/)
   })

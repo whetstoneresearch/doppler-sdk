@@ -115,7 +115,7 @@ describe('Scheduled Multicurve (Base Sepolia fork) smoke test', () => {
     const params = builder.build()
     expect(params.schedule?.startTime).toBe(oneHourFromNow)
 
-    const createParams = sdk.factory.encodeCreateMulticurveParams(params)
+    const createParams = sdk.multicurveFactory.encodeCreateParams(params)
     expect(createParams.poolInitializer).toEqual(addresses.v4ScheduledMulticurveInitializer)
 
     const [decoded] = decodeAbiParameters(
@@ -156,7 +156,7 @@ describe('Scheduled Multicurve (Base Sepolia fork) smoke test', () => {
 
     expect(decoded.startingTime).toBe(oneHourFromNow)
 
-    const { tokenAddress, poolId } = await sdk.factory.simulateCreateMulticurve(params)
+    const { tokenAddress, poolId } = await sdk.multicurveFactory.simulate(params)
     expect(tokenAddress).toMatch(/^0x[a-fA-F0-9]{40}$/)
     expect(poolId).toMatch(/^0x[a-fA-F0-9]{64}$/)
   })

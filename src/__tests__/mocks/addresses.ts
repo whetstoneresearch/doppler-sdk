@@ -1,6 +1,6 @@
 import type { Address } from 'viem';
 import { getAddress } from 'viem';
-import type { ChainAddresses } from '../../addresses';
+import type { ChainAddresses } from '../../common/addresses';
 
 // Mock addresses for testing - all checksummed for consistency with decodeEventLog
 export const mockAddresses: ChainAddresses = {
