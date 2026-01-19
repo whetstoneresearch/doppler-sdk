@@ -5,8 +5,8 @@ import type {
   HookInfo,
   PoolInfo,
   SupportedPublicClient,
-} from './types';
-import type { SupportedChainId } from './addresses';
+} from './common/types';
+import type { SupportedChainId } from './common/addresses';
 import { DopplerFactory } from './entities/DopplerFactory';
 import {
   StaticAuction,
@@ -24,7 +24,7 @@ import {
   DEFAULT_AIRLOCK_BENEFICIARY_SHARES,
   getAirlockBeneficiary,
   getAirlockOwner as fetchAirlockOwner,
-} from './utils/airlock';
+} from './common/utils/airlock';
 
 export class DopplerSDK<C extends SupportedChainId = SupportedChainId> {
   private publicClient: SupportedPublicClient;

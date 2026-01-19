@@ -12,6 +12,34 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
       "require": "./dist/index.js"
+    },
+    "./common": {
+      "types": "./dist/common/index.d.ts",
+      "import": "./dist/common/index.mjs",
+      "require": "./dist/common/index.js"
+    },
+    "./static": {
+      "types": "./dist/static/index.d.ts",
+      "import": "./dist/static/index.mjs",
+      "require": "./dist/static/index.js"
+    },
+    "./dynamic": {
+      "types": "./dist/dynamic/index.d.ts",
+      "import": "./dist/dynamic/index.mjs",
+      "require": "./dist/dynamic/index.js"
+    },
+    "./multicurve": {
+      "types": "./dist/multicurve/index.d.ts",
+      "import": "./dist/multicurve/index.mjs",
+      "require": "./dist/multicurve/index.js"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "common": ["dist/common/index.d.ts"],
+      "static": ["dist/static/index.d.ts"],
+      "dynamic": ["dist/dynamic/index.d.ts"],
+      "multicurve": ["dist/multicurve/index.d.ts"]
     }
   },
   "directories": {

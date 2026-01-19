@@ -2,7 +2,7 @@ import { createPublicClient, createWalletClient, http } from 'viem';
 import { mainnet } from 'viem/chains';
 import { vi } from 'vitest';
 import type { Address, WalletClient } from 'viem';
-import { SupportedPublicClient } from '../../types';
+import type { SupportedPublicClient } from '../../common/types';
 import {
   mockAddresses,
   mockGovernanceAddress,

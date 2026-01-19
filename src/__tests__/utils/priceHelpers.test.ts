@@ -9,8 +9,8 @@ import {
   calculateMarketCap,
   calculateFDV,
   estimateSlippage,
-} from '../../utils/priceHelpers';
-import { DAY_SECONDS } from '../../constants';
+} from '../../common/utils/priceHelpers';
+import { DAY_SECONDS } from '../../common/constants';
 
 describe('priceHelpers', () => {
   describe('calculateTickRange', () => {

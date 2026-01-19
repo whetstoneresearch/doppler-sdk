@@ -1,9 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import type {
-  CreateDynamicAuctionParams,
-  DynamicAuctionConfig,
-} from '../types';
-import { DAY_SECONDS } from '../constants';
+import type { CreateDynamicAuctionParams, DynamicAuctionConfig } from '../dynamic/types';
+import { DAY_SECONDS } from '../common/constants';
 
 describe('Type Consistency', () => {
   it('should have pool parameters separate from auction config', () => {

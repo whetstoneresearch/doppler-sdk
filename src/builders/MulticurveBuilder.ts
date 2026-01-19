@@ -1,31 +1,27 @@
 import type { Address } from 'viem';
+import { FEE_TIERS, TICK_SPACINGS, WAD, ZERO_ADDRESS } from '../common/constants';
+import { DEFAULT_V3_YEARLY_MINT_RATE } from '../static/constants';
 import {
-  DEFAULT_V3_YEARLY_MINT_RATE,
-  FEE_TIERS,
-  TICK_SPACINGS,
   V4_MAX_FEE,
-  WAD,
-  ZERO_ADDRESS,
-} from '../constants';
-
-import {
   marketCapToTicksForMulticurve,
   marketCapToTickForMulticurve,
-  validateMarketCapParameters,
-} from '../utils';
-import {
-  isNoOpEnabledChain,
-  type CreateMulticurveParams,
-  type GovernanceOption,
-  type MigrationConfig,
-  type VestingConfig,
-  type TokenConfig,
-  type MulticurveMarketCapCurvesConfig,
-  type MulticurveMarketCapPreset,
-  type ModuleAddressOverrides,
-  type RehypeDopplerHookConfig,
-} from '../types';
-import { type SupportedChainId } from '../addresses';
+} from '../internal/v4-shared';
+import { validateMarketCapParameters } from '../static/utils/marketCapHelpers';
+import { isNoOpEnabledChain } from '../common/types';
+import type {
+  GovernanceOption,
+  MigrationConfig,
+  VestingConfig,
+  TokenConfig,
+  ModuleAddressOverrides,
+} from '../common/types';
+import type {
+  CreateMulticurveParams,
+  MulticurveMarketCapCurvesConfig,
+  MulticurveMarketCapPreset,
+  RehypeDopplerHookConfig,
+} from '../multicurve/types';
+import type { SupportedChainId } from '../common/addresses';
 import {
   type BaseAuctionBuilder,
   type MarketCapPresetOverrides,

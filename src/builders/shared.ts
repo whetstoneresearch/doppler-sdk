@@ -1,22 +1,20 @@
 import type { Address } from 'viem';
+import { FEE_TIERS, TICK_SPACINGS, WAD } from '../common/constants';
 import {
   DEFAULT_MULTICURVE_LOWER_TICKS,
   DEFAULT_MULTICURVE_MAX_SUPPLY_SHARES,
   DEFAULT_MULTICURVE_NUM_POSITIONS,
   DEFAULT_MULTICURVE_UPPER_TICKS,
-  FEE_TIERS,
-  TICK_SPACINGS,
-  WAD,
-} from '../constants';
-import { MAX_TICK, MIN_TICK } from '../utils';
+} from '../internal/v4-shared';
+import { MAX_TICK, MIN_TICK } from '../common/utils/tickMath';
 import type {
   PriceRange,
   TickRange,
-  MulticurveMarketCapPreset,
   GovernanceOption,
   MigrationConfig,
-} from '../types';
-import type { SupportedChainId } from '../addresses';
+} from '../common/types';
+import type { MulticurveMarketCapPreset } from '../multicurve/types';
+import type { SupportedChainId } from '../common/addresses';
 
 // ============================================================================
 // Common Builder Interface

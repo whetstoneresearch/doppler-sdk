@@ -1,4 +1,8 @@
 /**
+ * Gamma computation utilities for V4 Dynamic Auctions.
+ */
+
+/**
  * Compute optimal gamma parameter based on price range and time parameters
  * Gamma determines how much the price can move per epoch during the sale.
  */

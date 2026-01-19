@@ -16,8 +16,8 @@ import {
   mockV2PoolAddress,
   mockAddressesWithExtras,
 } from './mocks/addresses';
-import type { CreateDynamicAuctionParams } from '../types';
-import { DAY_SECONDS } from '../constants';
+import type { CreateDynamicAuctionParams } from '../dynamic/types';
+import { DAY_SECONDS } from '../common/constants';
 
 describe('V4 SDK Compatibility', () => {
   let factory: DopplerFactory;

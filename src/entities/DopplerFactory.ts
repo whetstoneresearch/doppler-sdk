@@ -11,50 +11,53 @@ import {
   getAddress,
   decodeEventLog,
   toHex,
+  zeroAddress,
 } from 'viem';
 import type {
-  CreateStaticAuctionParams,
-  CreateDynamicAuctionParams,
-  CreateMulticurveParams,
   MigrationConfig,
   SupportedPublicClient,
   TokenConfig,
   Doppler404TokenConfig,
   StandardTokenConfig,
-  SupportedChainId,
   CreateParams,
+  ModuleAddressOverrides,
+} from '../common/types';
+import type { SupportedChainId } from '../common/addresses';
+import type { CreateStaticAuctionParams } from '../static/types';
+import type { CreateDynamicAuctionParams } from '../dynamic/types';
+import type {
+  CreateMulticurveParams,
   MulticurveBundleExactInResult,
   MulticurveBundleExactOutResult,
-  V4PoolKey,
-} from '../types';
-import type { ModuleAddressOverrides } from '../types';
-import { CHAIN_IDS, getAddresses } from '../addresses';
-import { zeroAddress } from 'viem';
+} from '../multicurve/types';
+import type { V4PoolKey } from '../internal/v4-shared/types';
+import { CHAIN_IDS, getAddresses } from '../common/addresses';
 import {
   ZERO_ADDRESS,
   WAD,
   DEFAULT_PD_SLUGS,
-  FLAG_MASK,
+  DEFAULT_CREATE_GAS_LIMIT,
+  TICK_SPACINGS,
+} from '../common/constants';
+import {
   DEFAULT_V3_NUM_POSITIONS,
   DEFAULT_V3_YEARLY_MINT_RATE,
   DEFAULT_V3_MAX_SHARE_TO_BE_SOLD,
-  DEFAULT_V4_YEARLY_MINT_RATE,
   DEFAULT_V3_INITIAL_VOTING_DELAY,
   DEFAULT_V3_INITIAL_VOTING_PERIOD,
   DEFAULT_V3_INITIAL_PROPOSAL_THRESHOLD,
+} from '../static/constants';
+import {
+  FLAG_MASK,
+  DEFAULT_V4_YEARLY_MINT_RATE,
   DEFAULT_V4_INITIAL_VOTING_DELAY,
   DEFAULT_V4_INITIAL_VOTING_PERIOD,
   DEFAULT_V4_INITIAL_PROPOSAL_THRESHOLD,
-  DEFAULT_CREATE_GAS_LIMIT,
-  TICK_SPACINGS,
   DOPPLER_MAX_TICK_SPACING,
-} from '../constants';
-import {
-  computeOptimalGamma,
-  MIN_TICK,
-  MAX_TICK,
   isToken0Expected,
-} from '../utils';
+} from '../internal/v4-shared';
+import { computeOptimalGamma } from '../dynamic/utils/gamma';
+import { MIN_TICK, MAX_TICK } from '../common/utils/tickMath';
 import {
   airlockAbi,
   bundlerAbi,
@@ -63,8 +66,8 @@ import {
   DopplerBytecode,
   DopplerDN404Bytecode,
   v4MulticurveInitializerAbi,
-} from '../abis';
-import { DopplerBytecodeBaseMainnet } from '@/abis/bytecodes';
+} from '../common/abis';
+import { DopplerBytecodeBaseMainnet } from '../common/abis/bytecodes';
 
 // Type definition for the custom migration encoder function
 export type MigrationEncoder = (config: MigrationConfig) => Hex;

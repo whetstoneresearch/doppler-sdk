@@ -1,4 +1,5 @@
 import type { Address } from 'viem';
+import { TICK_SPACINGS, ZERO_ADDRESS } from '../common/constants';
 import {
   DEFAULT_V3_END_TICK,
   DEFAULT_V3_FEE,
@@ -7,26 +8,26 @@ import {
   DEFAULT_V3_START_TICK,
   DEFAULT_V3_VESTING_DURATION,
   DEFAULT_V3_YEARLY_MINT_RATE,
-  TICK_SPACINGS,
   V3_FEE_TIERS,
-  ZERO_ADDRESS,
-} from '../constants';
+} from '../static/constants';
 import {
   marketCapToTicksForStaticAuction,
   validateMarketCapParameters,
-} from '../utils';
-import {
-  isNoOpEnabledChain,
-  type CreateStaticAuctionParams,
-  type GovernanceOption,
-  type MigrationConfig,
-  type PriceRange,
-  type VestingConfig,
-  type TokenConfig,
-  type StaticAuctionMarketCapConfig,
-  type ModuleAddressOverrides,
-} from '../types';
-import { type SupportedChainId } from '../addresses';
+} from '../static/utils/marketCapHelpers';
+import { isNoOpEnabledChain } from '../common/types';
+import type {
+  GovernanceOption,
+  MigrationConfig,
+  PriceRange,
+  VestingConfig,
+  TokenConfig,
+  ModuleAddressOverrides,
+} from '../common/types';
+import type {
+  CreateStaticAuctionParams,
+  StaticAuctionMarketCapConfig,
+} from '../static/types';
+import type { SupportedChainId } from '../common/addresses';
 import { computeTicks, type BaseAuctionBuilder } from './shared';
 
 export class StaticAuctionBuilder<

@@ -1,6 +1,6 @@
 import { type Address, type WalletClient, type PublicClient } from 'viem';
-import { derc20Abi } from '../../../abis';
-import { SupportedPublicClient } from '@/types';
+import { derc20Abi } from '../../../common/abis';
+import type { SupportedPublicClient } from '../../../common/types';
 
 /**
  * A class providing read and write access to a DERC20 token contract.

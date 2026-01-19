@@ -6,9 +6,9 @@ import {
   encodeAbiParameters,
   zeroAddress,
 } from 'viem';
-import type { HookInfo, SupportedPublicClient } from '../../types';
-import { dopplerHookAbi, airlockAbi } from '../../abis';
-import { getAddresses } from '../../addresses';
+import type { HookInfo, SupportedPublicClient } from '../../common/types';
+import { dopplerHookAbi, airlockAbi } from '../../common/abis';
+import { getAddresses } from '../../common/addresses';
 
 /**
  * DynamicAuction class for interacting with dynamic auctions (Uniswap V4 hook based)

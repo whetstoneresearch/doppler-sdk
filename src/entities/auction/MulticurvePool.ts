@@ -6,20 +6,18 @@ import {
   type Hex,
   zeroAddress,
 } from 'viem';
-import {
-  LockablePoolStatus,
-  type MulticurvePoolState,
-  type SupportedPublicClient,
-  type V4PoolKey,
-} from '../../types';
+import type { SupportedPublicClient } from '../../common/types';
+import { LockablePoolStatus } from '../../static/types';
+import type { MulticurvePoolState } from '../../multicurve/types';
+import type { V4PoolKey } from '../../internal/v4-shared/types';
 import {
   v4MulticurveInitializerAbi,
   v4MulticurveMigratorAbi,
   streamableFeesLockerAbi,
-} from '../../abis';
-import { getAddresses } from '../../addresses';
-import type { SupportedChainId } from '../../addresses';
-import { computePoolId } from '../../utils/poolKey';
+} from '../../common/abis';
+import { getAddresses } from '../../common/addresses';
+import type { SupportedChainId } from '../../common/addresses';
+import { computePoolId } from '../../internal/v4-shared/poolKey';
 
 /** Result from finding which initializer contains the pool */
 interface InitializerDiscoveryResult {

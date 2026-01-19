@@ -1,5 +1,5 @@
 import { encodeAbiParameters, keccak256, type Hex } from 'viem';
-import type { V4PoolKey } from '../types';
+import type { V4PoolKey } from './types';
 
 /**
  * Computes the PoolId (bytes32) from a V4 PoolKey

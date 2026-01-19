@@ -5,14 +5,16 @@ import {
   tokenPriceToRatio,
   ratioToTick,
   marketCapToTicksForStaticAuction,
+  validateMarketCapParameters,
+} from '../../static/utils/marketCapHelpers';
+import {
   marketCapToTicksForDynamicAuction,
   marketCapToTicksForMulticurve,
   marketCapToTickForMulticurve,
   applyTickOffsets,
   isToken1,
-  validateMarketCapParameters,
   tickToMarketCap,
-} from '../../utils/marketCapHelpers';
+} from '../../internal/v4-shared/marketCapHelpers';
 
 // Mock numeraire addresses for testing token ordering
 // isToken0Expected returns:

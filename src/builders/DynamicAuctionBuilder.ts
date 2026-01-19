@@ -2,29 +2,31 @@ import type { Address } from 'viem';
 import {
   DEFAULT_AUCTION_DURATION,
   DEFAULT_EPOCH_LENGTH,
+  FEE_TIERS,
+  ZERO_ADDRESS,
+} from '../common/constants';
+import {
   DEFAULT_V4_YEARLY_MINT_RATE,
   DOPPLER_MAX_TICK_SPACING,
-  FEE_TIERS,
   V4_MAX_FEE,
-  ZERO_ADDRESS,
-} from '../constants';
-import {
-  computeOptimalGamma,
   marketCapToTicksForDynamicAuction,
-  validateMarketCapParameters,
-} from '../utils';
-import {
-  isNoOpEnabledChain,
-  type CreateDynamicAuctionParams,
-  type GovernanceOption,
-  type MigrationConfig,
-  type PriceRange,
-  type VestingConfig,
-  type TokenConfig,
-  type DynamicAuctionMarketCapConfig,
-  type ModuleAddressOverrides,
-} from '../types';
-import { type SupportedChainId } from '../addresses';
+} from '../internal/v4-shared';
+import { computeOptimalGamma } from '../dynamic/utils/gamma';
+import { validateMarketCapParameters } from '../static/utils/marketCapHelpers';
+import { isNoOpEnabledChain } from '../common/types';
+import type {
+  GovernanceOption,
+  MigrationConfig,
+  PriceRange,
+  VestingConfig,
+  TokenConfig,
+  ModuleAddressOverrides,
+} from '../common/types';
+import type {
+  CreateDynamicAuctionParams,
+  DynamicAuctionMarketCapConfig,
+} from '../dynamic/types';
+import type { SupportedChainId } from '../common/addresses';
 import { computeTicks, type BaseAuctionBuilder } from './shared';
 
 export class DynamicAuctionBuilder<
