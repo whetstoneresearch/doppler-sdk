@@ -4,22 +4,22 @@ export const VERSION = '0.0.1';
 export { DopplerSDK } from './DopplerSDK';
 
 // Export auction classes from their modules
-export { StaticAuction } from './static/StaticAuction';
-export { DynamicAuction } from './dynamic/DynamicAuction';
-export { MulticurvePool } from './multicurve/MulticurvePool';
+export { StaticAuction } from './static/auction';
+export { DynamicAuction } from './dynamic/auction';
+export { MulticurvePool } from './multicurve/pool';
 
 // Export module-specific factories (for tree-shaking)
-export { StaticAuctionFactory } from './static/StaticAuctionFactory';
-export { DynamicAuctionFactory } from './dynamic/DynamicAuctionFactory';
-export { MulticurveFactory } from './multicurve/MulticurveFactory';
+export { StaticAuctionFactory } from './static/factory';
+export { DynamicAuctionFactory } from './dynamic/factory';
+export { MulticurveFactory } from './multicurve/factory';
 
 // Export utility classes
 export { Quoter, Derc20, Eth } from './common/utils';
 
 // Export builders from their module locations
-export { StaticAuctionBuilder } from './static/StaticAuctionBuilder';
-export { DynamicAuctionBuilder } from './dynamic/DynamicAuctionBuilder';
-export { MulticurveBuilder } from './multicurve/MulticurveBuilder';
+export { StaticAuctionBuilder } from './static/builder';
+export { DynamicAuctionBuilder } from './dynamic/builder';
+export { MulticurveBuilder } from './multicurve/builder';
 export type { BaseAuctionBuilder } from './common/types';
 
 // ============================================================================

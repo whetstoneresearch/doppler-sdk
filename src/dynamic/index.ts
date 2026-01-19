@@ -48,11 +48,11 @@ export type { V4PoolKey } from '../internal/v4-shared';
 export { computePoolId } from '../internal/v4-shared';
 
 // Export DynamicAuctionBuilder
-export { DynamicAuctionBuilder } from './DynamicAuctionBuilder';
+export { DynamicAuctionBuilder } from './builder';
 
 // Re-export DynamicAuction entity
-export { DynamicAuction } from './DynamicAuction';
+export { DynamicAuction } from './auction';
 
 // Export DynamicAuctionFactory
-export { DynamicAuctionFactory } from './DynamicAuctionFactory';
-export type { MigrationEncoder as DynamicMigrationEncoder } from './DynamicAuctionFactory';
+export { DynamicAuctionFactory } from './factory';
+export type { MigrationEncoder as DynamicMigrationEncoder } from './factory';

@@ -7,17 +7,17 @@ import type {
   SupportedPublicClient,
 } from './common/types';
 import type { SupportedChainId } from './common/addresses';
-import { StaticAuction } from './static/StaticAuction';
-import { DynamicAuction } from './dynamic/DynamicAuction';
-import { MulticurvePool } from './multicurve/MulticurvePool';
-import { StaticAuctionFactory } from './static/StaticAuctionFactory';
-import { DynamicAuctionFactory } from './dynamic/DynamicAuctionFactory';
-import { MulticurveFactory } from './multicurve/MulticurveFactory';
+import { StaticAuction } from './static/auction';
+import { DynamicAuction } from './dynamic/auction';
+import { MulticurvePool } from './multicurve/pool';
+import { StaticAuctionFactory } from './static/factory';
+import { DynamicAuctionFactory } from './dynamic/factory';
+import { MulticurveFactory } from './multicurve/factory';
 import { Quoter } from './common/utils/quoter';
 import { Derc20 } from './common/utils/derc20';
-import { StaticAuctionBuilder } from './static/StaticAuctionBuilder';
-import { DynamicAuctionBuilder } from './dynamic/DynamicAuctionBuilder';
-import { MulticurveBuilder } from './multicurve/MulticurveBuilder';
+import { StaticAuctionBuilder } from './static/builder';
+import { DynamicAuctionBuilder } from './dynamic/builder';
+import { MulticurveBuilder } from './multicurve/builder';
 import {
   DEFAULT_AIRLOCK_BENEFICIARY_SHARES,
   getAirlockBeneficiary,

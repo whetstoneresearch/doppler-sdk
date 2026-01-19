@@ -48,11 +48,11 @@ export {
 } from './utils/marketCapHelpers';
 
 // Export StaticAuctionBuilder
-export { StaticAuctionBuilder } from './StaticAuctionBuilder';
+export { StaticAuctionBuilder } from './builder';
 
 // Re-export StaticAuction entity
-export { StaticAuction } from './StaticAuction';
+export { StaticAuction } from './auction';
 
 // Export StaticAuctionFactory
-export { StaticAuctionFactory } from './StaticAuctionFactory';
-export type { MigrationEncoder as StaticMigrationEncoder } from './StaticAuctionFactory';
+export { StaticAuctionFactory } from './factory';
+export type { MigrationEncoder as StaticMigrationEncoder } from './factory';
