@@ -14,7 +14,7 @@ import './env'
 
 import { DopplerSDK, getAddresses } from '../src'
 import { GraphQLClient } from 'graphql-request'
-import { createPublicClient, http, formatEther, formatUnits, type Address } from 'viem'
+import { createPublicClient, http, formatEther, formatUnits, parseEther, type Address } from 'viem'
 import { baseSepolia } from 'viem/chains'
 
 const rpcUrl = process.env.RPC_URL ?? baseSepolia.rpcUrls.default.http[0]
@@ -22,9 +22,9 @@ const indexerUrl = process.env.INDEXER_URL || 'https://testnet-indexer.doppler.l
 
 // GraphQL query for fetching pool data
 const GET_POOL_QUERY = `
-  query GetPool($address: String!, $chainId: Float!) {
+  query GetPool($address: String!, $chainId: Int!) {
     pools(
-      where: { address: $address }
+      where: { address: $address, chainId: $chainId }
       limit: 1
     ) {
       items {
@@ -63,13 +63,14 @@ const GET_POOL_QUERY = `
 
 // GraphQL query for listing recent pools
 const GET_RECENT_POOLS_QUERY = `
-  query GetRecentPools($types: [String!]) {
+  query GetRecentPools($types: [String!], $chainId: Int!) {
     pools(
       orderBy: "createdAt"
       orderDirection: "desc"
       limit: 10
       where: {
         type_in: $types
+        chainId: $chainId
       }
     ) {
       items {
@@ -144,6 +145,7 @@ async function main() {
     pools: { items: Pool[] }
   }>(GET_RECENT_POOLS_QUERY, {
     types: ['v4'], // V4 pools include multicurve auctions
+    chainId: baseSepolia.id,
   })
 
   const recentPools = recentPoolsResponse.pools.items

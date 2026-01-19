@@ -13,17 +13,27 @@ const USER = '0x00000000000000000000000000000000000000AA' as Address;
 
 describe('Builder withMarketCapRange ordering', () => {
   describe('StaticAuctionBuilder', () => {
-    it('throws if withMarketCapRange is called before saleConfig', () => {
-      const builder = StaticAuctionBuilder.forChain(CHAIN_IDS.BASE).tokenConfig(
-        { name: 'Test', symbol: 'TST', tokenURI: 'ipfs://test' },
-      );
-
-      expect(() =>
-        builder.withMarketCapRange({
+    it('allows withMarketCapRange before saleConfig (order-independent)', () => {
+      const builder = StaticAuctionBuilder.forChain(CHAIN_IDS.BASE)
+        .tokenConfig({ name: 'Test', symbol: 'TST', tokenURI: 'ipfs://test' })
+        .withMarketCapRange({
           marketCap: { start: 100_000, end: 10_000_000 },
           numerairePrice: 3000,
-        }),
-      ).toThrow('Must call saleConfig() before withMarketCapRange()');
+        })
+        .saleConfig({
+          initialSupply: parseEther('1000000000'),
+          numTokensToSell: parseEther('900000000'),
+          numeraire: WETH,
+        })
+        .withGovernance({ type: 'default' })
+        .withMigration({ type: 'uniswapV2' })
+        .withUserAddress(USER);
+
+      const params = builder.build();
+
+      expect(params.pool.startTick).toBeDefined();
+      expect(params.pool.endTick).toBeDefined();
+      expect(params.pool.startTick).toBeLessThan(params.pool.endTick);
     });
 
     it('succeeds when saleConfig is called before withMarketCapRange', () => {
@@ -48,13 +58,121 @@ describe('Builder withMarketCapRange ordering', () => {
       expect(params.pool.endTick).toBeDefined();
       expect(params.pool.startTick).toBeLessThan(params.pool.endTick);
     });
+
+    it('throws in build if neither saleConfig nor tokenSupply is provided', () => {
+      const builder = StaticAuctionBuilder.forChain(CHAIN_IDS.BASE)
+        .tokenConfig({ name: 'Test', symbol: 'TST', tokenURI: 'ipfs://test' })
+        .withMarketCapRange({
+          marketCap: { start: 100_000, end: 10_000_000 },
+          numerairePrice: 3000,
+        })
+        .withGovernance({ type: 'default' })
+        .withMigration({ type: 'uniswapV2' })
+        .withUserAddress(USER);
+
+      expect(() => builder.build()).toThrow('saleConfig is required');
+    });
+
+    it('throws if poolByTicks is called after withMarketCapRange', () => {
+      const builder = StaticAuctionBuilder.forChain(CHAIN_IDS.BASE)
+        .tokenConfig({ name: 'Test', symbol: 'TST', tokenURI: 'ipfs://test' })
+        .withMarketCapRange({
+          marketCap: { start: 100_000, end: 10_000_000 },
+          numerairePrice: 3000,
+        });
+
+      expect(() => builder.poolByTicks({ startTick: 0, endTick: 100 })).toThrow(
+        'Cannot use poolByTicks() after withMarketCapRange()',
+      );
+    });
+
+    it('throws if withMarketCapRange is called after poolByTicks', () => {
+      const builder = StaticAuctionBuilder.forChain(CHAIN_IDS.BASE)
+        .tokenConfig({ name: 'Test', symbol: 'TST', tokenURI: 'ipfs://test' })
+        .saleConfig({
+          initialSupply: parseEther('1000000000'),
+          numTokensToSell: parseEther('900000000'),
+          numeraire: WETH,
+        })
+        .poolByTicks({ startTick: 0, endTick: 100 });
+
+      expect(() =>
+        builder.withMarketCapRange({
+          marketCap: { start: 100_000, end: 10_000_000 },
+          numerairePrice: 3000,
+        }),
+      ).toThrow('Cannot use withMarketCapRange() after poolByTicks()');
+    });
   });
 
   describe('DynamicAuctionBuilder', () => {
-    it('throws if withMarketCapRange is called before saleConfig', () => {
-      const builder = DynamicAuctionBuilder.forChain(
-        CHAIN_IDS.BASE,
-      ).tokenConfig({ name: 'Test', symbol: 'TST', tokenURI: 'ipfs://test' });
+    it('allows withMarketCapRange before saleConfig (order-independent)', () => {
+      const builder = DynamicAuctionBuilder.forChain(CHAIN_IDS.BASE)
+        .tokenConfig({ name: 'Test', symbol: 'TST', tokenURI: 'ipfs://test' })
+        .withMarketCapRange({
+          marketCap: { start: 100_000, min: 10_000 },
+          numerairePrice: 3000,
+          minProceeds: parseEther('10'),
+          maxProceeds: parseEther('1000'),
+        })
+        .saleConfig({
+          initialSupply: parseEther('1000000000'),
+          numTokensToSell: parseEther('900000000'),
+          numeraire: WETH,
+        })
+        .withGovernance({ type: 'default' })
+        .withMigration({ type: 'uniswapV2' })
+        .withUserAddress(USER);
+
+      const params = builder.build();
+
+      expect(params.auction.startTick).toBeDefined();
+      expect(params.auction.endTick).toBeDefined();
+      expect(params.auction.startTick).toBeLessThan(params.auction.endTick);
+      expect(params.pool.fee).toBe(10000);
+      expect(params.pool.tickSpacing).toBe(30);
+    });
+
+    it('throws in build if saleConfig not provided', () => {
+      const builder = DynamicAuctionBuilder.forChain(CHAIN_IDS.BASE)
+        .tokenConfig({ name: 'Test', symbol: 'TST', tokenURI: 'ipfs://test' })
+        .withMarketCapRange({
+          marketCap: { start: 100_000, min: 10_000 },
+          numerairePrice: 3000,
+          minProceeds: parseEther('10'),
+          maxProceeds: parseEther('1000'),
+        })
+        .withGovernance({ type: 'default' })
+        .withMigration({ type: 'uniswapV2' })
+        .withUserAddress(USER);
+
+      expect(() => builder.build()).toThrow('saleConfig is required');
+    });
+
+    it('throws if poolConfig is called after withMarketCapRange', () => {
+      const builder = DynamicAuctionBuilder.forChain(CHAIN_IDS.BASE)
+        .tokenConfig({ name: 'Test', symbol: 'TST', tokenURI: 'ipfs://test' })
+        .withMarketCapRange({
+          marketCap: { start: 100_000, min: 10_000 },
+          numerairePrice: 3000,
+          minProceeds: parseEther('10'),
+          maxProceeds: parseEther('1000'),
+        });
+
+      expect(() => builder.poolConfig({ fee: 3000, tickSpacing: 30 })).toThrow(
+        'Cannot use poolConfig() after withMarketCapRange()',
+      );
+    });
+
+    it('throws if withMarketCapRange is called after poolConfig', () => {
+      const builder = DynamicAuctionBuilder.forChain(CHAIN_IDS.BASE)
+        .tokenConfig({ name: 'Test', symbol: 'TST', tokenURI: 'ipfs://test' })
+        .saleConfig({
+          initialSupply: parseEther('1000000000'),
+          numTokensToSell: parseEther('900000000'),
+          numeraire: WETH,
+        })
+        .poolConfig({ fee: 3000, tickSpacing: 30 });
 
       expect(() =>
         builder.withMarketCapRange({
@@ -63,32 +181,10 @@ describe('Builder withMarketCapRange ordering', () => {
           minProceeds: parseEther('10'),
           maxProceeds: parseEther('1000'),
         }),
-      ).toThrow('Must call saleConfig() before withMarketCapRange()');
+      ).toThrow('Cannot use withMarketCapRange() after poolConfig()');
     });
 
-    it('throws if poolConfig is called after withMarketCapRange', () => {
-      const builder = DynamicAuctionBuilder.forChain(CHAIN_IDS.BASE)
-        .tokenConfig({ name: 'Test', symbol: 'TST', tokenURI: 'ipfs://test' })
-        .saleConfig({
-          initialSupply: parseEther('1000000000'),
-          numTokensToSell: parseEther('900000000'),
-          numeraire: WETH,
-        })
-        .withMarketCapRange({
-          marketCap: { start: 100_000, min: 10_000 },
-          numerairePrice: 3000,
-          minProceeds: parseEther('10'),
-          maxProceeds: parseEther('1000'),
-        });
-
-      expect(() => builder.poolConfig({ fee: 3000, tickSpacing: 60 })).toThrow(
-        'Cannot use poolConfig() after withMarketCapRange()',
-      );
-    });
-
-    it('throws if withMarketCapRange is called after poolConfig', () => {
-      // Note: tickSpacing: 60 would also throw for exceeding MAX_TICK_SPACING,
-      // but the mutual exclusion error should be thrown first when using poolConfig() then withMarketCapRange()
+    it('throws if poolConfig tickSpacing exceeds Doppler max', () => {
       const builder = DynamicAuctionBuilder.forChain(CHAIN_IDS.BASE)
         .tokenConfig({ name: 'Test', symbol: 'TST', tokenURI: 'ipfs://test' })
         .saleConfig({
@@ -253,15 +349,52 @@ describe('Builder withMarketCapRange ordering', () => {
   });
 
   describe('MulticurveBuilder', () => {
-    it('throws if withCurves is called before saleConfig', () => {
-      const builder = MulticurveBuilder.forChain(CHAIN_IDS.BASE).tokenConfig({
-        name: 'Test',
-        symbol: 'TST',
-        tokenURI: 'ipfs://test',
-      });
+    it('allows withCurves before saleConfig (order-independent)', () => {
+      const builder = MulticurveBuilder.forChain(CHAIN_IDS.BASE)
+        .tokenConfig({
+          name: 'Test',
+          symbol: 'TST',
+          tokenURI: 'ipfs://test',
+        })
+        .withCurves({
+          numerairePrice: 3000,
+          curves: [
+            {
+              marketCap: { start: 500_000, end: 1_000_000 },
+              numPositions: 10,
+              shares: parseEther('0.5'),
+            },
+            {
+              marketCap: { start: 1_000_000, end: 5_000_000 },
+              numPositions: 20,
+              shares: parseEther('0.5'),
+            },
+          ],
+        })
+        .saleConfig({
+          initialSupply: parseEther('1000000000'),
+          numTokensToSell: parseEther('900000000'),
+          numeraire: WETH,
+        })
+        .withGovernance({ type: 'default' })
+        .withMigration({ type: 'uniswapV2' })
+        .withUserAddress(USER);
 
-      expect(() =>
-        builder.withCurves({
+      const params = builder.build();
+
+      expect(params.pool.curves).toHaveLength(2);
+      expect(params.pool.curves[0].tickLower).toBeDefined();
+      expect(params.pool.curves[0].tickUpper).toBeDefined();
+    });
+
+    it('throws in build if saleConfig not provided', () => {
+      const builder = MulticurveBuilder.forChain(CHAIN_IDS.BASE)
+        .tokenConfig({
+          name: 'Test',
+          symbol: 'TST',
+          tokenURI: 'ipfs://test',
+        })
+        .withCurves({
           numerairePrice: 3000,
           curves: [
             {
@@ -270,8 +403,12 @@ describe('Builder withMarketCapRange ordering', () => {
               shares: WAD,
             },
           ],
-        }),
-      ).toThrow('Must call saleConfig() before withCurves()');
+        })
+        .withGovernance({ type: 'default' })
+        .withMigration({ type: 'uniswapV2' })
+        .withUserAddress(USER);
+
+      expect(() => builder.build()).toThrow('saleConfig is required');
     });
 
     it('succeeds when saleConfig is called before withCurves', () => {
@@ -306,6 +443,69 @@ describe('Builder withMarketCapRange ordering', () => {
       expect(params.pool.curves).toHaveLength(2);
       expect(params.pool.curves[0].tickLower).toBeDefined();
       expect(params.pool.curves[0].tickUpper).toBeDefined();
+    });
+
+    it('throws if poolConfig is called after withCurves', () => {
+      const builder = MulticurveBuilder.forChain(CHAIN_IDS.BASE)
+        .tokenConfig({
+          name: 'Test',
+          symbol: 'TST',
+          tokenURI: 'ipfs://test',
+        })
+        .withCurves({
+          numerairePrice: 3000,
+          curves: [
+            {
+              marketCap: { start: 1_000_000, end: 10_000_000 },
+              numPositions: 10,
+              shares: WAD,
+            },
+          ],
+        });
+
+      expect(() =>
+        builder.poolConfig({
+          fee: 3000,
+          tickSpacing: 60,
+          curves: [
+            { tickLower: 0, tickUpper: 100, numPositions: 10, shares: WAD },
+          ],
+        }),
+      ).toThrow('Cannot use poolConfig() after withCurves()');
+    });
+
+    it('throws if withCurves is called after poolConfig', () => {
+      const builder = MulticurveBuilder.forChain(CHAIN_IDS.BASE)
+        .tokenConfig({
+          name: 'Test',
+          symbol: 'TST',
+          tokenURI: 'ipfs://test',
+        })
+        .saleConfig({
+          initialSupply: parseEther('1000000000'),
+          numTokensToSell: parseEther('900000000'),
+          numeraire: WETH,
+        })
+        .poolConfig({
+          fee: 3000,
+          tickSpacing: 60,
+          curves: [
+            { tickLower: 0, tickUpper: 100, numPositions: 10, shares: WAD },
+          ],
+        });
+
+      expect(() =>
+        builder.withCurves({
+          numerairePrice: 3000,
+          curves: [
+            {
+              marketCap: { start: 1_000_000, end: 10_000_000 },
+              numPositions: 10,
+              shares: WAD,
+            },
+          ],
+        }),
+      ).toThrow('Cannot use withCurves() after poolConfig()');
     });
   });
 

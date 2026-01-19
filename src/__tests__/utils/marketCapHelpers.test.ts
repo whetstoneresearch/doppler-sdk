@@ -247,8 +247,9 @@ describe('marketCapHelpers', () => {
         numeraireDecimals: 18,
       });
 
-      // Tick is around -34500 (negative because ratio = 0.032/1 < 1)
-      expect(Math.abs(tick + 34500)).toBeLessThan(200);
+      // Multicurve canonical tick space negates the raw tick.
+      // raw tick is around -34500 (because ratio = 0.032/1 < 1), so multicurve tick ~ +34500.
+      expect(Math.abs(tick - 34500)).toBeLessThan(200);
     });
   });
 
@@ -782,8 +783,9 @@ describe('marketCapHelpers', () => {
         numeraireDecimals: 18,
       });
 
-      // ratio = 0.032/1 = 0.032 < 1, so tick is negative ≈ -34500
-      expect(Math.abs(pegTick + 34500)).toBeLessThan(200);
+      // Multicurve canonical tick space negates the raw tick.
+      // raw tick is negative here (ratio = 0.032/1 < 1), so multicurve pegTick is ≈ +34500.
+      expect(Math.abs(pegTick - 34500)).toBeLessThan(200);
     });
 
     it('should produce expected curve ranges', () => {

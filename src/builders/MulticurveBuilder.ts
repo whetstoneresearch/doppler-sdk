@@ -51,6 +51,21 @@ export class MulticurveBuilder<
   private numerairePrice?: number;
   private tokenDecimals?: number;
   private numeraireDecimals?: number;
+  // Deferred curves config - converted to pool in build()
+  private curvesConfig?: {
+    numerairePrice: number;
+    curves: Array<{
+      marketCap: { start: number; end: number | 'max' };
+      numPositions: number;
+      shares: bigint;
+    }>;
+    tokenSupply?: bigint;
+    tokenDecimals?: number;
+    numeraireDecimals?: number;
+    fee?: number;
+    tickSpacing?: number;
+    beneficiaries?: { beneficiary: Address; shares: bigint }[];
+  };
   public chainId: C;
 
   constructor(chainId: C) {
@@ -124,6 +139,15 @@ export class MulticurveBuilder<
     }[];
     beneficiaries?: { beneficiary: Address; shares: bigint }[];
   }): this {
+    // Mutual exclusion: cannot use poolConfig() after withCurves()
+    if (this.curvesConfig) {
+      throw new Error(
+        'Cannot use poolConfig() after withCurves(). ' +
+          'Use withCurves() for market cap-based configuration, ' +
+          'or poolConfig() for manual tick configuration.',
+      );
+    }
+
     const sortedBeneficiaries = params.beneficiaries
       ? [...params.beneficiaries].sort((a, b) => {
           const aAddr = a.beneficiary.toLowerCase();
@@ -148,6 +172,15 @@ export class MulticurveBuilder<
     overrides?: MarketCapPresetOverrides;
     beneficiaries?: { beneficiary: Address; shares: bigint }[];
   }): this {
+    // Mutual exclusion: cannot use withMarketCapPresets() after withCurves()
+    if (this.curvesConfig) {
+      throw new Error(
+        'Cannot use withMarketCapPresets() after withCurves(). ' +
+          'Use withCurves() for market cap-based configuration, ' +
+          'or withMarketCapPresets() for preset-based configuration.',
+      );
+    }
+
     const { fee, tickSpacing, curves } = buildCurvesFromPresets({
       fee: params?.fee,
       tickSpacing: params?.tickSpacing,
@@ -203,9 +236,13 @@ export class MulticurveBuilder<
    * ```
    */
   withCurves(params: MulticurveMarketCapCurvesConfig): this {
-    // Validate required config
-    if (!this.sale?.numeraire) {
-      throw new Error('Must call saleConfig() before withCurves()');
+    // Mutual exclusion: cannot use withCurves() after poolConfig()/withMarketCapPresets()
+    if (this.pool) {
+      throw new Error(
+        'Cannot use withCurves() after poolConfig()/withMarketCapPresets(). ' +
+          'Use withCurves() for market cap-based configuration, ' +
+          'or poolConfig() for manual tick configuration.',
+      );
     }
 
     // Validate numerairePrice
@@ -213,17 +250,12 @@ export class MulticurveBuilder<
       throw new Error('numerairePrice must be greater than 0');
     }
 
-    // Store for later use in build() (graduationMarketCap conversion)
-    this.numerairePrice = params.numerairePrice;
-    this.tokenDecimals = params.tokenDecimals;
-    this.numeraireDecimals = params.numeraireDecimals;
-
     // Validate curves array
     if (!params.curves || params.curves.length === 0) {
       throw new Error('curves array must contain at least one curve');
     }
 
-    // Validate each curve
+    // Validate each curve (basic validation that doesn't require saleConfig)
     for (let i = 0; i < params.curves.length; i++) {
       const curve = params.curves[i];
       this.validateCurveRange(
@@ -249,94 +281,32 @@ export class MulticurveBuilder<
       );
     }
 
-    // Get token supply
-    const tokenSupply = params.tokenSupply ?? this.sale.initialSupply;
-    if (!tokenSupply) {
+    // Validate fee if provided
+    if (params.fee !== undefined && params.fee > V4_MAX_FEE) {
       throw new Error(
-        'tokenSupply must be provided (either via saleConfig() or withCurves() params)',
-      );
-    }
-
-    // Get fee and tick spacing
-    // V4 pools support any fee 0-100,000, but standard tiers auto-derive tickSpacing
-    const fee = params.fee ?? FEE_TIERS.MEDIUM;
-
-    // Validate fee doesn't exceed V4 maximum
-    if (fee > V4_MAX_FEE) {
-      throw new Error(
-        `Fee ${fee} exceeds maximum allowed for V4 pools (${V4_MAX_FEE} = 10%). ` +
+        `Fee ${params.fee} exceeds maximum allowed for V4 pools (${V4_MAX_FEE} = 10%). ` +
           `Use a fee between 0 and ${V4_MAX_FEE}.`,
       );
     }
 
-    const tickSpacing =
-      params.tickSpacing ?? (TICK_SPACINGS as Record<number, number>)[fee];
+    // Store for later use in build() (graduationMarketCap conversion)
+    this.numerairePrice = params.numerairePrice;
+    this.tokenDecimals = params.tokenDecimals;
+    this.numeraireDecimals = params.numeraireDecimals;
 
-    if (tickSpacing === undefined) {
-      throw new Error(
-        `Custom fee ${fee} requires explicit tickSpacing. ` +
-          `Standard fees (100, 500, 3000, 10000) auto-derive tickSpacing.`,
-      );
-    }
-
-    // Validate first curve market caps (the launch price)
-    const firstCurve = sortedCurves[0];
-    const startValidation = validateMarketCapParameters(
-      firstCurve.marketCap.start,
-      tokenSupply,
-      params.tokenDecimals,
-    );
-    const endValidation =
-      firstCurve.marketCap.end === 'max'
-        ? { valid: true, warnings: [] }
-        : validateMarketCapParameters(
-            firstCurve.marketCap.end,
-            tokenSupply,
-            params.tokenDecimals,
-          );
-    const allWarnings = [
-      ...startValidation.warnings,
-      ...endValidation.warnings,
-    ];
-    if (allWarnings.length > 0) {
-      console.warn('First curve market cap validation warnings:');
-      allWarnings.forEach((w) => console.warn(`  - ${w}`));
-    }
-
-    // Convert all curves to ticks
-    const curves: {
-      tickLower: number;
-      tickUpper: number;
-      numPositions: number;
-      shares: bigint;
-    }[] = [];
-
-    for (const curve of sortedCurves) {
-      const curveTicks = marketCapToTicksForMulticurve({
-        marketCapLower: curve.marketCap.start,
-        marketCapUpper: curve.marketCap.end,
-        tokenSupply,
-        numerairePriceUSD: params.numerairePrice,
-        tickSpacing,
-        tokenDecimals: params.tokenDecimals ?? 18,
-        numeraireDecimals: params.numeraireDecimals ?? 18,
-      });
-
-      curves.push({
-        tickLower: curveTicks.tickLower,
-        tickUpper: curveTicks.tickUpper,
-        numPositions: curve.numPositions,
-        shares: curve.shares,
-      });
-    }
-
-    // Delegate to existing poolConfig method
-    return this.poolConfig({
-      fee,
-      tickSpacing,
-      curves,
+    // Store config for deferred conversion in build()
+    this.curvesConfig = {
+      numerairePrice: params.numerairePrice,
+      curves: sortedCurves,
+      tokenSupply: params.tokenSupply,
+      tokenDecimals: params.tokenDecimals,
+      numeraireDecimals: params.numeraireDecimals,
+      fee: params.fee,
+      tickSpacing: params.tickSpacing,
       beneficiaries: params.beneficiaries,
-    });
+    };
+
+    return this;
   }
 
   /**
@@ -589,9 +559,103 @@ export class MulticurveBuilder<
   build(): CreateMulticurveParams<C> {
     if (!this.token) throw new Error('tokenConfig is required');
     if (!this.sale) throw new Error('saleConfig is required');
-    if (!this.pool) throw new Error('poolConfig is required');
     if (!this.migration) throw new Error('migration configuration is required');
     if (!this.userAddress) throw new Error('userAddress is required');
+
+    // Convert deferred curves config to pool if set
+    if (this.curvesConfig && !this.pool) {
+      const config = this.curvesConfig;
+
+      // Get token supply from config or saleConfig
+      const tokenSupply = config.tokenSupply ?? this.sale.initialSupply;
+      if (!tokenSupply) {
+        throw new Error(
+          'tokenSupply must be provided (either via saleConfig() or withCurves() params)',
+        );
+      }
+
+      // Get fee and tick spacing
+      const fee = config.fee ?? FEE_TIERS.MEDIUM;
+      const tickSpacing =
+        config.tickSpacing ?? (TICK_SPACINGS as Record<number, number>)[fee];
+
+      if (tickSpacing === undefined) {
+        throw new Error(
+          `Custom fee ${fee} requires explicit tickSpacing. ` +
+            `Standard fees (100, 500, 3000, 10000) auto-derive tickSpacing.`,
+        );
+      }
+
+      // Validate first curve market caps (the launch price)
+      const firstCurve = config.curves[0];
+      const startValidation = validateMarketCapParameters(
+        firstCurve.marketCap.start,
+        tokenSupply,
+        config.tokenDecimals,
+      );
+      const endValidation =
+        firstCurve.marketCap.end === 'max'
+          ? { valid: true, warnings: [] }
+          : validateMarketCapParameters(
+              firstCurve.marketCap.end,
+              tokenSupply,
+              config.tokenDecimals,
+            );
+      const allWarnings = [
+        ...startValidation.warnings,
+        ...endValidation.warnings,
+      ];
+      if (allWarnings.length > 0) {
+        console.warn('First curve market cap validation warnings:');
+        allWarnings.forEach((w) => console.warn(`  - ${w}`));
+      }
+
+      // Convert all curves to ticks
+      const curves: {
+        tickLower: number;
+        tickUpper: number;
+        numPositions: number;
+        shares: bigint;
+      }[] = [];
+
+      for (const curve of config.curves) {
+        const curveTicks = marketCapToTicksForMulticurve({
+          marketCapLower: curve.marketCap.start,
+          marketCapUpper: curve.marketCap.end,
+          tokenSupply,
+          numerairePriceUSD: config.numerairePrice,
+          tickSpacing,
+          tokenDecimals: config.tokenDecimals ?? 18,
+          numeraireDecimals: config.numeraireDecimals ?? 18,
+        });
+
+        curves.push({
+          tickLower: curveTicks.tickLower,
+          tickUpper: curveTicks.tickUpper,
+          numPositions: curve.numPositions,
+          shares: curve.shares,
+        });
+      }
+
+      // Sort beneficiaries by address if provided
+      const sortedBeneficiaries = config.beneficiaries
+        ? [...config.beneficiaries].sort((a, b) => {
+            const aAddr = a.beneficiary.toLowerCase();
+            const bAddr = b.beneficiary.toLowerCase();
+            return aAddr < bAddr ? -1 : aAddr > bAddr ? 1 : 0;
+          })
+        : undefined;
+
+      // Set pool config
+      this.pool = {
+        fee,
+        tickSpacing,
+        curves,
+        beneficiaries: sortedBeneficiaries,
+      };
+    }
+
+    if (!this.pool) throw new Error('poolConfig is required');
 
     // Validate noOp migration requires beneficiaries
     // NoOpMigrator is designed for locked pools with beneficiaries. Without beneficiaries,
