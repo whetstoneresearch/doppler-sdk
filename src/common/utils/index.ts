@@ -51,3 +51,8 @@ export { decodeBalanceDelta } from './balanceDelta';
 
 // Re-export tick helpers
 export { computeTicks } from './tickHelpers';
+
+// Re-export utility classes
+export { Quoter } from './quoter';
+export { Derc20 } from './derc20';
+export { Eth } from './eth';

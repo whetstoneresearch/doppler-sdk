@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { Derc20 } from '../../entities/token/derc20/Derc20';
+import { Derc20 } from '../../common/utils/derc20';
 import {
   createMockPublicClient,
   createMockWalletClient,

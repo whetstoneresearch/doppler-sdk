@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { Eth } from '../../entities/token/eth/Eth';
+import { Eth } from '../../common/utils/eth';
 import { createMockPublicClient } from '../mocks/clients';
 import { parseEther, type Address } from 'viem';
 

@@ -4,9 +4,9 @@ import {
   type Hex,
   type PublicClient,
 } from 'viem';
-import { quoterV2Abi, uniswapV2Router02Abi, v4QuoterAbi } from '../../common/abis';
-import { getAddresses } from '../../common/addresses';
-import type { SupportedPublicClient } from '../../common/types';
+import { quoterV2Abi, uniswapV2Router02Abi, v4QuoterAbi } from '../abis';
+import { getAddresses } from '../addresses';
+import type { SupportedPublicClient } from '../types';
 
 /**
  * Unified Quoter for getting price quotes across Uniswap V2, V3, and V4

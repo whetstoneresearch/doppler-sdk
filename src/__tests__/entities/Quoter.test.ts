@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { Quoter } from '../../entities/quoter/Quoter';
+import { Quoter } from '../../common/utils/quoter';
 import { createMockPublicClient } from '../mocks/clients';
 import { mockAddresses } from '../mocks/addresses';
 import { parseEther } from 'viem';

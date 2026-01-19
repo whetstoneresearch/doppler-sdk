@@ -13,11 +13,8 @@ export { StaticAuctionFactory } from './static/StaticAuctionFactory';
 export { DynamicAuctionFactory } from './dynamic/DynamicAuctionFactory';
 export { MulticurveFactory } from './multicurve/MulticurveFactory';
 
-// Export quoter
-export { Quoter } from './entities/quoter';
-
-// Export token entities
-export { Derc20, Eth } from './entities/token';
+// Export utility classes
+export { Quoter, Derc20, Eth } from './common/utils';
 
 // Export builders from their module locations
 export { StaticAuctionBuilder } from './static/StaticAuctionBuilder';

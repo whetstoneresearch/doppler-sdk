@@ -1,5 +1,5 @@
 import { type Address, zeroAddress, type PublicClient } from 'viem';
-import type { SupportedPublicClient } from '../../../common/types';
+import type { SupportedPublicClient } from '../types';
 
 /**
  * A class providing read-only access to Ethereum (ETH) token information and balances.

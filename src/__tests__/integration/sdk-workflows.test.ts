@@ -287,7 +287,7 @@ describe('SDK Workflows Integration Tests', () => {
   describe('Token and Quoter Interactions', () => {
     it('should interact with token entities after auction creation', async () => {
       // 1. Get token entity
-      const { Derc20 } = await import('../../entities/token/derc20/Derc20');
+      const { Derc20 } = await import('../../common/utils/derc20');
       const derc20 = new Derc20(publicClient, walletClient, mockTokenAddress);
 
       // 2. Mock token info
@@ -307,7 +307,7 @@ describe('SDK Workflows Integration Tests', () => {
       expect(decimals).toBe(18);
 
       // 3. Get ETH entity
-      const { Eth } = await import('../../entities/token/eth/Eth');
+      const { Eth } = await import('../../common/utils/eth');
       const eth = new Eth(publicClient);
 
       // 4. Check ETH metadata
