@@ -26,7 +26,6 @@ import type {
   StandardTokenConfig,
   CreateParams,
   ModuleAddressOverrides,
-  BeneficiaryData,
 } from '../common/types';
 import type { CreateStaticAuctionParams } from './types';
 import type { SupportedChainId } from '../common/addresses';
@@ -36,7 +35,6 @@ import { MIN_TICK, MAX_TICK } from '../common/utils/tickMath';
 import { airlockAbi, bundlerAbi } from '../common/abis';
 import {
   DEFAULT_V3_NUM_POSITIONS,
-  DEFAULT_V3_YEARLY_MINT_RATE,
   DEFAULT_V3_MAX_SHARE_TO_BE_SOLD,
   DEFAULT_V3_INITIAL_VOTING_DELAY,
   DEFAULT_V3_INITIAL_VOTING_PERIOD,

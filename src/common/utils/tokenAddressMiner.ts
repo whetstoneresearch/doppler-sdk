@@ -76,18 +76,6 @@ function normalizePrefix(prefix: string): string {
   return normalized;
 }
 
-function computeCreate2Address(
-  salt: Hash,
-  initCodeHash: Hash,
-  deployer: Address,
-): Address {
-  const encoded = encodePacked(
-    ['bytes1', 'address', 'bytes32', 'bytes32'],
-    ['0xff', deployer, salt, initCodeHash],
-  );
-  return getAddress(`0x${keccak256(encoded).slice(-40)}`);
-}
-
 /**
  * Helper to convert hex string to Uint8Array
  */

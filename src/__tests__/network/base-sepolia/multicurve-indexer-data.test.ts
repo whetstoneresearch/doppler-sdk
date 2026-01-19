@@ -361,7 +361,7 @@ describe('Multicurve Indexer Data (Base Sepolia fork)', () => {
         expect(onChainState.fee).toBe(poolData.fee)
 
         console.log('  ✓ Indexer data consistent with on-chain state')
-      } catch (error) {
+      } catch {
         // May not be a multicurve pool
         console.log('  ⚠️  Could not verify (may not be multicurve pool)')
       }

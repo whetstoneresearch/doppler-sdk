@@ -14,10 +14,10 @@ describe('Multicurve with multiple vesting beneficiaries (Base Sepolia fork)', (
   const publicClient = getTestClient(chainId)
   const sdk = new DopplerSDK({ publicClient, chainId })
 
-  let initializerWhitelisted = false
-  let migratorWhitelisted = false
-  let tokenFactoryWhitelisted = false
-  let governanceFactoryWhitelisted = false
+  let _initializerWhitelisted = false
+  let _migratorWhitelisted = false
+  let _tokenFactoryWhitelisted = false
+  let _governanceFactoryWhitelisted = false
   let states: { tokenFactory?: number; governanceFactory?: number; initializer?: number; migrator?: number } = {}
 
   beforeAll(async () => {
@@ -29,7 +29,7 @@ describe('Multicurve with multiple vesting beneficiaries (Base Sepolia fork)', (
         args: [addresses.v4MulticurveInitializer!],
       }) as unknown as number
       states.initializer = Number(initState)
-      initializerWhitelisted = states.initializer === 3
+      _initializerWhitelisted = states.initializer === 3
     } catch {}
 
     try {
@@ -40,7 +40,7 @@ describe('Multicurve with multiple vesting beneficiaries (Base Sepolia fork)', (
         args: [addresses.v2Migrator],
       }) as unknown as number
       states.migrator = Number(migratorState)
-      migratorWhitelisted = states.migrator === 4
+      _migratorWhitelisted = states.migrator === 4
     } catch {}
 
     try {
@@ -51,7 +51,7 @@ describe('Multicurve with multiple vesting beneficiaries (Base Sepolia fork)', (
         args: [addresses.tokenFactory],
       }) as unknown as number
       states.tokenFactory = Number(tokenFactoryState)
-      tokenFactoryWhitelisted = states.tokenFactory === 1
+      _tokenFactoryWhitelisted = states.tokenFactory === 1
     } catch {}
 
     try {
@@ -62,7 +62,7 @@ describe('Multicurve with multiple vesting beneficiaries (Base Sepolia fork)', (
         args: [addresses.governanceFactory],
       }) as unknown as number
       states.governanceFactory = Number(governanceFactoryState)
-      governanceFactoryWhitelisted = states.governanceFactory === 2
+      _governanceFactoryWhitelisted = states.governanceFactory === 2
     } catch {}
   })
 
@@ -74,7 +74,7 @@ describe('Multicurve with multiple vesting beneficiaries (Base Sepolia fork)', (
 
     const totalSupply = 1_000_000n * WAD
     const tokensToSell = 910_000n * WAD // Leave 90k for vesting (under 100k per-address limit)
-    const expectedVestedAmount = totalSupply - tokensToSell // 90k tokens
+    const _expectedVestedAmount = totalSupply - tokensToSell // 90k tokens
 
     const builder = sdk
       .buildMulticurveAuction()
@@ -128,7 +128,7 @@ describe('Multicurve with multiple vesting beneficiaries (Base Sepolia fork)', (
 
     const totalSupply = 1_000_000n * WAD
     const tokensToSell = 910_000n * WAD // Leave 90k for vesting (under 100k limit)
-    const availableForVesting = totalSupply - tokensToSell // 90k tokens
+    const _availableForVesting = totalSupply - tokensToSell // 90k tokens
 
     // Define multiple beneficiaries (each under 100k per-address limit)
     const recipient1 = '0x1234567890123456789012345678901234567890'
@@ -235,7 +235,7 @@ describe('Multicurve with multiple vesting beneficiaries (Base Sepolia fork)', (
   it('validates that total vested amount does not exceed available tokens', async () => {
     const totalSupply = 1_000_000n * WAD
     const tokensToSell = 700_000n * WAD
-    const availableForVesting = totalSupply - tokensToSell // 300k tokens
+    const _availableForVesting = totalSupply - tokensToSell // 300k tokens
 
     const builder = sdk
       .buildMulticurveAuction()

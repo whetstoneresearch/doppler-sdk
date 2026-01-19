@@ -1,4 +1,4 @@
-import { Address, parseEther } from 'viem';
+import { Address } from 'viem';
 
 // Common constants
 export const WAD = 10n ** 18n;

@@ -14,10 +14,10 @@ describe('Multicurve with lockable beneficiaries using NoOpMigrator (Base Sepoli
   const publicClient = getTestClient(chainId)
   const sdk = new DopplerSDK({ publicClient, chainId })
 
-  let initializerWhitelisted = false
-  let noOpMigratorWhitelisted = false
-  let tokenFactoryWhitelisted = false
-  let governanceFactoryWhitelisted = false
+  let _initializerWhitelisted = false
+  let _noOpMigratorWhitelisted = false
+  let _tokenFactoryWhitelisted = false
+  let _governanceFactoryWhitelisted = false
   let airlockOwner: Address | undefined
   let states: {
     tokenFactory?: number
@@ -51,7 +51,7 @@ describe('Multicurve with lockable beneficiaries using NoOpMigrator (Base Sepoli
       }) as unknown as number
       states.initializer = Number(initState)
       // ModuleState.PoolInitializer = 3
-      initializerWhitelisted = states.initializer === 3
+      _initializerWhitelisted = states.initializer === 3
     } catch {}
 
     try {
@@ -63,7 +63,7 @@ describe('Multicurve with lockable beneficiaries using NoOpMigrator (Base Sepoli
       }) as unknown as number
       states.noOpMigrator = Number(noOpMigratorState)
       // ModuleState.LiquidityMigrator = 4
-      noOpMigratorWhitelisted = states.noOpMigrator === 4
+      _noOpMigratorWhitelisted = states.noOpMigrator === 4
     } catch {}
 
     try {
@@ -75,7 +75,7 @@ describe('Multicurve with lockable beneficiaries using NoOpMigrator (Base Sepoli
       }) as unknown as number
       states.tokenFactory = Number(tokenFactoryState)
       // ModuleState.TokenFactory = 1
-      tokenFactoryWhitelisted = states.tokenFactory === 1
+      _tokenFactoryWhitelisted = states.tokenFactory === 1
     } catch {}
 
     try {
@@ -87,7 +87,7 @@ describe('Multicurve with lockable beneficiaries using NoOpMigrator (Base Sepoli
       }) as unknown as number
       states.governanceFactory = Number(governanceFactoryState)
       // ModuleState.GovernanceFactory = 2
-      governanceFactoryWhitelisted = states.governanceFactory === 2
+      _governanceFactoryWhitelisted = states.governanceFactory === 2
     } catch {}
   })
 

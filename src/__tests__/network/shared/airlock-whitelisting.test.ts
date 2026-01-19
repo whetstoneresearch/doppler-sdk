@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, beforeEach, vi } from 'vitest';
 
 // Set shorter timeout for individual tests (10s instead of default 60s)
 vi.setConfig({ testTimeout: 10_000 });

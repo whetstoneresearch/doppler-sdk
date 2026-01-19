@@ -41,7 +41,6 @@ import { DopplerBytecodeBaseMainnet } from '../common/abis/bytecodes';
 import { isToken0Expected } from '../internal/v4-shared/marketCapHelpers';
 import { computeOptimalGamma } from './utils/gamma';
 import {
-  V4_MAX_FEE,
   DOPPLER_MAX_TICK_SPACING,
   DEFAULT_V4_INITIAL_VOTING_DELAY,
   DEFAULT_V4_INITIAL_VOTING_PERIOD,
