@@ -342,16 +342,15 @@ describe('MulticurveBuilder', () => {
       }).toThrow('must equal 100%');
     });
 
-    it('throws if saleConfig not called first', () => {
-      const builder = MulticurveBuilder.forChain(CHAIN_IDS.BASE).tokenConfig({
-        type: 'standard',
-        name: 'NoSale',
-        symbol: 'NS',
-        tokenURI: 'ipfs://ns',
-      });
-
-      expect(() => {
-        builder.withCurves({
+    it('allows withCurves before saleConfig (order-independent)', () => {
+      const builder = MulticurveBuilder.forChain(CHAIN_IDS.BASE)
+        .tokenConfig({
+          type: 'standard',
+          name: 'OrderFree',
+          symbol: 'OF',
+          tokenURI: 'ipfs://of',
+        })
+        .withCurves({
           numerairePrice: 3000,
           curves: [
             {
@@ -360,8 +359,48 @@ describe('MulticurveBuilder', () => {
               shares: WAD,
             },
           ],
-        });
-      }).toThrow('Must call saleConfig()');
+        })
+        .saleConfig({
+          initialSupply: parseEther('1000000000'),
+          numTokensToSell: parseEther('900000000'),
+          numeraire: WETH_BASE,
+        })
+        .withGovernance({ type: 'noOp' })
+        .withMigration({ type: 'uniswapV2' })
+        .withUserAddress(
+          '0x00000000000000000000000000000000000000AA' as Address,
+        );
+
+      const params = builder.build();
+      expect(params.pool.curves).toHaveLength(1);
+      expect(params.pool.curves[0].shares).toBe(WAD);
+    });
+
+    it('throws in build if saleConfig not provided', () => {
+      const builder = MulticurveBuilder.forChain(CHAIN_IDS.BASE)
+        .tokenConfig({
+          type: 'standard',
+          name: 'NoSale',
+          symbol: 'NS',
+          tokenURI: 'ipfs://ns',
+        })
+        .withCurves({
+          numerairePrice: 3000,
+          curves: [
+            {
+              marketCap: { start: 500_000, end: 1_000_000 },
+              numPositions: 10,
+              shares: WAD,
+            },
+          ],
+        })
+        .withGovernance({ type: 'noOp' })
+        .withMigration({ type: 'uniswapV2' })
+        .withUserAddress(
+          '0x00000000000000000000000000000000000000AA' as Address,
+        );
+
+      expect(() => builder.build()).toThrow('saleConfig is required');
     });
 
     it('throws if there is a gap between curves', () => {

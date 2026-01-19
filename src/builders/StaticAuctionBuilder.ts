@@ -43,6 +43,17 @@ export class StaticAuctionBuilder<
   private userAddress?: Address;
   private moduleAddresses?: ModuleAddressOverrides;
   private gasLimit?: bigint;
+  // Deferred market cap config - converted to pool in build()
+  private marketCapConfig?: {
+    marketCap: { start: number; end: number };
+    numerairePrice: number;
+    tokenSupply?: bigint;
+    tokenDecimals?: number;
+    numeraireDecimals?: number;
+    fee?: number;
+    numPositions?: number;
+    maxShareToBeSold?: bigint;
+  };
   public chainId: C;
 
   constructor(chainId: C) {
@@ -119,6 +130,15 @@ export class StaticAuctionBuilder<
     numPositions?: number;
     maxShareToBeSold?: bigint;
   }): this {
+    // Mutual exclusion: cannot use poolByTicks() after withMarketCapRange()
+    if (this.marketCapConfig) {
+      throw new Error(
+        'Cannot use poolByTicks() after withMarketCapRange(). ' +
+          'Use withMarketCapRange() for market cap-based configuration, ' +
+          'or poolByTicks()/poolByPriceRange() for manual tick configuration.',
+      );
+    }
+
     const fee = params.fee ?? DEFAULT_V3_FEE;
 
     // Validate fee is a V3-supported tier
@@ -151,6 +171,15 @@ export class StaticAuctionBuilder<
     numPositions?: number;
     maxShareToBeSold?: bigint;
   }): this {
+    // Mutual exclusion: cannot use poolByPriceRange() after withMarketCapRange()
+    if (this.marketCapConfig) {
+      throw new Error(
+        'Cannot use poolByPriceRange() after withMarketCapRange(). ' +
+          'Use withMarketCapRange() for market cap-based configuration, ' +
+          'or poolByTicks()/poolByPriceRange() for manual tick configuration.',
+      );
+    }
+
     const fee = params.fee ?? DEFAULT_V3_FEE;
     const tickSpacing =
       fee === 100
@@ -188,82 +217,49 @@ export class StaticAuctionBuilder<
    * ```
    */
   withMarketCapRange(params: StaticAuctionMarketCapConfig): this {
-    // Validate required config exists
-    if (!this.sale?.numeraire) {
-      throw new Error('Must call saleConfig() before withMarketCapRange()');
-    }
-
-    // Get token supply from config or param
-    const tokenSupply = params.tokenSupply ?? this.sale.initialSupply;
-    if (!tokenSupply) {
+    // Mutual exclusion: cannot use withMarketCapRange() after poolByTicks()/poolByPriceRange()
+    if (this.pool) {
       throw new Error(
-        'tokenSupply must be provided (either via saleConfig() or withMarketCapRange() params)',
+        'Cannot use withMarketCapRange() after poolByTicks()/poolByPriceRange(). ' +
+          'Use withMarketCapRange() for market cap-based configuration, ' +
+          'or poolByTicks()/poolByPriceRange() for manual tick configuration.',
       );
     }
 
-    // Determine fee and tick spacing
-    // IMPORTANT: Static Auctions use Uniswap V3, which REQUIRES one of 4 standard fee tiers.
-    // Unlike V4 (Dynamic/Multicurve), V3 does NOT support custom fees.
-    // This is a Uniswap V3 protocol constraint, not a Doppler limitation.
-    const fee = params.fee ?? DEFAULT_V3_FEE;
-
-    // Validate fee is a V3-supported tier
-    if (!(V3_FEE_TIERS as readonly number[]).includes(fee)) {
-      throw new Error(
-        `Static auctions (Uniswap V3) require standard fee tiers: ${V3_FEE_TIERS.join(', ')}. ` +
-          `Got: ${fee}. For custom fees, use Dynamic or Multicurve auctions (Uniswap V4).`,
-      );
+    // Basic validation that doesn't require saleConfig
+    if (params.numerairePrice <= 0) {
+      throw new Error('numerairePrice must be greater than 0');
+    }
+    if (params.marketCap.start <= 0 || params.marketCap.end <= 0) {
+      throw new Error('marketCap values must be greater than 0');
+    }
+    if (params.marketCap.start >= params.marketCap.end) {
+      throw new Error('marketCap.start must be less than marketCap.end');
     }
 
-    const tickSpacing =
-      fee === 100
-        ? TICK_SPACINGS[100]
-        : fee === 500
-          ? TICK_SPACINGS[500]
-          : fee === 3000
-            ? TICK_SPACINGS[3000]
-            : TICK_SPACINGS[10000];
-
-    // Validate market cap parameters
-    const startValidation = validateMarketCapParameters(
-      params.marketCap.start,
-      tokenSupply,
-      params.tokenDecimals,
-    );
-    const endValidation = validateMarketCapParameters(
-      params.marketCap.end,
-      tokenSupply,
-      params.tokenDecimals,
-    );
-
-    // Log warnings if any
-    const allWarnings = [
-      ...startValidation.warnings,
-      ...endValidation.warnings,
-    ];
-    if (allWarnings.length > 0) {
-      console.warn('Market cap validation warnings:');
-      allWarnings.forEach((w) => console.warn(`  - ${w}`));
+    // Validate fee is a V3-supported tier (if provided)
+    if (params.fee !== undefined) {
+      if (!(V3_FEE_TIERS as readonly number[]).includes(params.fee)) {
+        throw new Error(
+          `Static auctions (Uniswap V3) require standard fee tiers: ${V3_FEE_TIERS.join(', ')}. ` +
+            `Got: ${params.fee}. For custom fees, use Dynamic or Multicurve auctions (Uniswap V4).`,
+        );
+      }
     }
 
-    // Convert market cap range to ticks for V3 Static auction
-    const { startTick, endTick } = marketCapToTicksForStaticAuction({
-      marketCapRange: params.marketCap,
-      tokenSupply,
-      numerairePriceUSD: params.numerairePrice,
-      tickSpacing,
-      tokenDecimals: params.tokenDecimals ?? 18,
-      numeraireDecimals: params.numeraireDecimals ?? 18,
-    });
-
-    // Delegate to existing poolByTicks method
-    return this.poolByTicks({
-      startTick,
-      endTick,
-      fee,
+    // Store config for deferred conversion in build()
+    this.marketCapConfig = {
+      marketCap: params.marketCap,
+      numerairePrice: params.numerairePrice,
+      tokenSupply: params.tokenSupply,
+      tokenDecimals: params.tokenDecimals,
+      numeraireDecimals: params.numeraireDecimals,
+      fee: params.fee,
       numPositions: params.numPositions,
       maxShareToBeSold: params.maxShareToBeSold,
-    });
+    };
+
+    return this;
   }
 
   /**
@@ -388,9 +384,76 @@ export class StaticAuctionBuilder<
   build(): CreateStaticAuctionParams<C> {
     if (!this.token) throw new Error('tokenConfig is required');
     if (!this.sale) throw new Error('saleConfig is required');
-    if (!this.pool) throw new Error('pool configuration is required');
     if (!this.migration) throw new Error('migration configuration is required');
     if (!this.userAddress) throw new Error('userAddress is required');
+
+    // Convert deferred market cap config to pool if set
+    if (this.marketCapConfig && !this.pool) {
+      const config = this.marketCapConfig;
+
+      // Get token supply from config or saleConfig
+      const tokenSupply = config.tokenSupply ?? this.sale.initialSupply;
+      if (!tokenSupply) {
+        throw new Error(
+          'tokenSupply must be provided (either via saleConfig() or withMarketCapRange() params)',
+        );
+      }
+
+      // Determine fee and tick spacing
+      const fee = config.fee ?? DEFAULT_V3_FEE;
+      const tickSpacing =
+        fee === 100
+          ? TICK_SPACINGS[100]
+          : fee === 500
+            ? TICK_SPACINGS[500]
+            : fee === 3000
+              ? TICK_SPACINGS[3000]
+              : TICK_SPACINGS[10000];
+
+      // Validate market cap parameters
+      const startValidation = validateMarketCapParameters(
+        config.marketCap.start,
+        tokenSupply,
+        config.tokenDecimals,
+      );
+      const endValidation = validateMarketCapParameters(
+        config.marketCap.end,
+        tokenSupply,
+        config.tokenDecimals,
+      );
+
+      // Log warnings if any
+      const allWarnings = [
+        ...startValidation.warnings,
+        ...endValidation.warnings,
+      ];
+      if (allWarnings.length > 0) {
+        console.warn('Market cap validation warnings:');
+        allWarnings.forEach((w) => console.warn(`  - ${w}`));
+      }
+
+      // Convert market cap range to ticks for V3 Static auction
+      const { startTick, endTick } = marketCapToTicksForStaticAuction({
+        marketCapRange: config.marketCap,
+        tokenSupply,
+        numerairePriceUSD: config.numerairePrice,
+        tickSpacing,
+        tokenDecimals: config.tokenDecimals ?? 18,
+        numeraireDecimals: config.numeraireDecimals ?? 18,
+      });
+
+      // Set pool config
+      this.pool = {
+        startTick,
+        endTick,
+        fee,
+        numPositions: config.numPositions ?? DEFAULT_V3_NUM_POSITIONS,
+        maxShareToBeSold:
+          config.maxShareToBeSold ?? DEFAULT_V3_MAX_SHARE_TO_BE_SOLD,
+      };
+    }
+
+    if (!this.pool) throw new Error('pool configuration is required');
 
     // Default governance: noOp on supported chains, default on others (e.g., Ink)
     const governance =

@@ -43,6 +43,22 @@ export class DynamicAuctionBuilder<
   private blockTimestamp?: number;
   private moduleAddresses?: ModuleAddressOverrides;
   private gasLimit?: bigint;
+  // Deferred market cap config - converted to pool and auction in build()
+  private marketCapConfig?: {
+    marketCap: { start: number; min: number };
+    numerairePrice: number;
+    tokenSupply?: bigint;
+    tokenDecimals?: number;
+    numeraireDecimals?: number;
+    fee?: number;
+    tickSpacing?: number;
+    minProceeds: bigint;
+    maxProceeds: bigint;
+    duration?: number;
+    epochLength?: number;
+    gamma?: number;
+    numPdSlugs?: number;
+  };
   public chainId: C;
 
   constructor(chainId: C) {
@@ -107,7 +123,7 @@ export class DynamicAuctionBuilder<
 
   poolConfig(params: { fee: number; tickSpacing: number }): this {
     // Mutual exclusion: cannot use poolConfig() after withMarketCapRange()
-    if (this.auction) {
+    if (this.marketCapConfig) {
       throw new Error(
         'Cannot use poolConfig() after withMarketCapRange(). ' +
           'Use withMarketCapRange() for market cap-based configuration, ' +
@@ -235,106 +251,63 @@ export class DynamicAuctionBuilder<
    * ```
    */
   withMarketCapRange(params: DynamicAuctionMarketCapConfig): this {
-    // Validate required config
-    if (!this.sale?.numeraire) {
-      throw new Error('Must call saleConfig() before withMarketCapRange()');
-    }
-
-    // Mutual exclusion: cannot use both poolConfig() and withMarketCapRange()
+    // Mutual exclusion: cannot use withMarketCapRange() after poolConfig()
     if (this.pool) {
       throw new Error(
-        'Cannot use both poolConfig() and withMarketCapRange(). ' +
+        'Cannot use withMarketCapRange() after poolConfig(). ' +
           'Use withMarketCapRange() for market cap-based configuration, ' +
           'or poolConfig() + auctionByTicks() for manual tick configuration.',
       );
     }
 
-    // Get token supply
-    const tokenSupply = params.tokenSupply ?? this.sale.initialSupply;
-    if (!tokenSupply) {
-      throw new Error(
-        'tokenSupply must be provided (either via saleConfig() or withMarketCapRange() params)',
-      );
+    // Basic validation that doesn't require saleConfig
+    if (params.numerairePrice <= 0) {
+      throw new Error('numerairePrice must be greater than 0');
+    }
+    if (params.marketCap.start <= 0 || params.marketCap.min <= 0) {
+      throw new Error('marketCap values must be greater than 0');
+    }
+    if (params.marketCap.min >= params.marketCap.start) {
+      throw new Error('marketCap.min must be less than marketCap.start');
     }
 
-    // Derive fee and tickSpacing
-    // Default fee is HIGH (1%) for Dutch auctions
-    // V4 pools support any fee 0-100,000, but standard tiers auto-derive tickSpacing
-    const fee = params.fee ?? FEE_TIERS.HIGH;
-
-    // Validate fee doesn't exceed V4 maximum
-    if (fee > V4_MAX_FEE) {
+    // Validate fee if provided
+    if (params.fee !== undefined && params.fee > V4_MAX_FEE) {
       throw new Error(
-        `Fee ${fee} exceeds maximum allowed for V4 pools (${V4_MAX_FEE} = 10%). ` +
+        `Fee ${params.fee} exceeds maximum allowed for V4 pools (${V4_MAX_FEE} = 10%). ` +
           `Use a fee between 0 and ${V4_MAX_FEE}.`,
       );
     }
 
-    // Determine tickSpacing:
-    // - If explicitly provided, use it
-    // - Otherwise default to DOPPLER_MAX_TICK_SPACING (30) for all fees
-    // Standard tick spacings (60, 200) exceed Doppler's max anyway
-    const tickSpacing = params.tickSpacing ?? DOPPLER_MAX_TICK_SPACING;
-
-    // Validate tickSpacing doesn't exceed Doppler maximum
-    if (tickSpacing > DOPPLER_MAX_TICK_SPACING) {
+    // Validate tickSpacing if provided
+    if (
+      params.tickSpacing !== undefined &&
+      params.tickSpacing > DOPPLER_MAX_TICK_SPACING
+    ) {
       throw new Error(
-        `tickSpacing ${tickSpacing} exceeds maximum allowed for Doppler pools (${DOPPLER_MAX_TICK_SPACING}). ` +
+        `tickSpacing ${params.tickSpacing} exceeds maximum allowed for Doppler pools (${DOPPLER_MAX_TICK_SPACING}). ` +
           `Use tickSpacing <= ${DOPPLER_MAX_TICK_SPACING}.`,
       );
     }
 
-    // Set pool config internally
-    this.pool = { fee, tickSpacing };
-
-    // Validate market cap parameters
-    const startValidation = validateMarketCapParameters(
-      params.marketCap.start,
-      tokenSupply,
-      params.tokenDecimals,
-    );
-    const minValidation = validateMarketCapParameters(
-      params.marketCap.min,
-      tokenSupply,
-      params.tokenDecimals,
-    );
-
-    const allWarnings = [
-      ...startValidation.warnings,
-      ...minValidation.warnings,
-    ];
-    if (allWarnings.length > 0) {
-      console.warn('Market cap validation warnings:');
-      allWarnings.forEach((w) => console.warn(`  - ${w}`));
-    }
-
-    // Convert market cap range to ticks for V4 Dynamic auction
-    // Pass min as start, start as end (ascending order for validation)
-    // Dutch auction price semantics are handled by the contract, not tick ordering
-    const { startTick, endTick } = marketCapToTicksForDynamicAuction({
-      marketCapRange: {
-        start: params.marketCap.min,
-        end: params.marketCap.start,
-      },
-      tokenSupply,
-      numerairePriceUSD: params.numerairePrice,
-      numeraire: this.sale.numeraire,
-      tickSpacing,
-      tokenDecimals: params.tokenDecimals ?? 18,
-      numeraireDecimals: params.numeraireDecimals ?? 18,
-    });
-
-    // Delegate to existing auctionByTicks method
-    return this.auctionByTicks({
-      startTick,
-      endTick,
+    // Store config for deferred conversion in build()
+    this.marketCapConfig = {
+      marketCap: params.marketCap,
+      numerairePrice: params.numerairePrice,
+      tokenSupply: params.tokenSupply,
+      tokenDecimals: params.tokenDecimals,
+      numeraireDecimals: params.numeraireDecimals,
+      fee: params.fee,
+      tickSpacing: params.tickSpacing,
       minProceeds: params.minProceeds,
       maxProceeds: params.maxProceeds,
       duration: params.duration,
       epochLength: params.epochLength,
       gamma: params.gamma,
       numPdSlugs: params.numPdSlugs,
-    });
+    };
+
+    return this;
   }
 
   withVesting(params?: {
@@ -446,10 +419,84 @@ export class DynamicAuctionBuilder<
   build(): CreateDynamicAuctionParams<C> {
     if (!this.token) throw new Error('tokenConfig is required');
     if (!this.sale) throw new Error('saleConfig is required');
-    if (!this.pool) throw new Error('poolConfig is required');
-    if (!this.auction) throw new Error('auction configuration is required');
     if (!this.migration) throw new Error('migration configuration is required');
     if (!this.userAddress) throw new Error('userAddress is required');
+
+    // Convert deferred market cap config to pool and auction if set
+    if (this.marketCapConfig && !this.pool) {
+      const config = this.marketCapConfig;
+
+      // Get token supply from config or saleConfig
+      const tokenSupply = config.tokenSupply ?? this.sale.initialSupply;
+      if (!tokenSupply) {
+        throw new Error(
+          'tokenSupply must be provided (either via saleConfig() or withMarketCapRange() params)',
+        );
+      }
+
+      // Derive fee and tickSpacing
+      const fee = config.fee ?? FEE_TIERS.HIGH;
+      const tickSpacing = config.tickSpacing ?? DOPPLER_MAX_TICK_SPACING;
+
+      // Set pool config
+      this.pool = { fee, tickSpacing };
+
+      // Validate market cap parameters
+      const startValidation = validateMarketCapParameters(
+        config.marketCap.start,
+        tokenSupply,
+        config.tokenDecimals,
+      );
+      const minValidation = validateMarketCapParameters(
+        config.marketCap.min,
+        tokenSupply,
+        config.tokenDecimals,
+      );
+
+      const allWarnings = [
+        ...startValidation.warnings,
+        ...minValidation.warnings,
+      ];
+      if (allWarnings.length > 0) {
+        console.warn('Market cap validation warnings:');
+        allWarnings.forEach((w) => console.warn(`  - ${w}`));
+      }
+
+      // Convert market cap range to ticks for V4 Dynamic auction
+      const { startTick, endTick } = marketCapToTicksForDynamicAuction({
+        marketCapRange: {
+          start: config.marketCap.min,
+          end: config.marketCap.start,
+        },
+        tokenSupply,
+        numerairePriceUSD: config.numerairePrice,
+        numeraire: this.sale.numeraire,
+        tickSpacing,
+        tokenDecimals: config.tokenDecimals ?? 18,
+        numeraireDecimals: config.numeraireDecimals ?? 18,
+      });
+
+      // Set auction config
+      const duration = config.duration ?? DEFAULT_AUCTION_DURATION;
+      const epochLength = config.epochLength ?? DEFAULT_EPOCH_LENGTH;
+      const gamma =
+        config.gamma ??
+        computeOptimalGamma(startTick, endTick, duration, epochLength, tickSpacing);
+
+      this.auction = {
+        duration,
+        epochLength,
+        startTick,
+        endTick,
+        gamma,
+        minProceeds: config.minProceeds,
+        maxProceeds: config.maxProceeds,
+        numPdSlugs: config.numPdSlugs,
+      };
+    }
+
+    if (!this.pool) throw new Error('poolConfig is required');
+    if (!this.auction) throw new Error('auction configuration is required');
 
     // Validate noOp migration is not supported for dynamic auctions
     if (this.migration.type === 'noOp') {
