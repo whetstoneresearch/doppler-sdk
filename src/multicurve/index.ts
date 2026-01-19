@@ -46,19 +46,19 @@ export type { V4PoolKey } from '../internal/v4-shared';
 // Re-export computePoolId
 export { computePoolId } from '../internal/v4-shared';
 
-// Re-export MulticurveBuilder from builders
-export { MulticurveBuilder } from '../builders/MulticurveBuilder';
+// Export MulticurveBuilder
+export { MulticurveBuilder } from './MulticurveBuilder';
 
 // Re-export MulticurvePool entity
 export { MulticurvePool } from '../entities/auction/MulticurvePool';
 
-// Re-export shared builder utilities for curve presets
+// Export market cap preset utilities
 export {
   MARKET_CAP_PRESETS,
   MARKET_CAP_PRESET_ORDER,
-  buildCurvesFromPresets,
-} from '../builders/shared';
-export type { MarketCapPresetConfig, MarketCapPresetOverrides } from '../builders/shared';
+} from './constants';
+export { buildCurvesFromPresets } from './utils/presetHelpers';
+export type { MarketCapPresetConfig, MarketCapPresetOverrides } from './types';
 
 // Export MulticurveFactory
 export { MulticurveFactory } from './MulticurveFactory';

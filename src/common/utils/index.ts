@@ -48,3 +48,6 @@ export {
 
 // Re-export balance delta utilities
 export { decodeBalanceDelta } from './balanceDelta';
+
+// Re-export tick helpers
+export { computeTicks } from './tickHelpers';

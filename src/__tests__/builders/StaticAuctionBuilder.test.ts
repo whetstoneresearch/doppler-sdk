@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { StaticAuctionBuilder } from '../../builders';
-import { CHAIN_IDS } from '../../addresses';
-import { WAD, ZERO_ADDRESS } from '../../constants';
+import { StaticAuctionBuilder } from '../../static/StaticAuctionBuilder';
+import { CHAIN_IDS } from '../../common/addresses';
+import { WAD, ZERO_ADDRESS } from '../../common/constants';
 import type { Address } from 'viem';
 
 describe('StaticAuctionBuilder', () => {

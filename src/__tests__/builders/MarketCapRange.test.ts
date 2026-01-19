@@ -1,12 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import {
-  StaticAuctionBuilder,
-  DynamicAuctionBuilder,
-  MulticurveBuilder,
-} from '../../builders';
-import { CHAIN_IDS } from '../../addresses';
+import { StaticAuctionBuilder } from '../../static/StaticAuctionBuilder';
+import { DynamicAuctionBuilder } from '../../dynamic/DynamicAuctionBuilder';
+import { MulticurveBuilder } from '../../multicurve/MulticurveBuilder';
+import { CHAIN_IDS } from '../../common/addresses';
 import { parseEther, type Address } from 'viem';
-import { WAD } from '../../constants';
+import { WAD } from '../../common/constants';
 
 const WETH = '0x4200000000000000000000000000000000000006' as Address;
 const USER = '0x00000000000000000000000000000000000000AA' as Address;

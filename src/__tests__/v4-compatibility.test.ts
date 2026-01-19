@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { parseEther } from 'viem';
 import { DopplerFactory } from '../entities/DopplerFactory';
-import { DynamicAuctionBuilder } from '../builders';
+import { DynamicAuctionBuilder } from '../dynamic/DynamicAuctionBuilder';
 import {
   createMockPublicClient,
   createMockWalletClient,

@@ -258,3 +258,102 @@ export interface CreateParams {
   integrator: Address;
   salt: `0x${string}`;
 }
+
+// ============================================================================
+// Common Builder Interface
+// ============================================================================
+
+/**
+ * Common interface shared by all auction builders.
+ *
+ * Defines the methods that all builders (Static, Dynamic, Multicurve) implement.
+ * Useful for documentation and ensuring API consistency across builders.
+ *
+ * @template C - The chain ID type
+ */
+export interface BaseAuctionBuilder<C extends SupportedChainId> {
+  /** The chain ID this builder is configured for */
+  readonly chainId: C;
+
+  /**
+   * Configure the token to be created.
+   * Supports standard ERC20 or Doppler404 token types.
+   */
+  tokenConfig(
+    params:
+      | {
+          type?: 'standard';
+          name: string;
+          symbol: string;
+          tokenURI: string;
+          yearlyMintRate?: bigint;
+        }
+      | {
+          type: 'doppler404';
+          name: string;
+          symbol: string;
+          baseURI: string;
+          unit?: bigint;
+        },
+  ): this;
+
+  /**
+   * Configure the token sale parameters.
+   * @param params.initialSupply - Total token supply to mint
+   * @param params.numTokensToSell - Number of tokens allocated for the bonding curve
+   * @param params.numeraire - The quote token address (e.g., WETH)
+   */
+  saleConfig(params: {
+    initialSupply: bigint;
+    numTokensToSell: bigint;
+    numeraire: Address;
+  }): this;
+
+  /**
+   * Configure token vesting for team/investor allocations.
+   * Pass undefined or omit to disable vesting.
+   */
+  withVesting(params?: {
+    duration?: bigint;
+    cliffDuration?: number;
+    recipients?: Address[];
+    amounts?: bigint[];
+  }): this;
+
+  /**
+   * Configure governance for the token.
+   * @param params - Use { type: 'default' }, { type: 'noOp' }, or { type: 'custom', ... }
+   */
+  withGovernance(params: GovernanceOption<C>): this;
+
+  /**
+   * Configure post-auction liquidity migration.
+   * @param migration - Migration target (uniswapV2, uniswapV4, or noOp)
+   */
+  withMigration(migration: MigrationConfig): this;
+
+  /**
+   * Set the user address (token creator/owner).
+   * Required for build().
+   */
+  withUserAddress(address: Address): this;
+
+  /**
+   * Set the integrator address for fee attribution.
+   * Defaults to zero address if not provided.
+   */
+  withIntegrator(address?: Address): this;
+
+  /**
+   * Override the default gas limit for the create transaction.
+   */
+  withGasLimit(gas?: bigint): this;
+
+  // Module address overrides
+  withTokenFactory(address: Address): this;
+  withAirlock(address: Address): this;
+  withGovernanceFactory(address: Address): this;
+  withV2Migrator(address: Address): this;
+  withV4Migrator(address: Address): this;
+  withNoOpMigrator(address: Address): this;
+}

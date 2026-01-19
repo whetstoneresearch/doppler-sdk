@@ -47,8 +47,8 @@ export type { V4PoolKey } from '../internal/v4-shared';
 // Re-export computePoolId
 export { computePoolId } from '../internal/v4-shared';
 
-// Re-export DynamicAuctionBuilder from builders
-export { DynamicAuctionBuilder } from '../builders/DynamicAuctionBuilder';
+// Export DynamicAuctionBuilder
+export { DynamicAuctionBuilder } from './DynamicAuctionBuilder';
 
 // Re-export DynamicAuction entity
 export { DynamicAuction } from '../entities/auction/DynamicAuction';

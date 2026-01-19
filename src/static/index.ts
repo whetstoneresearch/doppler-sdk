@@ -47,8 +47,8 @@ export {
   validateMarketCapParameters,
 } from './utils/marketCapHelpers';
 
-// Re-export StaticAuctionBuilder from builders
-export { StaticAuctionBuilder } from '../builders/StaticAuctionBuilder';
+// Export StaticAuctionBuilder
+export { StaticAuctionBuilder } from './StaticAuctionBuilder';
 
 // Re-export StaticAuction entity
 export { StaticAuction } from '../entities/auction/StaticAuction';

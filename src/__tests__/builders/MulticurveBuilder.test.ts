@@ -1,17 +1,19 @@
 import { describe, it, expect } from 'vitest';
 import { parseEther, type Address } from 'viem';
-import { MulticurveBuilder } from '../../builders';
-import { CHAIN_IDS } from '../../addresses';
+import { MulticurveBuilder } from '../../multicurve/MulticurveBuilder';
+import { CHAIN_IDS } from '../../common/addresses';
+import {
+  FEE_TIERS,
+  TICK_SPACINGS,
+  WAD,
+  ZERO_ADDRESS,
+} from '../../common/constants';
 import {
   DEFAULT_MULTICURVE_LOWER_TICKS,
   DEFAULT_MULTICURVE_MAX_SUPPLY_SHARES,
   DEFAULT_MULTICURVE_NUM_POSITIONS,
   DEFAULT_MULTICURVE_UPPER_TICKS,
-  FEE_TIERS,
-  TICK_SPACINGS,
-  WAD,
-  ZERO_ADDRESS,
-} from '../../constants';
+} from '../../internal/v4-shared';
 
 // WETH on Base - token will be token1
 const WETH_BASE: Address = '0x4200000000000000000000000000000000000006';

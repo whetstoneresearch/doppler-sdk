@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { parseEther } from 'viem';
-import { MulticurveBuilder } from '../../builders';
-import { CHAIN_IDS } from '../../addresses';
+import { MulticurveBuilder } from '../../multicurve/MulticurveBuilder';
+import { CHAIN_IDS } from '../../common/addresses';
 
 describe('MulticurveBuilder - Vesting with multiple beneficiaries', () => {
   const chainId = CHAIN_IDS.BASE_SEPOLIA;

@@ -1,11 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import {
-  StaticAuctionBuilder,
-  DynamicAuctionBuilder,
-  MulticurveBuilder,
-  type BaseAuctionBuilder,
-} from '../../builders';
-import { CHAIN_IDS } from '../../addresses';
+import { StaticAuctionBuilder } from '../../static/StaticAuctionBuilder';
+import { DynamicAuctionBuilder } from '../../dynamic/DynamicAuctionBuilder';
+import { MulticurveBuilder } from '../../multicurve/MulticurveBuilder';
+import type { BaseAuctionBuilder } from '../../common/types';
+import { CHAIN_IDS } from '../../common/addresses';
 
 describe('BaseAuctionBuilder interface', () => {
   it('StaticAuctionBuilder implements BaseAuctionBuilder', () => {

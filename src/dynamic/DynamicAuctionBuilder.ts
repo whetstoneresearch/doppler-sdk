@@ -11,7 +11,7 @@ import {
   V4_MAX_FEE,
   marketCapToTicksForDynamicAuction,
 } from '../internal/v4-shared';
-import { computeOptimalGamma } from '../dynamic/utils/gamma';
+import { computeOptimalGamma } from './utils/gamma';
 import { validateMarketCapParameters } from '../static/utils/marketCapHelpers';
 import { isNoOpEnabledChain } from '../common/types';
 import type {
@@ -21,13 +21,14 @@ import type {
   VestingConfig,
   TokenConfig,
   ModuleAddressOverrides,
+  BaseAuctionBuilder,
 } from '../common/types';
 import type {
   CreateDynamicAuctionParams,
   DynamicAuctionMarketCapConfig,
-} from '../dynamic/types';
+} from './types';
 import type { SupportedChainId } from '../common/addresses';
-import { computeTicks, type BaseAuctionBuilder } from './shared';
+import { computeTicks } from '../common/utils/tickHelpers';
 
 export class DynamicAuctionBuilder<
   C extends SupportedChainId,

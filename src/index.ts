@@ -23,13 +23,11 @@ export { Quoter } from './entities/quoter';
 // Export token entities
 export { Derc20, Eth } from './entities/token';
 
-// Export builders and common interface
-export {
-  StaticAuctionBuilder,
-  DynamicAuctionBuilder,
-  MulticurveBuilder,
-} from './builders';
-export type { BaseAuctionBuilder } from './builders/shared';
+// Export builders from their module locations
+export { StaticAuctionBuilder } from './static/StaticAuctionBuilder';
+export { DynamicAuctionBuilder } from './dynamic/DynamicAuctionBuilder';
+export { MulticurveBuilder } from './multicurve/MulticurveBuilder';
+export type { BaseAuctionBuilder } from './common/types';
 
 // ============================================================================
 // Common module exports
@@ -262,14 +260,16 @@ export {
   getMaxTickRounded,
 } from './internal/v4-shared/marketCapHelpers';
 
-// Builder shared utilities
+// Tick helpers
+export { computeTicks } from './common/utils/tickHelpers';
+
+// Market cap preset utilities
 export {
-  computeTicks,
   MARKET_CAP_PRESETS,
   MARKET_CAP_PRESET_ORDER,
-  buildCurvesFromPresets,
-} from './builders/shared';
-export type { MarketCapPresetConfig, MarketCapPresetOverrides } from './builders/shared';
+} from './multicurve/constants';
+export { buildCurvesFromPresets } from './multicurve/utils/presetHelpers';
+export type { MarketCapPresetConfig, MarketCapPresetOverrides } from './multicurve/types';
 
 // Export ABIs
 export * from './common/abis';

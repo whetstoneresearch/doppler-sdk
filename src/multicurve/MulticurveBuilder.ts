@@ -14,19 +14,17 @@ import type {
   VestingConfig,
   TokenConfig,
   ModuleAddressOverrides,
+  BaseAuctionBuilder,
 } from '../common/types';
 import type {
   CreateMulticurveParams,
   MulticurveMarketCapCurvesConfig,
   MulticurveMarketCapPreset,
   RehypeDopplerHookConfig,
-} from '../multicurve/types';
+  MarketCapPresetOverrides,
+} from './types';
 import type { SupportedChainId } from '../common/addresses';
-import {
-  type BaseAuctionBuilder,
-  type MarketCapPresetOverrides,
-  buildCurvesFromPresets,
-} from './shared';
+import { buildCurvesFromPresets } from './utils/presetHelpers';
 
 export class MulticurveBuilder<
   C extends SupportedChainId,

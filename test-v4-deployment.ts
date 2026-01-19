@@ -2,8 +2,8 @@ import { createPublicClient, createWalletClient, http, parseEther } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { sepolia } from 'viem/chains'
 import { DopplerSDK } from './src/DopplerSDK'
-import { DynamicAuctionBuilder } from './src/builders'
-import { DAY_SECONDS } from './src/constants'
+import { DynamicAuctionBuilder } from './src/dynamic/DynamicAuctionBuilder'
+import { DAY_SECONDS } from './src/common/constants'
 
 // Test reproducing the V4 SDK deployment parameters
 async function testV4Deployment() {

@@ -15,11 +15,9 @@ import {
 } from './entities/auction';
 import { Quoter } from './entities/quoter';
 import { Derc20 } from './entities/token';
-import {
-  StaticAuctionBuilder,
-  DynamicAuctionBuilder,
-  MulticurveBuilder,
-} from './builders';
+import { StaticAuctionBuilder } from './static/StaticAuctionBuilder';
+import { DynamicAuctionBuilder } from './dynamic/DynamicAuctionBuilder';
+import { MulticurveBuilder } from './multicurve/MulticurveBuilder';
 import {
   DEFAULT_AIRLOCK_BENEFICIARY_SHARES,
   getAirlockBeneficiary,

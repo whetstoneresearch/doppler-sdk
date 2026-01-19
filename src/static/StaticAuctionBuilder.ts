@@ -9,11 +9,11 @@ import {
   DEFAULT_V3_VESTING_DURATION,
   DEFAULT_V3_YEARLY_MINT_RATE,
   V3_FEE_TIERS,
-} from '../static/constants';
+} from './constants';
 import {
   marketCapToTicksForStaticAuction,
   validateMarketCapParameters,
-} from '../static/utils/marketCapHelpers';
+} from './utils/marketCapHelpers';
 import { isNoOpEnabledChain } from '../common/types';
 import type {
   GovernanceOption,
@@ -22,13 +22,14 @@ import type {
   VestingConfig,
   TokenConfig,
   ModuleAddressOverrides,
+  BaseAuctionBuilder,
 } from '../common/types';
 import type {
   CreateStaticAuctionParams,
   StaticAuctionMarketCapConfig,
-} from '../static/types';
+} from './types';
 import type { SupportedChainId } from '../common/addresses';
-import { computeTicks, type BaseAuctionBuilder } from './shared';
+import { computeTicks } from '../common/utils/tickHelpers';
 
 export class StaticAuctionBuilder<
   C extends SupportedChainId,

@@ -210,3 +210,33 @@ export interface TickToMarketCapParams {
   tokenDecimals?: number;
   numeraireDecimals?: number;
 }
+
+// ============================================================================
+// Market Cap Preset Types
+// ============================================================================
+
+/**
+ * Configuration for a single market cap preset curve.
+ */
+export type MarketCapPresetConfig = {
+  tickLower: number;
+  tickUpper: number;
+  numPositions: number;
+  shares: bigint;
+};
+
+/**
+ * Partial overrides for market cap preset configurations.
+ * Allows customizing specific parameters while keeping preset defaults.
+ */
+export type MarketCapPresetOverrides = Partial<
+  Record<
+    MulticurveMarketCapPreset,
+    {
+      tickLower?: number;
+      tickUpper?: number;
+      numPositions?: number;
+      shares?: bigint;
+    }
+  >
+>;
