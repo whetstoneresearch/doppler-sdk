@@ -11,6 +11,8 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
+    // Only include tests under src/__tests__
+    include: ['src/__tests__/**/*.test.ts'],
     // Reduce concurrency to avoid rate limiting on public RPCs
     maxConcurrency: 1,
     // Run test files sequentially to further reduce RPC load
