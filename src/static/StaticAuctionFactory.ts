@@ -9,12 +9,14 @@
 import {
   type Address,
   type Hex,
+  type Hash,
   type PublicClient,
   type WalletClient,
   type Account,
   encodeAbiParameters,
   decodeEventLog,
   toHex,
+  zeroAddress,
 } from 'viem';
 import type {
   MigrationConfig,
@@ -31,7 +33,7 @@ import type { SupportedChainId } from '../common/addresses';
 import { getAddresses } from '../common/addresses';
 import { ZERO_ADDRESS, WAD, TICK_SPACINGS, DEFAULT_CREATE_GAS_LIMIT } from '../common/constants';
 import { MIN_TICK, MAX_TICK } from '../common/utils/tickMath';
-import { airlockAbi } from '../common/abis';
+import { airlockAbi, bundlerAbi } from '../common/abis';
 import {
   DEFAULT_V3_NUM_POSITIONS,
   DEFAULT_V3_YEARLY_MINT_RATE,
@@ -458,6 +460,121 @@ export class StaticAuctionFactory<C extends SupportedChainId = SupportedChainId>
       poolAddress: actualAddresses.poolOrHookAddress,
       transactionHash: hash,
     };
+  }
+
+  // ============================================================================
+  // Bundler methods (V3 pre-buy)
+  // ============================================================================
+
+  /**
+   * Simulate a bundle with exact input on Uniswap V3 as part of create
+   * Returns the expected output amount for the provided exact input.
+   */
+  async simulateBundleExactIn(
+    createParams: CreateParams,
+    params: {
+      tokenIn: Address;
+      tokenOut: Address;
+      amountIn: bigint;
+      fee: number;
+      sqrtPriceLimitX96: bigint;
+    },
+  ): Promise<bigint> {
+    const bundler = this.getBundlerAddress();
+    const { result } = await (
+      this.publicClient as PublicClient
+    ).simulateContract({
+      address: bundler,
+      abi: bundlerAbi,
+      functionName: 'simulateBundleExactIn',
+      args: [
+        { ...createParams },
+        {
+          tokenIn: params.tokenIn,
+          tokenOut: params.tokenOut,
+          amountIn: params.amountIn,
+          fee: params.fee,
+          sqrtPriceLimitX96: params.sqrtPriceLimitX96,
+        },
+      ],
+    });
+    return result as unknown as bigint;
+  }
+
+  /**
+   * Simulate a bundle with exact output on Uniswap V3 as part of create
+   * Returns the required input amount for the provided exact output.
+   */
+  async simulateBundleExactOut(
+    createParams: CreateParams,
+    params: {
+      tokenIn: Address;
+      tokenOut: Address;
+      amount: bigint;
+      fee: number;
+      sqrtPriceLimitX96: bigint;
+    },
+  ): Promise<bigint> {
+    const bundler = this.getBundlerAddress();
+    const { result } = await (
+      this.publicClient as PublicClient
+    ).simulateContract({
+      address: bundler,
+      abi: bundlerAbi,
+      functionName: 'simulateBundleExactOut',
+      args: [
+        { ...createParams },
+        {
+          tokenIn: params.tokenIn,
+          tokenOut: params.tokenOut,
+          amount: params.amount,
+          fee: params.fee,
+          sqrtPriceLimitX96: params.sqrtPriceLimitX96,
+        },
+      ],
+    });
+    return result as unknown as bigint;
+  }
+
+  /**
+   * Execute an atomic create + swap bundle through the Bundler
+   * commands/inputs are Universal Router encoded values (e.g., from doppler-router)
+   */
+  async bundle(
+    createParams: CreateParams,
+    commands: Hex,
+    inputs: Hex[],
+    options?: { gas?: bigint; value?: bigint },
+  ): Promise<Hash> {
+    if (!this.walletClient) {
+      throw new Error('Wallet client required for write operations');
+    }
+
+    const bundler = this.getBundlerAddress();
+    const { request } = await (
+      this.publicClient as PublicClient
+    ).simulateContract({
+      address: bundler,
+      abi: bundlerAbi,
+      functionName: 'bundle',
+      args: [{ ...createParams }, commands, inputs],
+      account: this.walletClient.account,
+      value: options?.value ?? 0n,
+    });
+    const gas = options?.gas ?? undefined;
+    const tx = await this.walletClient.writeContract(
+      gas ? { ...request, gas } : request,
+    );
+    return tx;
+  }
+
+  private getBundlerAddress(): Address {
+    const addresses = getAddresses(this.chainId);
+    const addr = addresses.bundler;
+    if (!addr || addr === zeroAddress) {
+      throw new Error('Bundler address not configured for this chain');
+    }
+    return addr;
   }
 
   // ============================================================================

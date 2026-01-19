@@ -1,7 +1,7 @@
 import { type Address, zeroAddress, type PublicClient } from 'viem';
-import type { PoolInfo, SupportedPublicClient } from '../../common/types';
-import { uniswapV3PoolAbi, airlockAbi } from '../../common/abis';
-import { getAddresses } from '../../common/addresses';
+import type { PoolInfo, SupportedPublicClient } from '../common/types';
+import { uniswapV3PoolAbi, airlockAbi } from '../common/abis';
+import { getAddresses } from '../common/addresses';
 
 /**
  * StaticAuction class for interacting with static auctions (Uniswap V3 based)

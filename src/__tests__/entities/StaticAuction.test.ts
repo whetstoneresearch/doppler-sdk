@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { StaticAuction } from '../../entities/auction/StaticAuction';
+import { StaticAuction } from '../../static/StaticAuction';
 import { createMockPublicClient } from '../mocks/clients';
 import {
   mockAddresses,

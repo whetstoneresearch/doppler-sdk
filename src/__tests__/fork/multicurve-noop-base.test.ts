@@ -129,13 +129,13 @@ maybeDescribe('Fork/Live - Multicurve NoOp Migration on Base', () => {
     expect(params.pool.beneficiaries).toHaveLength(2);
 
     // Encode and verify NoOpMigrator is used
-    const createParams = sdk.factory.encodeCreateMulticurveParams(params);
+    const createParams = sdk.multicurveFactory.encodeCreateParams(params);
     expect(createParams.liquidityMigrator).toBe(addresses.noOpMigrator);
     expect(createParams.liquidityMigratorData).toBe('0x');
 
     // Simulate the create operation
     const { tokenAddress, poolId } =
-      await sdk.factory.simulateCreateMulticurve(params);
+      await sdk.multicurveFactory.simulate(params);
     expect(tokenAddress).toMatch(/^0x[a-fA-F0-9]{40}$/);
     expect(poolId).toMatch(/^0x[a-fA-F0-9]{64}$/);
   }, 30_000);
@@ -202,13 +202,13 @@ maybeDescribe('Fork/Live - Multicurve NoOp Migration on Base', () => {
     expect(params.pool.beneficiaries).toHaveLength(2);
 
     // Encode and verify NoOpMigrator is used
-    const createParams = sdk.factory.encodeCreateMulticurveParams(params);
+    const createParams = sdk.multicurveFactory.encodeCreateParams(params);
     expect(createParams.liquidityMigrator).toBe(addresses.noOpMigrator);
     expect(createParams.liquidityMigratorData).toBe('0x');
 
     // Simulate the create operation
     const { tokenAddress, poolId } =
-      await sdk.factory.simulateCreateMulticurve(params);
+      await sdk.multicurveFactory.simulate(params);
     expect(tokenAddress).toMatch(/^0x[a-fA-F0-9]{40}$/);
     expect(poolId).toMatch(/^0x[a-fA-F0-9]{64}$/);
   }, 30_000);
@@ -275,12 +275,12 @@ maybeDescribe('Fork/Live - Multicurve NoOp Migration on Base', () => {
         DEFAULT_MULTICURVE_MAX_SUPPLY_SHARES[2],
     );
 
-    const createParams = sdk.factory.encodeCreateMulticurveParams(params);
+    const createParams = sdk.multicurveFactory.encodeCreateParams(params);
     expect(createParams.liquidityMigrator).toBe(addresses.noOpMigrator);
     expect(createParams.liquidityMigratorData).toBe('0x');
 
     const { tokenAddress, poolId } =
-      await sdk.factory.simulateCreateMulticurve(params);
+      await sdk.multicurveFactory.simulate(params);
     expect(tokenAddress).toMatch(/^0x[a-fA-F0-9]{40}$/);
     expect(poolId).toMatch(/^0x[a-fA-F0-9]{64}$/);
   }, 30_000);

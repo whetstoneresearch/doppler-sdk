@@ -11,15 +11,13 @@ import {
   mockHookAddress,
 } from '../mocks/addresses';
 import { parseEther, type Address } from 'viem';
-import type {
-  CreateStaticAuctionParams,
-  CreateMulticurveParams,
-} from '../../types';
-import { CHAIN_IDS } from '../../addresses';
+import type { CreateStaticAuctionParams } from '../../static/types';
+import type { CreateMulticurveParams } from '../../multicurve/types';
+import { CHAIN_IDS } from '../../common/addresses';
 
 // Ensure addresses include a Bundler for these tests
-vi.mock('../../addresses', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../addresses')>();
+vi.mock('../../common/addresses', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../common/addresses')>();
   return {
     ...actual,
     getAddresses: vi.fn(() => mockAddresses),
@@ -108,7 +106,7 @@ describe('Bundler integration', () => {
       } as any);
 
       const { createParams, asset, pool } =
-        await sdk.factory.simulateCreateStaticAuction(staticParams());
+        await sdk.staticFactory.simulate(staticParams());
       expect(asset).toBe(mockTokenAddress);
       expect(pool).toBe(mockPoolAddress);
 
@@ -118,7 +116,7 @@ describe('Bundler integration', () => {
         result: expectedAmountIn,
       } as any);
 
-      const amountIn = await sdk.factory.simulateBundleExactOutput(
+      const amountIn = await sdk.staticFactory.simulateBundleExactOut(
         createParams,
         {
           tokenIn: mockAddresses.weth,
@@ -152,7 +150,7 @@ describe('Bundler integration', () => {
         result: [mockTokenAddress, mockPoolAddress],
       } as any);
       const { createParams, asset } =
-        await sdk.factory.simulateCreateStaticAuction(staticParams());
+        await sdk.staticFactory.simulate(staticParams());
 
       // Next call to simulateContract should be for Bundler.bundle
       vi.mocked(publicClient.simulateContract).mockResolvedValueOnce({
@@ -170,7 +168,7 @@ describe('Bundler integration', () => {
 
       const commands = '0x1234' as `0x${string}`;
       const inputs = ['0xabcd'] as `0x${string}`[];
-      const tx = await sdk.factory.bundle(createParams, commands, inputs, {
+      const tx = await sdk.staticFactory.bundle(createParams, commands, inputs, {
         value: parseEther('1'),
       });
       expect(tx).toBe('0xabc');
@@ -191,7 +189,7 @@ describe('Bundler integration', () => {
   describe('Multicurve bundler helpers', () => {
     it('simulates multicurve bundle exact-out and normalizes the pool key', async () => {
       const createParams =
-        sdk.factory.encodeCreateMulticurveParams(multicurveParams());
+        sdk.multicurveFactory.encodeCreateParams(multicurveParams());
 
       const poolKeyTuple = [
         mockAddresses.weth,
@@ -208,7 +206,7 @@ describe('Bundler integration', () => {
         result: [mockTokenAddress, poolKeyTuple, expectedAmountIn, expectedGas],
       } as any);
 
-      const quote = await sdk.factory.simulateMulticurveBundleExactOut(
+      const quote = await sdk.multicurveFactory.simulateBundleExactOut(
         createParams,
         {
           exactAmountOut: parseEther('100'),
@@ -235,30 +233,26 @@ describe('Bundler integration', () => {
       expect(call.args?.[1]).toBe(parseEther('100'));
     });
 
-    it('simulates multicurve bundle exact-in and handles object responses', async () => {
+    it('simulates multicurve bundle exact-in and returns correct result', async () => {
       const createParams =
-        sdk.factory.encodeCreateMulticurveParams(multicurveParams());
+        sdk.multicurveFactory.encodeCreateParams(multicurveParams());
+
+      const poolKeyTuple = [
+        mockAddresses.weth,
+        mockTokenAddress,
+        500n,
+        12n,
+        mockHookAddress,
+      ] as const;
 
       vi.mocked(publicClient.simulateContract).mockResolvedValueOnce({
-        result: {
-          asset: mockTokenAddress,
-          poolKey: {
-            currency0: mockAddresses.weth,
-            currency1: mockTokenAddress,
-            fee: 500n,
-            tickSpacing: 12n,
-            hooks: mockHookAddress,
-          },
-          amountOut: 42n,
-          gasEstimate: 987n,
-        },
+        result: [mockTokenAddress, poolKeyTuple, 42n, 987n],
       } as any);
 
-      const quote = await sdk.factory.simulateMulticurveBundleExactIn(
+      const quote = await sdk.multicurveFactory.simulateBundleExactIn(
         createParams,
         {
           exactAmountIn: 10n,
-          hookData: '0xbeef' as `0x${string}`,
         },
       );
 
@@ -283,13 +277,13 @@ describe('Bundler integration', () => {
 
     it('rejects zero-value exact-in multicurve bundle simulations', async () => {
       const createParams =
-        sdk.factory.encodeCreateMulticurveParams(multicurveParams());
+        sdk.multicurveFactory.encodeCreateParams(multicurveParams());
 
       await expect(
-        sdk.factory.simulateMulticurveBundleExactIn(createParams, {
+        sdk.multicurveFactory.simulateBundleExactIn(createParams, {
           exactAmountIn: 0n,
         }),
-      ).rejects.toThrow(/must be greater than zero/);
+      ).rejects.toThrow(/must be positive/);
       expect(publicClient.simulateContract).not.toHaveBeenCalled();
     });
   });

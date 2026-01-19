@@ -7,12 +7,12 @@ import type {
   SupportedPublicClient,
 } from './common/types';
 import type { SupportedChainId } from './common/addresses';
-import { DopplerFactory } from './entities/DopplerFactory';
-import {
-  StaticAuction,
-  DynamicAuction,
-  MulticurvePool,
-} from './entities/auction';
+import { StaticAuction } from './static/StaticAuction';
+import { DynamicAuction } from './dynamic/DynamicAuction';
+import { MulticurvePool } from './multicurve/MulticurvePool';
+import { StaticAuctionFactory } from './static/StaticAuctionFactory';
+import { DynamicAuctionFactory } from './dynamic/DynamicAuctionFactory';
+import { MulticurveFactory } from './multicurve/MulticurveFactory';
 import { Quoter } from './entities/quoter';
 import { Derc20 } from './entities/token';
 import { StaticAuctionBuilder } from './static/StaticAuctionBuilder';
@@ -28,7 +28,9 @@ export class DopplerSDK<C extends SupportedChainId = SupportedChainId> {
   private publicClient: SupportedPublicClient;
   private walletClient?: WalletClient;
   public chainId: C;
-  private _factory?: DopplerFactory<C>;
+  private _staticFactory?: StaticAuctionFactory<C>;
+  private _dynamicFactory?: DynamicAuctionFactory<C>;
+  private _multicurveFactory?: MulticurveFactory<C>;
   private _quoter?: Quoter;
 
   constructor(config: DopplerSDKConfig) {
@@ -38,17 +40,45 @@ export class DopplerSDK<C extends SupportedChainId = SupportedChainId> {
   }
 
   /**
-   * Get the factory instance for creating auctions
+   * Get the static auction factory for creating V3-style static auctions
    */
-  get factory(): DopplerFactory<C> {
-    if (!this._factory) {
-      this._factory = new DopplerFactory(
+  get staticFactory(): StaticAuctionFactory<C> {
+    if (!this._staticFactory) {
+      this._staticFactory = new StaticAuctionFactory(
         this.publicClient,
         this.walletClient,
         this.chainId,
       );
     }
-    return this._factory;
+    return this._staticFactory;
+  }
+
+  /**
+   * Get the dynamic auction factory for creating V4 Dutch auctions
+   */
+  get dynamicFactory(): DynamicAuctionFactory<C> {
+    if (!this._dynamicFactory) {
+      this._dynamicFactory = new DynamicAuctionFactory(
+        this.publicClient,
+        this.walletClient,
+        this.chainId,
+      );
+    }
+    return this._dynamicFactory;
+  }
+
+  /**
+   * Get the multicurve factory for creating V4 multicurve auctions
+   */
+  get multicurveFactory(): MulticurveFactory<C> {
+    if (!this._multicurveFactory) {
+      this._multicurveFactory = new MulticurveFactory(
+        this.publicClient,
+        this.walletClient,
+        this.chainId,
+      );
+    }
+    return this._multicurveFactory;
   }
 
   /**

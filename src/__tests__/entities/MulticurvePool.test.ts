@@ -1,16 +1,16 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { MulticurvePool } from '../../entities/auction/MulticurvePool';
+import { MulticurvePool } from '../../multicurve/MulticurvePool';
 import {
   createMockPublicClient,
   createMockWalletClient,
 } from '../mocks/clients';
 import { mockAddresses } from '../mocks/addresses';
 import type { Address } from 'viem';
-import { LockablePoolStatus } from '../../types';
-import { computePoolId } from '../../utils/poolKey';
+import { LockablePoolStatus } from '../../static/types';
+import { computePoolId } from '../../internal/v4-shared/poolKey';
 
-vi.mock('../../addresses', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../addresses')>();
+vi.mock('../../common/addresses', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../common/addresses')>();
   return {
     ...actual,
     getAddresses: vi.fn(() => mockAddresses),
@@ -47,7 +47,7 @@ describe('MulticurvePool', () => {
     );
     vi.clearAllMocks();
     // Reset getAddresses mock to default behavior
-    const { getAddresses } = await import('../../addresses');
+    const { getAddresses } = await import('../../common/addresses');
     vi.mocked(getAddresses).mockReturnValue(mockAddresses);
   });
 
@@ -89,7 +89,7 @@ describe('MulticurvePool', () => {
     });
 
     it('should throw error if no initializer addresses are configured', async () => {
-      const { getAddresses } = await import('../../addresses');
+      const { getAddresses } = await import('../../common/addresses');
       vi.mocked(getAddresses).mockReturnValue({
         ...mockAddresses,
         v4MulticurveInitializer: undefined,
@@ -104,7 +104,7 @@ describe('MulticurvePool', () => {
     it('should fallback to scheduled initializer when pool not found in standard initializer', async () => {
       const mockScheduledInitializer =
         '0x8888888888888888888888888888888888888888' as Address;
-      const { getAddresses } = await import('../../addresses');
+      const { getAddresses } = await import('../../common/addresses');
       vi.mocked(getAddresses).mockReturnValue({
         ...mockAddresses,
         v4ScheduledMulticurveInitializer: mockScheduledInitializer,
@@ -146,7 +146,7 @@ describe('MulticurvePool', () => {
     it('should throw error with tried initializers when pool not found in any', async () => {
       const mockScheduledInitializer =
         '0x8888888888888888888888888888888888888888' as Address;
-      const { getAddresses } = await import('../../addresses');
+      const { getAddresses } = await import('../../common/addresses');
       vi.mocked(getAddresses).mockReturnValue({
         ...mockAddresses,
         v4ScheduledMulticurveInitializer: mockScheduledInitializer,
@@ -312,7 +312,7 @@ describe('MulticurvePool', () => {
     });
 
     it('should throw error if no initializer addresses are configured', async () => {
-      const { getAddresses } = await import('../../addresses');
+      const { getAddresses } = await import('../../common/addresses');
       vi.mocked(getAddresses).mockReturnValue({
         ...mockAddresses,
         v4MulticurveInitializer: undefined,
@@ -332,7 +332,7 @@ describe('MulticurvePool', () => {
         mockFarTick,
       ] as any);
 
-      const { getAddresses } = await import('../../addresses');
+      const { getAddresses } = await import('../../common/addresses');
       vi.mocked(getAddresses).mockReturnValueOnce({
         ...mockAddresses,
         v4Migrator: undefined,
@@ -415,7 +415,7 @@ describe('MulticurvePool', () => {
       const mockFees1 = 200n;
       const mockTxHash = '0xdecafbaddecafbad';
 
-      const { getAddresses } = await import('../../addresses');
+      const { getAddresses } = await import('../../common/addresses');
       vi.mocked(getAddresses).mockReturnValueOnce({
         ...mockAddresses,
         streamableFeesLocker: undefined,

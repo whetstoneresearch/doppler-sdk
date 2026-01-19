@@ -50,7 +50,7 @@ export { computePoolId } from '../internal/v4-shared';
 export { MulticurveBuilder } from './MulticurveBuilder';
 
 // Re-export MulticurvePool entity
-export { MulticurvePool } from '../entities/auction/MulticurvePool';
+export { MulticurvePool } from './MulticurvePool';
 
 // Export market cap preset utilities
 export {

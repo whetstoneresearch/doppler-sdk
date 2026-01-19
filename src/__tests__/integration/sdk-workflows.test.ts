@@ -11,14 +11,12 @@ import {
   mockPoolAddress,
 } from '../mocks/addresses';
 import { parseEther, type Address } from 'viem';
-import type {
-  CreateStaticAuctionParams,
-  CreateDynamicAuctionParams,
-} from '../../types';
-import { DAY_SECONDS } from '../../constants';
+import type { CreateStaticAuctionParams } from '../../static/types';
+import type { CreateDynamicAuctionParams } from '../../dynamic/types';
+import { DAY_SECONDS } from '../../common/constants';
 
-vi.mock('../../addresses', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../addresses')>();
+vi.mock('../../common/addresses', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../common/addresses')>();
   return {
     ...actual,
     getAddresses: vi.fn(() => mockAddresses),
@@ -88,7 +86,7 @@ describe('SDK Workflows Integration Tests', () => {
       } as any);
 
       // 3. Create the auction
-      const result = await sdk.factory.createStaticAuction(params);
+      const result = await sdk.staticFactory.create(params);
 
       expect(result).toEqual({
         poolAddress: mockPoolAddress,
@@ -230,7 +228,7 @@ describe('SDK Workflows Integration Tests', () => {
       } as any);
 
       // 3. Create the auction
-      const result = await sdk.factory.createDynamicAuction(params);
+      const result = await sdk.dynamicFactory.create(params);
 
       expect(result.hookAddress).toBe(mockHookAddress);
       expect(result.tokenAddress).toBe(mockTokenAddress);
@@ -366,7 +364,7 @@ describe('SDK Workflows Integration Tests', () => {
       };
 
       await expect(
-        readOnlySDK.factory.createStaticAuction(params),
+        readOnlySDK.staticFactory.create(params),
       ).rejects.toThrow('Wallet client required for write operations');
     });
 
@@ -395,7 +393,7 @@ describe('SDK Workflows Integration Tests', () => {
       };
 
       await expect(
-        sdk.factory.createStaticAuction(invalidParams),
+        sdk.staticFactory.create(invalidParams),
       ).rejects.toThrow('Cannot sell more tokens than initial supply');
     });
   });
@@ -410,7 +408,7 @@ describe('SDK Workflows Integration Tests', () => {
       });
 
       // The SDK should use chain-specific addresses
-      expect(baseSDK.factory).toBeDefined();
+      expect(baseSDK.staticFactory).toBeDefined();
 
       // Mock addresses for Base
       vi.mocked(publicClient.simulateContract).mockResolvedValueOnce({
@@ -447,7 +445,7 @@ describe('SDK Workflows Integration Tests', () => {
         logs: [createMockCreateEventLog(mockTokenAddress, mockPoolAddress)],
       } as any);
 
-      const result = await baseSDK.factory.createStaticAuction(params);
+      const result = await baseSDK.staticFactory.create(params);
       expect(result.poolAddress).toBe(mockPoolAddress);
     });
   });

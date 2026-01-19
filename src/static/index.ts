@@ -51,7 +51,7 @@ export {
 export { StaticAuctionBuilder } from './StaticAuctionBuilder';
 
 // Re-export StaticAuction entity
-export { StaticAuction } from '../entities/auction/StaticAuction';
+export { StaticAuction } from './StaticAuction';
 
 // Export StaticAuctionFactory
 export { StaticAuctionFactory } from './StaticAuctionFactory';

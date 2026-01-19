@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { DynamicAuction } from '../../entities/auction/DynamicAuction';
+import { DynamicAuction } from '../../dynamic/DynamicAuction';
 import { createMockPublicClient } from '../mocks/clients';
 import {
   mockAddresses,

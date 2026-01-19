@@ -3,14 +3,10 @@ export const VERSION = '0.0.1';
 // Export the main SDK class
 export { DopplerSDK } from './DopplerSDK';
 
-// Export factory and auction classes
-export { DopplerFactory } from './entities/DopplerFactory';
-export type { MigrationEncoder } from './entities/DopplerFactory';
-export {
-  StaticAuction,
-  DynamicAuction,
-  MulticurvePool,
-} from './entities/auction';
+// Export auction classes from their modules
+export { StaticAuction } from './static/StaticAuction';
+export { DynamicAuction } from './dynamic/DynamicAuction';
+export { MulticurvePool } from './multicurve/MulticurvePool';
 
 // Export module-specific factories (for tree-shaking)
 export { StaticAuctionFactory } from './static/StaticAuctionFactory';

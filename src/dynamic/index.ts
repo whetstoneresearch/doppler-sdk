@@ -51,7 +51,7 @@ export { computePoolId } from '../internal/v4-shared';
 export { DynamicAuctionBuilder } from './DynamicAuctionBuilder';
 
 // Re-export DynamicAuction entity
-export { DynamicAuction } from '../entities/auction/DynamicAuction';
+export { DynamicAuction } from './DynamicAuction';
 
 // Export DynamicAuctionFactory
 export { DynamicAuctionFactory } from './DynamicAuctionFactory';
