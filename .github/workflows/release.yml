@@ -1,0 +1,202 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'Release type'
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+        default: 'patch'
+      release_notes:
+        description: 'Release notes (optional changelog entry)'
+        required: false
+        type: string
+        default: ''
+      dry_run:
+        description: 'Dry run (skip npm publish and git push)'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  id-token: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: '22'
+  PNPM_VERSION: '10.11.0'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    environment: npm-publish
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run tests
+        run: pnpm test
+
+      - name: Run type check
+        run: pnpm typecheck
+
+      - name: Run linting
+        run: pnpm lint
+
+      - name: Build package
+        run: pnpm build
+
+      - name: Get current version
+        id: current_version
+        run: |
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Calculate new version
+        id: new_version
+        run: |
+          CURRENT="${{ steps.current_version.outputs.version }}"
+          RELEASE_TYPE="${{ inputs.release_type }}"
+
+          IFS='.' read -r MAJOR MINOR PATCH <<< "${CURRENT%%-*}"
+
+          case "$RELEASE_TYPE" in
+            patch)
+              NEW_VERSION="$MAJOR.$MINOR.$((PATCH + 1))"
+              ;;
+            minor)
+              NEW_VERSION="$MAJOR.$((MINOR + 1)).0"
+              ;;
+            major)
+              NEW_VERSION="$((MAJOR + 1)).0.0"
+              ;;
+          esac
+
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "New version: $NEW_VERSION"
+
+      - name: Determine dist-tags
+        id: dist_tags
+        run: |
+          NEW_VERSION="${{ steps.new_version.outputs.version }}"
+          MAJOR_VERSION=$(echo "$NEW_VERSION" | cut -d. -f1)
+
+          if [ "$MAJOR_VERSION" -ge 1 ]; then
+            echo "primary_tag=latest" >> $GITHUB_OUTPUT
+            echo "secondary_tag=" >> $GITHUB_OUTPUT
+          else
+            echo "primary_tag=latest" >> $GITHUB_OUTPUT
+            echo "secondary_tag=beta" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Update package.json version
+        run: npm version "${{ steps.new_version.outputs.version }}" --no-git-tag-version --allow-same-version
+
+      - name: Commit version bump
+        if: ${{ inputs.dry_run != true }}
+        run: |
+          git add package.json
+          if [ -n "${{ inputs.release_notes }}" ]; then
+            git commit -m "chore(release): v${{ steps.new_version.outputs.version }}
+
+          ${{ inputs.release_notes }}"
+          else
+            git commit -m "chore(release): v${{ steps.new_version.outputs.version }}"
+          fi
+
+      - name: Create git tag
+        if: ${{ inputs.dry_run != true }}
+        run: |
+          if [ -n "${{ inputs.release_notes }}" ]; then
+            git tag -a "v${{ steps.new_version.outputs.version }}" -m "Release v${{ steps.new_version.outputs.version }}
+
+          ${{ inputs.release_notes }}"
+          else
+            git tag -a "v${{ steps.new_version.outputs.version }}" -m "Release v${{ steps.new_version.outputs.version }}"
+          fi
+
+      - name: Push changes and tag
+        if: ${{ inputs.dry_run != true }}
+        run: |
+          git push origin main
+          git push origin "v${{ steps.new_version.outputs.version }}"
+
+      - name: Publish to NPM
+        if: ${{ inputs.dry_run != true }}
+        run: |
+          PRIMARY_TAG="${{ steps.dist_tags.outputs.primary_tag }}"
+          SECONDARY_TAG="${{ steps.dist_tags.outputs.secondary_tag }}"
+
+          npm publish --provenance --access public --tag "$PRIMARY_TAG"
+
+          if [ -n "$SECONDARY_TAG" ]; then
+            npm dist-tag add "@whetstone-research/doppler-sdk@${{ steps.new_version.outputs.version }}" "$SECONDARY_TAG"
+          fi
+
+      - name: Dry run summary
+        if: ${{ inputs.dry_run == true }}
+        run: |
+          echo "=== DRY RUN ==="
+          echo "Would publish version: ${{ steps.new_version.outputs.version }}"
+          echo "Primary tag: ${{ steps.dist_tags.outputs.primary_tag }}"
+          echo "Secondary tag: ${{ steps.dist_tags.outputs.secondary_tag }}"
+          npm pack --dry-run
+
+      - name: Create GitHub Release
+        if: ${{ inputs.dry_run != true }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.new_version.outputs.version }}
+          name: v${{ steps.new_version.outputs.version }}
+          body: |
+            ${{ inputs.release_notes }}
+
+            ## Install
+            ```bash
+            npm install @whetstone-research/doppler-sdk@${{ steps.new_version.outputs.version }}
+            ```
+          generate_release_notes: true
+          append_body: true
+
+      - name: Job summary
+        run: |
+          echo "## Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | \`${{ steps.new_version.outputs.version }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tag | \`${{ steps.dist_tags.outputs.primary_tag }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Git Tag | \`v${{ steps.new_version.outputs.version }}\` |" >> $GITHUB_STEP_SUMMARY
