@@ -11,8 +11,6 @@ on:
           - patch
           - minor
           - major
-          - canary
-          - rc
         default: 'patch'
       release_notes:
         description: 'Release notes (optional changelog entry)'
@@ -100,30 +98,6 @@ jobs:
             major)
               NEW_VERSION="$((MAJOR + 1)).0.0"
               ;;
-            canary)
-              CANARY_BASE="$MAJOR.$MINOR.$((PATCH + 1))-canary"
-              CANARY_NUM=1
-              set +e
-              EXISTING=$(npm view "@whetstone-research/doppler-sdk" versions --json 2>/dev/null | grep -o "\"${CANARY_BASE}\.[0-9]*\"" | sort -t. -k4 -n | tail -1)
-              set -e
-              if [ -n "$EXISTING" ]; then
-                EXISTING_NUM=$(echo "$EXISTING" | grep -o '[0-9]*"$' | tr -d '"')
-                CANARY_NUM=$((EXISTING_NUM + 1))
-              fi
-              NEW_VERSION="${CANARY_BASE}.${CANARY_NUM}"
-              ;;
-            rc)
-              RC_BASE="$MAJOR.$MINOR.$((PATCH + 1))-rc"
-              RC_NUM=1
-              set +e
-              EXISTING=$(npm view "@whetstone-research/doppler-sdk" versions --json 2>/dev/null | grep -o "\"${RC_BASE}\.[0-9]*\"" | sort -t. -k4 -n | tail -1)
-              set -e
-              if [ -n "$EXISTING" ]; then
-                EXISTING_NUM=$(echo "$EXISTING" | grep -o '[0-9]*"$' | tr -d '"')
-                RC_NUM=$((EXISTING_NUM + 1))
-              fi
-              NEW_VERSION="${RC_BASE}.${RC_NUM}"
-              ;;
           esac
 
           echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
@@ -132,32 +106,16 @@ jobs:
       - name: Determine dist-tags
         id: dist_tags
         run: |
-          RELEASE_TYPE="${{ inputs.release_type }}"
           NEW_VERSION="${{ steps.new_version.outputs.version }}"
+          MAJOR_VERSION=$(echo "$NEW_VERSION" | cut -d. -f1)
 
-          case "$RELEASE_TYPE" in
-            canary)
-              echo "primary_tag=canary" >> $GITHUB_OUTPUT
-              echo "secondary_tag=" >> $GITHUB_OUTPUT
-              echo "is_prerelease=true" >> $GITHUB_OUTPUT
-              ;;
-            rc)
-              echo "primary_tag=rc" >> $GITHUB_OUTPUT
-              echo "secondary_tag=" >> $GITHUB_OUTPUT
-              echo "is_prerelease=true" >> $GITHUB_OUTPUT
-              ;;
-            *)
-              MAJOR_VERSION=$(echo "$NEW_VERSION" | cut -d. -f1)
-              if [ "$MAJOR_VERSION" -ge 1 ]; then
-                echo "primary_tag=latest" >> $GITHUB_OUTPUT
-                echo "secondary_tag=" >> $GITHUB_OUTPUT
-              else
-                echo "primary_tag=latest" >> $GITHUB_OUTPUT
-                echo "secondary_tag=beta" >> $GITHUB_OUTPUT
-              fi
-              echo "is_prerelease=false" >> $GITHUB_OUTPUT
-              ;;
-          esac
+          if [ "$MAJOR_VERSION" -ge 1 ]; then
+            echo "primary_tag=latest" >> $GITHUB_OUTPUT
+            echo "secondary_tag=" >> $GITHUB_OUTPUT
+          else
+            echo "primary_tag=latest" >> $GITHUB_OUTPUT
+            echo "secondary_tag=beta" >> $GITHUB_OUTPUT
+          fi
 
       - name: Configure git
         run: |
@@ -230,7 +188,6 @@ jobs:
             ```bash
             npm install @whetstone-research/doppler-sdk@${{ steps.new_version.outputs.version }}
             ```
-          prerelease: ${{ steps.dist_tags.outputs.is_prerelease }}
           generate_release_notes: true
           append_body: true
 
