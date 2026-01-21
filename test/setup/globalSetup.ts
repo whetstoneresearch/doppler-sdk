@@ -22,11 +22,30 @@ for (const file of envFiles) {
   }
 }
 
-/** Chains to start Anvil forks for */
-const FORK_CHAINS = [
+/** Map of chain names to chain IDs (fork tests: base, base-sepolia only) */
+const CHAIN_NAME_TO_ID: Record<string, number> = {
+  base: CHAIN_IDS.BASE,
+  'base-sepolia': CHAIN_IDS.BASE_SEPOLIA,
+}
+
+/** All supported fork chains */
+const ALL_FORK_CHAINS = [
   CHAIN_IDS.BASE,
   CHAIN_IDS.BASE_SEPOLIA,
 ]
+
+/**
+ * Get chains to start based on TEST_CHAIN env var
+ * If TEST_CHAIN is set, only start that chain
+ * Otherwise start all chains
+ */
+function getChainsToStart(): number[] {
+  const testChain = process.env.TEST_CHAIN
+  if (testChain && CHAIN_NAME_TO_ID[testChain]) {
+    return [CHAIN_NAME_TO_ID[testChain]]
+  }
+  return ALL_FORK_CHAINS
+}
 
 /** Store for cleanup */
 declare global {
@@ -41,18 +60,22 @@ export default async function globalSetup(): Promise<void> {
     return
   }
 
+  const chainsToStart = getChainsToStart()
+  const testChain = process.env.TEST_CHAIN
+
   // Debug: Check if env vars are loaded
   console.log('[globalSetup] ALCHEMY_API_KEY:', process.env.ALCHEMY_API_KEY ? 'set' : 'NOT SET')
-  console.log('[globalSetup] BASE_RPC_URL:', process.env.BASE_RPC_URL ? 'set' : 'NOT SET')
-  console.log('[globalSetup] BASE_SEPOLIA_RPC_URL:', process.env.BASE_SEPOLIA_RPC_URL ? 'set' : 'NOT SET')
+  if (testChain) {
+    console.log(`[globalSetup] TEST_CHAIN: ${testChain}`)
+  }
 
-  console.log('[globalSetup] Starting Anvil forks...')
+  console.log(`[globalSetup] Starting Anvil forks for chains: ${chainsToStart.join(', ')}...`)
 
   const manager = getAnvilManager()
   globalThis.__ANVIL_MANAGER__ = manager
 
   // Start Anvil forks in parallel
-  const startPromises = FORK_CHAINS.map(async (chainId) => {
+  const startPromises = chainsToStart.map(async (chainId) => {
     try {
       const rpcUrl = await manager.start(chainId)
       console.log(`[globalSetup] Anvil started for chain ${chainId} at ${rpcUrl}`)
@@ -73,7 +96,7 @@ export default async function globalSetup(): Promise<void> {
   const failed = results.filter((r) => !r.success)
 
   console.log(
-    `[globalSetup] Anvil setup complete: ${successful.length}/${FORK_CHAINS.length} chains started`
+    `[globalSetup] Anvil setup complete: ${successful.length}/${chainsToStart.length} chains started`
   )
 
   if (failed.length > 0) {

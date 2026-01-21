@@ -9,29 +9,54 @@ import baseConfig from './vitest.config'
  * Set ANVIL_FORK_ENABLED=true to enable fork mode.
  *
  * Usage: ANVIL_FORK_ENABLED=true pnpm test:fork
+ *
+ * To run tests for a specific chain only:
+ *   TEST_CHAIN=base pnpm test:fork
+ *   TEST_CHAIN=base-sepolia pnpm test:fork
+ *   TEST_CHAIN=monad pnpm test:fork
  */
+
+// Determine which tests to include based on TEST_CHAIN env var
+function getIncludePatterns(): string[] {
+  const testChain = process.env.TEST_CHAIN
+
+  if (!testChain) {
+    // Run all fork tests
+    return [
+      'test/fork/**/*.test.ts',
+      'test/integration/**/*.test.ts',
+    ]
+  }
+
+  // Map chain names to test patterns (fork tests: base, base-sepolia only)
+  const chainPatterns: Record<string, string[]> = {
+    base: [
+      'test/fork/base/**/*.test.ts',
+      'test/integration/**/*.test.ts',
+    ],
+    'base-sepolia': [
+      'test/fork/base-sepolia/**/*.test.ts',
+      'test/integration/**/*.test.ts',
+    ],
+  }
+
+  return chainPatterns[testChain] || [
+    'test/fork/**/*.test.ts',
+    'test/integration/**/*.test.ts',
+  ]
+}
+
 export default mergeConfig(
   baseConfig,
   defineConfig({
     test: {
-      include: [
-        'test/fork/**/*.test.ts',
-        'test/integration/**/*.test.ts',
-        'src/__tests__/fork/**/*.test.ts',
-        'src/__tests__/integration/**/*.test.ts',
-        // Include chain-specific tests from test/ root
-        'test/*.base.test.ts',
-        'test/*.base-sepolia.test.ts',
-        'test/*.monad-mainnet.test.ts',
-      ],
+      include: getIncludePatterns(),
       exclude: [
         'node_modules/',
         'dist/',
         'test/setup/**',
         'test/unit/**',
         'test/e2e/**',
-        // Token address miner tests are unit tests
-        'test/token-address-miner*.test.ts',
       ],
       // Fork tests run sequentially to share Anvil state
       maxConcurrency: 1,
