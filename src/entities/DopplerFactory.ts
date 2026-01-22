@@ -64,7 +64,6 @@ import {
   DopplerDN404Bytecode,
   v4MulticurveInitializerAbi,
 } from '../abis';
-import { DopplerBytecodeBaseMainnet } from '@/abis/bytecodes';
 
 // Type definition for the custom migration encoder function
 export type MigrationEncoder = (config: MigrationConfig) => Hex;
@@ -2615,8 +2614,6 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       ],
     );
 
-    const isBase = this.chainId === CHAIN_IDS.BASE;
-
     const { poolManager, numTokensToSell, poolInitializer } = params;
 
     const hookInitHashData = encodeAbiParameters(
@@ -2657,12 +2654,7 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     const hookInitHash = keccak256(
       encodePacked(
         ['bytes', 'bytes'],
-        [
-          isBase
-            ? (DopplerBytecodeBaseMainnet as Hex)
-            : (DopplerBytecode as Hex),
-          hookInitHashData,
-        ],
+        [DopplerBytecode as Hex, hookInitHashData],
       ),
     );
 
