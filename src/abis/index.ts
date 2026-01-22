@@ -2279,5 +2279,7 @@ export {
   DERC20Bytecode,
   DERC2080Bytecode,
   DopplerBytecode,
+  DopplerBytecodeBaseMainnet,
   DopplerDN404Bytecode,
+  StateViewBytecode,
 } from './bytecodes';
