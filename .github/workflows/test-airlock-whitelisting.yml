@@ -58,7 +58,7 @@ jobs:
 
       - name: Run airlock whitelisting tests
         id: test
-        run: pnpm test airlock-whitelisting
+        run: pnpm test whitelisting
         timeout-minutes: 10
         continue-on-error: true
 
