@@ -62,7 +62,7 @@ const universalRouterAbi = [
  * - Time warp to endingTime
  * - Verify insufficientProceeds == false
  * - Successfully call migrate()
- * - Verify post-graduation state (liquidityMigrator = zeroAddress)
+ * - Verify post-graduation state (migrationPool is set)
  *
  * Run with: BASE_SEPOLIA_RPC_URL=<rpc-url> ANVIL_FORK_ENABLED=true pnpm test test/fork/base-sepolia/dynamic-auction-graduation
  */
@@ -191,7 +191,7 @@ describe('V4 Dynamic Auction Graduation - successful migration (Base Sepolia for
       .withUserAddress(account.address)
       .withV4Initializer(addresses.v4Initializer)
       .withV2Migrator(addresses.v2Migrator)
-      .withTime({ startTimeOffset: 120 }) // Larger offset to ensure start time is in the future
+      .withTime({ startTimeOffset: 300 }) // 5 minute offset to ensure start time is in the future on fork
       .build()
 
     // Simulate to get addresses and createParams
@@ -552,25 +552,27 @@ describe('V4 Dynamic Auction Graduation - successful migration (Base Sepolia for
       return
     }
 
-    // Check if migration was executed by checking liquidityMigrator
+    // Check if migration was executed by checking migrationPool
+    // getAssetData returns: [numeraire, timelock, governance, liquidityMigrator, poolInitializer, pool, migrationPool, numTokensToSell, totalSupply, integrator]
     const assetData = await publicClient.readContract({
       address: addresses.airlock,
       abi: airlockAbi,
       functionName: 'getAssetData',
       args: [tokenAddress],
     })
-    const assetDataArray = assetData as [Address, Address, Address, Address, Address, Address]
+    const assetDataArray = assetData as [Address, Address, Address, Address, Address, Address, Address, bigint, bigint, Address]
     const liquidityMigrator = assetDataArray[3]
+    const migrationPool = assetDataArray[6]
 
-    console.log(`    Liquidity Migrator after: ${liquidityMigrator}`)
+    console.log(`    Liquidity Migrator: ${liquidityMigrator}`)
+    console.log(`    Migration Pool: ${migrationPool}`)
 
-    // If migration succeeded, liquidityMigrator should be zeroAddress
-    if (liquidityMigrator === zeroAddress) {
-      console.log('  ✓ Post-graduation: liquidityMigrator is zero address')
+    // Migration is successful when migrationPool is set (non-zero)
+    if (migrationPool !== zeroAddress) {
+      console.log('  ✓ Post-graduation: migrationPool is set')
       console.log('    Token has successfully graduated!')
     } else {
-      // Migration may not have executed if swap didn't generate enough proceeds
-      console.log('  ⚠️  Liquidity migrator not zeroed - migration may not have executed')
+      console.log('  ⚠️  Migration pool not set - migration may not have completed')
     }
   }, 30_000)
 
@@ -580,17 +582,17 @@ describe('V4 Dynamic Auction Graduation - successful migration (Base Sepolia for
       return
     }
 
-    // Check if graduated (liquidityMigrator == zeroAddress)
+    // Check if graduated (migrationPool is set)
     const assetData = await publicClient.readContract({
       address: addresses.airlock,
       abi: airlockAbi,
       functionName: 'getAssetData',
       args: [tokenAddress],
     })
-    const assetDataArray = assetData as [Address, Address, Address, Address, Address, Address]
-    const liquidityMigrator = assetDataArray[3]
+    const assetDataArray = assetData as [Address, Address, Address, Address, Address, Address, Address, bigint, bigint, Address]
+    const migrationPool = assetDataArray[6]
 
-    if (liquidityMigrator !== zeroAddress) {
+    if (migrationPool === zeroAddress) {
       console.log('  ⚠️  Skipping - token not graduated (migration not executed)')
       return
     }

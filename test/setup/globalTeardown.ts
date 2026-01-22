@@ -1,34 +1,34 @@
 /**
- * Global teardown for Vitest fork tests
+ * Global test teardown - runs once after all tests
  *
- * Stops all Anvil processes after tests complete.
- * This is executed once after the entire test suite.
+ * Ensures all Anvil processes are cleaned up
  */
 
-import { getAnvilManager, isAnvilForkEnabled } from '../utils/anvil'
+import { exec } from 'child_process'
+import { promisify } from 'util'
 
-export default async function globalTeardown(): Promise<void> {
-  // Skip if not in fork mode
-  if (!isAnvilForkEnabled()) {
-    return
+const execAsync = promisify(exec)
+
+// Known Anvil ports used by tests (from test/utils/anvil.ts)
+const ANVIL_PORTS = [8545, 8546, 8547]
+
+async function killAnvilOnPort(port: number): Promise<void> {
+  try {
+    await execAsync(`lsof -ti:${port} | xargs kill -9 2>/dev/null || true`)
+  } catch {
+    // Ignore errors
   }
-
-  console.log('[globalTeardown] Stopping Anvil forks...')
-
-  // Use the global manager if available, otherwise get a new one
-  const manager = globalThis.__ANVIL_MANAGER__ ?? getAnvilManager()
-  const runningChains = manager.getRunningChains()
-
-  if (runningChains.length === 0) {
-    console.log('[globalTeardown] No Anvil processes to stop')
-    return
-  }
-
-  console.log(
-    `[globalTeardown] Stopping ${runningChains.length} Anvil process(es): ${runningChains.join(', ')}`
-  )
-
-  await manager.stopAll()
-
-  console.log('[globalTeardown] All Anvil processes stopped')
 }
+
+export async function teardown(): Promise<void> {
+  // Kill any remaining Anvil processes
+  await Promise.all(ANVIL_PORTS.map(killAnvilOnPort))
+
+  try {
+    await execAsync('pkill -9 anvil 2>/dev/null || true')
+  } catch {
+    // Ignore errors
+  }
+}
+
+export default teardown
