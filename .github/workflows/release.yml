@@ -254,7 +254,8 @@ jobs:
           PRIMARY_TAG="${{ steps.dist_tags.outputs.primary_tag }}"
           SECONDARY_TAG="${{ steps.dist_tags.outputs.secondary_tag }}"
 
-          npm publish --provenance --access public --tag "$PRIMARY_TAG"
+          # Trusted publishing uses OIDC - provenance is automatic
+          npm publish --access public --tag "$PRIMARY_TAG"
 
           if [ -n "$SECONDARY_TAG" ]; then
             npm dist-tag add "@whetstone-research/doppler-sdk@${{ steps.new_version.outputs.version }}" "$SECONDARY_TAG"
