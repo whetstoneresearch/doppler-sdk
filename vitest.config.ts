@@ -1,16 +1,38 @@
 import { defineConfig } from 'vitest/config'
 import path from 'path'
 
+/**
+ * Base Vitest configuration
+ *
+ * This is the default configuration used when running `pnpm test`.
+ * For mode-specific configurations, see:
+ * - vitest.unit.config.ts - Fast unit tests (mocked)
+ * - vitest.fork.config.ts - Anvil fork tests (real state)
+ * - vitest.live.config.ts - Live network tests (rate-limited)
+ */
 export default defineConfig({
-  // Keep default plugin-less config to avoid ESM plugin issues in CI
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src')
-    }
+      '@': path.resolve(__dirname, './src'),
+    },
   },
   test: {
     globals: true,
     environment: 'node',
+    // Global setup/teardown for Anvil cleanup
+    globalSetup: './test/setup/globalSetup.ts',
+    globalTeardown: './test/setup/globalTeardown.ts',
+    // Include both test directories
+    include: [
+      'test/**/*.test.ts',
+      'src/__tests__/**/*.test.ts',
+    ],
+    // Exclude setup files
+    exclude: [
+      'node_modules/',
+      'dist/',
+      'test/setup/**',
+    ],
     // Reduce concurrency to avoid rate limiting on public RPCs
     maxConcurrency: 1,
     // Run test files sequentially to further reduce RPC load
@@ -33,8 +55,10 @@ export default defineConfig({
         'dist/',
         '**/*.d.ts',
         '**/*.config.*',
-        '**/mockData.ts'
-      ]
-    }
-  }
+        '**/mockData.ts',
+        'test/setup/**',
+        'test/utils/**',
+      ],
+    },
+  },
 })

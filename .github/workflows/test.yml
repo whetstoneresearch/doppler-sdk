@@ -1,0 +1,148 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      run_fork_tests:
+        description: 'Run fork tests'
+        required: false
+        type: boolean
+        default: false
+      run_live_tests:
+        description: 'Run live tests (rate-limited)'
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '22'
+
+jobs:
+  # Fast unit tests - run on every PR
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run type check
+        run: pnpm typecheck
+
+      - name: Run linting
+        run: pnpm lint
+
+      - name: Run unit tests
+        run: pnpm test:unit
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          files: ./coverage/coverage-final.json
+          fail_ci_if_error: false
+
+  # Fork tests - require Foundry/Anvil and API keys
+  fork-tests:
+    name: Fork Tests (${{ matrix.chain }})
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_fork_tests }}
+    strategy:
+      fail-fast: false
+      matrix:
+        chain: [base, base-sepolia]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Verify Anvil installation
+        run: anvil --version
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run fork tests for ${{ matrix.chain }}
+        run: pnpm test:fork
+        env:
+          ANVIL_FORK_ENABLED: 'true'
+          ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
+          # Chain-specific configuration
+          TEST_CHAIN: ${{ matrix.chain }}
+        timeout-minutes: 15
+
+  # Live tests - rate-limited, manual trigger only
+  live-tests:
+    name: Live Tests
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_live_tests }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run live tests
+        run: pnpm test:live
+        env:
+          LIVE_TEST_ENABLED: 'true'
+          ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
+        timeout-minutes: 30
+
+  # Summary job for branch protection
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [unit-tests]
+    if: always()
+    steps:
+      - name: Check test results
+        run: |
+          if [ "${{ needs.unit-tests.result }}" != "success" ]; then
+            echo "Unit tests failed"
+            exit 1
+          fi
+          echo "All required tests passed"

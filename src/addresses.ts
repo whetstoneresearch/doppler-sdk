@@ -145,7 +145,8 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     v3Quoter: '0xC5290058841028F1614F3A6F0F5816cAd0df5E27' as Address,
     lockableV3Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
       .LockableUniswapV3Initializer as Address,
-    v4Initializer: '0x8e891d249f1ecbffa6143c03eb1b12843aef09d3' as Address,
+    v4Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
+      .UniswapV4Initializer as Address,
     v4MulticurveInitializer: GENERATED_DOPPLER_DEPLOYMENTS[
       CHAIN_IDS.BASE_SEPOLIA
     ].UniswapV4MulticurveInitializer as Address,
@@ -157,7 +158,8 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     rehypeDopplerHook: '0x636a756cee08775cc18780f52dd90b634f18ad37' as Address,
     dopplerLens: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
       .DopplerLensQuoter as Address,
-    dopplerDeployer: '0x60a039e4add40ca95e0475c11e8a4182d06c9aa0' as Address,
+    dopplerDeployer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
+      .DopplerDeployer as Address,
     poolManager: '0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408' as Address,
     v2Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
       .UniswapV2Migrator as Address,
@@ -169,14 +171,15 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       .NoOpMigrator as Address,
     governanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
       .GovernanceFactory as Address,
-    noOpGovernanceFactory:
-      '0x916b8987e4ad325c10d58ed8dc2036a6ff5eb228' as Address,
-    streamableFeesLocker:
-      '0x4da7d7a8034510c0ffd38a9252237ae8dba3cb61' as Address,
+    noOpGovernanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
+      .NoOpGovernanceFactory as Address,
+    streamableFeesLocker: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
+      .StreamableFeesLocker as Address,
     universalRouter: '0x492E6456D9528771018DeB9E87ef7750EF184104' as Address,
     univ2Router02: '0x1689E7B1F10000AE47eBfE339a4f69dECd19F602' as Address,
     permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3' as Address,
-    bundler: '0x69DB7c20cDdA49Bed2bFb21e16Fa218330C50661' as Address,
+    bundler: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
+      .Bundler as Address,
     weth: '0x4200000000000000000000000000000000000006' as Address,
     uniswapV4Quoter: '0x4A6513c898fe1B2d0E78d3b0e0A4a151589B1cBa' as Address,
   },
