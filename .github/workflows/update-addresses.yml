@@ -39,6 +39,10 @@ jobs:
           repositories: doppler-sdk
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
+        with:
+          # Explicit version required because checkout uses path: doppler-sdk,
+          # so pnpm can't find packageManager field in package.json at root
+          version: 10
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
