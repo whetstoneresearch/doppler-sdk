@@ -15,6 +15,7 @@ import {
 } from '../utils';
 import {
   isNoOpEnabledChain,
+  isLaunchpadEnabledChain,
   type CreateDynamicAuctionParams,
   type GovernanceOption,
   type MigrationConfig,
@@ -512,6 +513,15 @@ export class DynamicAuctionBuilder<
       (isNoOpEnabledChain(this.chainId)
         ? { type: 'noOp' as const }
         : { type: 'default' as const });
+
+    if (
+      governance.type === 'launchpad' &&
+      !isLaunchpadEnabledChain(this.chainId)
+    ) {
+      throw new Error(
+        `Launchpad governance is not supported on chain ${this.chainId}. Use a supported chain or a different governance type.`,
+      );
+    }
 
     // Ensure gamma is set and valid
     let { gamma } = this.auction;

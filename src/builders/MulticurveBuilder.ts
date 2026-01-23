@@ -15,6 +15,7 @@ import {
 } from '../utils';
 import {
   isNoOpEnabledChain,
+  isLaunchpadEnabledChain,
   type CreateMulticurveParams,
   type GovernanceOption,
   type MigrationConfig,
@@ -728,6 +729,15 @@ export class MulticurveBuilder<
       (isNoOpEnabledChain(this.chainId)
         ? { type: 'noOp' as const }
         : { type: 'default' as const });
+
+    if (
+      governance.type === 'launchpad' &&
+      !isLaunchpadEnabledChain(this.chainId)
+    ) {
+      throw new Error(
+        `Launchpad governance is not supported on chain ${this.chainId}. Use a supported chain or a different governance type.`,
+      );
+    }
 
     return {
       token: this.token,

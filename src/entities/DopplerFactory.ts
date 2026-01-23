@@ -259,37 +259,42 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       );
     }
 
-    const useNoOpGovernance = params.governance.type === 'noOp';
-
     // 4. Encode governance factory data
-    const governanceFactoryData: Hex = useNoOpGovernance
-      ? ('0x' as Hex)
-      : encodeAbiParameters(
-          [
-            { type: 'string' },
-            { type: 'uint48' },
-            { type: 'uint32' },
-            { type: 'uint256' },
-          ],
-          [
-            params.token.name,
-            params.governance.type === 'custom'
-              ? params.governance.initialVotingDelay
-              : DEFAULT_V3_INITIAL_VOTING_DELAY,
-            params.governance.type === 'custom'
-              ? params.governance.initialVotingPeriod
-              : DEFAULT_V3_INITIAL_VOTING_PERIOD,
-            params.governance.type === 'custom'
-              ? params.governance.initialProposalThreshold
-              : DEFAULT_V3_INITIAL_PROPOSAL_THRESHOLD,
-          ],
+    const governanceFactoryData: Hex = (() => {
+      if (params.governance.type === 'noOp') {
+        return '0x' as Hex;
+      }
+      if (params.governance.type === 'launchpad') {
+        return encodeAbiParameters(
+          [{ type: 'address' }],
+          [params.governance.multisig],
         );
+      }
+      return encodeAbiParameters(
+        [
+          { type: 'string' },
+          { type: 'uint48' },
+          { type: 'uint32' },
+          { type: 'uint256' },
+        ],
+        [
+          params.token.name,
+          params.governance.type === 'custom'
+            ? params.governance.initialVotingDelay
+            : DEFAULT_V3_INITIAL_VOTING_DELAY,
+          params.governance.type === 'custom'
+            ? params.governance.initialVotingPeriod
+            : DEFAULT_V3_INITIAL_VOTING_PERIOD,
+          params.governance.type === 'custom'
+            ? params.governance.initialProposalThreshold
+            : DEFAULT_V3_INITIAL_PROPOSAL_THRESHOLD,
+        ],
+      );
+    })();
 
     // 4.1 Choose governance factory
-
     const governanceFactoryAddress: Address = (() => {
-      if (useNoOpGovernance) {
-        // Prefer unified override; otherwise require chain's no-op governance factory
+      if (params.governance.type === 'noOp') {
         const resolved =
           params.modules?.governanceFactory ??
           addresses.noOpGovernanceFactory ??
@@ -297,6 +302,18 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
         if (!resolved || resolved === ZERO_ADDRESS) {
           throw new Error(
             'No-op governance requested, but no-op governanceFactory is not configured on this chain. Provide a governanceFactory override or use a supported chain.',
+          );
+        }
+        return resolved;
+      }
+      if (params.governance.type === 'launchpad') {
+        const resolved =
+          params.modules?.governanceFactory ??
+          addresses.launchpadGovernanceFactory ??
+          ZERO_ADDRESS;
+        if (!resolved || resolved === ZERO_ADDRESS) {
+          throw new Error(
+            'Launchpad governance requested, but launchpadGovernanceFactory is not configured on this chain. Provide a governanceFactory override or use a supported chain.',
           );
         }
         return resolved;
@@ -819,37 +836,42 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     // 6. Encode migration data
     const liquidityMigratorData = this.encodeMigrationData(params.migration);
 
-    const useNoOpGovernance = params.governance.type === 'noOp';
-
     // 7. Encode governance factory data
-    const governanceFactoryData: Hex = useNoOpGovernance
-      ? ('0x' as Hex)
-      : encodeAbiParameters(
-          [
-            { type: 'string' },
-            { type: 'uint48' },
-            { type: 'uint32' },
-            { type: 'uint256' },
-          ],
-          [
-            params.token.name,
-            params.governance.type === 'custom'
-              ? params.governance.initialVotingDelay
-              : DEFAULT_V4_INITIAL_VOTING_DELAY,
-            params.governance.type === 'custom'
-              ? params.governance.initialVotingPeriod
-              : DEFAULT_V4_INITIAL_VOTING_PERIOD,
-            params.governance.type === 'custom'
-              ? params.governance.initialProposalThreshold
-              : DEFAULT_V4_INITIAL_PROPOSAL_THRESHOLD,
-          ],
+    const governanceFactoryData: Hex = (() => {
+      if (params.governance.type === 'noOp') {
+        return '0x' as Hex;
+      }
+      if (params.governance.type === 'launchpad') {
+        return encodeAbiParameters(
+          [{ type: 'address' }],
+          [params.governance.multisig],
         );
+      }
+      return encodeAbiParameters(
+        [
+          { type: 'string' },
+          { type: 'uint48' },
+          { type: 'uint32' },
+          { type: 'uint256' },
+        ],
+        [
+          params.token.name,
+          params.governance.type === 'custom'
+            ? params.governance.initialVotingDelay
+            : DEFAULT_V4_INITIAL_VOTING_DELAY,
+          params.governance.type === 'custom'
+            ? params.governance.initialVotingPeriod
+            : DEFAULT_V4_INITIAL_VOTING_PERIOD,
+          params.governance.type === 'custom'
+            ? params.governance.initialProposalThreshold
+            : DEFAULT_V4_INITIAL_PROPOSAL_THRESHOLD,
+        ],
+      );
+    })();
 
     // 7.1 Choose governance factory
-
     const governanceFactoryAddress: Address = (() => {
-      if (useNoOpGovernance) {
-        // Prefer unified override; otherwise require chain's no-op governance factory
+      if (params.governance.type === 'noOp') {
         const resolved =
           params.modules?.governanceFactory ??
           addresses.noOpGovernanceFactory ??
@@ -857,6 +879,18 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
         if (!resolved || resolved === ZERO_ADDRESS) {
           throw new Error(
             'No-op governance requested, but no-op governanceFactory is not configured on this chain. Provide a governanceFactory override or use a supported chain.',
+          );
+        }
+        return resolved;
+      }
+      if (params.governance.type === 'launchpad') {
+        const resolved =
+          params.modules?.governanceFactory ??
+          addresses.launchpadGovernanceFactory ??
+          ZERO_ADDRESS;
+        if (!resolved || resolved === ZERO_ADDRESS) {
+          throw new Error(
+            'Launchpad governance requested, but launchpadGovernanceFactory is not configured on this chain. Provide a governanceFactory override or use a supported chain.',
           );
         }
         return resolved;
@@ -1493,31 +1527,38 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       );
     }
 
-    const useNoOpGovernance = params.governance.type === 'noOp';
-
     // Governance factory data
-    const governanceFactoryData: Hex = useNoOpGovernance
-      ? ('0x' as Hex)
-      : encodeAbiParameters(
-          [
-            { type: 'string' },
-            { type: 'uint48' },
-            { type: 'uint32' },
-            { type: 'uint256' },
-          ],
-          [
-            params.token.name,
-            params.governance.type === 'custom'
-              ? params.governance.initialVotingDelay
-              : DEFAULT_V4_INITIAL_VOTING_DELAY,
-            params.governance.type === 'custom'
-              ? params.governance.initialVotingPeriod
-              : DEFAULT_V4_INITIAL_VOTING_PERIOD,
-            params.governance.type === 'custom'
-              ? params.governance.initialProposalThreshold
-              : DEFAULT_V4_INITIAL_PROPOSAL_THRESHOLD,
-          ],
+    const governanceFactoryData: Hex = (() => {
+      if (params.governance.type === 'noOp') {
+        return '0x' as Hex;
+      }
+      if (params.governance.type === 'launchpad') {
+        return encodeAbiParameters(
+          [{ type: 'address' }],
+          [params.governance.multisig],
         );
+      }
+      return encodeAbiParameters(
+        [
+          { type: 'string' },
+          { type: 'uint48' },
+          { type: 'uint32' },
+          { type: 'uint256' },
+        ],
+        [
+          params.token.name,
+          params.governance.type === 'custom'
+            ? params.governance.initialVotingDelay
+            : DEFAULT_V4_INITIAL_VOTING_DELAY,
+          params.governance.type === 'custom'
+            ? params.governance.initialVotingPeriod
+            : DEFAULT_V4_INITIAL_VOTING_PERIOD,
+          params.governance.type === 'custom'
+            ? params.governance.initialProposalThreshold
+            : DEFAULT_V4_INITIAL_PROPOSAL_THRESHOLD,
+        ],
+      );
+    })();
 
     // Resolve module addresses
     const salt = this.generateRandomSalt(params.userAddress);
@@ -1595,7 +1636,7 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     }
 
     const governanceFactoryAddress: Address = (() => {
-      if (useNoOpGovernance) {
+      if (params.governance.type === 'noOp') {
         const resolved =
           params.modules?.governanceFactory ??
           addresses.noOpGovernanceFactory ??
@@ -1603,6 +1644,18 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
         if (!resolved || resolved === ZERO_ADDRESS) {
           throw new Error(
             'No-op governance requested, but no-op governanceFactory is not configured on this chain.',
+          );
+        }
+        return resolved;
+      }
+      if (params.governance.type === 'launchpad') {
+        const resolved =
+          params.modules?.governanceFactory ??
+          addresses.launchpadGovernanceFactory ??
+          ZERO_ADDRESS;
+        if (!resolved || resolved === ZERO_ADDRESS) {
+          throw new Error(
+            'Launchpad governance requested, but launchpadGovernanceFactory is not configured on this chain.',
           );
         }
         return resolved;
