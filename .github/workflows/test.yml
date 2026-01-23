@@ -66,7 +66,7 @@ jobs:
   fork-tests:
     name: Fork Tests (${{ matrix.chain }})
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_fork_tests }}
+    if: ${{ github.event_name == 'pull_request' }}
     strategy:
       fail-fast: false
       matrix:
