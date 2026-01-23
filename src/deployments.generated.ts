@@ -37,12 +37,15 @@ export const GENERATED_DOPPLER_DEPLOYMENTS = {
     "LockableUniswapV3Initializer": "0x8b4C7DB9121FC885689C0A50D5a1429F15AEc2a0",
     "NoOpGovernanceFactory": "0xb4deE32EB70A5E55f3D2d861F49Fb3D79f7a14d9",
     "NoOpMigrator": "0x5F3bA43D44375286296Cb85F1EA2EBfa25dde731",
+    "StreamableFeesLocker": "0x63f8C8F9beFaab2FaCD7Ece0b0242f78B920Ee90",
     "TimelockFactory": "0x44610355465c1F5914C8B8ea0E7c887CC67459b2",
     "TokenFactory": "0xaA47D2977d622DBdFD33eeF6a8276727c52EB4e5",
     "TokenFactory80": "0xf0B5141dD9096254B2ca624dff26024f46087229",
     "UniswapV2Locker": "0x08Ab3f5D1177511C438a15b3bd5d8b172b6f715F",
     "UniswapV2Migrator": "0x136191B46478cAB023cbC01a36160C4Aad81677a",
     "UniswapV4Initializer": "0x53b4c21a6Cb61D64F636ABBfa6E8E90E6558e8ad",
+    "UniswapV4Migrator": "0x44bf742e57cd8cF23ABbc8dab2c44e2a3228356E",
+    "UniswapV4MigratorHook": "0x3E4c689BBf33b37106eBC13Db8aa5BF13a25e500",
     "UniswapV4ScheduledMulticurveInitializer": "0xCe3099B2F07029b086E5e92a1573C5f5A3071783",
     "UniswapV4ScheduledMulticurveInitializerHook": "0x580ca49389d83b019d07E17e99454f2F218e2dc0"
   },
@@ -176,5 +179,8 @@ export const GENERATED_DOPPLER_DEPLOYMENTS = {
     "UniswapV4ScheduledMulticurveInitializer": "0x5C10D3e14Aae2Ef95619B25E907E013260E832E4",
     "UniswapV4ScheduledMulticurveInitializerHook": "0x5D663F9C993deFf2D17ce4232D75f347df7DADc0",
     "WETH": "0x660eAaEdEBc968f8f3694354FA8EC0b4c5Ba8D12"
+  },
+  "11155111": {
+    "AirlockMultisigTestnet": "0x0abCf819FD57C9f0141628410fFC273405E44426"
   }
 } as const
