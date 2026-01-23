@@ -81,7 +81,7 @@ export interface BaseAuctionBuilder<C extends SupportedChainId> {
 
   /**
    * Configure governance for the token.
-   * @param params - Use { type: 'default' }, { type: 'noOp' }, or { type: 'custom', ... }
+   * @param params - Use { type: 'default' }, { type: 'noOp' }, { type: 'launchpad', multisig: '0x...' }, or { type: 'custom', ... }
    */
   withGovernance(params: GovernanceOption<C>): this;
 

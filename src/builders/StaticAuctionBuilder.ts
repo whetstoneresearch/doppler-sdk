@@ -17,6 +17,7 @@ import {
 } from '../utils';
 import {
   isNoOpEnabledChain,
+  isLaunchpadEnabledChain,
   type CreateStaticAuctionParams,
   type GovernanceOption,
   type MigrationConfig,
@@ -461,6 +462,15 @@ export class StaticAuctionBuilder<
       (isNoOpEnabledChain(this.chainId)
         ? { type: 'noOp' as const }
         : { type: 'default' as const });
+
+    if (
+      governance.type === 'launchpad' &&
+      !isLaunchpadEnabledChain(this.chainId)
+    ) {
+      throw new Error(
+        `Launchpad governance is not supported on chain ${this.chainId}. Use a supported chain or a different governance type.`,
+      );
+    }
 
     // Merge beneficiaries into pool config if provided
     const poolWithBeneficiaries = this.beneficiaries

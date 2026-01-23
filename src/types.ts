@@ -92,6 +92,24 @@ export function isNoOpEnabledChain(
   return (NO_OP_ENABLED_CHAIN_IDS as readonly number[]).includes(chainId);
 }
 
+// Chains where launchpad governance is enabled
+export const LAUNCHPAD_ENABLED_CHAIN_IDS = [
+  CHAIN_IDS.BASE,
+  CHAIN_IDS.MONAD_MAINNET,
+] as const;
+
+export type LaunchpadEnabledChainId =
+  (typeof LAUNCHPAD_ENABLED_CHAIN_IDS)[number];
+
+/**
+ * Check if a chain supports launchpad governance
+ */
+export function isLaunchpadEnabledChain(
+  chainId: number,
+): chainId is LaunchpadEnabledChainId {
+  return (LAUNCHPAD_ENABLED_CHAIN_IDS as readonly number[]).includes(chainId);
+}
+
 // Governance configuration (discriminated union)
 export type GovernanceDefault = { type: 'default' };
 export interface GovernanceCustom {
@@ -101,11 +119,16 @@ export interface GovernanceCustom {
   initialProposalThreshold: bigint;
 }
 export type GovernanceNoOp = { type: 'noOp' };
+export interface GovernanceLaunchpad {
+  type: 'launchpad';
+  multisig: Address;
+}
 
 export type GovernanceOption<C extends SupportedChainId> =
   | GovernanceDefault
   | GovernanceCustom
-  | (C extends NoOpEnabledChainId ? GovernanceNoOp : never);
+  | (C extends NoOpEnabledChainId ? GovernanceNoOp : never)
+  | (C extends LaunchpadEnabledChainId ? GovernanceLaunchpad : never);
 
 // Unified beneficiary data used for fee streaming, lockable initializers, and migration configs
 // Uses shares in WAD format (1e18 = 100%) for consistency across all beneficiary configurations

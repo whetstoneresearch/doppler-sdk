@@ -54,6 +54,7 @@ export interface ChainAddresses {
   // Governance contracts
   governanceFactory: Address;
   noOpGovernanceFactory?: Address;
+  launchpadGovernanceFactory?: Address;
   streamableFeesLocker?: Address;
 
   // Router contracts
@@ -125,6 +126,8 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     governanceFactory: '0xb4deE32EB70A5E55f3D2d861F49Fb3D79f7a14d9' as Address,
     noOpGovernanceFactory:
       '0xe7dfbd5b0a2c3b4464653a9becdc489229ef090e' as Address,
+    launchpadGovernanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
+      .LaunchpadGovernanceFactory as Address,
     streamableFeesLocker: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
       .StreamableFeesLocker as Address,
     universalRouter: '0x6ff5693b99212da76ad316178a184ab56d299b43' as Address,
@@ -321,6 +324,9 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     noOpGovernanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[
       CHAIN_IDS.MONAD_MAINNET
     ].NoOpGovernanceFactory as Address,
+    launchpadGovernanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[
+      CHAIN_IDS.MONAD_MAINNET
+    ].LaunchpadGovernanceFactory as Address,
     v4ScheduledMulticurveInitializer: GENERATED_DOPPLER_DEPLOYMENTS[
       CHAIN_IDS.MONAD_MAINNET
     ].UniswapV4ScheduledMulticurveInitializer as Address,
