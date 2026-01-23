@@ -162,6 +162,19 @@ jobs:
           cache: 'pnpm'
           registry-url: 'https://registry.npmjs.org'
 
+      - name: Log Node and npm versions (before)
+        run: |
+          node --version
+          npm --version
+
+      - name: Upgrade npm
+        run: npm install -g npm@latest
+
+      - name: Log Node and npm versions (after)
+        run: |
+          node --version
+          npm --version
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
