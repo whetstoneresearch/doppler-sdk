@@ -119,8 +119,8 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     poolManager: '0x498581ff718922c3f8e6a244956af099b2652b2b' as Address,
     v2Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
       .UniswapV2Migrator as Address,
-    v4Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
-      .UniswapV4Migrator as Address,
+    v4Migrator: '0xd3b4cf7fd24381e90a4f012fc6c5976b87b9b3ce' as Address,
+    v4MigratorHook: '0xd6fecff347c6203a41874e8d77de669b54e7a500' as Address,
     noOpMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
       .NoOpMigrator as Address,
     governanceFactory: '0xb4deE32EB70A5E55f3D2d861F49Fb3D79f7a14d9' as Address,
@@ -166,10 +166,8 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     poolManager: '0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408' as Address,
     v2Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
       .UniswapV2Migrator as Address,
-    v4Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
-      .UniswapV4Migrator as Address,
-    v4MigratorHook: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
-      .UniswapV4MigratorHook as Address,
+    v4Migrator: '0xeee0eccb54398ce371caacbcef076d3ed597ddb3' as Address,
+    v4MigratorHook: '0x127caaad598ffa97577940b0a5c3b6150019e500' as Address,
     noOpMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
       .NoOpMigrator as Address,
     governanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
