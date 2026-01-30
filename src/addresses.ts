@@ -176,8 +176,8 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       .GovernanceFactory as Address,
     noOpGovernanceFactory:
       '0x916b8987e4ad325c10d58ed8dc2036a6ff5eb228' as Address,
-    streamableFeesLocker:
-      '0x4da7d7a8034510c0ffd38a9252237ae8dba3cb61' as Address,
+    streamableFeesLocker: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
+      .StreamableFeesLocker as Address,
     universalRouter: '0x492E6456D9528771018DeB9E87ef7750EF184104' as Address,
     univ2Router02: '0x1689E7B1F10000AE47eBfE339a4f69dECd19F602' as Address,
     permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3' as Address,
