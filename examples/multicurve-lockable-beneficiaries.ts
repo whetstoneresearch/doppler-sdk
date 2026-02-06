@@ -13,7 +13,7 @@
 import './env'
 
 import { DopplerSDK, WAD, getAddresses } from '../src'
-import { createPublicClient, createWalletClient, http, type Address } from 'viem'
+import { createPublicClient, createWalletClient, http } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { baseSepolia } from 'viem/chains'
 
@@ -26,24 +26,18 @@ async function main() {
   const account = privateKeyToAccount(privateKey)
 
   const publicClient = createPublicClient({ chain: baseSepolia, transport: http(rpcUrl) })
-  const walletClient = createWalletClient({ chain: baseSepolia, transport: http(rpcUrl), account })
+ const walletClient = createWalletClient({ chain: baseSepolia, transport: http(rpcUrl), account })
 
   const sdk = new DopplerSDK({ publicClient, walletClient, chainId: baseSepolia.id })
   const addresses = getAddresses(baseSepolia.id)
 
-  // Get the Airlock owner address (required beneficiary with minimum 5% shares)
-  // On Base mainnet, you'd query this via: publicClient.readContract({ address: addresses.airlock, abi: airlockAbi, functionName: 'owner' })
-  // For this example, we'll use a placeholder - replace with actual protocol owner
-  const protocolOwner = '0x0000000000000000000000000000000000000000' as Address // REPLACE with actual Airlock owner
-
   // Define beneficiaries with shares that sum to WAD (1e18 = 100%)
   // IMPORTANT: Protocol owner must be included with at least 5% shares (WAD/20)
+  const airlockBeneficiary = await sdk.getAirlockBeneficiary(WAD / 10n) // 10% to Airlock owner (>= 5% required)
   const beneficiaries = [
-    { beneficiary: protocolOwner, shares: WAD / 10n },              // 10% to protocol owner (>= 5% required)
-    { beneficiary: account.address, shares: (WAD * 4n) / 10n },     // 40% to deployer
-    { beneficiary: '0x1234567890123456789012345678901234567890' as Address, shares: WAD / 2n }, // 50% to another address
+    airlockBeneficiary,
+    { beneficiary: account.address, shares: WAD - airlockBeneficiary.shares }, // remaining shares to deployer
   ]
-  // Total: 100% (WAD)
 
   // Build multicurve with beneficiaries
   const params = sdk
