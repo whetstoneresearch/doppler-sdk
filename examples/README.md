@@ -16,6 +16,9 @@ Create a pool seeded with the low/medium/high market cap presets in one initiali
 ### 4. [Multicurve with Lockable Beneficiaries](./multicurve-lockable-beneficiaries.ts)
 Create a multicurve auction with fee streaming to multiple beneficiaries. Uses NoOp migration (no post-auction migration) to keep liquidity locked while distributing fees.
 
+### 4a. [Multicurve No-Migration + Doppler404 (DN404-style)](./multicurve-noop-doppler404.ts)
+Create a multicurve auction on Base Sepolia using NoOp migration (no liquidity migration) and a Doppler404 token. Defaults to simulation-only; set `EXECUTE=1` to broadcast.
+
 ### 5. [Multicurve Fee Collection](./multicurve-collect-fees.ts)
 Collect and distribute trading fees from a multicurve pool with lockable beneficiaries. Demonstrates how beneficiaries can claim accumulated fees from swap activity.
 
