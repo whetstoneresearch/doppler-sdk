@@ -807,6 +807,11 @@ vesting: {
 
 The Doppler protocol uses CREATE2 for deterministic deployments, enabling you to find vanity addresses for both tokens and hooks before submitting transactions. The SDK provides a `mineTokenAddress` utility that mirrors on-chain calculations.
 
+`mineTokenAddress` supports matching:
+- A **prefix** (address starts with hex characters)
+- A **suffix** (address ends with hex characters, useful as an identifier)
+- Both prefix + suffix simultaneously (logical AND)
+
 #### Mining Token Addresses (Static Auctions)
 
 For static auctions (V3 pools), you can mine vanity token addresses:
@@ -849,6 +854,20 @@ const { salt, tokenAddress, iterations } = mineTokenAddress({
 
 console.log(`Vanity token ${tokenAddress} found after ${iterations} iterations`)
 // Now submit airlock.create({ ...createParams, salt }) when ready to deploy
+```
+
+You can also mine an identifier at the end of the address using `suffix`:
+
+```typescript
+const { salt, tokenAddress, iterations } = mineTokenAddress({
+  suffix: 'beef', // 1-4 hex chars is typically practical
+  tokenFactory: createParams.tokenFactory,
+  initialSupply: createParams.initialSupply,
+  recipient: addresses.airlock,
+  owner: addresses.airlock,
+  tokenData: createParams.tokenFactoryData,
+  maxIterations: 1_000_000,
+})
 ```
 
 #### Mining Hook and Token Addresses (Dynamic Auctions)

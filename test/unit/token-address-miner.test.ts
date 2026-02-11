@@ -9,7 +9,7 @@ import {
   getAddress,
 } from 'viem'
 import { mineTokenAddress } from '../../src/utils/tokenAddressMiner'
-import { DERC20Bytecode, DopplerDN404Bytecode } from '../../src/abis'
+import { DERC2080Bytecode, DopplerDN404Bytecode } from '../../src/abis'
 
 const TOKEN_FACTORY = '0x0000000000000000000000000000000000000fac' as Address
 const RECIPIENT = '0x000000000000000000000000000000000000beef' as Address
@@ -96,10 +96,70 @@ describe('mineTokenAddress', () => {
       ]
     )
     const initHash = keccak256(
-      encodePacked(['bytes', 'bytes'], [DERC20Bytecode as Hex, initHashData])
+      encodePacked(['bytes', 'bytes'], [DERC2080Bytecode as Hex, initHashData])
     ) as Hash
     const manualAddress = computeCreate2Address(result.salt, initHash, TOKEN_FACTORY)
     expect(manualAddress).toBe(result.tokenAddress)
+  })
+
+  it('mines a matching suffix for standard tokens', () => {
+    const initialSupply = 1_000_000n
+    const tokenData = encodeAbiParameters(
+      STANDARD_TOKEN_ABI,
+      [
+        'Vanity Token',
+        'VNY',
+        1000n,
+        30n,
+        [RECIPIENT],
+        [100n],
+        'ipfs://token',
+      ]
+    )
+
+    const result = mineTokenAddress({
+      suffix: '0',
+      tokenFactory: TOKEN_FACTORY,
+      initialSupply,
+      recipient: RECIPIENT,
+      owner: OWNER,
+      tokenData,
+      maxIterations: 100_000,
+    })
+
+    expect(result.tokenAddress.slice(2).toLowerCase().endsWith('0')).toBe(true)
+    expect(result.iterations).toBeGreaterThan(0)
+  })
+
+  it('mines a matching prefix and suffix together', () => {
+    const initialSupply = 1_000_000n
+    const tokenData = encodeAbiParameters(
+      STANDARD_TOKEN_ABI,
+      [
+        'Vanity Token',
+        'VNY',
+        1000n,
+        30n,
+        [RECIPIENT],
+        [100n],
+        'ipfs://token',
+      ]
+    )
+
+    const result = mineTokenAddress({
+      prefix: '0',
+      suffix: '0',
+      tokenFactory: TOKEN_FACTORY,
+      initialSupply,
+      recipient: RECIPIENT,
+      owner: OWNER,
+      tokenData,
+      maxIterations: 500_000,
+    })
+
+    const addr = result.tokenAddress.slice(2).toLowerCase()
+    expect(addr.startsWith('0')).toBe(true)
+    expect(addr.endsWith('0')).toBe(true)
   })
 
   it('mines doppler404 token addresses', () => {
@@ -230,7 +290,7 @@ describe('mineTokenAddress', () => {
       ]
     )
     const initHash = keccak256(
-      encodePacked(['bytes', 'bytes'], [DERC20Bytecode as Hex, initHashData])
+      encodePacked(['bytes', 'bytes'], [DERC2080Bytecode as Hex, initHashData])
     ) as Hash
     const firstCandidate = computeCreate2Address(
       '0x'.padEnd(66, '0') as Hash,
@@ -250,5 +310,59 @@ describe('mineTokenAddress', () => {
         maxIterations: 1,
       })
     ).toThrowError(/could not find salt/i)
+  })
+
+  it('throws when neither prefix nor suffix is provided', () => {
+    const initialSupply = 1_000_000n
+    const tokenData = encodeAbiParameters(
+      STANDARD_TOKEN_ABI,
+      [
+        'Vanity Token',
+        'VNY',
+        1000n,
+        30n,
+        [RECIPIENT],
+        [100n],
+        'ipfs://token',
+      ]
+    )
+
+    expect(() =>
+      mineTokenAddress({
+        // @ts-expect-error runtime guard
+        tokenFactory: TOKEN_FACTORY,
+        initialSupply,
+        recipient: RECIPIENT,
+        owner: OWNER,
+        tokenData,
+      } as any)
+    ).toThrowError(/must provide prefix and\/or suffix/i)
+  })
+
+  it('throws on invalid suffix', () => {
+    const initialSupply = 1_000_000n
+    const tokenData = encodeAbiParameters(
+      STANDARD_TOKEN_ABI,
+      [
+        'Vanity Token',
+        'VNY',
+        1000n,
+        30n,
+        [RECIPIENT],
+        [100n],
+        'ipfs://token',
+      ]
+    )
+
+    expect(() =>
+      mineTokenAddress({
+        suffix: 'zz',
+        tokenFactory: TOKEN_FACTORY,
+        initialSupply,
+        recipient: RECIPIENT,
+        owner: OWNER,
+        tokenData,
+      } as any)
+    ).toThrowError(/suffix must be a hexadecimal string/i)
   })
 })

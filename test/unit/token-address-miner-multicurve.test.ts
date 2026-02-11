@@ -9,7 +9,7 @@ import {
   parseEther,
 } from 'viem'
 import { mineTokenAddress } from '../../src/utils/tokenAddressMiner'
-import { DERC20Bytecode } from '../../src/abis'
+import { DERC2080Bytecode } from '../../src/abis'
 
 const TOKEN_FACTORY = '0x0000000000000000000000000000000000000fac' as Address
 const AIRLOCK = '0x000000000000000000000000000000000000a11c' as Address
@@ -91,7 +91,7 @@ describe('mineTokenAddress for multicurve auctions', () => {
       ]
     )
     const initHash = keccak256(
-      encodePacked(['bytes', 'bytes'], [DERC20Bytecode as Hex, initHashData])
+      encodePacked(['bytes', 'bytes'], [DERC2080Bytecode as Hex, initHashData])
     )
     const manualAddress = computeCreate2Address(result.salt, initHash, TOKEN_FACTORY)
     expect(manualAddress).toBe(result.tokenAddress)
