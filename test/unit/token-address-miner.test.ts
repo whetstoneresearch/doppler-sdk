@@ -155,7 +155,7 @@ describe('mineTokenAddress', () => {
       ]
     )
     const initHash = keccak256(
-      encodePacked(['bytes', 'bytes'], [DERC20Bytecode as Hex, initHashData])
+      encodePacked(['bytes', 'bytes'], [DERC2080Bytecode as Hex, initHashData])
     ) as Hash
 
     const manualAddress = computeCreate2Address(result.salt, initHash, TOKEN_FACTORY_80)
