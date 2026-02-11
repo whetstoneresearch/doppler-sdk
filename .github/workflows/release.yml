@@ -213,16 +213,10 @@ jobs:
       - name: Determine dist-tags
         id: dist_tags
         run: |
-          NEW_VERSION="${{ steps.new_version.outputs.version }}"
-          MAJOR_VERSION=$(echo "$NEW_VERSION" | cut -d. -f1)
-
-          if [ "$MAJOR_VERSION" -ge 1 ]; then
-            echo "primary_tag=latest" >> $GITHUB_OUTPUT
-            echo "secondary_tag=" >> $GITHUB_OUTPUT
-          else
-            echo "primary_tag=latest" >> $GITHUB_OUTPUT
-            echo "secondary_tag=beta" >> $GITHUB_OUTPUT
-          fi
+          # We only publish prerelease builds under the `beta` dist-tag.
+          # Do not publish or update `latest` from this workflow.
+          echo "primary_tag=beta" >> $GITHUB_OUTPUT
+          echo "secondary_tag=" >> $GITHUB_OUTPUT
 
       - name: Configure git
         run: |
