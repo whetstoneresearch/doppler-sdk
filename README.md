@@ -315,7 +315,7 @@ console.log('Pool address:', decayResult.poolAddress)
 console.log('Token address:', decayResult.tokenAddress)
 ```
 
-For decay pools, `pool.fee` is always the terminal fee (`endFee`) of the schedule. The SDK supports `startFee` values up to `800_000` (80%) for anti-sniping configurations. Ensure your deployed decay initializer/hook also supports the same max start fee. Override the decay initializer module with `.withV4DecayMulticurveInitializer('0x...')` when targeting custom deployments.
+For decay pools, `pool.fee` is always the terminal fee (`endFee`) of the schedule. `withDecay({ startTime })` is optional; if omitted, `startTime` defaults to `0`. The SDK supports `startFee` values up to `800_000` (80%) for anti-sniping configurations. Ensure your deployed decay initializer/hook also supports the same max start fee. Override the decay initializer module with `.withV4DecayMulticurveInitializer('0x...')` when targeting custom deployments.
 
 **Multicurve with Lockable Beneficiaries (NoOp Migration):**
 

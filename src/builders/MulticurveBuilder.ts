@@ -514,9 +514,10 @@ export class MulticurveBuilder<
    *
    * The pool's terminal fee is always taken from `poolConfig().fee`.
    * `startFee` must be greater than or equal to that terminal fee.
+   * `startTime` is optional and defaults to `0` when omitted.
    */
   withDecay(params?: {
-    startTime: number | bigint | Date;
+    startTime?: number | bigint | Date;
     startFee: number;
     durationSeconds: number | bigint;
   }): this {
@@ -529,10 +530,10 @@ export class MulticurveBuilder<
 
     this.assertCanSetInitializer('decay');
 
-    const startTime = this.parseStartTimeSeconds(
-      params.startTime,
-      'Decay startTime',
-    );
+    const startTime =
+      params.startTime === undefined
+        ? 0
+        : this.parseStartTimeSeconds(params.startTime, 'Decay startTime');
     const startFee = Number(params.startFee);
     const durationSeconds = Number(params.durationSeconds);
 

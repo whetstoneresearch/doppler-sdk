@@ -249,6 +249,22 @@ describe('MulticurveBuilder', () => {
       });
     });
 
+    it('defaults decay startTime to 0 when omitted', () => {
+      const params = buildBaseBuilder()
+        .withDecay({
+          startFee: 3000,
+          durationSeconds: 3600,
+        })
+        .build();
+
+      expect(params.initializer).toEqual({
+        type: 'decay',
+        startTime: 0,
+        startFee: 3000,
+        durationSeconds: 3600,
+      });
+    });
+
     it('rejects decay startFee below terminal pool fee', () => {
       const builder = buildBaseBuilder().withDecay({
         startTime: Math.floor(Date.now() / 1000) + 600,
