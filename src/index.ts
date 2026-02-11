@@ -45,6 +45,8 @@ export type {
 
   // DopplerHook types (e.g., RehypeDopplerHook)
   RehypeDopplerHookConfig,
+  MulticurveInitializerConfig,
+  MulticurveDecayFeeSchedule,
 
   // Parameter types
   CreateStaticAuctionParams,
@@ -154,6 +156,7 @@ export {
   VALID_FEE_TIERS,
   V3_FEE_TIERS,
   V4_MAX_FEE,
+  DECAY_MAX_START_FEE,
   type FeeTier,
 } from './constants';
 

@@ -188,7 +188,7 @@ console.log('Token address:', result.tokenAddress)
 
 ### Multicurve Auction (V4 Multicurve Initializer)
 
-Multicurve auctions use a Uniswap V4-style initializer that seeds liquidity across multiple curves in a single pool. This enables richer distributions and can be combined with any supported migration path (V2, V3, V4, or NoOp).
+Multicurve auctions use a Uniswap V4-style initializer that seeds liquidity across multiple curves in a single pool. This enables richer distributions and can be combined with any supported migration path (V2, V3, V4, or NoOp). Multicurve initializer modes are modeled as a typed variant (`standard`, `scheduled`, `decay`, `rehype`) so new hook/initializer variations can be added without breaking existing integrations.
 
 **Standard Multicurve with Migration:**
 ```typescript
@@ -280,6 +280,42 @@ console.log('Token address:', scheduledResult.tokenAddress)
 ```
 
 Ensure the target chain has the scheduled multicurve initializer whitelisted. If you are targeting a custom deployment, override it via `.withV4ScheduledMulticurveInitializer('0x...')`.
+
+**Decay Multicurve Launch (Dynamic Fee):**
+```typescript
+import { MulticurveBuilder } from '@whetstone-research/doppler-sdk'
+import { parseEther } from 'viem'
+import { baseSepolia } from 'viem/chains'
+
+const startTime = Math.floor(Date.now() / 1000) + 300
+
+const decay = new MulticurveBuilder(baseSepolia.id)
+  .tokenConfig({ name: 'Decay Token', symbol: 'DMC', tokenURI: 'ipfs://decay.json' })
+  .saleConfig({ initialSupply: parseEther('1000000'), numTokensToSell: parseEther('900000'), numeraire: '0x4200000000000000000000000000000000000006' })
+  .poolConfig({
+    fee: 500, // terminal fee (0.05%)
+    tickSpacing: 10,
+    curves: [
+      { tickLower: 0, tickUpper: 220000, numPositions: 12, shares: parseEther('0.5') },
+      { tickLower: 20000, tickUpper: 220000, numPositions: 12, shares: parseEther('0.5') },
+    ],
+  })
+  .withDecay({
+    startTime,
+    startFee: 3000,      // starts at 0.3%
+    durationSeconds: 3600, // decays to pool.fee over 1 hour
+  })
+  .withGovernance({ type: 'default' })
+  .withMigration({ type: 'uniswapV2' })
+  .withUserAddress('0x...')
+  .build()
+
+const decayResult = await sdk.factory.createMulticurve(decay)
+console.log('Pool address:', decayResult.poolAddress)
+console.log('Token address:', decayResult.tokenAddress)
+```
+
+For decay pools, `pool.fee` is always the terminal fee (`endFee`) of the schedule. `withDecay({ startTime })` is optional; if omitted, `startTime` defaults to `0`. The SDK supports `startFee` values up to `800_000` (80%) for anti-sniping configurations. Ensure your deployed decay initializer/hook also supports the same max start fee. Override the decay initializer module with `.withV4DecayMulticurveInitializer('0x...')` when targeting custom deployments.
 
 **Multicurve with Lockable Beneficiaries (NoOp Migration):**
 
@@ -464,6 +500,12 @@ console.log('Hook address:', state.poolKey.hooks);
 console.log('Far tick threshold:', state.farTick);
 console.log('Pool status:', state.status); // 0=Uninitialized, 1=Initialized, 2=Locked, 3=Exited
 
+// For dynamic-fee multicurve pools, read the live decay fee schedule
+const feeSchedule = await pool.getFeeSchedule();
+if (feeSchedule) {
+  console.log('Fee schedule:', feeSchedule);
+}
+
 // Collect and distribute fees to beneficiaries
 // This can be called by anyone, but only beneficiaries receive fees
 const { fees0, fees1, transactionHash } = await pool.collectFees();
@@ -495,6 +537,7 @@ The SDK handles the complexity of fee collection by:
 - Pools in "Locked" status (status = 2) use the multicurve initializer for collection
 - Pools in "Exited" status (status = 3) automatically stream fees through `StreamableFeesLockerV2`; the SDK
   resolves the locker address and stream data for you
+- `getFeeSchedule()` returns decay schedule details only for dynamic-fee multicurve pools, otherwise `null`
 - Beneficiaries must be configured at pool creation time and cannot be changed
 
 **Common Use Cases:**
@@ -1071,6 +1114,8 @@ import type {
   CreateStaticAuctionParams,
   CreateDynamicAuctionParams,
   CreateMulticurveParams,
+  MulticurveInitializerConfig,
+  MulticurveDecayFeeSchedule,
   MigrationConfig,
   PoolInfo,
   HookInfo,

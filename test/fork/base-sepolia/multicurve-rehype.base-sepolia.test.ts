@@ -330,7 +330,7 @@ describe('Multicurve with RehypeDopplerHook (Base Sepolia) test', () => {
 
     expect(tokenAddress).toMatch(/^0x[a-fA-F0-9]{40}$/)
     expect(poolId).toMatch(/^0x[a-fA-F0-9]{64}$/)
-    expect(params.dopplerHook?.farTick).toBeDefined()
+    expect(params.initializer?.type).toBe('rehype')
   })
 
   it('can simulate create() using withCurves() WITH rehype and explicit farTick', { timeout: 60000 }, async () => {

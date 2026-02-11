@@ -5,43 +5,68 @@ This directory contains practical examples demonstrating how to use the Doppler 
 ## Examples
 
 ### 1. [Static Auction with V2 Migration](./static-auction-v2.ts)
+
 Create a simple token launch using a static price range on Uniswap V3, then migrate to Uniswap V2.
 
 ### 2. [Dynamic Auction with V4 Migration](./dynamic-auction-v4.ts)
+
 Create a gradual Dutch auction that adjusts price over time based on demand.
 
 ### 3. [Multicurve Initializer (V4)](./multicurve-initializer.ts)
+
 Create a pool seeded with the low/medium/high market cap presets in one initializer call. Use any standard migration path (V2/V3/V4) and optionally tailor individual tiers.
 
 ### 4. [Multicurve with Lockable Beneficiaries](./multicurve-lockable-beneficiaries.ts)
+
 Create a multicurve auction with fee streaming to multiple beneficiaries. Uses NoOp migration (no post-auction migration) to keep liquidity locked while distributing fees.
 
 ### 5. [Multicurve Fee Collection](./multicurve-collect-fees.ts)
+
 Collect and distribute trading fees from a multicurve pool with lockable beneficiaries. Demonstrates how beneficiaries can claim accumulated fees from swap activity.
 
 ### 6. [Multicurve Pre-Buy with WETH](./multicurve-prebuy-weth.ts)
+
 Atomically create a multicurve auction and pre-buy tokens using WETH (not ETH) with Permit2 signatures. Demonstrates using `doppler-router` to build Universal Router commands for V4 swaps.
 
 ### 7. [Multicurve Quote & Swap](./multicurve-quote-and-swap.ts)
+
 Create a multicurve auction with market cap presets, quote a swap using the SDK quoter, and execute the swap via Universal Router. Shows the complete flow of quoting and swapping on V4 pools.
 
 ### 8. [Multicurve Indexer Data](./multicurve-indexer-data.ts)
+
 Query and process pool data from the Doppler indexer. Demonstrates fetching pool metrics, parsing PoolKey data, monitoring migration status, and using indexer data with the SDK for quoting. **Note:** Requires `graphql-request` package.
 
 ### 9. [Auction Monitoring](./auction-monitoring.ts)
+
 Monitor an existing auction for graduation status and key metrics.
 
 ### 10. [Token Interaction](./token-interaction.ts)
+
 Interact with launched tokens - check balances, approve spending, and release vested tokens.
 
 ### 11. [Price Quoter](./price-quoter.ts)
+
 Get price quotes across different Uniswap versions for optimal trading.
 
 ### 12. [Scheduled Multicurve Launch](./multicurve-scheduled-launch.ts)
+
 Create a multicurve auction that queues until a future start time using the scheduled initializer on Base.
 
 ### 13. [Multicurve Vanity Launch (Market Cap)](./multicurve-vanity-by-marketcap.ts)
+
 Create a multicurve pool and mine a salt so the deployed token address ends with a chosen hex suffix (identifier). Launches on-chain (requires RPC + PRIVATE_KEY).
+
+### 14. [Decay Multicurve Swap Simulation](./multicurve-decay-simulate-swaps.ts)
+
+Deploy a decay multicurve pool, then simulate buy swaps across the fee schedule using the same Universal Router V4 command pattern used by the Pure Markets interface. Validates that quoted output rises as fees decay.
+
+### 15. [Base Mainnet Decay Multicurve Deploy](./multicurve-decay-base-mainnet-launch.ts)
+
+Deploy a decay multicurve pool on Base mainnet using a simulation-first flow. Requires `CONFIRM_BASE_MAINNET=true` and only broadcasts when `EXECUTE_MAINNET=true`.
+
+### 16. [Base Mainnet Decay Multicurve Swap Simulation](./multicurve-decay-base-mainnet-simulate-swaps.ts)
+
+Deploy a decay multicurve pool on Base mainnet, then simulate buys across fee-decay checkpoints using the Pure Markets swap flow. Requires `CONFIRM_BASE_MAINNET=true`.
 
 ## Prerequisites
 
@@ -57,17 +82,20 @@ Before running these examples, ensure you have:
 ### For SDK Development (this repo)
 
 1. Install dependencies from the repo root:
+
 ```bash
 pnpm install
 ```
 
 2. Set up environment variables:
+
 ```bash
 cp .env.example .env
 # Edit .env with your values
 ```
 
 3. Run an example:
+
 ```bash
 pnpm tsx examples/multicurve-initializer.ts
 ```
@@ -75,6 +103,7 @@ pnpm tsx examples/multicurve-initializer.ts
 ### For SDK Consumers (using the published package)
 
 1. Install dependencies:
+
 ```bash
 npm install @whetstone-research/doppler-sdk viem
 
@@ -86,12 +115,14 @@ npm install graphql-request
 ```
 
 2. Set environment variables (use your preferred method):
+
 ```bash
 export PRIVATE_KEY=your_private_key_here
 export RPC_URL=https://your-rpc-endpoint
 ```
 
 3. Run an example:
+
 ```bash
 npx tsx examples/static-auction-v2.ts
 ```
@@ -99,43 +130,47 @@ npx tsx examples/static-auction-v2.ts
 ## Common Patterns
 
 ### SDK Initialization
+
 ```typescript
-import { DopplerSDK } from 'doppler-sdk'
-import { createPublicClient, createWalletClient, http } from 'viem'
-import { baseSepolia } from 'viem/chains'
+import { DopplerSDK } from 'doppler-sdk';
+import { createPublicClient, createWalletClient, http } from 'viem';
+import { baseSepolia } from 'viem/chains';
 
 const publicClient = createPublicClient({
   chain: baseSepolia,
-  transport: http(process.env.RPC_URL)
-})
+  transport: http(process.env.RPC_URL),
+});
 
 const walletClient = createWalletClient({
   chain: baseSepolia,
   transport: http(process.env.RPC_URL),
-  account: privateKeyToAccount(process.env.PRIVATE_KEY as `0x${string}`)
-})
+  account: privateKeyToAccount(process.env.PRIVATE_KEY as `0x${string}`),
+});
 
 const sdk = new DopplerSDK({
   publicClient,
   walletClient,
-  chainId: baseSepolia.id
-})
+  chainId: baseSepolia.id,
+});
 ```
 
 ### Error Handling
+
 All SDK methods can throw errors. Always wrap calls in try-catch blocks:
 
 ```typescript
 try {
-  const result = await sdk.factory.createStaticAuction(params)
-  console.log('Success:', result)
+  const result = await sdk.factory.createStaticAuction(params);
+  console.log('Success:', result);
 } catch (error) {
-  console.error('Failed to create auction:', error.message)
+  console.error('Failed to create auction:', error.message);
 }
 ```
 
 ### Gas & Overrides
+
 The SDK automatically simulates transactions before executing.
+
 - For factory `create()` transactions, the SDK uses a default gas limit of 13,500,000. You can override via the `gas` field on `CreateStaticAuctionParams`/`CreateDynamicAuctionParams`.
 - For other writes (e.g., token `approve`/`release`), you can pass an optional `{ gas }` to the method.
 
@@ -145,8 +180,8 @@ You can also manually estimate gas:
 const gasEstimate = await publicClient.estimateGas({
   account: walletClient.account,
   to: contractAddress,
-  data: encodedData
-})
+  data: encodedData,
+});
 ```
 
 ## Testing Examples
@@ -181,6 +216,7 @@ The following examples have corresponding fork tests:
 - **Pre-buy with WETH**: `test/multicurve-prebuy-weth.test.ts`
 
 Fork tests validate:
+
 - Contract module whitelisting on target chain
 - Transaction simulation without spending gas
 - Correct parameter encoding
@@ -189,6 +225,7 @@ Fork tests validate:
 ## Support
 
 For questions or issues:
+
 - Read the [SDK documentation](../README.md)
 - Check the [migration guide](../docs/MIGRATION.md)
 - Open an issue on [GitHub](https://github.com/doppler-sdk/issues)

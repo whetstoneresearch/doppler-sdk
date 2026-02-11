@@ -1567,6 +1567,22 @@ export const v4MulticurveInitializerAbi = [
   { type: 'error', name: 'InvalidProtocolOwnerBeneficiary', inputs: [] },
 ] as const;
 
+export const decayMulticurveInitializerHookAbi = [
+  {
+    type: 'function',
+    name: 'getFeeScheduleOf',
+    inputs: [{ name: 'poolId', type: 'bytes32', internalType: 'PoolId' }],
+    outputs: [
+      { name: 'startingTime', type: 'uint32', internalType: 'uint32' },
+      { name: 'startFee', type: 'uint24', internalType: 'uint24' },
+      { name: 'endFee', type: 'uint24', internalType: 'uint24' },
+      { name: 'lastFee', type: 'uint24', internalType: 'uint24' },
+      { name: 'durationSeconds', type: 'uint32', internalType: 'uint32' },
+    ],
+    stateMutability: 'view',
+  },
+] as const;
+
 export const streamableFeesLockerAbi = [
   {
     type: 'function',
