@@ -277,9 +277,6 @@ async function main() {
   console.log('Universal Router:', addresses.universalRouter);
   console.log();
 
-  const requestedStartTime =
-    Math.floor(Date.now() / 1000) + START_DELAY_SECONDS;
-
   const params = sdk
     .buildMulticurveAuction()
     .tokenConfig({
@@ -310,7 +307,6 @@ async function main() {
       ],
     })
     .withDecay({
-      startTime: requestedStartTime,
       startFee: 800_000, // 80% anti-sniping start fee
       durationSeconds: DECAY_DURATION_SECONDS,
     })
@@ -354,7 +350,6 @@ async function main() {
   }
 
   console.log('Decay schedule');
-  console.log('  Requested start:', requestedStartTime);
   console.log('  Actual start:', schedule.startingTime);
   console.log(
     '  Start fee:',
