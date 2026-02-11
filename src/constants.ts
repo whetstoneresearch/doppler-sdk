@@ -49,6 +49,13 @@ export const V3_FEE_TIERS = VALID_FEE_TIERS;
  */
 export const V4_MAX_FEE = 100_000; // 10%
 
+/**
+ * Maximum allowed start fee for decay multicurve schedules.
+ * This is intentionally higher than V4_MAX_FEE to support anti-sniping launches.
+ * 800_000 = 80%
+ */
+export const DECAY_MAX_START_FEE = 800_000; // 80%
+
 // Tick spacings for different fee tiers (standard Uniswap V3 mapping)
 // In V4, tickSpacing is independent of fee - you can use any combination
 export const TICK_SPACINGS = {

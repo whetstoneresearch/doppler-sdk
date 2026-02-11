@@ -697,6 +697,26 @@ export interface RehypeDopplerHookConfig {
   farTick?: number;
 }
 
+// Decay fee schedule state for multicurve pools using a dynamic-fee hook
+export interface MulticurveDecayFeeSchedule {
+  startingTime: number;
+  startFee: number;
+  endFee: number;
+  lastFee: number;
+  durationSeconds: number;
+}
+
+export type MulticurveInitializerConfig =
+  | { type: 'standard' }
+  | { type: 'scheduled'; startTime: number }
+  | {
+      type: 'decay';
+      startTime: number;
+      startFee: number;
+      durationSeconds: number;
+    }
+  | { type: 'rehype'; config: RehypeDopplerHookConfig };
+
 // Create Multicurve initializer parameters
 export interface CreateMulticurveParams<
   C extends SupportedChainId = SupportedChainId,
@@ -709,6 +729,7 @@ export interface CreateMulticurveParams<
 
   // Pool configuration for multicurve initializer
   pool: {
+    // For decay initializer mode, this is the terminal fee (endFee).
     fee: number;
     tickSpacing: number;
     curves: MulticurveCurve[];
@@ -716,11 +737,22 @@ export interface CreateMulticurveParams<
     beneficiaries?: BeneficiaryData[];
   };
 
+  // Preferred initializer configuration. Defaults to { type: 'standard' }.
+  initializer?: MulticurveInitializerConfig;
+
+  /**
+   * @deprecated Use initializer: { type: 'scheduled', startTime } instead.
+   * Retained for backwards compatibility.
+   */
   // Optional scheduled launch configuration
   schedule?: {
     startTime: number;
   };
 
+  /**
+   * @deprecated Use initializer: { type: 'rehype', config } instead.
+   * Retained for backwards compatibility.
+   */
   dopplerHook?: RehypeDopplerHookConfig;
 
   // Vesting configuration (optional)
@@ -773,6 +805,7 @@ export interface ModuleAddressOverrides {
   v4Initializer?: Address;
   v4MulticurveInitializer?: Address;
   v4ScheduledMulticurveInitializer?: Address;
+  v4DecayMulticurveInitializer?: Address;
   dopplerHookInitializer?: Address;
 
   // DopplerHooks

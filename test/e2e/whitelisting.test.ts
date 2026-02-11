@@ -320,6 +320,15 @@ describe('Airlock Module Whitelisting', () => {
         );
       }
 
+      if (
+        addresses.v4DecayMulticurveInitializer &&
+        addresses.v4DecayMulticurveInitializer !== ZERO_ADDRESS
+      ) {
+        it(`V4DecayMulticurveInitializer (${addresses.v4DecayMulticurveInitializer}) whitelisted`,
+          () => testModule('V4DecayMulticurveInitializer', addresses.v4DecayMulticurveInitializer!, ModuleState.PoolInitializer)
+        );
+      }
+
       (addresses.v2Migrator === ZERO_ADDRESS ? it.skip : it)(
         `V2Migrator (${addresses.v2Migrator}) whitelisted`,
         () => testModule('V2Migrator', addresses.v2Migrator, ModuleState.LiquidityMigrator)

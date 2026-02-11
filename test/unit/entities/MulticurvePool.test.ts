@@ -5,9 +5,10 @@ import {
   createMockWalletClient,
 } from '../../setup/fixtures/clients';
 import { mockAddresses } from '../../setup/fixtures/addresses';
-import type { Address } from 'viem';
+import { type Address, zeroAddress } from 'viem';
 import { LockablePoolStatus } from '../../../src/types';
 import { computePoolId } from '../../../src/utils/poolKey';
+import { DYNAMIC_FEE_FLAG } from '../../../src/constants';
 
 vi.mock('../../../src/addresses', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../src/addresses')>();
@@ -94,6 +95,7 @@ describe('MulticurvePool', () => {
         ...mockAddresses,
         v4MulticurveInitializer: undefined,
         v4ScheduledMulticurveInitializer: undefined,
+        v4DecayMulticurveInitializer: undefined,
       } as any);
 
       await expect(multicurvePool.getState()).rejects.toThrow(
@@ -168,6 +170,61 @@ describe('MulticurvePool', () => {
 
       await expect(multicurvePool.getState()).rejects.toThrow(
         `Pool not found for token ${mockTokenAddress}. Tried initializers:`,
+      );
+    });
+
+    it('should fallback to decay initializer when pool not found in standard/scheduled', async () => {
+      const mockScheduledInitializer =
+        '0x8888888888888888888888888888888888888888' as Address;
+      const mockDecayInitializer =
+        '0x9999999999999999999999999999999999999999' as Address;
+      const { getAddresses } = await import('../../../src/addresses');
+      vi.mocked(getAddresses).mockReturnValue({
+        ...mockAddresses,
+        v4ScheduledMulticurveInitializer: mockScheduledInitializer,
+        v4DecayMulticurveInitializer: mockDecayInitializer,
+      } as any);
+
+      vi.mocked(publicClient.readContract)
+        .mockResolvedValueOnce([
+          zeroAddress,
+          0,
+          {
+            currency0: zeroAddress,
+            currency1: zeroAddress,
+            fee: 0,
+            tickSpacing: 0,
+            hooks: zeroAddress,
+          },
+          0,
+        ] as any)
+        .mockResolvedValueOnce([
+          zeroAddress,
+          0,
+          {
+            currency0: zeroAddress,
+            currency1: zeroAddress,
+            fee: 0,
+            tickSpacing: 0,
+            hooks: zeroAddress,
+          },
+          0,
+        ] as any)
+        .mockResolvedValueOnce([
+          mockNumeraire,
+          LockablePoolStatus.Initialized,
+          mockPoolKey,
+          mockFarTick,
+        ] as any);
+
+      const state = await multicurvePool.getState();
+
+      expect(state.poolKey).toEqual(mockPoolKey);
+      expect(publicClient.readContract).toHaveBeenCalledTimes(3);
+      expect(publicClient.readContract).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          address: mockDecayInitializer,
+        }),
       );
     });
   });
@@ -317,6 +374,7 @@ describe('MulticurvePool', () => {
         ...mockAddresses,
         v4MulticurveInitializer: undefined,
         v4ScheduledMulticurveInitializer: undefined,
+        v4DecayMulticurveInitializer: undefined,
       } as any);
 
       await expect(multicurvePool.collectFees()).rejects.toThrow(
@@ -524,6 +582,65 @@ describe('MulticurvePool', () => {
       const numeraireAddress = await multicurvePool.getNumeraireAddress();
 
       expect(numeraireAddress).toBe(mockNumeraire);
+    });
+  });
+
+  describe('getFeeSchedule', () => {
+    it('returns null for non-dynamic multicurve pools', async () => {
+      vi.mocked(publicClient.readContract).mockResolvedValueOnce([
+        mockNumeraire,
+        LockablePoolStatus.Initialized,
+        mockPoolKey,
+        mockFarTick,
+      ] as any);
+
+      const schedule = await multicurvePool.getFeeSchedule();
+      expect(schedule).toBeNull();
+    });
+
+    it('returns decay fee schedule for dynamic-fee pools', async () => {
+      const dynamicPoolKey = {
+        ...mockPoolKey,
+        fee: DYNAMIC_FEE_FLAG,
+      };
+
+      vi.mocked(publicClient.readContract)
+        .mockResolvedValueOnce([
+          mockNumeraire,
+          LockablePoolStatus.Initialized,
+          dynamicPoolKey,
+          mockFarTick,
+        ] as any)
+        .mockResolvedValueOnce([1700000000, 10000, 1000, 8000, 3600] as any);
+
+      const schedule = await multicurvePool.getFeeSchedule();
+      expect(schedule).toEqual({
+        startingTime: 1700000000,
+        startFee: 10000,
+        endFee: 1000,
+        lastFee: 8000,
+        durationSeconds: 3600,
+      });
+    });
+
+    it('throws when dynamic hook does not expose getFeeScheduleOf', async () => {
+      const dynamicPoolKey = {
+        ...mockPoolKey,
+        fee: DYNAMIC_FEE_FLAG,
+      };
+
+      vi.mocked(publicClient.readContract)
+        .mockResolvedValueOnce([
+          mockNumeraire,
+          LockablePoolStatus.Initialized,
+          dynamicPoolKey,
+          mockFarTick,
+        ] as any)
+        .mockRejectedValueOnce(new Error('Unknown function selector'));
+
+      await expect(multicurvePool.getFeeSchedule()).rejects.toThrow(
+        'does not expose getFeeScheduleOf(poolId)',
+      );
     });
   });
 });

@@ -16,9 +16,19 @@ import type {
   CreateDynamicAuctionParams,
   CreateMulticurveParams,
 } from '../../../src/types';
-import { parseEther, decodeAbiParameters, type Address } from 'viem';
+import {
+  parseEther,
+  decodeAbiParameters,
+  encodeAbiParameters,
+  keccak256,
+  type Address,
+} from 'viem';
 import { MAX_TICK, isToken0Expected } from '../../../src/utils';
-import { DAY_SECONDS } from '../../../src/constants';
+import {
+  DAY_SECONDS,
+  DYNAMIC_FEE_FLAG,
+  DECAY_MAX_START_FEE,
+} from '../../../src/constants';
 
 vi.mock('../../../src/addresses', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../src/addresses')>();
@@ -151,6 +161,142 @@ describe('DopplerFactory', () => {
 
       // Non-positive ticks are valid - tick sign depends on price ratio
       expect(() => factory.encodeCreateMulticurveParams(params)).not.toThrow();
+    });
+
+    it('encodes decay multicurve params with decay initializer', () => {
+      const params = multicurveParams();
+      params.initializer = {
+        type: 'decay',
+        startTime: 1_800_000_000,
+        startFee: 5_000,
+        durationSeconds: 86_400,
+      };
+
+      const createParams = factory.encodeCreateMulticurveParams(params);
+      expect(createParams.poolInitializer).toBe(
+        mockAddresses.v4DecayMulticurveInitializer,
+      );
+
+      const [decoded] = decodeAbiParameters(
+        [
+          {
+            type: 'tuple',
+            components: [
+              { name: 'startFee', type: 'uint24' },
+              { name: 'fee', type: 'uint24' },
+              { name: 'durationSeconds', type: 'uint32' },
+              { name: 'tickSpacing', type: 'int24' },
+              {
+                name: 'curves',
+                type: 'tuple[]',
+                components: [
+                  { name: 'tickLower', type: 'int24' },
+                  { name: 'tickUpper', type: 'int24' },
+                  { name: 'numPositions', type: 'uint16' },
+                  { name: 'shares', type: 'uint256' },
+                ],
+              },
+              {
+                name: 'beneficiaries',
+                type: 'tuple[]',
+                components: [
+                  { name: 'beneficiary', type: 'address' },
+                  { name: 'shares', type: 'uint96' },
+                ],
+              },
+              { name: 'startingTime', type: 'uint32' },
+            ],
+          },
+        ],
+        createParams.poolInitializerData,
+      ) as any;
+
+      expect(Number(decoded.startFee)).toBe(5_000);
+      expect(Number(decoded.fee)).toBe(params.pool.fee);
+      expect(Number(decoded.durationSeconds)).toBe(86_400);
+      expect(Number(decoded.tickSpacing)).toBe(params.pool.tickSpacing);
+      expect(Number(decoded.startingTime)).toBe(1_800_000_000);
+    });
+
+    it('computes decay multicurve poolId with dynamic fee flag', async () => {
+      const params = multicurveParams();
+      params.initializer = {
+        type: 'decay',
+        startTime: 1_800_000_000,
+        startFee: 8_000,
+        durationSeconds: 10_000,
+      };
+
+      vi.mocked(publicClient.readContract).mockResolvedValueOnce(
+        mockPoolAddress as any,
+      );
+
+      const result = await factory.simulateCreateMulticurve(params);
+
+      const numeraire = params.sale.numeraire;
+      const currency0 = mockTokenAddress < numeraire ? mockTokenAddress : numeraire;
+      const currency1 = mockTokenAddress < numeraire ? numeraire : mockTokenAddress;
+      const expectedPoolId = keccak256(
+        encodeAbiParameters(
+          [
+            { type: 'address' },
+            { type: 'address' },
+            { type: 'uint24' },
+            { type: 'int24' },
+            { type: 'address' },
+          ],
+          [
+            currency0,
+            currency1,
+            DYNAMIC_FEE_FLAG,
+            params.pool.tickSpacing,
+            mockPoolAddress,
+          ],
+        ),
+      );
+
+      expect(result.poolId).toBe(expectedPoolId);
+    });
+
+    it('rejects conflicting decay initializer and legacy schedule fields', () => {
+      const params = multicurveParams();
+      params.initializer = {
+        type: 'decay',
+        startTime: 1_800_000_000,
+        startFee: 6_000,
+        durationSeconds: 1_000,
+      };
+      params.schedule = { startTime: 1_800_000_000 };
+
+      expect(() => factory.encodeCreateMulticurveParams(params)).toThrow(
+        "Initializer type 'decay' cannot be combined with legacy schedule/dopplerHook fields",
+      );
+    });
+
+    it('accepts decay startFee up to 80%', () => {
+      const params = multicurveParams();
+      params.initializer = {
+        type: 'decay',
+        startTime: 1_800_000_000,
+        startFee: DECAY_MAX_START_FEE,
+        durationSeconds: 1_000,
+      };
+
+      expect(() => factory.encodeCreateMulticurveParams(params)).not.toThrow();
+    });
+
+    it('rejects decay startFee above 80%', () => {
+      const params = multicurveParams();
+      params.initializer = {
+        type: 'decay',
+        startTime: 1_800_000_000,
+        startFee: DECAY_MAX_START_FEE + 1,
+        durationSeconds: 1_000,
+      };
+
+      expect(() => factory.encodeCreateMulticurveParams(params)).toThrow(
+        `Decay multicurve startFee must be between 0 and ${DECAY_MAX_START_FEE}`,
+      );
     });
   });
 

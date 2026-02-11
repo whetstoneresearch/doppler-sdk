@@ -1,6 +1,7 @@
 import type { Address } from 'viem';
 import {
   DEFAULT_V3_YEARLY_MINT_RATE,
+  DECAY_MAX_START_FEE,
   FEE_TIERS,
   TICK_SPACINGS,
   V4_MAX_FEE,
@@ -25,6 +26,7 @@ import {
   type MulticurveMarketCapPreset,
   type ModuleAddressOverrides,
   type RehypeDopplerHookConfig,
+  type MulticurveInitializerConfig,
 } from '../types';
 import { type SupportedChainId } from '../addresses';
 import {
@@ -39,6 +41,7 @@ export class MulticurveBuilder<
   private token?: TokenConfig;
   private sale?: CreateMulticurveParams<C>['sale'];
   private pool?: CreateMulticurveParams<C>['pool'];
+  private initializer?: CreateMulticurveParams<C>['initializer'];
   private schedule?: CreateMulticurveParams<C>['schedule'];
   private dopplerHook?: RehypeDopplerHookConfig;
   private vesting?: VestingConfig;
@@ -410,6 +413,8 @@ export class MulticurveBuilder<
    * ```
    */
   withRehypeDopplerHook(params: RehypeDopplerHookConfig): this {
+    this.assertCanSetInitializer('rehype');
+
     const totalDistribution =
       params.assetBuybackPercentWad +
       params.numeraireBuybackPercentWad +
@@ -429,6 +434,7 @@ export class MulticurveBuilder<
     }
 
     this.dopplerHook = params;
+    this.initializer = { type: 'rehype', config: params };
     return this;
   }
 
@@ -451,21 +457,17 @@ export class MulticurveBuilder<
     return this;
   }
 
-  withSchedule(params?: { startTime: number | bigint | Date }): this {
-    if (!params) {
-      this.schedule = undefined;
-      return this;
-    }
-
+  private parseStartTimeSeconds(
+    value: number | bigint | Date,
+    label: string,
+  ): number {
     let startTimeSeconds: number;
-    const { startTime } = params;
-
-    if (startTime instanceof Date) {
-      startTimeSeconds = Math.floor(startTime.getTime() / 1000);
-    } else if (typeof startTime === 'bigint') {
-      startTimeSeconds = Number(startTime);
+    if (value instanceof Date) {
+      startTimeSeconds = Math.floor(value.getTime() / 1000);
+    } else if (typeof value === 'bigint') {
+      startTimeSeconds = Number(value);
     } else {
-      startTimeSeconds = Number(startTime);
+      startTimeSeconds = Number(value);
     }
 
     if (
@@ -473,22 +475,112 @@ export class MulticurveBuilder<
       !Number.isInteger(startTimeSeconds)
     ) {
       throw new Error(
-        'Schedule startTime must be an integer number of seconds since Unix epoch',
+        `${label} must be an integer number of seconds since Unix epoch`,
       );
     }
 
     if (startTimeSeconds < 0) {
-      throw new Error('Schedule startTime cannot be negative');
+      throw new Error(`${label} cannot be negative`);
     }
 
     const UINT32_MAX = 0xffffffff;
     if (startTimeSeconds > UINT32_MAX) {
       throw new Error(
-        'Schedule startTime must fit within uint32 (seconds since Unix epoch up to year 2106)',
+        `${label} must fit within uint32 (seconds since Unix epoch up to year 2106)`,
       );
     }
 
+    return startTimeSeconds;
+  }
+
+  private assertCanSetInitializer(
+    nextType: MulticurveInitializerConfig['type'],
+  ): void {
+    const currentType = this.initializer?.type;
+    if (
+      currentType === undefined ||
+      currentType === 'standard' ||
+      currentType === nextType
+    ) {
+      return;
+    }
+    throw new Error(
+      `Cannot set multicurve initializer to '${nextType}' because it is already configured as '${currentType}'`,
+    );
+  }
+
+  /**
+   * Configure decay multicurve initializer settings.
+   *
+   * The pool's terminal fee is always taken from `poolConfig().fee`.
+   * `startFee` must be greater than or equal to that terminal fee.
+   */
+  withDecay(params?: {
+    startTime: number | bigint | Date;
+    startFee: number;
+    durationSeconds: number | bigint;
+  }): this {
+    if (!params) {
+      if (this.initializer?.type === 'decay') {
+        this.initializer = { type: 'standard' };
+      }
+      return this;
+    }
+
+    this.assertCanSetInitializer('decay');
+
+    const startTime = this.parseStartTimeSeconds(
+      params.startTime,
+      'Decay startTime',
+    );
+    const startFee = Number(params.startFee);
+    const durationSeconds = Number(params.durationSeconds);
+
+    if (!Number.isFinite(startFee) || !Number.isInteger(startFee)) {
+      throw new Error('Decay startFee must be an integer');
+    }
+    if (startFee < 0 || startFee > DECAY_MAX_START_FEE) {
+      throw new Error(
+        `Decay startFee must be between 0 and ${DECAY_MAX_START_FEE} (80%)`,
+      );
+    }
+    if (!Number.isFinite(durationSeconds) || !Number.isInteger(durationSeconds)) {
+      throw new Error('Decay durationSeconds must be an integer');
+    }
+    if (durationSeconds < 0) {
+      throw new Error('Decay durationSeconds cannot be negative');
+    }
+    const UINT32_MAX = 0xffffffff;
+    if (durationSeconds > UINT32_MAX) {
+      throw new Error('Decay durationSeconds must fit within uint32');
+    }
+
+    this.schedule = undefined;
+    this.initializer = {
+      type: 'decay',
+      startTime,
+      startFee,
+      durationSeconds,
+    };
+    return this;
+  }
+
+  withSchedule(params?: { startTime: number | bigint | Date }): this {
+    if (!params) {
+      if (this.initializer?.type === 'scheduled') {
+        this.initializer = { type: 'standard' };
+      }
+      this.schedule = undefined;
+      return this;
+    }
+
+    this.assertCanSetInitializer('scheduled');
+    const startTimeSeconds = this.parseStartTimeSeconds(
+      params.startTime,
+      'Schedule startTime',
+    );
     this.schedule = { startTime: startTimeSeconds };
+    this.initializer = { type: 'scheduled', startTime: startTimeSeconds };
     return this;
   }
 
@@ -539,6 +631,9 @@ export class MulticurveBuilder<
   }
   withV4ScheduledMulticurveInitializer(address: Address): this {
     return this.overrideModule('v4ScheduledMulticurveInitializer', address);
+  }
+  withV4DecayMulticurveInitializer(address: Address): this {
+    return this.overrideModule('v4DecayMulticurveInitializer', address);
   }
   withGovernanceFactory(address: Address): this {
     return this.overrideModule('governanceFactory', address);
@@ -723,6 +818,48 @@ export class MulticurveBuilder<
       dopplerHook = { ...dopplerHook, farTick };
     }
 
+    const initializer =
+      this.initializer ??
+      (dopplerHook
+        ? { type: 'rehype', config: dopplerHook }
+        : this.schedule
+          ? { type: 'scheduled', startTime: this.schedule.startTime }
+          : { type: 'standard' });
+
+    if (initializer.type === 'scheduled' && dopplerHook) {
+      throw new Error(
+        "Cannot combine scheduled multicurve with rehype initializer. Use exactly one initializer mode.",
+      );
+    }
+    if (initializer.type === 'decay' && dopplerHook) {
+      throw new Error(
+        "Cannot combine decay multicurve with rehype initializer. Use exactly one initializer mode.",
+      );
+    }
+    if (initializer.type === 'decay') {
+      const startFee = Number(initializer.startFee);
+      const terminalFee = Number(this.pool.fee);
+
+      if (startFee < terminalFee) {
+        throw new Error(
+          `Decay startFee (${startFee}) must be greater than or equal to terminal pool fee (${terminalFee})`,
+        );
+      }
+
+      if (startFee > terminalFee && initializer.durationSeconds <= 0) {
+        throw new Error(
+          'Decay durationSeconds must be greater than 0 when startFee is greater than pool.fee',
+        );
+      }
+    }
+
+    const schedule =
+      initializer.type === 'scheduled'
+        ? { startTime: initializer.startTime }
+        : undefined;
+    dopplerHook =
+      initializer.type === 'rehype' ? initializer.config : undefined;
+
     // Default governance: noOp on supported chains, default on others (e.g., Ink)
     const governance =
       this.governance ??
@@ -743,7 +880,8 @@ export class MulticurveBuilder<
       token: this.token,
       sale: this.sale,
       pool: this.pool,
-      schedule: this.schedule,
+      initializer,
+      schedule,
       dopplerHook,
       vesting: this.vesting,
       governance: governance as GovernanceOption<C>,
