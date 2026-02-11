@@ -8,6 +8,7 @@ import {
 } from '../../setup/fixtures/clients';
 import {
   mockAddresses,
+  mockHookAddress,
   mockTokenAddress,
   mockPoolAddress,
 } from '../../setup/fixtures/addresses';
@@ -28,6 +29,7 @@ import {
   DAY_SECONDS,
   DYNAMIC_FEE_FLAG,
   DECAY_MAX_START_FEE,
+  ZERO_ADDRESS,
 } from '../../../src/constants';
 
 vi.mock('../../../src/addresses', async (importOriginal) => {
@@ -256,6 +258,89 @@ describe('DopplerFactory', () => {
       );
 
       expect(result.poolId).toBe(expectedPoolId);
+    });
+
+    it('computes rehype multicurve poolId using configured hook address', async () => {
+      const params = multicurveParams();
+      params.initializer = {
+        type: 'rehype',
+        config: {
+          hookAddress: mockHookAddress,
+          buybackDestination:
+            '0x1234567890123456789012345678901234567890' as Address,
+          customFee: 3000,
+          assetBuybackPercentWad: parseEther('0.25'),
+          numeraireBuybackPercentWad: parseEther('0.25'),
+          beneficiaryPercentWad: parseEther('0.25'),
+          lpPercentWad: parseEther('0.25'),
+        },
+      };
+      params.modules = {
+        dopplerHookInitializer:
+          '0x7100000000000000000000000000000000000011' as Address,
+      };
+
+      const result = await factory.simulateCreateMulticurve(params);
+
+      const numeraire = params.sale.numeraire;
+      const currency0 = mockTokenAddress < numeraire ? mockTokenAddress : numeraire;
+      const currency1 = mockTokenAddress < numeraire ? numeraire : mockTokenAddress;
+      const expectedPoolId = keccak256(
+        encodeAbiParameters(
+          [
+            { type: 'address' },
+            { type: 'address' },
+            { type: 'uint24' },
+            { type: 'int24' },
+            { type: 'address' },
+          ],
+          [
+            currency0,
+            currency1,
+            params.pool.fee,
+            params.pool.tickSpacing,
+            mockHookAddress,
+          ],
+        ),
+      );
+
+      expect(result.poolId).toBe(expectedPoolId);
+      expect(publicClient.readContract).not.toHaveBeenCalled();
+    });
+
+    it('computes rehype multicurve poolId with zero hook when no hook config is set', async () => {
+      const params = multicurveParams();
+      params.modules = {
+        dopplerHookInitializer:
+          '0x7100000000000000000000000000000000000011' as Address,
+      };
+
+      const result = await factory.simulateCreateMulticurve(params);
+
+      const numeraire = params.sale.numeraire;
+      const currency0 = mockTokenAddress < numeraire ? mockTokenAddress : numeraire;
+      const currency1 = mockTokenAddress < numeraire ? numeraire : mockTokenAddress;
+      const expectedPoolId = keccak256(
+        encodeAbiParameters(
+          [
+            { type: 'address' },
+            { type: 'address' },
+            { type: 'uint24' },
+            { type: 'int24' },
+            { type: 'address' },
+          ],
+          [
+            currency0,
+            currency1,
+            params.pool.fee,
+            params.pool.tickSpacing,
+            ZERO_ADDRESS,
+          ],
+        ),
+      );
+
+      expect(result.poolId).toBe(expectedPoolId);
+      expect(publicClient.readContract).not.toHaveBeenCalled();
     });
 
     it('rejects conflicting decay initializer and legacy schedule fields', () => {

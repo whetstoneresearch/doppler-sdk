@@ -3274,43 +3274,42 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     const addresses = getAddresses(this.chainId);
 
     const initializerMode = this.resolveMulticurveInitializerMode(params);
-    const initializerAddress = (() => {
-      if (initializerMode.type === 'rehype') {
+    let hookAddress: Address;
+    if (initializerMode.type === 'rehype') {
+      // For DopplerHookInitializer mode, hook address comes from the encoded
+      // initializer payload (or defaults to zero when no hook config is set).
+      hookAddress = initializerMode.hookConfig?.hookAddress ?? ZERO_ADDRESS;
+    } else {
+      const initializerAddress = (() => {
+        if (initializerMode.type === 'decay') {
+          return (
+            params.modules?.v4DecayMulticurveInitializer ??
+            addresses.v4DecayMulticurveInitializer
+          );
+        }
+        if (initializerMode.type === 'scheduled') {
+          return (
+            params.modules?.v4ScheduledMulticurveInitializer ??
+            addresses.v4ScheduledMulticurveInitializer
+          );
+        }
         return (
-          params.modules?.dopplerHookInitializer ??
-          addresses.dopplerHookInitializer
+          params.modules?.v4MulticurveInitializer ??
+          addresses.v4MulticurveInitializer
         );
-      }
-      if (initializerMode.type === 'decay') {
-        return (
-          params.modules?.v4DecayMulticurveInitializer ??
-          addresses.v4DecayMulticurveInitializer
-        );
-      }
-      if (initializerMode.type === 'scheduled') {
-        return (
-          params.modules?.v4ScheduledMulticurveInitializer ??
-          addresses.v4ScheduledMulticurveInitializer
-        );
-      }
-      return (
-        params.modules?.v4MulticurveInitializer ??
-        addresses.v4MulticurveInitializer
-      );
-    })();
+      })();
 
-    if (!initializerAddress) {
-      throw new Error('Multicurve initializer address not configured');
-    }
+      if (!initializerAddress) {
+        throw new Error('Multicurve initializer address not configured');
+      }
 
-    // Read the HOOK address from the initializer contract
-    const hookAddress = (await (this.publicClient as PublicClient).readContract(
-      {
+      // Standard/scheduled/decay initializers expose HOOK() directly.
+      hookAddress = (await (this.publicClient as PublicClient).readContract({
         address: initializerAddress,
         abi: v4MulticurveInitializerAbi,
         functionName: 'HOOK',
-      },
-    )) as Address;
+      })) as Address;
+    }
 
     // Construct the pool key and compute poolId
     const numeraire = params.sale.numeraire;
