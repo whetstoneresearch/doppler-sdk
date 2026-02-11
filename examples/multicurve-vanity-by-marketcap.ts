@@ -13,6 +13,11 @@
  * - VANITY_PREFIX (optional; default empty)
  * - MAX_ITERATIONS (optional; default 1_000_000)
  * - START_SALT (optional; default 0; useful to continue searching after a failure)
+ * - MAX_PREFLIGHT_ATTEMPTS (optional; default 10; number of mine+simulate retries)
+ * - DRY_RUN (optional; if set to "1"/"true", stops after preflight simulation)
+ * - TOKEN_NAME (optional; default includes timestamp to avoid collisions)
+ * - TOKEN_SYMBOL (optional; default "VNY")
+ * - TOKEN_URI (optional; default example.com)
  */
 import './env'
 
@@ -52,6 +57,12 @@ function parseBigIntEnv(name: string, fallback: bigint): bigint {
   }
 }
 
+function parseBoolEnv(name: string, fallback = false): boolean {
+  const v = (process.env[name] ?? '').trim().toLowerCase()
+  if (!v) return fallback
+  return v === '1' || v === 'true' || v === 'yes' || v === 'y'
+}
+
 function normalizeHexFragment(value: string): string {
   return value.trim().toLowerCase().replace(/^0x/, '')
 }
@@ -81,6 +92,12 @@ async function main() {
   const vanitySuffix = (process.env.VANITY_SUFFIX ?? 'beef').trim()
   const maxIterations = parseNumberEnv('MAX_ITERATIONS', 1_000_000)
   const startSalt = parseBigIntEnv('START_SALT', 0n)
+  const maxPreflightAttempts = parseNumberEnv('MAX_PREFLIGHT_ATTEMPTS', 10)
+  const dryRun = parseBoolEnv('DRY_RUN', false)
+
+  const tokenName = (process.env.TOKEN_NAME ?? `VANITY_${Date.now()}`).trim()
+  const tokenSymbol = (process.env.TOKEN_SYMBOL ?? 'VNY').trim()
+  const tokenURI = (process.env.TOKEN_URI ?? 'https://example.com/sample.json').trim()
 
   const account = privateKeyToAccount(privateKey)
 
@@ -117,9 +134,9 @@ async function main() {
   const params = sdk
     .buildMulticurveAuction()
     .tokenConfig({
-      name: 'TEST',
-      symbol: 'TEST',
-      tokenURI: 'https://example.com/sample.json',
+      name: tokenName,
+      symbol: tokenSymbol,
+      tokenURI: tokenURI,
     })
     .saleConfig({
       initialSupply: parseEther('1000000000'), // 1 billion tokens
@@ -165,6 +182,10 @@ async function main() {
   console.log('  suffix:', vanitySuffix)
   console.log('  maxIterations:', maxIterations)
   console.log('  startSalt:', startSalt.toString())
+  console.log('  maxPreflightAttempts:', maxPreflightAttempts)
+  console.log('  dryRun:', dryRun)
+  console.log('  tokenName:', tokenName)
+  console.log('  tokenSymbol:', tokenSymbol)
 
   const expected = expectedIterations(
     vanityPrefix || undefined,
@@ -190,45 +211,80 @@ async function main() {
   // Multicurve encoder generates a random salt internally; override it with our mined salt.
   const createParams = sdk.factory.encodeCreateMulticurveParams(params)
 
-  const mined = mineTokenAddress({
-    ...(vanityPrefix ? { prefix: vanityPrefix } : {}),
-    suffix: vanitySuffix,
-    tokenFactory: createParams.tokenFactory,
-    initialSupply: createParams.initialSupply,
-    recipient: airlockAddress,
-    owner: airlockAddress,
-    tokenData: createParams.tokenFactoryData,
-    maxIterations,
-    startSalt,
-  })
+  let mined: ReturnType<typeof mineTokenAddress> | undefined
+  let vanityCreateParams: typeof createParams | undefined
+  let currentStartSalt = startSalt
 
-  const vanityCreateParams = { ...createParams, salt: mined.salt }
+  for (let attempt = 1; attempt <= maxPreflightAttempts; attempt++) {
+    mined = mineTokenAddress({
+      ...(vanityPrefix ? { prefix: vanityPrefix } : {}),
+      suffix: vanitySuffix,
+      tokenFactory: createParams.tokenFactory,
+      initialSupply: createParams.initialSupply,
+      recipient: airlockAddress,
+      owner: airlockAddress,
+      tokenData: createParams.tokenFactoryData,
+      maxIterations,
+      startSalt: currentStartSalt,
+    })
 
-  console.log('Mined vanity salt:')
-  console.log('  tokenAddress:', mined.tokenAddress)
-  console.log('  salt:', mined.salt)
-  console.log('  iterations:', mined.iterations)
-  console.log('')
+    vanityCreateParams = { ...createParams, salt: mined.salt }
 
-  // Preflight: simulate the exact airlock.create() call with the vanity salt.
-  // If this doesn't match our mined address, do not broadcast a transaction.
-  const sim = await publicClient.simulateContract({
-    address: airlockAddress,
-    abi: airlockAbi,
-    functionName: 'create',
-    args: [{ ...vanityCreateParams }],
-    account: account.address,
-  })
-  const simResult = sim.result as readonly unknown[] | undefined
-  const simulatedTokenAddress = (simResult?.[0] as Address | undefined) ?? undefined
-  if (!simulatedTokenAddress) {
-    throw new Error('Failed to simulate multicurve create with vanity salt')
+    console.log(`Mined vanity salt (attempt ${attempt}/${maxPreflightAttempts}):`)
+    console.log('  tokenAddress:', mined.tokenAddress)
+    console.log('  salt:', mined.salt)
+    console.log('  iterations:', mined.iterations)
+
+    // Preflight: simulate the exact airlock.create() call with the vanity salt.
+    // This can revert if the CREATE2 address is already taken or params are invalid.
+    try {
+      const sim = await publicClient.simulateContract({
+        address: airlockAddress,
+        abi: airlockAbi,
+        functionName: 'create',
+        args: [{ ...vanityCreateParams }],
+        account: account.address,
+      })
+      const simResult = sim.result as readonly unknown[] | undefined
+      const simulatedTokenAddress =
+        (simResult?.[0] as Address | undefined) ?? undefined
+      if (!simulatedTokenAddress) {
+        throw new Error('simulateContract returned no token address')
+      }
+      if (
+        simulatedTokenAddress.toLowerCase() !== mined.tokenAddress.toLowerCase()
+      ) {
+        throw new Error(
+          `miner computed ${mined.tokenAddress} but simulation predicts ${simulatedTokenAddress}`,
+        )
+      }
+
+      console.log('  preflight: OK (simulation matches mined address)')
+      console.log('')
+      break
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e)
+      console.log('  preflight: REVERTED, will try next salt window')
+      console.log('  error:', msg.split('\n')[0])
+      console.log('')
+
+      // Continue search from the next salt value after the one we just tested.
+      currentStartSalt = BigInt(mined.salt) + 1n
+      mined = undefined
+      vanityCreateParams = undefined
+    }
   }
-  if (simulatedTokenAddress.toLowerCase() !== mined.tokenAddress.toLowerCase()) {
+
+  if (!mined || !vanityCreateParams) {
     throw new Error(
-      `Vanity mining mismatch: miner computed ${mined.tokenAddress} but on-chain simulation predicts ${simulatedTokenAddress}. ` +
-        `Do not broadcast. This usually indicates the token creation bytecode differs from defaults for this network.`,
+      `Preflight failed after ${maxPreflightAttempts} attempts. ` +
+        `Try increasing MAX_PREFLIGHT_ATTEMPTS, increasing MAX_ITERATIONS, changing TOKEN_NAME, or setting START_SALT.`,
     )
+  }
+
+  if (dryRun) {
+    console.log('DRY_RUN enabled; stopping after preflight.')
+    return
   }
 
   console.log('Creating multicurve pool with vanity salt...')
