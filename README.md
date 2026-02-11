@@ -860,6 +860,7 @@ You can also mine an identifier at the end of the address using `suffix`:
 
 ```typescript
 const { salt, tokenAddress, iterations } = mineTokenAddress({
+  prefix: '',
   suffix: 'beef', // 1-4 hex chars is typically practical
   tokenFactory: createParams.tokenFactory,
   initialSupply: createParams.initialSupply,

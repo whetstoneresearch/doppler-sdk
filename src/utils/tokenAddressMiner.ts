@@ -8,11 +8,19 @@ import {
   getAddress,
   decodeAbiParameters,
 } from 'viem';
-import { DERC2080Bytecode, DopplerDN404Bytecode } from '../abis';
+import { DERC20Bytecode, DERC2080Bytecode, DopplerDN404Bytecode } from '../abis';
 
 const DEFAULT_MAX_ITERATIONS = 1_000_000;
 
 export type TokenVariant = 'standard' | 'doppler404';
+
+// TokenFactory80 has the same deterministic CREATE2 address across all chains where it is deployed.
+const TOKEN_FACTORY_80_ADDRESS =
+  '0xf0B5141dD9096254B2ca624dff26024f46087229' as const;
+
+function isTokenFactory80(tokenFactory: Address): boolean {
+  return tokenFactory.toLowerCase() === TOKEN_FACTORY_80_ADDRESS.toLowerCase();
+}
 
 export interface TokenAddressHookConfig {
   deployer: Address;
@@ -21,7 +29,14 @@ export interface TokenAddressHookConfig {
   suffix?: string;
 }
 
-interface TokenAddressMiningParamsBase {
+export interface TokenAddressMiningParams {
+  /**
+   * Vanity prefix (hex). Keep as `''` (empty string) if you only want to mine a suffix.
+   * Note: this is required for backwards compatibility with older SDK versions.
+   */
+  prefix: string;
+  /** Vanity suffix (hex), useful as an identifier at the end of the address. */
+  suffix?: string;
   tokenFactory: Address;
   initialSupply: bigint;
   recipient: Address;
@@ -33,12 +48,6 @@ interface TokenAddressMiningParamsBase {
   startSalt?: bigint;
   hook?: TokenAddressHookConfig;
 }
-
-export type TokenAddressMiningParams = TokenAddressMiningParamsBase &
-  (
-    | { prefix: string; suffix?: string }
-    | { prefix?: string; suffix: string }
-  );
 
 export interface TokenAddressMiningResult {
   salt: Hash;
@@ -164,6 +173,7 @@ function computeCreate2AddressFast(buffer: Uint8Array): string {
 
 function buildTokenInitHash(params: {
   variant: TokenVariant;
+  tokenFactory: Address;
   tokenData: Hex;
   initialSupply: bigint;
   recipient: Address;
@@ -172,6 +182,7 @@ function buildTokenInitHash(params: {
 }): Hash {
   const {
     variant,
+    tokenFactory,
     tokenData,
     initialSupply,
     recipient,
@@ -250,12 +261,14 @@ function buildTokenInitHash(params: {
     ],
   );
 
+  const defaultBytecode = isTokenFactory80(tokenFactory)
+    ? (DERC2080Bytecode as Hex)
+    : (DERC20Bytecode as Hex);
+
   return keccak256(
     encodePacked(
       ['bytes', 'bytes'],
-      // TokenFactory80 deploys the v80 token creation bytecode on current networks.
-      // Consumers can override with customBytecode for older deployments.
-      [customBytecode ?? (DERC2080Bytecode as Hex), initHashData],
+      [customBytecode ?? defaultBytecode, initHashData],
     ),
   ) as Hash;
 }
@@ -278,9 +291,6 @@ export function mineTokenAddress(
     hook,
   } = params;
 
-  if (prefix === undefined && suffix === undefined) {
-    throw new Error('TokenAddressMiner: must provide prefix and/or suffix');
-  }
   if (maxIterations <= 0 || !Number.isFinite(maxIterations)) {
     throw new Error(
       'TokenAddressMiner: maxIterations must be a positive finite number',
@@ -290,13 +300,25 @@ export function mineTokenAddress(
     throw new Error('TokenAddressMiner: startSalt cannot be negative');
   }
 
+  const prefixTrimmed = prefix.trim();
+  const suffixTrimmed = suffix?.trim();
+
   const normalizedPrefix =
-    prefix === undefined ? undefined : normalizeHexFragment(prefix, 'prefix');
+    prefixTrimmed.length === 0
+      ? undefined
+      : normalizeHexFragment(prefixTrimmed, 'prefix');
   const normalizedSuffix =
-    suffix === undefined ? undefined : normalizeHexFragment(suffix, 'suffix');
+    !suffixTrimmed || suffixTrimmed.length === 0
+      ? undefined
+      : normalizeHexFragment(suffixTrimmed, 'suffix');
+
+  if (!normalizedPrefix && !normalizedSuffix) {
+    throw new Error('TokenAddressMiner: must provide prefix and/or suffix');
+  }
 
   const tokenInitHash = buildTokenInitHash({
     variant: tokenVariant,
+    tokenFactory,
     tokenData,
     initialSupply,
     recipient,
@@ -308,8 +330,14 @@ export function mineTokenAddress(
     ? {
         deployer: hook.deployer,
         initCodeHash: hook.initCodeHash,
-        prefix: hook.prefix ? normalizeHexFragment(hook.prefix, 'prefix') : undefined,
-        suffix: hook.suffix ? normalizeHexFragment(hook.suffix, 'suffix') : undefined,
+        prefix:
+          hook.prefix && hook.prefix.trim().length > 0
+            ? normalizeHexFragment(hook.prefix, 'prefix')
+            : undefined,
+        suffix:
+          hook.suffix && hook.suffix.trim().length > 0
+            ? normalizeHexFragment(hook.suffix, 'suffix')
+            : undefined,
       }
     : undefined;
 
@@ -356,8 +384,8 @@ export function mineTokenAddress(
   }
 
   const constraints: string[] = [];
-  if (prefix !== undefined) constraints.push(`prefix ${prefix}`);
-  if (suffix !== undefined) constraints.push(`suffix ${suffix}`);
+  if (normalizedPrefix) constraints.push(`prefix ${prefixTrimmed}`);
+  if (normalizedSuffix) constraints.push(`suffix ${suffixTrimmed}`);
 
   throw new Error(
     `TokenAddressMiner: could not find salt matching ${constraints.join(

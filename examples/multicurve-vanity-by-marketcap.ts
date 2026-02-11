@@ -217,7 +217,7 @@ async function main() {
 
   for (let attempt = 1; attempt <= maxPreflightAttempts; attempt++) {
     mined = mineTokenAddress({
-      ...(vanityPrefix ? { prefix: vanityPrefix } : {}),
+      prefix: vanityPrefix,
       suffix: vanitySuffix,
       tokenFactory: createParams.tokenFactory,
       initialSupply: createParams.initialSupply,

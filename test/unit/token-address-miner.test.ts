@@ -9,9 +9,10 @@ import {
   getAddress,
 } from 'viem'
 import { mineTokenAddress } from '../../src/utils/tokenAddressMiner'
-import { DERC2080Bytecode, DopplerDN404Bytecode } from '../../src/abis'
+import { DERC20Bytecode, DERC2080Bytecode, DopplerDN404Bytecode } from '../../src/abis'
 
 const TOKEN_FACTORY = '0x0000000000000000000000000000000000000fac' as Address
+const TOKEN_FACTORY_80 = '0xf0B5141dD9096254B2ca624dff26024f46087229' as Address
 const RECIPIENT = '0x000000000000000000000000000000000000beef' as Address
 const OWNER = '0x000000000000000000000000000000000000c0de' as Address
 const HOOK_DEPLOYER = '0x000000000000000000000000000000000000dEaD' as Address
@@ -96,9 +97,68 @@ describe('mineTokenAddress', () => {
       ]
     )
     const initHash = keccak256(
-      encodePacked(['bytes', 'bytes'], [DERC2080Bytecode as Hex, initHashData])
+      encodePacked(['bytes', 'bytes'], [DERC20Bytecode as Hex, initHashData])
     ) as Hash
     const manualAddress = computeCreate2Address(result.salt, initHash, TOKEN_FACTORY)
+    expect(manualAddress).toBe(result.tokenAddress)
+  })
+
+  it('uses v80 bytecode when tokenFactory is TokenFactory80', () => {
+    const initialSupply = 1_000_000n
+    const tokenData = encodeAbiParameters(
+      STANDARD_TOKEN_ABI,
+      [
+        'Vanity Token',
+        'VNY',
+        1000n,
+        30n,
+        [RECIPIENT],
+        [100n],
+        'ipfs://token',
+      ]
+    )
+
+    const result = mineTokenAddress({
+      prefix: '0',
+      tokenFactory: TOKEN_FACTORY_80,
+      initialSupply,
+      recipient: RECIPIENT,
+      owner: OWNER,
+      tokenData,
+      maxIterations: 200_000,
+    })
+
+    const initHashData = encodeAbiParameters(
+      [
+        { type: 'string' },
+        { type: 'string' },
+        { type: 'uint256' },
+        { type: 'address' },
+        { type: 'address' },
+        { type: 'uint256' },
+        { type: 'uint256' },
+        { type: 'address[]' },
+        { type: 'uint256[]' },
+        { type: 'string' },
+      ],
+      [
+        'Vanity Token',
+        'VNY',
+        initialSupply,
+        RECIPIENT,
+        OWNER,
+        1000n,
+        30n,
+        [RECIPIENT],
+        [100n],
+        'ipfs://token',
+      ]
+    )
+    const initHash = keccak256(
+      encodePacked(['bytes', 'bytes'], [DERC20Bytecode as Hex, initHashData])
+    ) as Hash
+
+    const manualAddress = computeCreate2Address(result.salt, initHash, TOKEN_FACTORY_80)
     expect(manualAddress).toBe(result.tokenAddress)
   })
 
@@ -118,6 +178,7 @@ describe('mineTokenAddress', () => {
     )
 
     const result = mineTokenAddress({
+      prefix: '',
       suffix: '0',
       tokenFactory: TOKEN_FACTORY,
       initialSupply,
@@ -290,7 +351,7 @@ describe('mineTokenAddress', () => {
       ]
     )
     const initHash = keccak256(
-      encodePacked(['bytes', 'bytes'], [DERC2080Bytecode as Hex, initHashData])
+      encodePacked(['bytes', 'bytes'], [DERC20Bytecode as Hex, initHashData])
     ) as Hash
     const firstCandidate = computeCreate2Address(
       '0x'.padEnd(66, '0') as Hash,
@@ -329,13 +390,13 @@ describe('mineTokenAddress', () => {
 
     expect(() =>
       mineTokenAddress({
-        // @ts-expect-error runtime guard
+        prefix: '',
         tokenFactory: TOKEN_FACTORY,
         initialSupply,
         recipient: RECIPIENT,
         owner: OWNER,
         tokenData,
-      } as any)
+      })
     ).toThrowError(/must provide prefix and\/or suffix/i)
   })
 
@@ -356,6 +417,7 @@ describe('mineTokenAddress', () => {
 
     expect(() =>
       mineTokenAddress({
+        prefix: '',
         suffix: 'zz',
         tokenFactory: TOKEN_FACTORY,
         initialSupply,
