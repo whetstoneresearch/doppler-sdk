@@ -8,20 +8,35 @@ import {
   getAddress,
   decodeAbiParameters,
 } from 'viem';
-import { DERC20Bytecode, DopplerDN404Bytecode } from '../abis';
+import { DERC20Bytecode, DERC2080Bytecode, DopplerDN404Bytecode } from '../abis';
 
 const DEFAULT_MAX_ITERATIONS = 1_000_000;
 
 export type TokenVariant = 'standard' | 'doppler404';
 
+// TokenFactory80 has the same deterministic CREATE2 address across all chains where it is deployed.
+const TOKEN_FACTORY_80_ADDRESS =
+  '0xf0B5141dD9096254B2ca624dff26024f46087229' as const;
+
+function isTokenFactory80(tokenFactory: Address): boolean {
+  return tokenFactory.toLowerCase() === TOKEN_FACTORY_80_ADDRESS.toLowerCase();
+}
+
 export interface TokenAddressHookConfig {
   deployer: Address;
   initCodeHash: Hash;
   prefix?: string;
+  suffix?: string;
 }
 
 export interface TokenAddressMiningParams {
+  /**
+   * Vanity prefix (hex). Keep as `''` (empty string) if you only want to mine a suffix.
+   * Note: this is required for backwards compatibility with older SDK versions.
+   */
   prefix: string;
+  /** Vanity suffix (hex), useful as an identifier at the end of the address. */
+  suffix?: string;
   tokenFactory: Address;
   initialSupply: bigint;
   recipient: Address;
@@ -58,20 +73,22 @@ const DOPPLER404_TOKEN_DATA_ABI = [
   { type: 'uint256' },
 ] as const;
 
-function normalizePrefix(prefix: string): string {
-  const normalized = prefix.trim().toLowerCase().replace(/^0x/, '');
+function normalizeHexFragment(value: string, label: 'prefix' | 'suffix'): string {
+  const normalized = value.trim().toLowerCase().replace(/^0x/, '');
   if (normalized.length === 0) {
     throw new Error(
-      'TokenAddressMiner: prefix must contain at least one hex character',
+      `TokenAddressMiner: ${label} must contain at least one hex character`,
     );
   }
   if (normalized.length > 40) {
     throw new Error(
-      'TokenAddressMiner: prefix cannot exceed 40 hex characters',
+      `TokenAddressMiner: ${label} cannot exceed 40 hex characters`,
     );
   }
   if (!/^[0-9a-f]+$/i.test(normalized)) {
-    throw new Error('TokenAddressMiner: prefix must be a hexadecimal string');
+    throw new Error(
+      `TokenAddressMiner: ${label} must be a hexadecimal string`,
+    );
   }
   return normalized;
 }
@@ -156,6 +173,7 @@ function computeCreate2AddressFast(buffer: Uint8Array): string {
 
 function buildTokenInitHash(params: {
   variant: TokenVariant;
+  tokenFactory: Address;
   tokenData: Hex;
   initialSupply: bigint;
   recipient: Address;
@@ -164,6 +182,7 @@ function buildTokenInitHash(params: {
 }): Hash {
   const {
     variant,
+    tokenFactory,
     tokenData,
     initialSupply,
     recipient,
@@ -242,10 +261,14 @@ function buildTokenInitHash(params: {
     ],
   );
 
+  const defaultBytecode = isTokenFactory80(tokenFactory)
+    ? (DERC2080Bytecode as Hex)
+    : (DERC20Bytecode as Hex);
+
   return keccak256(
     encodePacked(
       ['bytes', 'bytes'],
-      [customBytecode ?? (DERC20Bytecode as Hex), initHashData],
+      [customBytecode ?? defaultBytecode, initHashData],
     ),
   ) as Hash;
 }
@@ -255,6 +278,7 @@ export function mineTokenAddress(
 ): TokenAddressMiningResult {
   const {
     prefix,
+    suffix,
     tokenFactory,
     initialSupply,
     recipient,
@@ -276,9 +300,25 @@ export function mineTokenAddress(
     throw new Error('TokenAddressMiner: startSalt cannot be negative');
   }
 
-  const normalizedPrefix = normalizePrefix(prefix);
+  const prefixTrimmed = prefix.trim();
+  const suffixTrimmed = suffix?.trim();
+
+  const normalizedPrefix =
+    prefixTrimmed.length === 0
+      ? undefined
+      : normalizeHexFragment(prefixTrimmed, 'prefix');
+  const normalizedSuffix =
+    !suffixTrimmed || suffixTrimmed.length === 0
+      ? undefined
+      : normalizeHexFragment(suffixTrimmed, 'suffix');
+
+  if (!normalizedPrefix && !normalizedSuffix) {
+    throw new Error('TokenAddressMiner: must provide prefix and/or suffix');
+  }
+
   const tokenInitHash = buildTokenInitHash({
     variant: tokenVariant,
+    tokenFactory,
     tokenData,
     initialSupply,
     recipient,
@@ -290,7 +330,14 @@ export function mineTokenAddress(
     ? {
         deployer: hook.deployer,
         initCodeHash: hook.initCodeHash,
-        prefix: hook.prefix ? normalizePrefix(hook.prefix) : undefined,
+        prefix:
+          hook.prefix && hook.prefix.trim().length > 0
+            ? normalizeHexFragment(hook.prefix, 'prefix')
+            : undefined,
+        suffix:
+          hook.suffix && hook.suffix.trim().length > 0
+            ? normalizeHexFragment(hook.suffix, 'suffix')
+            : undefined,
       }
     : undefined;
 
@@ -309,35 +356,40 @@ export function mineTokenAddress(
 
     // Compute token address using fast method (no checksum)
     const candidateRaw = computeCreate2AddressFast(tokenBuffer);
+    const candidateHex = candidateRaw.slice(2);
     iterations++;
 
-    if (candidateRaw.slice(2).startsWith(normalizedPrefix)) {
-      let hookAddressRaw: string | undefined;
-      if (hookBuffer) {
-        updateSaltInBuffer(hookBuffer, salt);
-        hookAddressRaw = computeCreate2AddressFast(hookBuffer);
-        if (
-          hookConfig?.prefix &&
-          !hookAddressRaw.slice(2).startsWith(hookConfig.prefix)
-        ) {
-          continue;
-        }
-      }
+    if (normalizedPrefix && !candidateHex.startsWith(normalizedPrefix)) continue;
+    if (normalizedSuffix && !candidateHex.endsWith(normalizedSuffix)) continue;
 
-      // Found a match! Convert to proper format for return
-      const saltHex = `0x${salt.toString(16).padStart(64, '0')}` as Hash;
-      return {
-        salt: saltHex,
-        tokenAddress: getAddress(candidateRaw) as Address,
-        iterations,
-        hookAddress: hookAddressRaw
-          ? (getAddress(hookAddressRaw) as Address)
-          : undefined,
-      };
+    let hookAddressRaw: string | undefined;
+    if (hookBuffer) {
+      updateSaltInBuffer(hookBuffer, salt);
+      hookAddressRaw = computeCreate2AddressFast(hookBuffer);
+      const hookHex = hookAddressRaw.slice(2);
+      if (hookConfig?.prefix && !hookHex.startsWith(hookConfig.prefix)) continue;
+      if (hookConfig?.suffix && !hookHex.endsWith(hookConfig.suffix)) continue;
     }
+
+    // Found a match! Convert to proper format for return
+    const saltHex = `0x${salt.toString(16).padStart(64, '0')}` as Hash;
+    return {
+      salt: saltHex,
+      tokenAddress: getAddress(candidateRaw) as Address,
+      iterations,
+      hookAddress: hookAddressRaw
+        ? (getAddress(hookAddressRaw) as Address)
+        : undefined,
+    };
   }
 
+  const constraints: string[] = [];
+  if (normalizedPrefix) constraints.push(`prefix ${prefixTrimmed}`);
+  if (normalizedSuffix) constraints.push(`suffix ${suffixTrimmed}`);
+
   throw new Error(
-    `TokenAddressMiner: could not find salt matching prefix ${prefix} within ${maxIterations} iterations`,
+    `TokenAddressMiner: could not find salt matching ${constraints.join(
+      ' and ',
+    )} within ${maxIterations} iterations`,
   );
 }

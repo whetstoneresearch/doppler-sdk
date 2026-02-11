@@ -40,6 +40,9 @@ Get price quotes across different Uniswap versions for optimal trading.
 ### 12. [Scheduled Multicurve Launch](./multicurve-scheduled-launch.ts)
 Create a multicurve auction that queues until a future start time using the scheduled initializer on Base.
 
+### 13. [Multicurve Vanity Launch (Market Cap)](./multicurve-vanity-by-marketcap.ts)
+Create a multicurve pool and mine a salt so the deployed token address ends with a chosen hex suffix (identifier). Launches on-chain (requires RPC + PRIVATE_KEY).
+
 ## Prerequisites
 
 Before running these examples, ensure you have:
