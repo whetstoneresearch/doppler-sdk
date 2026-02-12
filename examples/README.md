@@ -64,7 +64,11 @@ Deploy a decay multicurve pool, then simulate buy swaps across the fee schedule 
 
 Deploy a decay multicurve pool on Base mainnet using a simulation-first flow. Requires `CONFIRM_BASE_MAINNET=true` and only broadcasts when `EXECUTE_MAINNET=true`.
 
-### 16. [Base Mainnet Decay Multicurve Swap Simulation](./multicurve-decay-base-mainnet-simulate-swaps.ts)
+### 16. [Decay Multicurve with Vanity Suffix](./multicurve-decay-vanity-launch.ts)
+
+Full production-style decay multicurve launch with integrator, beneficiaries, multi-recipient vesting (1-year linear vest split between deployer and advisor), noOp migration/governance, and CREATE2 salt mining for a vanity token address suffix ("beef"). Demonstrates the complete builder pattern used by production apps.
+
+### 17. [Base Mainnet Decay Multicurve Swap Simulation](./multicurve-decay-base-mainnet-simulate-swaps.ts)
 
 Deploy a decay multicurve pool on Base mainnet, then simulate buys across fee-decay checkpoints using the Pure Markets swap flow. Requires `CONFIRM_BASE_MAINNET=true`.
 
