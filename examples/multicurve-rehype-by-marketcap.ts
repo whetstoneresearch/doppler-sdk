@@ -18,16 +18,15 @@ import './env'
 import { DopplerSDK, getAddresses } from '../src'
 import { parseEther, createPublicClient, createWalletClient, http, type Address } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
-import { baseSepolia } from 'viem/chains'
+import { base } from 'viem/chains'
 
 const privateKey = process.env.PRIVATE_KEY as `0x${string}`
-const rpcUrl = process.env.RPC_URL ?? baseSepolia.rpcUrls.default.http[0]
+const rpcUrl = process.env.RPC_URL ?? base.rpcUrls.default.http[0]
 
 if (!privateKey) throw new Error('PRIVATE_KEY is not set')
 
 // RehypeDopplerHook deployed on Base Sepolia
-const REHYPE_DOPPLER_HOOK_ADDRESS = '0x636a756cee08775cc18780f52dd90b634f18ad37' as Address
-
+const REHYPE_DOPPLER_HOOK_ADDRESS = getAddresses(base.id).rehypeDopplerHook as Address;
 // Destination address for buyback tokens
 const BUYBACK_DESTINATION = '0x0000000000000000000000000000000000000007' as Address
 
@@ -45,11 +44,11 @@ async function getEthPriceUsd(): Promise<number> {
 async function main() {
   const account = privateKeyToAccount(privateKey)
 
-  const publicClient = createPublicClient({ chain: baseSepolia, transport: http(rpcUrl) })
-  const walletClient = createWalletClient({ chain: baseSepolia, transport: http(rpcUrl), account })
+  const publicClient = createPublicClient({ chain: base, transport: http(rpcUrl) })
+  const walletClient = createWalletClient({ chain: base, transport: http(rpcUrl), account })
 
-  const sdk = new DopplerSDK({ publicClient, walletClient, chainId: baseSepolia.id })
-  const addresses = getAddresses(baseSepolia.id)
+  const sdk = new DopplerSDK({ publicClient, walletClient, chainId: base.id })
+  const addresses = getAddresses(base.id)
 
   // Fetch current ETH price
   console.log('Fetching current ETH price from CoinGecko...')

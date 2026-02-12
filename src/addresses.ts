@@ -122,6 +122,8 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     poolManager: '0x498581ff718922c3f8e6a244956af099b2652b2b' as Address,
     rehypeDopplerHook: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
       .RehypeDopplerHook as Address,
+    dopplerHookInitializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
+      .DopplerHookInitializer as Address,
     v2Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
       .UniswapV2Migrator as Address,
     v4Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
@@ -166,8 +168,7 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     ].DecayMulticurveInitializer as Address, // From Doppler decay multicurve deployments (Base Sepolia)
     dopplerHookInitializer:
       '0x98CD6478DeBe443069dB863Abb9626d94de9A544' as Address,
-    rehypeDopplerHook: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
-      .RehypeDopplerHook as Address,
+    rehypeDopplerHook: "0x636a756cee08775cc18780f52dd90b634f18ad37" as Address,
     dopplerLens: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
       .DopplerLensQuoter as Address,
     dopplerDeployer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
