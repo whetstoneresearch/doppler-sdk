@@ -26,8 +26,7 @@ const rpcUrl = process.env.RPC_URL ?? baseSepolia.rpcUrls.default.http[0]
 if (!privateKey) throw new Error('PRIVATE_KEY is not set')
 
 // RehypeDopplerHook deployed on Base Sepolia
-const REHYPE_DOPPLER_HOOK_ADDRESS = '0x636a756cee08775cc18780f52dd90b634f18ad37' as Address
-
+const REHYPE_DOPPLER_HOOK_ADDRESS = getAddresses(baseSepolia.id).rehypeDopplerHook as Address;
 // Destination address for buyback tokens
 const BUYBACK_DESTINATION = '0x0000000000000000000000000000000000000007' as Address
 
