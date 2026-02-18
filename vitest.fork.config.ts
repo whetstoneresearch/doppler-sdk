@@ -1,4 +1,4 @@
-import { defineConfig, mergeConfig } from 'vitest/config'
+import { defineConfig } from 'vitest/config'
 import baseConfig from './vitest.config'
 
 /**
@@ -51,32 +51,35 @@ function getIncludePatterns(): string[] {
   ]
 }
 
-export default mergeConfig(
-  baseConfig,
-  defineConfig({
-    test: {
-      include: getIncludePatterns(),
-      exclude: [
-        'node_modules/',
-        'dist/',
-        'test/setup/**',
-        'test/unit/**',
-        'test/e2e/**',
-      ],
-      // Fork tests run sequentially to share Anvil state
-      maxConcurrency: 1,
-      fileParallelism: false,
-      // Longer timeout for fork operations
-      testTimeout: 120_000,
-      hookTimeout: 120_000,
-      // Global setup starts Anvil
-      globalSetup: ['./test/setup/globalSetup.ts'],
-      // Setup file for custom matchers and snapshot hooks
-      setupFiles: ['./test/setup/vitest.setup.ts'],
-      // Env vars for fork mode
-      env: {
-        ANVIL_FORK_ENABLED: 'true',
-      },
+const base = baseConfig as any
+const baseTest = base.test ?? {}
+
+export default defineConfig({
+  ...base,
+  test: {
+    ...baseTest,
+    include: getIncludePatterns(),
+    exclude: [
+      'node_modules/',
+      'dist/',
+      'test/setup/**',
+      'test/unit/**',
+      'test/e2e/**',
+    ],
+    // Fork tests run sequentially to share Anvil state
+    maxConcurrency: 1,
+    fileParallelism: false,
+    // Longer timeout for fork operations
+    testTimeout: 120_000,
+    hookTimeout: 120_000,
+    // Global setup starts Anvil
+    globalSetup: ['./test/setup/globalSetup.ts'],
+    // Setup file for custom matchers and snapshot hooks
+    setupFiles: ['./test/setup/vitest.setup.ts'],
+    // Env vars for fork mode
+    env: {
+      ...(baseTest.env ?? {}),
+      ANVIL_FORK_ENABLED: 'true',
     },
-  })
-)
+  },
+})
