@@ -12,6 +12,9 @@ export {
   MulticurvePool,
   RehypeDopplerHook,
   RehypeDopplerHookMigrator,
+  OpeningAuction,
+  OpeningAuctionLifecycle,
+  OpeningAuctionPositionManager,
 } from './entities/auction';
 
 // Export quoter
@@ -25,8 +28,16 @@ export {
   StaticAuctionBuilder,
   DynamicAuctionBuilder,
   MulticurveBuilder,
+  OpeningAuctionBuilder,
 } from './builders';
 export type { BaseAuctionBuilder } from './builders/shared';
+export type {
+  OpeningAuctionConfig,
+  OpeningAuctionDopplerConfig,
+  ResolvedOpeningAuctionDopplerConfig,
+  CreateOpeningAuctionParams,
+  OpeningAuctionModuleAddressOverrides,
+} from './builders/OpeningAuctionBuilder';
 
 // Export all types
 export type {
@@ -60,6 +71,9 @@ export type {
   V4PoolKey,
   MulticurveBundleExactOutResult,
   MulticurveBundleExactInResult,
+  OpeningAuctionState,
+  OpeningAuctionCreateResult,
+  OpeningAuctionCompleteResult,
 
   // Configuration types
   DopplerSDKConfig,
@@ -103,6 +117,10 @@ export type { ModuleAddressOverrides } from './types';
 // Export enums
 export { LockablePoolStatus } from './types';
 export { RehypeFeeRoutingMode } from './types';
+export {
+  OpeningAuctionStatus,
+  OpeningAuctionPhase,
+} from './types';
 
 // Export addresses and utilities
 export {
@@ -156,9 +174,22 @@ export {
   BASIS_POINTS,
   FLAG_MASK,
   DOPPLER_FLAGS,
+  OPENING_AUCTION_FLAGS,
   DYNAMIC_FEE_FLAG,
   FEE_AMOUNT_MASK,
   DOPPLER_MAX_TICK_SPACING,
+  DEFAULT_OPENING_AUCTION_DURATION,
+  DEFAULT_OPENING_AUCTION_FEE,
+  DEFAULT_OPENING_AUCTION_MIN_ACCEPTABLE_TICK_TOKEN0,
+  DEFAULT_OPENING_AUCTION_MIN_ACCEPTABLE_TICK_TOKEN1,
+  DEFAULT_OPENING_AUCTION_MIN_LIQUIDITY,
+  DEFAULT_OPENING_AUCTION_INCENTIVE_SHARE_BPS,
+  DEFAULT_OPENING_AUCTION_SHARE_TO_AUCTION_BPS,
+  DEFAULT_OPENING_DOPPLER_DURATION,
+  DEFAULT_OPENING_DOPPLER_EPOCH_LENGTH,
+  DEFAULT_OPENING_DOPPLER_NUM_PD_SLUGS,
+  DEFAULT_OPENING_DOPPLER_FEE,
+  DEFAULT_OPENING_DOPPLER_TICK_SPACING,
   VALID_FEE_TIERS,
   V3_FEE_TIERS,
   V4_MAX_FEE,

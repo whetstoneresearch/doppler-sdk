@@ -6,7 +6,7 @@ import type {
   PoolInfo,
   SupportedPublicClient,
 } from './types';
-import type { SupportedChainId } from './addresses';
+import { getAddresses, type SupportedChainId } from './addresses';
 import { DopplerFactory } from './entities/DopplerFactory';
 import {
   StaticAuction,
@@ -14,6 +14,9 @@ import {
   MulticurvePool,
   RehypeDopplerHook,
   RehypeDopplerHookMigrator,
+  OpeningAuction,
+  OpeningAuctionLifecycle,
+  OpeningAuctionPositionManager,
 } from './entities/auction';
 import { Quoter } from './entities/quoter';
 import { Derc20 } from './entities/token';
@@ -21,7 +24,9 @@ import {
   StaticAuctionBuilder,
   DynamicAuctionBuilder,
   MulticurveBuilder,
+  OpeningAuctionBuilder,
 } from './builders';
+import { ZERO_ADDRESS } from './constants';
 import {
   DEFAULT_AIRLOCK_BENEFICIARY_SHARES,
   getAirlockBeneficiary,
@@ -108,6 +113,66 @@ export class DopplerSDK<C extends SupportedChainId = SupportedChainId> {
   }
 
   /**
+   * Get an OpeningAuction instance for interacting with an opening auction hook.
+   * @param hookAddress The address of the opening auction hook
+   */
+  async getOpeningAuction(hookAddress: Address): Promise<OpeningAuction> {
+    return new OpeningAuction(this.publicClient, this.walletClient, hookAddress);
+  }
+
+  /**
+   * Get an OpeningAuctionLifecycle instance for interacting with opening-auction completion flows.
+   * @param initializerAddress Optional OpeningAuctionInitializer override address
+   */
+  async getOpeningAuctionLifecycle(
+    initializerAddress?: Address,
+  ): Promise<OpeningAuctionLifecycle> {
+    const chainAddresses = getAddresses(this.chainId);
+    const resolvedInitializer =
+      initializerAddress ??
+      (chainAddresses.openingAuctionInitializer ?? ZERO_ADDRESS);
+
+    if (resolvedInitializer === ZERO_ADDRESS) {
+      throw new Error(
+        'OpeningAuctionInitializer address is not configured on this chain. ' +
+          'Pass initializerAddress to getOpeningAuctionLifecycle(), or override it via builder.withOpeningAuctionInitializer().',
+      );
+    }
+
+    return new OpeningAuctionLifecycle(
+      this.publicClient,
+      this.walletClient,
+      resolvedInitializer,
+    );
+  }
+
+  /**
+   * Get an OpeningAuctionPositionManager instance for placing/withdrawing opening-auction bids.
+   * @param positionManagerAddress Optional OpeningAuctionPositionManager override address
+   */
+  async getOpeningAuctionPositionManager(
+    positionManagerAddress?: Address,
+  ): Promise<OpeningAuctionPositionManager> {
+    const chainAddresses = getAddresses(this.chainId);
+    const resolvedPositionManager =
+      positionManagerAddress ??
+      (chainAddresses.openingAuctionPositionManager ?? ZERO_ADDRESS);
+
+    if (resolvedPositionManager === ZERO_ADDRESS) {
+      throw new Error(
+        'OpeningAuctionPositionManager address is not configured on this chain. ' +
+          'Pass positionManagerAddress to getOpeningAuctionPositionManager(), or resolve it from the initializer via OpeningAuctionLifecycle.getPositionManager().',
+      );
+    }
+
+    return new OpeningAuctionPositionManager(
+      this.publicClient,
+      this.walletClient,
+      resolvedPositionManager,
+    );
+  }
+
+  /**
    * Get a MulticurvePool instance for interacting with a V4 multicurve pool
    * @param tokenAddress The address of the token created by the auction (called "asset" in contracts; V4 pools don't have addresses, so the token is used as the lookup key)
    */
@@ -164,6 +229,13 @@ export class DopplerSDK<C extends SupportedChainId = SupportedChainId> {
    */
   buildMulticurveAuction(): MulticurveBuilder<C> {
     return new MulticurveBuilder(this.chainId);
+  }
+
+  /**
+   * Create a new opening auction builder
+   */
+  buildOpeningAuction(): OpeningAuctionBuilder<C> {
+    return new OpeningAuctionBuilder(this.chainId);
   }
 
   /**
