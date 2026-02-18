@@ -6,6 +6,7 @@ import { type Address, type Chain } from 'viem';
 import {
   base,
   baseSepolia,
+  sepolia,
   mainnet,
   ink,
   unichain,
@@ -30,6 +31,7 @@ const CHAIN_NAME_TO_ID: Record<string, SupportedChainId> = {
   base: CHAIN_IDS.BASE,
   'base-sepolia': CHAIN_IDS.BASE_SEPOLIA,
   mainnet: CHAIN_IDS.MAINNET,
+  'eth-sepolia': CHAIN_IDS.ETH_SEPOLIA,
   ink: CHAIN_IDS.INK,
   unichain: CHAIN_IDS.UNICHAIN,
   'unichain-sepolia': CHAIN_IDS.UNICHAIN_SEPOLIA,
@@ -89,6 +91,7 @@ const testResults: TestResult[] = [];
 // Chain ID to name mapping
 const CHAIN_ID_NAMES: Record<number, string> = {
   1: 'Mainnet',
+  11155111: 'Ethereum Sepolia',
   8453: 'Base',
   84532: 'Base Sepolia',
   57073: 'Ink',
@@ -130,6 +133,10 @@ const CHAINS: Partial<Record<SupportedChainId, { chain: Chain; rpc?: string }>> 
     [CHAIN_IDS.MAINNET]: {
       chain: mainnet,
       rpc: getAlchemyRpc('eth-mainnet'),
+    },
+    [CHAIN_IDS.ETH_SEPOLIA]: {
+      chain: sepolia,
+      rpc: getAlchemyRpc('eth-sepolia'),
     },
     [CHAIN_IDS.BASE]: {
       chain: base,

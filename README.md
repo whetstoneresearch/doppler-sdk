@@ -1165,6 +1165,26 @@ pnpm test airlock-whitelisting
 ALCHEMY_API_KEY=your_key_here pnpm test airlock-whitelisting
 ```
 
+To run fork tests (Anvil):
+
+```bash
+# all fork tests
+ALCHEMY_API_KEY=your_key_here pnpm test:fork
+
+# chain-specific fork tests
+ALCHEMY_API_KEY=your_key_here TEST_CHAIN=base pnpm test:fork
+ALCHEMY_API_KEY=your_key_here TEST_CHAIN=base-sepolia pnpm test:fork
+ALCHEMY_API_KEY=your_key_here TEST_CHAIN=mainnet pnpm test:fork
+ALCHEMY_API_KEY=your_key_here TEST_CHAIN=eth-sepolia pnpm test:fork
+```
+
+You can also provide chain-specific RPC URLs directly:
+
+```bash
+ETH_MAINNET_RPC_URL=https://... TEST_CHAIN=mainnet pnpm test:fork
+ETH_SEPOLIA_RPC_URL=https://... TEST_CHAIN=eth-sepolia pnpm test:fork
+```
+
 ## Migration from Previous SDKs
 
 If you're migrating from `doppler-v3-sdk` or `doppler-v4-sdk`, see our [Migration Guide](./docs/migration-guide.md).

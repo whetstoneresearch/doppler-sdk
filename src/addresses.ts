@@ -80,7 +80,8 @@ const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as Address;
 export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
   [CHAIN_IDS.MAINNET]: {
     airlock: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MAINNET].Airlock as Address,
-    tokenFactory: ZERO_ADDRESS,
+    tokenFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MAINNET]
+      .CloneERC20Factory as Address,
     v3Initializer: ZERO_ADDRESS,
     v3Quoter: ZERO_ADDRESS,
     v4Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MAINNET]
@@ -95,7 +96,7 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     dopplerLens: ZERO_ADDRESS,
     dopplerDeployer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MAINNET]
       .DopplerDeployer as Address,
-    poolManager: ZERO_ADDRESS,
+    poolManager: '0x000000000004444c5dc75cB358380D2e3dE08A90' as Address,
     v2Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MAINNET]
       .UniswapV2Migrator as Address,
     v4Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MAINNET]
@@ -107,7 +108,7 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       .NoOpGovernanceFactory as Address,
     streamableFeesLocker: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MAINNET]
       .StreamableFeesLocker as Address,
-    universalRouter: ZERO_ADDRESS,
+    universalRouter: '0x66a9893cc07d91d95644aedd05d03f95e1dba8af' as Address,
     permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3' as Address,
     weth: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' as Address,
     uniswapV2Factory: '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f' as Address,
@@ -117,7 +118,8 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
   [CHAIN_IDS.ETH_SEPOLIA]: {
     airlock: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ETH_SEPOLIA]
       .Airlock as Address,
-    tokenFactory: ZERO_ADDRESS,
+    tokenFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ETH_SEPOLIA]
+      .CloneERC20Factory as Address,
     v3Initializer: ZERO_ADDRESS,
     v3Quoter: ZERO_ADDRESS,
     v4Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ETH_SEPOLIA]
@@ -132,7 +134,7 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     dopplerLens: ZERO_ADDRESS,
     dopplerDeployer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ETH_SEPOLIA]
       .DopplerDeployer as Address,
-    poolManager: ZERO_ADDRESS,
+    poolManager: '0xE03A1074c86CFeDd5C142C4F04F1a1536e203543' as Address,
     v2Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ETH_SEPOLIA]
       .UniswapV2Migrator as Address,
     v4Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ETH_SEPOLIA]
@@ -144,10 +146,10 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       .NoOpGovernanceFactory as Address,
     streamableFeesLocker: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ETH_SEPOLIA]
       .StreamableFeesLocker as Address,
-    universalRouter: ZERO_ADDRESS,
+    universalRouter: '0x3A9D48AB9751398BbFa63ad67599Bb04e4BdF98b' as Address,
     permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3' as Address,
     weth: '0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14' as Address,
-    uniswapV4Quoter: ZERO_ADDRESS,
+    uniswapV4Quoter: '0x61b3f2011a92d183c7dbadbda940a7555ccf9227' as Address,
   },
   [CHAIN_IDS.BASE]: {
     airlock: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE].Airlock as Address,

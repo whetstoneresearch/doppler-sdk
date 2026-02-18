@@ -13,6 +13,8 @@ import baseConfig from './vitest.config'
  * To run tests for a specific chain only:
  *   TEST_CHAIN=base pnpm test:fork
  *   TEST_CHAIN=base-sepolia pnpm test:fork
+ *   TEST_CHAIN=mainnet pnpm test:fork
+ *   TEST_CHAIN=eth-sepolia pnpm test:fork
  *   TEST_CHAIN=monad pnpm test:fork
  */
 
@@ -28,7 +30,7 @@ function getIncludePatterns(): string[] {
     ]
   }
 
-  // Map chain names to test patterns (fork tests: base, base-sepolia only)
+  // Map chain names to chain-specific fork test patterns.
   const chainPatterns: Record<string, string[]> = {
     base: [
       'test/fork/base/**/*.test.ts',
@@ -38,6 +40,9 @@ function getIncludePatterns(): string[] {
       'test/fork/base-sepolia/**/*.test.ts',
       'test/integration/**/*.test.ts',
     ],
+    mainnet: ['test/fork/mainnet/**/*.test.ts'],
+    'eth-sepolia': ['test/fork/eth-sepolia/**/*.test.ts'],
+    monad: ['test/fork/**/*.monad-mainnet.test.ts'],
   }
 
   return chainPatterns[testChain] || [

@@ -72,6 +72,24 @@ Full production-style decay multicurve launch with integrator, beneficiaries, mu
 
 Deploy a decay multicurve pool on Base mainnet, then simulate buys across fee-decay checkpoints using the Pure Markets swap flow. Requires `CONFIRM_BASE_MAINNET=true`.
 
+### 18. [Scheduled Multicurve Launch (Ethereum Sepolia)](./multicurve-scheduled-eth-sepolia.ts)
+
+Create and simulate a multicurve launch on Ethereum Sepolia using no-op governance. Launches immediately tradable by default; set `ETH_SEPOLIA_START_DELAY_SECONDS>0` for scheduled mode. Broadcasts by default; set `EXECUTE_ETH_SEPOLIA=false` for simulation-only mode.
+
+### 19. [Swap + Transfer (Ethereum Sepolia)](./multicurve-swap-transfer-eth-sepolia.ts)
+
+Use an existing Ethereum Sepolia multicurve token to quote and execute a buy swap through Universal Router, then optionally transfer purchased tokens to another address.
+
+Quick run:
+
+```bash
+export PRIVATE_KEY=0x...
+export ALCHEMY_API_KEY=...
+export TOKEN_ADDRESS=0x... # launched multicurve token
+export TRANSFER_TO=0x...   # optional
+pnpm tsx examples/multicurve-swap-transfer-eth-sepolia.ts
+```
+
 ## Prerequisites
 
 Before running these examples, ensure you have:
