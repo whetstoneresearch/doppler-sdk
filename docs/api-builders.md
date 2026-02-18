@@ -346,21 +346,177 @@ All presets use the curated tick ranges from `DEFAULT_MULTICURVE_*` constants. S
 
 ---
 
+## OpeningAuctionBuilder (Opening Auction -> Doppler)
+
+Use this builder when launch liquidity starts in an OpeningAuction hook and then transitions into a Doppler hook.
+
+Methods (chainable):
+
+- tokenConfig(params)
+  - Standard: `{ name, symbol, tokenURI, yearlyMintRate? }`
+  - Doppler404: `{ type: 'doppler404', name, symbol, baseURI, unit? }`
+- saleConfig({ initialSupply, numTokensToSell, numeraire })
+- openingAuctionConfig({ auctionDuration, minAcceptableTickToken0, minAcceptableTickToken1, incentiveShareBps, tickSpacing, fee, minLiquidity, shareToAuctionBps })
+  - All fields are required
+- dopplerConfig({ minProceeds, maxProceeds, startTick, endTick, duration?, epochLength?, gamma?, numPdSlugs?, fee?, tickSpacing? })
+  - Defaults: `duration = 7 days`, `epochLength = 12 hours`, `numPdSlugs = 5`, `fee = 10000`, `tickSpacing = 30`
+  - `gamma` is computed automatically when omitted
+- withVesting({ duration?, cliffDuration?, recipients?, amounts? } | undefined)
+- withGovernance(GovernanceOption)
+  - Optional in builder; defaults to no-op on no-op-enabled chains, default governance otherwise
+- withMigration(MigrationConfig)
+- withUserAddress(address)
+- withIntegrator(address?)
+- withTime({ startTimeOffset?, startingTime?, blockTimestamp? } | undefined)
+  - `startTimeOffset` and `startingTime` are mutually exclusive
+- Address overrides (optional):
+  - withAirlock(address)
+  - withTokenFactory(address)
+  - withPoolManager(address)
+  - withDopplerDeployer(address)
+  - withGovernanceFactory(address)
+  - withV2Migrator(address)
+  - withV4Migrator(address)
+  - withNoOpMigrator(address)
+  - withOpeningAuctionInitializer(address)
+  - withOpeningAuctionPositionManager(address)
+- build(): `CreateOpeningAuctionParams`
+
+Validation highlights:
+- `initialSupply > 0`, `numTokensToSell > 0`, and `numTokensToSell <= initialSupply`
+- `openingAuction.shareToAuctionBps` must be in `(0, 10000]`
+- `openingAuction.incentiveShareBps` must be in `[0, 10000]`
+- `openingAuction.tickSpacing` must be divisible by `doppler.tickSpacing`
+- `doppler.duration` must be divisible by `doppler.epochLength`
+- Tick direction depends on token ordering against `numeraire`:
+  - token expected as currency1: `startTick <= endTick`
+  - token expected as currency0: `startTick >= endTick`
+
+Example:
+```ts
+const openingParams = sdk
+  .buildOpeningAuction()
+  .tokenConfig({ name: 'My Token', symbol: 'MTK', tokenURI: 'https://example.com/mtk.json' })
+  .saleConfig({
+    initialSupply: parseEther('1_000_000'),
+    numTokensToSell: parseEther('900_000'),
+    numeraire: WETH,
+  })
+  .openingAuctionConfig({
+    auctionDuration: 86400,
+    minAcceptableTickToken0: -34020,
+    minAcceptableTickToken1: -34020,
+    incentiveShareBps: 1000,
+    tickSpacing: 60,
+    fee: 3000,
+    minLiquidity: 10n ** 15n,
+    shareToAuctionBps: 10000,
+  })
+  .dopplerConfig({
+    minProceeds: parseEther('5'),
+    maxProceeds: parseEther('1000'),
+    startTick: -120000,
+    endTick: -90000,
+    tickSpacing: 30,
+  })
+  .withGovernance({ type: 'default' })
+  .withMigration({ type: 'uniswapV2' })
+  .withUserAddress(user)
+  .build()
+
+const createSim = await sdk.factory.simulateCreateOpeningAuction(openingParams)
+const created = await createSim.execute()
+```
+
+Lifecycle usage notes:
+- Read lifecycle state via initializer: `const lifecycle = await sdk.getOpeningAuctionLifecycle(initializerAddress)` then `await lifecycle.getState(asset)`
+- Settle before completion:
+  - Explicit: `await (await sdk.getOpeningAuction(state.openingAuctionHook)).settleAuction()`
+  - Or let completion auto-settle: `sdk.factory.completeOpeningAuction({ asset, autoSettle: true })`
+- Complete into Doppler (auto-mined salt):
+  - `const completionSim = await sdk.factory.simulateCompleteOpeningAuction({ asset, initializerAddress })`
+  - `const completion = await completionSim.execute()` (may remine if block time/state changes between simulation and execution)
+- Incentive wrappers are available on factory (and lifecycle entity equivalents):
+  - `simulateRecoverOpeningAuctionIncentives` / `recoverOpeningAuctionIncentives`
+  - `simulateSweepOpeningAuctionIncentives` / `sweepOpeningAuctionIncentives`
+
+Phase 2 bid management (position manager):
+- Resolve the onchain `OpeningAuctionPositionManager`:
+  - via SDK chain addresses: `const pm = await sdk.getOpeningAuctionPositionManager()`
+  - or via initializer (recommended when addresses are not configured): `const pmAddress = await lifecycle.getPositionManager()` then `await sdk.getOpeningAuctionPositionManager(pmAddress)`
+- Use the pool key from initializer state: `const { openingAuctionPoolKey } = await lifecycle.getState(asset)`
+- Place/withdraw bids as Uniswap V4 liquidity positions. Use simulation to learn the required token deltas:
+
+```ts
+import { OpeningAuctionPositionManager } from '@whetstone-research/doppler-sdk'
+import { zeroHash } from 'viem'
+
+const lifecycle = await sdk.getOpeningAuctionLifecycle(initializerAddress)
+const state = await lifecycle.getState(asset)
+
+const pmAddress = await lifecycle.getPositionManager()
+const pm = await sdk.getOpeningAuctionPositionManager(pmAddress)
+
+// Optional: explicit hookData encoding (otherwise the position manager encodes msg.sender internally)
+const hookData = OpeningAuctionPositionManager.encodeOwnerHookData(account.address)
+
+// NOTE: `liquidity` is Uniswap V4 liquidity units; pick a value and iterate using simulation + decoded deltas.
+const tickLower = 0
+const salt = zeroHash
+
+const sim = await pm.simulatePlaceBid({
+  key: state.openingAuctionPoolKey,
+  tickLower,
+  liquidity: 1_000_000n,
+  salt,
+  hookData,
+  account: account.address,
+})
+console.log('BalanceDelta:', sim.decoded) // negative amounts mean you pay in
+
+// Broadcast:
+// await pm.placeBid({ key: state.openingAuctionPoolKey, tickLower, liquidity: 1_000_000n, salt, hookData })
+```
+
+Position ID resolution (for incentive claims):
+- The opening-auction hook assigns an onchain `positionId`. Use it to query/claim incentives:
+  - `await opening.getPositionId({ owner, tickLower, tickUpper, salt })`
+  - or `await opening.claimIncentivesByPositionKey({ owner, tickLower, tickUpper, salt })`
+
+Withdrawals during the active auction must be full:
+- The hook disallows partial removals while the auction is active.
+- Either track the exact liquidity you placed, or use `withdrawFullBid(...)` which reads onchain liquidity first:
+
+```ts
+const { transactionHash } = await pm.withdrawFullBid({
+  openingAuctionHookAddress: state.openingAuctionHook,
+  key: state.openingAuctionPoolKey,
+  tickLower,
+  salt,
+  hookData,
+})
+console.log('withdraw tx:', transactionHash)
+```
+
+---
+
 ## Build Results
 
 - Static: `CreateStaticAuctionParams` with fields: `token`, `sale`, `pool`, optional `vesting`, `governance`, `migration`, `integrator`, `userAddress`
 - Dynamic: `CreateDynamicAuctionParams` with fields: `token`, `sale`, `auction`, `pool`, optional `vesting`, `governance`, `migration`, `integrator`, `userAddress`, optional `startTimeOffset`, optional `blockTimestamp`
 - Multicurve: `CreateMulticurveParams` with fields: `token`, `sale`, `pool` (with `curves`), optional `vesting`, `governance`, `migration`, `integrator`, `userAddress`
+- Opening auction: `CreateOpeningAuctionParams` with fields: `token`, `sale`, `openingAuction`, `doppler`, optional `vesting`, `governance`, `migration`, `integrator`, `userAddress`, optional `startTimeOffset`, optional `startingTime`, optional `blockTimestamp`, optional module overrides
 
 Pass the built object directly to the factory:
 ```ts
 const { poolAddress, tokenAddress } = await sdk.factory.createStaticAuction(staticParams)
 const { hookAddress, tokenAddress: token2, poolId } = await sdk.factory.createDynamicAuction(dynamicParams)
 const { tokenAddress: token3, poolId: poolId3 } = await sdk.factory.createMulticurve(multicurveParams)
+const { tokenAddress: token4, openingAuctionHookAddress } = await sdk.factory.createOpeningAuction(openingParams)
 ```
 
 Notes:
 - For doppler404 tokens, ensure `doppler404Factory` is configured on your target chain (see `src/addresses.ts`).
 - Doppler404 tokenConfig supports optional `unit?: bigint` which defaults to `1000` when omitted.
 - `integrator` defaults to zero address when omitted.
-- `withTime` is only relevant to dynamic auctions.
+- `withTime` is relevant to dynamic and opening-auction builders.

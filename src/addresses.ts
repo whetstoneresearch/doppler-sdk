@@ -34,6 +34,8 @@ export interface ChainAddresses {
   // Multicurve initializer (V4) — optional per chain
   v4MulticurveInitializer?: Address;
   v4ScheduledMulticurveInitializer?: Address;
+  openingAuctionInitializer?: Address;
+  openingAuctionPositionManager?: Address;
 
   // DopplerHook system (for RehypeDopplerHook support)
   dopplerHookInitializer?: Address;
@@ -112,6 +114,9 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     v4ScheduledMulticurveInitializer: GENERATED_DOPPLER_DEPLOYMENTS[
       CHAIN_IDS.BASE
     ].UniswapV4ScheduledMulticurveInitializer as Address, // From Doppler scheduled multicurve deployments (Base mainnet)
+    // Opening auction slots reserved for phase-1 lifecycle support (not deployed on Base yet)
+    openingAuctionInitializer: ZERO_ADDRESS,
+    openingAuctionPositionManager: ZERO_ADDRESS,
     dopplerLens: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
       .DopplerLensQuoter as Address,
     dopplerDeployer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
@@ -156,6 +161,11 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     v4ScheduledMulticurveInitializer: GENERATED_DOPPLER_DEPLOYMENTS[
       CHAIN_IDS.BASE_SEPOLIA
     ].UniswapV4ScheduledMulticurveInitializer as Address, // From Doppler scheduled multicurve deployments (Base Sepolia)
+    // Opening Auction contracts (deployed Feb 2025)
+    openingAuctionInitializer:
+      '0x3dCd35945Dc86a9FaA80846B06CB4676961d0AEa' as Address,
+    openingAuctionPositionManager:
+      '0x957CA7472ced1C1B3608152F83E0E69F975a37a9' as Address,
     dopplerHookInitializer:
       '0x98CD6478DeBe443069dB863Abb9626d94de9A544' as Address,
     rehypeDopplerHook: '0x636a756cee08775cc18780f52dd90b634f18ad37' as Address,
@@ -336,7 +346,7 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3' as Address,
     bundler: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_MAINNET]
       .Bundler as Address,
-    weth: '0x3bd359c1119da7da1d913d1c4d2b7c461115433a' as Address, // INFO: this is wmon, but we treat it as weth because mon is native 
+    weth: '0x3bd359c1119da7da1d913d1c4d2b7c461115433a' as Address, // INFO: this is wmon, but we treat it as weth because mon is native
     uniswapV4Quoter: '0xa222dd357a9076d1091ed6aa2e16c9742dd26891' as Address,
   },
 };

@@ -99,6 +99,24 @@ export const DEFAULT_V4_INITIAL_VOTING_PERIOD = 50400; // 14 hours
 export const DEFAULT_V4_INITIAL_PROPOSAL_THRESHOLD = 0n;
 export const DEFAULT_V4_YEARLY_MINT_RATE = parseEther('0.02'); // 2% yearly mint rate
 
+// Opening Auction (Phase 1 lifecycle) default parameters
+// Defaults mirror current opening-auction test/reference config in doppler.
+export const OPENING_AUCTION_BPS = 10_000;
+export const DEFAULT_OPENING_AUCTION_DURATION = SECONDS_PER_DAY; // 1 day
+export const DEFAULT_OPENING_AUCTION_MIN_ACCEPTABLE_TICK_TOKEN0 = -34_020;
+export const DEFAULT_OPENING_AUCTION_MIN_ACCEPTABLE_TICK_TOKEN1 = -34_020;
+export const DEFAULT_OPENING_AUCTION_INCENTIVE_SHARE_BPS = 1000; // 10%
+export const DEFAULT_OPENING_AUCTION_FEE = 3000; // 0.3%
+export const DEFAULT_OPENING_AUCTION_MIN_LIQUIDITY = 10n ** 15n;
+export const DEFAULT_OPENING_AUCTION_SHARE_TO_AUCTION_BPS = OPENING_AUCTION_BPS;
+
+// Doppler handoff defaults for opening-auction transitions
+export const DEFAULT_OPENING_DOPPLER_DURATION = DEFAULT_AUCTION_DURATION; // 7 days
+export const DEFAULT_OPENING_DOPPLER_EPOCH_LENGTH = DEFAULT_EPOCH_LENGTH; // 12 hours
+export const DEFAULT_OPENING_DOPPLER_NUM_PD_SLUGS = DEFAULT_PD_SLUGS;
+export const DEFAULT_OPENING_DOPPLER_FEE = FEE_TIERS.HIGH; // 1%
+export const DEFAULT_OPENING_DOPPLER_TICK_SPACING = DOPPLER_MAX_TICK_SPACING;
+
 // V4 Multicurve Default Tick Ranges
 // Based on market cap tiers: LOW ($7.5k -> $30k), MEDIUM ($50k -> $150k), HIGH ($250k -> $750k)
 // Calculated for 1B token supply, $4500 numeraire (e.g., WETH on Base)
@@ -131,6 +149,18 @@ export const DOPPLER_FLAGS = BigInt(
     (1 << 11) | // BEFORE_ADD_LIQUIDITY_FLAG
     (1 << 7) | // BEFORE_SWAP_FLAG
     (1 << 6) | // AFTER_SWAP_FLAG
+    (1 << 5), // BEFORE_DONATE_FLAG
+);
+
+// V4 Hook Flags for OpeningAuction
+export const OPENING_AUCTION_FLAGS = BigInt(
+  (1 << 13) | // BEFORE_INITIALIZE_FLAG
+    (1 << 12) | // AFTER_INITIALIZE_FLAG
+    (1 << 11) | // BEFORE_ADD_LIQUIDITY_FLAG
+    (1 << 10) | // BEFORE_REMOVE_LIQUIDITY_FLAG
+    (1 << 9) | // AFTER_ADD_LIQUIDITY_FLAG
+    (1 << 8) | // AFTER_REMOVE_LIQUIDITY_FLAG
+    (1 << 7) | // BEFORE_SWAP_FLAG
     (1 << 5), // BEFORE_DONATE_FLAG
 );
 

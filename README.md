@@ -186,6 +186,75 @@ console.log('Hook address:', result.hookAddress)
 console.log('Token address:', result.tokenAddress)
 ```
 
+### Opening Auction (Lifecycle + Bid Management)
+
+Support includes:
+- `sdk.buildOpeningAuction()` for `CreateOpeningAuctionParams`
+- `sdk.factory.simulateCreateOpeningAuction(params)` and `sdk.factory.createOpeningAuction(params)`
+- `sdk.getOpeningAuction(hookAddress)` for hook reads + `settleAuction()` / `claimIncentives()`
+- `sdk.factory.simulateCompleteOpeningAuction(...)` and `sdk.factory.completeOpeningAuction(...)` for handoff to Doppler
+- `sdk.getOpeningAuctionLifecycle(initializerAddress?)` for initializer-level state + complete/recover/sweep helpers
+- `sdk.getOpeningAuctionPositionManager(positionManagerAddress?)` for placing/withdrawing opening-auction bids
+  - Resolve the address via `await (await sdk.getOpeningAuctionLifecycle(initializerAddress)).getPositionManager()` when chain defaults are not configured
+  - Resolve `positionId` for incentives via `opening.getPositionId(...)` or `opening.claimIncentivesByPositionKey(...)` (no log parsing required)
+
+> **Base caveat:** on Base mainnet (`chainId = 8453`), `openingAuctionInitializer` and `openingAuctionPositionManager` default to `0x0000000000000000000000000000000000000000` until deployment. Override with `.withOpeningAuctionInitializer('0x...')` / `.withOpeningAuctionPositionManager('0x...')` (or pass explicit addresses) before using opening-auction create/completion/bid flows there.
+
+```typescript
+const params = sdk
+  .buildOpeningAuction()
+  .tokenConfig({
+    name: 'My Token',
+    symbol: 'MTK',
+    tokenURI: 'https://example.com/metadata.json',
+  })
+  .saleConfig({
+    initialSupply: parseEther('1000000'),
+    numTokensToSell: parseEther('900000'),
+    numeraire: '0x...',
+  })
+  .openingAuctionConfig({
+    auctionDuration: 3600,
+    minAcceptableTickToken0: -887220,
+    minAcceptableTickToken1: -887220,
+    incentiveShareBps: 500,
+    tickSpacing: 60,
+    fee: 3000,
+    minLiquidity: 1n,
+    shareToAuctionBps: 8000,
+  })
+  .dopplerConfig({
+    minProceeds: parseEther('10'),
+    maxProceeds: parseEther('100'),
+    startTick: -69080,
+    endTick: -92103,
+  })
+  .withMigration({ type: 'uniswapV4', fee: 3000, tickSpacing: 60 })
+  .withUserAddress('0x...')
+  .withOpeningAuctionInitializer('0x...') // required on Base until deployed
+  .build()
+
+const sim = await sdk.factory.simulateCreateOpeningAuction(params)
+const created = await sim.execute()
+
+const opening = await sdk.getOpeningAuction(created.openingAuctionHookAddress)
+await opening.getPhase()
+
+const lifecycle = await sdk.getOpeningAuctionLifecycle('0x...')
+await lifecycle.getState(created.tokenAddress)
+
+await sdk.factory.completeOpeningAuction({
+  asset: created.tokenAddress,
+  initializerAddress: '0x...',
+})
+```
+
+`completeOpeningAuction` auto-settles and auto-mines `dopplerSalt` when omitted; because completion mining can race with block timestamps/state changes, the SDK may re-mine and retry a few times if needed. `simulateCompleteOpeningAuction` requires the opening auction to already be settled.
+
+Position-manager bid wrappers are available, but bid sizing is still “advanced user”: `liquidity` is Uniswap V4 liquidity units. Use `simulatePlaceBid(...)` / `simulateWithdrawBid(...)` to inspect the `BalanceDelta` (token amounts in/out) and iterate. During the active auction, liquidity withdrawals must be full (no partial removals); use `withdrawFullBid(...)` to read the onchain liquidity and withdraw safely.
+
+See [examples/opening-auction-lifecycle.ts](./examples/opening-auction-lifecycle.ts) for the full builder/factory/lifecycle flow, and [examples/opening-auction-bidding.ts](./examples/opening-auction-bidding.ts) for the bid-management pattern + positionId resolution.
+
 ### Multicurve Auction (V4 Multicurve Initializer)
 
 Multicurve auctions use a Uniswap V4-style initializer that seeds liquidity across multiple curves in a single pool. This enables richer distributions and can be combined with any supported migration path (V2, V3, V4, or NoOp).

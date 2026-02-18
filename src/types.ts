@@ -63,6 +63,35 @@ export interface DynamicAuctionConfig {
   numPdSlugs?: number; // Price discovery slugs (optional)
 }
 
+// Opening Auction configuration
+export interface OpeningAuctionConfig {
+  auctionDuration: number; // in seconds
+  minAcceptableTickToken0: number;
+  minAcceptableTickToken1: number;
+  incentiveShareBps: number;
+  tickSpacing: number;
+  fee: number; // e.g., 3000 for 0.3%
+  minLiquidity: bigint;
+  shareToAuctionBps: number;
+}
+
+// Doppler handoff configuration used by opening-auction initializer
+export interface OpeningAuctionDopplerConfig {
+  minProceeds: bigint;
+  maxProceeds: bigint;
+  startTick: number;
+  endTick: number;
+  epochLength: number; // in seconds
+  duration: number; // in seconds
+  gamma?: number;
+  numPdSlugs?: number;
+  fee: number; // e.g., 10000 for 1%
+  tickSpacing: number;
+  // Optional time controls for deterministic simulations/builds
+  startTimeOffset?: number;
+  startingTime?: number;
+}
+
 // Vesting configuration
 export interface VestingConfig {
   duration: number; // in seconds
@@ -142,6 +171,22 @@ export enum LockablePoolStatus {
   Uninitialized = 0,
   Initialized = 1,
   Locked = 2,
+  Exited = 3,
+}
+
+// Opening auction phase (hook-level)
+export enum OpeningAuctionPhase {
+  NotStarted = 0,
+  Active = 1,
+  Closed = 2,
+  Settled = 3,
+}
+
+// Opening auction status (initializer-level)
+export enum OpeningAuctionStatus {
+  Uninitialized = 0,
+  AuctionActive = 1,
+  DopplerActive = 2,
   Exited = 3,
 }
 
@@ -255,6 +300,51 @@ export interface CreateDynamicAuctionParams<
   // Time configuration (internal use)
   startTimeOffset?: number;
   blockTimestamp?: number; // Optional: use this block timestamp instead of fetching latest
+
+  // Optional transaction gas limit override for the create() transaction
+  // If omitted, SDK will default to 13,500,000 gas for create()
+  gas?: bigint;
+
+  // Optional address overrides for on-chain modules used during encoding/creation
+  modules?: ModuleAddressOverrides;
+}
+
+// Create Opening Auction parameters
+export interface CreateOpeningAuctionParams<
+  C extends SupportedChainId = SupportedChainId,
+> {
+  // Token configuration
+  token: TokenConfig;
+
+  // Sale configuration
+  sale: SaleConfig;
+
+  // Opening auction configuration
+  openingAuction: OpeningAuctionConfig;
+
+  // Doppler handoff configuration
+  doppler: OpeningAuctionDopplerConfig;
+
+  // Vesting configuration (optional)
+  vesting?: VestingConfig;
+
+  // Governance configuration (required). Use `{ type: 'noOp' }` where enabled,
+  // `{ type: 'default' }` for standard defaults, or `{ type: 'custom', ... }` to customize.
+  governance: GovernanceOption<C>;
+
+  // Explicit Migration Configuration
+  migration: MigrationConfig;
+
+  // Integrator details
+  integrator?: Address;
+  userAddress: Address;
+
+  // Optional timing controls for Doppler handoff start
+  startTimeOffset?: number;
+  startingTime?: number;
+
+  // Optional: use this block timestamp instead of fetching latest
+  blockTimestamp?: number;
 
   // Optional transaction gas limit override for the create() transaction
   // If omitted, SDK will default to 13,500,000 gas for create()
@@ -618,6 +708,44 @@ export interface HookInfo {
   maximumProceeds: bigint;
 }
 
+export interface OpeningAuctionPosition {
+  owner: Address;
+  tickLower: number;
+  tickUpper: number;
+  liquidity: bigint;
+  rewardDebtX128: bigint;
+  hasClaimedIncentives: boolean;
+}
+
+export interface OpeningAuctionState {
+  numeraire: Address;
+  auctionStartTime: bigint;
+  auctionEndTime: bigint;
+  auctionTokens: bigint;
+  dopplerTokens: bigint;
+  status: OpeningAuctionStatus;
+  openingAuctionHook: Address;
+  dopplerHook: Address;
+  openingAuctionPoolKey: V4PoolKey;
+  dopplerInitData: `0x${string}`;
+  isToken0: boolean;
+}
+
+export interface OpeningAuctionCreateResult {
+  tokenAddress: Address;
+  openingAuctionHookAddress: Address;
+  transactionHash: string;
+  createParams: CreateParams;
+  minedSalt: `0x${string}`;
+}
+
+export interface OpeningAuctionCompleteResult {
+  asset: Address;
+  dopplerHookAddress: Address;
+  transactionHash: string;
+  dopplerSalt: `0x${string}`;
+}
+
 // Quote result type
 export interface QuoteResult {
   amountOut: bigint;
@@ -773,6 +901,8 @@ export interface ModuleAddressOverrides {
   v4Initializer?: Address;
   v4MulticurveInitializer?: Address;
   v4ScheduledMulticurveInitializer?: Address;
+  openingAuctionInitializer?: Address;
+  openingAuctionPositionManager?: Address;
   dopplerHookInitializer?: Address;
 
   // DopplerHooks

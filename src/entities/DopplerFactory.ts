@@ -10,11 +10,13 @@ import {
   keccak256,
   getAddress,
   decodeEventLog,
+  decodeAbiParameters,
   toHex,
 } from 'viem';
 import type {
   CreateStaticAuctionParams,
   CreateDynamicAuctionParams,
+  CreateOpeningAuctionParams,
   CreateMulticurveParams,
   MigrationConfig,
   SupportedPublicClient,
@@ -26,6 +28,9 @@ import type {
   MulticurveBundleExactInResult,
   MulticurveBundleExactOutResult,
   V4PoolKey,
+  OpeningAuctionState,
+  OpeningAuctionCreateResult,
+  OpeningAuctionCompleteResult,
 } from '../types';
 import type { ModuleAddressOverrides } from '../types';
 import { CHAIN_IDS, getAddresses } from '../addresses';
@@ -35,6 +40,8 @@ import {
   WAD,
   DEFAULT_PD_SLUGS,
   FLAG_MASK,
+  DOPPLER_FLAGS,
+  OPENING_AUCTION_FLAGS,
   DEFAULT_V3_NUM_POSITIONS,
   DEFAULT_V3_YEARLY_MINT_RATE,
   DEFAULT_V3_MAX_SHARE_TO_BE_SOLD,
@@ -62,13 +69,31 @@ import {
   DERC2080Bytecode,
   DopplerBytecode,
   DopplerDN404Bytecode,
+  OpeningAuctionBytecode,
   v4MulticurveInitializerAbi,
+  openingAuctionAbi,
+  openingAuctionInitializerAbi,
 } from '../abis';
 
 // Type definition for the custom migration encoder function
 export type MigrationEncoder = (config: MigrationConfig) => Hex;
 
 const MAX_UINT128 = (1n << 128n) - 1n;
+const ONE_MILLION = 1_000_000n;
+const OPENING_AUCTION_PHASE_SETTLED = 3;
+const OPENING_AUCTION_STATUS_ACTIVE = 1;
+// Auto-mined completion can race with on-chain state changes; keep retries bounded.
+const MAX_COMPLETION_ATTEMPTS = 3;
+
+const erc20BalanceOfAbi = [
+  {
+    type: 'function',
+    name: 'balanceOf',
+    inputs: [{ type: 'address', name: 'account' }],
+    outputs: [{ type: 'uint256', name: '' }],
+    stateMutability: 'view',
+  },
+] as const;
 
 // TokenFactory80 has the same deterministic CREATE2 address across all chains
 const TOKEN_FACTORY_80_ADDRESS =
@@ -1115,6 +1140,1424 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     };
   }
 
+  async encodeCreateOpeningAuctionParams(
+    params: CreateOpeningAuctionParams<C>,
+  ): Promise<{
+    createParams: CreateParams;
+    hookAddress: Address;
+    tokenAddress: Address;
+    minedSalt: Hash;
+  }> {
+    this.validateOpeningAuctionParams(params);
+    const addresses = getAddresses(this.chainId);
+
+    const openingAuctionInitializer = this.resolveOpeningAuctionInitializerAddress(
+      params.modules,
+      addresses,
+    );
+
+    const [poolManagerForAuction, auctionDeployer] = await Promise.all([
+      (this.publicClient as PublicClient).readContract({
+        address: openingAuctionInitializer,
+        abi: openingAuctionInitializerAbi,
+        functionName: 'poolManager',
+      }) as Promise<Address>,
+      (this.publicClient as PublicClient).readContract({
+        address: openingAuctionInitializer,
+        abi: openingAuctionInitializerAbi,
+        functionName: 'auctionDeployer',
+      }) as Promise<Address>,
+    ]);
+
+    let blockTimestamp: number;
+    if (params.blockTimestamp !== undefined) {
+      blockTimestamp = params.blockTimestamp;
+    } else {
+      const latestBlock = await (this.publicClient as PublicClient).getBlock({
+        blockTag: 'latest',
+      });
+      blockTimestamp = Number(
+        (latestBlock as { timestamp: bigint | number }).timestamp,
+      );
+    }
+
+    const startOffset =
+      params.startTimeOffset ?? params.doppler.startTimeOffset ?? 30;
+    const startTime =
+      params.startingTime ??
+      params.doppler.startingTime ??
+      blockTimestamp + startOffset;
+    const endTime = startTime + params.doppler.duration;
+
+    const isToken0 = isToken0Expected(params.sale.numeraire);
+    const gamma =
+      params.doppler.gamma ??
+      computeOptimalGamma(
+        params.doppler.startTick,
+        params.doppler.endTick,
+        params.doppler.duration,
+        params.doppler.epochLength,
+        params.doppler.tickSpacing,
+      );
+
+    const dopplerData = encodeAbiParameters(
+      [
+        { type: 'uint256' },
+        { type: 'uint256' },
+        { type: 'uint256' },
+        { type: 'uint256' },
+        { type: 'int24' },
+        { type: 'int24' },
+        { type: 'uint256' },
+        { type: 'int24' },
+        { type: 'bool' },
+        { type: 'uint256' },
+        { type: 'uint24' },
+        { type: 'int24' },
+      ],
+      [
+        params.doppler.minProceeds,
+        params.doppler.maxProceeds,
+        BigInt(startTime),
+        BigInt(endTime),
+        params.doppler.startTick,
+        params.doppler.endTick,
+        BigInt(params.doppler.epochLength),
+        gamma,
+        isToken0,
+        BigInt(params.doppler.numPdSlugs ?? DEFAULT_PD_SLUGS),
+        params.doppler.fee,
+        params.doppler.tickSpacing,
+      ],
+    );
+
+    const poolInitializerData = encodeAbiParameters(
+      [
+        {
+          type: 'tuple',
+          components: [
+            {
+              name: 'auctionConfig',
+              type: 'tuple',
+              components: [
+                { name: 'auctionDuration', type: 'uint256' },
+                { name: 'minAcceptableTickToken0', type: 'int24' },
+                { name: 'minAcceptableTickToken1', type: 'int24' },
+                { name: 'incentiveShareBps', type: 'uint256' },
+                { name: 'tickSpacing', type: 'int24' },
+                { name: 'fee', type: 'uint24' },
+                { name: 'minLiquidity', type: 'uint128' },
+                { name: 'shareToAuctionBps', type: 'uint256' },
+              ],
+            },
+            { name: 'dopplerData', type: 'bytes' },
+          ],
+        },
+      ],
+      [
+        {
+          auctionConfig: {
+            auctionDuration: BigInt(params.openingAuction.auctionDuration),
+            minAcceptableTickToken0:
+              params.openingAuction.minAcceptableTickToken0,
+            minAcceptableTickToken1:
+              params.openingAuction.minAcceptableTickToken1,
+            incentiveShareBps: BigInt(params.openingAuction.incentiveShareBps),
+            tickSpacing: params.openingAuction.tickSpacing,
+            fee: params.openingAuction.fee,
+            minLiquidity: params.openingAuction.minLiquidity,
+            shareToAuctionBps: BigInt(params.openingAuction.shareToAuctionBps),
+          },
+          dopplerData,
+        },
+      ],
+    );
+
+    if (this.isDoppler404Token(params.token)) {
+      if (
+        !addresses.doppler404Factory ||
+        addresses.doppler404Factory === ZERO_ADDRESS
+      ) {
+        throw new Error(
+          'Doppler404 factory address not configured for this chain',
+        );
+      }
+    }
+
+    const vestingDuration = params.vesting?.duration ?? BigInt(0);
+    const tokenFactoryData = this.isDoppler404Token(params.token)
+      ? (() => {
+          const t = params.token as Doppler404TokenConfig;
+          return {
+            name: t.name,
+            symbol: t.symbol,
+            baseURI: t.baseURI,
+            unit: t.unit !== undefined ? BigInt(t.unit) : 1000n,
+          };
+        })()
+      : (() => {
+          const t = params.token as StandardTokenConfig;
+          let vestingRecipients: Address[] = [];
+          let vestingAmounts: bigint[] = [];
+
+          if (params.vesting) {
+            if (params.vesting.recipients && params.vesting.amounts) {
+              vestingRecipients = params.vesting.recipients;
+              vestingAmounts = params.vesting.amounts;
+            } else {
+              vestingRecipients = [params.userAddress];
+              vestingAmounts = [
+                params.sale.initialSupply - params.sale.numTokensToSell,
+              ];
+            }
+          }
+
+          return {
+            name: t.name,
+            symbol: t.symbol,
+            initialSupply: params.sale.initialSupply,
+            airlock: params.modules?.airlock ?? addresses.airlock,
+            yearlyMintRate: t.yearlyMintRate ?? DEFAULT_V4_YEARLY_MINT_RATE,
+            vestingDuration: BigInt(vestingDuration),
+            recipients: vestingRecipients,
+            amounts: vestingAmounts,
+            tokenURI: t.tokenURI,
+          };
+        })();
+
+    const resolvedTokenFactory: Address | undefined =
+      params.modules?.tokenFactory ??
+      (this.isDoppler404Token(params.token)
+        ? (addresses.doppler404Factory as Address | undefined)
+        : addresses.tokenFactory);
+
+    if (!resolvedTokenFactory || resolvedTokenFactory === ZERO_ADDRESS) {
+      throw new Error(
+        'Token factory address not configured. Provide an explicit address via builder.withTokenFactory(...) or ensure chain config includes a valid factory.',
+      );
+    }
+
+    const auctionTokens =
+      (params.sale.numTokensToSell *
+        BigInt(params.openingAuction.shareToAuctionBps)) /
+      10_000n;
+    if (auctionTokens <= 0n) {
+      throw new Error('Opening auction token allocation rounds to zero');
+    }
+
+    const [salt, hookAddress, tokenAddress, encodedTokenFactoryData] =
+      this.mineOpeningAuctionHookAddress({
+        auctionDeployer,
+        openingAuctionInitializer,
+        poolManager: poolManagerForAuction,
+        auctionTokens,
+        openingAuctionConfig: params.openingAuction,
+        numeraire: params.sale.numeraire,
+        tokenFactory: resolvedTokenFactory,
+        tokenFactoryData,
+        airlock: params.modules?.airlock ?? addresses.airlock,
+        initialSupply: params.sale.initialSupply,
+        tokenVariant: this.isDoppler404Token(params.token)
+          ? 'doppler404'
+          : 'standard',
+      });
+
+    const liquidityMigratorData = this.encodeMigrationData(params.migration);
+
+    const governanceFactoryData: Hex = (() => {
+      if (params.governance.type === 'noOp') {
+        return '0x' as Hex;
+      }
+      if (params.governance.type === 'launchpad') {
+        return encodeAbiParameters(
+          [{ type: 'address' }],
+          [params.governance.multisig],
+        );
+      }
+      return encodeAbiParameters(
+        [
+          { type: 'string' },
+          { type: 'uint48' },
+          { type: 'uint32' },
+          { type: 'uint256' },
+        ],
+        [
+          params.token.name,
+          params.governance.type === 'custom'
+            ? params.governance.initialVotingDelay
+            : DEFAULT_V4_INITIAL_VOTING_DELAY,
+          params.governance.type === 'custom'
+            ? params.governance.initialVotingPeriod
+            : DEFAULT_V4_INITIAL_VOTING_PERIOD,
+          params.governance.type === 'custom'
+            ? params.governance.initialProposalThreshold
+            : DEFAULT_V4_INITIAL_PROPOSAL_THRESHOLD,
+        ],
+      );
+    })();
+
+    const governanceFactoryAddress: Address = (() => {
+      if (params.governance.type === 'noOp') {
+        const resolved =
+          params.modules?.governanceFactory ??
+          addresses.noOpGovernanceFactory ??
+          ZERO_ADDRESS;
+        if (!resolved || resolved === ZERO_ADDRESS) {
+          throw new Error(
+            'No-op governance requested, but no-op governanceFactory is not configured on this chain. Provide a governanceFactory override or use a supported chain.',
+          );
+        }
+        return resolved;
+      }
+      if (params.governance.type === 'launchpad') {
+        const resolved =
+          params.modules?.governanceFactory ??
+          addresses.launchpadGovernanceFactory ??
+          ZERO_ADDRESS;
+        if (!resolved || resolved === ZERO_ADDRESS) {
+          throw new Error(
+            'Launchpad governance requested, but launchpadGovernanceFactory is not configured on this chain. Provide a governanceFactory override or use a supported chain.',
+          );
+        }
+        return resolved;
+      }
+      const resolved =
+        params.modules?.governanceFactory ?? addresses.governanceFactory;
+      if (!resolved || resolved === ZERO_ADDRESS) {
+        throw new Error(
+          'Standard governance requested but governanceFactory is not deployed on this chain.',
+        );
+      }
+      return resolved;
+    })();
+
+    const createParams: CreateParams = {
+      initialSupply: params.sale.initialSupply,
+      numTokensToSell: params.sale.numTokensToSell,
+      numeraire: params.sale.numeraire,
+      tokenFactory: resolvedTokenFactory,
+      tokenFactoryData: encodedTokenFactoryData,
+      governanceFactory: governanceFactoryAddress,
+      governanceFactoryData,
+      poolInitializer: openingAuctionInitializer,
+      poolInitializerData,
+      liquidityMigrator: this.getMigratorAddress(
+        params.migration,
+        params.modules,
+      ),
+      liquidityMigratorData,
+      integrator: params.integrator ?? ZERO_ADDRESS,
+      salt,
+    };
+
+    return {
+      createParams,
+      hookAddress,
+      tokenAddress,
+      minedSalt: salt,
+    };
+  }
+
+  async simulateCreateOpeningAuction(
+    params: CreateOpeningAuctionParams<C>,
+  ): Promise<{
+    createParams: CreateParams;
+    openingAuctionHookAddress: Address;
+    tokenAddress: Address;
+    minedSalt: Hash;
+    gasEstimate?: bigint;
+    execute: () => Promise<OpeningAuctionCreateResult>;
+  }> {
+    const { createParams, minedSalt } =
+      await this.encodeCreateOpeningAuctionParams(params);
+    const addresses = getAddresses(this.chainId);
+
+    const airlockAddress = params.modules?.airlock ?? addresses.airlock;
+    const { request, result } = await (
+      this.publicClient as PublicClient
+    ).simulateContract({
+      address: airlockAddress,
+      abi: airlockAbi,
+      functionName: 'create',
+      args: [{ ...createParams }],
+      account: this.walletClient?.account,
+    });
+    const simResult = result as readonly unknown[] | undefined;
+    const gasEstimate = await this.resolveCreateGasEstimate({
+      request,
+      address: airlockAddress,
+      createParams,
+      account: this.walletClient?.account ?? params.userAddress,
+    });
+
+    if (!simResult || !Array.isArray(simResult) || simResult.length < 2) {
+      throw new Error('Failed to simulate opening auction create');
+    }
+
+    return {
+      createParams,
+      openingAuctionHookAddress: simResult[1] as Address,
+      tokenAddress: simResult[0] as Address,
+      minedSalt,
+      gasEstimate,
+      execute: () =>
+        this.createOpeningAuction(params, {
+          _createParams: createParams,
+          _minedSalt: minedSalt,
+        }),
+    };
+  }
+
+  async createOpeningAuction(
+    params: CreateOpeningAuctionParams<C>,
+    options?: { _createParams?: CreateParams; _minedSalt?: Hash },
+  ): Promise<OpeningAuctionCreateResult> {
+    const addresses = getAddresses(this.chainId);
+    if (!this.walletClient) {
+      throw new Error('Wallet client required for write operations');
+    }
+
+    let createParams = options?._createParams;
+    let minedSalt = options?._minedSalt;
+    if (!createParams || !minedSalt) {
+      const simulation = await this.simulateCreateOpeningAuction(params);
+      createParams = simulation.createParams;
+      minedSalt = simulation.minedSalt;
+    }
+
+    const airlockAddress = params.modules?.airlock ?? addresses.airlock;
+    const { request, result } = await (
+      this.publicClient as PublicClient
+    ).simulateContract({
+      address: airlockAddress,
+      abi: airlockAbi,
+      functionName: 'create',
+      args: [{ ...createParams }],
+      account: this.walletClient.account,
+    });
+    const simResult = result as readonly unknown[] | undefined;
+
+    const gasEstimate = await this.resolveCreateGasEstimate({
+      request,
+      address: airlockAddress,
+      createParams,
+      account: this.walletClient.account,
+    });
+    const gasOverride = params.gas ?? gasEstimate ?? DEFAULT_CREATE_GAS_LIMIT;
+    const hash = await this.walletClient.writeContract({
+      ...request,
+      gas: gasOverride,
+    });
+
+    const receipt = await (
+      this.publicClient as PublicClient
+    ).waitForTransactionReceipt({ hash });
+
+    const actualAddresses = this.extractAddressesFromCreateEvent(receipt);
+    if (!actualAddresses) {
+      throw new Error(
+        'Failed to extract addresses from Create event in transaction logs',
+      );
+    }
+
+    if (simResult && Array.isArray(simResult) && simResult.length >= 2) {
+      const simulatedToken = simResult[0] as Address;
+      const simulatedHook = simResult[1] as Address;
+      if (simulatedToken.toLowerCase() !== actualAddresses.tokenAddress.toLowerCase()) {
+        console.warn(
+          `[DopplerSDK] Simulation predicted token ${simulatedToken} but actual is ${actualAddresses.tokenAddress}. ` +
+            `This may indicate state divergence between simulation and execution.`,
+        );
+      }
+      if (simulatedHook.toLowerCase() !== actualAddresses.poolOrHookAddress.toLowerCase()) {
+        console.warn(
+          `[DopplerSDK] Simulation predicted opening hook ${simulatedHook} but actual is ${actualAddresses.poolOrHookAddress}. ` +
+            `This may indicate state divergence between simulation and execution.`,
+        );
+      }
+    }
+
+    return {
+      tokenAddress: actualAddresses.tokenAddress,
+      openingAuctionHookAddress: actualAddresses.poolOrHookAddress,
+      transactionHash: hash,
+      createParams,
+      minedSalt,
+    };
+  }
+
+  async simulateCompleteOpeningAuction(args: {
+    asset: Address;
+    initializerAddress?: Address;
+    dopplerSalt?: Hash;
+    blockTimestamp?: number;
+  }): Promise<{
+    asset: Address;
+    dopplerSalt: Hash;
+    dopplerHookAddress: Address;
+    gasEstimate?: bigint;
+    execute: () => Promise<OpeningAuctionCompleteResult>;
+  }> {
+    const initializerAddress = args.initializerAddress
+      ? args.initializerAddress
+      : this.resolveOpeningAuctionInitializerAddress();
+
+    const autoMined = args.dopplerSalt === undefined;
+    const deterministic = args.blockTimestamp !== undefined;
+    const maxAttempts =
+      autoMined && !deterministic ? MAX_COMPLETION_ATTEMPTS : 1;
+
+    let startSalt: bigint | undefined;
+    let lastError: unknown;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      const stateRaw = await (this.publicClient as PublicClient).readContract({
+        address: initializerAddress,
+        abi: openingAuctionInitializerAbi,
+        functionName: 'getState',
+        args: [args.asset],
+      });
+      const state = this.normalizeOpeningAuctionState(stateRaw);
+
+      const phase = await (this.publicClient as PublicClient).readContract({
+        address: state.openingAuctionHook,
+        abi: openingAuctionAbi,
+        functionName: 'phase',
+      });
+      if (Number(phase) !== OPENING_AUCTION_PHASE_SETTLED) {
+        throw new Error(
+          'Opening auction is not settled yet. Run settleAuction() first, then simulate completion.',
+        );
+      }
+
+      const completion =
+        args.dopplerSalt !== undefined
+          ? {
+              dopplerSalt: args.dopplerSalt,
+              dopplerHookAddress: zeroAddress,
+            }
+          : await this.mineDopplerCompletionSalt({
+              asset: args.asset,
+              initializerAddress,
+              state,
+              blockTimestamp: args.blockTimestamp,
+              startSalt,
+            });
+
+      try {
+        const { request } = await (this.publicClient as PublicClient).simulateContract(
+          {
+            address: initializerAddress,
+            abi: openingAuctionInitializerAbi,
+            functionName: 'completeAuction',
+            args: [args.asset, completion.dopplerSalt],
+            account: this.walletClient?.account,
+          },
+        );
+
+        const gasEstimate =
+          request &&
+          typeof request === 'object' &&
+          'gas' in (request as Record<string, unknown>)
+            ? ((request as { gas?: bigint }).gas ?? undefined)
+            : undefined;
+
+        return {
+          asset: args.asset,
+          dopplerSalt: completion.dopplerSalt,
+          dopplerHookAddress: completion.dopplerHookAddress,
+          gasEstimate,
+          execute: () =>
+            this.completeOpeningAuction({
+              asset: args.asset,
+              initializerAddress,
+              ...(args.dopplerSalt !== undefined
+                ? { dopplerSalt: args.dopplerSalt }
+                : {}),
+              autoSettle: false,
+              blockTimestamp: args.blockTimestamp,
+            }),
+        };
+      } catch (err) {
+        lastError = err;
+        if (attempt >= maxAttempts) {
+          if (maxAttempts === 1) throw err;
+          break;
+        }
+        if (autoMined) startSalt = BigInt(completion.dopplerSalt) + 1n;
+      }
+    }
+
+    const lastMsg =
+      lastError instanceof Error ? lastError.message : String(lastError);
+    throw new Error(
+      `simulateCompleteOpeningAuction failed after ${maxAttempts} attempt${
+        maxAttempts === 1 ? '' : 's'
+      }: ${lastMsg}`,
+    );
+  }
+
+  async completeOpeningAuction(args: {
+    asset: Address;
+    initializerAddress?: Address;
+    dopplerSalt?: Hash;
+    autoSettle?: boolean;
+    blockTimestamp?: number;
+  }): Promise<OpeningAuctionCompleteResult> {
+    if (!this.walletClient) {
+      throw new Error('Wallet client required for write operations');
+    }
+
+    const initializerAddress = args.initializerAddress
+      ? args.initializerAddress
+      : this.resolveOpeningAuctionInitializerAddress();
+
+    const stateRaw = await (this.publicClient as PublicClient).readContract({
+      address: initializerAddress,
+      abi: openingAuctionInitializerAbi,
+      functionName: 'getState',
+      args: [args.asset],
+    });
+    const state = this.normalizeOpeningAuctionState(stateRaw);
+    if (state.status !== OPENING_AUCTION_STATUS_ACTIVE) {
+      throw new Error(
+        `Opening auction status is not active for ${args.asset}. Current status: ${state.status}.`,
+      );
+    }
+
+    const autoSettle = args.autoSettle ?? true;
+    const phase = await (this.publicClient as PublicClient).readContract({
+      address: state.openingAuctionHook,
+      abi: openingAuctionAbi,
+      functionName: 'phase',
+    });
+
+    if (autoSettle && Number(phase) !== OPENING_AUCTION_PHASE_SETTLED) {
+      const { request } = await (this.publicClient as PublicClient).simulateContract(
+        {
+          address: state.openingAuctionHook,
+          abi: openingAuctionAbi,
+          functionName: 'settleAuction',
+          account: this.walletClient.account,
+        },
+      );
+      const settleTx = await this.walletClient.writeContract(request);
+      await (this.publicClient as PublicClient).waitForTransactionReceipt({
+        hash: settleTx,
+      });
+    }
+
+    const autoMined = args.dopplerSalt === undefined;
+    const deterministic = args.blockTimestamp !== undefined;
+    const maxAttempts =
+      autoMined && !deterministic ? MAX_COMPLETION_ATTEMPTS : 1;
+
+    let startSalt: bigint | undefined;
+    let lastError: unknown;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      const stateRawAttempt = await (this.publicClient as PublicClient).readContract({
+        address: initializerAddress,
+        abi: openingAuctionInitializerAbi,
+        functionName: 'getState',
+        args: [args.asset],
+      });
+      const stateAttempt = this.normalizeOpeningAuctionState(stateRawAttempt);
+      if (stateAttempt.status !== OPENING_AUCTION_STATUS_ACTIVE) {
+        throw new Error(
+          `Opening auction status is not active for ${args.asset}. Current status: ${stateAttempt.status}.`,
+        );
+      }
+
+      const completion =
+        args.dopplerSalt !== undefined
+          ? {
+              dopplerSalt: args.dopplerSalt,
+              dopplerHookAddress: zeroAddress,
+            }
+          : await this.mineDopplerCompletionSalt({
+              asset: args.asset,
+              initializerAddress,
+              state: stateAttempt,
+              blockTimestamp: args.blockTimestamp,
+              startSalt,
+            });
+
+      let request: unknown;
+      try {
+        ({ request } = await (this.publicClient as PublicClient).simulateContract({
+          address: initializerAddress,
+          abi: openingAuctionInitializerAbi,
+          functionName: 'completeAuction',
+          args: [args.asset, completion.dopplerSalt],
+          account: this.walletClient.account,
+        }));
+      } catch (err) {
+        lastError = err;
+        if (attempt >= maxAttempts) {
+          if (maxAttempts === 1) throw err;
+          break;
+        }
+        if (autoMined) startSalt = BigInt(completion.dopplerSalt) + 1n;
+        continue;
+      }
+
+      const txHash = await this.walletClient.writeContract(request as any);
+      const receipt = await (this.publicClient as PublicClient).waitForTransactionReceipt({
+        hash: txHash,
+      });
+      if (receipt.status === 'reverted') {
+        const receiptError = new Error(
+          `completeAuction transaction reverted (hash: ${txHash})`,
+        );
+        lastError = receiptError;
+        if (attempt >= maxAttempts) {
+          if (maxAttempts === 1) throw receiptError;
+          break;
+        }
+        if (autoMined) startSalt = BigInt(completion.dopplerSalt) + 1n;
+        continue;
+      }
+
+      const dopplerHookAddress = await (this.publicClient as PublicClient).readContract(
+        {
+          address: initializerAddress,
+          abi: openingAuctionInitializerAbi,
+          functionName: 'getDopplerHook',
+          args: [args.asset],
+        },
+      );
+
+      return {
+        asset: args.asset,
+        dopplerHookAddress:
+          dopplerHookAddress === zeroAddress
+            ? completion.dopplerHookAddress
+            : dopplerHookAddress,
+        transactionHash: txHash,
+        dopplerSalt: completion.dopplerSalt,
+      };
+    }
+
+    const lastMsg =
+      lastError instanceof Error ? lastError.message : String(lastError);
+    throw new Error(
+      `completeOpeningAuction failed after ${maxAttempts} attempt${
+        maxAttempts === 1 ? '' : 's'
+      }: ${lastMsg}`,
+    );
+  }
+
+  async simulateRecoverOpeningAuctionIncentives(args: {
+    asset: Address;
+    initializerAddress?: Address;
+    account?: Address | Account;
+  }): Promise<{ request: unknown }> {
+    const initializerAddress = args.initializerAddress
+      ? args.initializerAddress
+      : this.resolveOpeningAuctionInitializerAddress();
+
+    const { request } = await (this.publicClient as PublicClient).simulateContract(
+      {
+        address: initializerAddress,
+        abi: openingAuctionInitializerAbi,
+        functionName: 'recoverOpeningAuctionIncentives',
+        args: [args.asset],
+        account: args.account ?? this.walletClient?.account,
+      },
+    );
+    return { request };
+  }
+
+  async recoverOpeningAuctionIncentives(args: {
+    asset: Address;
+    initializerAddress?: Address;
+  }): Promise<Hash> {
+    if (!this.walletClient) {
+      throw new Error('Wallet client required for write operations');
+    }
+    const simulation = await this.simulateRecoverOpeningAuctionIncentives({
+      ...args,
+      account: this.walletClient.account,
+    });
+    return this.walletClient.writeContract(simulation.request as any);
+  }
+
+  async simulateSweepOpeningAuctionIncentives(args: {
+    asset: Address;
+    initializerAddress?: Address;
+    account?: Address | Account;
+  }): Promise<{ request: unknown }> {
+    const initializerAddress = args.initializerAddress
+      ? args.initializerAddress
+      : this.resolveOpeningAuctionInitializerAddress();
+
+    const { request } = await (this.publicClient as PublicClient).simulateContract(
+      {
+        address: initializerAddress,
+        abi: openingAuctionInitializerAbi,
+        functionName: 'sweepOpeningAuctionIncentives',
+        args: [args.asset],
+        account: args.account ?? this.walletClient?.account,
+      },
+    );
+    return { request };
+  }
+
+  async sweepOpeningAuctionIncentives(args: {
+    asset: Address;
+    initializerAddress?: Address;
+  }): Promise<Hash> {
+    if (!this.walletClient) {
+      throw new Error('Wallet client required for write operations');
+    }
+    const simulation = await this.simulateSweepOpeningAuctionIncentives({
+      ...args,
+      account: this.walletClient.account,
+    });
+    return this.walletClient.writeContract(simulation.request as any);
+  }
+
+  private resolveOpeningAuctionInitializerAddress(
+    modules?: ModuleAddressOverrides,
+    chainAddresses?: ReturnType<typeof getAddresses>,
+  ): Address {
+    const addresses = chainAddresses ?? getAddresses(this.chainId);
+    const resolved =
+      modules?.openingAuctionInitializer ??
+      addresses.openingAuctionInitializer ??
+      ZERO_ADDRESS;
+    if (!resolved || resolved === ZERO_ADDRESS) {
+      throw new Error(
+        'OpeningAuctionInitializer address not configured. Provide modules.openingAuctionInitializer or configure chain addresses.',
+      );
+    }
+    return resolved;
+  }
+
+  private normalizeOpeningAuctionState(raw: unknown): OpeningAuctionState {
+    if (Array.isArray(raw)) {
+      const [
+        numeraire,
+        auctionStartTime,
+        auctionEndTime,
+        auctionTokens,
+        dopplerTokens,
+        status,
+        openingAuctionHook,
+        dopplerHook,
+        openingAuctionPoolKey,
+        dopplerInitData,
+        isToken0,
+      ] = raw as [
+        Address,
+        bigint,
+        bigint,
+        bigint,
+        bigint,
+        number,
+        Address,
+        Address,
+        unknown,
+        `0x${string}`,
+        boolean,
+      ];
+
+      return {
+        numeraire,
+        auctionStartTime,
+        auctionEndTime,
+        auctionTokens,
+        dopplerTokens,
+        status,
+        openingAuctionHook,
+        dopplerHook,
+        openingAuctionPoolKey: this.normalizePoolKey(openingAuctionPoolKey),
+        dopplerInitData,
+        isToken0,
+      };
+    }
+
+    const value = raw as Record<string, unknown>;
+    return {
+      numeraire: value.numeraire as Address,
+      auctionStartTime: value.auctionStartTime as bigint,
+      auctionEndTime: value.auctionEndTime as bigint,
+      auctionTokens: value.auctionTokens as bigint,
+      dopplerTokens: value.dopplerTokens as bigint,
+      status: Number(value.status),
+      openingAuctionHook: value.openingAuctionHook as Address,
+      dopplerHook: value.dopplerHook as Address,
+      openingAuctionPoolKey: this.normalizePoolKey(
+        value.openingAuctionPoolKey,
+      ),
+      dopplerInitData: value.dopplerInitData as `0x${string}`,
+      isToken0: Boolean(value.isToken0),
+    };
+  }
+
+  private decodeDopplerInitData(dopplerData: `0x${string}`): {
+    minimumProceeds: bigint;
+    maximumProceeds: bigint;
+    startingTime: bigint;
+    endingTime: bigint;
+    startingTick: number;
+    endingTick: number;
+    epochLength: bigint;
+    gamma: number;
+    isToken0: boolean;
+    numPDSlugs: bigint;
+    lpFee: number;
+    tickSpacing: number;
+  } {
+    const decoded = decodeAbiParameters(
+      [
+        { type: 'uint256' },
+        { type: 'uint256' },
+        { type: 'uint256' },
+        { type: 'uint256' },
+        { type: 'int24' },
+        { type: 'int24' },
+        { type: 'uint256' },
+        { type: 'int24' },
+        { type: 'bool' },
+        { type: 'uint256' },
+        { type: 'uint24' },
+        { type: 'int24' },
+      ],
+      dopplerData,
+    );
+
+    return {
+      minimumProceeds: decoded[0],
+      maximumProceeds: decoded[1],
+      startingTime: decoded[2],
+      endingTime: decoded[3],
+      startingTick: Number(decoded[4]),
+      endingTick: Number(decoded[5]),
+      epochLength: decoded[6],
+      gamma: Number(decoded[7]),
+      isToken0: decoded[8],
+      numPDSlugs: decoded[9],
+      lpFee: Number(decoded[10]),
+      tickSpacing: Number(decoded[11]),
+    };
+  }
+
+  private encodeDopplerInitData(data: {
+    minimumProceeds: bigint;
+    maximumProceeds: bigint;
+    startingTime: bigint;
+    endingTime: bigint;
+    startingTick: number;
+    endingTick: number;
+    epochLength: bigint;
+    gamma: number;
+    isToken0: boolean;
+    numPDSlugs: bigint;
+    lpFee: number;
+    tickSpacing: number;
+  }): Hex {
+    return encodeAbiParameters(
+      [
+        { type: 'uint256' },
+        { type: 'uint256' },
+        { type: 'uint256' },
+        { type: 'uint256' },
+        { type: 'int24' },
+        { type: 'int24' },
+        { type: 'uint256' },
+        { type: 'int24' },
+        { type: 'bool' },
+        { type: 'uint256' },
+        { type: 'uint24' },
+        { type: 'int24' },
+      ],
+      [
+        data.minimumProceeds,
+        data.maximumProceeds,
+        data.startingTime,
+        data.endingTime,
+        data.startingTick,
+        data.endingTick,
+        data.epochLength,
+        data.gamma,
+        data.isToken0,
+        data.numPDSlugs,
+        data.lpFee,
+        data.tickSpacing,
+      ],
+    );
+  }
+
+  private alignTickTowardZero(tick: number, tickSpacing: number): number {
+    return tick - (tick % tickSpacing);
+  }
+
+  private alignTickForDirection(
+    isToken0: boolean,
+    tick: number,
+    tickSpacing: number,
+  ): number {
+    if (isToken0) {
+      return tick < 0
+        ? Math.trunc((tick - tickSpacing + 1) / tickSpacing) * tickSpacing
+        : Math.trunc(tick / tickSpacing) * tickSpacing;
+    }
+
+    return tick < 0
+      ? Math.trunc(tick / tickSpacing) * tickSpacing
+      : Math.trunc((tick + tickSpacing - 1) / tickSpacing) * tickSpacing;
+  }
+
+  private async mineDopplerCompletionSalt(args: {
+    asset: Address;
+    initializerAddress: Address;
+    state: OpeningAuctionState;
+    blockTimestamp?: number;
+    startSalt?: bigint;
+  }): Promise<{ dopplerSalt: Hash; dopplerHookAddress: Address }> {
+    const [phaseRaw, clearingTickRaw, incentiveTokensTotal, totalIncentivesClaimed] =
+      await Promise.all([
+        (this.publicClient as PublicClient).readContract({
+          address: args.state.openingAuctionHook,
+          abi: openingAuctionAbi,
+          functionName: 'phase',
+        }),
+        (this.publicClient as PublicClient).readContract({
+          address: args.state.openingAuctionHook,
+          abi: openingAuctionAbi,
+          functionName: 'clearingTick',
+        }),
+        (this.publicClient as PublicClient).readContract({
+          address: args.state.openingAuctionHook,
+          abi: openingAuctionAbi,
+          functionName: 'incentiveTokensTotal',
+        }),
+        (this.publicClient as PublicClient).readContract({
+          address: args.state.openingAuctionHook,
+          abi: openingAuctionAbi,
+          functionName: 'totalIncentivesClaimed',
+        }),
+      ]);
+
+    if (Number(phaseRaw) !== OPENING_AUCTION_PHASE_SETTLED) {
+      throw new Error('Opening auction must be settled before completion mining');
+    }
+
+    const rawAssetBalance = await (this.publicClient as PublicClient).readContract({
+      address: args.asset,
+      abi: erc20BalanceOfAbi,
+      functionName: 'balanceOf',
+      args: [args.state.openingAuctionHook],
+    });
+
+    const reservedIncentives =
+      totalIncentivesClaimed < incentiveTokensTotal
+        ? incentiveTokensTotal - totalIncentivesClaimed
+        : 0n;
+    const unsoldTokens =
+      rawAssetBalance > reservedIncentives
+        ? rawAssetBalance - reservedIncentives
+        : 0n;
+
+    const dopplerData = this.decodeDopplerInitData(args.state.dopplerInitData);
+    let alignedClearingTick = this.alignTickForDirection(
+      args.state.isToken0,
+      Number(clearingTickRaw),
+      dopplerData.tickSpacing,
+    );
+    const minAligned = this.alignTickTowardZero(MIN_TICK, dopplerData.tickSpacing);
+    const maxAligned = this.alignTickTowardZero(MAX_TICK, dopplerData.tickSpacing);
+    if (alignedClearingTick < minAligned) alignedClearingTick = minAligned;
+    if (alignedClearingTick > maxAligned) alignedClearingTick = maxAligned;
+
+    let blockTimestamp: number;
+    if (args.blockTimestamp !== undefined) {
+      blockTimestamp = args.blockTimestamp;
+    } else {
+      const latestBlock = await (this.publicClient as PublicClient).getBlock({
+        blockTag: 'latest',
+      });
+      blockTimestamp = Number(
+        (latestBlock as { timestamp: bigint | number }).timestamp,
+      );
+    }
+
+    const originalDuration = dopplerData.endingTime - dopplerData.startingTime;
+    let newStartingTime = dopplerData.startingTime;
+    let newEndingTime = dopplerData.endingTime;
+    if (BigInt(blockTimestamp) >= dopplerData.startingTime) {
+      newStartingTime = BigInt(blockTimestamp + 1);
+      newEndingTime = newStartingTime + originalDuration;
+    }
+
+    const modifiedDopplerData = this.encodeDopplerInitData({
+      ...dopplerData,
+      startingTime: newStartingTime,
+      endingTime: newEndingTime,
+      startingTick: alignedClearingTick,
+    });
+    const decodedModified = this.decodeDopplerInitData(
+      modifiedDopplerData as `0x${string}`,
+    );
+
+    const [poolManager, dopplerDeployer] = await Promise.all([
+      (this.publicClient as PublicClient).readContract({
+        address: args.initializerAddress,
+        abi: openingAuctionInitializerAbi,
+        functionName: 'poolManager',
+      }) as Promise<Address>,
+      (this.publicClient as PublicClient).readContract({
+        address: args.initializerAddress,
+        abi: openingAuctionInitializerAbi,
+        functionName: 'dopplerDeployer',
+      }) as Promise<Address>,
+    ]);
+
+    let startSalt = args.startSalt ?? 0n;
+    while (startSalt < ONE_MILLION) {
+      const mined = this.mineDopplerHookSalt({
+        dopplerDeployer,
+        poolManager,
+        initializerAddress: args.initializerAddress,
+        unsoldTokens,
+        dopplerData: decodedModified,
+        startSalt,
+      });
+
+      const bytecode = await (this.publicClient as PublicClient).getBytecode({
+        address: mined.hookAddress,
+      });
+      if (!bytecode || bytecode === '0x') {
+        return {
+          dopplerSalt: mined.salt,
+          dopplerHookAddress: mined.hookAddress,
+        };
+      }
+      startSalt = BigInt(mined.salt) + 1n;
+    }
+
+    throw new Error('Could not find an unused Doppler completion salt');
+  }
+
+  private mineDopplerHookSalt(args: {
+    dopplerDeployer: Address;
+    poolManager: Address;
+    initializerAddress: Address;
+    unsoldTokens: bigint;
+    dopplerData: {
+      minimumProceeds: bigint;
+      maximumProceeds: bigint;
+      startingTime: bigint;
+      endingTime: bigint;
+      startingTick: number;
+      endingTick: number;
+      epochLength: bigint;
+      gamma: number;
+      isToken0: boolean;
+      numPDSlugs: bigint;
+      lpFee: number;
+      tickSpacing: number;
+    };
+    startSalt?: bigint;
+  }): { salt: Hash; hookAddress: Address } {
+    const { dopplerData } = args;
+    const initHashData = encodeAbiParameters(
+      [
+        { type: 'address' },
+        { type: 'uint256' },
+        { type: 'uint256' },
+        { type: 'uint256' },
+        { type: 'uint256' },
+        { type: 'uint256' },
+        { type: 'int24' },
+        { type: 'int24' },
+        { type: 'uint256' },
+        { type: 'int24' },
+        { type: 'bool' },
+        { type: 'uint256' },
+        { type: 'address' },
+        { type: 'uint24' },
+      ],
+      [
+        args.poolManager,
+        args.unsoldTokens,
+        dopplerData.minimumProceeds,
+        dopplerData.maximumProceeds,
+        dopplerData.startingTime,
+        dopplerData.endingTime,
+        dopplerData.startingTick,
+        dopplerData.endingTick,
+        dopplerData.epochLength,
+        dopplerData.gamma,
+        dopplerData.isToken0,
+        dopplerData.numPDSlugs,
+        args.initializerAddress,
+        dopplerData.lpFee,
+      ],
+    );
+
+    const initHash = keccak256(
+      encodePacked(['bytes', 'bytes'], [DopplerBytecode as Hex, initHashData]),
+    );
+    const hookBuffer = this.prepareCreate2Buffer(args.dopplerDeployer, initHash);
+
+    for (let salt = args.startSalt ?? 0n; salt < ONE_MILLION; salt++) {
+      this.updateSaltInBuffer(hookBuffer, salt);
+      const hookRaw = this.computeCreate2AddressFast(hookBuffer);
+      const hookBigInt = BigInt(hookRaw);
+      if ((hookBigInt & FLAG_MASK) !== DOPPLER_FLAGS) {
+        continue;
+      }
+
+      return {
+        salt: `0x${salt.toString(16).padStart(64, '0')}` as Hash,
+        hookAddress: getAddress(hookRaw) as Address,
+      };
+    }
+
+    throw new Error('Could not mine Doppler completion salt');
+  }
+
+  private mineOpeningAuctionHookAddress(params: {
+    auctionDeployer: Address;
+    openingAuctionInitializer: Address;
+    poolManager: Address;
+    auctionTokens: bigint;
+    openingAuctionConfig: CreateOpeningAuctionParams<C>['openingAuction'];
+    numeraire: Address;
+    tokenFactory: Address;
+    tokenFactoryData:
+      | {
+          name: string;
+          symbol: string;
+          baseURI: string;
+          unit?: bigint;
+        }
+      | {
+          name: string;
+          symbol: string;
+          initialSupply: bigint;
+          airlock: Address;
+          yearlyMintRate: bigint;
+          vestingDuration: bigint;
+          recipients: Address[];
+          amounts: bigint[];
+          tokenURI: string;
+        };
+    airlock: Address;
+    initialSupply: bigint;
+    tokenVariant: 'standard' | 'doppler404';
+  }): [Hash, Address, Address, Hex] {
+    const config = params.openingAuctionConfig;
+    const initHashData = encodeAbiParameters(
+      [
+        { type: 'address' },
+        { type: 'address' },
+        { type: 'uint256' },
+        {
+          type: 'tuple',
+          components: [
+            { type: 'uint256', name: 'auctionDuration' },
+            { type: 'int24', name: 'minAcceptableTickToken0' },
+            { type: 'int24', name: 'minAcceptableTickToken1' },
+            { type: 'uint256', name: 'incentiveShareBps' },
+            { type: 'int24', name: 'tickSpacing' },
+            { type: 'uint24', name: 'fee' },
+            { type: 'uint128', name: 'minLiquidity' },
+            { type: 'uint256', name: 'shareToAuctionBps' },
+          ],
+        },
+      ],
+      [
+        params.poolManager,
+        params.openingAuctionInitializer,
+        params.auctionTokens,
+        {
+          auctionDuration: BigInt(config.auctionDuration),
+          minAcceptableTickToken0: config.minAcceptableTickToken0,
+          minAcceptableTickToken1: config.minAcceptableTickToken1,
+          incentiveShareBps: BigInt(config.incentiveShareBps),
+          tickSpacing: config.tickSpacing,
+          fee: config.fee,
+          minLiquidity: config.minLiquidity,
+          shareToAuctionBps: BigInt(config.shareToAuctionBps),
+        },
+      ],
+    );
+
+    const hookInitHash = keccak256(
+      encodePacked(
+        ['bytes', 'bytes'],
+        [OpeningAuctionBytecode as Hex, initHashData],
+      ),
+    );
+
+    const encodedTokenFactoryData =
+      params.tokenVariant === 'doppler404'
+        ? (() => {
+            const t = params.tokenFactoryData as {
+              name: string;
+              symbol: string;
+              baseURI: string;
+              unit?: bigint;
+            };
+            return encodeAbiParameters(
+              [
+                { type: 'string' },
+                { type: 'string' },
+                { type: 'string' },
+                { type: 'uint256' },
+              ],
+              [t.name, t.symbol, t.baseURI, t.unit ?? 1000n],
+            );
+          })()
+        : (() => {
+            const t = params.tokenFactoryData as {
+              name: string;
+              symbol: string;
+              initialSupply: bigint;
+              airlock: Address;
+              yearlyMintRate: bigint;
+              vestingDuration: bigint;
+              recipients: Address[];
+              amounts: bigint[];
+              tokenURI: string;
+            };
+            return encodeAbiParameters(
+              [
+                { type: 'string' },
+                { type: 'string' },
+                { type: 'uint256' },
+                { type: 'uint256' },
+                { type: 'address[]' },
+                { type: 'uint256[]' },
+                { type: 'string' },
+              ],
+              [
+                t.name,
+                t.symbol,
+                t.yearlyMintRate,
+                t.vestingDuration,
+                t.recipients,
+                t.amounts,
+                t.tokenURI,
+              ],
+            );
+          })();
+
+    let tokenInitHash: Hash;
+    if (params.tokenVariant === 'doppler404') {
+      const t = params.tokenFactoryData as {
+        name: string;
+        symbol: string;
+        baseURI: string;
+      };
+      const initData = encodeAbiParameters(
+        [
+          { type: 'string' },
+          { type: 'string' },
+          { type: 'uint256' },
+          { type: 'address' },
+          { type: 'address' },
+          { type: 'string' },
+        ],
+        [
+          t.name,
+          t.symbol,
+          params.initialSupply,
+          params.airlock,
+          params.airlock,
+          t.baseURI,
+        ],
+      );
+      tokenInitHash = keccak256(
+        encodePacked(['bytes', 'bytes'], [DopplerDN404Bytecode as Hex, initData]),
+      );
+    } else {
+      const t = params.tokenFactoryData as {
+        name: string;
+        symbol: string;
+        yearlyMintRate: bigint;
+        vestingDuration: bigint;
+        recipients: Address[];
+        amounts: bigint[];
+        tokenURI: string;
+      };
+      const initData = encodeAbiParameters(
+        [
+          { type: 'string' },
+          { type: 'string' },
+          { type: 'uint256' },
+          { type: 'address' },
+          { type: 'address' },
+          { type: 'uint256' },
+          { type: 'uint256' },
+          { type: 'address[]' },
+          { type: 'uint256[]' },
+          { type: 'string' },
+        ],
+        [
+          t.name,
+          t.symbol,
+          params.initialSupply,
+          params.airlock,
+          params.airlock,
+          t.yearlyMintRate,
+          t.vestingDuration,
+          t.recipients,
+          t.amounts,
+          t.tokenURI,
+        ],
+      );
+      const isTokenFactory80 =
+        params.tokenFactory.toLowerCase() === TOKEN_FACTORY_80_ADDRESS;
+      tokenInitHash = keccak256(
+        encodePacked(
+          ['bytes', 'bytes'],
+          [
+            isTokenFactory80
+              ? (DERC2080Bytecode as Hex)
+              : (DERC20Bytecode as Hex),
+            initData,
+          ],
+        ),
+      );
+    }
+
+    const isToken0 = isToken0Expected(params.numeraire);
+    const numeraireBigInt = BigInt(params.numeraire);
+    const hookBuffer = this.prepareCreate2Buffer(
+      params.auctionDeployer,
+      hookInitHash,
+    );
+    const tokenBuffer = this.prepareCreate2Buffer(params.tokenFactory, tokenInitHash);
+
+    for (let salt = 0n; salt < ONE_MILLION; salt++) {
+      this.updateSaltInBuffer(hookBuffer, salt);
+      const hookRaw = this.computeCreate2AddressFast(hookBuffer);
+      if ((BigInt(hookRaw) & FLAG_MASK) !== OPENING_AUCTION_FLAGS) {
+        continue;
+      }
+
+      this.updateSaltInBuffer(tokenBuffer, salt);
+      const tokenRaw = this.computeCreate2AddressFast(tokenBuffer);
+      const tokenBigInt = BigInt(tokenRaw);
+      if (
+        (isToken0 && tokenBigInt < numeraireBigInt) ||
+        (!isToken0 && tokenBigInt > numeraireBigInt)
+      ) {
+        return [
+          `0x${salt.toString(16).padStart(64, '0')}` as Hash,
+          getAddress(hookRaw) as Address,
+          getAddress(tokenRaw) as Address,
+          encodedTokenFactoryData,
+        ];
+      }
+    }
+
+    throw new Error('Unable to mine opening auction salt');
+  }
+
   private async resolveCreateGasEstimate(args: {
     request?: unknown;
     address: Address;
@@ -2115,6 +3558,88 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
           `Beneficiary shares must sum to ${WAD} (100%), but got ${totalShares}`,
         );
       }
+    }
+  }
+
+  private validateOpeningAuctionParams(
+    params: CreateOpeningAuctionParams<C>,
+  ): void {
+    if (!params.token.name || params.token.name.trim().length === 0) {
+      throw new Error('Token name is required');
+    }
+    if (!params.token.symbol || params.token.symbol.trim().length === 0) {
+      throw new Error('Token symbol is required');
+    }
+
+    if (params.sale.initialSupply <= 0n) {
+      throw new Error('Initial supply must be positive');
+    }
+    if (params.sale.numTokensToSell <= 0n) {
+      throw new Error('Number of tokens to sell must be positive');
+    }
+    if (params.sale.numTokensToSell > params.sale.initialSupply) {
+      throw new Error('Cannot sell more tokens than initial supply');
+    }
+
+    if (params.openingAuction.shareToAuctionBps <= 0) {
+      throw new Error('openingAuction.shareToAuctionBps must be positive');
+    }
+    if (params.openingAuction.shareToAuctionBps > 10_000) {
+      throw new Error('openingAuction.shareToAuctionBps cannot exceed 10_000');
+    }
+    if (params.openingAuction.incentiveShareBps < 0) {
+      throw new Error('openingAuction.incentiveShareBps cannot be negative');
+    }
+    if (params.openingAuction.incentiveShareBps > 10_000) {
+      throw new Error('openingAuction.incentiveShareBps cannot exceed 10_000');
+    }
+    if (params.openingAuction.auctionDuration <= 0) {
+      throw new Error('openingAuction.auctionDuration must be positive');
+    }
+    if (params.openingAuction.tickSpacing <= 0) {
+      throw new Error('openingAuction.tickSpacing must be positive');
+    }
+    if (params.openingAuction.minLiquidity <= 0n) {
+      throw new Error('openingAuction.minLiquidity must be positive');
+    }
+
+    if (params.doppler.duration <= 0 || params.doppler.epochLength <= 0) {
+      throw new Error('doppler.duration and doppler.epochLength must be positive');
+    }
+    if (params.doppler.duration % params.doppler.epochLength !== 0) {
+      throw new Error('doppler.epochLength must divide doppler.duration evenly');
+    }
+    if (params.doppler.tickSpacing <= 0) {
+      throw new Error('doppler.tickSpacing must be positive');
+    }
+    if (params.doppler.tickSpacing > DOPPLER_MAX_TICK_SPACING) {
+      throw new Error(
+        `doppler.tickSpacing must be <= ${DOPPLER_MAX_TICK_SPACING}`,
+      );
+    }
+    if (params.openingAuction.tickSpacing % params.doppler.tickSpacing !== 0) {
+      throw new Error(
+        `openingAuction.tickSpacing (${params.openingAuction.tickSpacing}) must be divisible by doppler.tickSpacing (${params.doppler.tickSpacing})`,
+      );
+    }
+
+    const isToken0 = isToken0Expected(params.sale.numeraire);
+    if (isToken0 && params.doppler.startTick < params.doppler.endTick) {
+      throw new Error(
+        'doppler.startTick must be >= doppler.endTick when token is expected as currency0',
+      );
+    }
+    if (!isToken0 && params.doppler.startTick > params.doppler.endTick) {
+      throw new Error(
+        'doppler.startTick must be <= doppler.endTick when token is expected as currency1',
+      );
+    }
+
+    if (
+      params.doppler.gamma !== undefined &&
+      params.doppler.gamma % params.doppler.tickSpacing !== 0
+    ) {
+      throw new Error('doppler.gamma must be divisible by doppler.tickSpacing');
     }
   }
 
