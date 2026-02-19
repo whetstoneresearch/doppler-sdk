@@ -8,9 +8,9 @@ on:
   workflow_dispatch:
     inputs:
       chains:
-        description: 'Chains to test (comma-separated: base,base-sepolia,mainnet,ink,unichain,unichain-sepolia,monad-testnet,monad-mainnet or "all")'
+        description: 'Chains to test (comma-separated: base,base-sepolia,mainnet,eth-sepolia,ink,unichain,unichain-sepolia,monad-testnet,monad-mainnet or "all")'
         required: false
-        default: 'base,base-sepolia,unichain,unichain-sepolia,monad-mainnet'
+        default: 'base,base-sepolia,mainnet,eth-sepolia,unichain,unichain-sepolia,monad-mainnet'
         type: string
       rpc_delay_ms:
         description: 'Delay between RPC calls in ms (increase if rate limited)'
@@ -30,8 +30,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
-      # workflow_dispatch can specify chains; automated runs exclude unichain chains
-      TEST_CHAINS: ${{ github.event_name == 'workflow_dispatch' && (github.event.inputs.chains || 'base,base-sepolia,unichain,unichain-sepolia,monad-mainnet') || 'base,base-sepolia,monad-mainnet' }}
+      # workflow_dispatch can specify chains; automated runs keep a reduced default set
+      TEST_CHAINS: ${{ github.event_name == 'workflow_dispatch' && (github.event.inputs.chains || 'base,base-sepolia,mainnet,eth-sepolia,unichain,unichain-sepolia,monad-mainnet') || 'base,base-sepolia,mainnet,eth-sepolia,monad-mainnet' }}
       RPC_DELAY_MS: ${{ github.event.inputs.rpc_delay_ms || '1000' }}
       CI: true
 
@@ -87,4 +87,3 @@ jobs:
       - name: Check test outcome
         if: steps.test.outcome == 'failure'
         run: exit 1
-

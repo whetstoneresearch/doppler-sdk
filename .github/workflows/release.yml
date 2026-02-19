@@ -113,7 +113,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        chain: [base, base-sepolia]
+        chain: [base, base-sepolia, mainnet, eth-sepolia]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
