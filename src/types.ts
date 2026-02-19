@@ -1,15 +1,16 @@
-import { base, baseSepolia, ink, unichain } from 'viem/chains';
+import { base, baseSepolia, ink, mainnet, sepolia, unichain } from 'viem/chains';
 import { CHAIN_IDS, type SupportedChainId } from './addresses';
 // Re-export SupportedChainId so consumers can import from this module
 export { type SupportedChainId } from './addresses';
 import type { Address, WalletClient } from 'viem';
 
 export type SupportedChain =
+  | typeof mainnet
+  | typeof sepolia
   | typeof base
   | typeof baseSepolia
   | typeof ink
-  | typeof unichain
-  | typeof baseSepolia;
+  | typeof unichain;
 // Use a wide type to avoid cross-package viem type identity issues when linking packages locally.
 export type SupportedPublicClient = unknown;
 
@@ -73,6 +74,8 @@ export interface VestingConfig {
 
 // Chains where no-op governance is enabled
 export const NO_OP_ENABLED_CHAIN_IDS = [
+  CHAIN_IDS.MAINNET,
+  CHAIN_IDS.ETH_SEPOLIA,
   CHAIN_IDS.BASE,
   CHAIN_IDS.BASE_SEPOLIA,
   CHAIN_IDS.UNICHAIN,

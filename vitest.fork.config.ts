@@ -1,4 +1,4 @@
-import { defineConfig, mergeConfig } from 'vitest/config'
+import { defineConfig } from 'vitest/config'
 import baseConfig from './vitest.config'
 
 /**
@@ -13,6 +13,8 @@ import baseConfig from './vitest.config'
  * To run tests for a specific chain only:
  *   TEST_CHAIN=base pnpm test:fork
  *   TEST_CHAIN=base-sepolia pnpm test:fork
+ *   TEST_CHAIN=mainnet pnpm test:fork
+ *   TEST_CHAIN=eth-sepolia pnpm test:fork
  *   TEST_CHAIN=monad pnpm test:fork
  */
 
@@ -28,7 +30,7 @@ function getIncludePatterns(): string[] {
     ]
   }
 
-  // Map chain names to test patterns (fork tests: base, base-sepolia only)
+  // Map chain names to chain-specific fork test patterns.
   const chainPatterns: Record<string, string[]> = {
     base: [
       'test/fork/base/**/*.test.ts',
@@ -38,6 +40,9 @@ function getIncludePatterns(): string[] {
       'test/fork/base-sepolia/**/*.test.ts',
       'test/integration/**/*.test.ts',
     ],
+    mainnet: ['test/fork/mainnet/**/*.test.ts'],
+    'eth-sepolia': ['test/fork/eth-sepolia/**/*.test.ts'],
+    monad: ['test/fork/**/*.monad-mainnet.test.ts'],
   }
 
   return chainPatterns[testChain] || [
@@ -46,32 +51,35 @@ function getIncludePatterns(): string[] {
   ]
 }
 
-export default mergeConfig(
-  baseConfig,
-  defineConfig({
-    test: {
-      include: getIncludePatterns(),
-      exclude: [
-        'node_modules/',
-        'dist/',
-        'test/setup/**',
-        'test/unit/**',
-        'test/e2e/**',
-      ],
-      // Fork tests run sequentially to share Anvil state
-      maxConcurrency: 1,
-      fileParallelism: false,
-      // Longer timeout for fork operations
-      testTimeout: 120_000,
-      hookTimeout: 120_000,
-      // Global setup starts Anvil
-      globalSetup: ['./test/setup/globalSetup.ts'],
-      // Setup file for custom matchers and snapshot hooks
-      setupFiles: ['./test/setup/vitest.setup.ts'],
-      // Env vars for fork mode
-      env: {
-        ANVIL_FORK_ENABLED: 'true',
-      },
+const base = baseConfig as any
+const baseTest = base.test ?? {}
+
+export default defineConfig({
+  ...base,
+  test: {
+    ...baseTest,
+    include: getIncludePatterns(),
+    exclude: [
+      'node_modules/',
+      'dist/',
+      'test/setup/**',
+      'test/unit/**',
+      'test/e2e/**',
+    ],
+    // Fork tests run sequentially to share Anvil state
+    maxConcurrency: 1,
+    fileParallelism: false,
+    // Longer timeout for fork operations
+    testTimeout: 120_000,
+    hookTimeout: 120_000,
+    // Global setup starts Anvil
+    globalSetup: ['./test/setup/globalSetup.ts'],
+    // Setup file for custom matchers and snapshot hooks
+    setupFiles: ['./test/setup/vitest.setup.ts'],
+    // Env vars for fork mode
+    env: {
+      ...(baseTest.env ?? {}),
+      ANVIL_FORK_ENABLED: 'true',
     },
-  })
-)
+  },
+})
