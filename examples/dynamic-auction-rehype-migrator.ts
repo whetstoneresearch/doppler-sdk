@@ -42,6 +42,10 @@ async function main() {
     chainId: baseSepolia.id,
   });
 
+  // Required by Airlock/Doppler migrators: include protocol owner beneficiary
+  // with at least 5% shares.
+  const airlockBeneficiary = await sdk.getAirlockBeneficiary();
+
   const params = sdk
     .buildDynamicAuction()
     .tokenConfig({
@@ -73,7 +77,10 @@ async function main() {
       useDynamicFee: false,
       tickSpacing: 10,
       lockDuration: 30 * DAY_SECONDS,
-      beneficiaries: [{ beneficiary: account.address, shares: parseEther('1') }],
+      beneficiaries: [
+        { beneficiary: account.address, shares: parseEther('0.95') },
+        airlockBeneficiary,
+      ],
       rehype: {
         buybackDestination: account.address,
         customFee: 3000,

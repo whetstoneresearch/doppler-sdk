@@ -796,7 +796,10 @@ const params = sdk
     fee: 3000,
     tickSpacing: 10,
     lockDuration: 30 * 24 * 60 * 60,
-    beneficiaries: [{ beneficiary: '0xYourBeneficiary...', shares: parseEther('1') }],
+    beneficiaries: [
+      { beneficiary: '0xYourBeneficiary...', shares: parseEther('0.95') },
+      await sdk.getAirlockBeneficiary(), // required protocol owner entry (>=5%)
+    ],
     rehype: {
       buybackDestination: '0xYourBuybackDestination...',
       customFee: 3000,
@@ -809,6 +812,9 @@ const params = sdk
   .withUserAddress('0xYourAddress...')
   .build();
 ```
+
+Note: `dopplerHook` migrator beneficiaries must include the current Airlock owner
+with at least 5% shares, and total shares must sum to `1e18`.
 
 ```typescript
 migration: {
