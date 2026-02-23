@@ -346,6 +346,24 @@ describe('Airlock Module Whitelisting', () => {
         () => testModule('V4Migrator', addresses.v4Migrator, ModuleState.LiquidityMigrator)
       );
 
+      if (
+        addresses.dopplerHookMigrator &&
+        addresses.dopplerHookMigrator !== ZERO_ADDRESS
+      ) {
+        it(`DopplerHookMigrator (${addresses.dopplerHookMigrator}) whitelisted`,
+          () => testModule('DopplerHookMigrator', addresses.dopplerHookMigrator!, ModuleState.LiquidityMigrator)
+        );
+      }
+
+      if (
+        addresses.rehypeDopplerHookMigrator &&
+        addresses.rehypeDopplerHookMigrator !== ZERO_ADDRESS
+      ) {
+        it(`RehypeDopplerHookMigrator (${addresses.rehypeDopplerHookMigrator}) whitelisted`,
+          () => testModule('RehypeDopplerHookMigrator', addresses.rehypeDopplerHookMigrator!, ModuleState.LiquidityMigrator)
+        );
+      }
+
       if (addresses.noOpMigrator && addresses.noOpMigrator !== ZERO_ADDRESS) {
         it(`NoOpMigrator (${addresses.noOpMigrator}) whitelisted`,
           () => testModule('NoOpMigrator', addresses.noOpMigrator!, ModuleState.LiquidityMigrator)

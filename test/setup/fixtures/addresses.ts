@@ -29,6 +29,12 @@ export const mockAddresses: ChainAddresses = {
   v4Migrator: getAddress(
     '0x8000000000000000000000000000000000000008',
   ) as Address,
+  dopplerHookMigrator: getAddress(
+    '0x8100000000000000000000000000000000000008',
+  ) as Address,
+  rehypeDopplerHookMigrator: getAddress(
+    '0x8200000000000000000000000000000000000008',
+  ) as Address,
   v4MigratorHook: getAddress(
     '0x9000000000000000000000000000000000000009',
   ) as Address,

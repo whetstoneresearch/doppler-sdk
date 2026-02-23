@@ -769,6 +769,80 @@ migration: {
 }
 ```
 
+### Migrate via DopplerHookMigrator (Dynamic Auctions)
+
+Use this mode when you want rehypothecation / custom hook behavior on the
+migrated V4 pool. This migration type is only supported for dynamic auctions.
+
+```typescript
+const params = sdk
+  .buildDynamicAuction()
+  .tokenConfig({ name: 'Example', symbol: 'EX', tokenURI: 'https://example.com/token.json' })
+  .saleConfig({
+    initialSupply: parseEther('1000000'),
+    numTokensToSell: parseEther('500000'),
+    numeraire: addresses.weth,
+  })
+  .withMarketCapRange({
+    marketCap: { start: 500_000, min: 50_000 },
+    numerairePrice: 3000,
+    minProceeds: parseEther('10'),
+    maxProceeds: parseEther('1000'),
+    fee: 3000,
+    tickSpacing: 10,
+  })
+  .withMigration({
+    type: 'dopplerHook',
+    fee: 3000,
+    tickSpacing: 10,
+    lockDuration: 30 * 24 * 60 * 60,
+    beneficiaries: [
+      { beneficiary: '0xYourBeneficiary...', shares: parseEther('0.95') },
+      await sdk.getAirlockBeneficiary(), // required protocol owner entry (>=5%)
+    ],
+    rehype: {
+      buybackDestination: '0xYourBuybackDestination...',
+      customFee: 3000,
+      assetBuybackPercentWad: parseEther('0.25'),
+      numeraireBuybackPercentWad: parseEther('0.25'),
+      beneficiaryPercentWad: parseEther('0.25'),
+      lpPercentWad: parseEther('0.25'),
+    },
+  })
+  .withUserAddress('0xYourAddress...')
+  .build();
+```
+
+Note: `dopplerHook` migrator beneficiaries must include the current Airlock owner
+with at least 5% shares, and total shares must sum to `1e18`.
+
+```typescript
+migration: {
+  type: 'dopplerHook',
+  fee: 3000,
+  useDynamicFee: false,
+  tickSpacing: 10,
+  lockDuration: 30 * 24 * 60 * 60,
+  beneficiaries: [
+    { beneficiary: '0xYourBeneficiary...', shares: parseEther('1') },
+  ],
+  rehype: {
+    // optional; defaults to chain rehypeDopplerHookMigrator address
+    // hookAddress: '0xRehypeMigratorHook...',
+    buybackDestination: '0xYourBuybackDestination...',
+    customFee: 3000,
+    assetBuybackPercentWad: parseEther('0.25'),
+    numeraireBuybackPercentWad: parseEther('0.25'),
+    beneficiaryPercentWad: parseEther('0.25'),
+    lpPercentWad: parseEther('0.25'),
+  },
+  proceedsSplit: {
+    recipient: '0xProceedsRecipient...',
+    share: parseEther('0.1'),
+  },
+}
+```
+
 To make configuring the first beneficiary simpler, the SDK now exposes helpers for resolving the
 airlock owner and creating the default 5% entry:
 

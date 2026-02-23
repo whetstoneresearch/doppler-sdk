@@ -16,6 +16,7 @@ import type {
   CreateStaticAuctionParams,
   CreateDynamicAuctionParams,
   CreateMulticurveParams,
+  DopplerHookMigrationConfig,
   MigrationConfig,
   SupportedPublicClient,
   TokenConfig,
@@ -55,6 +56,7 @@ import {
 } from '../constants';
 import {
   computeOptimalGamma,
+  encodeRehypeDopplerHookMigratorCalldata,
   MIN_TICK,
   MAX_TICK,
   isToken0Expected,
@@ -73,6 +75,7 @@ import {
 export type MigrationEncoder = (config: MigrationConfig) => Hex;
 
 const MAX_UINT128 = (1n << 128n) - 1n;
+const MAX_PROCEEDS_SPLIT_SHARE = WAD / 2n;
 
 // TokenFactory80 has the same deterministic CREATE2 address across all chains
 const TOKEN_FACTORY_80_ADDRESS =
@@ -205,7 +208,10 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     }
 
     // 2. Encode migration data based on MigrationConfig
-    const liquidityMigratorData = this.encodeMigrationData(params.migration);
+    const liquidityMigratorData = this.encodeMigrationData(params.migration, {
+      numeraire: params.sale.numeraire,
+      overrides: params.modules,
+    });
 
     // 3. Encode token parameters (standard vs Doppler404)
     let tokenFactoryData: Hex;
@@ -844,7 +850,10 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     });
 
     // 6. Encode migration data
-    const liquidityMigratorData = this.encodeMigrationData(params.migration);
+    const liquidityMigratorData = this.encodeMigrationData(params.migration, {
+      numeraire: params.sale.numeraire,
+      overrides: params.modules,
+    });
 
     // 7. Encode governance factory data
     const governanceFactoryData: Hex = (() => {
@@ -1169,7 +1178,13 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
    * Encode migration data based on the MigrationConfig
    * This replaces the manual encoding methods from the old SDKs
    */
-  private encodeMigrationData(config: MigrationConfig): Hex {
+  private encodeMigrationData(
+    config: MigrationConfig,
+    options?: {
+      numeraire?: Address;
+      overrides?: ModuleAddressOverrides;
+    },
+  ): Hex {
     // Use custom encoder if available
     if (this.customMigrationEncoder) {
       return this.customMigrationEncoder(config);
@@ -1225,6 +1240,94 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
             beneficiaryData,
           ],
         );
+
+      case 'dopplerHook': {
+        const dopplerHookConfig = config as DopplerHookMigrationConfig;
+
+        if (dopplerHookConfig.hook && dopplerHookConfig.rehype) {
+          throw new Error(
+            'dopplerHook migration cannot set both hook and rehype config. Use exactly one hook mode.',
+          );
+        }
+
+        // Copy beneficiaries and sort by address in ascending order (required by contract)
+        const beneficiaries = [...dopplerHookConfig.beneficiaries].sort(
+          (a, b) => {
+            const addrA = a.beneficiary.toLowerCase();
+            const addrB = b.beneficiary.toLowerCase();
+            return addrA < addrB ? -1 : addrA > addrB ? 1 : 0;
+          },
+        );
+
+        let dopplerHookAddress: Address = ZERO_ADDRESS;
+        let onInitializationCalldata: Hex = '0x';
+
+        if (dopplerHookConfig.hook) {
+          dopplerHookAddress = dopplerHookConfig.hook.hookAddress;
+          onInitializationCalldata =
+            dopplerHookConfig.hook.onInitializationCalldata ?? '0x';
+        } else if (dopplerHookConfig.rehype) {
+          const addresses = getAddresses(this.chainId);
+          const resolvedRehypeHookAddress =
+            dopplerHookConfig.rehype.hookAddress ??
+            options?.overrides?.rehypeDopplerHookMigrator ??
+            addresses.rehypeDopplerHookMigrator;
+
+          if (!resolvedRehypeHookAddress) {
+            throw new Error(
+              'RehypeDopplerHookMigrator address not configured on this chain. Provide migration.rehype.hookAddress or override modules.rehypeDopplerHookMigrator.',
+            );
+          }
+
+          if (!options?.numeraire) {
+            throw new Error(
+              'numeraire is required to encode rehype dopplerHook migration data',
+            );
+          }
+
+          dopplerHookAddress = resolvedRehypeHookAddress;
+          onInitializationCalldata =
+            encodeRehypeDopplerHookMigratorCalldata({
+              numeraire: options.numeraire,
+              config: dopplerHookConfig.rehype,
+            });
+        }
+
+        const proceedsRecipient =
+          dopplerHookConfig.proceedsSplit?.recipient ?? ZERO_ADDRESS;
+        const proceedsShare = dopplerHookConfig.proceedsSplit?.share ?? 0n;
+
+        return encodeAbiParameters(
+          [
+            { type: 'uint24' },
+            { type: 'bool' },
+            { type: 'int24' },
+            { type: 'uint32' },
+            {
+              type: 'tuple[]',
+              components: [
+                { type: 'address', name: 'beneficiary' },
+                { type: 'uint96', name: 'shares' },
+              ],
+            },
+            { type: 'address' },
+            { type: 'bytes' },
+            { type: 'address' },
+            { type: 'uint256' },
+          ],
+          [
+            dopplerHookConfig.fee,
+            dopplerHookConfig.useDynamicFee ?? false,
+            dopplerHookConfig.tickSpacing,
+            dopplerHookConfig.lockDuration,
+            beneficiaries,
+            dopplerHookAddress,
+            onInitializationCalldata,
+            proceedsRecipient,
+            proceedsShare,
+          ],
+        );
+      }
 
       default:
         throw new Error('Unknown migration type');
@@ -1838,7 +1941,10 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       }
     } else {
       // Use standard migration flow when no beneficiaries
-      liquidityMigratorData = this.encodeMigrationData(params.migration);
+      liquidityMigratorData = this.encodeMigrationData(params.migration, {
+        numeraire: params.sale.numeraire,
+        overrides: params.modules,
+      });
       resolvedMigrator = this.getMigratorAddress(
         params.migration,
         params.modules,
@@ -2199,6 +2305,12 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     }
 
     // Validate migration config
+    if (params.migration.type === 'dopplerHook') {
+      throw new Error(
+        'dopplerHook migration is only supported for dynamic auctions',
+      );
+    }
+
     if (
       params.migration.type === 'uniswapV4' &&
       params.migration.streamableFees
@@ -2331,6 +2443,106 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
         );
       }
     }
+
+    if (params.migration.type === 'dopplerHook') {
+      const migration = params.migration;
+
+      if (!Number.isInteger(migration.fee) || migration.fee < 0) {
+        throw new Error('DopplerHook migration fee must be a non-negative integer');
+      }
+      if (migration.fee > 150_000) {
+        throw new Error(
+          'DopplerHook migration fee must be <= 150000 (15%)',
+        );
+      }
+
+      if (
+        !Number.isInteger(migration.tickSpacing) ||
+        migration.tickSpacing <= 0
+      ) {
+        throw new Error(
+          'DopplerHook migration tickSpacing must be a positive integer',
+        );
+      }
+
+      if (migration.beneficiaries.length === 0) {
+        throw new Error(
+          'At least one beneficiary is required for dopplerHook migration',
+        );
+      }
+
+      const totalShares = migration.beneficiaries.reduce(
+        (sum, b) => sum + b.shares,
+        0n,
+      );
+      if (totalShares !== WAD) {
+        throw new Error(
+          `Beneficiary shares must sum to ${WAD} (100%), but got ${totalShares}`,
+        );
+      }
+
+      const lockDuration = Number(migration.lockDuration);
+      if (!Number.isInteger(lockDuration) || lockDuration < 0) {
+        throw new Error(
+          'DopplerHook migration lockDuration must be a non-negative integer number of seconds',
+        );
+      }
+      if (lockDuration > 0xffffffff) {
+        throw new Error(
+          'DopplerHook migration lockDuration must fit within uint32',
+        );
+      }
+
+      if (migration.hook && migration.rehype) {
+        throw new Error(
+          'dopplerHook migration cannot set both hook and rehype config. Use exactly one hook mode.',
+        );
+      }
+
+      if (migration.rehype) {
+        if (
+          !Number.isInteger(migration.rehype.customFee) ||
+          migration.rehype.customFee < 0
+        ) {
+          throw new Error(
+            'Rehype customFee must be a non-negative integer',
+          );
+        }
+        if (migration.rehype.customFee > 1_000_000) {
+          throw new Error('Rehype customFee must be <= 1000000 (100%)');
+        }
+
+        const rehypeDistributionTotal =
+          migration.rehype.assetBuybackPercentWad +
+          migration.rehype.numeraireBuybackPercentWad +
+          migration.rehype.beneficiaryPercentWad +
+          migration.rehype.lpPercentWad;
+
+        if (rehypeDistributionTotal !== WAD) {
+          throw new Error(
+            `DopplerHook fee distribution must sum to ${WAD} (100%), but got ${rehypeDistributionTotal}`,
+          );
+        }
+      }
+
+      if (migration.proceedsSplit) {
+        if (migration.proceedsSplit.recipient === ZERO_ADDRESS) {
+          throw new Error(
+            'DopplerHook proceeds split recipient cannot be zero address',
+          );
+        }
+
+        if (migration.proceedsSplit.share < 0n) {
+          throw new Error('DopplerHook proceeds split share cannot be negative');
+        }
+
+        if (migration.proceedsSplit.share > MAX_PROCEEDS_SPLIT_SHARE) {
+          throw new Error(
+            `DopplerHook proceeds split share cannot exceed ${MAX_PROCEEDS_SPLIT_SHARE}`,
+          );
+        }
+      }
+    }
   }
 
   /**
@@ -2405,6 +2617,12 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     }
 
     // Validate migration config for V4
+    if (params.migration.type === 'dopplerHook') {
+      throw new Error(
+        'dopplerHook migration is only supported for dynamic auctions',
+      );
+    }
+
     if (
       params.migration.type === 'uniswapV4' &&
       params.migration.streamableFees
@@ -2474,6 +2692,19 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
           );
         }
         return v4Address;
+      }
+      case 'dopplerHook': {
+        const dopplerHookMigratorAddress =
+          overrides?.dopplerHookMigrator ?? addresses.dopplerHookMigrator;
+        if (
+          !dopplerHookMigratorAddress ||
+          dopplerHookMigratorAddress === ZERO_ADDRESS
+        ) {
+          throw new Error(
+            'DopplerHookMigrator not configured on this chain. Provide override via modules.dopplerHookMigrator or use a different migration type.',
+          );
+        }
+        return dopplerHookMigratorAddress;
       }
       case 'noOp': {
         const noOpAddress = overrides?.noOpMigrator ?? addresses.noOpMigrator;

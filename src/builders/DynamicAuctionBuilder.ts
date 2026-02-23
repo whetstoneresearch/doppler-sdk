@@ -413,6 +413,14 @@ export class DynamicAuctionBuilder<
     return this.overrideModule('v4Migrator', address);
   }
 
+  withDopplerHookMigrator(address: Address): this {
+    return this.overrideModule('dopplerHookMigrator', address);
+  }
+
+  withRehypeDopplerHookMigrator(address: Address): this {
+    return this.overrideModule('rehypeDopplerHookMigrator', address);
+  }
+
   withNoOpMigrator(address: Address): this {
     return this.overrideModule('noOpMigrator', address);
   }
@@ -503,7 +511,7 @@ export class DynamicAuctionBuilder<
     if (this.migration.type === 'noOp') {
       throw new Error(
         'noOp migration is not supported for dynamic auctions. ' +
-          'Use uniswapV2 or uniswapV4 migration instead.',
+          'Use uniswapV2, uniswapV4, or dopplerHook migration instead.',
       );
     }
 
