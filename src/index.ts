@@ -35,6 +35,7 @@ export type {
   DynamicAuctionConfig,
   VestingConfig,
   MigrationConfig,
+  DopplerHookMigrationConfig,
   BeneficiaryData,
 
   // Lockable initializer types
@@ -45,6 +46,7 @@ export type {
 
   // DopplerHook types (e.g., RehypeDopplerHook)
   RehypeDopplerHookConfig,
+  RehypeDopplerHookMigratorConfig,
   MulticurveInitializerConfig,
   MulticurveDecayFeeSchedule,
 

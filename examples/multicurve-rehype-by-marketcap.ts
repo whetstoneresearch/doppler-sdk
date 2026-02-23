@@ -27,6 +27,7 @@ if (!privateKey) throw new Error('PRIVATE_KEY is not set')
 
 // RehypeDopplerHook deployed on Base Sepolia
 const REHYPE_DOPPLER_HOOK_ADDRESS = getAddresses(baseSepolia.id).rehypeDopplerHook as Address;
+
 // Destination address for buyback tokens
 const BUYBACK_DESTINATION = '0x0000000000000000000000000000000000000007' as Address
 

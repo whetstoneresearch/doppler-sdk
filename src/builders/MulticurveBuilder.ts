@@ -365,9 +365,7 @@ export class MulticurveBuilder<
       const prevCurve = sortedCurves[i - 1];
       const currCurve = sortedCurves[i];
       const prevEnd =
-        prevCurve.marketCap.end === 'max'
-          ? Infinity
-          : prevCurve.marketCap.end;
+        prevCurve.marketCap.end === 'max' ? Infinity : prevCurve.marketCap.end;
       const prevEndLabel =
         prevCurve.marketCap.end === 'max'
           ? 'max'
@@ -427,7 +425,10 @@ export class MulticurveBuilder<
     }
 
     // Validate mutual exclusivity of graduation threshold options
-    if (params.graduationMarketCap !== undefined && params.farTick !== undefined) {
+    if (
+      params.graduationMarketCap !== undefined &&
+      params.farTick !== undefined
+    ) {
       throw new Error(
         'Cannot specify both graduationMarketCap and farTick. Use one or the other.',
       );
@@ -545,7 +546,10 @@ export class MulticurveBuilder<
         `Decay startFee must be between 0 and ${DECAY_MAX_START_FEE} (80%)`,
       );
     }
-    if (!Number.isFinite(durationSeconds) || !Number.isInteger(durationSeconds)) {
+    if (
+      !Number.isFinite(durationSeconds) ||
+      !Number.isInteger(durationSeconds)
+    ) {
       throw new Error('Decay durationSeconds must be an integer');
     }
     if (durationSeconds < 0) {
@@ -829,12 +833,12 @@ export class MulticurveBuilder<
 
     if (initializer.type === 'scheduled' && dopplerHook) {
       throw new Error(
-        "Cannot combine scheduled multicurve with rehype initializer. Use exactly one initializer mode.",
+        'Cannot combine scheduled multicurve with rehype initializer. Use exactly one initializer mode.',
       );
     }
     if (initializer.type === 'decay' && dopplerHook) {
       throw new Error(
-        "Cannot combine decay multicurve with rehype initializer. Use exactly one initializer mode.",
+        'Cannot combine decay multicurve with rehype initializer. Use exactly one initializer mode.',
       );
     }
     if (initializer.type === 'decay') {

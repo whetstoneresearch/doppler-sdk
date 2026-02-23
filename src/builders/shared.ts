@@ -87,7 +87,7 @@ export interface BaseAuctionBuilder<C extends SupportedChainId> {
 
   /**
    * Configure post-auction liquidity migration.
-   * @param migration - Migration target (uniswapV2, uniswapV4, or noOp)
+   * @param migration - Migration target (uniswapV2, uniswapV4, dopplerHook, or noOp)
    */
   withMigration(migration: MigrationConfig): this;
 

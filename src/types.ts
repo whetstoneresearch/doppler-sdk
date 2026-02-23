@@ -1,4 +1,11 @@
-import { base, baseSepolia, ink, mainnet, sepolia, unichain } from 'viem/chains';
+import {
+  base,
+  baseSepolia,
+  ink,
+  mainnet,
+  sepolia,
+  unichain,
+} from 'viem/chains';
 import { CHAIN_IDS, type SupportedChainId } from './addresses';
 // Re-export SupportedChainId so consumers can import from this module
 export { type SupportedChainId } from './addresses';
@@ -171,6 +178,49 @@ export interface MulticurvePoolState {
 }
 
 // Migration configuration (discriminated union)
+export interface RehypeDopplerHookMigratorConfig {
+  // Optional hook address override. Defaults to chain rehypeDopplerHookMigrator.
+  hookAddress?: Address;
+  // Destination address for buyback tokens / beneficiary fee claims.
+  buybackDestination: Address;
+  // Custom swap fee in hundredths of a bip (1e6 = 100%).
+  customFee: number;
+  // Percentage of fees used for asset buyback (in WAD, e.g., 0.2e18 = 20%).
+  assetBuybackPercentWad: bigint;
+  // Percentage of fees used for numeraire buyback (in WAD, e.g., 0.2e18 = 20%).
+  numeraireBuybackPercentWad: bigint;
+  // Percentage of fees distributed to beneficiaries (in WAD, e.g., 0.3e18 = 30%).
+  beneficiaryPercentWad: bigint;
+  // Percentage of fees retained for LP rebalancing (in WAD, e.g., 0.3e18 = 30%).
+  lpPercentWad: bigint;
+}
+
+export interface DopplerHookMigrationConfig {
+  type: 'dopplerHook';
+  // Fee for fixed-fee pools, or initial LP fee when useDynamicFee=true.
+  fee: number;
+  // Use dynamic LP fees on the migrated V4 pool.
+  useDynamicFee?: boolean;
+  // Tick spacing for the migrated V4 pool.
+  tickSpacing: number;
+  // Fee lock duration in seconds.
+  lockDuration: number;
+  // Fee streaming beneficiaries (must be sorted and sum to WAD onchain).
+  beneficiaries: BeneficiaryData[];
+  // Generic hook configuration (raw initialization calldata).
+  hook?: {
+    hookAddress: Address;
+    onInitializationCalldata?: `0x${string}`;
+  };
+  // Ergonomic helper for RehypeDopplerHookMigrator initialization.
+  rehype?: RehypeDopplerHookMigratorConfig;
+  // Optional proceeds split paid out during migration.
+  proceedsSplit?: {
+    recipient: Address;
+    share: bigint;
+  };
+}
+
 export type MigrationConfig =
   | { type: 'uniswapV2' } // Basic migration to a new Uniswap v2 pool
   | {
@@ -185,6 +235,7 @@ export type MigrationConfig =
         beneficiaries: BeneficiaryData[]; // Uses shares in WAD (1e18 = 100%)
       };
     }
+  | DopplerHookMigrationConfig // Dynamic-only: migration via DopplerHookMigrator
   | { type: 'noOp' }; // No migration - used with lockable beneficiaries
 
 // Create Static Auction parameters
@@ -824,5 +875,7 @@ export interface ModuleAddressOverrides {
   // Migrators
   v2Migrator?: Address;
   v4Migrator?: Address;
+  dopplerHookMigrator?: Address;
+  rehypeDopplerHookMigrator?: Address;
   noOpMigrator?: Address;
 }

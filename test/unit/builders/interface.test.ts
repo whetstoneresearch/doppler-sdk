@@ -33,6 +33,8 @@ describe('BaseAuctionBuilder interface', () => {
     expect(typeof builder.withVesting).toBe('function');
     expect(typeof builder.withGovernance).toBe('function');
     expect(typeof builder.withMigration).toBe('function');
+    expect(typeof (builder as DynamicAuctionBuilder<typeof CHAIN_IDS.BASE>).withDopplerHookMigrator).toBe('function');
+    expect(typeof (builder as DynamicAuctionBuilder<typeof CHAIN_IDS.BASE>).withRehypeDopplerHookMigrator).toBe('function');
     expect(typeof builder.withUserAddress).toBe('function');
     expect(typeof builder.withIntegrator).toBe('function');
     expect(typeof builder.withGasLimit).toBe('function');

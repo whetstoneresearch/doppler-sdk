@@ -50,6 +50,8 @@ export interface ChainAddresses {
   // Migration contracts
   v2Migrator: Address;
   v4Migrator: Address;
+  dopplerHookMigrator?: Address;
+  rehypeDopplerHookMigrator?: Address;
   v4MigratorHook?: Address;
   noOpMigrator?: Address;
 
@@ -79,7 +81,8 @@ const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as Address;
 
 export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
   [CHAIN_IDS.MAINNET]: {
-    airlock: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MAINNET].Airlock as Address,
+    airlock: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MAINNET]
+      .Airlock as Address,
     tokenFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MAINNET]
       .CloneERC20Factory as Address,
     v3Initializer: ZERO_ADDRESS,
@@ -232,6 +235,11 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       .UniswapV2Migrator as Address,
     v4Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
       .UniswapV4Migrator as Address,
+    dopplerHookMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
+      .DopplerHookMigrator as Address,
+    rehypeDopplerHookMigrator: GENERATED_DOPPLER_DEPLOYMENTS[
+      CHAIN_IDS.BASE_SEPOLIA
+    ].RehypeDopplerHookMigrator as Address,
     v4MigratorHook: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
       .UniswapV4MigratorHook as Address,
     noOpMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]

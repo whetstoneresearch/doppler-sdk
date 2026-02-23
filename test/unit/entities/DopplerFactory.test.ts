@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { DopplerFactory } from '../../../src/entities/DopplerFactory';
+import { DynamicAuctionBuilder } from '../../../src/builders';
 import {
   createMockPublicClient,
   createMockWalletClient,
@@ -358,6 +359,27 @@ describe('DopplerFactory', () => {
       );
     });
 
+    it('rejects dopplerHook migration for multicurve auctions', () => {
+      const params = multicurveParams();
+      params.migration = {
+        type: 'dopplerHook',
+        fee: 3000,
+        tickSpacing: 60,
+        lockDuration: 30 * DAY_SECONDS,
+        beneficiaries: [
+          {
+            beneficiary:
+              '0x1234567890123456789012345678901234567890' as Address,
+            shares: parseEther('1'),
+          },
+        ],
+      };
+
+      expect(() => factory.encodeCreateMulticurveParams(params)).toThrow(
+        'dopplerHook migration is only supported for dynamic auctions',
+      );
+    });
+
     it('accepts decay startFee up to 80%', () => {
       const params = multicurveParams();
       params.initializer = {
@@ -420,6 +442,29 @@ describe('DopplerFactory', () => {
 
       await expect(factory.createStaticAuction(invalidParams)).rejects.toThrow(
         'Cannot sell more tokens than initial supply',
+      );
+    });
+
+    it('rejects dopplerHook migration for static auctions', async () => {
+      const invalidParams = {
+        ...validParams,
+        migration: {
+          type: 'dopplerHook' as const,
+          fee: 3000,
+          tickSpacing: 60,
+          lockDuration: 30 * DAY_SECONDS,
+          beneficiaries: [
+            {
+              beneficiary:
+                '0x1234567890123456789012345678901234567890' as Address,
+              shares: parseEther('1'),
+            },
+          ],
+        },
+      };
+
+      await expect(factory.createStaticAuction(invalidParams)).rejects.toThrow(
+        'dopplerHook migration is only supported for dynamic auctions',
       );
     });
 
@@ -738,6 +783,228 @@ describe('DopplerFactory', () => {
       expect(typeof poolId).toBe('string');
       expect(poolId.startsWith('0x')).toBe(true);
       expect(gasEstimate).toBe(12_250_000n);
+    });
+
+    it('encodes dopplerHook migration with rehype helper for dynamic auctions', async () => {
+      const marketCapParams = DynamicAuctionBuilder.forChain(1)
+        .tokenConfig({
+          name: 'Test Token',
+          symbol: 'TEST',
+          tokenURI: 'https://example.com/token',
+        })
+        .saleConfig({
+          initialSupply: parseEther('1000000'),
+          numTokensToSell: parseEther('500000'),
+          numeraire: mockAddresses.weth,
+        })
+        .withMarketCapRange({
+          marketCap: { start: 500_000, min: 50_000 },
+          numerairePrice: 3000,
+          minProceeds: parseEther('100'),
+          maxProceeds: parseEther('10000'),
+          fee: 3000,
+          tickSpacing: 10,
+          duration: 7 * DAY_SECONDS,
+          epochLength: 3600,
+        })
+        .withGovernance({ type: 'noOp' })
+        .withMigration({ type: 'uniswapV4', fee: 3000, tickSpacing: 10 })
+        .withUserAddress('0x1234567890123456789012345678901234567890' as Address)
+        .build();
+
+      const params: CreateDynamicAuctionParams = {
+        ...marketCapParams,
+        migration: {
+          type: 'dopplerHook',
+          fee: 3000,
+          tickSpacing: 10,
+          lockDuration: 30 * DAY_SECONDS,
+          beneficiaries: [
+            {
+              beneficiary:
+                '0x1234567890123456789012345678901234567890' as Address,
+              shares: parseEther('1'),
+            },
+          ],
+          rehype: {
+            buybackDestination:
+              '0x1234567890123456789012345678901234567890' as Address,
+            customFee: 3000,
+            assetBuybackPercentWad: parseEther('0.25'),
+            numeraireBuybackPercentWad: parseEther('0.25'),
+            beneficiaryPercentWad: parseEther('0.25'),
+            lpPercentWad: parseEther('0.25'),
+          },
+        },
+      };
+
+      const { createParams } = await factory.encodeCreateDynamicAuctionParams(params);
+
+      expect(createParams.liquidityMigrator).toBe(mockAddresses.dopplerHookMigrator);
+
+      const decoded = decodeAbiParameters(
+        [
+          { type: 'uint24' },
+          { type: 'bool' },
+          { type: 'int24' },
+          { type: 'uint32' },
+          {
+            type: 'tuple[]',
+            components: [
+              { type: 'address', name: 'beneficiary' },
+              { type: 'uint96', name: 'shares' },
+            ],
+          },
+          { type: 'address' },
+          { type: 'bytes' },
+          { type: 'address' },
+          { type: 'uint256' },
+        ],
+        createParams.liquidityMigratorData,
+      ) as readonly [
+        number,
+        boolean,
+        number,
+        number,
+        readonly { beneficiary: Address; shares: bigint }[],
+        Address,
+        `0x${string}`,
+        Address,
+        bigint,
+      ];
+
+      expect(decoded[0]).toBe(3000);
+      expect(decoded[1]).toBe(false);
+      expect(decoded[2]).toBe(10);
+      expect(decoded[3]).toBe(30 * DAY_SECONDS);
+      expect(decoded[4]).toHaveLength(1);
+      expect(decoded[5]).toBe(mockAddresses.rehypeDopplerHookMigrator);
+      expect(decoded[7]).toBe(ZERO_ADDRESS);
+      expect(decoded[8]).toBe(0n);
+
+      const rehypeInit = decodeAbiParameters(
+        [
+          { type: 'address' },
+          { type: 'address' },
+          { type: 'uint24' },
+          { type: 'uint256' },
+          { type: 'uint256' },
+          { type: 'uint256' },
+          { type: 'uint256' },
+        ],
+        decoded[6],
+      );
+
+      expect(rehypeInit[0]).toBe(marketCapParams.sale.numeraire);
+      expect(rehypeInit[1]).toBe(
+        '0x1234567890123456789012345678901234567890',
+      );
+      expect(rehypeInit[2]).toBe(3000);
+      expect(rehypeInit[3]).toBe(parseEther('0.25'));
+      expect(rehypeInit[4]).toBe(parseEther('0.25'));
+      expect(rehypeInit[5]).toBe(parseEther('0.25'));
+      expect(rehypeInit[6]).toBe(parseEther('0.25'));
+    });
+
+    it('encodes dopplerHook migration with generic hook + proceeds split', async () => {
+      const genericHook =
+        '0x9999999999999999999999999999999999999999' as Address;
+      const proceedsRecipient =
+        '0x1111111111111111111111111111111111111111' as Address;
+
+      const marketCapParams = DynamicAuctionBuilder.forChain(1)
+        .tokenConfig({
+          name: 'Test Token',
+          symbol: 'TEST',
+          tokenURI: 'https://example.com/token',
+        })
+        .saleConfig({
+          initialSupply: parseEther('1000000'),
+          numTokensToSell: parseEther('500000'),
+          numeraire: mockAddresses.weth,
+        })
+        .withMarketCapRange({
+          marketCap: { start: 500_000, min: 50_000 },
+          numerairePrice: 3000,
+          minProceeds: parseEther('100'),
+          maxProceeds: parseEther('10000'),
+          fee: 3000,
+          tickSpacing: 10,
+          duration: 7 * DAY_SECONDS,
+          epochLength: 3600,
+        })
+        .withGovernance({ type: 'noOp' })
+        .withMigration({ type: 'uniswapV4', fee: 3000, tickSpacing: 10 })
+        .withUserAddress('0x1234567890123456789012345678901234567890' as Address)
+        .build();
+
+      const params: CreateDynamicAuctionParams = {
+        ...marketCapParams,
+        migration: {
+          type: 'dopplerHook',
+          fee: 500,
+          useDynamicFee: true,
+          tickSpacing: 20,
+          lockDuration: DAY_SECONDS,
+          beneficiaries: [
+            {
+              beneficiary:
+                '0x1234567890123456789012345678901234567890' as Address,
+              shares: parseEther('1'),
+            },
+          ],
+          hook: {
+            hookAddress: genericHook,
+            onInitializationCalldata: '0x1234',
+          },
+          proceedsSplit: {
+            recipient: proceedsRecipient,
+            share: parseEther('0.1'),
+          },
+        },
+      };
+
+      const { createParams } = await factory.encodeCreateDynamicAuctionParams(params);
+
+      const decoded = decodeAbiParameters(
+        [
+          { type: 'uint24' },
+          { type: 'bool' },
+          { type: 'int24' },
+          { type: 'uint32' },
+          {
+            type: 'tuple[]',
+            components: [
+              { type: 'address', name: 'beneficiary' },
+              { type: 'uint96', name: 'shares' },
+            ],
+          },
+          { type: 'address' },
+          { type: 'bytes' },
+          { type: 'address' },
+          { type: 'uint256' },
+        ],
+        createParams.liquidityMigratorData,
+      ) as readonly [
+        number,
+        boolean,
+        number,
+        number,
+        readonly { beneficiary: Address; shares: bigint }[],
+        Address,
+        `0x${string}`,
+        Address,
+        bigint,
+      ];
+
+      expect(decoded[0]).toBe(500);
+      expect(decoded[1]).toBe(true);
+      expect(decoded[2]).toBe(20);
+      expect(decoded[3]).toBe(DAY_SECONDS);
+      expect(decoded[5]).toBe(genericHook);
+      expect(decoded[6]).toBe('0x1234');
+      expect(decoded[7]).toBe(proceedsRecipient);
+      expect(decoded[8]).toBe(parseEther('0.1'));
     });
 
     it('should allow overriding gas when creating a dynamic auction', async () => {
