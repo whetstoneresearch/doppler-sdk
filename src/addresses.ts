@@ -81,7 +81,8 @@ const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as Address;
 
 export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
   [CHAIN_IDS.MAINNET]: {
-    airlock: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MAINNET].Airlock as Address,
+    airlock: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MAINNET]
+      .Airlock as Address,
     tokenFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MAINNET]
       .CloneERC20Factory as Address,
     v3Initializer: ZERO_ADDRESS,
@@ -105,9 +106,8 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       .UniswapV4Migrator as Address,
     dopplerHookMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MAINNET]
       .DopplerHookMigrator as Address,
-    rehypeDopplerHookMigrator: GENERATED_DOPPLER_DEPLOYMENTS[
-      CHAIN_IDS.MAINNET
-    ].RehypeDopplerHookMigrator as Address,
+    rehypeDopplerHookMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MAINNET]
+      .RehypeDopplerHookMigrator as Address,
     noOpMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MAINNET]
       .NoOpMigrator as Address,
     governanceFactory: ZERO_ADDRESS,
@@ -146,9 +146,8 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       .UniswapV2Migrator as Address,
     v4Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ETH_SEPOLIA]
       .UniswapV4Migrator as Address,
-    dopplerHookMigrator: GENERATED_DOPPLER_DEPLOYMENTS[
-      CHAIN_IDS.ETH_SEPOLIA
-    ].DopplerHookMigrator as Address,
+    dopplerHookMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ETH_SEPOLIA]
+      .DopplerHookMigrator as Address,
     rehypeDopplerHookMigrator: GENERATED_DOPPLER_DEPLOYMENTS[
       CHAIN_IDS.ETH_SEPOLIA
     ].RehypeDopplerHookMigrator as Address,
@@ -250,9 +249,8 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       .UniswapV2Migrator as Address,
     v4Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
       .UniswapV4Migrator as Address,
-    dopplerHookMigrator: GENERATED_DOPPLER_DEPLOYMENTS[
-      CHAIN_IDS.BASE_SEPOLIA
-    ].DopplerHookMigrator as Address,
+    dopplerHookMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
+      .DopplerHookMigrator as Address,
     rehypeDopplerHookMigrator: GENERATED_DOPPLER_DEPLOYMENTS[
       CHAIN_IDS.BASE_SEPOLIA
     ].RehypeDopplerHookMigrator as Address,
@@ -405,9 +403,8 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     v2Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_MAINNET]
       .UniswapV2Migrator as Address,
     v4Migrator: ZERO_ADDRESS,
-    dopplerHookMigrator: GENERATED_DOPPLER_DEPLOYMENTS[
-      CHAIN_IDS.MONAD_MAINNET
-    ].DopplerHookMigrator as Address,
+    dopplerHookMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_MAINNET]
+      .DopplerHookMigrator as Address,
     rehypeDopplerHookMigrator: GENERATED_DOPPLER_DEPLOYMENTS[
       CHAIN_IDS.MONAD_MAINNET
     ].RehypeDopplerHookMigrator as Address,

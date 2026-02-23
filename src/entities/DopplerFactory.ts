@@ -84,7 +84,12 @@ const TOKEN_FACTORY_80_ADDRESS =
 type ResolvedMulticurveInitializerMode =
   | { type: 'standard' }
   | { type: 'scheduled'; startTime: number }
-  | { type: 'decay'; startTime: number; startFee: number; durationSeconds: number }
+  | {
+      type: 'decay';
+      startTime: number;
+      startFee: number;
+      durationSeconds: number;
+    }
   | { type: 'rehype'; hookConfig?: RehypeDopplerHookConfig };
 
 export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
@@ -1286,11 +1291,10 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
           }
 
           dopplerHookAddress = resolvedRehypeHookAddress;
-          onInitializationCalldata =
-            encodeRehypeDopplerHookMigratorCalldata({
-              numeraire: options.numeraire,
-              config: dopplerHookConfig.rehype,
-            });
+          onInitializationCalldata = encodeRehypeDopplerHookMigratorCalldata({
+            numeraire: options.numeraire,
+            config: dopplerHookConfig.rehype,
+          });
         }
 
         const proceedsRecipient =
@@ -1337,11 +1341,9 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
   /**
    * Encode create params for Uniswap V4 Multicurve initializer/migrator flow
    */
-  private normalizeUint32(
-    value: number | bigint,
-    label: string,
-  ): number {
-    const normalized = typeof value === 'bigint' ? Number(value) : Number(value);
+  private normalizeUint32(value: number | bigint, label: string): number {
+    const normalized =
+      typeof value === 'bigint' ? Number(value) : Number(value);
     if (!Number.isFinite(normalized) || !Number.isInteger(normalized)) {
       throw new Error(
         `${label} must be an integer number of seconds since Unix epoch`,
@@ -2448,12 +2450,12 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       const migration = params.migration;
 
       if (!Number.isInteger(migration.fee) || migration.fee < 0) {
-        throw new Error('DopplerHook migration fee must be a non-negative integer');
+        throw new Error(
+          'DopplerHook migration fee must be a non-negative integer',
+        );
       }
       if (migration.fee > 150_000) {
-        throw new Error(
-          'DopplerHook migration fee must be <= 150000 (15%)',
-        );
+        throw new Error('DopplerHook migration fee must be <= 150000 (15%)');
       }
 
       if (
@@ -2504,9 +2506,7 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
           !Number.isInteger(migration.rehype.customFee) ||
           migration.rehype.customFee < 0
         ) {
-          throw new Error(
-            'Rehype customFee must be a non-negative integer',
-          );
+          throw new Error('Rehype customFee must be a non-negative integer');
         }
         if (migration.rehype.customFee > 1_000_000) {
           throw new Error('Rehype customFee must be <= 1000000 (100%)');
@@ -2533,7 +2533,9 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
         }
 
         if (migration.proceedsSplit.share < 0n) {
-          throw new Error('DopplerHook proceeds split share cannot be negative');
+          throw new Error(
+            'DopplerHook proceeds split share cannot be negative',
+          );
         }
 
         if (migration.proceedsSplit.share > MAX_PROCEEDS_SPLIT_SHARE) {

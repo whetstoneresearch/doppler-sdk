@@ -8,7 +8,11 @@ import {
   getAddress,
   decodeAbiParameters,
 } from 'viem';
-import { DERC20Bytecode, DERC2080Bytecode, DopplerDN404Bytecode } from '../abis';
+import {
+  DERC20Bytecode,
+  DERC2080Bytecode,
+  DopplerDN404Bytecode,
+} from '../abis';
 
 const DEFAULT_MAX_ITERATIONS = 1_000_000;
 
@@ -73,7 +77,10 @@ const DOPPLER404_TOKEN_DATA_ABI = [
   { type: 'uint256' },
 ] as const;
 
-function normalizeHexFragment(value: string, label: 'prefix' | 'suffix'): string {
+function normalizeHexFragment(
+  value: string,
+  label: 'prefix' | 'suffix',
+): string {
   const normalized = value.trim().toLowerCase().replace(/^0x/, '');
   if (normalized.length === 0) {
     throw new Error(
@@ -86,9 +93,7 @@ function normalizeHexFragment(value: string, label: 'prefix' | 'suffix'): string
     );
   }
   if (!/^[0-9a-f]+$/i.test(normalized)) {
-    throw new Error(
-      `TokenAddressMiner: ${label} must be a hexadecimal string`,
-    );
+    throw new Error(`TokenAddressMiner: ${label} must be a hexadecimal string`);
   }
   return normalized;
 }
@@ -133,7 +138,10 @@ function bytesToHex(bytes: Uint8Array): string {
  * Pre-compute CREATE2 buffer with constant prefix for fast mining
  * Buffer layout: 0xff (1 byte) + deployer (20 bytes) + salt (32 bytes) + initCodeHash (32 bytes) = 85 bytes
  */
-function prepareCreate2Buffer(deployer: Address, initCodeHash: Hash): Uint8Array {
+function prepareCreate2Buffer(
+  deployer: Address,
+  initCodeHash: Hash,
+): Uint8Array {
   const buffer = new Uint8Array(85);
   buffer[0] = 0xff;
   const deployerBytes = hexToBytes(deployer);
@@ -359,7 +367,8 @@ export function mineTokenAddress(
     const candidateHex = candidateRaw.slice(2);
     iterations++;
 
-    if (normalizedPrefix && !candidateHex.startsWith(normalizedPrefix)) continue;
+    if (normalizedPrefix && !candidateHex.startsWith(normalizedPrefix))
+      continue;
     if (normalizedSuffix && !candidateHex.endsWith(normalizedSuffix)) continue;
 
     let hookAddressRaw: string | undefined;
@@ -367,7 +376,8 @@ export function mineTokenAddress(
       updateSaltInBuffer(hookBuffer, salt);
       hookAddressRaw = computeCreate2AddressFast(hookBuffer);
       const hookHex = hookAddressRaw.slice(2);
-      if (hookConfig?.prefix && !hookHex.startsWith(hookConfig.prefix)) continue;
+      if (hookConfig?.prefix && !hookHex.startsWith(hookConfig.prefix))
+        continue;
       if (hookConfig?.suffix && !hookHex.endsWith(hookConfig.suffix)) continue;
     }
 

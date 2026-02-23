@@ -34,7 +34,7 @@ export type {
 } from '../types';
 
 export function getMaxTickRounded(tickSpacing: number): number {
-  return Math.floor(MAX_TICK / tickSpacing) * tickSpacing
+  return Math.floor(MAX_TICK / tickSpacing) * tickSpacing;
 }
 
 /**
@@ -444,23 +444,25 @@ export function marketCapToTicksForMulticurve(
     numeraireDecimals,
     tickSpacing,
   );
-  const tickAtUpper = marketCapUpper === 'max'
-    ? getMaxTickRounded(tickSpacing)
-    : -_computeRawTick(
-        marketCapUpper,
-        tokenSupply,
-        numerairePriceUSD,
-        tokenDecimals,
-        numeraireDecimals,
-        tickSpacing,
-      );
+  const tickAtUpper =
+    marketCapUpper === 'max'
+      ? getMaxTickRounded(tickSpacing)
+      : -_computeRawTick(
+          marketCapUpper,
+          tokenSupply,
+          numerairePriceUSD,
+          tokenDecimals,
+          numeraireDecimals,
+          tickSpacing,
+        );
 
   // Use natural tick ordering (lower market cap = lower tick value)
   const tickLower = Math.min(tickAtLower, tickAtUpper);
   const tickUpper = Math.max(tickAtLower, tickAtUpper);
 
   if (tickLower === tickUpper) {
-    const upperLabel = marketCapUpper === 'max' ? 'max' : `$${marketCapUpper.toLocaleString()}`;
+    const upperLabel =
+      marketCapUpper === 'max' ? 'max' : `$${marketCapUpper.toLocaleString()}`;
     throw new Error(
       `Market cap range $${marketCapLower.toLocaleString()} - ${upperLabel} ` +
         `resulted in same tick (${tickLower}). Try a wider range or smaller tick spacing.`,

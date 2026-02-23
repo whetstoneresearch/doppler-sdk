@@ -490,7 +490,13 @@ export class DynamicAuctionBuilder<
       const epochLength = config.epochLength ?? DEFAULT_EPOCH_LENGTH;
       const gamma =
         config.gamma ??
-        computeOptimalGamma(startTick, endTick, duration, epochLength, tickSpacing);
+        computeOptimalGamma(
+          startTick,
+          endTick,
+          duration,
+          epochLength,
+          tickSpacing,
+        );
 
       this.auction = {
         duration,
