@@ -5,6 +5,7 @@ import type {
   HookInfo,
   PoolInfo,
   SupportedPublicClient,
+  V4PoolKey,
 } from './types';
 import { getAddresses, type SupportedChainId } from './addresses';
 import { DopplerFactory } from './entities/DopplerFactory';
@@ -16,6 +17,7 @@ import {
   RehypeDopplerHookMigrator,
   OpeningAuction,
   OpeningAuctionLifecycle,
+  OpeningAuctionBidManager,
   OpeningAuctionPositionManager,
 } from './entities/auction';
 import { Quoter } from './entities/quoter';
@@ -170,6 +172,28 @@ export class DopplerSDK<C extends SupportedChainId = SupportedChainId> {
       this.walletClient,
       resolvedPositionManager,
     );
+  }
+
+  /**
+   * Get a context-bound OpeningAuctionBidManager for placing/withdrawing bids, status reads, and incentive claims.
+   * @param args.openingAuctionHookAddress Opening auction hook address
+   * @param args.openingAuctionPoolKey Opening auction pool key from OpeningAuctionLifecycle.getState(asset)
+   * @param args.positionManagerAddress Optional OpeningAuctionPositionManager override
+   */
+  async getOpeningAuctionBidManager(args: {
+    openingAuctionHookAddress: Address;
+    openingAuctionPoolKey: V4PoolKey;
+    positionManagerAddress?: Address;
+  }): Promise<OpeningAuctionBidManager> {
+    const positionManager = await this.getOpeningAuctionPositionManager(
+      args.positionManagerAddress,
+    );
+
+    return new OpeningAuctionBidManager(this.publicClient, this.walletClient, {
+      openingAuctionHookAddress: args.openingAuctionHookAddress,
+      openingAuctionPoolKey: args.openingAuctionPoolKey,
+      positionManagerAddress: positionManager.getAddress(),
+    });
   }
 
   /**

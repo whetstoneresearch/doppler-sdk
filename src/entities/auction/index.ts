@@ -4,5 +4,41 @@ export { MulticurvePool } from './MulticurvePool';
 export { RehypeDopplerHook } from './RehypeDopplerHook';
 export { RehypeDopplerHookMigrator } from './RehypeDopplerHookMigrator';
 export { OpeningAuction } from './OpeningAuction';
+export type {
+  OpeningAuctionBidConstraints,
+  OpeningAuctionPosition,
+  OpeningAuctionSettlementData,
+  OpeningAuctionIncentiveData,
+} from './OpeningAuction';
 export { OpeningAuctionLifecycle } from './OpeningAuctionLifecycle';
 export { OpeningAuctionPositionManager } from './OpeningAuctionPositionManager';
+export type {
+  OpeningAuctionModifyLiquidityParams,
+  OpeningAuctionModifyLiquiditySimulationResult,
+  OpeningAuctionWithdrawFullBidSimulationResult,
+  OpeningAuctionWithdrawFullBidResult,
+} from './OpeningAuctionPositionManager';
+export { OpeningAuctionBidManager } from './OpeningAuctionBidManager';
+export type {
+  OpeningAuctionOwnerBidInfo,
+  OpeningAuctionOwnerBidStatus,
+  OpeningAuctionBidPlacedEvent,
+  OpeningAuctionBidWithdrawnEvent,
+  OpeningAuctionIncentivesClaimedEvent,
+  OpeningAuctionPhaseChangedEvent,
+  OpeningAuctionEstimatedClearingTickUpdatedEvent,
+  OpeningAuctionWatchBidPlacedOptions,
+  OpeningAuctionWatchBidWithdrawnOptions,
+  OpeningAuctionWatchIncentivesClaimedOptions,
+  OpeningAuctionWatchPhaseChangeOptions,
+  OpeningAuctionWatchEstimatedClearingTickOptions,
+  OpeningAuctionMoveBidArgs,
+  OpeningAuctionMoveBidSimulationResult,
+  OpeningAuctionMoveBidResult,
+  OpeningAuctionBidQuote,
+  OpeningAuctionClaimAllIncentivesPreview,
+  OpeningAuctionClaimAllIncentivesResult,
+  OpeningAuctionBidValidationResult,
+  OpeningAuctionQuoteFromTokenAmountArgs,
+  OpeningAuctionQuoteFromTokenAmountResult,
+} from './OpeningAuctionBidManager';

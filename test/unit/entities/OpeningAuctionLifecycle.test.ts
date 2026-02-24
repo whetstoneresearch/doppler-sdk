@@ -45,7 +45,7 @@ describe('OpeningAuctionLifecycle', () => {
         1_700_086_400n,
         500_000n,
         300_000n,
-        2,
+        2n,
         mockHookAddress,
         mockDopplerHook,
         [mockTokenAddress, mockAddresses.weth, 3000n, 60n, mockHookAddress],

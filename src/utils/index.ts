@@ -48,7 +48,14 @@ export {
 
 export { decodeBalanceDelta } from './balanceDelta';
 
-export { computePoolId } from './poolKey';
+export { computePoolId, normalizePoolKey } from './poolKey';
+
+export {
+  getAmount0ForLiquidity,
+  getAmount1ForLiquidity,
+  getLiquidityForAmount0,
+  getLiquidityForAmount1,
+} from './liquidityMath';
 
 export { computeOptimalGamma } from './computeOptimalGamma';
 

@@ -118,7 +118,7 @@ describe('Opening Auction (Base Sepolia fork) smoke test', () => {
 
   it('SDK opening auction lifecycle helper is available', async () => {
     // The SDK lifecycle helper is configured with the initializer address
-    const lifecycle = sdk.getOpeningAuctionLifecycle()
+    const lifecycle = await sdk.getOpeningAuctionLifecycle()
     expect(lifecycle).toBeDefined()
 
     // The lifecycle helper provides methods to interact with the initializer
@@ -187,13 +187,13 @@ describe('Opening Auction (Base Sepolia fork) smoke test', () => {
     }
   })
 
-  it('SDK can access opening auction lifecycle helper', () => {
-    const lifecycle = sdk.getOpeningAuctionLifecycle()
+  it('SDK can access opening auction lifecycle helper', async () => {
+    const lifecycle = await sdk.getOpeningAuctionLifecycle()
     expect(lifecycle).toBeDefined()
   })
 
-  it('SDK can access opening auction position manager helper', () => {
-    const positionManager = sdk.getOpeningAuctionPositionManager()
+  it('SDK can access opening auction position manager helper', async () => {
+    const positionManager = await sdk.getOpeningAuctionPositionManager()
     expect(positionManager).toBeDefined()
   })
 })

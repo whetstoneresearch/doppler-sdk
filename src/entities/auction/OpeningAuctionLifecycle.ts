@@ -6,35 +6,8 @@ import {
   type Account,
 } from 'viem';
 import { openingAuctionInitializerAbi } from '../../abis';
-import type { OpeningAuctionState, SupportedPublicClient, V4PoolKey } from '../../types';
-
-function normalizePoolKey(value: unknown): V4PoolKey {
-  if (Array.isArray(value)) {
-    const [currency0, currency1, feeRaw, tickSpacingRaw, hooks] = value as [
-      Address,
-      Address,
-      number | bigint,
-      number | bigint,
-      Address,
-    ];
-    return {
-      currency0,
-      currency1,
-      fee: Number(feeRaw),
-      tickSpacing: Number(tickSpacingRaw),
-      hooks,
-    };
-  }
-
-  const obj = value as Record<string, unknown>;
-  return {
-    currency0: obj.currency0 as Address,
-    currency1: obj.currency1 as Address,
-    fee: Number(obj.fee),
-    tickSpacing: Number(obj.tickSpacing),
-    hooks: obj.hooks as Address,
-  };
-}
+import type { OpeningAuctionState, SupportedPublicClient } from '../../types';
+import { normalizePoolKey } from '../../utils/poolKey';
 
 export class OpeningAuctionLifecycle {
   private publicClient: SupportedPublicClient;
@@ -86,7 +59,7 @@ export class OpeningAuctionLifecycle {
         bigint,
         bigint,
         bigint,
-        number,
+        number | bigint,
         Address,
         Address,
         unknown,
@@ -100,7 +73,7 @@ export class OpeningAuctionLifecycle {
         auctionEndTime,
         auctionTokens,
         dopplerTokens,
-        status,
+        status: Number(status),
         openingAuctionHook,
         dopplerHook,
         openingAuctionPoolKey: normalizePoolKey(openingAuctionPoolKey),

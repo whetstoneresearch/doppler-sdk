@@ -15,6 +15,9 @@ import type { SupportedPublicClient, V4PoolKey } from '../../types';
 import { decodeBalanceDelta } from '../../utils';
 import { OpeningAuction } from './OpeningAuction';
 
+const INT24_MIN = -8_388_608;
+const INT24_MAX = 8_388_607;
+
 export interface OpeningAuctionModifyLiquidityParams {
   tickLower: number;
   tickUpper: number;
@@ -24,6 +27,7 @@ export interface OpeningAuctionModifyLiquidityParams {
 
 export interface OpeningAuctionModifyLiquiditySimulationResult {
   request: unknown;
+  gasEstimate: bigint;
   delta: bigint;
   decoded: {
     amount0: bigint;
@@ -83,7 +87,7 @@ export class OpeningAuctionPositionManager {
 
   static encodeOwnerHookData(
     owner: Address,
-    format: 'packed' | 'abi' = 'abi',
+    format: 'packed' | 'abi' = 'packed',
   ): Hex {
     // The hook accepts either 20-byte packed address or ABI-encoded address.
     if (format === 'packed') return owner as unknown as Hex;
@@ -115,12 +119,104 @@ export class OpeningAuctionPositionManager {
     liquidityDelta: bigint;
     salt?: Hash;
   }): OpeningAuctionModifyLiquidityParams {
+    const { tickLower, tickUpper } = OpeningAuctionPositionManager.validateSingleTick(
+      {
+        key: args.key,
+        tickLower: args.tickLower,
+      },
+    );
+
     return {
-      tickLower: args.tickLower,
-      tickUpper: args.tickLower + args.key.tickSpacing,
+      tickLower,
+      tickUpper,
       liquidityDelta: args.liquidityDelta,
       salt: args.salt ?? zeroHash,
     };
+  }
+
+  static validateSingleTick(args: {
+    key: V4PoolKey;
+    tickLower: number;
+    tickUpper?: number;
+  }): { tickLower: number; tickUpper: number } {
+    if (!Number.isInteger(args.tickLower)) {
+      throw new Error('tickLower must be an integer int24');
+    }
+    if (args.tickLower < INT24_MIN || args.tickLower > INT24_MAX) {
+      throw new Error(
+        `tickLower out of int24 bounds (${INT24_MIN}..${INT24_MAX})`,
+      );
+    }
+    if (!Number.isInteger(args.key.tickSpacing) || args.key.tickSpacing <= 0) {
+      throw new Error('tickSpacing must be a positive integer');
+    }
+    if (args.tickLower % args.key.tickSpacing !== 0) {
+      throw new Error(
+        `tickLower (${args.tickLower}) must align to tickSpacing (${args.key.tickSpacing})`,
+      );
+    }
+
+    const tickUpper = args.tickUpper ?? args.tickLower + args.key.tickSpacing;
+    if (!Number.isInteger(tickUpper)) {
+      throw new Error('tickUpper must be an integer int24');
+    }
+    if (tickUpper < INT24_MIN || tickUpper > INT24_MAX) {
+      throw new Error(
+        `tickUpper out of int24 bounds (${INT24_MIN}..${INT24_MAX})`,
+      );
+    }
+    if (tickUpper - args.tickLower !== args.key.tickSpacing) {
+      throw new Error(
+        `single-tick bids require tickUpper - tickLower == tickSpacing (${args.key.tickSpacing})`,
+      );
+    }
+
+    return {
+      tickLower: args.tickLower,
+      tickUpper,
+    };
+  }
+
+  private static assertPositiveLiquidity(
+    liquidity: bigint,
+    operation: 'placeBid' | 'withdrawBid',
+  ): void {
+    if (liquidity <= 0n) {
+      throw new Error(`${operation} requires liquidity > 0`);
+    }
+  }
+
+  private async estimateModifyLiquidityGas(
+    args:
+      | {
+          key: V4PoolKey;
+          params: OpeningAuctionModifyLiquidityParams;
+          account?: Address | Account;
+        }
+      | {
+          key: V4PoolKey;
+          params: OpeningAuctionModifyLiquidityParams;
+          hookData: Hex;
+          account?: Address | Account;
+        },
+  ): Promise<bigint> {
+    if ('hookData' in args) {
+      return await this.rpc.estimateContractGas({
+        address: this.positionManagerAddress,
+        abi: openingAuctionPositionManagerAbi,
+        functionName: 'modifyLiquidity',
+        args: [args.key, args.params, args.hookData],
+        account: args.account ?? this.walletClient?.account,
+      } as any);
+    }
+
+    return await this.rpc.estimateContractGas({
+      address: this.positionManagerAddress,
+      abi: openingAuctionPositionManagerAbi,
+      functionName: 'modifyLiquidity',
+      args: [args.key, args.params],
+      account: args.account ?? this.walletClient?.account,
+    } as any);
   }
 
   async simulateModifyLiquidity(
@@ -136,12 +232,40 @@ export class OpeningAuctionPositionManager {
       account: account ?? this.walletClient?.account,
     } as any);
 
+    const gasEstimate =
+      typeof (request as any)?.gas === 'bigint'
+        ? ((request as any).gas as bigint)
+        : await this.estimateModifyLiquidityGas({ key, params, account });
+
     const delta = result as unknown as bigint;
     return {
       request,
+      gasEstimate,
       delta,
       decoded: decodeBalanceDelta(delta),
     };
+  }
+
+  async estimateModifyLiquidityGasWithoutHookData(
+    key: V4PoolKey,
+    params: OpeningAuctionModifyLiquidityParams,
+    account?: Address | Account,
+  ): Promise<bigint> {
+    return await this.estimateModifyLiquidityGas({ key, params, account });
+  }
+
+  async estimateModifyLiquidityGasWithHookData(
+    key: V4PoolKey,
+    params: OpeningAuctionModifyLiquidityParams,
+    hookData: Hex,
+    account?: Address | Account,
+  ): Promise<bigint> {
+    return await this.estimateModifyLiquidityGas({
+      key,
+      params,
+      hookData,
+      account,
+    });
   }
 
   async modifyLiquidity(
@@ -175,9 +299,20 @@ export class OpeningAuctionPositionManager {
       account: account ?? this.walletClient?.account,
     } as any);
 
+    const gasEstimate =
+      typeof (request as any)?.gas === 'bigint'
+        ? ((request as any).gas as bigint)
+        : await this.estimateModifyLiquidityGas({
+            key,
+            params,
+            hookData,
+            account,
+          });
+
     const delta = result as unknown as bigint;
     return {
       request,
+      gasEstimate,
       delta,
       decoded: decodeBalanceDelta(delta),
     };
@@ -210,6 +345,11 @@ export class OpeningAuctionPositionManager {
     hookData?: Hex;
     account?: Address | Account;
   }): Promise<OpeningAuctionModifyLiquiditySimulationResult> {
+    OpeningAuctionPositionManager.assertPositiveLiquidity(
+      args.liquidity,
+      'placeBid',
+    );
+
     const params = OpeningAuctionPositionManager.buildSingleTickParams({
       key: args.key,
       tickLower: args.tickLower,
@@ -229,6 +369,18 @@ export class OpeningAuctionPositionManager {
     return this.simulateModifyLiquidity(args.key, params, args.account);
   }
 
+  async estimatePlaceBidGas(args: {
+    key: V4PoolKey;
+    tickLower: number;
+    liquidity: bigint;
+    salt?: Hash;
+    hookData?: Hex;
+    account?: Address | Account;
+  }): Promise<bigint> {
+    const simulation = await this.simulatePlaceBid(args);
+    return simulation.gasEstimate;
+  }
+
   async placeBid(args: {
     key: V4PoolKey;
     tickLower: number;
@@ -236,6 +388,11 @@ export class OpeningAuctionPositionManager {
     salt?: Hash;
     hookData?: Hex;
   }): Promise<Hash> {
+    OpeningAuctionPositionManager.assertPositiveLiquidity(
+      args.liquidity,
+      'placeBid',
+    );
+
     const params = OpeningAuctionPositionManager.buildSingleTickParams({
       key: args.key,
       tickLower: args.tickLower,
@@ -258,6 +415,11 @@ export class OpeningAuctionPositionManager {
     hookData?: Hex;
     account?: Address | Account;
   }): Promise<OpeningAuctionModifyLiquiditySimulationResult> {
+    OpeningAuctionPositionManager.assertPositiveLiquidity(
+      args.liquidity,
+      'withdrawBid',
+    );
+
     const params = OpeningAuctionPositionManager.buildSingleTickParams({
       key: args.key,
       tickLower: args.tickLower,
@@ -277,6 +439,18 @@ export class OpeningAuctionPositionManager {
     return this.simulateModifyLiquidity(args.key, params, args.account);
   }
 
+  async estimateWithdrawBidGas(args: {
+    key: V4PoolKey;
+    tickLower: number;
+    liquidity: bigint;
+    salt?: Hash;
+    hookData?: Hex;
+    account?: Address | Account;
+  }): Promise<bigint> {
+    const simulation = await this.simulateWithdrawBid(args);
+    return simulation.gasEstimate;
+  }
+
   async withdrawBid(args: {
     key: V4PoolKey;
     tickLower: number;
@@ -284,6 +458,11 @@ export class OpeningAuctionPositionManager {
     salt?: Hash;
     hookData?: Hex;
   }): Promise<Hash> {
+    OpeningAuctionPositionManager.assertPositiveLiquidity(
+      args.liquidity,
+      'withdrawBid',
+    );
+
     const params = OpeningAuctionPositionManager.buildSingleTickParams({
       key: args.key,
       tickLower: args.tickLower,
@@ -327,12 +506,17 @@ export class OpeningAuctionPositionManager {
       );
     }
 
-    const tickUpper = args.tickLower + args.key.tickSpacing;
+    const { tickLower, tickUpper } = OpeningAuctionPositionManager.validateSingleTick(
+      {
+        key: args.key,
+        tickLower: args.tickLower,
+      },
+    );
     const salt = args.salt ?? zeroHash;
 
     const positionId = await opening.getPositionId({
       owner,
-      tickLower: args.tickLower,
+      tickLower,
       tickUpper,
       salt,
     });
@@ -349,7 +533,7 @@ export class OpeningAuctionPositionManager {
 
     const simulation = await this.simulateWithdrawBid({
       key: args.key,
-      tickLower: args.tickLower,
+      tickLower,
       liquidity,
       salt,
       hookData: args.hookData,
@@ -384,12 +568,17 @@ export class OpeningAuctionPositionManager {
       args.openingAuctionHookAddress,
     );
     const owner = args.owner ?? walletAddress;
-    const tickUpper = args.tickLower + args.key.tickSpacing;
+    const { tickLower, tickUpper } = OpeningAuctionPositionManager.validateSingleTick(
+      {
+        key: args.key,
+        tickLower: args.tickLower,
+      },
+    );
     const salt = args.salt ?? zeroHash;
 
     const positionId = await opening.getPositionId({
       owner,
-      tickLower: args.tickLower,
+      tickLower,
       tickUpper,
       salt,
     });
@@ -406,7 +595,7 @@ export class OpeningAuctionPositionManager {
 
     const transactionHash = await this.withdrawBid({
       key: args.key,
-      tickLower: args.tickLower,
+      tickLower,
       liquidity,
       salt,
       hookData: args.hookData,
