@@ -1,10 +1,15 @@
 import {
+  type Account,
   type Address,
   type Hash,
   type PublicClient,
   type WalletClient,
+  zeroAddress,
+  zeroHash,
 } from 'viem';
-import type { SupportedPublicClient } from '../../types';
+import type { SupportedPublicClient, V4PoolKey } from '../../types';
+import { normalizePoolKey } from '../../utils/poolKey';
+import { OpeningAuctionPositionManager } from './OpeningAuctionPositionManager';
 
 const openingAuctionEntityAbi = [
   {
@@ -164,6 +169,206 @@ const openingAuctionEntityAbi = [
     outputs: [],
     stateMutability: 'nonpayable',
   },
+  {
+    type: 'function',
+    name: 'estimatedClearingTick',
+    inputs: [],
+    outputs: [{ type: 'int24' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'liquidityAtTick',
+    inputs: [{ name: 'tick', type: 'int24' }],
+    outputs: [{ type: 'uint128' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'nextPositionId',
+    inputs: [],
+    outputs: [{ type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'ownerPositions',
+    inputs: [
+      { name: 'owner', type: 'address' },
+      { name: 'index', type: 'uint256' },
+    ],
+    outputs: [{ type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'isToken0',
+    inputs: [],
+    outputs: [{ type: 'bool' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'poolKey',
+    inputs: [],
+    outputs: [
+      {
+        type: 'tuple',
+        components: [
+          { name: 'currency0', type: 'address' },
+          { name: 'currency1', type: 'address' },
+          { name: 'fee', type: 'uint24' },
+          { name: 'tickSpacing', type: 'int24' },
+          { name: 'hooks', type: 'address' },
+        ],
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'minLiquidity',
+    inputs: [],
+    outputs: [{ type: 'uint128' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'minAcceptableTickToken0',
+    inputs: [],
+    outputs: [{ type: 'int24' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'minAcceptableTickToken1',
+    inputs: [],
+    outputs: [{ type: 'int24' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'event',
+    name: 'AuctionSettled',
+    inputs: [
+      { name: 'clearingTick', type: 'int24', indexed: false },
+      { name: 'tokensSold', type: 'uint256', indexed: false },
+      { name: 'proceeds', type: 'uint256', indexed: false },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'BidPlaced',
+    inputs: [
+      { name: 'positionId', type: 'uint256', indexed: true },
+      { name: 'owner', type: 'address', indexed: true },
+      { name: 'tickLower', type: 'int24', indexed: false },
+      { name: 'liquidity', type: 'uint128', indexed: false },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'BidWithdrawn',
+    inputs: [
+      { name: 'positionId', type: 'uint256', indexed: true },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'IncentivesClaimed',
+    inputs: [
+      { name: 'positionId', type: 'uint256', indexed: true },
+      { name: 'owner', type: 'address', indexed: true },
+      { name: 'amount', type: 'uint256', indexed: false },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'EstimatedClearingTickUpdated',
+    inputs: [
+      { name: 'newEstimatedClearingTick', type: 'int24', indexed: false },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'PhaseChanged',
+    inputs: [
+      { name: 'oldPhase', type: 'uint8', indexed: true },
+      { name: 'newPhase', type: 'uint8', indexed: true },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'AuctionStarted',
+    inputs: [
+      { name: 'auctionStartTime', type: 'uint256', indexed: false },
+      { name: 'auctionEndTime', type: 'uint256', indexed: false },
+      { name: 'totalAuctionTokens', type: 'uint256', indexed: false },
+      { name: 'incentiveTokensTotal', type: 'uint256', indexed: false },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'TickEnteredRange',
+    inputs: [
+      { name: 'tick', type: 'int24', indexed: true },
+      { name: 'liquidity', type: 'uint128', indexed: false },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'TickExitedRange',
+    inputs: [
+      { name: 'tick', type: 'int24', indexed: true },
+      { name: 'liquidity', type: 'uint128', indexed: false },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'LiquidityAddedToTick',
+    inputs: [
+      { name: 'tick', type: 'int24', indexed: true },
+      { name: 'liquidityAdded', type: 'uint128', indexed: false },
+      { name: 'totalLiquidity', type: 'uint128', indexed: false },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'LiquidityRemovedFromTick',
+    inputs: [
+      { name: 'tick', type: 'int24', indexed: true },
+      { name: 'liquidityRemoved', type: 'uint128', indexed: false },
+      { name: 'remainingLiquidity', type: 'uint128', indexed: false },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'TimeHarvested',
+    inputs: [
+      { name: 'positionId', type: 'uint256', indexed: true },
+      { name: 'harvestedTimeX128', type: 'uint256', indexed: false },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'IncentivesRecovered',
+    inputs: [
+      { name: 'recipient', type: 'address', indexed: true },
+      { name: 'amount', type: 'uint256', indexed: false },
+    ],
+    anonymous: false,
+  },
 ] as const;
 
 export interface OpeningAuctionPosition {
@@ -189,6 +394,34 @@ export interface OpeningAuctionIncentiveData {
   cachedTotalWeightedTimeX128: bigint;
   incentivesClaimDeadline: bigint;
 }
+
+export interface OpeningAuctionBidConstraints {
+  minLiquidity: bigint;
+  minAcceptableTickToken0: number;
+  minAcceptableTickToken1: number;
+}
+
+export interface OpeningAuctionAuctionSettledEvent {
+  clearingTick: number;
+  tokensSold: bigint;
+  proceeds: bigint;
+  transactionHash: Hash;
+  blockNumber: bigint;
+  logIndex: number;
+}
+
+export interface OpeningAuctionWatchSettlementOptions {
+  fromBlock?: bigint;
+  poll?: boolean;
+  pollingInterval?: number;
+  strict?: boolean;
+  onError?: (error: Error) => void;
+  onSettled: (event: OpeningAuctionAuctionSettledEvent) => void;
+}
+
+// Phase constants for isInRange client-side logic
+const PHASE_NOT_STARTED = 0;
+const PHASE_SETTLED = 3;
 
 export class OpeningAuction {
   private publicClient: SupportedPublicClient;
@@ -369,8 +602,8 @@ export class OpeningAuction {
         hasClaimedIncentives,
       ] = position as unknown as readonly [
         Address,
-        number,
-        number,
+        number | bigint,
+        number | bigint,
         bigint,
         bigint,
         boolean,
@@ -378,8 +611,8 @@ export class OpeningAuction {
 
       return {
         owner,
-        tickLower,
-        tickUpper,
+        tickLower: Number(tickLower),
+        tickUpper: Number(tickUpper),
         liquidity,
         rewardDebtX128,
         hasClaimedIncentives,
@@ -405,13 +638,290 @@ export class OpeningAuction {
     };
   }
 
-  async isInRange(positionId: bigint): Promise<boolean> {
+  async getEstimatedClearingTick(): Promise<number> {
+    const tick = await this.rpc.readContract({
+      address: this.hookAddress,
+      abi: openingAuctionEntityAbi,
+      functionName: 'estimatedClearingTick',
+    });
+    return Number(tick);
+  }
+
+  async getLiquidityAtTick(tick: number): Promise<bigint> {
+    if (!Number.isInteger(tick)) {
+      throw new Error('tick must be an integer');
+    }
+    if (tick < -8_388_608 || tick > 8_388_607) {
+      throw new Error('tick out of int24 bounds (-8388608..8388607)');
+    }
     return await this.rpc.readContract({
       address: this.hookAddress,
       abi: openingAuctionEntityAbi,
-      functionName: 'isInRange',
-      args: [positionId],
+      functionName: 'liquidityAtTick',
+      args: [tick],
     });
+  }
+
+  async getNextPositionId(): Promise<bigint> {
+    const result = await this.rpc.readContract({
+      address: this.hookAddress,
+      abi: openingAuctionEntityAbi,
+      functionName: 'nextPositionId',
+    });
+    if (result === 0n) {
+      throw new Error('nextPositionId returned 0, which indicates malformed contract state');
+    }
+    return result;
+  }
+
+  async getOwnerPositionIdAt(owner: Address, index: bigint): Promise<bigint> {
+    return await this.rpc.readContract({
+      address: this.hookAddress,
+      abi: openingAuctionEntityAbi,
+      functionName: 'ownerPositions',
+      args: [owner, index],
+    });
+  }
+
+  async getIsToken0(): Promise<boolean> {
+    return await this.rpc.readContract({
+      address: this.hookAddress,
+      abi: openingAuctionEntityAbi,
+      functionName: 'isToken0',
+    });
+  }
+
+  async getPoolKey(): Promise<V4PoolKey> {
+    const result = await this.rpc.readContract({
+      address: this.hookAddress,
+      abi: openingAuctionEntityAbi,
+      functionName: 'poolKey',
+    });
+
+    return normalizePoolKey(result);
+  }
+
+  async getMinLiquidity(): Promise<bigint> {
+    return await this.rpc.readContract({
+      address: this.hookAddress,
+      abi: openingAuctionEntityAbi,
+      functionName: 'minLiquidity',
+    });
+  }
+
+  async getMinAcceptableTickToken0(): Promise<number> {
+    const tick = await this.rpc.readContract({
+      address: this.hookAddress,
+      abi: openingAuctionEntityAbi,
+      functionName: 'minAcceptableTickToken0',
+    });
+    return Number(tick);
+  }
+
+  async getMinAcceptableTickToken1(): Promise<number> {
+    const tick = await this.rpc.readContract({
+      address: this.hookAddress,
+      abi: openingAuctionEntityAbi,
+      functionName: 'minAcceptableTickToken1',
+    });
+    return Number(tick);
+  }
+
+  async getBidConstraints(): Promise<OpeningAuctionBidConstraints> {
+    const [minLiquidity, minAcceptableTickToken0, minAcceptableTickToken1] =
+      await Promise.all([
+        this.getMinLiquidity(),
+        this.getMinAcceptableTickToken0(),
+        this.getMinAcceptableTickToken1(),
+      ]);
+
+    return {
+      minLiquidity,
+      minAcceptableTickToken0,
+      minAcceptableTickToken1,
+    };
+  }
+
+  /**
+   * Return position IDs owned by the given address with non-zero liquidity.
+   *
+   * Strategy:
+   * 1) Prefer owner-indexed enumeration via `ownerPositions(owner, index)` when available.
+   *    This is typically O(K) for owner positions.
+   * 2) Fallback to global scan (1..nextPositionId) for compatibility.
+   */
+  async getOwnerPositions(owner: Address): Promise<bigint[]> {
+    const ownerLower = owner.toLowerCase();
+
+    try {
+      const indexedIds = await this.getOwnerPositionIdsIndexed(owner);
+      if (indexedIds.length > 0) {
+        const positions = await Promise.all(
+          indexedIds.map((positionId) => this.getPosition(positionId)),
+        );
+
+        return indexedIds.filter((positionId, i) => {
+          const pos = positions[i];
+          return pos.owner.toLowerCase() === ownerLower && pos.liquidity > 0n;
+        });
+      }
+    } catch {
+      // fallback below
+    }
+
+    return await this.getOwnerPositionsByGlobalScan(owner);
+  }
+
+  private async getOwnerPositionIdsIndexed(owner: Address): Promise<bigint[]> {
+    const MAX_INDEXED_SCAN = 10_000;
+    const BATCH = 50;
+    const ids: bigint[] = [];
+
+    for (let index = 0; index < MAX_INDEXED_SCAN; index += BATCH) {
+      const batch = Array.from({ length: BATCH }, (_, i) => BigInt(index + i));
+
+      const results = await Promise.allSettled(
+        batch.map((idx) => this.getOwnerPositionIdAt(owner, idx)),
+      );
+
+      let firstRejectedOffset: number | null = null;
+      let sawFulfilledAfterReject = false;
+      for (let i = 0; i < results.length; i++) {
+        const res = results[i];
+        if (res.status === 'fulfilled') {
+          if (firstRejectedOffset !== null) {
+            sawFulfilledAfterReject = true;
+          }
+          const id = res.value;
+          if (id > 0n) ids.push(id);
+        } else if (firstRejectedOffset === null) {
+          firstRejectedOffset = i;
+        }
+      }
+
+      if (firstRejectedOffset === null) {
+        continue;
+      }
+
+      if (sawFulfilledAfterReject) {
+        throw new Error('ownerPositions indexed enumeration inconsistent');
+      }
+
+      // Distinguish expected end-of-list (out-of-bounds) from transient RPC errors:
+      // previous index should still succeed while first failed index should still fail.
+      const firstFailedIndex = BigInt(index + firstRejectedOffset);
+      const lastSuccessIndex =
+        firstRejectedOffset > 0
+          ? BigInt(index + firstRejectedOffset - 1)
+          : index > 0
+            ? BigInt(index - 1)
+            : null;
+
+      if (lastSuccessIndex === null) {
+        throw new Error('ownerPositions indexed enumeration unavailable');
+      }
+
+      const [lastSuccessProbe, firstFailedProbe] = await Promise.allSettled([
+        this.getOwnerPositionIdAt(owner, lastSuccessIndex),
+        this.getOwnerPositionIdAt(owner, firstFailedIndex),
+      ]);
+
+      if (
+        lastSuccessProbe.status === 'fulfilled' &&
+        firstFailedProbe.status === 'rejected'
+      ) {
+        return ids;
+      }
+
+      throw new Error('ownerPositions indexed enumeration incomplete');
+    }
+
+    return ids;
+  }
+
+  private async getOwnerPositionsByGlobalScan(owner: Address): Promise<bigint[]> {
+    const ownerLower = owner.toLowerCase();
+    const nextId = await this.getNextPositionId();
+    if (nextId <= 1n) {
+      return [];
+    }
+
+    const CONCURRENCY = 20;
+    const result: bigint[] = [];
+
+    for (let start = 1n; start < nextId; start += BigInt(CONCURRENCY)) {
+      const end =
+        start + BigInt(CONCURRENCY) < nextId
+          ? start + BigInt(CONCURRENCY)
+          : nextId;
+      const chunk: bigint[] = [];
+      for (let i = start; i < end; i++) {
+        chunk.push(i);
+      }
+
+      const positions = await Promise.all(chunk.map((id) => this.getPosition(id)));
+
+      for (let i = 0; i < chunk.length; i++) {
+        const pos = positions[i];
+        if (pos.owner.toLowerCase() === ownerLower && pos.liquidity > 0n) {
+          result.push(chunk[i]);
+        }
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Return whether a position is in range.
+   *
+   * Prefers contract-native `isInRange` when available, and falls back to
+   * client-side reconstruction for compatibility.
+   */
+  async isInRange(positionId: bigint): Promise<boolean> {
+    try {
+      const nativeResult = await this.rpc.readContract({
+        address: this.hookAddress,
+        abi: openingAuctionEntityAbi,
+        functionName: 'isInRange',
+        args: [positionId],
+      });
+
+      if (typeof nativeResult === 'boolean') {
+        return nativeResult;
+      }
+    } catch {
+      // fallback below
+    }
+
+    // Fallback: client-side reconstruction.
+    const [position, phase, isToken0] = await Promise.all([
+      this.getPosition(positionId),
+      this.getPhase(),
+      this.getIsToken0(),
+    ]);
+
+    if (position.owner === zeroAddress) {
+      return false;
+    }
+
+    if (phase === PHASE_NOT_STARTED) {
+      return false;
+    }
+
+    let refTick: number;
+    if (phase === PHASE_SETTLED) {
+      const settlement = await this.getSettlementData();
+      refTick = settlement.clearingTick;
+    } else {
+      refTick = await this.getEstimatedClearingTick();
+    }
+
+    if (isToken0) {
+      return refTick < position.tickUpper;
+    } else {
+      return refTick >= position.tickLower;
+    }
   }
 
   async calculateIncentives(positionId: bigint): Promise<bigint> {
@@ -423,18 +933,17 @@ export class OpeningAuction {
     });
   }
 
+  /**
+   * Compute position ID client-side using computePositionKey + positionKeyToId read.
+   */
   async getPositionId(args: {
     owner: Address;
     tickLower: number;
     tickUpper: number;
     salt: Hash;
   }): Promise<bigint> {
-    return await this.rpc.readContract({
-      address: this.hookAddress,
-      abi: openingAuctionEntityAbi,
-      functionName: 'getPositionId',
-      args: [args.owner, args.tickLower, args.tickUpper, args.salt],
-    });
+    const positionKey = OpeningAuctionPositionManager.computePositionKey(args);
+    return await this.getPositionIdFromKey(positionKey);
   }
 
   async getPositionIdFromKey(positionKey: Hash): Promise<bigint> {
@@ -446,35 +955,100 @@ export class OpeningAuction {
     });
   }
 
-  async settleAuction(): Promise<Hash> {
-    if (!this.walletClient) {
-      throw new Error('Wallet client required for write operations');
-    }
+  async estimateSettleAuctionGas(account?: Address | Account): Promise<bigint> {
+    const simulation = await this.simulateSettleAuction(account);
+    return simulation.gasEstimate;
+  }
 
+  async simulateSettleAuction(account?: Address | Account): Promise<{
+    request: unknown;
+    gasEstimate: bigint;
+  }> {
+    const resolvedAccount = account ?? this.walletClient?.account;
     const { request } = await this.rpc.simulateContract({
       address: this.hookAddress,
       abi: openingAuctionEntityAbi,
       functionName: 'settleAuction',
-      account: this.walletClient.account,
-    });
+      account: resolvedAccount,
+    } as any);
 
-    return await this.walletClient.writeContract(request);
+    const gasEstimate =
+      typeof (request as any)?.gas === 'bigint'
+        ? ((request as any).gas as bigint)
+        : await this.rpc.estimateContractGas({
+            address: this.hookAddress,
+            abi: openingAuctionEntityAbi,
+            functionName: 'settleAuction',
+            account: resolvedAccount,
+          } as any);
+
+    return { request, gasEstimate };
   }
 
-  async claimIncentives(positionId: bigint): Promise<Hash> {
+  async settleAuction(options?: { gas?: bigint }): Promise<Hash> {
     if (!this.walletClient) {
       throw new Error('Wallet client required for write operations');
     }
 
+    const { request } = await this.simulateSettleAuction(this.walletClient.account);
+    return await this.walletClient.writeContract(
+      options?.gas ? { ...(request as any), gas: options.gas } : (request as any),
+    );
+  }
+
+  async estimateClaimIncentivesGas(
+    positionId: bigint,
+    account?: Address | Account,
+  ): Promise<bigint> {
+    const simulation = await this.simulateClaimIncentives(positionId, account);
+    return simulation.gasEstimate;
+  }
+
+  async simulateClaimIncentives(
+    positionId: bigint,
+    account?: Address | Account,
+  ): Promise<{
+    request: unknown;
+    gasEstimate: bigint;
+  }> {
+    const resolvedAccount = account ?? this.walletClient?.account;
     const { request } = await this.rpc.simulateContract({
       address: this.hookAddress,
       abi: openingAuctionEntityAbi,
       functionName: 'claimIncentives',
       args: [positionId],
-      account: this.walletClient.account,
-    });
+      account: resolvedAccount,
+    } as any);
 
-    return await this.walletClient.writeContract(request);
+    const gasEstimate =
+      typeof (request as any)?.gas === 'bigint'
+        ? ((request as any).gas as bigint)
+        : await this.rpc.estimateContractGas({
+            address: this.hookAddress,
+            abi: openingAuctionEntityAbi,
+            functionName: 'claimIncentives',
+            args: [positionId],
+            account: resolvedAccount,
+          } as any);
+
+    return { request, gasEstimate };
+  }
+
+  async claimIncentives(
+    positionId: bigint,
+    options?: { gas?: bigint },
+  ): Promise<Hash> {
+    if (!this.walletClient) {
+      throw new Error('Wallet client required for write operations');
+    }
+
+    const { request } = await this.simulateClaimIncentives(
+      positionId,
+      this.walletClient.account,
+    );
+    return await this.walletClient.writeContract(
+      options?.gas ? { ...(request as any), gas: options.gas } : (request as any),
+    );
   }
 
   async claimIncentivesByPositionKey(args: {
@@ -489,5 +1063,36 @@ export class OpeningAuction {
     }
 
     return await this.claimIncentives(positionId);
+  }
+
+  watchAuctionSettled(options: OpeningAuctionWatchSettlementOptions): () => void {
+    return this.rpc.watchContractEvent({
+      address: this.hookAddress,
+      abi: openingAuctionEntityAbi,
+      eventName: 'AuctionSettled',
+      fromBlock: options.fromBlock,
+      poll: options.poll,
+      pollingInterval: options.pollingInterval,
+      strict: options.strict ?? false,
+      onError: options.onError,
+      onLogs: (logs: any[]) => {
+        for (const log of logs) {
+          const args = (log?.args ?? {}) as {
+            clearingTick?: number | bigint;
+            tokensSold?: bigint;
+            proceeds?: bigint;
+          };
+
+          options.onSettled({
+            clearingTick: Number(args.clearingTick ?? 0),
+            tokensSold: args.tokensSold ?? 0n,
+            proceeds: args.proceeds ?? 0n,
+            transactionHash: (log.transactionHash ?? zeroHash) as Hash,
+            blockNumber: (log.blockNumber ?? 0n) as bigint,
+            logIndex: Number(log.logIndex ?? 0),
+          });
+        }
+      },
+    } as any);
   }
 }

@@ -80,12 +80,19 @@ describe('OpeningAuctionPositionManager', () => {
   });
 
   describe('call encoding', () => {
-    it('encodeOwnerHookData defaults to ABI encoding', () => {
+    it('encodeOwnerHookData defaults to packed 20-byte encoding', () => {
+      const owner = mockTokenAddress;
+      const packed = OpeningAuctionPositionManager.encodeOwnerHookData(owner);
+      expect(packed).toBe(owner);
+      expect(packed.length).toBe(42); // 0x + 40 hex chars
+    });
+
+    it('encodeOwnerHookData supports explicit abi format opt-in', () => {
       const owner = mockTokenAddress;
       const expected = encodeAbiParameters([{ type: 'address' }], [owner]);
-      expect(OpeningAuctionPositionManager.encodeOwnerHookData(owner)).toBe(
-        expected,
-      );
+      expect(
+        OpeningAuctionPositionManager.encodeOwnerHookData(owner, 'abi'),
+      ).toBe(expected);
     });
 
     it('encodeOwnerHookData supports packed 20-byte encoding', () => {
@@ -157,7 +164,7 @@ describe('OpeningAuctionPositionManager', () => {
         args: [mockKey, mockParams],
       };
       vi.mocked(publicClient.simulateContract).mockResolvedValueOnce({
-        request,
+        request: { ...request, gas: 123456n },
         result: delta,
       } as any);
 
@@ -167,7 +174,8 @@ describe('OpeningAuctionPositionManager', () => {
       );
 
       expect(simulation).toEqual({
-        request,
+        request: { ...request, gas: 123456n },
+        gasEstimate: 123456n,
         delta,
         decoded: { amount0: 1n, amount1: 2n },
       });
@@ -184,7 +192,7 @@ describe('OpeningAuctionPositionManager', () => {
       const explicitAccount =
         '0x4444444444444444444444444444444444444444' as Address;
       vi.mocked(publicClient.simulateContract).mockResolvedValueOnce({
-        request: { functionName: 'modifyLiquidity' },
+        request: { functionName: 'modifyLiquidity', gas: 99999n },
         result: 0n,
       } as any);
 
@@ -240,7 +248,7 @@ describe('OpeningAuctionPositionManager', () => {
   describe('modifyLiquidityWithHookData', () => {
     it('simulateModifyLiquidityWithHookData uses wallet account by default', async () => {
       vi.mocked(publicClient.simulateContract).mockResolvedValueOnce({
-        request: { functionName: 'modifyLiquidity' },
+        request: { functionName: 'modifyLiquidity', gas: 100001n },
         result: 0n,
       } as any);
 
@@ -337,6 +345,7 @@ describe('OpeningAuctionPositionManager', () => {
     it('builds single-tick params and forwards to simulateModifyLiquidity when no hookData', async () => {
       const simulation = {
         request: {},
+        gasEstimate: 111111n,
         delta: 0n,
         decoded: { amount0: 0n, amount1: 0n },
       };
@@ -376,6 +385,7 @@ describe('OpeningAuctionPositionManager', () => {
         .spyOn(manager, 'simulateModifyLiquidityWithHookData')
         .mockResolvedValueOnce({
           request: {},
+          gasEstimate: 222222n,
           delta: 0n,
           decoded: { amount0: 0n, amount1: 0n },
         });
@@ -396,6 +406,16 @@ describe('OpeningAuctionPositionManager', () => {
         account,
       );
       spy.mockRestore();
+    });
+
+    it('throws when liquidity is non-positive', async () => {
+      await expect(
+        manager.simulatePlaceBid({
+          key: mockKey,
+          tickLower,
+          liquidity: 0n,
+        }),
+      ).rejects.toThrow('placeBid requires liquidity > 0');
     });
   });
 
@@ -455,6 +475,16 @@ describe('OpeningAuctionPositionManager', () => {
       modifySpy.mockRestore();
       fallbackSpy.mockRestore();
     });
+
+    it('throws when liquidity is non-positive', async () => {
+      await expect(
+        manager.placeBid({
+          key: mockKey,
+          tickLower,
+          liquidity: 0n,
+        }),
+      ).rejects.toThrow('placeBid requires liquidity > 0');
+    });
   });
 
   describe('simulateWithdrawBid', () => {
@@ -472,7 +502,12 @@ describe('OpeningAuctionPositionManager', () => {
       };
       const spy = vi
         .spyOn(manager, 'simulateModifyLiquidity')
-        .mockResolvedValue({ request: {}, delta: 0n, decoded: { amount0: 0n, amount1: 0n } });
+        .mockResolvedValue({
+          request: {},
+          gasEstimate: 333333n,
+          delta: 0n,
+          decoded: { amount0: 0n, amount1: 0n },
+        });
 
       await manager.simulateWithdrawBid({
         key: mockKey,
@@ -495,7 +530,12 @@ describe('OpeningAuctionPositionManager', () => {
       };
       const spy = vi
         .spyOn(manager, 'simulateModifyLiquidityWithHookData')
-        .mockResolvedValue({ request: {}, delta: 0n, decoded: { amount0: 0n, amount1: 0n } });
+        .mockResolvedValue({
+          request: {},
+          gasEstimate: 444444n,
+          delta: 0n,
+          decoded: { amount0: 0n, amount1: 0n },
+        });
 
       await manager.simulateWithdrawBid({
         key: mockKey,
@@ -512,6 +552,16 @@ describe('OpeningAuctionPositionManager', () => {
         undefined,
       );
       spy.mockRestore();
+    });
+
+    it('throws when liquidity is non-positive', async () => {
+      await expect(
+        manager.simulateWithdrawBid({
+          key: mockKey,
+          tickLower,
+          liquidity: 0n,
+        }),
+      ).rejects.toThrow('withdrawBid requires liquidity > 0');
     });
   });
 
@@ -571,6 +621,16 @@ describe('OpeningAuctionPositionManager', () => {
       modifySpy.mockRestore();
       fallbackSpy.mockRestore();
     });
+
+    it('throws when liquidity is non-positive', async () => {
+      await expect(
+        manager.withdrawBid({
+          key: mockKey,
+          tickLower,
+          liquidity: 0n,
+        }),
+      ).rejects.toThrow('withdrawBid requires liquidity > 0');
+    });
   });
 
   describe('simulateWithdrawFullBid', () => {
@@ -597,6 +657,7 @@ describe('OpeningAuctionPositionManager', () => {
       const request = {
         address: mockPositionManagerAddress,
         functionName: 'modifyLiquidity',
+        gas: 555555n,
       };
       vi.mocked(publicClient.simulateContract).mockResolvedValueOnce({
         request,
@@ -616,6 +677,7 @@ describe('OpeningAuctionPositionManager', () => {
         liquidity: 123n,
         simulation: {
           request,
+          gasEstimate: 555555n,
           delta: 0n,
           decoded: { amount0: 0n, amount1: 0n },
         },
@@ -624,8 +686,8 @@ describe('OpeningAuctionPositionManager', () => {
       expect(publicClient.readContract).toHaveBeenCalledWith({
         address: openingAuctionHookAddress,
         abi: expect.any(Array),
-        functionName: 'getPositionId',
-        args: [owner, tickLower, tickUpper, salt],
+        functionName: 'positionKeyToId',
+        args: [expect.any(String)],
       });
 
       expect(publicClient.simulateContract).toHaveBeenCalledWith({
@@ -671,7 +733,7 @@ describe('OpeningAuctionPositionManager', () => {
       const owner = walletClient.account.address;
 
       vi.mocked(publicClient.readContract)
-        .mockResolvedValueOnce(5n) // getPositionId
+        .mockResolvedValueOnce(5n) // positionKeyToId
         .mockResolvedValueOnce([
           owner,
           tickLower,
@@ -707,8 +769,8 @@ describe('OpeningAuctionPositionManager', () => {
       expect(publicClient.readContract).toHaveBeenCalledWith({
         address: openingAuctionHookAddress,
         abi: expect.any(Array),
-        functionName: 'getPositionId',
-        args: [owner, tickLower, tickUpper, salt],
+        functionName: 'positionKeyToId',
+        args: [expect.any(String)],
       });
 
       expect(publicClient.simulateContract).toHaveBeenCalledWith({

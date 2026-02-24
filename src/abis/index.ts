@@ -1040,6 +1040,85 @@ export const openingAuctionAbi = [
     stateMutability: 'nonpayable',
   },
   {
+    type: 'function',
+    name: 'estimatedClearingTick',
+    inputs: [],
+    outputs: [{ name: '', type: 'int24', internalType: 'int24' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'liquidityAtTick',
+    inputs: [{ name: 'tick', type: 'int24', internalType: 'int24' }],
+    outputs: [{ name: '', type: 'uint128', internalType: 'uint128' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'nextPositionId',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256', internalType: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'ownerPositions',
+    inputs: [
+      { name: 'owner', type: 'address', internalType: 'address' },
+      { name: 'index', type: 'uint256', internalType: 'uint256' },
+    ],
+    outputs: [{ name: '', type: 'uint256', internalType: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'isToken0',
+    inputs: [],
+    outputs: [{ name: '', type: 'bool', internalType: 'bool' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'poolKey',
+    inputs: [],
+    outputs: [
+      {
+        name: '',
+        type: 'tuple',
+        internalType: 'struct PoolKey',
+        components: [
+          { name: 'currency0', type: 'address', internalType: 'Currency' },
+          { name: 'currency1', type: 'address', internalType: 'Currency' },
+          { name: 'fee', type: 'uint24', internalType: 'uint24' },
+          { name: 'tickSpacing', type: 'int24', internalType: 'int24' },
+          { name: 'hooks', type: 'address', internalType: 'contract IHooks' },
+        ],
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'minLiquidity',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint128', internalType: 'uint128' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'minAcceptableTickToken0',
+    inputs: [],
+    outputs: [{ name: '', type: 'int24', internalType: 'int24' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'minAcceptableTickToken1',
+    inputs: [],
+    outputs: [{ name: '', type: 'int24', internalType: 'int24' }],
+    stateMutability: 'view',
+  },
+  {
     type: 'event',
     name: 'AuctionSettled',
     inputs: [
@@ -1061,6 +1140,119 @@ export const openingAuctionAbi = [
         indexed: false,
         internalType: 'uint256',
       },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'BidPlaced',
+    inputs: [
+      { name: 'positionId', type: 'uint256', indexed: true, internalType: 'uint256' },
+      { name: 'owner', type: 'address', indexed: true, internalType: 'address' },
+      { name: 'tickLower', type: 'int24', indexed: false, internalType: 'int24' },
+      { name: 'liquidity', type: 'uint128', indexed: false, internalType: 'uint128' },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'BidWithdrawn',
+    inputs: [
+      { name: 'positionId', type: 'uint256', indexed: true, internalType: 'uint256' },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'IncentivesClaimed',
+    inputs: [
+      { name: 'positionId', type: 'uint256', indexed: true, internalType: 'uint256' },
+      { name: 'owner', type: 'address', indexed: true, internalType: 'address' },
+      { name: 'amount', type: 'uint256', indexed: false, internalType: 'uint256' },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'EstimatedClearingTickUpdated',
+    inputs: [
+      { name: 'newEstimatedClearingTick', type: 'int24', indexed: false, internalType: 'int24' },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'PhaseChanged',
+    inputs: [
+      { name: 'oldPhase', type: 'uint8', indexed: true, internalType: 'uint8' },
+      { name: 'newPhase', type: 'uint8', indexed: true, internalType: 'uint8' },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'AuctionStarted',
+    inputs: [
+      { name: 'auctionStartTime', type: 'uint256', indexed: false, internalType: 'uint256' },
+      { name: 'auctionEndTime', type: 'uint256', indexed: false, internalType: 'uint256' },
+      { name: 'totalAuctionTokens', type: 'uint256', indexed: false, internalType: 'uint256' },
+      { name: 'incentiveTokensTotal', type: 'uint256', indexed: false, internalType: 'uint256' },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'TickEnteredRange',
+    inputs: [
+      { name: 'tick', type: 'int24', indexed: true, internalType: 'int24' },
+      { name: 'liquidity', type: 'uint128', indexed: false, internalType: 'uint128' },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'TickExitedRange',
+    inputs: [
+      { name: 'tick', type: 'int24', indexed: true, internalType: 'int24' },
+      { name: 'liquidity', type: 'uint128', indexed: false, internalType: 'uint128' },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'LiquidityAddedToTick',
+    inputs: [
+      { name: 'tick', type: 'int24', indexed: true, internalType: 'int24' },
+      { name: 'liquidityAdded', type: 'uint128', indexed: false, internalType: 'uint128' },
+      { name: 'totalLiquidity', type: 'uint128', indexed: false, internalType: 'uint128' },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'LiquidityRemovedFromTick',
+    inputs: [
+      { name: 'tick', type: 'int24', indexed: true, internalType: 'int24' },
+      { name: 'liquidityRemoved', type: 'uint128', indexed: false, internalType: 'uint128' },
+      { name: 'remainingLiquidity', type: 'uint128', indexed: false, internalType: 'uint128' },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'TimeHarvested',
+    inputs: [
+      { name: 'positionId', type: 'uint256', indexed: true, internalType: 'uint256' },
+      { name: 'harvestedTimeX128', type: 'uint256', indexed: false, internalType: 'uint256' },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'IncentivesRecovered',
+    inputs: [
+      { name: 'recipient', type: 'address', indexed: true, internalType: 'address' },
+      { name: 'amount', type: 'uint256', indexed: false, internalType: 'uint256' },
     ],
     anonymous: false,
   },
@@ -1321,6 +1513,19 @@ export const openingAuctionPositionManagerAbi = [
     outputs: [{ name: 'delta', type: 'int256', internalType: 'BalanceDelta' }],
     stateMutability: 'nonpayable',
   },
+  // Common bubbled custom errors for easier revert decoding in SDK consumers.
+  {
+    type: 'error',
+    name: 'WrappedError',
+    inputs: [
+      { name: 'target', type: 'address', internalType: 'address' },
+      { name: 'selector', type: 'bytes4', internalType: 'bytes4' },
+      { name: 'reason', type: 'bytes', internalType: 'bytes' },
+      { name: 'details', type: 'bytes', internalType: 'bytes' },
+    ],
+  },
+  { type: 'error', name: 'HookCallFailed', inputs: [] },
+  { type: 'error', name: 'PositionIsLocked', inputs: [] },
 ] as const;
 
 export const quoterV2Abi = [

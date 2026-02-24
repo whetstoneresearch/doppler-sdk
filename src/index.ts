@@ -12,6 +12,7 @@ export {
   MulticurvePool,
   OpeningAuction,
   OpeningAuctionLifecycle,
+  OpeningAuctionBidManager,
   OpeningAuctionPositionManager,
 } from './entities/auction';
 
@@ -36,6 +37,52 @@ export type {
   CreateOpeningAuctionParams,
   OpeningAuctionModuleAddressOverrides,
 } from './builders/OpeningAuctionBuilder';
+export type {
+  OpeningAuctionBidManagerConfig,
+  OpeningAuctionBidArgs,
+  OpeningAuctionWithdrawFullBidArgs,
+  OpeningAuctionBidLookupArgs,
+  OpeningAuctionBidSimulationResult,
+  OpeningAuctionClaimIncentivesSimulationResult,
+  OpeningAuctionBidPositionInfo,
+  OpeningAuctionBidStatus,
+  OpeningAuctionWatchBidStatusOptions,
+  OpeningAuctionAuctionSettledEvent,
+  OpeningAuctionWatchSettlementOptions,
+  OpeningAuctionOwnerBidInfo,
+  OpeningAuctionOwnerBidStatus,
+  OpeningAuctionBidPlacedEvent,
+  OpeningAuctionBidWithdrawnEvent,
+  OpeningAuctionIncentivesClaimedEvent,
+  OpeningAuctionPhaseChangedEvent,
+  OpeningAuctionEstimatedClearingTickUpdatedEvent,
+  OpeningAuctionWatchBidPlacedOptions,
+  OpeningAuctionWatchBidWithdrawnOptions,
+  OpeningAuctionWatchIncentivesClaimedOptions,
+  OpeningAuctionWatchPhaseChangeOptions,
+  OpeningAuctionWatchEstimatedClearingTickOptions,
+  OpeningAuctionMoveBidArgs,
+  OpeningAuctionMoveBidSimulationResult,
+  OpeningAuctionMoveBidResult,
+  OpeningAuctionBidQuote,
+  OpeningAuctionClaimAllIncentivesPreview,
+  OpeningAuctionClaimAllIncentivesResult,
+  OpeningAuctionBidValidationResult,
+  OpeningAuctionQuoteFromTokenAmountArgs,
+  OpeningAuctionQuoteFromTokenAmountResult,
+} from './entities/auction/OpeningAuctionBidManager';
+export type {
+  OpeningAuctionBidConstraints,
+  OpeningAuctionPosition,
+  OpeningAuctionSettlementData,
+  OpeningAuctionIncentiveData,
+} from './entities/auction/OpeningAuction';
+export type {
+  OpeningAuctionModifyLiquidityParams,
+  OpeningAuctionModifyLiquiditySimulationResult,
+  OpeningAuctionWithdrawFullBidSimulationResult,
+  OpeningAuctionWithdrawFullBidResult,
+} from './entities/auction/OpeningAuctionPositionManager';
 
 // Export all types
 export type {

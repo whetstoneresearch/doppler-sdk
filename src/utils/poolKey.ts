@@ -1,4 +1,4 @@
-import { encodeAbiParameters, keccak256, type Hex } from 'viem';
+import { encodeAbiParameters, keccak256, type Address, type Hex } from 'viem';
 import type { V4PoolKey } from '../types';
 
 /**
@@ -32,4 +32,54 @@ export function computePoolId(poolKey: V4PoolKey): Hex {
 
   // Return keccak256 hash of the encoded poolKey
   return keccak256(encoded);
+}
+
+/**
+ * Normalizes a pool key value from various response shapes (tuple array or named fields)
+ * into a canonical V4PoolKey object.
+ *
+ * This handles the different formats that contract reads may return:
+ * - Named tuple: { currency0, currency1, fee, tickSpacing, hooks }
+ * - Positional array: [currency0, currency1, fee, tickSpacing, hooks]
+ */
+export function normalizePoolKey(value: unknown): V4PoolKey {
+  if (!value) {
+    throw new Error('normalizePoolKey: value is null or undefined');
+  }
+
+  if (Array.isArray(value)) {
+    if (value.length < 5) {
+      throw new Error(
+        `normalizePoolKey: expected array of length >= 5, got ${value.length}`,
+      );
+    }
+    return {
+      currency0: value[0] as Address,
+      currency1: value[1] as Address,
+      fee: Number(value[2]),
+      tickSpacing: Number(value[3]),
+      hooks: value[4] as Address,
+    };
+  }
+
+  const obj = value as Record<string, unknown>;
+  if (
+    obj.currency0 === undefined ||
+    obj.currency1 === undefined ||
+    obj.fee === undefined ||
+    obj.tickSpacing === undefined ||
+    obj.hooks === undefined
+  ) {
+    throw new Error(
+      'normalizePoolKey: missing required fields (currency0, currency1, fee, tickSpacing, hooks)',
+    );
+  }
+
+  return {
+    currency0: obj.currency0 as Address,
+    currency1: obj.currency1 as Address,
+    fee: Number(obj.fee),
+    tickSpacing: Number(obj.tickSpacing),
+    hooks: obj.hooks as Address,
+  };
 }
