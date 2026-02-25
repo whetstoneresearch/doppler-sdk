@@ -12,11 +12,10 @@ import {
 } from 'viem';
 import { openingAuctionPositionManagerAbi } from '../../abis';
 import type { SupportedPublicClient, V4PoolKey } from '../../types';
+import { INT24_MIN, INT24_MAX } from '../../constants';
 import { decodeBalanceDelta } from '../../utils';
+import { resolveGasEstimate } from '../../utils/gasEstimate';
 import { OpeningAuction } from './OpeningAuction';
-
-const INT24_MIN = -8_388_608;
-const INT24_MAX = 8_388_607;
 
 export interface OpeningAuctionModifyLiquidityParams {
   tickLower: number;
@@ -232,10 +231,9 @@ export class OpeningAuctionPositionManager {
       account: account ?? this.walletClient?.account,
     } as any);
 
-    const gasEstimate =
-      typeof (request as any)?.gas === 'bigint'
-        ? ((request as any).gas as bigint)
-        : await this.estimateModifyLiquidityGas({ key, params, account });
+    const gasEstimate = await resolveGasEstimate(request, () =>
+      this.estimateModifyLiquidityGas({ key, params, account }),
+    );
 
     const delta = result as unknown as bigint;
     return {
@@ -299,15 +297,9 @@ export class OpeningAuctionPositionManager {
       account: account ?? this.walletClient?.account,
     } as any);
 
-    const gasEstimate =
-      typeof (request as any)?.gas === 'bigint'
-        ? ((request as any).gas as bigint)
-        : await this.estimateModifyLiquidityGas({
-            key,
-            params,
-            hookData,
-            account,
-          });
+    const gasEstimate = await resolveGasEstimate(request, () =>
+      this.estimateModifyLiquidityGas({ key, params, hookData, account }),
+    );
 
     const delta = result as unknown as bigint;
     return {

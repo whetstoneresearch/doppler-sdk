@@ -62,6 +62,8 @@ import {
   DYNAMIC_FEE_FLAG,
   DECAY_MAX_START_FEE,
   V4_MAX_FEE,
+  OPENING_AUCTION_PHASE_SETTLED,
+  OPENING_AUCTION_STATUS_ACTIVE,
 } from '../constants';
 import {
   computeOptimalGamma,
@@ -90,8 +92,6 @@ export type MigrationEncoder = (config: MigrationConfig) => Hex;
 const MAX_UINT128 = (1n << 128n) - 1n;
 const MAX_PROCEEDS_SPLIT_SHARE = WAD / 2n;
 const ONE_MILLION = 1_000_000n;
-const OPENING_AUCTION_PHASE_SETTLED = 3;
-const OPENING_AUCTION_STATUS_ACTIVE = 1;
 // Auto-mined completion can race with on-chain state changes; keep retries bounded.
 const MAX_COMPLETION_ATTEMPTS = 3;
 
