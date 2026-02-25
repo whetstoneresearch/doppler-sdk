@@ -9,6 +9,7 @@ import {
 } from 'viem';
 import type { SupportedPublicClient, V4PoolKey } from '../../types';
 import { normalizePoolKey } from '../../utils/poolKey';
+import { resolveGasEstimate } from '../../utils/gasEstimate';
 import { OpeningAuctionPositionManager } from './OpeningAuctionPositionManager';
 
 const openingAuctionEntityAbi = [
@@ -419,9 +420,10 @@ export interface OpeningAuctionWatchSettlementOptions {
   onSettled: (event: OpeningAuctionAuctionSettledEvent) => void;
 }
 
-// Phase constants for isInRange client-side logic
-const PHASE_NOT_STARTED = 0;
-const PHASE_SETTLED = 3;
+import {
+  OPENING_AUCTION_PHASE_NOT_STARTED,
+  OPENING_AUCTION_PHASE_SETTLED,
+} from '../../constants';
 
 export class OpeningAuction {
   private publicClient: SupportedPublicClient;
@@ -905,12 +907,12 @@ export class OpeningAuction {
       return false;
     }
 
-    if (phase === PHASE_NOT_STARTED) {
+    if (phase === OPENING_AUCTION_PHASE_NOT_STARTED) {
       return false;
     }
 
     let refTick: number;
-    if (phase === PHASE_SETTLED) {
+    if (phase === OPENING_AUCTION_PHASE_SETTLED) {
       const settlement = await this.getSettlementData();
       refTick = settlement.clearingTick;
     } else {
@@ -972,15 +974,14 @@ export class OpeningAuction {
       account: resolvedAccount,
     } as any);
 
-    const gasEstimate =
-      typeof (request as any)?.gas === 'bigint'
-        ? ((request as any).gas as bigint)
-        : await this.rpc.estimateContractGas({
-            address: this.hookAddress,
-            abi: openingAuctionEntityAbi,
-            functionName: 'settleAuction',
-            account: resolvedAccount,
-          } as any);
+    const gasEstimate = await resolveGasEstimate(request, () =>
+      this.rpc.estimateContractGas({
+        address: this.hookAddress,
+        abi: openingAuctionEntityAbi,
+        functionName: 'settleAuction',
+        account: resolvedAccount,
+      } as any),
+    );
 
     return { request, gasEstimate };
   }
@@ -1020,16 +1021,15 @@ export class OpeningAuction {
       account: resolvedAccount,
     } as any);
 
-    const gasEstimate =
-      typeof (request as any)?.gas === 'bigint'
-        ? ((request as any).gas as bigint)
-        : await this.rpc.estimateContractGas({
-            address: this.hookAddress,
-            abi: openingAuctionEntityAbi,
-            functionName: 'claimIncentives',
-            args: [positionId],
-            account: resolvedAccount,
-          } as any);
+    const gasEstimate = await resolveGasEstimate(request, () =>
+      this.rpc.estimateContractGas({
+        address: this.hookAddress,
+        abi: openingAuctionEntityAbi,
+        functionName: 'claimIncentives',
+        args: [positionId],
+        account: resolvedAccount,
+      } as any),
+    );
 
     return { request, gasEstimate };
   }

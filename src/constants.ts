@@ -164,6 +164,22 @@ export const OPENING_AUCTION_FLAGS = BigInt(
     (1 << 5), // BEFORE_DONATE_FLAG
 );
 
+// Opening Auction phase constants (matches on-chain AuctionPhase enum)
+export const OPENING_AUCTION_PHASE_NOT_STARTED = 0;
+export const OPENING_AUCTION_PHASE_ACTIVE = 1;
+export const OPENING_AUCTION_PHASE_CLOSED = 2;
+export const OPENING_AUCTION_PHASE_SETTLED = 3;
+
+// Opening Auction status constants (matches on-chain OpeningAuctionStatus enum)
+export const OPENING_AUCTION_STATUS_UNINITIALIZED = 0;
+export const OPENING_AUCTION_STATUS_ACTIVE = 1;
+export const OPENING_AUCTION_STATUS_DOPPLER_ACTIVE = 2;
+export const OPENING_AUCTION_STATUS_EXITED = 3;
+
+// Int24 bounds (Uniswap V4 tick type)
+export const INT24_MIN = -8_388_608;
+export const INT24_MAX = 8_388_607;
+
 // V4 Dynamic Fee Flag
 export const DYNAMIC_FEE_FLAG = 0x800000; // 8388608 in decimal
 export const FEE_AMOUNT_MASK = 0xffffff; // Mask to extract actual fee from dynamic fee

@@ -1079,7 +1079,7 @@ describe('OpeningAuctionBidManager', () => {
         owner: ownerAddress,
       });
 
-      expect(result.estimatedIncentiveShareBps).toBe(0);
+      expect(result.estimatedIncentiveShareBps).toBeNull();
     });
   });
 

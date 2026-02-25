@@ -5,9 +5,15 @@ import {
   type Hex,
   type PublicClient,
   type WalletClient,
+  zeroAddress,
   zeroHash,
 } from 'viem';
 import type { SupportedPublicClient, V4PoolKey } from '../../types';
+import {
+  OPENING_AUCTION_PHASE_NOT_STARTED,
+  OPENING_AUCTION_PHASE_ACTIVE,
+  OPENING_AUCTION_PHASE_SETTLED,
+} from '../../constants';
 import { getSqrtRatioAtTick } from '../../utils/tickMath';
 import {
   getLiquidityForAmount0,
@@ -255,7 +261,7 @@ export interface OpeningAuctionBidQuote {
   estimatedClearingTick: number;
   wouldBeFilledAtEstimatedClearing: boolean;
   isAboveEstimatedClearing: boolean;
-  estimatedIncentiveShareBps: number;
+  estimatedIncentiveShareBps: number | null;
 }
 
 export interface OpeningAuctionClaimAllIncentivesPreview {
@@ -315,11 +321,6 @@ export interface OpeningAuctionQuoteFromTokenAmountResult
   tokenIndex: 0 | 1;
 }
 
-// Phase constants
-const PHASE_NOT_STARTED = 0;
-const PHASE_ACTIVE = 1;
-const PHASE_SETTLED = 3;
-
 // ABI subset for event watchers (avoids importing full ABI)
 const bidManagerEventAbi = [
   {
@@ -378,14 +379,14 @@ export class OpeningAuctionBidManager {
   private openingAuctionPoolKey: V4PoolKey;
   private openingAuctionHookAddress: Address;
 
-  // Memoized snapshot for reducing redundant reads within a single call context
+  // Memoized snapshot for reducing redundant reads within a single call context.
+  // Uses block number instead of wall-clock time for reliable cache invalidation.
   private _snapshotCache: {
     phase: number;
     isToken0: boolean;
     estimatedClearingTick: number;
-    timestamp: number;
+    blockNumber: bigint;
   } | null = null;
-  private static readonly SNAPSHOT_TTL_MS = 2000;
 
   private get rpc(): PublicClient {
     return this.publicClient as PublicClient;
@@ -482,12 +483,13 @@ export class OpeningAuctionBidManager {
     }
 
     // Read constraints and auction state in parallel
-    const [constraints, phase, isToken0, estimatedClearingTick] =
+    const [constraints, phase, isToken0, estimatedClearingTick, blockNumber] =
       await Promise.all([
         this.openingAuction.getBidConstraints(),
         this.openingAuction.getPhase(),
         this.openingAuction.getIsToken0(),
         this.openingAuction.getEstimatedClearingTick(),
+        this.rpc.getBlockNumber(),
       ]);
 
     const tickValidationPassed = errors.length === 0;
@@ -518,10 +520,10 @@ export class OpeningAuctionBidManager {
     }
 
     // Phase gating
-    if (phase === PHASE_NOT_STARTED) {
+    if (phase === OPENING_AUCTION_PHASE_NOT_STARTED) {
       errors.push('Auction has not started yet; bids cannot be placed');
     }
-    if (phase === PHASE_SETTLED) {
+    if (phase === OPENING_AUCTION_PHASE_SETTLED) {
       errors.push('Auction is already settled; new bids cannot be placed');
     }
 
@@ -532,7 +534,7 @@ export class OpeningAuctionBidManager {
         phase,
         isToken0,
         estimatedClearingTick,
-        timestamp: Date.now(),
+        blockNumber,
       };
     }
 
@@ -1130,7 +1132,7 @@ export class OpeningAuctionBidManager {
     args: OpeningAuctionBidArgs,
   ): Promise<OpeningAuctionBidSimulationResult> {
     const phase = await this.openingAuction.getPhase();
-    if (phase === PHASE_ACTIVE) {
+    if (phase === OPENING_AUCTION_PHASE_ACTIVE) {
       throw new Error(
         'Cannot decrease bid during active auction phase. Only full withdrawal is allowed during active auction.',
       );
@@ -1140,7 +1142,7 @@ export class OpeningAuctionBidManager {
 
   async estimateDecreaseBidGas(args: OpeningAuctionBidArgs): Promise<bigint> {
     const phase = await this.openingAuction.getPhase();
-    if (phase === PHASE_ACTIVE) {
+    if (phase === OPENING_AUCTION_PHASE_ACTIVE) {
       throw new Error(
         'Cannot decrease bid during active auction phase. Only full withdrawal is allowed during active auction.',
       );
@@ -1153,7 +1155,7 @@ export class OpeningAuctionBidManager {
     options?: { gas?: bigint },
   ): Promise<Hash> {
     const phase = await this.openingAuction.getPhase();
-    if (phase === PHASE_ACTIVE) {
+    if (phase === OPENING_AUCTION_PHASE_ACTIVE) {
       throw new Error(
         'Cannot decrease bid during active auction phase. Only full withdrawal is allowed during active auction.',
       );
@@ -1286,10 +1288,20 @@ export class OpeningAuctionBidManager {
     );
 
     // Execute place at new tick
-    const placeTxHash = await this.placeBid(
-      { tickLower: args.toTickLower, liquidity, salt: args.salt, owner: args.owner },
-      options?.gasPlace ? { gas: options.gasPlace } : undefined,
-    );
+    let placeTxHash: Hash;
+    try {
+      placeTxHash = await this.placeBid(
+        { tickLower: args.toTickLower, liquidity, salt: args.salt, owner: args.owner },
+        options?.gasPlace ? { gas: options.gasPlace } : undefined,
+      );
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : String(err);
+      throw new Error(
+        `moveBid: withdraw succeeded (tx: ${withdrawTxHash}) but place at tick ${args.toTickLower} failed: ${message}. ` +
+          `Retry with placeBid({ tickLower: ${args.toTickLower}, liquidity: ${liquidity}, salt: "${salt}" }) to recover.`,
+      );
+    }
 
     this.invalidateSnapshot();
 
@@ -1321,7 +1333,8 @@ export class OpeningAuctionBidManager {
       : tickLower < estimatedClearingTick;
 
     // Rough incentive share estimate: position liquidity / (position liquidity + existing liquidity at tick)
-    let estimatedIncentiveShareBps = 0;
+    // Returns null when liquidity data is unavailable so callers can distinguish "unknown" from "zero".
+    let estimatedIncentiveShareBps: number | null = null;
     try {
       const existingLiquidity = await this.openingAuction.getLiquidityAtTick(tickLower);
       const totalLiquidity = existingLiquidity + args.liquidity;
@@ -1329,9 +1342,11 @@ export class OpeningAuctionBidManager {
         estimatedIncentiveShareBps = Number(
           (args.liquidity * 10000n) / totalLiquidity,
         );
+      } else {
+        estimatedIncentiveShareBps = 0;
       }
     } catch {
-      // If liquidity read fails, leave estimate at 0
+      // Liquidity read failed — leave as null to signal unknown
     }
 
     return {
@@ -1525,7 +1540,7 @@ export class OpeningAuctionBidManager {
 
           options.onBidPlaced({
             positionId: logArgs.positionId ?? 0n,
-            owner: logArgs.owner ?? (zeroHash.slice(0, 42) as Address),
+            owner: logArgs.owner ?? zeroAddress,
             tickLower: Number(logArgs.tickLower ?? 0),
             liquidity: logArgs.liquidity ?? 0n,
             transactionHash: (log.transactionHash ?? zeroHash) as Hash,
@@ -1599,7 +1614,7 @@ export class OpeningAuctionBidManager {
 
           options.onIncentivesClaimed({
             positionId: logArgs.positionId ?? 0n,
-            owner: logArgs.owner ?? (zeroHash.slice(0, 42) as Address),
+            owner: logArgs.owner ?? zeroAddress,
             amount: logArgs.amount ?? 0n,
             transactionHash: (log.transactionHash ?? zeroHash) as Hash,
             blockNumber: (log.blockNumber ?? 0n) as bigint,
@@ -1682,17 +1697,18 @@ export class OpeningAuctionBidManager {
 
   /**
    * Returns a memoized auction snapshot (phase, isToken0, estimatedClearingTick).
-   * Cached for SNAPSHOT_TTL_MS to reduce redundant reads within composite operations.
+   * Cached per block number to reduce redundant reads within composite operations.
    */
   private async getAuctionSnapshot(): Promise<{
     phase: number;
     isToken0: boolean;
     estimatedClearingTick: number;
   }> {
+    const currentBlock = await this.rpc.getBlockNumber();
+
     if (
       this._snapshotCache &&
-      Date.now() - this._snapshotCache.timestamp <
-        OpeningAuctionBidManager.SNAPSHOT_TTL_MS
+      this._snapshotCache.blockNumber >= currentBlock
     ) {
       return this._snapshotCache;
     }
@@ -1707,7 +1723,7 @@ export class OpeningAuctionBidManager {
       phase,
       isToken0,
       estimatedClearingTick,
-      timestamp: Date.now(),
+      blockNumber: currentBlock,
     };
 
     return this._snapshotCache;

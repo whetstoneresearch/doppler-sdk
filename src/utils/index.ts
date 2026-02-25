@@ -59,6 +59,8 @@ export {
 
 export { computeOptimalGamma } from './computeOptimalGamma';
 
+export { resolveGasEstimate } from './gasEstimate';
+
 export { isToken0Expected } from './isToken0Expected';
 
 // Re-export market cap conversion utilities
