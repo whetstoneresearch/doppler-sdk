@@ -418,12 +418,11 @@ describe('OpeningAuction', () => {
       expect(result).toEqual([11n]);
     });
 
-    it('returns empty array when nextPositionId is 1 (no positions)', async () => {
+    it('returns empty array when ownerPositions(0) is out of bounds', async () => {
       vi.mocked(publicClient.readContract).mockImplementation(async (call: any) => {
         if (call?.functionName === 'ownerPositions') {
-          throw new Error('ownerPositions unavailable');
+          throw new Error('index out of bounds');
         }
-        if (call?.functionName === 'nextPositionId') return 1n;
         throw new Error(`Unexpected: ${call?.functionName}`);
       });
 
@@ -433,30 +432,22 @@ describe('OpeningAuction', () => {
       expect(result).toEqual([]);
     });
 
-    it('scans and filters positions by owner with non-zero liquidity', async () => {
+    it('throws when ownerPositions indexed enumeration is inconsistent', async () => {
       const owner = '0x0000000000000000000000000000000000000001' as Address;
-      const otherOwner = '0x0000000000000000000000000000000000000099' as Address;
-
-      const positions = new Map<bigint, any>([
-        [1n, [owner, -100, 0, 1000n, 0n, false]],
-        [2n, [otherOwner, -60, 0, 500n, 0n, false]],
-        [3n, [owner, -200, -100, 0n, 0n, false]],
-      ]);
-
       vi.mocked(publicClient.readContract).mockImplementation(async (call: any) => {
         if (call?.functionName === 'ownerPositions') {
-          throw new Error('ownerPositions unavailable');
-        }
-        if (call?.functionName === 'nextPositionId') return 4n;
-        if (call?.functionName === 'positions') {
-          return positions.get(call?.args?.[0]);
+          const index = call?.args?.[1] as bigint;
+          if (index === 0n) return 11n;
+          if (index === 1n) throw new Error('index out of bounds');
+          if (index === 2n) return 22n; // fulfilled after reject => inconsistent
+          throw new Error('index out of bounds');
         }
         throw new Error(`Unexpected: ${call?.functionName}`);
       });
 
-      const result = await auction.getOwnerPositions(owner);
-
-      expect(result).toEqual([1n]);
+      await expect(auction.getOwnerPositions(owner)).rejects.toThrow(
+        'ownerPositions indexed enumeration inconsistent',
+      );
     });
   });
 
