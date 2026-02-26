@@ -911,6 +911,623 @@ export const dopplerHookAbi = [
   { type: 'error', name: 'CannotDonate', inputs: [] },
 ] as const;
 
+export const openingAuctionAbi = [
+  {
+    type: 'function',
+    name: 'phase',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint8', internalType: 'enum AuctionPhase' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'auctionStartTime',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256', internalType: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'auctionEndTime',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256', internalType: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'clearingTick',
+    inputs: [],
+    outputs: [{ name: '', type: 'int24', internalType: 'int24' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'totalTokensSold',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256', internalType: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'totalProceeds',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256', internalType: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'incentiveTokensTotal',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256', internalType: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'totalAuctionTokens',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256', internalType: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'totalIncentivesClaimed',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256', internalType: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'incentivesClaimDeadline',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256', internalType: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'positions',
+    inputs: [{ name: 'positionId', type: 'uint256', internalType: 'uint256' }],
+    outputs: [
+      {
+        name: '',
+        type: 'tuple',
+        internalType: 'struct AuctionPosition',
+        components: [
+          { name: 'owner', type: 'address', internalType: 'address' },
+          { name: 'tickLower', type: 'int24', internalType: 'int24' },
+          { name: 'tickUpper', type: 'int24', internalType: 'int24' },
+          { name: 'liquidity', type: 'uint128', internalType: 'uint128' },
+          {
+            name: 'rewardDebtX128',
+            type: 'uint256',
+            internalType: 'uint256',
+          },
+          {
+            name: 'hasClaimedIncentives',
+            type: 'bool',
+            internalType: 'bool',
+          },
+        ],
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'isInRange',
+    inputs: [{ name: 'positionId', type: 'uint256', internalType: 'uint256' }],
+    outputs: [{ name: '', type: 'bool', internalType: 'bool' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'calculateIncentives',
+    inputs: [{ name: 'positionId', type: 'uint256', internalType: 'uint256' }],
+    outputs: [{ name: '', type: 'uint256', internalType: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'settleAuction',
+    inputs: [],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'claimIncentives',
+    inputs: [{ name: 'positionId', type: 'uint256', internalType: 'uint256' }],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'estimatedClearingTick',
+    inputs: [],
+    outputs: [{ name: '', type: 'int24', internalType: 'int24' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'liquidityAtTick',
+    inputs: [{ name: 'tick', type: 'int24', internalType: 'int24' }],
+    outputs: [{ name: '', type: 'uint128', internalType: 'uint128' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'nextPositionId',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256', internalType: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'ownerPositions',
+    inputs: [
+      { name: 'owner', type: 'address', internalType: 'address' },
+      { name: 'index', type: 'uint256', internalType: 'uint256' },
+    ],
+    outputs: [{ name: '', type: 'uint256', internalType: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'isToken0',
+    inputs: [],
+    outputs: [{ name: '', type: 'bool', internalType: 'bool' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'poolKey',
+    inputs: [],
+    outputs: [
+      {
+        name: '',
+        type: 'tuple',
+        internalType: 'struct PoolKey',
+        components: [
+          { name: 'currency0', type: 'address', internalType: 'Currency' },
+          { name: 'currency1', type: 'address', internalType: 'Currency' },
+          { name: 'fee', type: 'uint24', internalType: 'uint24' },
+          { name: 'tickSpacing', type: 'int24', internalType: 'int24' },
+          { name: 'hooks', type: 'address', internalType: 'contract IHooks' },
+        ],
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'minLiquidity',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint128', internalType: 'uint128' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'minAcceptableTickToken0',
+    inputs: [],
+    outputs: [{ name: '', type: 'int24', internalType: 'int24' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'minAcceptableTickToken1',
+    inputs: [],
+    outputs: [{ name: '', type: 'int24', internalType: 'int24' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'event',
+    name: 'AuctionSettled',
+    inputs: [
+      {
+        name: 'clearingTick',
+        type: 'int24',
+        indexed: false,
+        internalType: 'int24',
+      },
+      {
+        name: 'tokensSold',
+        type: 'uint256',
+        indexed: false,
+        internalType: 'uint256',
+      },
+      {
+        name: 'proceeds',
+        type: 'uint256',
+        indexed: false,
+        internalType: 'uint256',
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'BidPlaced',
+    inputs: [
+      { name: 'positionId', type: 'uint256', indexed: true, internalType: 'uint256' },
+      { name: 'owner', type: 'address', indexed: true, internalType: 'address' },
+      { name: 'tickLower', type: 'int24', indexed: false, internalType: 'int24' },
+      { name: 'liquidity', type: 'uint128', indexed: false, internalType: 'uint128' },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'BidWithdrawn',
+    inputs: [
+      { name: 'positionId', type: 'uint256', indexed: true, internalType: 'uint256' },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'IncentivesClaimed',
+    inputs: [
+      { name: 'positionId', type: 'uint256', indexed: true, internalType: 'uint256' },
+      { name: 'owner', type: 'address', indexed: true, internalType: 'address' },
+      { name: 'amount', type: 'uint256', indexed: false, internalType: 'uint256' },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'EstimatedClearingTickUpdated',
+    inputs: [
+      { name: 'newEstimatedClearingTick', type: 'int24', indexed: false, internalType: 'int24' },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'PhaseChanged',
+    inputs: [
+      { name: 'oldPhase', type: 'uint8', indexed: true, internalType: 'uint8' },
+      { name: 'newPhase', type: 'uint8', indexed: true, internalType: 'uint8' },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'AuctionStarted',
+    inputs: [
+      { name: 'auctionStartTime', type: 'uint256', indexed: false, internalType: 'uint256' },
+      { name: 'auctionEndTime', type: 'uint256', indexed: false, internalType: 'uint256' },
+      { name: 'totalAuctionTokens', type: 'uint256', indexed: false, internalType: 'uint256' },
+      { name: 'incentiveTokensTotal', type: 'uint256', indexed: false, internalType: 'uint256' },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'TickEnteredRange',
+    inputs: [
+      { name: 'tick', type: 'int24', indexed: true, internalType: 'int24' },
+      { name: 'liquidity', type: 'uint128', indexed: false, internalType: 'uint128' },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'TickExitedRange',
+    inputs: [
+      { name: 'tick', type: 'int24', indexed: true, internalType: 'int24' },
+      { name: 'liquidity', type: 'uint128', indexed: false, internalType: 'uint128' },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'LiquidityAddedToTick',
+    inputs: [
+      { name: 'tick', type: 'int24', indexed: true, internalType: 'int24' },
+      { name: 'liquidityAdded', type: 'uint128', indexed: false, internalType: 'uint128' },
+      { name: 'totalLiquidity', type: 'uint128', indexed: false, internalType: 'uint128' },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'LiquidityRemovedFromTick',
+    inputs: [
+      { name: 'tick', type: 'int24', indexed: true, internalType: 'int24' },
+      { name: 'liquidityRemoved', type: 'uint128', indexed: false, internalType: 'uint128' },
+      { name: 'remainingLiquidity', type: 'uint128', indexed: false, internalType: 'uint128' },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'TimeHarvested',
+    inputs: [
+      { name: 'positionId', type: 'uint256', indexed: true, internalType: 'uint256' },
+      { name: 'harvestedTimeX128', type: 'uint256', indexed: false, internalType: 'uint256' },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'IncentivesRecovered',
+    inputs: [
+      { name: 'recipient', type: 'address', indexed: true, internalType: 'address' },
+      { name: 'amount', type: 'uint256', indexed: false, internalType: 'uint256' },
+    ],
+    anonymous: false,
+  },
+] as const;
+
+export const openingAuctionInitializerAbi = [
+  {
+    type: 'function',
+    name: 'initialize',
+    inputs: [
+      { name: 'asset', type: 'address', internalType: 'address' },
+      { name: 'numeraire', type: 'address', internalType: 'address' },
+      {
+        name: 'numTokensToSell',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+      { name: 'salt', type: 'bytes32', internalType: 'bytes32' },
+      { name: 'data', type: 'bytes', internalType: 'bytes' },
+    ],
+    outputs: [{ name: '', type: 'address', internalType: 'address' }],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'poolManager',
+    inputs: [],
+    outputs: [
+      { name: '', type: 'address', internalType: 'contract IPoolManager' },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'auctionDeployer',
+    inputs: [],
+    outputs: [
+      {
+        name: '',
+        type: 'address',
+        internalType: 'contract OpeningAuctionDeployer',
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'dopplerDeployer',
+    inputs: [],
+    outputs: [
+      {
+        name: '',
+        type: 'address',
+        internalType: 'contract IDopplerDeployer',
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'positionManager',
+    inputs: [],
+    outputs: [{ name: '', type: 'address', internalType: 'address' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'getState',
+    inputs: [{ name: 'asset', type: 'address', internalType: 'address' }],
+    outputs: [
+      { name: 'numeraire', type: 'address', internalType: 'address' },
+      {
+        name: 'auctionStartTime',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+      { name: 'auctionEndTime', type: 'uint256', internalType: 'uint256' },
+      { name: 'auctionTokens', type: 'uint256', internalType: 'uint256' },
+      { name: 'dopplerTokens', type: 'uint256', internalType: 'uint256' },
+      {
+        name: 'status',
+        type: 'uint8',
+        internalType: 'enum OpeningAuctionStatus',
+      },
+      {
+        name: 'openingAuctionHook',
+        type: 'address',
+        internalType: 'address',
+      },
+      { name: 'dopplerHook', type: 'address', internalType: 'address' },
+      {
+        name: 'openingAuctionPoolKey',
+        type: 'tuple',
+        internalType: 'struct PoolKey',
+        components: [
+          { name: 'currency0', type: 'address', internalType: 'Currency' },
+          { name: 'currency1', type: 'address', internalType: 'Currency' },
+          { name: 'fee', type: 'uint24', internalType: 'uint24' },
+          { name: 'tickSpacing', type: 'int24', internalType: 'int24' },
+          { name: 'hooks', type: 'address', internalType: 'contract IHooks' },
+        ],
+      },
+      { name: 'dopplerInitData', type: 'bytes', internalType: 'bytes' },
+      { name: 'isToken0', type: 'bool', internalType: 'bool' },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'getOpeningAuctionHook',
+    inputs: [{ name: 'asset', type: 'address', internalType: 'address' }],
+    outputs: [{ name: '', type: 'address', internalType: 'address' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'getDopplerHook',
+    inputs: [{ name: 'asset', type: 'address', internalType: 'address' }],
+    outputs: [{ name: '', type: 'address', internalType: 'address' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'completeAuction',
+    inputs: [
+      { name: 'asset', type: 'address', internalType: 'address' },
+      { name: 'dopplerSalt', type: 'bytes32', internalType: 'bytes32' },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'recoverOpeningAuctionIncentives',
+    inputs: [{ name: 'asset', type: 'address', internalType: 'address' }],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'sweepOpeningAuctionIncentives',
+    inputs: [{ name: 'asset', type: 'address', internalType: 'address' }],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'event',
+    name: 'AuctionCompleted',
+    inputs: [
+      {
+        name: 'asset',
+        type: 'address',
+        indexed: true,
+        internalType: 'address',
+      },
+      {
+        name: 'clearingTick',
+        type: 'int24',
+        indexed: false,
+        internalType: 'int24',
+      },
+      {
+        name: 'tokensSold',
+        type: 'uint256',
+        indexed: false,
+        internalType: 'uint256',
+      },
+      {
+        name: 'proceeds',
+        type: 'uint256',
+        indexed: false,
+        internalType: 'uint256',
+      },
+    ],
+    anonymous: false,
+  },
+] as const;
+
+// Placeholder ABI for phase-2 bid-management wrappers.
+export const openingAuctionPositionManagerAbi = [
+  {
+    type: 'function',
+    name: 'poolManager',
+    inputs: [],
+    outputs: [
+      { name: '', type: 'address', internalType: 'contract IPoolManager' },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'modifyLiquidity',
+    inputs: [
+      {
+        name: 'key',
+        type: 'tuple',
+        internalType: 'struct PoolKey',
+        components: [
+          { name: 'currency0', type: 'address', internalType: 'Currency' },
+          { name: 'currency1', type: 'address', internalType: 'Currency' },
+          { name: 'fee', type: 'uint24', internalType: 'uint24' },
+          { name: 'tickSpacing', type: 'int24', internalType: 'int24' },
+          { name: 'hooks', type: 'address', internalType: 'contract IHooks' },
+        ],
+      },
+      {
+        name: 'params',
+        type: 'tuple',
+        internalType: 'struct IPoolManager.ModifyLiquidityParams',
+        components: [
+          { name: 'tickLower', type: 'int24', internalType: 'int24' },
+          { name: 'tickUpper', type: 'int24', internalType: 'int24' },
+          {
+            name: 'liquidityDelta',
+            type: 'int256',
+            internalType: 'int256',
+          },
+          { name: 'salt', type: 'bytes32', internalType: 'bytes32' },
+        ],
+      },
+      { name: 'hookData', type: 'bytes', internalType: 'bytes' },
+    ],
+    outputs: [{ name: 'delta', type: 'int256', internalType: 'BalanceDelta' }],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'modifyLiquidity',
+    inputs: [
+      {
+        name: 'key',
+        type: 'tuple',
+        internalType: 'struct PoolKey',
+        components: [
+          { name: 'currency0', type: 'address', internalType: 'Currency' },
+          { name: 'currency1', type: 'address', internalType: 'Currency' },
+          { name: 'fee', type: 'uint24', internalType: 'uint24' },
+          { name: 'tickSpacing', type: 'int24', internalType: 'int24' },
+          { name: 'hooks', type: 'address', internalType: 'contract IHooks' },
+        ],
+      },
+      {
+        name: 'params',
+        type: 'tuple',
+        internalType: 'struct IPoolManager.ModifyLiquidityParams',
+        components: [
+          { name: 'tickLower', type: 'int24', internalType: 'int24' },
+          { name: 'tickUpper', type: 'int24', internalType: 'int24' },
+          {
+            name: 'liquidityDelta',
+            type: 'int256',
+            internalType: 'int256',
+          },
+          { name: 'salt', type: 'bytes32', internalType: 'bytes32' },
+        ],
+      },
+    ],
+    outputs: [{ name: 'delta', type: 'int256', internalType: 'BalanceDelta' }],
+    stateMutability: 'nonpayable',
+  },
+  // Common bubbled custom errors for easier revert decoding in SDK consumers.
+  {
+    type: 'error',
+    name: 'WrappedError',
+    inputs: [
+      { name: 'target', type: 'address', internalType: 'address' },
+      { name: 'selector', type: 'bytes4', internalType: 'bytes4' },
+      { name: 'reason', type: 'bytes', internalType: 'bytes' },
+      { name: 'details', type: 'bytes', internalType: 'bytes' },
+    ],
+  },
+  { type: 'error', name: 'HookCallFailed', inputs: [] },
+  { type: 'error', name: 'PositionIsLocked', inputs: [] },
+] as const;
+
 export const quoterV2Abi = [
   {
     inputs: [
@@ -2296,5 +2913,6 @@ export {
   DERC2080Bytecode,
   DopplerBytecode,
   DopplerDN404Bytecode,
+  OpeningAuctionBytecode,
   StateViewBytecode,
 } from './bytecodes';

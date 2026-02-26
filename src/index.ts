@@ -10,6 +10,10 @@ export {
   StaticAuction,
   DynamicAuction,
   MulticurvePool,
+  OpeningAuction,
+  OpeningAuctionLifecycle,
+  OpeningAuctionBidManager,
+  OpeningAuctionPositionManager,
 } from './entities/auction';
 
 // Export quoter
@@ -23,8 +27,62 @@ export {
   StaticAuctionBuilder,
   DynamicAuctionBuilder,
   MulticurveBuilder,
+  OpeningAuctionBuilder,
 } from './builders';
 export type { BaseAuctionBuilder } from './builders/shared';
+export type {
+  OpeningAuctionConfig,
+  OpeningAuctionDopplerConfig,
+  ResolvedOpeningAuctionDopplerConfig,
+  CreateOpeningAuctionParams,
+  OpeningAuctionModuleAddressOverrides,
+} from './builders/OpeningAuctionBuilder';
+export type {
+  OpeningAuctionBidManagerConfig,
+  OpeningAuctionBidArgs,
+  OpeningAuctionWithdrawFullBidArgs,
+  OpeningAuctionBidLookupArgs,
+  OpeningAuctionBidSimulationResult,
+  OpeningAuctionClaimIncentivesSimulationResult,
+  OpeningAuctionBidPositionInfo,
+  OpeningAuctionBidStatus,
+  OpeningAuctionWatchBidStatusOptions,
+  OpeningAuctionAuctionSettledEvent,
+  OpeningAuctionWatchSettlementOptions,
+  OpeningAuctionOwnerBidInfo,
+  OpeningAuctionOwnerBidStatus,
+  OpeningAuctionBidPlacedEvent,
+  OpeningAuctionBidWithdrawnEvent,
+  OpeningAuctionIncentivesClaimedEvent,
+  OpeningAuctionPhaseChangedEvent,
+  OpeningAuctionEstimatedClearingTickUpdatedEvent,
+  OpeningAuctionWatchBidPlacedOptions,
+  OpeningAuctionWatchBidWithdrawnOptions,
+  OpeningAuctionWatchIncentivesClaimedOptions,
+  OpeningAuctionWatchPhaseChangeOptions,
+  OpeningAuctionWatchEstimatedClearingTickOptions,
+  OpeningAuctionMoveBidArgs,
+  OpeningAuctionMoveBidSimulationResult,
+  OpeningAuctionMoveBidResult,
+  OpeningAuctionBidQuote,
+  OpeningAuctionClaimAllIncentivesPreview,
+  OpeningAuctionClaimAllIncentivesResult,
+  OpeningAuctionBidValidationResult,
+  OpeningAuctionQuoteFromTokenAmountArgs,
+  OpeningAuctionQuoteFromTokenAmountResult,
+} from './entities/auction/OpeningAuctionBidManager';
+export type {
+  OpeningAuctionBidConstraints,
+  OpeningAuctionPosition,
+  OpeningAuctionSettlementData,
+  OpeningAuctionIncentiveData,
+} from './entities/auction/OpeningAuction';
+export type {
+  OpeningAuctionModifyLiquidityParams,
+  OpeningAuctionModifyLiquiditySimulationResult,
+  OpeningAuctionWithdrawFullBidSimulationResult,
+  OpeningAuctionWithdrawFullBidResult,
+} from './entities/auction/OpeningAuctionPositionManager';
 
 // Export all types
 export type {
@@ -57,6 +115,9 @@ export type {
   V4PoolKey,
   MulticurveBundleExactOutResult,
   MulticurveBundleExactInResult,
+  OpeningAuctionState,
+  OpeningAuctionCreateResult,
+  OpeningAuctionCompleteResult,
 
   // Configuration types
   DopplerSDKConfig,
@@ -98,7 +159,11 @@ export type {
 export type { ModuleAddressOverrides } from './types';
 
 // Export enums
-export { LockablePoolStatus } from './types';
+export {
+  LockablePoolStatus,
+  OpeningAuctionStatus,
+  OpeningAuctionPhase,
+} from './types';
 
 // Export addresses and utilities
 export {
@@ -152,9 +217,32 @@ export {
   BASIS_POINTS,
   FLAG_MASK,
   DOPPLER_FLAGS,
+  OPENING_AUCTION_FLAGS,
+  OPENING_AUCTION_PHASE_NOT_STARTED,
+  OPENING_AUCTION_PHASE_ACTIVE,
+  OPENING_AUCTION_PHASE_CLOSED,
+  OPENING_AUCTION_PHASE_SETTLED,
+  OPENING_AUCTION_STATUS_UNINITIALIZED,
+  OPENING_AUCTION_STATUS_ACTIVE,
+  OPENING_AUCTION_STATUS_DOPPLER_ACTIVE,
+  OPENING_AUCTION_STATUS_EXITED,
+  INT24_MIN,
+  INT24_MAX,
   DYNAMIC_FEE_FLAG,
   FEE_AMOUNT_MASK,
   DOPPLER_MAX_TICK_SPACING,
+  DEFAULT_OPENING_AUCTION_DURATION,
+  DEFAULT_OPENING_AUCTION_FEE,
+  DEFAULT_OPENING_AUCTION_MIN_ACCEPTABLE_TICK_TOKEN0,
+  DEFAULT_OPENING_AUCTION_MIN_ACCEPTABLE_TICK_TOKEN1,
+  DEFAULT_OPENING_AUCTION_MIN_LIQUIDITY,
+  DEFAULT_OPENING_AUCTION_INCENTIVE_SHARE_BPS,
+  DEFAULT_OPENING_AUCTION_SHARE_TO_AUCTION_BPS,
+  DEFAULT_OPENING_DOPPLER_DURATION,
+  DEFAULT_OPENING_DOPPLER_EPOCH_LENGTH,
+  DEFAULT_OPENING_DOPPLER_NUM_PD_SLUGS,
+  DEFAULT_OPENING_DOPPLER_FEE,
+  DEFAULT_OPENING_DOPPLER_TICK_SPACING,
   VALID_FEE_TIERS,
   V3_FEE_TIERS,
   V4_MAX_FEE,
