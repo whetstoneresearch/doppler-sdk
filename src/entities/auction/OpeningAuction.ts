@@ -748,30 +748,24 @@ export class OpeningAuction {
    * Return position IDs owned by the given address with non-zero liquidity.
    *
    * Strategy:
-   * 1) Prefer owner-indexed enumeration via `ownerPositions(owner, index)` when available.
-   *    This is typically O(K) for owner positions.
-   * 2) Fallback to global scan (1..nextPositionId) for compatibility.
+   * 1) Enumerate owner-indexed positions via `ownerPositions(owner, index)`.
+   * 2) Stop when the first out-of-bounds index is reached.
    */
   async getOwnerPositions(owner: Address): Promise<bigint[]> {
     const ownerLower = owner.toLowerCase();
-
-    try {
-      const indexedIds = await this.getOwnerPositionIdsIndexed(owner);
-      if (indexedIds.length > 0) {
-        const positions = await Promise.all(
-          indexedIds.map((positionId) => this.getPosition(positionId)),
-        );
-
-        return indexedIds.filter((positionId, i) => {
-          const pos = positions[i];
-          return pos.owner.toLowerCase() === ownerLower && pos.liquidity > 0n;
-        });
-      }
-    } catch {
-      // fallback below
+    const indexedIds = await this.getOwnerPositionIdsIndexed(owner);
+    if (indexedIds.length === 0) {
+      return [];
     }
 
-    return await this.getOwnerPositionsByGlobalScan(owner);
+    const positions = await Promise.all(
+      indexedIds.map((positionId) => this.getPosition(positionId)),
+    );
+
+    return indexedIds.filter((positionId, i) => {
+      const pos = positions[i];
+      return pos.owner.toLowerCase() === ownerLower && pos.liquidity > 0n;
+    });
   }
 
   private async getOwnerPositionIdsIndexed(owner: Address): Promise<bigint[]> {
@@ -809,6 +803,11 @@ export class OpeningAuction {
         throw new Error('ownerPositions indexed enumeration inconsistent');
       }
 
+      // ownerPositions(owner, 0) reverting means owner has no positions.
+      if (index === 0 && firstRejectedOffset === 0) {
+        return ids;
+      }
+
       // Distinguish expected end-of-list (out-of-bounds) from transient RPC errors:
       // previous index should still succeed while first failed index should still fail.
       const firstFailedIndex = BigInt(index + firstRejectedOffset);
@@ -839,39 +838,6 @@ export class OpeningAuction {
     }
 
     return ids;
-  }
-
-  private async getOwnerPositionsByGlobalScan(owner: Address): Promise<bigint[]> {
-    const ownerLower = owner.toLowerCase();
-    const nextId = await this.getNextPositionId();
-    if (nextId <= 1n) {
-      return [];
-    }
-
-    const CONCURRENCY = 20;
-    const result: bigint[] = [];
-
-    for (let start = 1n; start < nextId; start += BigInt(CONCURRENCY)) {
-      const end =
-        start + BigInt(CONCURRENCY) < nextId
-          ? start + BigInt(CONCURRENCY)
-          : nextId;
-      const chunk: bigint[] = [];
-      for (let i = start; i < end; i++) {
-        chunk.push(i);
-      }
-
-      const positions = await Promise.all(chunk.map((id) => this.getPosition(id)));
-
-      for (let i = 0; i < chunk.length; i++) {
-        const pos = positions[i];
-        if (pos.owner.toLowerCase() === ownerLower && pos.liquidity > 0n) {
-          result.push(chunk[i]);
-        }
-      }
-    }
-
-    return result;
   }
 
   /**

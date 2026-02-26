@@ -203,13 +203,23 @@ describe('OpeningAuctionBidManager', () => {
    * Helper: set up a function-name-based mock for readContract.
    * Each key maps to a queue of return values for that functionName.
    */
-  function mockByFunction(mapping: Record<string, any[]>) {
+  function mockByFunction(
+    mapping: Record<string, any[] | ((call: any) => any | Promise<any>)>,
+  ) {
     const queues: Record<string, any[]> = {};
-    for (const [key, values] of Object.entries(mapping)) {
-      queues[key] = [...values];
+    const handlers: Record<string, (call: any) => any | Promise<any>> = {};
+    for (const [key, config] of Object.entries(mapping)) {
+      if (typeof config === 'function') {
+        handlers[key] = config;
+      } else {
+        queues[key] = [...config];
+      }
     }
     vi.mocked(publicClient.readContract).mockImplementation(async (call: any) => {
       const fn = call?.functionName;
+      if (handlers[fn]) {
+        return await handlers[fn](call);
+      }
       if (queues[fn] && queues[fn].length > 0) {
         return queues[fn].shift();
       }
@@ -219,14 +229,22 @@ describe('OpeningAuctionBidManager', () => {
 
   describe('getOwnerBids', () => {
     it('returns empty array when owner has no positions', async () => {
-      mockByFunction({ nextPositionId: [1n] });
+      mockByFunction({
+        ownerPositions: () => {
+          throw new Error('index out of bounds');
+        },
+      });
 
       const result = await manager.getOwnerBids({ owner: ownerAddress });
       expect(result).toEqual([]);
     });
 
     it('resolves owner from walletClient when not provided', async () => {
-      mockByFunction({ nextPositionId: [1n] });
+      mockByFunction({
+        ownerPositions: () => {
+          throw new Error('index out of bounds');
+        },
+      });
 
       const result = await manager.getOwnerBids();
       expect(result).toEqual([]);
@@ -236,10 +254,15 @@ describe('OpeningAuctionBidManager', () => {
       const otherOwner = '0x0000000000000000000000000000000000000099' as Address;
 
       mockByFunction({
-        nextPositionId: [3n],
-        // getOwnerPositions scans 1,2; then getMultiplePositionInfos re-reads position 1
+        ownerPositions: (call: any) => {
+          const index = call?.args?.[1] as bigint;
+          if (index === 0n) return 1n;
+          if (index === 1n) return 2n;
+          throw new Error('index out of bounds');
+        },
+        // getOwnerPositions (indexed ids) then getMultiplePositionInfos re-reads position 1
         positions: [
-          // scan: position 1 (owner match), position 2 (no match)
+          // indexed filter: position 1 (owner match), position 2 (no match)
           [ownerAddress, -120, -60, 5000n, 0n, false],
           [otherOwner, -60, 0, 1000n, 0n, false],
           // getMultiplePositionInfos: getPosition(1) and isInRange->getPosition(1)
@@ -271,9 +294,13 @@ describe('OpeningAuctionBidManager', () => {
   describe('getOwnerBidStatuses', () => {
     it('returns enriched statuses with clearing tick info', async () => {
       mockByFunction({
-        nextPositionId: [2n],
+        ownerPositions: (call: any) => {
+          const index = call?.args?.[1] as bigint;
+          if (index === 0n) return 1n;
+          throw new Error('index out of bounds');
+        },
         positions: [
-          // getOwnerPositions scan
+          // getOwnerPositions indexed filter
           [ownerAddress, -120, -60, 5000n, 0n, false],
           // getMultiplePositionInfos: getPosition(1)
           [ownerAddress, -120, -60, 5000n, 0n, false],
@@ -1143,9 +1170,13 @@ describe('OpeningAuctionBidManager', () => {
 
       // Mock for simulateClaimAllIncentives: minimal setup with 1 claimable position
       mockByFunction({
-        nextPositionId: [2n],
+        ownerPositions: (call: any) => {
+          const index = call?.args?.[1] as bigint;
+          if (index === 0n) return 1n;
+          throw new Error('index out of bounds');
+        },
         positions: [
-          // scan
+          // indexed filter
           [ownerAddress, -120, -60, 5000n, 0n, false],
           // getMultiplePositionInfos
           [ownerAddress, -120, -60, 5000n, 0n, false],
@@ -1174,7 +1205,12 @@ describe('OpeningAuctionBidManager', () => {
 
     it('stops on first error when continueOnError is false', async () => {
       mockByFunction({
-        nextPositionId: [3n],
+        ownerPositions: (call: any) => {
+          const index = call?.args?.[1] as bigint;
+          if (index === 0n) return 1n;
+          if (index === 1n) return 2n;
+          throw new Error('index out of bounds');
+        },
         positions: [
           [ownerAddress, -120, -60, 5000n, 0n, false],
           [ownerAddress, 0, 60, 3000n, 0n, false],
@@ -1211,7 +1247,12 @@ describe('OpeningAuctionBidManager', () => {
       const txHash2 = `0x${'bb'.repeat(32)}` as Hash;
 
       mockByFunction({
-        nextPositionId: [3n],
+        ownerPositions: (call: any) => {
+          const index = call?.args?.[1] as bigint;
+          if (index === 0n) return 1n;
+          if (index === 1n) return 2n;
+          throw new Error('index out of bounds');
+        },
         positions: [
           [ownerAddress, -120, -60, 5000n, 0n, false],
           [ownerAddress, 0, 60, 3000n, 0n, false],
