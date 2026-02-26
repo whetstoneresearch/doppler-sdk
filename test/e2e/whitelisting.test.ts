@@ -6,6 +6,7 @@ import { type Address, type Chain } from 'viem';
 import {
   base,
   baseSepolia,
+  sepolia,
   mainnet,
   ink,
   unichain,
@@ -30,6 +31,7 @@ const CHAIN_NAME_TO_ID: Record<string, SupportedChainId> = {
   base: CHAIN_IDS.BASE,
   'base-sepolia': CHAIN_IDS.BASE_SEPOLIA,
   mainnet: CHAIN_IDS.MAINNET,
+  'eth-sepolia': CHAIN_IDS.ETH_SEPOLIA,
   ink: CHAIN_IDS.INK,
   unichain: CHAIN_IDS.UNICHAIN,
   'unichain-sepolia': CHAIN_IDS.UNICHAIN_SEPOLIA,
@@ -89,6 +91,7 @@ const testResults: TestResult[] = [];
 // Chain ID to name mapping
 const CHAIN_ID_NAMES: Record<number, string> = {
   1: 'Mainnet',
+  11155111: 'Ethereum Sepolia',
   8453: 'Base',
   84532: 'Base Sepolia',
   57073: 'Ink',
@@ -130,6 +133,10 @@ const CHAINS: Partial<Record<SupportedChainId, { chain: Chain; rpc?: string }>> 
     [CHAIN_IDS.MAINNET]: {
       chain: mainnet,
       rpc: getAlchemyRpc('eth-mainnet'),
+    },
+    [CHAIN_IDS.ETH_SEPOLIA]: {
+      chain: sepolia,
+      rpc: getAlchemyRpc('eth-sepolia'),
     },
     [CHAIN_IDS.BASE]: {
       chain: base,
@@ -320,6 +327,15 @@ describe('Airlock Module Whitelisting', () => {
         );
       }
 
+      if (
+        addresses.v4DecayMulticurveInitializer &&
+        addresses.v4DecayMulticurveInitializer !== ZERO_ADDRESS
+      ) {
+        it(`V4DecayMulticurveInitializer (${addresses.v4DecayMulticurveInitializer}) whitelisted`,
+          () => testModule('V4DecayMulticurveInitializer', addresses.v4DecayMulticurveInitializer!, ModuleState.PoolInitializer)
+        );
+      }
+
       (addresses.v2Migrator === ZERO_ADDRESS ? it.skip : it)(
         `V2Migrator (${addresses.v2Migrator}) whitelisted`,
         () => testModule('V2Migrator', addresses.v2Migrator, ModuleState.LiquidityMigrator)
@@ -329,6 +345,24 @@ describe('Airlock Module Whitelisting', () => {
         `V4Migrator (${addresses.v4Migrator}) whitelisted`,
         () => testModule('V4Migrator', addresses.v4Migrator, ModuleState.LiquidityMigrator)
       );
+
+      if (
+        addresses.dopplerHookMigrator &&
+        addresses.dopplerHookMigrator !== ZERO_ADDRESS
+      ) {
+        it(`DopplerHookMigrator (${addresses.dopplerHookMigrator}) whitelisted`,
+          () => testModule('DopplerHookMigrator', addresses.dopplerHookMigrator!, ModuleState.LiquidityMigrator)
+        );
+      }
+
+      if (
+        addresses.rehypeDopplerHookMigrator &&
+        addresses.rehypeDopplerHookMigrator !== ZERO_ADDRESS
+      ) {
+        it(`RehypeDopplerHookMigrator (${addresses.rehypeDopplerHookMigrator}) whitelisted`,
+          () => testModule('RehypeDopplerHookMigrator', addresses.rehypeDopplerHookMigrator!, ModuleState.LiquidityMigrator)
+        );
+      }
 
       if (addresses.noOpMigrator && addresses.noOpMigrator !== ZERO_ADDRESS) {
         it(`NoOpMigrator (${addresses.noOpMigrator}) whitelisted`,

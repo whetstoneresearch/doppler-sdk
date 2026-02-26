@@ -93,6 +93,7 @@ export type {
   DynamicAuctionConfig,
   VestingConfig,
   MigrationConfig,
+  DopplerHookMigrationConfig,
   BeneficiaryData,
 
   // Lockable initializer types
@@ -103,6 +104,9 @@ export type {
 
   // DopplerHook types (e.g., RehypeDopplerHook)
   RehypeDopplerHookConfig,
+  RehypeDopplerHookMigratorConfig,
+  MulticurveInitializerConfig,
+  MulticurveDecayFeeSchedule,
 
   // Parameter types
   CreateStaticAuctionParams,
@@ -242,6 +246,7 @@ export {
   VALID_FEE_TIERS,
   V3_FEE_TIERS,
   V4_MAX_FEE,
+  DECAY_MAX_START_FEE,
   type FeeTier,
 } from './constants';
 

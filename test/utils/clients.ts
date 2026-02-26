@@ -28,7 +28,7 @@ import {
   createTestClient,
   http,
 } from 'viem'
-import { base, baseSepolia } from 'viem/chains'
+import { base, baseSepolia, mainnet, sepolia } from 'viem/chains'
 import { privateKeyToAccount } from 'viem/accounts'
 import { createRateLimitedClient } from './rpc'
 import { CHAIN_IDS } from '../../src'
@@ -71,6 +71,16 @@ interface ChainTestConfig {
 }
 
 const CHAIN_CONFIG: Record<number, ChainTestConfig> = {
+  [CHAIN_IDS.MAINNET]: {
+    chain: mainnet,
+    envVar: 'ETH_MAINNET_RPC_URL',
+    alchemyNetwork: 'eth-mainnet',
+  },
+  [CHAIN_IDS.ETH_SEPOLIA]: {
+    chain: sepolia,
+    envVar: 'ETH_SEPOLIA_RPC_URL',
+    alchemyNetwork: 'eth-sepolia',
+  },
   [CHAIN_IDS.BASE]: {
     chain: base,
     envVar: 'BASE_RPC_URL',
@@ -163,6 +173,8 @@ export function getRpcEnvVar(chainId: number): string | undefined {
 }
 
 // Convenience exports for commonly used chains
+export const getMainnetClient = () => getTestClient(CHAIN_IDS.MAINNET)
+export const getEthSepoliaClient = () => getTestClient(CHAIN_IDS.ETH_SEPOLIA)
 export const getBaseClient = () => getTestClient(CHAIN_IDS.BASE)
 export const getBaseSepoliaClient = () => getTestClient(CHAIN_IDS.BASE_SEPOLIA)
 export const getMonadMainnetClient = () => getTestClient(CHAIN_IDS.MONAD_MAINNET)

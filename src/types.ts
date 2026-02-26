@@ -1,15 +1,23 @@
-import { base, baseSepolia, ink, unichain } from 'viem/chains';
+import {
+  base,
+  baseSepolia,
+  ink,
+  mainnet,
+  sepolia,
+  unichain,
+} from 'viem/chains';
 import { CHAIN_IDS, type SupportedChainId } from './addresses';
 // Re-export SupportedChainId so consumers can import from this module
 export { type SupportedChainId } from './addresses';
 import type { Address, WalletClient } from 'viem';
 
 export type SupportedChain =
+  | typeof mainnet
+  | typeof sepolia
   | typeof base
   | typeof baseSepolia
   | typeof ink
-  | typeof unichain
-  | typeof baseSepolia;
+  | typeof unichain;
 // Use a wide type to avoid cross-package viem type identity issues when linking packages locally.
 export type SupportedPublicClient = unknown;
 
@@ -102,6 +110,8 @@ export interface VestingConfig {
 
 // Chains where no-op governance is enabled
 export const NO_OP_ENABLED_CHAIN_IDS = [
+  CHAIN_IDS.MAINNET,
+  CHAIN_IDS.ETH_SEPOLIA,
   CHAIN_IDS.BASE,
   CHAIN_IDS.BASE_SEPOLIA,
   CHAIN_IDS.UNICHAIN,
@@ -213,6 +223,49 @@ export interface MulticurvePoolState {
 }
 
 // Migration configuration (discriminated union)
+export interface RehypeDopplerHookMigratorConfig {
+  // Optional hook address override. Defaults to chain rehypeDopplerHookMigrator.
+  hookAddress?: Address;
+  // Destination address for buyback tokens / beneficiary fee claims.
+  buybackDestination: Address;
+  // Custom swap fee in hundredths of a bip (1e6 = 100%).
+  customFee: number;
+  // Percentage of fees used for asset buyback (in WAD, e.g., 0.2e18 = 20%).
+  assetBuybackPercentWad: bigint;
+  // Percentage of fees used for numeraire buyback (in WAD, e.g., 0.2e18 = 20%).
+  numeraireBuybackPercentWad: bigint;
+  // Percentage of fees distributed to beneficiaries (in WAD, e.g., 0.3e18 = 30%).
+  beneficiaryPercentWad: bigint;
+  // Percentage of fees retained for LP rebalancing (in WAD, e.g., 0.3e18 = 30%).
+  lpPercentWad: bigint;
+}
+
+export interface DopplerHookMigrationConfig {
+  type: 'dopplerHook';
+  // Fee for fixed-fee pools, or initial LP fee when useDynamicFee=true.
+  fee: number;
+  // Use dynamic LP fees on the migrated V4 pool.
+  useDynamicFee?: boolean;
+  // Tick spacing for the migrated V4 pool.
+  tickSpacing: number;
+  // Fee lock duration in seconds.
+  lockDuration: number;
+  // Fee streaming beneficiaries (must be sorted and sum to WAD onchain).
+  beneficiaries: BeneficiaryData[];
+  // Generic hook configuration (raw initialization calldata).
+  hook?: {
+    hookAddress: Address;
+    onInitializationCalldata?: `0x${string}`;
+  };
+  // Ergonomic helper for RehypeDopplerHookMigrator initialization.
+  rehype?: RehypeDopplerHookMigratorConfig;
+  // Optional proceeds split paid out during migration.
+  proceedsSplit?: {
+    recipient: Address;
+    share: bigint;
+  };
+}
+
 export type MigrationConfig =
   | { type: 'uniswapV2' } // Basic migration to a new Uniswap v2 pool
   | {
@@ -227,6 +280,7 @@ export type MigrationConfig =
         beneficiaries: BeneficiaryData[]; // Uses shares in WAD (1e18 = 100%)
       };
     }
+  | DopplerHookMigrationConfig // Dynamic-only: migration via DopplerHookMigrator
   | { type: 'noOp' }; // No migration - used with lockable beneficiaries
 
 // Create Static Auction parameters
@@ -825,6 +879,26 @@ export interface RehypeDopplerHookConfig {
   farTick?: number;
 }
 
+// Decay fee schedule state for multicurve pools using a dynamic-fee hook
+export interface MulticurveDecayFeeSchedule {
+  startingTime: number;
+  startFee: number;
+  endFee: number;
+  lastFee: number;
+  durationSeconds: number;
+}
+
+export type MulticurveInitializerConfig =
+  | { type: 'standard' }
+  | { type: 'scheduled'; startTime: number }
+  | {
+      type: 'decay';
+      startTime: number;
+      startFee: number;
+      durationSeconds: number;
+    }
+  | { type: 'rehype'; config: RehypeDopplerHookConfig };
+
 // Create Multicurve initializer parameters
 export interface CreateMulticurveParams<
   C extends SupportedChainId = SupportedChainId,
@@ -837,6 +911,7 @@ export interface CreateMulticurveParams<
 
   // Pool configuration for multicurve initializer
   pool: {
+    // For decay initializer mode, this is the terminal fee (endFee).
     fee: number;
     tickSpacing: number;
     curves: MulticurveCurve[];
@@ -844,11 +919,22 @@ export interface CreateMulticurveParams<
     beneficiaries?: BeneficiaryData[];
   };
 
+  // Preferred initializer configuration. Defaults to { type: 'standard' }.
+  initializer?: MulticurveInitializerConfig;
+
+  /**
+   * @deprecated Use initializer: { type: 'scheduled', startTime } instead.
+   * Retained for backwards compatibility.
+   */
   // Optional scheduled launch configuration
   schedule?: {
     startTime: number;
   };
 
+  /**
+   * @deprecated Use initializer: { type: 'rehype', config } instead.
+   * Retained for backwards compatibility.
+   */
   dopplerHook?: RehypeDopplerHookConfig;
 
   // Vesting configuration (optional)
@@ -903,6 +989,7 @@ export interface ModuleAddressOverrides {
   v4ScheduledMulticurveInitializer?: Address;
   openingAuctionInitializer?: Address;
   openingAuctionPositionManager?: Address;
+  v4DecayMulticurveInitializer?: Address;
   dopplerHookInitializer?: Address;
 
   // DopplerHooks
@@ -918,5 +1005,7 @@ export interface ModuleAddressOverrides {
   // Migrators
   v2Migrator?: Address;
   v4Migrator?: Address;
+  dopplerHookMigrator?: Address;
+  rehypeDopplerHookMigrator?: Address;
   noOpMigrator?: Address;
 }

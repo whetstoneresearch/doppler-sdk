@@ -63,6 +63,8 @@ export { resolveGasEstimate } from './gasEstimate';
 
 export { isToken0Expected } from './isToken0Expected';
 
+export { encodeRehypeDopplerHookMigratorCalldata } from './dopplerHookMigrator';
+
 // Re-export market cap conversion utilities
 export {
   // Core conversion functions (pure math)

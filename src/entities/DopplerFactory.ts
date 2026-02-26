@@ -18,6 +18,7 @@ import type {
   CreateDynamicAuctionParams,
   CreateOpeningAuctionParams,
   CreateMulticurveParams,
+  DopplerHookMigrationConfig,
   MigrationConfig,
   SupportedPublicClient,
   TokenConfig,
@@ -31,9 +32,10 @@ import type {
   OpeningAuctionState,
   OpeningAuctionCreateResult,
   OpeningAuctionCompleteResult,
+  RehypeDopplerHookConfig,
 } from '../types';
 import type { ModuleAddressOverrides } from '../types';
-import { CHAIN_IDS, getAddresses } from '../addresses';
+import { getAddresses } from '../addresses';
 import { zeroAddress } from 'viem';
 import {
   ZERO_ADDRESS,
@@ -57,9 +59,13 @@ import {
   DOPPLER_MAX_TICK_SPACING,
   OPENING_AUCTION_PHASE_SETTLED,
   OPENING_AUCTION_STATUS_ACTIVE,
+  DYNAMIC_FEE_FLAG,
+  DECAY_MAX_START_FEE,
+  V4_MAX_FEE,
 } from '../constants';
 import {
   computeOptimalGamma,
+  encodeRehypeDopplerHookMigratorCalldata,
   MIN_TICK,
   MAX_TICK,
   isToken0Expected,
@@ -94,10 +100,22 @@ const erc20BalanceOfAbi = [
     stateMutability: 'view',
   },
 ] as const;
+const MAX_PROCEEDS_SPLIT_SHARE = WAD / 2n;
 
 // TokenFactory80 has the same deterministic CREATE2 address across all chains
 const TOKEN_FACTORY_80_ADDRESS =
   '0xf0b5141dd9096254b2ca624dff26024f46087229' as const;
+
+type ResolvedMulticurveInitializerMode =
+  | { type: 'standard' }
+  | { type: 'scheduled'; startTime: number }
+  | {
+      type: 'decay';
+      startTime: number;
+      startFee: number;
+      durationSeconds: number;
+    }
+  | { type: 'rehype'; hookConfig?: RehypeDopplerHookConfig };
 
 export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
   private publicClient: SupportedPublicClient;
@@ -220,7 +238,10 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     }
 
     // 2. Encode migration data based on MigrationConfig
-    const liquidityMigratorData = this.encodeMigrationData(params.migration);
+    const liquidityMigratorData = this.encodeMigrationData(params.migration, {
+      numeraire: params.sale.numeraire,
+      overrides: params.modules,
+    });
 
     // 3. Encode token parameters (standard vs Doppler404)
     let tokenFactoryData: Hex;
@@ -859,7 +880,10 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     });
 
     // 6. Encode migration data
-    const liquidityMigratorData = this.encodeMigrationData(params.migration);
+    const liquidityMigratorData = this.encodeMigrationData(params.migration, {
+      numeraire: params.sale.numeraire,
+      overrides: params.modules,
+    });
 
     // 7. Encode governance factory data
     const governanceFactoryData: Hex = (() => {
@@ -2602,7 +2626,13 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
    * Encode migration data based on the MigrationConfig
    * This replaces the manual encoding methods from the old SDKs
    */
-  private encodeMigrationData(config: MigrationConfig): Hex {
+  private encodeMigrationData(
+    config: MigrationConfig,
+    options?: {
+      numeraire?: Address;
+      overrides?: ModuleAddressOverrides;
+    },
+  ): Hex {
     // Use custom encoder if available
     if (this.customMigrationEncoder) {
       return this.customMigrationEncoder(config);
@@ -2659,6 +2689,93 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
           ],
         );
 
+      case 'dopplerHook': {
+        const dopplerHookConfig = config as DopplerHookMigrationConfig;
+
+        if (dopplerHookConfig.hook && dopplerHookConfig.rehype) {
+          throw new Error(
+            'dopplerHook migration cannot set both hook and rehype config. Use exactly one hook mode.',
+          );
+        }
+
+        // Copy beneficiaries and sort by address in ascending order (required by contract)
+        const beneficiaries = [...dopplerHookConfig.beneficiaries].sort(
+          (a, b) => {
+            const addrA = a.beneficiary.toLowerCase();
+            const addrB = b.beneficiary.toLowerCase();
+            return addrA < addrB ? -1 : addrA > addrB ? 1 : 0;
+          },
+        );
+
+        let dopplerHookAddress: Address = ZERO_ADDRESS;
+        let onInitializationCalldata: Hex = '0x';
+
+        if (dopplerHookConfig.hook) {
+          dopplerHookAddress = dopplerHookConfig.hook.hookAddress;
+          onInitializationCalldata =
+            dopplerHookConfig.hook.onInitializationCalldata ?? '0x';
+        } else if (dopplerHookConfig.rehype) {
+          const addresses = getAddresses(this.chainId);
+          const resolvedRehypeHookAddress =
+            dopplerHookConfig.rehype.hookAddress ??
+            options?.overrides?.rehypeDopplerHookMigrator ??
+            addresses.rehypeDopplerHookMigrator;
+
+          if (!resolvedRehypeHookAddress) {
+            throw new Error(
+              'RehypeDopplerHookMigrator address not configured on this chain. Provide migration.rehype.hookAddress or override modules.rehypeDopplerHookMigrator.',
+            );
+          }
+
+          if (!options?.numeraire) {
+            throw new Error(
+              'numeraire is required to encode rehype dopplerHook migration data',
+            );
+          }
+
+          dopplerHookAddress = resolvedRehypeHookAddress;
+          onInitializationCalldata = encodeRehypeDopplerHookMigratorCalldata({
+            numeraire: options.numeraire,
+            config: dopplerHookConfig.rehype,
+          });
+        }
+
+        const proceedsRecipient =
+          dopplerHookConfig.proceedsSplit?.recipient ?? ZERO_ADDRESS;
+        const proceedsShare = dopplerHookConfig.proceedsSplit?.share ?? 0n;
+
+        return encodeAbiParameters(
+          [
+            { type: 'uint24' },
+            { type: 'bool' },
+            { type: 'int24' },
+            { type: 'uint32' },
+            {
+              type: 'tuple[]',
+              components: [
+                { type: 'address', name: 'beneficiary' },
+                { type: 'uint96', name: 'shares' },
+              ],
+            },
+            { type: 'address' },
+            { type: 'bytes' },
+            { type: 'address' },
+            { type: 'uint256' },
+          ],
+          [
+            dopplerHookConfig.fee,
+            dopplerHookConfig.useDynamicFee ?? false,
+            dopplerHookConfig.tickSpacing,
+            dopplerHookConfig.lockDuration,
+            beneficiaries,
+            dopplerHookAddress,
+            onInitializationCalldata,
+            proceedsRecipient,
+            proceedsShare,
+          ],
+        );
+      }
+
       default:
         throw new Error('Unknown migration type');
     }
@@ -2667,6 +2784,175 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
   /**
    * Encode create params for Uniswap V4 Multicurve initializer/migrator flow
    */
+  private normalizeUint32(value: number | bigint, label: string): number {
+    const normalized =
+      typeof value === 'bigint' ? Number(value) : Number(value);
+    if (!Number.isFinite(normalized) || !Number.isInteger(normalized)) {
+      throw new Error(
+        `${label} must be an integer number of seconds since Unix epoch`,
+      );
+    }
+    if (normalized < 0) {
+      throw new Error(`${label} cannot be negative`);
+    }
+    const UINT32_MAX = 0xffffffff;
+    if (normalized > UINT32_MAX) {
+      throw new Error(
+        `${label} must fit within uint32 (seconds since Unix epoch up to year 2106)`,
+      );
+    }
+    return normalized;
+  }
+
+  private resolveMulticurveInitializerMode(
+    params: CreateMulticurveParams<C>,
+  ): ResolvedMulticurveInitializerMode {
+    const legacySchedule = params.schedule;
+    const legacyHook = params.dopplerHook;
+    const hasLegacySchedule = legacySchedule !== undefined;
+    const hasLegacyHook = legacyHook !== undefined;
+
+    if (hasLegacySchedule && hasLegacyHook) {
+      throw new Error(
+        'Cannot combine schedule and dopplerHook legacy multicurve options. Use exactly one initializer mode.',
+      );
+    }
+
+    const initializer = params.initializer;
+    let mode: ResolvedMulticurveInitializerMode;
+
+    if (!initializer) {
+      if (hasLegacySchedule) {
+        mode = {
+          type: 'scheduled',
+          startTime: this.normalizeUint32(
+            legacySchedule.startTime,
+            'Scheduled multicurve startTime',
+          ),
+        };
+      } else if (hasLegacyHook) {
+        mode = {
+          type: 'rehype',
+          hookConfig: legacyHook,
+        };
+      } else {
+        mode = { type: 'standard' };
+      }
+    } else {
+      switch (initializer.type) {
+        case 'standard': {
+          if (hasLegacySchedule || hasLegacyHook) {
+            throw new Error(
+              "Initializer type 'standard' cannot be combined with legacy schedule/dopplerHook fields",
+            );
+          }
+          mode = { type: 'standard' };
+          break;
+        }
+        case 'scheduled': {
+          if (hasLegacyHook) {
+            throw new Error(
+              "Initializer type 'scheduled' cannot be combined with dopplerHook",
+            );
+          }
+          const normalizedStart = this.normalizeUint32(
+            initializer.startTime,
+            'Scheduled multicurve startTime',
+          );
+          if (hasLegacySchedule) {
+            const legacyStart = this.normalizeUint32(
+              legacySchedule.startTime,
+              'Scheduled multicurve startTime',
+            );
+            if (legacyStart !== normalizedStart) {
+              throw new Error(
+                'Conflicting scheduled start times provided via initializer and schedule',
+              );
+            }
+          }
+          mode = { type: 'scheduled', startTime: normalizedStart };
+          break;
+        }
+        case 'decay': {
+          if (hasLegacySchedule || hasLegacyHook) {
+            throw new Error(
+              "Initializer type 'decay' cannot be combined with legacy schedule/dopplerHook fields",
+            );
+          }
+          const startTime = this.normalizeUint32(
+            initializer.startTime,
+            'Decay multicurve startTime',
+          );
+          const startFee = Number(initializer.startFee);
+          const durationSeconds = this.normalizeUint32(
+            initializer.durationSeconds,
+            'Decay multicurve durationSeconds',
+          );
+          const endFee = Number(params.pool.fee);
+          if (!Number.isInteger(startFee)) {
+            throw new Error('Decay multicurve startFee must be an integer');
+          }
+          if (startFee < 0 || startFee > DECAY_MAX_START_FEE) {
+            throw new Error(
+              `Decay multicurve startFee must be between 0 and ${DECAY_MAX_START_FEE}`,
+            );
+          }
+          if (!Number.isInteger(endFee) || endFee < 0 || endFee > V4_MAX_FEE) {
+            throw new Error(
+              `Multicurve pool fee must be between 0 and ${V4_MAX_FEE}`,
+            );
+          }
+          if (startFee < endFee) {
+            throw new Error(
+              `Decay multicurve startFee (${startFee}) must be greater than or equal to terminal pool fee (${endFee})`,
+            );
+          }
+          if (startFee > endFee && durationSeconds <= 0) {
+            throw new Error(
+              'Decay multicurve durationSeconds must be greater than 0 when startFee is greater than terminal pool fee',
+            );
+          }
+          mode = {
+            type: 'decay',
+            startTime,
+            startFee,
+            durationSeconds,
+          };
+          break;
+        }
+        case 'rehype': {
+          if (hasLegacySchedule) {
+            throw new Error(
+              "Initializer type 'rehype' cannot be combined with schedule",
+            );
+          }
+          mode = { type: 'rehype', hookConfig: initializer.config };
+          break;
+        }
+        default: {
+          const exhaustive: never = initializer;
+          throw new Error(
+            `Unsupported multicurve initializer type: ${(exhaustive as { type?: string })?.type ?? 'unknown'}`,
+          );
+        }
+      }
+    }
+
+    // Backwards-compatible behavior: an explicit dopplerHookInitializer override
+    // selects the DopplerHookInitializer path even without hook config.
+    if (params.modules?.dopplerHookInitializer !== undefined) {
+      if (mode.type === 'standard') {
+        mode = { type: 'rehype' };
+      } else if (mode.type !== 'rehype') {
+        throw new Error(
+          'modules.dopplerHookInitializer can only be used with the rehype or standard multicurve initializer mode',
+        );
+      }
+    }
+
+    return mode;
+  }
+
   encodeCreateMulticurveParams(
     params: CreateMulticurveParams<C>,
   ): CreateParams {
@@ -2699,37 +2985,14 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
         },
       );
 
-    const useScheduledInitializer = params.schedule !== undefined;
-    const useDopplerHook = params.dopplerHook !== undefined;
-    // Allow using DopplerHookInitializer even without a hook if explicitly overridden
-    const useDopplerHookInitializer =
-      useDopplerHook || params.modules?.dopplerHookInitializer !== undefined;
-
-    let scheduleStartTime: number | undefined;
-    if (useScheduledInitializer) {
-      scheduleStartTime = Number(params.schedule!.startTime);
-      if (
-        !Number.isFinite(scheduleStartTime) ||
-        !Number.isInteger(scheduleStartTime)
-      ) {
-        throw new Error(
-          'Scheduled multicurve startTime must be an integer number of seconds since Unix epoch',
-        );
-      }
-      if (scheduleStartTime < 0) {
-        throw new Error('Scheduled multicurve startTime cannot be negative');
-      }
-      const UINT32_MAX = 0xffffffff;
-      if (scheduleStartTime > UINT32_MAX) {
-        throw new Error(
-          'Scheduled multicurve startTime must fit within uint32 (seconds since Unix epoch up to year 2106)',
-        );
-      }
-    }
+    const initializerMode = this.resolveMulticurveInitializerMode(params);
+    const useScheduledInitializer = initializerMode.type === 'scheduled';
+    const useDecayInitializer = initializerMode.type === 'decay';
+    const useDopplerHookInitializer = initializerMode.type === 'rehype';
 
     // Validate dopplerHook fee distribution if provided
-    if (useDopplerHook) {
-      const hook = params.dopplerHook!;
+    if (initializerMode.type === 'rehype' && initializerMode.hookConfig) {
+      const hook = initializerMode.hookConfig;
       const totalDistribution =
         hook.assetBuybackPercentWad +
         hook.numeraireBuybackPercentWad +
@@ -2779,6 +3042,10 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     // UniswapV4ScheduledMulticurveInitializer:
     //   struct InitData { uint24 fee; int24 tickSpacing; Curve[] curves; BeneficiaryData[] beneficiaries; uint32 startingTime; }
     //
+    // DecayMulticurveInitializer:
+    //   struct InitData { uint24 startFee; uint24 fee; uint32 durationSeconds; int24 tickSpacing; Curve[] curves;
+    //                     BeneficiaryData[] beneficiaries; uint32 startingTime; }
+    //
     // DopplerHookInitializer:
     //   struct InitData { uint24 fee; int24 tickSpacing; int24 farTick; Curve[] curves; BeneficiaryData[] beneficiaries;
     //                     address dopplerHook; bytes onInitializationDopplerHookCalldata; bytes graduationDopplerHookCalldata; }
@@ -2786,11 +3053,15 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     let poolInitializerData: Hex;
 
     if (useDopplerHookInitializer) {
+      const hookConfig =
+        initializerMode.type === 'rehype'
+          ? initializerMode.hookConfig
+          : undefined;
       // DopplerHookInitializer format (8 fields)
       // Calculate farTick: use provided value from dopplerHook, or auto-calculate from curves
       let farTick: number;
-      if (params.dopplerHook?.farTick !== undefined) {
-        farTick = params.dopplerHook.farTick;
+      if (hookConfig?.farTick !== undefined) {
+        farTick = hookConfig.farTick;
       } else {
         // Auto-calculate from curves (max tickUpper)
         const allTickUppers = params.pool.curves.map((c) => c.tickUpper);
@@ -2802,9 +3073,8 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       let graduationDopplerHookCalldata: Hex = '0x';
       let dopplerHookAddress: Address = ZERO_ADDRESS;
 
-      if (useDopplerHook) {
-        const hook = params.dopplerHook!;
-        dopplerHookAddress = hook.hookAddress;
+      if (hookConfig) {
+        dopplerHookAddress = hookConfig.hookAddress;
         onInitializationDopplerHookCalldata = encodeAbiParameters(
           [
             { type: 'address' }, // numeraire
@@ -2817,15 +3087,15 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
           ],
           [
             params.sale.numeraire,
-            hook.buybackDestination,
-            hook.customFee,
-            hook.assetBuybackPercentWad,
-            hook.numeraireBuybackPercentWad,
-            hook.beneficiaryPercentWad,
-            hook.lpPercentWad,
+            hookConfig.buybackDestination,
+            hookConfig.customFee,
+            hookConfig.assetBuybackPercentWad,
+            hookConfig.numeraireBuybackPercentWad,
+            hookConfig.beneficiaryPercentWad,
+            hookConfig.lpPercentWad,
           ],
         );
-        graduationDopplerHookCalldata = hook.graduationCalldata ?? '0x';
+        graduationDopplerHookCalldata = hookConfig.graduationCalldata ?? '0x';
       }
 
       const dopplerHookTupleComponents = [
@@ -2858,8 +3128,47 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
           },
         ],
       );
+    } else if (useDecayInitializer) {
+      // DecayMulticurveInitializer format (7 fields)
+      const decayTupleComponents = [
+        { name: 'startFee', type: 'uint24' },
+        { name: 'fee', type: 'uint24' },
+        { name: 'durationSeconds', type: 'uint32' },
+        { name: 'tickSpacing', type: 'int24' },
+        { name: 'curves', type: 'tuple[]', components: curveComponents },
+        {
+          name: 'beneficiaries',
+          type: 'tuple[]',
+          components: beneficiaryComponents,
+        },
+        { name: 'startingTime', type: 'uint32' },
+      ];
+
+      if (initializerMode.type !== 'decay') {
+        throw new Error('Invalid multicurve initializer state for decay mode');
+      }
+
+      poolInitializerData = encodeAbiParameters(
+        [{ type: 'tuple', components: decayTupleComponents }],
+        [
+          {
+            startFee: initializerMode.startFee,
+            fee: params.pool.fee,
+            durationSeconds: initializerMode.durationSeconds,
+            tickSpacing: params.pool.tickSpacing,
+            curves: curvesData,
+            beneficiaries: beneficiariesData,
+            startingTime: initializerMode.startTime,
+          },
+        ],
+      );
     } else if (useScheduledInitializer) {
       // UniswapV4ScheduledMulticurveInitializer format (5 fields)
+      if (initializerMode.type !== 'scheduled') {
+        throw new Error(
+          'Invalid multicurve initializer state for scheduled mode',
+        );
+      }
       const scheduledTupleComponents = [
         { name: 'fee', type: 'uint24' },
         { name: 'tickSpacing', type: 'int24' },
@@ -2880,7 +3189,7 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
             tickSpacing: params.pool.tickSpacing,
             curves: curvesData,
             beneficiaries: beneficiariesData,
-            startingTime: scheduleStartTime!,
+            startingTime: initializerMode.startTime,
           },
         ],
       );
@@ -3023,6 +3332,12 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
           addresses.dopplerHookInitializer
         );
       }
+      if (useDecayInitializer) {
+        return (
+          params.modules?.v4DecayMulticurveInitializer ??
+          addresses.v4DecayMulticurveInitializer
+        );
+      }
       if (useScheduledInitializer) {
         return (
           params.modules?.v4ScheduledMulticurveInitializer ??
@@ -3038,6 +3353,11 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       if (useDopplerHookInitializer) {
         throw new Error(
           'DopplerHookInitializer address not configured on this chain. Override via builder.withDopplerHookInitializer() or update chain config.',
+        );
+      }
+      if (useDecayInitializer) {
+        throw new Error(
+          'Decay multicurve initializer address not configured on this chain. Override via builder.withV4DecayMulticurveInitializer() or update chain config.',
         );
       }
       throw new Error(
@@ -3066,7 +3386,10 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       }
     } else {
       // Use standard migration flow when no beneficiaries
-      liquidityMigratorData = this.encodeMigrationData(params.migration);
+      liquidityMigratorData = this.encodeMigrationData(params.migration, {
+        numeraire: params.sale.numeraire,
+        overrides: params.modules,
+      });
       resolvedMigrator = this.getMigratorAddress(
         params.migration,
         params.modules,
@@ -3427,6 +3750,12 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     }
 
     // Validate migration config
+    if (params.migration.type === 'dopplerHook') {
+      throw new Error(
+        'dopplerHook migration is only supported for dynamic auctions',
+      );
+    }
+
     if (
       params.migration.type === 'uniswapV4' &&
       params.migration.streamableFees
@@ -3559,6 +3888,106 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
         );
       }
     }
+
+    if (params.migration.type === 'dopplerHook') {
+      const migration = params.migration;
+
+      if (!Number.isInteger(migration.fee) || migration.fee < 0) {
+        throw new Error(
+          'DopplerHook migration fee must be a non-negative integer',
+        );
+      }
+      if (migration.fee > 150_000) {
+        throw new Error('DopplerHook migration fee must be <= 150000 (15%)');
+      }
+
+      if (
+        !Number.isInteger(migration.tickSpacing) ||
+        migration.tickSpacing <= 0
+      ) {
+        throw new Error(
+          'DopplerHook migration tickSpacing must be a positive integer',
+        );
+      }
+
+      if (migration.beneficiaries.length === 0) {
+        throw new Error(
+          'At least one beneficiary is required for dopplerHook migration',
+        );
+      }
+
+      const totalShares = migration.beneficiaries.reduce(
+        (sum, b) => sum + b.shares,
+        0n,
+      );
+      if (totalShares !== WAD) {
+        throw new Error(
+          `Beneficiary shares must sum to ${WAD} (100%), but got ${totalShares}`,
+        );
+      }
+
+      const lockDuration = Number(migration.lockDuration);
+      if (!Number.isInteger(lockDuration) || lockDuration < 0) {
+        throw new Error(
+          'DopplerHook migration lockDuration must be a non-negative integer number of seconds',
+        );
+      }
+      if (lockDuration > 0xffffffff) {
+        throw new Error(
+          'DopplerHook migration lockDuration must fit within uint32',
+        );
+      }
+
+      if (migration.hook && migration.rehype) {
+        throw new Error(
+          'dopplerHook migration cannot set both hook and rehype config. Use exactly one hook mode.',
+        );
+      }
+
+      if (migration.rehype) {
+        if (
+          !Number.isInteger(migration.rehype.customFee) ||
+          migration.rehype.customFee < 0
+        ) {
+          throw new Error('Rehype customFee must be a non-negative integer');
+        }
+        if (migration.rehype.customFee > 1_000_000) {
+          throw new Error('Rehype customFee must be <= 1000000 (100%)');
+        }
+
+        const rehypeDistributionTotal =
+          migration.rehype.assetBuybackPercentWad +
+          migration.rehype.numeraireBuybackPercentWad +
+          migration.rehype.beneficiaryPercentWad +
+          migration.rehype.lpPercentWad;
+
+        if (rehypeDistributionTotal !== WAD) {
+          throw new Error(
+            `DopplerHook fee distribution must sum to ${WAD} (100%), but got ${rehypeDistributionTotal}`,
+          );
+        }
+      }
+
+      if (migration.proceedsSplit) {
+        if (migration.proceedsSplit.recipient === ZERO_ADDRESS) {
+          throw new Error(
+            'DopplerHook proceeds split recipient cannot be zero address',
+          );
+        }
+
+        if (migration.proceedsSplit.share < 0n) {
+          throw new Error(
+            'DopplerHook proceeds split share cannot be negative',
+          );
+        }
+
+        if (migration.proceedsSplit.share > MAX_PROCEEDS_SPLIT_SHARE) {
+          throw new Error(
+            `DopplerHook proceeds split share cannot exceed ${MAX_PROCEEDS_SPLIT_SHARE}`,
+          );
+        }
+      }
+    }
   }
 
   private validateOpeningAuctionParams(
@@ -3666,6 +4095,9 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       throw new Error('Cannot sell more tokens than initial supply');
     }
 
+    // Validate initializer mode / compatibility and mode-specific constraints.
+    this.resolveMulticurveInitializerMode(params);
+
     // Validate vesting if provided
     if (params.vesting) {
       // Validate recipients and amounts arrays match
@@ -3712,6 +4144,12 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     }
 
     // Validate migration config for V4
+    if (params.migration.type === 'dopplerHook') {
+      throw new Error(
+        'dopplerHook migration is only supported for dynamic auctions',
+      );
+    }
+
     if (
       params.migration.type === 'uniswapV4' &&
       params.migration.streamableFees
@@ -3781,6 +4219,19 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
           );
         }
         return v4Address;
+      }
+      case 'dopplerHook': {
+        const dopplerHookMigratorAddress =
+          overrides?.dopplerHookMigrator ?? addresses.dopplerHookMigrator;
+        if (
+          !dopplerHookMigratorAddress ||
+          dopplerHookMigratorAddress === ZERO_ADDRESS
+        ) {
+          throw new Error(
+            'DopplerHookMigrator not configured on this chain. Provide override via modules.dopplerHookMigrator or use a different migration type.',
+          );
+        }
+        return dopplerHookMigratorAddress;
       }
       case 'noOp': {
         const noOpAddress = overrides?.noOpMigrator ?? addresses.noOpMigrator;
@@ -4580,36 +5031,55 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
   ): Promise<Hex> {
     const addresses = getAddresses(this.chainId);
 
-    // Determine which initializer to use (scheduled vs regular)
-    const useScheduledInitializer = params.schedule !== undefined;
-    const initializerAddress = useScheduledInitializer
-      ? (params.modules?.v4ScheduledMulticurveInitializer ??
-        addresses.v4ScheduledMulticurveInitializer)
-      : (params.modules?.v4MulticurveInitializer ??
-        addresses.v4MulticurveInitializer);
+    const initializerMode = this.resolveMulticurveInitializerMode(params);
+    let hookAddress: Address;
+    if (initializerMode.type === 'rehype') {
+      // For DopplerHookInitializer mode, hook address comes from the encoded
+      // initializer payload (or defaults to zero when no hook config is set).
+      hookAddress = initializerMode.hookConfig?.hookAddress ?? ZERO_ADDRESS;
+    } else {
+      const initializerAddress = (() => {
+        if (initializerMode.type === 'decay') {
+          return (
+            params.modules?.v4DecayMulticurveInitializer ??
+            addresses.v4DecayMulticurveInitializer
+          );
+        }
+        if (initializerMode.type === 'scheduled') {
+          return (
+            params.modules?.v4ScheduledMulticurveInitializer ??
+            addresses.v4ScheduledMulticurveInitializer
+          );
+        }
+        return (
+          params.modules?.v4MulticurveInitializer ??
+          addresses.v4MulticurveInitializer
+        );
+      })();
 
-    if (!initializerAddress) {
-      throw new Error('Multicurve initializer address not configured');
-    }
+      if (!initializerAddress) {
+        throw new Error('Multicurve initializer address not configured');
+      }
 
-    // Read the HOOK address from the initializer contract
-    const hookAddress = (await (this.publicClient as PublicClient).readContract(
-      {
+      // Standard/scheduled/decay initializers expose HOOK() directly.
+      hookAddress = (await (this.publicClient as PublicClient).readContract({
         address: initializerAddress,
         abi: v4MulticurveInitializerAbi,
         functionName: 'HOOK',
-      },
-    )) as Address;
+      })) as Address;
+    }
 
     // Construct the pool key and compute poolId
     const numeraire = params.sale.numeraire;
     const currency0 = tokenAddress < numeraire ? tokenAddress : numeraire;
     const currency1 = tokenAddress < numeraire ? numeraire : tokenAddress;
+    const fee =
+      initializerMode.type === 'decay' ? DYNAMIC_FEE_FLAG : params.pool.fee;
 
     return this.computePoolId({
       currency0,
       currency1,
-      fee: params.pool.fee,
+      fee,
       tickSpacing: params.pool.tickSpacing,
       hooks: hookAddress,
     }) as Hex;

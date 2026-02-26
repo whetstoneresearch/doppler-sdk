@@ -8,17 +8,20 @@ import {
 } from 'viem';
 import {
   LockablePoolStatus,
+  type MulticurveDecayFeeSchedule,
   type MulticurvePoolState,
   type SupportedPublicClient,
   type V4PoolKey,
 } from '../../types';
 import {
+  decayMulticurveInitializerHookAbi,
   v4MulticurveInitializerAbi,
   v4MulticurveMigratorAbi,
   streamableFeesLockerAbi,
 } from '../../abis';
 import { getAddresses } from '../../addresses';
 import type { SupportedChainId } from '../../addresses';
+import { DYNAMIC_FEE_FLAG } from '../../constants';
 import { computePoolId } from '../../utils/poolKey';
 
 /** Result from finding which initializer contains the pool */
@@ -71,7 +74,7 @@ export class MulticurvePool {
   /**
    * Get current pool state from the multicurve initializer
    *
-   * Automatically discovers which initializer (standard or scheduled) contains the pool.
+   * Automatically discovers which initializer (standard, scheduled, or decay) contains the pool.
    */
   async getState(): Promise<MulticurvePoolState> {
     const { state } = await this.findInitializerForPool();
@@ -82,7 +85,7 @@ export class MulticurvePool {
    * Find which initializer contains this pool and return both the address and state.
    *
    * Tries v4MulticurveInitializer first (more common), then falls back to
-   * v4ScheduledMulticurveInitializer if the pool isn't found.
+   * v4ScheduledMulticurveInitializer and v4DecayMulticurveInitializer if needed.
    */
   private async findInitializerForPool(): Promise<InitializerDiscoveryResult> {
     const chainId = await this.rpc.getChainId();
@@ -92,6 +95,7 @@ export class MulticurvePool {
     const initializersToTry: Address[] = [
       addresses.v4MulticurveInitializer,
       addresses.v4ScheduledMulticurveInitializer,
+      addresses.v4DecayMulticurveInitializer,
     ].filter(
       (addr): addr is Address => addr !== undefined && addr !== zeroAddress,
     );
@@ -248,6 +252,45 @@ export class MulticurvePool {
   async getNumeraireAddress(): Promise<Address> {
     const state = await this.getState();
     return state.numeraire;
+  }
+
+  /**
+   * Get the decay fee schedule for dynamic-fee multicurve pools.
+   *
+   * Returns `null` when the pool is not using dynamic fees.
+   */
+  async getFeeSchedule(): Promise<MulticurveDecayFeeSchedule | null> {
+    const { state } = await this.findInitializerForPool();
+    if (state.poolKey.fee !== DYNAMIC_FEE_FLAG) {
+      return null;
+    }
+
+    const poolId = computePoolId(state.poolKey);
+    try {
+      const scheduleData = await this.rpc.readContract({
+        address: state.poolKey.hooks,
+        abi: decayMulticurveInitializerHookAbi,
+        functionName: 'getFeeScheduleOf',
+        args: [poolId],
+      });
+
+      const scheduleStruct = scheduleData as any;
+      return {
+        startingTime: Number(
+          scheduleStruct.startingTime ?? scheduleStruct[0] ?? 0,
+        ),
+        startFee: Number(scheduleStruct.startFee ?? scheduleStruct[1] ?? 0),
+        endFee: Number(scheduleStruct.endFee ?? scheduleStruct[2] ?? 0),
+        lastFee: Number(scheduleStruct.lastFee ?? scheduleStruct[3] ?? 0),
+        durationSeconds: Number(
+          scheduleStruct.durationSeconds ?? scheduleStruct[4] ?? 0,
+        ),
+      };
+    } catch {
+      throw new Error(
+        `Dynamic multicurve hook at ${state.poolKey.hooks} does not expose getFeeScheduleOf(poolId)`,
+      );
+    }
   }
 
   private parsePoolKey(rawPoolKey: unknown): V4PoolKey {

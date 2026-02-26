@@ -23,8 +23,17 @@ export const mockAddresses: ChainAddresses = {
   v4MulticurveInitializer: getAddress(
     '0x7100000000000000000000000000000000000007',
   ) as Address,
+  v4DecayMulticurveInitializer: getAddress(
+    '0x7200000000000000000000000000000000000007',
+  ) as Address,
   v4Migrator: getAddress(
     '0x8000000000000000000000000000000000000008',
+  ) as Address,
+  dopplerHookMigrator: getAddress(
+    '0x8100000000000000000000000000000000000008',
+  ) as Address,
+  rehypeDopplerHookMigrator: getAddress(
+    '0x8200000000000000000000000000000000000008',
   ) as Address,
   v4MigratorHook: getAddress(
     '0x9000000000000000000000000000000000000009',

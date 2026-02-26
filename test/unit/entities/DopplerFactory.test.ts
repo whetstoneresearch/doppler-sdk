@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { DopplerFactory } from '../../../src/entities/DopplerFactory';
+import { DynamicAuctionBuilder } from '../../../src/builders';
 import {
   createMockPublicClient,
   createMockWalletClient,
@@ -8,6 +9,7 @@ import {
 } from '../../setup/fixtures/clients';
 import {
   mockAddresses,
+  mockHookAddress,
   mockTokenAddress,
   mockPoolAddress,
 } from '../../setup/fixtures/addresses';
@@ -16,9 +18,20 @@ import type {
   CreateDynamicAuctionParams,
   CreateMulticurveParams,
 } from '../../../src/types';
-import { parseEther, decodeAbiParameters, type Address } from 'viem';
+import {
+  parseEther,
+  decodeAbiParameters,
+  encodeAbiParameters,
+  keccak256,
+  type Address,
+} from 'viem';
 import { MAX_TICK, isToken0Expected } from '../../../src/utils';
-import { DAY_SECONDS } from '../../../src/constants';
+import {
+  DAY_SECONDS,
+  DYNAMIC_FEE_FLAG,
+  DECAY_MAX_START_FEE,
+  ZERO_ADDRESS,
+} from '../../../src/constants';
 
 vi.mock('../../../src/addresses', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../src/addresses')>();
@@ -152,6 +165,246 @@ describe('DopplerFactory', () => {
       // Non-positive ticks are valid - tick sign depends on price ratio
       expect(() => factory.encodeCreateMulticurveParams(params)).not.toThrow();
     });
+
+    it('encodes decay multicurve params with decay initializer', () => {
+      const params = multicurveParams();
+      params.initializer = {
+        type: 'decay',
+        startTime: 1_800_000_000,
+        startFee: 5_000,
+        durationSeconds: 86_400,
+      };
+
+      const createParams = factory.encodeCreateMulticurveParams(params);
+      expect(createParams.poolInitializer).toBe(
+        mockAddresses.v4DecayMulticurveInitializer,
+      );
+
+      const [decoded] = decodeAbiParameters(
+        [
+          {
+            type: 'tuple',
+            components: [
+              { name: 'startFee', type: 'uint24' },
+              { name: 'fee', type: 'uint24' },
+              { name: 'durationSeconds', type: 'uint32' },
+              { name: 'tickSpacing', type: 'int24' },
+              {
+                name: 'curves',
+                type: 'tuple[]',
+                components: [
+                  { name: 'tickLower', type: 'int24' },
+                  { name: 'tickUpper', type: 'int24' },
+                  { name: 'numPositions', type: 'uint16' },
+                  { name: 'shares', type: 'uint256' },
+                ],
+              },
+              {
+                name: 'beneficiaries',
+                type: 'tuple[]',
+                components: [
+                  { name: 'beneficiary', type: 'address' },
+                  { name: 'shares', type: 'uint96' },
+                ],
+              },
+              { name: 'startingTime', type: 'uint32' },
+            ],
+          },
+        ],
+        createParams.poolInitializerData,
+      ) as any;
+
+      expect(Number(decoded.startFee)).toBe(5_000);
+      expect(Number(decoded.fee)).toBe(params.pool.fee);
+      expect(Number(decoded.durationSeconds)).toBe(86_400);
+      expect(Number(decoded.tickSpacing)).toBe(params.pool.tickSpacing);
+      expect(Number(decoded.startingTime)).toBe(1_800_000_000);
+    });
+
+    it('computes decay multicurve poolId with dynamic fee flag', async () => {
+      const params = multicurveParams();
+      params.initializer = {
+        type: 'decay',
+        startTime: 1_800_000_000,
+        startFee: 8_000,
+        durationSeconds: 10_000,
+      };
+
+      vi.mocked(publicClient.readContract).mockResolvedValueOnce(
+        mockPoolAddress as any,
+      );
+
+      const result = await factory.simulateCreateMulticurve(params);
+
+      const numeraire = params.sale.numeraire;
+      const currency0 = mockTokenAddress < numeraire ? mockTokenAddress : numeraire;
+      const currency1 = mockTokenAddress < numeraire ? numeraire : mockTokenAddress;
+      const expectedPoolId = keccak256(
+        encodeAbiParameters(
+          [
+            { type: 'address' },
+            { type: 'address' },
+            { type: 'uint24' },
+            { type: 'int24' },
+            { type: 'address' },
+          ],
+          [
+            currency0,
+            currency1,
+            DYNAMIC_FEE_FLAG,
+            params.pool.tickSpacing,
+            mockPoolAddress,
+          ],
+        ),
+      );
+
+      expect(result.poolId).toBe(expectedPoolId);
+    });
+
+    it('computes rehype multicurve poolId using configured hook address', async () => {
+      const params = multicurveParams();
+      params.initializer = {
+        type: 'rehype',
+        config: {
+          hookAddress: mockHookAddress,
+          buybackDestination:
+            '0x1234567890123456789012345678901234567890' as Address,
+          customFee: 3000,
+          assetBuybackPercentWad: parseEther('0.25'),
+          numeraireBuybackPercentWad: parseEther('0.25'),
+          beneficiaryPercentWad: parseEther('0.25'),
+          lpPercentWad: parseEther('0.25'),
+        },
+      };
+      params.modules = {
+        dopplerHookInitializer:
+          '0x7100000000000000000000000000000000000011' as Address,
+      };
+
+      const result = await factory.simulateCreateMulticurve(params);
+
+      const numeraire = params.sale.numeraire;
+      const currency0 = mockTokenAddress < numeraire ? mockTokenAddress : numeraire;
+      const currency1 = mockTokenAddress < numeraire ? numeraire : mockTokenAddress;
+      const expectedPoolId = keccak256(
+        encodeAbiParameters(
+          [
+            { type: 'address' },
+            { type: 'address' },
+            { type: 'uint24' },
+            { type: 'int24' },
+            { type: 'address' },
+          ],
+          [
+            currency0,
+            currency1,
+            params.pool.fee,
+            params.pool.tickSpacing,
+            mockHookAddress,
+          ],
+        ),
+      );
+
+      expect(result.poolId).toBe(expectedPoolId);
+      expect(publicClient.readContract).not.toHaveBeenCalled();
+    });
+
+    it('computes rehype multicurve poolId with zero hook when no hook config is set', async () => {
+      const params = multicurveParams();
+      params.modules = {
+        dopplerHookInitializer:
+          '0x7100000000000000000000000000000000000011' as Address,
+      };
+
+      const result = await factory.simulateCreateMulticurve(params);
+
+      const numeraire = params.sale.numeraire;
+      const currency0 = mockTokenAddress < numeraire ? mockTokenAddress : numeraire;
+      const currency1 = mockTokenAddress < numeraire ? numeraire : mockTokenAddress;
+      const expectedPoolId = keccak256(
+        encodeAbiParameters(
+          [
+            { type: 'address' },
+            { type: 'address' },
+            { type: 'uint24' },
+            { type: 'int24' },
+            { type: 'address' },
+          ],
+          [
+            currency0,
+            currency1,
+            params.pool.fee,
+            params.pool.tickSpacing,
+            ZERO_ADDRESS,
+          ],
+        ),
+      );
+
+      expect(result.poolId).toBe(expectedPoolId);
+      expect(publicClient.readContract).not.toHaveBeenCalled();
+    });
+
+    it('rejects conflicting decay initializer and legacy schedule fields', () => {
+      const params = multicurveParams();
+      params.initializer = {
+        type: 'decay',
+        startTime: 1_800_000_000,
+        startFee: 6_000,
+        durationSeconds: 1_000,
+      };
+      params.schedule = { startTime: 1_800_000_000 };
+
+      expect(() => factory.encodeCreateMulticurveParams(params)).toThrow(
+        "Initializer type 'decay' cannot be combined with legacy schedule/dopplerHook fields",
+      );
+    });
+
+    it('rejects dopplerHook migration for multicurve auctions', () => {
+      const params = multicurveParams();
+      params.migration = {
+        type: 'dopplerHook',
+        fee: 3000,
+        tickSpacing: 60,
+        lockDuration: 30 * DAY_SECONDS,
+        beneficiaries: [
+          {
+            beneficiary:
+              '0x1234567890123456789012345678901234567890' as Address,
+            shares: parseEther('1'),
+          },
+        ],
+      };
+
+      expect(() => factory.encodeCreateMulticurveParams(params)).toThrow(
+        'dopplerHook migration is only supported for dynamic auctions',
+      );
+    });
+
+    it('accepts decay startFee up to 80%', () => {
+      const params = multicurveParams();
+      params.initializer = {
+        type: 'decay',
+        startTime: 1_800_000_000,
+        startFee: DECAY_MAX_START_FEE,
+        durationSeconds: 1_000,
+      };
+
+      expect(() => factory.encodeCreateMulticurveParams(params)).not.toThrow();
+    });
+
+    it('rejects decay startFee above 80%', () => {
+      const params = multicurveParams();
+      params.initializer = {
+        type: 'decay',
+        startTime: 1_800_000_000,
+        startFee: DECAY_MAX_START_FEE + 1,
+        durationSeconds: 1_000,
+      };
+
+      expect(() => factory.encodeCreateMulticurveParams(params)).toThrow(
+        `Decay multicurve startFee must be between 0 and ${DECAY_MAX_START_FEE}`,
+      );
+    });
   });
 
   describe('createStaticAuction', () => {
@@ -189,6 +442,29 @@ describe('DopplerFactory', () => {
 
       await expect(factory.createStaticAuction(invalidParams)).rejects.toThrow(
         'Cannot sell more tokens than initial supply',
+      );
+    });
+
+    it('rejects dopplerHook migration for static auctions', async () => {
+      const invalidParams = {
+        ...validParams,
+        migration: {
+          type: 'dopplerHook' as const,
+          fee: 3000,
+          tickSpacing: 60,
+          lockDuration: 30 * DAY_SECONDS,
+          beneficiaries: [
+            {
+              beneficiary:
+                '0x1234567890123456789012345678901234567890' as Address,
+              shares: parseEther('1'),
+            },
+          ],
+        },
+      };
+
+      await expect(factory.createStaticAuction(invalidParams)).rejects.toThrow(
+        'dopplerHook migration is only supported for dynamic auctions',
       );
     });
 
@@ -507,6 +783,228 @@ describe('DopplerFactory', () => {
       expect(typeof poolId).toBe('string');
       expect(poolId.startsWith('0x')).toBe(true);
       expect(gasEstimate).toBe(12_250_000n);
+    });
+
+    it('encodes dopplerHook migration with rehype helper for dynamic auctions', async () => {
+      const marketCapParams = DynamicAuctionBuilder.forChain(1)
+        .tokenConfig({
+          name: 'Test Token',
+          symbol: 'TEST',
+          tokenURI: 'https://example.com/token',
+        })
+        .saleConfig({
+          initialSupply: parseEther('1000000'),
+          numTokensToSell: parseEther('500000'),
+          numeraire: mockAddresses.weth,
+        })
+        .withMarketCapRange({
+          marketCap: { start: 500_000, min: 50_000 },
+          numerairePrice: 3000,
+          minProceeds: parseEther('100'),
+          maxProceeds: parseEther('10000'),
+          fee: 3000,
+          tickSpacing: 10,
+          duration: 7 * DAY_SECONDS,
+          epochLength: 3600,
+        })
+        .withGovernance({ type: 'noOp' })
+        .withMigration({ type: 'uniswapV4', fee: 3000, tickSpacing: 10 })
+        .withUserAddress('0x1234567890123456789012345678901234567890' as Address)
+        .build();
+
+      const params: CreateDynamicAuctionParams = {
+        ...marketCapParams,
+        migration: {
+          type: 'dopplerHook',
+          fee: 3000,
+          tickSpacing: 10,
+          lockDuration: 30 * DAY_SECONDS,
+          beneficiaries: [
+            {
+              beneficiary:
+                '0x1234567890123456789012345678901234567890' as Address,
+              shares: parseEther('1'),
+            },
+          ],
+          rehype: {
+            buybackDestination:
+              '0x1234567890123456789012345678901234567890' as Address,
+            customFee: 3000,
+            assetBuybackPercentWad: parseEther('0.25'),
+            numeraireBuybackPercentWad: parseEther('0.25'),
+            beneficiaryPercentWad: parseEther('0.25'),
+            lpPercentWad: parseEther('0.25'),
+          },
+        },
+      };
+
+      const { createParams } = await factory.encodeCreateDynamicAuctionParams(params);
+
+      expect(createParams.liquidityMigrator).toBe(mockAddresses.dopplerHookMigrator);
+
+      const decoded = decodeAbiParameters(
+        [
+          { type: 'uint24' },
+          { type: 'bool' },
+          { type: 'int24' },
+          { type: 'uint32' },
+          {
+            type: 'tuple[]',
+            components: [
+              { type: 'address', name: 'beneficiary' },
+              { type: 'uint96', name: 'shares' },
+            ],
+          },
+          { type: 'address' },
+          { type: 'bytes' },
+          { type: 'address' },
+          { type: 'uint256' },
+        ],
+        createParams.liquidityMigratorData,
+      ) as readonly [
+        number,
+        boolean,
+        number,
+        number,
+        readonly { beneficiary: Address; shares: bigint }[],
+        Address,
+        `0x${string}`,
+        Address,
+        bigint,
+      ];
+
+      expect(decoded[0]).toBe(3000);
+      expect(decoded[1]).toBe(false);
+      expect(decoded[2]).toBe(10);
+      expect(decoded[3]).toBe(30 * DAY_SECONDS);
+      expect(decoded[4]).toHaveLength(1);
+      expect(decoded[5]).toBe(mockAddresses.rehypeDopplerHookMigrator);
+      expect(decoded[7]).toBe(ZERO_ADDRESS);
+      expect(decoded[8]).toBe(0n);
+
+      const rehypeInit = decodeAbiParameters(
+        [
+          { type: 'address' },
+          { type: 'address' },
+          { type: 'uint24' },
+          { type: 'uint256' },
+          { type: 'uint256' },
+          { type: 'uint256' },
+          { type: 'uint256' },
+        ],
+        decoded[6],
+      );
+
+      expect(rehypeInit[0]).toBe(marketCapParams.sale.numeraire);
+      expect(rehypeInit[1]).toBe(
+        '0x1234567890123456789012345678901234567890',
+      );
+      expect(rehypeInit[2]).toBe(3000);
+      expect(rehypeInit[3]).toBe(parseEther('0.25'));
+      expect(rehypeInit[4]).toBe(parseEther('0.25'));
+      expect(rehypeInit[5]).toBe(parseEther('0.25'));
+      expect(rehypeInit[6]).toBe(parseEther('0.25'));
+    });
+
+    it('encodes dopplerHook migration with generic hook + proceeds split', async () => {
+      const genericHook =
+        '0x9999999999999999999999999999999999999999' as Address;
+      const proceedsRecipient =
+        '0x1111111111111111111111111111111111111111' as Address;
+
+      const marketCapParams = DynamicAuctionBuilder.forChain(1)
+        .tokenConfig({
+          name: 'Test Token',
+          symbol: 'TEST',
+          tokenURI: 'https://example.com/token',
+        })
+        .saleConfig({
+          initialSupply: parseEther('1000000'),
+          numTokensToSell: parseEther('500000'),
+          numeraire: mockAddresses.weth,
+        })
+        .withMarketCapRange({
+          marketCap: { start: 500_000, min: 50_000 },
+          numerairePrice: 3000,
+          minProceeds: parseEther('100'),
+          maxProceeds: parseEther('10000'),
+          fee: 3000,
+          tickSpacing: 10,
+          duration: 7 * DAY_SECONDS,
+          epochLength: 3600,
+        })
+        .withGovernance({ type: 'noOp' })
+        .withMigration({ type: 'uniswapV4', fee: 3000, tickSpacing: 10 })
+        .withUserAddress('0x1234567890123456789012345678901234567890' as Address)
+        .build();
+
+      const params: CreateDynamicAuctionParams = {
+        ...marketCapParams,
+        migration: {
+          type: 'dopplerHook',
+          fee: 500,
+          useDynamicFee: true,
+          tickSpacing: 20,
+          lockDuration: DAY_SECONDS,
+          beneficiaries: [
+            {
+              beneficiary:
+                '0x1234567890123456789012345678901234567890' as Address,
+              shares: parseEther('1'),
+            },
+          ],
+          hook: {
+            hookAddress: genericHook,
+            onInitializationCalldata: '0x1234',
+          },
+          proceedsSplit: {
+            recipient: proceedsRecipient,
+            share: parseEther('0.1'),
+          },
+        },
+      };
+
+      const { createParams } = await factory.encodeCreateDynamicAuctionParams(params);
+
+      const decoded = decodeAbiParameters(
+        [
+          { type: 'uint24' },
+          { type: 'bool' },
+          { type: 'int24' },
+          { type: 'uint32' },
+          {
+            type: 'tuple[]',
+            components: [
+              { type: 'address', name: 'beneficiary' },
+              { type: 'uint96', name: 'shares' },
+            ],
+          },
+          { type: 'address' },
+          { type: 'bytes' },
+          { type: 'address' },
+          { type: 'uint256' },
+        ],
+        createParams.liquidityMigratorData,
+      ) as readonly [
+        number,
+        boolean,
+        number,
+        number,
+        readonly { beneficiary: Address; shares: bigint }[],
+        Address,
+        `0x${string}`,
+        Address,
+        bigint,
+      ];
+
+      expect(decoded[0]).toBe(500);
+      expect(decoded[1]).toBe(true);
+      expect(decoded[2]).toBe(20);
+      expect(decoded[3]).toBe(DAY_SECONDS);
+      expect(decoded[5]).toBe(genericHook);
+      expect(decoded[6]).toBe('0x1234');
+      expect(decoded[7]).toBe(proceedsRecipient);
+      expect(decoded[8]).toBe(parseEther('0.1'));
     });
 
     it('should allow overriding gas when creating a dynamic auction', async () => {

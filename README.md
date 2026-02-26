@@ -257,7 +257,7 @@ See [examples/opening-auction-lifecycle.ts](./examples/opening-auction-lifecycle
 
 ### Multicurve Auction (V4 Multicurve Initializer)
 
-Multicurve auctions use a Uniswap V4-style initializer that seeds liquidity across multiple curves in a single pool. This enables richer distributions and can be combined with any supported migration path (V2, V3, V4, or NoOp).
+Multicurve auctions use a Uniswap V4-style initializer that seeds liquidity across multiple curves in a single pool. This enables richer distributions and can be combined with any supported migration path (V2, V3, V4, or NoOp). Multicurve initializer modes are modeled as a typed variant (`standard`, `scheduled`, `decay`, `rehype`) so new hook/initializer variations can be added without breaking existing integrations.
 
 **Standard Multicurve with Migration:**
 ```typescript
@@ -349,6 +349,42 @@ console.log('Token address:', scheduledResult.tokenAddress)
 ```
 
 Ensure the target chain has the scheduled multicurve initializer whitelisted. If you are targeting a custom deployment, override it via `.withV4ScheduledMulticurveInitializer('0x...')`.
+
+**Decay Multicurve Launch (Dynamic Fee):**
+```typescript
+import { MulticurveBuilder } from '@whetstone-research/doppler-sdk'
+import { parseEther } from 'viem'
+import { baseSepolia } from 'viem/chains'
+
+const startTime = Math.floor(Date.now() / 1000) + 300
+
+const decay = new MulticurveBuilder(baseSepolia.id)
+  .tokenConfig({ name: 'Decay Token', symbol: 'DMC', tokenURI: 'ipfs://decay.json' })
+  .saleConfig({ initialSupply: parseEther('1000000'), numTokensToSell: parseEther('900000'), numeraire: '0x4200000000000000000000000000000000000006' })
+  .poolConfig({
+    fee: 500, // terminal fee (0.05%)
+    tickSpacing: 10,
+    curves: [
+      { tickLower: 0, tickUpper: 220000, numPositions: 12, shares: parseEther('0.5') },
+      { tickLower: 20000, tickUpper: 220000, numPositions: 12, shares: parseEther('0.5') },
+    ],
+  })
+  .withDecay({
+    startTime,
+    startFee: 3000,      // starts at 0.3%
+    durationSeconds: 3600, // decays to pool.fee over 1 hour
+  })
+  .withGovernance({ type: 'default' })
+  .withMigration({ type: 'uniswapV2' })
+  .withUserAddress('0x...')
+  .build()
+
+const decayResult = await sdk.factory.createMulticurve(decay)
+console.log('Pool address:', decayResult.poolAddress)
+console.log('Token address:', decayResult.tokenAddress)
+```
+
+For decay pools, `pool.fee` is always the terminal fee (`endFee`) of the schedule. `withDecay({ startTime })` is optional; if omitted, `startTime` defaults to `0`. The SDK supports `startFee` values up to `800_000` (80%) for anti-sniping configurations. Ensure your deployed decay initializer/hook also supports the same max start fee. Override the decay initializer module with `.withV4DecayMulticurveInitializer('0x...')` when targeting custom deployments.
 
 **Multicurve with Lockable Beneficiaries (NoOp Migration):**
 
@@ -533,6 +569,12 @@ console.log('Hook address:', state.poolKey.hooks);
 console.log('Far tick threshold:', state.farTick);
 console.log('Pool status:', state.status); // 0=Uninitialized, 1=Initialized, 2=Locked, 3=Exited
 
+// For dynamic-fee multicurve pools, read the live decay fee schedule
+const feeSchedule = await pool.getFeeSchedule();
+if (feeSchedule) {
+  console.log('Fee schedule:', feeSchedule);
+}
+
 // Collect and distribute fees to beneficiaries
 // This can be called by anyone, but only beneficiaries receive fees
 const { fees0, fees1, transactionHash } = await pool.collectFees();
@@ -564,6 +606,7 @@ The SDK handles the complexity of fee collection by:
 - Pools in "Locked" status (status = 2) use the multicurve initializer for collection
 - Pools in "Exited" status (status = 3) automatically stream fees through `StreamableFeesLockerV2`; the SDK
   resolves the locker address and stream data for you
+- `getFeeSchedule()` returns decay schedule details only for dynamic-fee multicurve pools, otherwise `null`
 - Beneficiaries must be configured at pool creation time and cannot be changed
 
 **Common Use Cases:**
@@ -795,6 +838,80 @@ migration: {
 }
 ```
 
+### Migrate via DopplerHookMigrator (Dynamic Auctions)
+
+Use this mode when you want rehypothecation / custom hook behavior on the
+migrated V4 pool. This migration type is only supported for dynamic auctions.
+
+```typescript
+const params = sdk
+  .buildDynamicAuction()
+  .tokenConfig({ name: 'Example', symbol: 'EX', tokenURI: 'https://example.com/token.json' })
+  .saleConfig({
+    initialSupply: parseEther('1000000'),
+    numTokensToSell: parseEther('500000'),
+    numeraire: addresses.weth,
+  })
+  .withMarketCapRange({
+    marketCap: { start: 500_000, min: 50_000 },
+    numerairePrice: 3000,
+    minProceeds: parseEther('10'),
+    maxProceeds: parseEther('1000'),
+    fee: 3000,
+    tickSpacing: 10,
+  })
+  .withMigration({
+    type: 'dopplerHook',
+    fee: 3000,
+    tickSpacing: 10,
+    lockDuration: 30 * 24 * 60 * 60,
+    beneficiaries: [
+      { beneficiary: '0xYourBeneficiary...', shares: parseEther('0.95') },
+      await sdk.getAirlockBeneficiary(), // required protocol owner entry (>=5%)
+    ],
+    rehype: {
+      buybackDestination: '0xYourBuybackDestination...',
+      customFee: 3000,
+      assetBuybackPercentWad: parseEther('0.25'),
+      numeraireBuybackPercentWad: parseEther('0.25'),
+      beneficiaryPercentWad: parseEther('0.25'),
+      lpPercentWad: parseEther('0.25'),
+    },
+  })
+  .withUserAddress('0xYourAddress...')
+  .build();
+```
+
+Note: `dopplerHook` migrator beneficiaries must include the current Airlock owner
+with at least 5% shares, and total shares must sum to `1e18`.
+
+```typescript
+migration: {
+  type: 'dopplerHook',
+  fee: 3000,
+  useDynamicFee: false,
+  tickSpacing: 10,
+  lockDuration: 30 * 24 * 60 * 60,
+  beneficiaries: [
+    { beneficiary: '0xYourBeneficiary...', shares: parseEther('1') },
+  ],
+  rehype: {
+    // optional; defaults to chain rehypeDopplerHookMigrator address
+    // hookAddress: '0xRehypeMigratorHook...',
+    buybackDestination: '0xYourBuybackDestination...',
+    customFee: 3000,
+    assetBuybackPercentWad: parseEther('0.25'),
+    numeraireBuybackPercentWad: parseEther('0.25'),
+    beneficiaryPercentWad: parseEther('0.25'),
+    lpPercentWad: parseEther('0.25'),
+  },
+  proceedsSplit: {
+    recipient: '0xProceedsRecipient...',
+    share: parseEther('0.1'),
+  },
+}
+```
+
 To make configuring the first beneficiary simpler, the SDK now exposes helpers for resolving the
 airlock owner and creating the default 5% entry:
 
@@ -876,6 +993,11 @@ vesting: {
 
 The Doppler protocol uses CREATE2 for deterministic deployments, enabling you to find vanity addresses for both tokens and hooks before submitting transactions. The SDK provides a `mineTokenAddress` utility that mirrors on-chain calculations.
 
+`mineTokenAddress` supports matching:
+- A **prefix** (address starts with hex characters)
+- A **suffix** (address ends with hex characters, useful as an identifier)
+- Both prefix + suffix simultaneously (logical AND)
+
 #### Mining Token Addresses (Static Auctions)
 
 For static auctions (V3 pools), you can mine vanity token addresses:
@@ -918,6 +1040,21 @@ const { salt, tokenAddress, iterations } = mineTokenAddress({
 
 console.log(`Vanity token ${tokenAddress} found after ${iterations} iterations`)
 // Now submit airlock.create({ ...createParams, salt }) when ready to deploy
+```
+
+You can also mine an identifier at the end of the address using `suffix`:
+
+```typescript
+const { salt, tokenAddress, iterations } = mineTokenAddress({
+  prefix: '',
+  suffix: 'beef', // 1-4 hex chars is typically practical
+  tokenFactory: createParams.tokenFactory,
+  initialSupply: createParams.initialSupply,
+  recipient: addresses.airlock,
+  owner: addresses.airlock,
+  tokenData: createParams.tokenFactoryData,
+  maxIterations: 1_000_000,
+})
 ```
 
 #### Mining Hook and Token Addresses (Dynamic Auctions)
@@ -1120,6 +1257,8 @@ import type {
   CreateStaticAuctionParams,
   CreateDynamicAuctionParams,
   CreateMulticurveParams,
+  MulticurveInitializerConfig,
+  MulticurveDecayFeeSchedule,
   MigrationConfig,
   PoolInfo,
   HookInfo,
@@ -1167,6 +1306,26 @@ pnpm test airlock-whitelisting
 
 # Or with Alchemy (faster and more reliable)
 ALCHEMY_API_KEY=your_key_here pnpm test airlock-whitelisting
+```
+
+To run fork tests (Anvil):
+
+```bash
+# all fork tests
+ALCHEMY_API_KEY=your_key_here pnpm test:fork
+
+# chain-specific fork tests
+ALCHEMY_API_KEY=your_key_here TEST_CHAIN=base pnpm test:fork
+ALCHEMY_API_KEY=your_key_here TEST_CHAIN=base-sepolia pnpm test:fork
+ALCHEMY_API_KEY=your_key_here TEST_CHAIN=mainnet pnpm test:fork
+ALCHEMY_API_KEY=your_key_here TEST_CHAIN=eth-sepolia pnpm test:fork
+```
+
+You can also provide chain-specific RPC URLs directly:
+
+```bash
+ETH_MAINNET_RPC_URL=https://... TEST_CHAIN=mainnet pnpm test:fork
+ETH_SEPOLIA_RPC_URL=https://... TEST_CHAIN=eth-sepolia pnpm test:fork
 ```
 
 ## Migration from Previous SDKs
