@@ -382,13 +382,13 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       .TokenFactory80 as Address,
     v3Initializer: ZERO_ADDRESS,
     v3Quoter: '0x66266174564170519409d8853898f065c719536b' as Address,
-    v4Initializer: ZERO_ADDRESS,
+    v4Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_MAINNET].UniswapV4Initializer,
     dopplerLens: ZERO_ADDRESS,
-    dopplerDeployer: ZERO_ADDRESS,
+    dopplerDeployer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_MAINNET].DopplerDeployer,
     poolManager: '0x188d586ddcf52439676ca21a244753fa19f9ea8e' as Address,
     v2Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_MAINNET]
       .UniswapV2Migrator as Address,
-    v4Migrator: ZERO_ADDRESS,
+    v4Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_MAINNET].UniswapV4Migrator,
     noOpMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_MAINNET]
       .NoOpMigrator as Address,
     governanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_MAINNET]
