@@ -10,6 +10,8 @@ export {
   StaticAuction,
   DynamicAuction,
   MulticurvePool,
+  RehypeDopplerHook,
+  RehypeDopplerHookMigrator,
 } from './entities/auction';
 
 // Export quoter
@@ -46,6 +48,7 @@ export type {
 
   // DopplerHook types (e.g., RehypeDopplerHook)
   RehypeDopplerHookConfig,
+  RehypeFeeDistributionInfo,
   RehypeDopplerHookMigratorConfig,
   MulticurveInitializerConfig,
   MulticurveDecayFeeSchedule,
@@ -99,6 +102,7 @@ export type { ModuleAddressOverrides } from './types';
 
 // Export enums
 export { LockablePoolStatus } from './types';
+export { RehypeFeeRoutingMode } from './types';
 
 // Export addresses and utilities
 export {

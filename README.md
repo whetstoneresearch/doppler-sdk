@@ -60,12 +60,25 @@ const sdk = new DopplerSDK({
 Static auctions use Uniswap V3 pools with concentrated liquidity in a fixed price range. They're ideal for simple, predictable price discovery.
 
 ```typescript
-import { StaticAuctionBuilder } from '@whetstone-research/doppler-sdk'
+import { StaticAuctionBuilder } from '@whetstone-research/doppler-sdk';
 
 const params = new StaticAuctionBuilder()
-  .tokenConfig({ name: 'My Token', symbol: 'MTK', tokenURI: 'https://example.com/metadata.json' })
-  .saleConfig({ initialSupply: parseEther('1000000000'), numTokensToSell: parseEther('900000000'), numeraire: '0x...' })
-  .poolByTicks({ startTick: -92200, endTick: -69000, fee: 10000, numPositions: 15 })
+  .tokenConfig({
+    name: 'My Token',
+    symbol: 'MTK',
+    tokenURI: 'https://example.com/metadata.json',
+  })
+  .saleConfig({
+    initialSupply: parseEther('1000000000'),
+    numTokensToSell: parseEther('900000000'),
+    numeraire: '0x...',
+  })
+  .poolByTicks({
+    startTick: -92200,
+    endTick: -69000,
+    fee: 10000,
+    numPositions: 15,
+  })
   .withVesting({
     duration: BigInt(365 * 24 * 60 * 60),
     // Optional: specify multiple recipients and amounts
@@ -74,11 +87,11 @@ const params = new StaticAuctionBuilder()
   })
   .withMigration({ type: 'uniswapV2' })
   .withUserAddress('0x...')
-  .build()
+  .build();
 
-const result = await sdk.factory.createStaticAuction(params)
-console.log('Pool address:', result.poolAddress)
-console.log('Token address:', result.tokenAddress)
+const result = await sdk.factory.createStaticAuction(params);
+console.log('Pool address:', result.poolAddress);
+console.log('Token address:', result.tokenAddress);
 ```
 
 > **Tick spacing reminder:** When you provide ticks manually via `poolByTicks`, make sure both `startTick` and `endTick` are exact multiples of the fee tier's tick spacing (100→1, 500→10, 3000→60, 10000→200). The SDK now validates this locally and will fail fast if the ticks are misaligned.
@@ -88,38 +101,51 @@ console.log('Token address:', result.tokenAddress)
 When you want fee revenue to flow to specific addresses without migrating liquidity, use lockable beneficiaries. The pool enters a "Locked" state where trading fees are collected and distributed to beneficiaries:
 
 ```typescript
-import { StaticAuctionBuilder, WAD, getAirlockOwner } from '@whetstone-research/doppler-sdk'
-import { parseEther } from 'viem'
+import {
+  StaticAuctionBuilder,
+  WAD,
+  getAirlockOwner,
+} from '@whetstone-research/doppler-sdk';
+import { parseEther } from 'viem';
 
 // Get the protocol owner (required beneficiary with min 5%)
-const protocolOwner = await getAirlockOwner(publicClient)
+const protocolOwner = await getAirlockOwner(publicClient);
 
 // Define beneficiaries - shares must sum to WAD (1e18 = 100%)
 const beneficiaries = [
-  { beneficiary: protocolOwner, shares: parseEther('0.05') },  // 5% (minimum required)
-  { beneficiary: '0xTeamWallet...', shares: parseEther('0.45') },  // 45%
+  { beneficiary: protocolOwner, shares: parseEther('0.05') }, // 5% (minimum required)
+  { beneficiary: '0xTeamWallet...', shares: parseEther('0.45') }, // 45%
   { beneficiary: '0xDAOTreasury...', shares: parseEther('0.50') }, // 50%
-]
+];
 
 const params = new StaticAuctionBuilder(chainId)
-  .tokenConfig({ name: 'My Token', symbol: 'MTK', tokenURI: 'https://example.com/metadata.json' })
-  .saleConfig({ initialSupply: parseEther('1000000000'), numTokensToSell: parseEther('900000000'), numeraire: wethAddress })
-  .poolByTicks({
-    startTick: 174960,  // Must be multiple of 60 for fee 3000
-    endTick: 225000,
-    fee: 3000,  // Set > 0 to accumulate fees for beneficiaries
+  .tokenConfig({
+    name: 'My Token',
+    symbol: 'MTK',
+    tokenURI: 'https://example.com/metadata.json',
   })
-  .withBeneficiaries(beneficiaries)  // Lock pool and enable fee streaming
-  .withMigration({ type: 'noOp' })   // Use NoOp since pool is locked
+  .saleConfig({
+    initialSupply: parseEther('1000000000'),
+    numTokensToSell: parseEther('900000000'),
+    numeraire: wethAddress,
+  })
+  .poolByTicks({
+    startTick: 174960, // Must be multiple of 60 for fee 3000
+    endTick: 225000,
+    fee: 3000, // Set > 0 to accumulate fees for beneficiaries
+  })
+  .withBeneficiaries(beneficiaries) // Lock pool and enable fee streaming
+  .withMigration({ type: 'noOp' }) // Use NoOp since pool is locked
   .withGovernance({ type: 'default' })
   .withUserAddress('0x...')
-  .build()
+  .build();
 
-const result = await sdk.factory.createStaticAuction(params)
-console.log('Pool address:', result.poolAddress)  // SAVE THIS - needed to collect fees!
+const result = await sdk.factory.createStaticAuction(params);
+console.log('Pool address:', result.poolAddress); // SAVE THIS - needed to collect fees!
 ```
 
 **Important Notes:**
+
 - **Shares must sum to exactly WAD (1e18 = 100%)**
 - **Protocol owner must receive at least 5%** of fees
 - **SDK automatically sorts beneficiaries** by address (ascending)
@@ -135,11 +161,22 @@ See [examples/static-auction-lockable-beneficiaries.ts](./examples/static-auctio
 Dynamic auctions use Uniswap V4 hooks to implement gradual Dutch auctions where the price moves over time.
 
 ```typescript
-import { DynamicAuctionBuilder, DAY_SECONDS } from '@whetstone-research/doppler-sdk'
+import {
+  DynamicAuctionBuilder,
+  DAY_SECONDS,
+} from '@whetstone-research/doppler-sdk';
 
 const params = new DynamicAuctionBuilder()
-  .tokenConfig({ name: 'My Token', symbol: 'MTK', tokenURI: 'https://example.com/metadata.json' })
-  .saleConfig({ initialSupply: parseEther('1000000'), numTokensToSell: parseEther('900000'), numeraire: '0x...' })
+  .tokenConfig({
+    name: 'My Token',
+    symbol: 'MTK',
+    tokenURI: 'https://example.com/metadata.json',
+  })
+  .saleConfig({
+    initialSupply: parseEther('1000000'),
+    numTokensToSell: parseEther('900000'),
+    numeraire: '0x...',
+  })
   .poolConfig({ fee: 3000, tickSpacing: 60 })
   .auctionByTicks({
     duration: 7 * DAY_SECONDS,
@@ -179,11 +216,11 @@ const params = new DynamicAuctionBuilder()
   // .withV3Migrator('0xV3Migrator...')
   // .withV4Migrator('0xV4Migrator...')
   .withUserAddress('0x...')
-  .build()
+  .build();
 
-const result = await sdk.factory.createDynamicAuction(params)
-console.log('Hook address:', result.hookAddress)
-console.log('Token address:', result.tokenAddress)
+const result = await sdk.factory.createDynamicAuction(params);
+console.log('Hook address:', result.hookAddress);
+console.log('Token address:', result.tokenAddress);
 ```
 
 ### Multicurve Auction (V4 Multicurve Initializer)
@@ -191,42 +228,70 @@ console.log('Token address:', result.tokenAddress)
 Multicurve auctions use a Uniswap V4-style initializer that seeds liquidity across multiple curves in a single pool. This enables richer distributions and can be combined with any supported migration path (V2, V3, V4, or NoOp). Multicurve initializer modes are modeled as a typed variant (`standard`, `scheduled`, `decay`, `rehype`) so new hook/initializer variations can be added without breaking existing integrations.
 
 **Standard Multicurve with Migration:**
+
 ```typescript
-import { MulticurveBuilder } from '@whetstone-research/doppler-sdk'
-import { parseEther } from 'viem'
-import { base } from 'viem/chains'
+import { MulticurveBuilder } from '@whetstone-research/doppler-sdk';
+import { parseEther } from 'viem';
+import { base } from 'viem/chains';
 
 const params = new MulticurveBuilder(base.id)
-  .tokenConfig({ name: 'My Token', symbol: 'MTK', tokenURI: 'https://example.com/metadata.json' })
-  .saleConfig({ initialSupply: parseEther('1000000'), numTokensToSell: parseEther('900000'), numeraire: '0x...' })
+  .tokenConfig({
+    name: 'My Token',
+    symbol: 'MTK',
+    tokenURI: 'https://example.com/metadata.json',
+  })
+  .saleConfig({
+    initialSupply: parseEther('1000000'),
+    numTokensToSell: parseEther('900000'),
+    numeraire: '0x...',
+  })
   .poolConfig({
     fee: 0,
     tickSpacing: 8,
     curves: [
-      { tickLower: 0, tickUpper: 240000, numPositions: 10, shares: parseEther('0.5') },
-      { tickLower: 16000, tickUpper: 240000, numPositions: 10, shares: parseEther('0.5') },
+      {
+        tickLower: 0,
+        tickUpper: 240000,
+        numPositions: 10,
+        shares: parseEther('0.5'),
+      },
+      {
+        tickLower: 16000,
+        tickUpper: 240000,
+        numPositions: 10,
+        shares: parseEther('0.5'),
+      },
     ],
   })
   .withGovernance({ type: 'default' })
   // Choose a migration path (V2, V3, or V4)
   .withMigration({ type: 'uniswapV2' })
   .withUserAddress('0x...')
-  .build()
+  .build();
 
-const result = await sdk.factory.createMulticurve(params)
-console.log('Pool address:', result.poolAddress)
-console.log('Token address:', result.tokenAddress)
+const result = await sdk.factory.createMulticurve(params);
+console.log('Pool address:', result.poolAddress);
+console.log('Token address:', result.tokenAddress);
 ```
 
 **Market Cap Presets (Low / Medium / High):**
+
 ```typescript
-import { MulticurveBuilder, FEE_TIERS } from '@whetstone-research/doppler-sdk'
-import { parseEther } from 'viem'
-import { base } from 'viem/chains'
+import { MulticurveBuilder, FEE_TIERS } from '@whetstone-research/doppler-sdk';
+import { parseEther } from 'viem';
+import { base } from 'viem/chains';
 
 const presetParams = new MulticurveBuilder(base.id)
-  .tokenConfig({ name: 'Preset Launch', symbol: 'PRST', tokenURI: 'ipfs://preset.json' })
-  .saleConfig({ initialSupply: parseEther('1000000'), numTokensToSell: parseEther('900000'), numeraire: '0x...' })
+  .tokenConfig({
+    name: 'Preset Launch',
+    symbol: 'PRST',
+    tokenURI: 'ipfs://preset.json',
+  })
+  .saleConfig({
+    initialSupply: parseEther('1000000'),
+    numTokensToSell: parseEther('900000'),
+    numeraire: '0x...',
+  })
   .withMarketCapPresets({
     fee: FEE_TIERS.LOW, // defaults to 0.05% fee tier (tick spacing 10)
     presets: ['low', 'medium', 'high'], // defaults to all tiers
@@ -235,14 +300,15 @@ const presetParams = new MulticurveBuilder(base.id)
   .withGovernance({ type: 'default' })
   .withMigration({ type: 'uniswapV2' })
   .withUserAddress('0x...')
-  .build()
+  .build();
 
-const presetResult = await sdk.factory.createMulticurve(presetParams)
-console.log('Pool address:', presetResult.poolAddress)
-console.log('Token address:', presetResult.tokenAddress)
+const presetResult = await sdk.factory.createMulticurve(presetParams);
+console.log('Pool address:', presetResult.poolAddress);
+console.log('Token address:', presetResult.tokenAddress);
 ```
 
 The preset helper seeds three curated curve buckets sized for ~1B token supply targets:
+
 - `low`: ~5% of the sale allocated to a $7.5k-$30k market cap window.
 - `medium`: ~12.5% targeting roughly $50k-$150k market caps.
 - `high`: ~20% aimed at $250k-$750k market caps.
@@ -250,69 +316,107 @@ The preset helper seeds three curated curve buckets sized for ~1B token supply t
 Pass `presets` to pick a subset (e.g. `['medium', 'high']`) or provide `overrides` to adjust ticks, positions, or shares for a specific tier. When the selected presets sum to less than 100%, the builder automatically appends a filler curve (using the highest selected tier's shape) so liquidity always covers the full sale. Shares must stay within 0-1e18 and the helper will throw if the total ever exceeds 100%.
 
 **Scheduled Multicurve Launch:**
-```typescript
-import { MulticurveBuilder } from '@whetstone-research/doppler-sdk'
-import { parseEther } from 'viem'
-import { base } from 'viem/chains'
 
-const startTime = Math.floor(Date.now() / 1000) + 3600 // one hour from now
+```typescript
+import { MulticurveBuilder } from '@whetstone-research/doppler-sdk';
+import { parseEther } from 'viem';
+import { base } from 'viem/chains';
+
+const startTime = Math.floor(Date.now() / 1000) + 3600; // one hour from now
 
 const scheduled = new MulticurveBuilder(base.id)
-  .tokenConfig({ name: 'My Token', symbol: 'MTK', tokenURI: 'ipfs://scheduled.json' })
-  .saleConfig({ initialSupply: parseEther('1000000'), numTokensToSell: parseEther('900000'), numeraire: '0x4200000000000000000000000000000000000006' })
+  .tokenConfig({
+    name: 'My Token',
+    symbol: 'MTK',
+    tokenURI: 'ipfs://scheduled.json',
+  })
+  .saleConfig({
+    initialSupply: parseEther('1000000'),
+    numTokensToSell: parseEther('900000'),
+    numeraire: '0x4200000000000000000000000000000000000006',
+  })
   .poolConfig({
     fee: 0,
     tickSpacing: 8,
     curves: [
-      { tickLower: 0, tickUpper: 240000, numPositions: 12, shares: parseEther('0.5') },
-      { tickLower: 16000, tickUpper: 240000, numPositions: 12, shares: parseEther('0.5') },
+      {
+        tickLower: 0,
+        tickUpper: 240000,
+        numPositions: 12,
+        shares: parseEther('0.5'),
+      },
+      {
+        tickLower: 16000,
+        tickUpper: 240000,
+        numPositions: 12,
+        shares: parseEther('0.5'),
+      },
     ],
   })
   .withSchedule({ startTime })
   .withGovernance({ type: 'default' })
   .withMigration({ type: 'uniswapV2' })
   .withUserAddress('0x...')
-  .build()
+  .build();
 
-const scheduledResult = await sdk.factory.createMulticurve(scheduled)
-console.log('Pool address:', scheduledResult.poolAddress)
-console.log('Token address:', scheduledResult.tokenAddress)
+const scheduledResult = await sdk.factory.createMulticurve(scheduled);
+console.log('Pool address:', scheduledResult.poolAddress);
+console.log('Token address:', scheduledResult.tokenAddress);
 ```
 
 Ensure the target chain has the scheduled multicurve initializer whitelisted. If you are targeting a custom deployment, override it via `.withV4ScheduledMulticurveInitializer('0x...')`.
 
 **Decay Multicurve Launch (Dynamic Fee):**
-```typescript
-import { MulticurveBuilder } from '@whetstone-research/doppler-sdk'
-import { parseEther } from 'viem'
-import { baseSepolia } from 'viem/chains'
 
-const startTime = Math.floor(Date.now() / 1000) + 300
+```typescript
+import { MulticurveBuilder } from '@whetstone-research/doppler-sdk';
+import { parseEther } from 'viem';
+import { baseSepolia } from 'viem/chains';
+
+const startTime = Math.floor(Date.now() / 1000) + 300;
 
 const decay = new MulticurveBuilder(baseSepolia.id)
-  .tokenConfig({ name: 'Decay Token', symbol: 'DMC', tokenURI: 'ipfs://decay.json' })
-  .saleConfig({ initialSupply: parseEther('1000000'), numTokensToSell: parseEther('900000'), numeraire: '0x4200000000000000000000000000000000000006' })
+  .tokenConfig({
+    name: 'Decay Token',
+    symbol: 'DMC',
+    tokenURI: 'ipfs://decay.json',
+  })
+  .saleConfig({
+    initialSupply: parseEther('1000000'),
+    numTokensToSell: parseEther('900000'),
+    numeraire: '0x4200000000000000000000000000000000000006',
+  })
   .poolConfig({
     fee: 500, // terminal fee (0.05%)
     tickSpacing: 10,
     curves: [
-      { tickLower: 0, tickUpper: 220000, numPositions: 12, shares: parseEther('0.5') },
-      { tickLower: 20000, tickUpper: 220000, numPositions: 12, shares: parseEther('0.5') },
+      {
+        tickLower: 0,
+        tickUpper: 220000,
+        numPositions: 12,
+        shares: parseEther('0.5'),
+      },
+      {
+        tickLower: 20000,
+        tickUpper: 220000,
+        numPositions: 12,
+        shares: parseEther('0.5'),
+      },
     ],
   })
   .withDecay({
     startTime,
-    startFee: 3000,      // starts at 0.3%
+    startFee: 3000, // starts at 0.3%
     durationSeconds: 3600, // decays to pool.fee over 1 hour
   })
   .withGovernance({ type: 'default' })
   .withMigration({ type: 'uniswapV2' })
   .withUserAddress('0x...')
-  .build()
+  .build();
 
-const decayResult = await sdk.factory.createMulticurve(decay)
-console.log('Pool address:', decayResult.poolAddress)
-console.log('Token address:', decayResult.tokenAddress)
+const decayResult = await sdk.factory.createMulticurve(decay);
+console.log('Pool address:', decayResult.poolAddress);
+console.log('Token address:', decayResult.tokenAddress);
 ```
 
 For decay pools, `pool.fee` is always the terminal fee (`endFee`) of the schedule. `withDecay({ startTime })` is optional; if omitted, `startTime` defaults to `0`. The SDK supports `startFee` values up to `800_000` (80%) for anti-sniping configurations. Ensure your deployed decay initializer/hook also supports the same max start fee. Override the decay initializer module with `.withV4DecayMulticurveInitializer('0x...')` when targeting custom deployments.
@@ -322,36 +426,54 @@ For decay pools, `pool.fee` is always the terminal fee (`endFee`) of the schedul
 When you want fee revenue to flow to specific addresses without migrating liquidity after the auction, use lockable beneficiaries with NoOp migration:
 
 ```typescript
-import { WAD } from '@whetstone-research/doppler-sdk'
+import { WAD } from '@whetstone-research/doppler-sdk';
 
 // Define beneficiaries with shares that sum to WAD (1e18 = 100%)
 // IMPORTANT: Protocol owner must be included with at least 5% shares
 const lockableBeneficiaries = [
-  { beneficiary: '0xProtocolOwner...', shares: WAD / 10n },      // 10% to protocol (>= 5% required)
+  { beneficiary: '0xProtocolOwner...', shares: WAD / 10n }, // 10% to protocol (>= 5% required)
   { beneficiary: '0xYourAddress...', shares: (WAD * 4n) / 10n }, // 40%
-  { beneficiary: '0xOtherAddress...', shares: WAD / 2n },        // 50%
-]
+  { beneficiary: '0xOtherAddress...', shares: WAD / 2n }, // 50%
+];
 
 const params = new MulticurveBuilder(base.id)
-  .tokenConfig({ name: 'My Token', symbol: 'MTK', tokenURI: 'https://example.com/metadata.json' })
-  .saleConfig({ initialSupply: parseEther('1000000'), numTokensToSell: parseEther('900000'), numeraire: '0x...' })
+  .tokenConfig({
+    name: 'My Token',
+    symbol: 'MTK',
+    tokenURI: 'https://example.com/metadata.json',
+  })
+  .saleConfig({
+    initialSupply: parseEther('1000000'),
+    numTokensToSell: parseEther('900000'),
+    numeraire: '0x...',
+  })
   .poolConfig({
     fee: 3000, // 0.3% fee tier - set > 0 to accumulate fees for beneficiaries
     tickSpacing: 8,
     curves: [
-      { tickLower: 0, tickUpper: 240000, numPositions: 10, shares: parseEther('0.5') },
-      { tickLower: 16000, tickUpper: 240000, numPositions: 10, shares: parseEther('0.5') },
+      {
+        tickLower: 0,
+        tickUpper: 240000,
+        numPositions: 10,
+        shares: parseEther('0.5'),
+      },
+      {
+        tickLower: 16000,
+        tickUpper: 240000,
+        numPositions: 10,
+        shares: parseEther('0.5'),
+      },
     ],
     beneficiaries: lockableBeneficiaries, // Add beneficiaries for fee streaming
   })
   .withGovernance({ type: 'default' })
   .withMigration({ type: 'noOp' }) // Use NoOp migration with lockable beneficiaries
   .withUserAddress('0x...')
-  .build()
+  .build();
 
-const result = await sdk.factory.createMulticurve(params)
-const assetAddress = result.tokenAddress // SAVE THIS - you'll need it to collect fees!
-console.log('Asset address:', assetAddress)
+const result = await sdk.factory.createMulticurve(params);
+const assetAddress = result.tokenAddress; // SAVE THIS - you'll need it to collect fees!
+console.log('Asset address:', assetAddress);
 
 // Later, to collect fees (works before and after migration):
 // const pool = await sdk.getMulticurvePool(assetAddress)
@@ -359,6 +481,7 @@ console.log('Asset address:', assetAddress)
 ```
 
 **Important Notes:**
+
 - Set `fee` > 0 (e.g., 3000 for 0.3%) to accumulate trading fees for beneficiaries
 - **Save the asset address** (token address) returned from creation - you need it to collect fees later
 - Beneficiaries receive fees proportional to their shares when `collectFees()` is called
@@ -369,25 +492,35 @@ console.log('Asset address:', assetAddress)
 See [examples/multicurve-lockable-beneficiaries.ts](./examples/multicurve-lockable-beneficiaries.ts) for a complete example.
 
 #### Transaction gas override
+
 - You can pass a gas limit to factory create calls via the `gas` field on `CreateStaticAuctionParams` / `CreateDynamicAuctionParams` / `CreateMulticurveParams`.
 - If omitted, the SDK uses the simulation's gas estimate when available, falling back to 13,500,000 gas for the `create()` transaction.
 - `simulateCreate*` helpers now return `gasEstimate` so you can tune overrides before sending.
 - Builders expose `.withGasLimit(gas: bigint)` so you can set overrides fluently.
-
-
 
 ### Builder Pattern (Recommended)
 
 Prefer using the builders to construct `CreateStaticAuctionParams` and `CreateDynamicAuctionParams` fluently and safely. Builders apply sensible defaults and can compute ticks and gamma for you.
 
 ```typescript
-import { StaticAuctionBuilder, DynamicAuctionBuilder } from '@whetstone-research/doppler-sdk'
-import { parseEther } from 'viem'
+import {
+  StaticAuctionBuilder,
+  DynamicAuctionBuilder,
+} from '@whetstone-research/doppler-sdk';
+import { parseEther } from 'viem';
 
 // Dynamic auction via builder
 const dynamicParams = new DynamicAuctionBuilder()
-  .tokenConfig({ name: 'My Token', symbol: 'MTK', tokenURI: 'https://example.com/metadata.json' })
-  .saleConfig({ initialSupply: parseEther('1000000'), numTokensToSell: parseEther('500000'), numeraire: wethAddress })
+  .tokenConfig({
+    name: 'My Token',
+    symbol: 'MTK',
+    tokenURI: 'https://example.com/metadata.json',
+  })
+  .saleConfig({
+    initialSupply: parseEther('1000000'),
+    numTokensToSell: parseEther('500000'),
+    numeraire: wethAddress,
+  })
   .poolConfig({ fee: 3000, tickSpacing: 60 })
   .auctionByPriceRange({
     priceRange: { startPrice: 0.0001, endPrice: 0.001 },
@@ -396,20 +529,31 @@ const dynamicParams = new DynamicAuctionBuilder()
   })
   .withMigration({ type: 'uniswapV2' })
   .withUserAddress('0x...')
-  .build()
+  .build();
 
-const dyn = await sdk.factory.createDynamicAuction(dynamicParams)
+const dyn = await sdk.factory.createDynamicAuction(dynamicParams);
 
 // Static auction via builder
 const staticParams = new StaticAuctionBuilder()
-  .tokenConfig({ name: 'My Token', symbol: 'MTK', tokenURI: 'https://example.com/metadata.json' })
-  .saleConfig({ initialSupply: parseEther('1000000000'), numTokensToSell: parseEther('900000000'), numeraire: wethAddress })
-  .poolByPriceRange({ priceRange: { startPrice: 0.0001, endPrice: 0.001 }, fee: 3000 })
+  .tokenConfig({
+    name: 'My Token',
+    symbol: 'MTK',
+    tokenURI: 'https://example.com/metadata.json',
+  })
+  .saleConfig({
+    initialSupply: parseEther('1000000000'),
+    numTokensToSell: parseEther('900000000'),
+    numeraire: wethAddress,
+  })
+  .poolByPriceRange({
+    priceRange: { startPrice: 0.0001, endPrice: 0.001 },
+    fee: 3000,
+  })
   .withMigration({ type: 'uniswapV2' })
   .withUserAddress('0x...')
-  .build()
+  .build();
 
-const stat = await sdk.factory.createStaticAuction(staticParams)
+const stat = await sdk.factory.createStaticAuction(staticParams);
 ```
 
 ### Simplified Creation with Defaults
@@ -419,19 +563,35 @@ The SDK intelligently applies defaults when parameters are omitted. Here are exa
 ```typescript
 // Minimal static auction via builder
 const staticMinimal = new StaticAuctionBuilder()
-  .tokenConfig({ name: 'My Token', symbol: 'MTK', tokenURI: 'https://example.com/metadata.json' })
-  .saleConfig({ initialSupply: parseEther('1000000000'), numTokensToSell: parseEther('900000000'), numeraire: '0x...' })
+  .tokenConfig({
+    name: 'My Token',
+    symbol: 'MTK',
+    tokenURI: 'https://example.com/metadata.json',
+  })
+  .saleConfig({
+    initialSupply: parseEther('1000000000'),
+    numTokensToSell: parseEther('900000000'),
+    numeraire: '0x...',
+  })
   .poolByTicks({ fee: 10000 }) // uses default tick range and numPositions
   .withMigration({ type: 'uniswapV2' })
   .withUserAddress('0x...')
-  .build()
+  .build();
 
-const staticResult = await sdk.factory.createStaticAuction(staticMinimal)
+const staticResult = await sdk.factory.createStaticAuction(staticMinimal);
 
 // Minimal dynamic auction via builder
 const dynamicMinimal = new DynamicAuctionBuilder()
-  .tokenConfig({ name: 'My Token', symbol: 'MTK', tokenURI: 'https://example.com/metadata.json' })
-  .saleConfig({ initialSupply: parseEther('1000000'), numTokensToSell: parseEther('900000'), numeraire: '0x...' })
+  .tokenConfig({
+    name: 'My Token',
+    symbol: 'MTK',
+    tokenURI: 'https://example.com/metadata.json',
+  })
+  .saleConfig({
+    initialSupply: parseEther('1000000'),
+    numTokensToSell: parseEther('900000'),
+    numeraire: '0x...',
+  })
   .poolConfig({ fee: 3000, tickSpacing: 60 })
   .auctionByTicks({
     startTick: -92103,
@@ -441,9 +601,9 @@ const dynamicMinimal = new DynamicAuctionBuilder()
   }) // duration/epoch defaults applied; gamma computed automatically
   .withMigration({ type: 'uniswapV4' })
   .withUserAddress('0x...')
-  .build()
+  .build();
 
-const dynamicResult = await sdk.factory.createDynamicAuction(dynamicMinimal)
+const dynamicResult = await sdk.factory.createDynamicAuction(dynamicMinimal);
 ```
 
 ## Interacting with Auctions
@@ -521,6 +681,7 @@ const numeraireAddress = await pool.getNumeraireAddress();
 **Fee Collection Technical Details:**
 
 The SDK handles the complexity of fee collection by:
+
 1. **Retrieving pool configuration** from the multicurve initializer contract
 2. **Detecting migration status** and, if the pool has migrated, resolving the shared `StreamableFeesLockerV2`
    address via the multicurve migrator (no manual lookup required)
@@ -529,6 +690,7 @@ The SDK handles the complexity of fee collection by:
 5. **Distributing fees** proportionally to all configured beneficiaries
 
 **Important Notes:**
+
 - Fees accumulate from swap activity on the pool (only if fee tier > 0)
 - Anyone can call `collectFees()`, but fees are distributed to beneficiaries only
 - Fees are automatically split according to configured beneficiary shares
@@ -541,6 +703,7 @@ The SDK handles the complexity of fee collection by:
 - Beneficiaries must be configured at pool creation time and cannot be changed
 
 **Common Use Cases:**
+
 - Set up periodic fee collection (e.g., daily or weekly)
 - Integrate with a bot that automatically collects fees when threshold is reached
 - Allow any beneficiary to trigger collection after significant trading activity
@@ -573,9 +736,10 @@ await token.release();
 ```
 
 Alternatively, you can instantiate directly if needed:
+
 ```typescript
-import { Derc20 } from '@whetstone-research/doppler-sdk'
-const tokenDirect = new Derc20(publicClient, walletClient, tokenAddress)
+import { Derc20 } from '@whetstone-research/doppler-sdk';
+const tokenDirect = new Derc20(publicClient, walletClient, tokenAddress);
 ```
 
 ### Governance Delegation (ERC20Votes)
@@ -583,81 +747,105 @@ const tokenDirect = new Derc20(publicClient, walletClient, tokenAddress)
 DERC20 extends OpenZeppelin's ERC20Votes. Voting power is tracked via checkpoints and only updates once an address delegates voting power (typically to itself). The SDK exposes simple read/write helpers for delegation.
 
 Basics:
-```ts
-import { Derc20 } from '@whetstone-research/doppler-sdk'
 
-const token = sdk.getDerc20(tokenAddress)
+```ts
+import { Derc20 } from '@whetstone-research/doppler-sdk';
+
+const token = sdk.getDerc20(tokenAddress);
 
 // Read: who an account delegates to, and current voting power
-const currentDelegate = await token.getDelegates(userAddress)
-const votes = await token.getVotes(userAddress)
+const currentDelegate = await token.getDelegates(userAddress);
+const votes = await token.getVotes(userAddress);
 
 // Self‑delegate to activate vote tracking
-await token.delegate(userAddress)
+await token.delegate(userAddress);
 
 // Or delegate to another address
-await token.delegate('0xDelegatee...')
+await token.delegate('0xDelegatee...');
 ```
 
 Historical votes:
+
 ```ts
 // OZ v5 uses timepoints (block numbers for block‑based clocks)
-const blockNumber = await publicClient.getBlockNumber()
-const pastVotes = await token.getPastVotes(userAddress, blockNumber - 1n)
+const blockNumber = await publicClient.getBlockNumber();
+const pastVotes = await token.getPastVotes(userAddress, blockNumber - 1n);
 ```
 
 Signature‑based delegation (delegateBySig):
+
 ```ts
 // Signs an EIP‑712 message and submits a transaction calling delegateBySig
 // Note: This still submits a transaction from the connected wallet.
-const expiry = BigInt(Math.floor(Date.now() / 1000) + 3600) // 1h
-await token.delegateBySig('0xDelegatee...', expiry)
+const expiry = BigInt(Math.floor(Date.now() / 1000) + 3600); // 1h
+await token.delegateBySig('0xDelegatee...', expiry);
 ```
 
 Advanced: gasless delegation via relayer
+
 - The token supports `delegateBySig(delegatee, nonce, expiry, v, r, s)`. A relayer can submit this on behalf of the user if it holds ETH for gas.
 - To do this, have the user sign typed data, then send the signature to your backend that calls the contract.
 
 Client (sign only):
+
 ```ts
 const [nonce, name] = await Promise.all([
-  publicClient.readContract({ address: tokenAddress, abi: derc20Abi, functionName: 'nonces', args: [userAddress] }),
+  publicClient.readContract({
+    address: tokenAddress,
+    abi: derc20Abi,
+    functionName: 'nonces',
+    args: [userAddress],
+  }),
   token.getName(),
-])
-const chainId = await publicClient.getChainId()
-const domain = { name, version: '1', chainId, verifyingContract: tokenAddress } as const
-const types = { Delegation: [
-  { name: 'delegatee', type: 'address' },
-  { name: 'nonce', type: 'uint256' },
-  { name: 'expiry', type: 'uint256' },
-] } as const
-const message = { delegatee: '0xDelegatee...', nonce, expiry } as const
+]);
+const chainId = await publicClient.getChainId();
+const domain = {
+  name,
+  version: '1',
+  chainId,
+  verifyingContract: tokenAddress,
+} as const;
+const types = {
+  Delegation: [
+    { name: 'delegatee', type: 'address' },
+    { name: 'nonce', type: 'uint256' },
+    { name: 'expiry', type: 'uint256' },
+  ],
+} as const;
+const message = { delegatee: '0xDelegatee...', nonce, expiry } as const;
 
 const signature = await walletClient.signTypedData({
-  domain, types, primaryType: 'Delegation', message, account: userAddress,
-})
+  domain,
+  types,
+  primaryType: 'Delegation',
+  message,
+  account: userAddress,
+});
 // POST { signature, delegatee, nonce, expiry } to your relayer
 ```
 
 Relayer (submit tx):
+
 ```ts
 function splitSig(sig: `0x${string}`) {
-  const r = `0x${sig.slice(2, 66)}` as `0x${string}`
-  const s = `0x${sig.slice(66, 130)}` as `0x${string}`
-  let v = parseInt(sig.slice(130, 132), 16); if (v < 27) v += 27
-  return { v, r, s }
+  const r = `0x${sig.slice(2, 66)}` as `0x${string}`;
+  const s = `0x${sig.slice(66, 130)}` as `0x${string}`;
+  let v = parseInt(sig.slice(130, 132), 16);
+  if (v < 27) v += 27;
+  return { v, r, s };
 }
 
-const { v, r, s } = splitSig(signature)
+const { v, r, s } = splitSig(signature);
 await relayerWallet.writeContract({
   address: tokenAddress,
   abi: derc20Abi,
   functionName: 'delegateBySig',
   args: ['0xDelegatee...', nonce, expiry, v, r, s],
-})
+});
 ```
 
 Notes
+
 - Users must delegate (even to themselves) before votes appear in `getVotes`.
 - `getPastVotes`/`getPastTotalSupply` expect a timepoint; for block‑based clocks, pass a block number that has already been mined.
 - Events you may track: `DelegateChanged` and `DelegateVotesChanged` for live updates.
@@ -698,6 +886,7 @@ console.log('Price after swap:', quote.sqrtPriceX96After);
 For static auctions, you can create the pool and execute a pre‑buy in a single transaction via the Bundler.
 
 High‑level flow:
+
 - Simulate create to get `CreateParams` and the predicted token address
 - Decide `amountOut` to buy, simulate `amountIn` with `simulateBundleExactOutput(...)`
 - Build Universal Router commands (e.g., via `doppler-router`)
@@ -714,21 +903,27 @@ before attempting these flows; if you see
 
 ```ts
 // Prepare multicurve CreateParams up front
-const createParams = sdk.factory.encodeCreateMulticurveParams(multicurveConfig)
+const createParams = sdk.factory.encodeCreateMulticurveParams(multicurveConfig);
 
 // Quote an exact-out bundle
-const exactOutQuote = await sdk.factory.simulateMulticurveBundleExactOut(createParams, {
-  exactAmountOut: parseEther('100'),
-})
+const exactOutQuote = await sdk.factory.simulateMulticurveBundleExactOut(
+  createParams,
+  {
+    exactAmountOut: parseEther('100'),
+  },
+);
 
 // Quote an exact-in bundle
-const exactInQuote = await sdk.factory.simulateMulticurveBundleExactIn(createParams, {
-  exactAmountIn: parseEther('25'),
-})
+const exactInQuote = await sdk.factory.simulateMulticurveBundleExactIn(
+  createParams,
+  {
+    exactAmountIn: parseEther('25'),
+  },
+);
 
-console.log('Predicted asset:', exactOutQuote.asset)
-console.log('PoolKey:', exactOutQuote.poolKey)
-console.log('Input required:', exactOutQuote.amountIn)
+console.log('Predicted asset:', exactOutQuote.asset);
+console.log('PoolKey:', exactOutQuote.poolKey);
+console.log('Input required:', exactOutQuote.amountIn);
 ```
 
 The multicurve helpers automatically normalise the returned PoolKey to maintain canonical token ordering and
@@ -739,6 +934,7 @@ hash the result when collecting fees, so consumers no longer need to manually as
 The SDK supports flexible migration paths after auction completion:
 
 ### Migrate to Uniswap V2
+
 ```typescript
 migration: {
   type: 'uniswapV2',
@@ -746,6 +942,7 @@ migration: {
 ```
 
 ### Migrate to Uniswap V3
+
 ```typescript
 migration: {
   type: 'uniswapV3',
@@ -755,6 +952,7 @@ migration: {
 ```
 
 ### Migrate to Uniswap V4
+
 ```typescript
 migration: {
   type: 'uniswapV4',
@@ -777,7 +975,11 @@ migrated V4 pool. This migration type is only supported for dynamic auctions.
 ```typescript
 const params = sdk
   .buildDynamicAuction()
-  .tokenConfig({ name: 'Example', symbol: 'EX', tokenURI: 'https://example.com/token.json' })
+  .tokenConfig({
+    name: 'Example',
+    symbol: 'EX',
+    tokenURI: 'https://example.com/token.json',
+  })
   .saleConfig({
     initialSupply: parseEther('1000000'),
     numTokensToSell: parseEther('500000'),
@@ -803,10 +1005,17 @@ const params = sdk
     rehype: {
       buybackDestination: '0xYourBuybackDestination...',
       customFee: 3000,
-      assetBuybackPercentWad: parseEther('0.25'),
-      numeraireBuybackPercentWad: parseEther('0.25'),
-      beneficiaryPercentWad: parseEther('0.25'),
-      lpPercentWad: parseEther('0.25'),
+      feeRoutingMode: 'directBuyback',
+      feeDistributionInfo: {
+        assetFeesToAssetBuybackWad: parseEther('0.25'),
+        assetFeesToNumeraireBuybackWad: parseEther('0.25'),
+        assetFeesToBeneficiaryWad: parseEther('0.25'),
+        assetFeesToLpWad: parseEther('0.25'),
+        numeraireFeesToAssetBuybackWad: parseEther('0.25'),
+        numeraireFeesToNumeraireBuybackWad: parseEther('0.25'),
+        numeraireFeesToBeneficiaryWad: parseEther('0.25'),
+        numeraireFeesToLpWad: parseEther('0.25'),
+      },
     },
   })
   .withUserAddress('0xYourAddress...')
@@ -815,6 +1024,8 @@ const params = sdk
 
 Note: `dopplerHook` migrator beneficiaries must include the current Airlock owner
 with at least 5% shares, and total shares must sum to `1e18`.
+Unlike initializer-side Rehype pools, migrator-side Rehype uses a static
+`customFee`; there is no fee decay schedule in this mode.
 
 ```typescript
 migration: {
@@ -831,10 +1042,17 @@ migration: {
     // hookAddress: '0xRehypeMigratorHook...',
     buybackDestination: '0xYourBuybackDestination...',
     customFee: 3000,
-    assetBuybackPercentWad: parseEther('0.25'),
-    numeraireBuybackPercentWad: parseEther('0.25'),
-    beneficiaryPercentWad: parseEther('0.25'),
-    lpPercentWad: parseEther('0.25'),
+    feeRoutingMode: 'directBuyback',
+    feeDistributionInfo: {
+      assetFeesToAssetBuybackWad: parseEther('0.25'),
+      assetFeesToNumeraireBuybackWad: parseEther('0.25'),
+      assetFeesToBeneficiaryWad: parseEther('0.25'),
+      assetFeesToLpWad: parseEther('0.25'),
+      numeraireFeesToAssetBuybackWad: parseEther('0.25'),
+      numeraireFeesToNumeraireBuybackWad: parseEther('0.25'),
+      numeraireFeesToBeneficiaryWad: parseEther('0.25'),
+      numeraireFeesToLpWad: parseEther('0.25'),
+    },
   },
   proceedsSplit: {
     recipient: '0xProceedsRecipient...',
@@ -847,18 +1065,22 @@ To make configuring the first beneficiary simpler, the SDK now exposes helpers f
 airlock owner and creating the default 5% entry:
 
 ```ts
-import { DopplerSDK, createAirlockBeneficiary, getAirlockOwner } from '@whetstone-research/doppler-sdk'
-import { parseEther } from 'viem'
+import {
+  DopplerSDK,
+  createAirlockBeneficiary,
+  getAirlockOwner,
+} from '@whetstone-research/doppler-sdk';
+import { parseEther } from 'viem';
 
-const sdk = new DopplerSDK({ publicClient, chainId })
+const sdk = new DopplerSDK({ publicClient, chainId });
 
 // Get the owner and construct the beneficiary entry (5% by default)
-const airlockBeneficiary = await sdk.getAirlockBeneficiary()
+const airlockBeneficiary = await sdk.getAirlockBeneficiary();
 
 // Or build the entry manually if you do not have an SDK instance handy
 // (airlockEntry will be equivalent to airlockBeneficiary above)
-const owner = await getAirlockOwner(publicClient)
-const airlockEntry = createAirlockBeneficiary(owner) // defaults to 5% shares
+const owner = await getAirlockOwner(publicClient);
+const airlockEntry = createAirlockBeneficiary(owner); // defaults to 5% shares
 
 const migration = {
   type: 'uniswapV4' as const,
@@ -871,10 +1093,8 @@ const migration = {
       { beneficiary: '0xYourDAO...', shares: parseEther('0.95') }, // 95%
     ],
   },
-}
+};
 ```
-
- 
 
 ## Supported Chains
 
@@ -888,21 +1108,21 @@ import {
   isSupportedChainId,
   type SupportedChainId,
   type ChainAddresses,
-} from '@whetstone-research/doppler-sdk'
+} from '@whetstone-research/doppler-sdk';
 
 // Validate and narrow a chain ID
 function ensureSupported(id: number): SupportedChainId {
-  if (!isSupportedChainId(id)) throw new Error('Unsupported chain')
-  return id
+  if (!isSupportedChainId(id)) throw new Error('Unsupported chain');
+  return id;
 }
 
-const chainId = ensureSupported(CHAIN_IDS.BASE)
-const addresses: ChainAddresses = getAddresses(chainId)
-console.log('Airlock for Base:', addresses.airlock)
+const chainId = ensureSupported(CHAIN_IDS.BASE);
+const addresses: ChainAddresses = getAddresses(chainId);
+console.log('Airlock for Base:', addresses.airlock);
 
 // Iterate supported chains
 for (const id of SUPPORTED_CHAIN_IDS) {
-  console.log('Supported chain id:', id)
+  console.log('Supported chain id:', id);
 }
 ```
 
@@ -925,6 +1145,7 @@ vesting: {
 The Doppler protocol uses CREATE2 for deterministic deployments, enabling you to find vanity addresses for both tokens and hooks before submitting transactions. The SDK provides a `mineTokenAddress` utility that mirrors on-chain calculations.
 
 `mineTokenAddress` supports matching:
+
 - A **prefix** (address starts with hex characters)
 - A **suffix** (address ends with hex characters, useful as an identifier)
 - Both prefix + suffix simultaneously (logical AND)
@@ -938,12 +1159,16 @@ import {
   StaticAuctionBuilder,
   mineTokenAddress,
   getAddresses,
-} from '@whetstone-research/doppler-sdk'
-import { parseEther } from 'viem'
-import { base } from 'viem/chains'
+} from '@whetstone-research/doppler-sdk';
+import { parseEther } from 'viem';
+import { base } from 'viem/chains';
 
 const builder = new StaticAuctionBuilder(base.id)
-  .tokenConfig({ name: 'Vanity Token', symbol: 'VNY', tokenURI: 'https://example.com/token.json' })
+  .tokenConfig({
+    name: 'Vanity Token',
+    symbol: 'VNY',
+    tokenURI: 'https://example.com/token.json',
+  })
   .saleConfig({
     initialSupply: parseEther('1000000'),
     numTokensToSell: parseEther('750000'),
@@ -952,12 +1177,13 @@ const builder = new StaticAuctionBuilder(base.id)
   .poolByTicks({ startTick: -92100, endTick: -69060, fee: 3000 })
   .withGovernance({ type: 'default' })
   .withMigration({ type: 'uniswapV3', fee: 3000, tickSpacing: 60 })
-  .withUserAddress('0x...')
+  .withUserAddress('0x...');
 
-const staticParams = builder.build()
+const staticParams = builder.build();
 // Fetch the encoded create() payload without sending the transaction
-const createParams = await sdk.factory.encodeCreateStaticAuctionParams(staticParams)
-const addresses = getAddresses(base.id)
+const createParams =
+  await sdk.factory.encodeCreateStaticAuctionParams(staticParams);
+const addresses = getAddresses(base.id);
 
 const { salt, tokenAddress, iterations } = mineTokenAddress({
   prefix: 'dead', // omit 0x prefix
@@ -967,9 +1193,11 @@ const { salt, tokenAddress, iterations } = mineTokenAddress({
   owner: addresses.airlock,
   tokenData: createParams.tokenFactoryData,
   maxIterations: 1_000_000, // optional safety cap
-})
+});
 
-console.log(`Vanity token ${tokenAddress} found after ${iterations} iterations`)
+console.log(
+  `Vanity token ${tokenAddress} found after ${iterations} iterations`,
+);
 // Now submit airlock.create({ ...createParams, salt }) when ready to deploy
 ```
 
@@ -985,7 +1213,7 @@ const { salt, tokenAddress, iterations } = mineTokenAddress({
   owner: addresses.airlock,
   tokenData: createParams.tokenFactoryData,
   maxIterations: 1_000_000,
-})
+});
 ```
 
 #### Mining Hook and Token Addresses (Dynamic Auctions)
@@ -999,12 +1227,16 @@ import {
   getAddresses,
   DopplerBytecode,
   DAY_SECONDS,
-} from '@whetstone-research/doppler-sdk'
-import { parseEther, keccak256, encodePacked, encodeAbiParameters } from 'viem'
-import { base } from 'viem/chains'
+} from '@whetstone-research/doppler-sdk';
+import { parseEther, keccak256, encodePacked, encodeAbiParameters } from 'viem';
+import { base } from 'viem/chains';
 
 const builder = new DynamicAuctionBuilder()
-  .tokenConfig({ name: 'My Token', symbol: 'MTK', tokenURI: 'https://example.com/token.json' })
+  .tokenConfig({
+    name: 'My Token',
+    symbol: 'MTK',
+    tokenURI: 'https://example.com/token.json',
+  })
   .saleConfig({
     initialSupply: parseEther('1000000'),
     numTokensToSell: parseEther('900000'),
@@ -1020,20 +1252,30 @@ const builder = new DynamicAuctionBuilder()
     maxProceeds: parseEther('1000'),
   })
   .withMigration({ type: 'uniswapV4', fee: 3000, tickSpacing: 60 })
-  .withUserAddress('0x...')
+  .withUserAddress('0x...');
 
-const dynamicParams = builder.build()
-const { createParams } = await sdk.factory.encodeCreateDynamicAuctionParams(dynamicParams)
-const addresses = getAddresses(base.id)
+const dynamicParams = builder.build();
+const { createParams } =
+  await sdk.factory.encodeCreateDynamicAuctionParams(dynamicParams);
+const addresses = getAddresses(base.id);
 
 // Compute hook init code hash (required for hook mining)
 const hookInitHashData = encodeAbiParameters(
   [
-    { type: 'address' }, { type: 'uint256' }, { type: 'uint256' },
-    { type: 'uint256' }, { type: 'uint256' }, { type: 'uint256' },
-    { type: 'int24' }, { type: 'int24' }, { type: 'uint256' },
-    { type: 'int24' }, { type: 'bool' }, { type: 'uint256' },
-    { type: 'address' }, { type: 'uint24' },
+    { type: 'address' },
+    { type: 'uint256' },
+    { type: 'uint256' },
+    { type: 'uint256' },
+    { type: 'uint256' },
+    { type: 'uint256' },
+    { type: 'int24' },
+    { type: 'int24' },
+    { type: 'uint256' },
+    { type: 'int24' },
+    { type: 'bool' },
+    { type: 'uint256' },
+    { type: 'address' },
+    { type: 'uint24' },
   ],
   [
     addresses.poolManager,
@@ -1042,15 +1284,15 @@ const hookInitHashData = encodeAbiParameters(
     dynamicParams.auction.maxProceeds,
     /* startingTime, endingTime, startTick, endTick, epochLength, gamma, isToken0, numPDSlugs */
     /* poolInitializer, fee - extract from createParams */
-  ]
-)
+  ],
+);
 
 const hookInitHash = keccak256(
-  encodePacked(['bytes', 'bytes'], [DopplerBytecode, hookInitHashData])
-)
+  encodePacked(['bytes', 'bytes'], [DopplerBytecode, hookInitHashData]),
+);
 
 const result = mineTokenAddress({
-  prefix: 'cafe',        // Token prefix
+  prefix: 'cafe', // Token prefix
   tokenFactory: createParams.tokenFactory,
   initialSupply: createParams.initialSupply,
   recipient: addresses.airlock,
@@ -1064,11 +1306,11 @@ const result = mineTokenAddress({
     initCodeHash: hookInitHash,
     prefix: '00', // Hook prefix for gas optimization
   },
-})
+});
 
-console.log('Token address:', result.tokenAddress)
-console.log('Hook address:', result.hookAddress) // only if hook config provided
-console.log(`Found after ${result.iterations} iterations`)
+console.log('Token address:', result.tokenAddress);
+console.log('Hook address:', result.hookAddress); // only if hook config provided
+console.log(`Found after ${result.iterations} iterations`);
 ```
 
 #### Mining Token Addresses (Multicurve Auctions)
@@ -1080,12 +1322,16 @@ import {
   MulticurveBuilder,
   mineTokenAddress,
   getAddresses,
-} from '@whetstone-research/doppler-sdk'
-import { parseEther } from 'viem'
-import { base } from 'viem/chains'
+} from '@whetstone-research/doppler-sdk';
+import { parseEther } from 'viem';
+import { base } from 'viem/chains';
 
 const builder = new MulticurveBuilder(base.id)
-  .tokenConfig({ name: 'Vanity Multicurve', symbol: 'VMC', tokenURI: 'https://example.com/token.json' })
+  .tokenConfig({
+    name: 'Vanity Multicurve',
+    symbol: 'VMC',
+    tokenURI: 'https://example.com/token.json',
+  })
   .saleConfig({
     initialSupply: parseEther('1000000'),
     numTokensToSell: parseEther('900000'),
@@ -1095,19 +1341,29 @@ const builder = new MulticurveBuilder(base.id)
     fee: 3000,
     tickSpacing: 60,
     curves: [
-      { tickLower: 0, tickUpper: 240000, numPositions: 10, shares: parseEther('0.5') },
-      { tickLower: 16000, tickUpper: 240000, numPositions: 10, shares: parseEther('0.5') },
+      {
+        tickLower: 0,
+        tickUpper: 240000,
+        numPositions: 10,
+        shares: parseEther('0.5'),
+      },
+      {
+        tickLower: 16000,
+        tickUpper: 240000,
+        numPositions: 10,
+        shares: parseEther('0.5'),
+      },
     ],
   })
   .withGovernance({ type: 'default' })
   .withMigration({ type: 'uniswapV2' })
-  .withUserAddress('0x...')
+  .withUserAddress('0x...');
 
-const multicurveParams = builder.build()
-const addresses = getAddresses(base.id)
+const multicurveParams = builder.build();
+const addresses = getAddresses(base.id);
 
 // Get CreateParams without calling create
-const createParams = sdk.factory.encodeCreateMulticurveParams(multicurveParams)
+const createParams = sdk.factory.encodeCreateMulticurveParams(multicurveParams);
 
 // Mine a vanity token address
 const { salt, tokenAddress, iterations } = mineTokenAddress({
@@ -1118,12 +1374,14 @@ const { salt, tokenAddress, iterations } = mineTokenAddress({
   owner: addresses.airlock,
   tokenData: createParams.tokenFactoryData,
   maxIterations: 500_000,
-})
+});
 
-console.log(`Vanity token ${tokenAddress} found after ${iterations} iterations`)
+console.log(
+  `Vanity token ${tokenAddress} found after ${iterations} iterations`,
+);
 
 // Use the mined salt in createParams
-const vanityCreateParams = { ...createParams, salt }
+const vanityCreateParams = { ...createParams, salt };
 
 // Now submit the transaction manually with the vanity salt
 await publicClient.writeContract({
@@ -1132,7 +1390,7 @@ await publicClient.writeContract({
   functionName: 'create',
   args: [vanityCreateParams],
   account: walletClient.account,
-})
+});
 ```
 
 **Important**: Since `encodeCreateMulticurveParams` generates a random salt internally, you must construct the final `CreateParams` manually with your mined salt. The high-level `createMulticurve` method will replace any provided salt.
@@ -1163,19 +1421,19 @@ The main SDK class providing access to all functionality.
 
 ```typescript
 class DopplerSDK {
-  constructor(config: DopplerSDKConfig)
-  
+  constructor(config: DopplerSDKConfig);
+
   // Properties
-  factory: DopplerFactory
-  quoter: Quoter
-  
+  factory: DopplerFactory;
+  quoter: Quoter;
+
   // Methods
-  getStaticAuction(poolAddress: Address): Promise<StaticAuction>
-  getDynamicAuction(hookAddress: Address): Promise<DynamicAuction>
+  getStaticAuction(poolAddress: Address): Promise<StaticAuction>;
+  getDynamicAuction(hookAddress: Address): Promise<DynamicAuction>;
   // Multicurve helper
-  buildMulticurveAuction(): MulticurveBuilder
-  getPoolInfo(poolAddress: Address): Promise<PoolInfo>
-  getHookInfo(hookAddress: Address): Promise<HookInfo>
+  buildMulticurveAuction(): MulticurveBuilder;
+  getPoolInfo(poolAddress: Address): Promise<PoolInfo>;
+  getHookInfo(hookAddress: Address): Promise<HookInfo>;
 }
 ```
 
