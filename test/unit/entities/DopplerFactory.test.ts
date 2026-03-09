@@ -445,6 +445,64 @@ describe('DopplerFactory', () => {
       );
     });
 
+    it('uses an interior farTick when DopplerHookInitializer is selected without hook config', () => {
+      const params = multicurveParams();
+      params.modules = {
+        dopplerHookInitializer:
+          '0x7100000000000000000000000000000000000011' as Address,
+      };
+
+      const createParams = factory.encodeCreateMulticurveParams(params);
+      const [decodedPoolInitData] = decodeAbiParameters(
+        [
+          {
+            type: 'tuple',
+            components: [
+              { name: 'fee', type: 'uint24' },
+              { name: 'tickSpacing', type: 'int24' },
+              { name: 'farTick', type: 'int24' },
+              {
+                name: 'curves',
+                type: 'tuple[]',
+                components: [
+                  { name: 'tickLower', type: 'int24' },
+                  { name: 'tickUpper', type: 'int24' },
+                  { name: 'numPositions', type: 'uint16' },
+                  { name: 'shares', type: 'uint256' },
+                ],
+              },
+              {
+                name: 'beneficiaries',
+                type: 'tuple[]',
+                components: [
+                  { name: 'beneficiary', type: 'address' },
+                  { name: 'shares', type: 'uint96' },
+                ],
+              },
+              { name: 'dopplerHook', type: 'address' },
+              { name: 'onInitializationDopplerHookCalldata', type: 'bytes' },
+              { name: 'graduationDopplerHookCalldata', type: 'bytes' },
+            ],
+          },
+        ],
+        createParams.poolInitializerData,
+      ) as any;
+
+      const decodedCurves = decodedPoolInitData.curves as Array<{
+        tickUpper: bigint;
+      }>;
+      const expectedFarTick =
+        Math.max(...decodedCurves.map((curve) => Number(curve.tickUpper))) -
+        params.pool.tickSpacing;
+
+      expect(Number(decodedPoolInitData.farTick)).toBe(expectedFarTick);
+      expect(decodedPoolInitData.dopplerHook).toBe(ZERO_ADDRESS);
+      expect(decodedPoolInitData.onInitializationDopplerHookCalldata).toBe(
+        '0x',
+      );
+      expect(decodedPoolInitData.graduationDopplerHookCalldata).toBe('0x');
+    });
+
     it('computes rehype multicurve poolId with zero hook when no hook config is set', async () => {
       const params = multicurveParams();
       params.modules = {

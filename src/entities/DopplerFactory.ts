@@ -1792,9 +1792,10 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       if (hookConfig?.farTick !== undefined) {
         farTick = hookConfig.farTick;
       } else {
-        // Auto-calculate from curves (max tickUpper)
-        const allTickUppers = params.pool.curves.map((c) => c.tickUpper);
-        farTick = Math.max(...allTickUppers);
+        // Keep farTick strictly inside the global curve range so it remains
+        // reachable regardless of whether the mined token sorts as token0 or token1.
+        const allTickUppers = normalizedCurves.map((c) => c.tickUpper);
+        farTick = Math.max(...allTickUppers) - params.pool.tickSpacing;
       }
 
       // Encode dopplerHook initialization calldata if provided
