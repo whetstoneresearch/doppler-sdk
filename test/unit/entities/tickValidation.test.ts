@@ -16,9 +16,14 @@ import {
 } from 'viem';
 import { airlockAbi } from '../../../src/abis';
 
-vi.mock('../../../src/addresses', () => ({
-  getAddresses: vi.fn(() => mockAddresses),
-}));
+vi.mock('../../../src/addresses', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('../../../src/addresses')>();
+  return {
+    ...actual,
+    getAddresses: vi.fn(() => mockAddresses),
+  };
+});
 
 describe('Tick Validation (Issue #34)', () => {
   let factory: DopplerFactory;
