@@ -27,8 +27,10 @@ import type {
   MulticurveBundleExactInResult,
   MulticurveBundleExactOutResult,
   V4PoolKey,
+  RehypeFeeDistributionInfo,
   RehypeDopplerHookConfig,
 } from '../types';
+import { RehypeFeeRoutingMode } from '../types';
 import type { ModuleAddressOverrides } from '../types';
 import { getAddresses } from '../addresses';
 import { zeroAddress } from 'viem';
@@ -61,6 +63,7 @@ import {
   MAX_TICK,
   isToken0Expected,
 } from '../utils';
+import { normalizeRehypeDopplerHookMigratorConfig } from '../utils/dopplerHookMigrator';
 import {
   airlockAbi,
   bundlerAbi,
@@ -91,6 +94,19 @@ type ResolvedMulticurveInitializerMode =
       durationSeconds: number;
     }
   | { type: 'rehype'; hookConfig?: RehypeDopplerHookConfig };
+
+type NormalizedRehypeHookConfig = {
+  hookAddress: Address;
+  buybackDestination: Address;
+  startFee: number;
+  endFee: number;
+  durationSeconds: number;
+  startingTime: number;
+  feeRoutingMode: RehypeFeeRoutingMode;
+  feeDistributionInfo: RehypeFeeDistributionInfo;
+  graduationCalldata?: `0x${string}`;
+  farTick?: number;
+};
 
 export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
   private publicClient: SupportedPublicClient;
@@ -1361,6 +1377,176 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     return normalized;
   }
 
+  private normalizeRehypeStartingTime(
+    value: RehypeDopplerHookConfig['startingTime'],
+    label: string,
+  ): number {
+    if (value === undefined) return 0;
+    if (value instanceof Date) {
+      return this.normalizeUint32(Math.floor(value.getTime() / 1000), label);
+    }
+    return this.normalizeUint32(value, label);
+  }
+
+  private normalizeRehypeFeeRoutingMode(
+    mode: RehypeDopplerHookConfig['feeRoutingMode'],
+  ): RehypeFeeRoutingMode {
+    if (mode === undefined || mode === RehypeFeeRoutingMode.DirectBuyback) {
+      return RehypeFeeRoutingMode.DirectBuyback;
+    }
+    if (mode === RehypeFeeRoutingMode.RouteToBeneficiaryFees) {
+      return RehypeFeeRoutingMode.RouteToBeneficiaryFees;
+    }
+    if (mode === 'directBuyback') {
+      return RehypeFeeRoutingMode.DirectBuyback;
+    }
+    if (mode === 'routeToBeneficiaryFees') {
+      return RehypeFeeRoutingMode.RouteToBeneficiaryFees;
+    }
+    throw new Error(
+      'Rehype feeRoutingMode must be DirectBuyback/directBuyback or RouteToBeneficiaryFees/routeToBeneficiaryFees',
+    );
+  }
+
+  private resolveRehypeFeeDistributionInfo(
+    config: RehypeDopplerHookConfig,
+  ): RehypeFeeDistributionInfo {
+    if (config.feeDistributionInfo) {
+      return config.feeDistributionInfo;
+    }
+
+    const assetBuyback = config.assetBuybackPercentWad;
+    const numeraireBuyback = config.numeraireBuybackPercentWad;
+    const beneficiary = config.beneficiaryPercentWad;
+    const lp = config.lpPercentWad;
+
+    if (
+      assetBuyback === undefined ||
+      numeraireBuyback === undefined ||
+      beneficiary === undefined ||
+      lp === undefined
+    ) {
+      throw new Error(
+        'Rehype feeDistributionInfo is required, or provide all deprecated legacy percentages.',
+      );
+    }
+
+    return {
+      assetFeesToAssetBuybackWad: assetBuyback,
+      assetFeesToNumeraireBuybackWad: numeraireBuyback,
+      assetFeesToBeneficiaryWad: beneficiary,
+      assetFeesToLpWad: lp,
+      numeraireFeesToAssetBuybackWad: assetBuyback,
+      numeraireFeesToNumeraireBuybackWad: numeraireBuyback,
+      numeraireFeesToBeneficiaryWad: beneficiary,
+      numeraireFeesToLpWad: lp,
+    };
+  }
+
+  private validateRehypeFeeDistributionInfo(
+    feeDistributionInfo: RehypeFeeDistributionInfo,
+  ): void {
+    const assetRowTotal =
+      feeDistributionInfo.assetFeesToAssetBuybackWad +
+      feeDistributionInfo.assetFeesToNumeraireBuybackWad +
+      feeDistributionInfo.assetFeesToBeneficiaryWad +
+      feeDistributionInfo.assetFeesToLpWad;
+    if (assetRowTotal !== WAD) {
+      throw new Error(
+        `Rehype asset fee distribution must sum to ${WAD} (100%), but got ${assetRowTotal}`,
+      );
+    }
+
+    const numeraireRowTotal =
+      feeDistributionInfo.numeraireFeesToAssetBuybackWad +
+      feeDistributionInfo.numeraireFeesToNumeraireBuybackWad +
+      feeDistributionInfo.numeraireFeesToBeneficiaryWad +
+      feeDistributionInfo.numeraireFeesToLpWad;
+    if (numeraireRowTotal !== WAD) {
+      throw new Error(
+        `Rehype numeraire fee distribution must sum to ${WAD} (100%), but got ${numeraireRowTotal}`,
+      );
+    }
+  }
+
+  private normalizeRehypeHookConfig(
+    config: RehypeDopplerHookConfig,
+  ): NormalizedRehypeHookConfig {
+    const MAX_REHYPE_FEE = 1_000_000;
+
+    const startFeeRaw = config.startFee ?? config.customFee;
+    if (startFeeRaw === undefined) {
+      throw new Error(
+        'Rehype startFee is required, or provide deprecated customFee.',
+      );
+    }
+    const endFeeRaw = config.endFee ?? startFeeRaw;
+
+    const startFee = Number(startFeeRaw);
+    const endFee = Number(endFeeRaw);
+
+    if (
+      !Number.isInteger(startFee) ||
+      startFee < 0 ||
+      startFee > MAX_REHYPE_FEE
+    ) {
+      throw new Error(
+        `Rehype startFee must be an integer between 0 and ${MAX_REHYPE_FEE}`,
+      );
+    }
+    if (!Number.isInteger(endFee) || endFee < 0 || endFee > MAX_REHYPE_FEE) {
+      throw new Error(
+        `Rehype endFee must be an integer between 0 and ${MAX_REHYPE_FEE}`,
+      );
+    }
+    if (startFee < endFee) {
+      throw new Error(
+        `Rehype startFee (${startFee}) must be greater than or equal to endFee (${endFee})`,
+      );
+    }
+
+    const durationRaw =
+      config.durationSeconds ?? (startFee === endFee ? 0 : undefined);
+    if (durationRaw === undefined) {
+      throw new Error(
+        'Rehype durationSeconds must be provided when startFee is greater than endFee.',
+      );
+    }
+
+    const durationSeconds = this.normalizeUint32(
+      durationRaw,
+      'Rehype durationSeconds',
+    );
+    if (startFee > endFee && durationSeconds <= 0) {
+      throw new Error(
+        'Rehype durationSeconds must be greater than 0 when startFee is greater than endFee.',
+      );
+    }
+
+    const startingTime = this.normalizeRehypeStartingTime(
+      config.startingTime,
+      'Rehype startingTime',
+    );
+    const feeRoutingMode = this.normalizeRehypeFeeRoutingMode(
+      config.feeRoutingMode,
+    );
+    const feeDistributionInfo = this.resolveRehypeFeeDistributionInfo(config);
+    this.validateRehypeFeeDistributionInfo(feeDistributionInfo);
+
+    return {
+      hookAddress: config.hookAddress,
+      buybackDestination: config.buybackDestination,
+      startFee,
+      endFee,
+      durationSeconds,
+      startingTime,
+      feeRoutingMode,
+      feeDistributionInfo,
+      graduationCalldata: config.graduationCalldata,
+      farTick: config.farTick,
+    };
+  }
+
   private resolveMulticurveInitializerMode(
     params: CreateMulticurveParams<C>,
   ): ResolvedMulticurveInitializerMode {
@@ -1546,21 +1732,10 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     const useScheduledInitializer = initializerMode.type === 'scheduled';
     const useDecayInitializer = initializerMode.type === 'decay';
     const useDopplerHookInitializer = initializerMode.type === 'rehype';
-
-    // Validate dopplerHook fee distribution if provided
-    if (initializerMode.type === 'rehype' && initializerMode.hookConfig) {
-      const hook = initializerMode.hookConfig;
-      const totalDistribution =
-        hook.assetBuybackPercentWad +
-        hook.numeraireBuybackPercentWad +
-        hook.beneficiaryPercentWad +
-        hook.lpPercentWad;
-      if (totalDistribution !== WAD) {
-        throw new Error(
-          `DopplerHook fee distribution must sum to ${WAD} (100%), but got ${totalDistribution}`,
-        );
-      }
-    }
+    const normalizedRehypeHookConfig =
+      initializerMode.type === 'rehype' && initializerMode.hookConfig
+        ? this.normalizeRehypeHookConfig(initializerMode.hookConfig)
+        : undefined;
 
     // Shared curve and beneficiary component definitions for ABI encoding
     const curveComponents = [
@@ -1610,19 +1785,17 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     let poolInitializerData: Hex;
 
     if (useDopplerHookInitializer) {
-      const hookConfig =
-        initializerMode.type === 'rehype'
-          ? initializerMode.hookConfig
-          : undefined;
+      const hookConfig = normalizedRehypeHookConfig;
       // DopplerHookInitializer format (8 fields)
       // Calculate farTick: use provided value from dopplerHook, or auto-calculate from curves
       let farTick: number;
       if (hookConfig?.farTick !== undefined) {
         farTick = hookConfig.farTick;
       } else {
-        // Auto-calculate from curves (max tickUpper)
-        const allTickUppers = params.pool.curves.map((c) => c.tickUpper);
-        farTick = Math.max(...allTickUppers);
+        // Keep farTick strictly inside the global curve range so it remains
+        // reachable regardless of whether the mined token sorts as token0 or token1.
+        const allTickUppers = normalizedCurves.map((c) => c.tickUpper);
+        farTick = Math.max(...allTickUppers) - params.pool.tickSpacing;
       }
 
       // Encode dopplerHook initialization calldata if provided
@@ -1632,24 +1805,46 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
 
       if (hookConfig) {
         dopplerHookAddress = hookConfig.hookAddress;
+
+        const feeDistributionComponents = [
+          { name: 'assetFeesToAssetBuybackWad', type: 'uint256' },
+          { name: 'assetFeesToNumeraireBuybackWad', type: 'uint256' },
+          { name: 'assetFeesToBeneficiaryWad', type: 'uint256' },
+          { name: 'assetFeesToLpWad', type: 'uint256' },
+          { name: 'numeraireFeesToAssetBuybackWad', type: 'uint256' },
+          { name: 'numeraireFeesToNumeraireBuybackWad', type: 'uint256' },
+          { name: 'numeraireFeesToBeneficiaryWad', type: 'uint256' },
+          { name: 'numeraireFeesToLpWad', type: 'uint256' },
+        ];
+
+        const rehypeInitDataComponents = [
+          { name: 'numeraire', type: 'address' },
+          { name: 'buybackDst', type: 'address' },
+          { name: 'startFee', type: 'uint24' },
+          { name: 'endFee', type: 'uint24' },
+          { name: 'durationSeconds', type: 'uint32' },
+          { name: 'startingTime', type: 'uint32' },
+          { name: 'feeRoutingMode', type: 'uint8' },
+          {
+            name: 'feeDistributionInfo',
+            type: 'tuple',
+            components: feeDistributionComponents,
+          },
+        ];
+
         onInitializationDopplerHookCalldata = encodeAbiParameters(
+          [{ type: 'tuple', components: rehypeInitDataComponents }],
           [
-            { type: 'address' }, // numeraire
-            { type: 'address' }, // buybackDst
-            { type: 'uint24' }, // customFee
-            { type: 'uint256' }, // assetBuybackPercentWad
-            { type: 'uint256' }, // numeraireBuybackPercentWad
-            { type: 'uint256' }, // beneficiaryPercentWad
-            { type: 'uint256' }, // lpPercentWad
-          ],
-          [
-            params.sale.numeraire,
-            hookConfig.buybackDestination,
-            hookConfig.customFee,
-            hookConfig.assetBuybackPercentWad,
-            hookConfig.numeraireBuybackPercentWad,
-            hookConfig.beneficiaryPercentWad,
-            hookConfig.lpPercentWad,
+            {
+              numeraire: params.sale.numeraire,
+              buybackDst: hookConfig.buybackDestination,
+              startFee: hookConfig.startFee,
+              endFee: hookConfig.endFee,
+              durationSeconds: hookConfig.durationSeconds,
+              startingTime: hookConfig.startingTime,
+              feeRoutingMode: hookConfig.feeRoutingMode,
+              feeDistributionInfo: hookConfig.feeDistributionInfo,
+            },
           ],
         );
         graduationDopplerHookCalldata = hookConfig.graduationCalldata ?? '0x';
@@ -2502,27 +2697,7 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       }
 
       if (migration.rehype) {
-        if (
-          !Number.isInteger(migration.rehype.customFee) ||
-          migration.rehype.customFee < 0
-        ) {
-          throw new Error('Rehype customFee must be a non-negative integer');
-        }
-        if (migration.rehype.customFee > 1_000_000) {
-          throw new Error('Rehype customFee must be <= 1000000 (100%)');
-        }
-
-        const rehypeDistributionTotal =
-          migration.rehype.assetBuybackPercentWad +
-          migration.rehype.numeraireBuybackPercentWad +
-          migration.rehype.beneficiaryPercentWad +
-          migration.rehype.lpPercentWad;
-
-        if (rehypeDistributionTotal !== WAD) {
-          throw new Error(
-            `DopplerHook fee distribution must sum to ${WAD} (100%), but got ${rehypeDistributionTotal}`,
-          );
-        }
+        normalizeRehypeDopplerHookMigratorConfig(migration.rehype);
       }
 
       if (migration.proceedsSplit) {

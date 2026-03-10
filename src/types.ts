@@ -185,14 +185,31 @@ export interface RehypeDopplerHookMigratorConfig {
   buybackDestination: Address;
   // Custom swap fee in hundredths of a bip (1e6 = 100%).
   customFee: number;
-  // Percentage of fees used for asset buyback (in WAD, e.g., 0.2e18 = 20%).
-  assetBuybackPercentWad: bigint;
-  // Percentage of fees used for numeraire buyback (in WAD, e.g., 0.2e18 = 20%).
-  numeraireBuybackPercentWad: bigint;
-  // Percentage of fees distributed to beneficiaries (in WAD, e.g., 0.3e18 = 30%).
-  beneficiaryPercentWad: bigint;
-  // Percentage of fees retained for LP rebalancing (in WAD, e.g., 0.3e18 = 30%).
-  lpPercentWad: bigint;
+  // Routing mode for buyback-designated fees. Defaults to DirectBuyback.
+  feeRoutingMode?:
+    | RehypeFeeRoutingMode
+    | 'directBuyback'
+    | 'routeToBeneficiaryFees';
+  // Current fee routing matrix API.
+  feeDistributionInfo?: RehypeFeeDistributionInfo;
+
+  /**
+   * @deprecated Use feeDistributionInfo.* fields instead.
+   * If feeDistributionInfo is omitted, legacy percentages are mirrored to both rows.
+   */
+  assetBuybackPercentWad?: bigint;
+  /**
+   * @deprecated Use feeDistributionInfo.* fields instead.
+   */
+  numeraireBuybackPercentWad?: bigint;
+  /**
+   * @deprecated Use feeDistributionInfo.* fields instead.
+   */
+  beneficiaryPercentWad?: bigint;
+  /**
+   * @deprecated Use feeDistributionInfo.* fields instead.
+   */
+  lpPercentWad?: bigint;
 }
 
 export interface DopplerHookMigrationConfig {
@@ -723,22 +740,63 @@ export interface MulticurveBundleExactInResult {
 }
 
 // RehypeDopplerHook configuration for fee distribution and buyback
+export interface RehypeFeeDistributionInfo {
+  assetFeesToAssetBuybackWad: bigint;
+  assetFeesToNumeraireBuybackWad: bigint;
+  assetFeesToBeneficiaryWad: bigint;
+  assetFeesToLpWad: bigint;
+  numeraireFeesToAssetBuybackWad: bigint;
+  numeraireFeesToNumeraireBuybackWad: bigint;
+  numeraireFeesToBeneficiaryWad: bigint;
+  numeraireFeesToLpWad: bigint;
+}
+
+export enum RehypeFeeRoutingMode {
+  DirectBuyback = 0,
+  RouteToBeneficiaryFees = 1,
+}
+
+// Initializer-side RehypeDopplerHook configuration.
+// Supports both the current API and deprecated legacy fields for compatibility.
 export interface RehypeDopplerHookConfig {
   // The hook contract address (must be whitelisted in the initializer)
   hookAddress: Address;
-  // Destination address for buyback tokens
+  // Destination address for buyback tokens / beneficiary fee claims
   buybackDestination: Address;
-  // Custom swap fee in basis points (e.g., 3000 = 0.3%)
-  customFee: number;
-  // Fee distribution percentages (must sum to 100% / WAD)
-  // Percentage of fees used for asset buyback (in WAD, e.g., 0.2e18 = 20%)
-  assetBuybackPercentWad: bigint;
-  // Percentage of fees used for numeraire buyback (in WAD, e.g., 0.2e18 = 20%)
-  numeraireBuybackPercentWad: bigint;
-  // Percentage of fees distributed to beneficiaries (in WAD, e.g., 0.3e18 = 30%)
-  beneficiaryPercentWad: bigint;
-  // Percentage of fees distributed to LPs (in WAD, e.g., 0.3e18 = 30%)
-  lpPercentWad: bigint;
+
+  // Current fee schedule API
+  startFee?: number;
+  endFee?: number;
+  durationSeconds?: number | bigint;
+  startingTime?: number | bigint | Date;
+  feeRoutingMode?:
+    | RehypeFeeRoutingMode
+    | 'directBuyback'
+    | 'routeToBeneficiaryFees';
+  feeDistributionInfo?: RehypeFeeDistributionInfo;
+
+  /**
+   * @deprecated Use startFee/endFee instead. When provided alone, maps to startFee=endFee=customFee.
+   */
+  customFee?: number;
+  /**
+   * @deprecated Use feeDistributionInfo.* fields instead.
+   * If feeDistributionInfo is omitted, legacy percentages are mirrored to both rows.
+   */
+  assetBuybackPercentWad?: bigint;
+  /**
+   * @deprecated Use feeDistributionInfo.* fields instead.
+   */
+  numeraireBuybackPercentWad?: bigint;
+  /**
+   * @deprecated Use feeDistributionInfo.* fields instead.
+   */
+  beneficiaryPercentWad?: bigint;
+  /**
+   * @deprecated Use feeDistributionInfo.* fields instead.
+   */
+  lpPercentWad?: bigint;
+
   // Optional graduation calldata (called when pool graduates)
   graduationCalldata?: `0x${string}`;
 
@@ -861,8 +919,12 @@ export interface ModuleAddressOverrides {
   v4ScheduledMulticurveInitializer?: Address;
   v4DecayMulticurveInitializer?: Address;
   dopplerHookInitializer?: Address;
+  rehypeDopplerHookInitializer?: Address;
 
   // DopplerHooks
+  /**
+   * @deprecated Use rehypeDopplerHookInitializer instead.
+   */
   rehypeDopplerHook?: Address;
 
   // Governance

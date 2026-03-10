@@ -335,6 +335,95 @@ describe('MulticurveBuilder', () => {
 
       expect(params.modules?.v4DecayMulticurveInitializer).toBe(decayInitializer);
     });
+
+    it('builds rehype initializer config with fee schedule and distribution matrix', () => {
+      const params = buildBaseBuilder()
+        .withRehypeDopplerHook({
+          hookAddress: '0x9999999999999999999999999999999999999999' as Address,
+          buybackDestination:
+            '0x8888888888888888888888888888888888888888' as Address,
+          startFee: 6000,
+          endFee: 3000,
+          durationSeconds: 3600,
+          startingTime: 1_800_000_000,
+          feeRoutingMode: 1,
+          feeDistributionInfo: {
+            assetFeesToAssetBuybackWad: parseEther('0.2'),
+            assetFeesToNumeraireBuybackWad: parseEther('0.3'),
+            assetFeesToBeneficiaryWad: parseEther('0.1'),
+            assetFeesToLpWad: parseEther('0.4'),
+            numeraireFeesToAssetBuybackWad: parseEther('0.2'),
+            numeraireFeesToNumeraireBuybackWad: parseEther('0.3'),
+            numeraireFeesToBeneficiaryWad: parseEther('0.1'),
+            numeraireFeesToLpWad: parseEther('0.4'),
+          },
+        })
+        .build();
+
+      expect(params.initializer?.type).toBe('rehype');
+      const rehype = (params.initializer as { type: 'rehype'; config: any }).config;
+      expect(rehype.startFee).toBe(6000);
+      expect(rehype.endFee).toBe(3000);
+      expect(rehype.durationSeconds).toBe(3600);
+      expect(rehype.startingTime).toBe(1_800_000_000);
+      expect(rehype.feeRoutingMode).toBe(1);
+      expect(rehype.feeDistributionInfo.assetFeesToLpWad).toBe(
+        parseEther('0.4'),
+      );
+      expect(rehype.feeDistributionInfo.numeraireFeesToLpWad).toBe(
+        parseEther('0.4'),
+      );
+    });
+
+    it('normalizes legacy rehype fields into fee schedule and matrix fields', () => {
+      const params = buildBaseBuilder()
+        .withRehypeDopplerHook({
+          hookAddress: '0x9999999999999999999999999999999999999999' as Address,
+          buybackDestination:
+            '0x8888888888888888888888888888888888888888' as Address,
+          customFee: 3000,
+          assetBuybackPercentWad: parseEther('0.25'),
+          numeraireBuybackPercentWad: parseEther('0.25'),
+          beneficiaryPercentWad: parseEther('0.25'),
+          lpPercentWad: parseEther('0.25'),
+        })
+        .build();
+
+      const rehype = (params.initializer as { type: 'rehype'; config: any }).config;
+      expect(rehype.startFee).toBe(3000);
+      expect(rehype.endFee).toBe(3000);
+      expect(rehype.durationSeconds).toBe(0);
+      expect(rehype.feeRoutingMode).toBe(0);
+      expect(rehype.feeDistributionInfo.assetFeesToAssetBuybackWad).toBe(
+        parseEther('0.25'),
+      );
+      expect(rehype.feeDistributionInfo.numeraireFeesToAssetBuybackWad).toBe(
+        parseEther('0.25'),
+      );
+    });
+
+    it('rejects rehype configs where a distribution row does not sum to WAD', () => {
+      expect(() =>
+        buildBaseBuilder().withRehypeDopplerHook({
+          hookAddress: '0x9999999999999999999999999999999999999999' as Address,
+          buybackDestination:
+            '0x8888888888888888888888888888888888888888' as Address,
+          startFee: 3000,
+          endFee: 3000,
+          durationSeconds: 0,
+          feeDistributionInfo: {
+            assetFeesToAssetBuybackWad: parseEther('0.5'),
+            assetFeesToNumeraireBuybackWad: parseEther('0.2'),
+            assetFeesToBeneficiaryWad: parseEther('0.1'),
+            assetFeesToLpWad: parseEther('0.1'),
+            numeraireFeesToAssetBuybackWad: parseEther('0.25'),
+            numeraireFeesToNumeraireBuybackWad: parseEther('0.25'),
+            numeraireFeesToBeneficiaryWad: parseEther('0.25'),
+            numeraireFeesToLpWad: parseEther('0.25'),
+          },
+        }),
+      ).toThrow('asset fee distribution must sum');
+    });
   });
 
   describe('withCurves', () => {

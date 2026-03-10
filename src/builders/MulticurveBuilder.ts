@@ -17,6 +17,7 @@ import {
 import {
   isNoOpEnabledChain,
   isLaunchpadEnabledChain,
+  RehypeFeeRoutingMode,
   type CreateMulticurveParams,
   type GovernanceOption,
   type MigrationConfig,
@@ -402,27 +403,35 @@ export class MulticurveBuilder<
    * builder.withRehypeDopplerHook({
    *   hookAddress: '0x...',
    *   buybackDestination: '0x...',
-   *   customFee: 3000, // 0.3%
-   *   assetBuybackPercentWad: parseEther('0.2'),    // 20%
-   *   numeraireBuybackPercentWad: parseEther('0.2'), // 20%
-   *   beneficiaryPercentWad: parseEther('0.3'),      // 30%
-   *   lpPercentWad: parseEther('0.3'),               // 30%
+   *   startFee: 3000, // 0.3%
+   *   endFee: 3000,
+   *   durationSeconds: 0,
+   *   feeDistributionInfo: {
+   *     assetFeesToAssetBuybackWad: parseEther('0.2'),
+   *     assetFeesToNumeraireBuybackWad: parseEther('0.2'),
+   *     assetFeesToBeneficiaryWad: parseEther('0.3'),
+   *     assetFeesToLpWad: parseEther('0.3'),
+   *     numeraireFeesToAssetBuybackWad: parseEther('0.2'),
+   *     numeraireFeesToNumeraireBuybackWad: parseEther('0.2'),
+   *     numeraireFeesToBeneficiaryWad: parseEther('0.3'),
+   *     numeraireFeesToLpWad: parseEther('0.3'),
+   *   },
    * })
    * ```
    */
   withRehypeDopplerHook(params: RehypeDopplerHookConfig): this {
     this.assertCanSetInitializer('rehype');
 
-    const totalDistribution =
-      params.assetBuybackPercentWad +
-      params.numeraireBuybackPercentWad +
-      params.beneficiaryPercentWad +
-      params.lpPercentWad;
-    if (totalDistribution !== WAD) {
-      throw new Error(
-        `DopplerHook fee distribution must sum to ${WAD} (100%), but got ${totalDistribution}`,
-      );
-    }
+    const feeDistributionInfo = this.resolveRehypeFeeDistributionInfo(params);
+    this.validateRehypeDistribution(feeDistributionInfo);
+
+    const {
+      startFee,
+      endFee,
+      durationSeconds,
+      startingTime,
+      feeRoutingMode,
+    } = this.resolveRehypeFeeSchedule(params);
 
     // Validate mutual exclusivity of graduation threshold options
     if (
@@ -434,9 +443,194 @@ export class MulticurveBuilder<
       );
     }
 
-    this.dopplerHook = params;
-    this.initializer = { type: 'rehype', config: params };
+    const normalizedParams: RehypeDopplerHookConfig = {
+      ...params,
+      startFee,
+      endFee,
+      durationSeconds,
+      startingTime,
+      feeRoutingMode,
+      feeDistributionInfo,
+    };
+
+    this.dopplerHook = normalizedParams;
+    this.initializer = { type: 'rehype', config: normalizedParams };
     return this;
+  }
+
+  private parseUint32Value(value: number | bigint, label: string): number {
+    const normalized = typeof value === 'bigint' ? Number(value) : Number(value);
+    if (!Number.isFinite(normalized) || !Number.isInteger(normalized)) {
+      throw new Error(`${label} must be an integer number of seconds`);
+    }
+    if (normalized < 0) {
+      throw new Error(`${label} cannot be negative`);
+    }
+    const UINT32_MAX = 0xffffffff;
+    if (normalized > UINT32_MAX) {
+      throw new Error(`${label} must fit within uint32`);
+    }
+    return normalized;
+  }
+
+  private normalizeRehypeFeeRoutingMode(
+    mode: RehypeDopplerHookConfig['feeRoutingMode'],
+  ): RehypeFeeRoutingMode {
+    if (mode === undefined || mode === RehypeFeeRoutingMode.DirectBuyback) {
+      return RehypeFeeRoutingMode.DirectBuyback;
+    }
+    if (mode === RehypeFeeRoutingMode.RouteToBeneficiaryFees) {
+      return RehypeFeeRoutingMode.RouteToBeneficiaryFees;
+    }
+    if (mode === 'directBuyback') {
+      return RehypeFeeRoutingMode.DirectBuyback;
+    }
+    if (mode === 'routeToBeneficiaryFees') {
+      return RehypeFeeRoutingMode.RouteToBeneficiaryFees;
+    }
+    throw new Error(
+      'Rehype feeRoutingMode must be DirectBuyback/directBuyback or RouteToBeneficiaryFees/routeToBeneficiaryFees',
+    );
+  }
+
+  private resolveRehypeFeeDistributionInfo(
+    params: RehypeDopplerHookConfig,
+  ): NonNullable<RehypeDopplerHookConfig['feeDistributionInfo']> {
+    if (params.feeDistributionInfo) {
+      return params.feeDistributionInfo;
+    }
+
+    const assetBuyback = params.assetBuybackPercentWad;
+    const numeraireBuyback = params.numeraireBuybackPercentWad;
+    const beneficiary = params.beneficiaryPercentWad;
+    const lp = params.lpPercentWad;
+
+    if (
+      assetBuyback === undefined ||
+      numeraireBuyback === undefined ||
+      beneficiary === undefined ||
+      lp === undefined
+    ) {
+      throw new Error(
+        'Rehype feeDistributionInfo is required, or provide all deprecated legacy percentages.',
+      );
+    }
+
+    return {
+      assetFeesToAssetBuybackWad: assetBuyback,
+      assetFeesToNumeraireBuybackWad: numeraireBuyback,
+      assetFeesToBeneficiaryWad: beneficiary,
+      assetFeesToLpWad: lp,
+      numeraireFeesToAssetBuybackWad: assetBuyback,
+      numeraireFeesToNumeraireBuybackWad: numeraireBuyback,
+      numeraireFeesToBeneficiaryWad: beneficiary,
+      numeraireFeesToLpWad: lp,
+    };
+  }
+
+  private validateRehypeDistribution(
+    feeDistributionInfo: NonNullable<RehypeDopplerHookConfig['feeDistributionInfo']>,
+  ): void {
+    const assetRowTotal =
+      feeDistributionInfo.assetFeesToAssetBuybackWad +
+      feeDistributionInfo.assetFeesToNumeraireBuybackWad +
+      feeDistributionInfo.assetFeesToBeneficiaryWad +
+      feeDistributionInfo.assetFeesToLpWad;
+
+    if (assetRowTotal !== WAD) {
+      throw new Error(
+        `Rehype asset fee distribution must sum to ${WAD} (100%), but got ${assetRowTotal}`,
+      );
+    }
+
+    const numeraireRowTotal =
+      feeDistributionInfo.numeraireFeesToAssetBuybackWad +
+      feeDistributionInfo.numeraireFeesToNumeraireBuybackWad +
+      feeDistributionInfo.numeraireFeesToBeneficiaryWad +
+      feeDistributionInfo.numeraireFeesToLpWad;
+
+    if (numeraireRowTotal !== WAD) {
+      throw new Error(
+        `Rehype numeraire fee distribution must sum to ${WAD} (100%), but got ${numeraireRowTotal}`,
+      );
+    }
+  }
+
+  private resolveRehypeFeeSchedule(params: RehypeDopplerHookConfig): {
+    startFee: number;
+    endFee: number;
+    durationSeconds: number;
+    startingTime: number;
+    feeRoutingMode: RehypeFeeRoutingMode;
+  } {
+    const MAX_REHYPE_FEE = 1_000_000;
+
+    const startFeeRaw = params.startFee ?? params.customFee;
+    if (startFeeRaw === undefined) {
+      throw new Error(
+        'Rehype startFee is required, or provide deprecated customFee.',
+      );
+    }
+
+    const endFeeRaw = params.endFee ?? startFeeRaw;
+    const startFee = Number(startFeeRaw);
+    const endFee = Number(endFeeRaw);
+
+    if (!Number.isInteger(startFee) || startFee < 0 || startFee > MAX_REHYPE_FEE) {
+      throw new Error(
+        `Rehype startFee must be an integer between 0 and ${MAX_REHYPE_FEE}`,
+      );
+    }
+    if (!Number.isInteger(endFee) || endFee < 0 || endFee > MAX_REHYPE_FEE) {
+      throw new Error(
+        `Rehype endFee must be an integer between 0 and ${MAX_REHYPE_FEE}`,
+      );
+    }
+    if (startFee < endFee) {
+      throw new Error(
+        `Rehype startFee (${startFee}) must be greater than or equal to endFee (${endFee})`,
+      );
+    }
+
+    const durationRaw =
+      params.durationSeconds ??
+      (startFee === endFee ? 0 : undefined);
+
+    if (durationRaw === undefined) {
+      throw new Error(
+        'Rehype durationSeconds must be provided when startFee is greater than endFee.',
+      );
+    }
+
+    const durationSeconds = this.parseUint32Value(
+      durationRaw,
+      'Rehype durationSeconds',
+    );
+    if (startFee > endFee && durationSeconds <= 0) {
+      throw new Error(
+        'Rehype durationSeconds must be greater than 0 when startFee is greater than endFee.',
+      );
+    }
+
+    const startingTime =
+      params.startingTime === undefined
+        ? 0
+        : this.parseStartTimeSeconds(
+            params.startingTime,
+            'Rehype startingTime',
+          );
+
+    const feeRoutingMode = this.normalizeRehypeFeeRoutingMode(
+      params.feeRoutingMode,
+    );
+
+    return {
+      startFee,
+      endFee,
+      durationSeconds,
+      startingTime,
+      feeRoutingMode,
+    };
   }
 
   withVesting(params?: {

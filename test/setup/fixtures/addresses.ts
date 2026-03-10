@@ -26,6 +26,12 @@ export const mockAddresses: ChainAddresses = {
   v4DecayMulticurveInitializer: getAddress(
     '0x7200000000000000000000000000000000000007',
   ) as Address,
+  rehypeDopplerHookInitializer: getAddress(
+    '0x7300000000000000000000000000000000000007',
+  ) as Address,
+  rehypeDopplerHook: getAddress(
+    '0x7300000000000000000000000000000000000007',
+  ) as Address,
   v4Migrator: getAddress(
     '0x8000000000000000000000000000000000000008',
   ) as Address,

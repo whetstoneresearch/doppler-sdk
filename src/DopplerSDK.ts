@@ -12,6 +12,8 @@ import {
   StaticAuction,
   DynamicAuction,
   MulticurvePool,
+  RehypeDopplerHook,
+  RehypeDopplerHookMigrator,
 } from './entities/auction';
 import { Quoter } from './entities/quoter';
 import { Derc20 } from './entities/token';
@@ -77,6 +79,32 @@ export class DopplerSDK<C extends SupportedChainId = SupportedChainId> {
    */
   async getDynamicAuction(hookAddress: Address): Promise<DynamicAuction> {
     return new DynamicAuction(this.publicClient, hookAddress);
+  }
+
+  /**
+   * Get a RehypeDopplerHook instance for interacting with initializer-side rehype hook state.
+   * @param hookAddress The address of the RehypeDopplerHookInitializer
+   */
+  async getRehypeDopplerHook(hookAddress: Address): Promise<RehypeDopplerHook> {
+    return new RehypeDopplerHook(
+      this.publicClient,
+      this.walletClient,
+      hookAddress,
+    );
+  }
+
+  /**
+   * Get a RehypeDopplerHookMigrator instance for interacting with migrator-side rehype hook state.
+   * @param hookAddress The address of the RehypeDopplerHookMigrator
+   */
+  async getRehypeDopplerHookMigrator(
+    hookAddress: Address,
+  ): Promise<RehypeDopplerHookMigrator> {
+    return new RehypeDopplerHookMigrator(
+      this.publicClient,
+      this.walletClient,
+      hookAddress,
+    );
   }
 
   /**

@@ -34,7 +34,8 @@ import {
 } from '../../../src/constants';
 
 vi.mock('../../../src/addresses', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../../src/addresses')>();
+  const actual =
+    await importOriginal<typeof import('../../../src/addresses')>();
   return {
     ...actual,
     getAddresses: vi.fn(() => mockAddresses),
@@ -237,8 +238,10 @@ describe('DopplerFactory', () => {
       const result = await factory.simulateCreateMulticurve(params);
 
       const numeraire = params.sale.numeraire;
-      const currency0 = mockTokenAddress < numeraire ? mockTokenAddress : numeraire;
-      const currency1 = mockTokenAddress < numeraire ? numeraire : mockTokenAddress;
+      const currency0 =
+        mockTokenAddress < numeraire ? mockTokenAddress : numeraire;
+      const currency1 =
+        mockTokenAddress < numeraire ? numeraire : mockTokenAddress;
       const expectedPoolId = keccak256(
         encodeAbiParameters(
           [
@@ -269,11 +272,20 @@ describe('DopplerFactory', () => {
           hookAddress: mockHookAddress,
           buybackDestination:
             '0x1234567890123456789012345678901234567890' as Address,
-          customFee: 3000,
-          assetBuybackPercentWad: parseEther('0.25'),
-          numeraireBuybackPercentWad: parseEther('0.25'),
-          beneficiaryPercentWad: parseEther('0.25'),
-          lpPercentWad: parseEther('0.25'),
+          startFee: 3000,
+          endFee: 3000,
+          durationSeconds: 0,
+          feeRoutingMode: 0,
+          feeDistributionInfo: {
+            assetFeesToAssetBuybackWad: parseEther('0.25'),
+            assetFeesToNumeraireBuybackWad: parseEther('0.25'),
+            assetFeesToBeneficiaryWad: parseEther('0.25'),
+            assetFeesToLpWad: parseEther('0.25'),
+            numeraireFeesToAssetBuybackWad: parseEther('0.25'),
+            numeraireFeesToNumeraireBuybackWad: parseEther('0.25'),
+            numeraireFeesToBeneficiaryWad: parseEther('0.25'),
+            numeraireFeesToLpWad: parseEther('0.25'),
+          },
         },
       };
       params.modules = {
@@ -284,8 +296,10 @@ describe('DopplerFactory', () => {
       const result = await factory.simulateCreateMulticurve(params);
 
       const numeraire = params.sale.numeraire;
-      const currency0 = mockTokenAddress < numeraire ? mockTokenAddress : numeraire;
-      const currency1 = mockTokenAddress < numeraire ? numeraire : mockTokenAddress;
+      const currency0 =
+        mockTokenAddress < numeraire ? mockTokenAddress : numeraire;
+      const currency1 =
+        mockTokenAddress < numeraire ? numeraire : mockTokenAddress;
       const expectedPoolId = keccak256(
         encodeAbiParameters(
           [
@@ -309,6 +323,186 @@ describe('DopplerFactory', () => {
       expect(publicClient.readContract).not.toHaveBeenCalled();
     });
 
+    it('encodes rehype initialization calldata using the new hook InitData layout', () => {
+      const params = multicurveParams();
+      params.initializer = {
+        type: 'rehype',
+        config: {
+          hookAddress: mockHookAddress,
+          buybackDestination:
+            '0x1234567890123456789012345678901234567890' as Address,
+          startFee: 5000,
+          endFee: 3000,
+          durationSeconds: 3600,
+          startingTime: 1_800_000_000,
+          feeRoutingMode: 1,
+          feeDistributionInfo: {
+            assetFeesToAssetBuybackWad: parseEther('0.2'),
+            assetFeesToNumeraireBuybackWad: parseEther('0.3'),
+            assetFeesToBeneficiaryWad: parseEther('0.1'),
+            assetFeesToLpWad: parseEther('0.4'),
+            numeraireFeesToAssetBuybackWad: parseEther('0.2'),
+            numeraireFeesToNumeraireBuybackWad: parseEther('0.3'),
+            numeraireFeesToBeneficiaryWad: parseEther('0.1'),
+            numeraireFeesToLpWad: parseEther('0.4'),
+          },
+          farTick: 100_000,
+        },
+      };
+      params.modules = {
+        dopplerHookInitializer:
+          '0x7100000000000000000000000000000000000011' as Address,
+      };
+
+      const createParams = factory.encodeCreateMulticurveParams(params);
+      const [decodedPoolInitData] = decodeAbiParameters(
+        [
+          {
+            type: 'tuple',
+            components: [
+              { name: 'fee', type: 'uint24' },
+              { name: 'tickSpacing', type: 'int24' },
+              { name: 'farTick', type: 'int24' },
+              {
+                name: 'curves',
+                type: 'tuple[]',
+                components: [
+                  { name: 'tickLower', type: 'int24' },
+                  { name: 'tickUpper', type: 'int24' },
+                  { name: 'numPositions', type: 'uint16' },
+                  { name: 'shares', type: 'uint256' },
+                ],
+              },
+              {
+                name: 'beneficiaries',
+                type: 'tuple[]',
+                components: [
+                  { name: 'beneficiary', type: 'address' },
+                  { name: 'shares', type: 'uint96' },
+                ],
+              },
+              { name: 'dopplerHook', type: 'address' },
+              { name: 'onInitializationDopplerHookCalldata', type: 'bytes' },
+              { name: 'graduationDopplerHookCalldata', type: 'bytes' },
+            ],
+          },
+        ],
+        createParams.poolInitializerData,
+      ) as any;
+
+      expect(decodedPoolInitData.dopplerHook).toBe(mockHookAddress);
+      expect(Number(decodedPoolInitData.farTick)).toBe(100_000);
+
+      const [decodedHookInitData] = decodeAbiParameters(
+        [
+          {
+            type: 'tuple',
+            components: [
+              { name: 'numeraire', type: 'address' },
+              { name: 'buybackDst', type: 'address' },
+              { name: 'startFee', type: 'uint24' },
+              { name: 'endFee', type: 'uint24' },
+              { name: 'durationSeconds', type: 'uint32' },
+              { name: 'startingTime', type: 'uint32' },
+              { name: 'feeRoutingMode', type: 'uint8' },
+              {
+                name: 'feeDistributionInfo',
+                type: 'tuple',
+                components: [
+                  { name: 'assetFeesToAssetBuybackWad', type: 'uint256' },
+                  { name: 'assetFeesToNumeraireBuybackWad', type: 'uint256' },
+                  { name: 'assetFeesToBeneficiaryWad', type: 'uint256' },
+                  { name: 'assetFeesToLpWad', type: 'uint256' },
+                  { name: 'numeraireFeesToAssetBuybackWad', type: 'uint256' },
+                  {
+                    name: 'numeraireFeesToNumeraireBuybackWad',
+                    type: 'uint256',
+                  },
+                  { name: 'numeraireFeesToBeneficiaryWad', type: 'uint256' },
+                  { name: 'numeraireFeesToLpWad', type: 'uint256' },
+                ],
+              },
+            ],
+          },
+        ],
+        decodedPoolInitData.onInitializationDopplerHookCalldata,
+      ) as any;
+
+      expect(decodedHookInitData.numeraire).toBe(params.sale.numeraire);
+      expect(decodedHookInitData.buybackDst).toBe(
+        '0x1234567890123456789012345678901234567890',
+      );
+      expect(Number(decodedHookInitData.startFee)).toBe(5000);
+      expect(Number(decodedHookInitData.endFee)).toBe(3000);
+      expect(Number(decodedHookInitData.durationSeconds)).toBe(3600);
+      expect(Number(decodedHookInitData.startingTime)).toBe(1_800_000_000);
+      expect(Number(decodedHookInitData.feeRoutingMode)).toBe(1);
+      expect(
+        decodedHookInitData.feeDistributionInfo.assetFeesToNumeraireBuybackWad,
+      ).toBe(parseEther('0.3'));
+      expect(decodedHookInitData.feeDistributionInfo.numeraireFeesToLpWad).toBe(
+        parseEther('0.4'),
+      );
+    });
+
+    it('uses an interior farTick when DopplerHookInitializer is selected without hook config', () => {
+      const params = multicurveParams();
+      params.modules = {
+        dopplerHookInitializer:
+          '0x7100000000000000000000000000000000000011' as Address,
+      };
+
+      const createParams = factory.encodeCreateMulticurveParams(params);
+      const [decodedPoolInitData] = decodeAbiParameters(
+        [
+          {
+            type: 'tuple',
+            components: [
+              { name: 'fee', type: 'uint24' },
+              { name: 'tickSpacing', type: 'int24' },
+              { name: 'farTick', type: 'int24' },
+              {
+                name: 'curves',
+                type: 'tuple[]',
+                components: [
+                  { name: 'tickLower', type: 'int24' },
+                  { name: 'tickUpper', type: 'int24' },
+                  { name: 'numPositions', type: 'uint16' },
+                  { name: 'shares', type: 'uint256' },
+                ],
+              },
+              {
+                name: 'beneficiaries',
+                type: 'tuple[]',
+                components: [
+                  { name: 'beneficiary', type: 'address' },
+                  { name: 'shares', type: 'uint96' },
+                ],
+              },
+              { name: 'dopplerHook', type: 'address' },
+              { name: 'onInitializationDopplerHookCalldata', type: 'bytes' },
+              { name: 'graduationDopplerHookCalldata', type: 'bytes' },
+            ],
+          },
+        ],
+        createParams.poolInitializerData,
+      ) as any;
+
+      const decodedCurves = decodedPoolInitData.curves as Array<{
+        tickUpper: bigint;
+      }>;
+      const expectedFarTick =
+        Math.max(...decodedCurves.map((curve) => Number(curve.tickUpper))) -
+        params.pool.tickSpacing;
+
+      expect(Number(decodedPoolInitData.farTick)).toBe(expectedFarTick);
+      expect(decodedPoolInitData.dopplerHook).toBe(ZERO_ADDRESS);
+      expect(decodedPoolInitData.onInitializationDopplerHookCalldata).toBe(
+        '0x',
+      );
+      expect(decodedPoolInitData.graduationDopplerHookCalldata).toBe('0x');
+    });
+
     it('computes rehype multicurve poolId with zero hook when no hook config is set', async () => {
       const params = multicurveParams();
       params.modules = {
@@ -319,8 +513,10 @@ describe('DopplerFactory', () => {
       const result = await factory.simulateCreateMulticurve(params);
 
       const numeraire = params.sale.numeraire;
-      const currency0 = mockTokenAddress < numeraire ? mockTokenAddress : numeraire;
-      const currency1 = mockTokenAddress < numeraire ? numeraire : mockTokenAddress;
+      const currency0 =
+        mockTokenAddress < numeraire ? mockTokenAddress : numeraire;
+      const currency1 =
+        mockTokenAddress < numeraire ? numeraire : mockTokenAddress;
       const expectedPoolId = keccak256(
         encodeAbiParameters(
           [
@@ -809,7 +1005,9 @@ describe('DopplerFactory', () => {
         })
         .withGovernance({ type: 'noOp' })
         .withMigration({ type: 'uniswapV4', fee: 3000, tickSpacing: 10 })
-        .withUserAddress('0x1234567890123456789012345678901234567890' as Address)
+        .withUserAddress(
+          '0x1234567890123456789012345678901234567890' as Address,
+        )
         .build();
 
       const params: CreateDynamicAuctionParams = {
@@ -830,17 +1028,27 @@ describe('DopplerFactory', () => {
             buybackDestination:
               '0x1234567890123456789012345678901234567890' as Address,
             customFee: 3000,
-            assetBuybackPercentWad: parseEther('0.25'),
-            numeraireBuybackPercentWad: parseEther('0.25'),
-            beneficiaryPercentWad: parseEther('0.25'),
-            lpPercentWad: parseEther('0.25'),
+            feeRoutingMode: 'routeToBeneficiaryFees',
+            feeDistributionInfo: {
+              assetFeesToAssetBuybackWad: parseEther('0.25'),
+              assetFeesToNumeraireBuybackWad: parseEther('0.15'),
+              assetFeesToBeneficiaryWad: parseEther('0.35'),
+              assetFeesToLpWad: parseEther('0.25'),
+              numeraireFeesToAssetBuybackWad: parseEther('0.25'),
+              numeraireFeesToNumeraireBuybackWad: parseEther('0.15'),
+              numeraireFeesToBeneficiaryWad: parseEther('0.35'),
+              numeraireFeesToLpWad: parseEther('0.25'),
+            },
           },
         },
       };
 
-      const { createParams } = await factory.encodeCreateDynamicAuctionParams(params);
+      const { createParams } =
+        await factory.encodeCreateDynamicAuctionParams(params);
 
-      expect(createParams.liquidityMigrator).toBe(mockAddresses.dopplerHookMigrator);
+      expect(createParams.liquidityMigrator).toBe(
+        mockAddresses.dopplerHookMigrator,
+      );
 
       const decoded = decodeAbiParameters(
         [
@@ -882,28 +1090,248 @@ describe('DopplerFactory', () => {
       expect(decoded[7]).toBe(ZERO_ADDRESS);
       expect(decoded[8]).toBe(0n);
 
-      const rehypeInit = decodeAbiParameters(
+      const [rehypeInit] = decodeAbiParameters(
         [
-          { type: 'address' },
-          { type: 'address' },
-          { type: 'uint24' },
-          { type: 'uint256' },
-          { type: 'uint256' },
-          { type: 'uint256' },
-          { type: 'uint256' },
+          {
+            type: 'tuple',
+            components: [
+              { name: 'numeraire', type: 'address' },
+              { name: 'buybackDst', type: 'address' },
+              { name: 'customFee', type: 'uint24' },
+              { name: 'feeRoutingMode', type: 'uint8' },
+              {
+                name: 'feeDistributionInfo',
+                type: 'tuple',
+                components: [
+                  { name: 'assetFeesToAssetBuybackWad', type: 'uint256' },
+                  { name: 'assetFeesToNumeraireBuybackWad', type: 'uint256' },
+                  { name: 'assetFeesToBeneficiaryWad', type: 'uint256' },
+                  { name: 'assetFeesToLpWad', type: 'uint256' },
+                  { name: 'numeraireFeesToAssetBuybackWad', type: 'uint256' },
+                  {
+                    name: 'numeraireFeesToNumeraireBuybackWad',
+                    type: 'uint256',
+                  },
+                  { name: 'numeraireFeesToBeneficiaryWad', type: 'uint256' },
+                  { name: 'numeraireFeesToLpWad', type: 'uint256' },
+                ],
+              },
+            ],
+          },
         ],
         decoded[6],
-      );
+      ) as any;
 
-      expect(rehypeInit[0]).toBe(marketCapParams.sale.numeraire);
-      expect(rehypeInit[1]).toBe(
+      expect(rehypeInit.numeraire).toBe(marketCapParams.sale.numeraire);
+      expect(rehypeInit.buybackDst).toBe(
         '0x1234567890123456789012345678901234567890',
       );
-      expect(rehypeInit[2]).toBe(3000);
-      expect(rehypeInit[3]).toBe(parseEther('0.25'));
-      expect(rehypeInit[4]).toBe(parseEther('0.25'));
-      expect(rehypeInit[5]).toBe(parseEther('0.25'));
-      expect(rehypeInit[6]).toBe(parseEther('0.25'));
+      expect(Number(rehypeInit.customFee)).toBe(3000);
+      expect(Number(rehypeInit.feeRoutingMode)).toBe(1);
+      expect(rehypeInit.feeDistributionInfo.assetFeesToBeneficiaryWad).toBe(
+        parseEther('0.35'),
+      );
+      expect(rehypeInit.feeDistributionInfo.numeraireFeesToLpWad).toBe(
+        parseEther('0.25'),
+      );
+    });
+
+    it('normalizes legacy dopplerHook rehype migration fields into the new migrator layout', async () => {
+      const marketCapParams = DynamicAuctionBuilder.forChain(1)
+        .tokenConfig({
+          name: 'Test Token',
+          symbol: 'TEST',
+          tokenURI: 'https://example.com/token',
+        })
+        .saleConfig({
+          initialSupply: parseEther('1000000'),
+          numTokensToSell: parseEther('500000'),
+          numeraire: mockAddresses.weth,
+        })
+        .withMarketCapRange({
+          marketCap: { start: 500_000, min: 50_000 },
+          numerairePrice: 3000,
+          minProceeds: parseEther('100'),
+          maxProceeds: parseEther('10000'),
+          fee: 3000,
+          tickSpacing: 10,
+          duration: 7 * DAY_SECONDS,
+          epochLength: 3600,
+        })
+        .withGovernance({ type: 'noOp' })
+        .withMigration({ type: 'uniswapV4', fee: 3000, tickSpacing: 10 })
+        .withUserAddress(
+          '0x1234567890123456789012345678901234567890' as Address,
+        )
+        .build();
+
+      const params: CreateDynamicAuctionParams = {
+        ...marketCapParams,
+        migration: {
+          type: 'dopplerHook',
+          fee: 3000,
+          tickSpacing: 10,
+          lockDuration: 30 * DAY_SECONDS,
+          beneficiaries: [
+            {
+              beneficiary:
+                '0x1234567890123456789012345678901234567890' as Address,
+              shares: parseEther('1'),
+            },
+          ],
+          rehype: {
+            buybackDestination:
+              '0x1234567890123456789012345678901234567890' as Address,
+            customFee: 3000,
+            assetBuybackPercentWad: parseEther('0.25'),
+            numeraireBuybackPercentWad: parseEther('0.25'),
+            beneficiaryPercentWad: parseEther('0.25'),
+            lpPercentWad: parseEther('0.25'),
+          },
+        },
+      };
+
+      const { createParams } =
+        await factory.encodeCreateDynamicAuctionParams(params);
+      const decoded = decodeAbiParameters(
+        [
+          { type: 'uint24' },
+          { type: 'bool' },
+          { type: 'int24' },
+          { type: 'uint32' },
+          {
+            type: 'tuple[]',
+            components: [
+              { type: 'address', name: 'beneficiary' },
+              { type: 'uint96', name: 'shares' },
+            ],
+          },
+          { type: 'address' },
+          { type: 'bytes' },
+          { type: 'address' },
+          { type: 'uint256' },
+        ],
+        createParams.liquidityMigratorData,
+      ) as readonly [
+        number,
+        boolean,
+        number,
+        number,
+        readonly { beneficiary: Address; shares: bigint }[],
+        Address,
+        `0x${string}`,
+        Address,
+        bigint,
+      ];
+
+      const [rehypeInit] = decodeAbiParameters(
+        [
+          {
+            type: 'tuple',
+            components: [
+              { name: 'numeraire', type: 'address' },
+              { name: 'buybackDst', type: 'address' },
+              { name: 'customFee', type: 'uint24' },
+              { name: 'feeRoutingMode', type: 'uint8' },
+              {
+                name: 'feeDistributionInfo',
+                type: 'tuple',
+                components: [
+                  { name: 'assetFeesToAssetBuybackWad', type: 'uint256' },
+                  { name: 'assetFeesToNumeraireBuybackWad', type: 'uint256' },
+                  { name: 'assetFeesToBeneficiaryWad', type: 'uint256' },
+                  { name: 'assetFeesToLpWad', type: 'uint256' },
+                  { name: 'numeraireFeesToAssetBuybackWad', type: 'uint256' },
+                  {
+                    name: 'numeraireFeesToNumeraireBuybackWad',
+                    type: 'uint256',
+                  },
+                  { name: 'numeraireFeesToBeneficiaryWad', type: 'uint256' },
+                  { name: 'numeraireFeesToLpWad', type: 'uint256' },
+                ],
+              },
+            ],
+          },
+        ],
+        decoded[6],
+      ) as any;
+
+      expect(Number(rehypeInit.feeRoutingMode)).toBe(0);
+      expect(rehypeInit.feeDistributionInfo.assetFeesToAssetBuybackWad).toBe(
+        parseEther('0.25'),
+      );
+      expect(
+        rehypeInit.feeDistributionInfo.numeraireFeesToAssetBuybackWad,
+      ).toBe(parseEther('0.25'));
+      expect(rehypeInit.feeDistributionInfo.numeraireFeesToLpWad).toBe(
+        parseEther('0.25'),
+      );
+    });
+
+    it('rejects dopplerHook rehype migration configs where a distribution row does not sum to WAD', async () => {
+      const marketCapParams = DynamicAuctionBuilder.forChain(1)
+        .tokenConfig({
+          name: 'Test Token',
+          symbol: 'TEST',
+          tokenURI: 'https://example.com/token',
+        })
+        .saleConfig({
+          initialSupply: parseEther('1000000'),
+          numTokensToSell: parseEther('500000'),
+          numeraire: mockAddresses.weth,
+        })
+        .withMarketCapRange({
+          marketCap: { start: 500_000, min: 50_000 },
+          numerairePrice: 3000,
+          minProceeds: parseEther('100'),
+          maxProceeds: parseEther('10000'),
+          fee: 3000,
+          tickSpacing: 10,
+          duration: 7 * DAY_SECONDS,
+          epochLength: 3600,
+        })
+        .withGovernance({ type: 'noOp' })
+        .withMigration({ type: 'uniswapV4', fee: 3000, tickSpacing: 10 })
+        .withUserAddress(
+          '0x1234567890123456789012345678901234567890' as Address,
+        )
+        .build();
+
+      const params: CreateDynamicAuctionParams = {
+        ...marketCapParams,
+        migration: {
+          type: 'dopplerHook',
+          fee: 3000,
+          tickSpacing: 10,
+          lockDuration: 30 * DAY_SECONDS,
+          beneficiaries: [
+            {
+              beneficiary:
+                '0x1234567890123456789012345678901234567890' as Address,
+              shares: parseEther('1'),
+            },
+          ],
+          rehype: {
+            buybackDestination:
+              '0x1234567890123456789012345678901234567890' as Address,
+            customFee: 3000,
+            feeDistributionInfo: {
+              assetFeesToAssetBuybackWad: parseEther('0.5'),
+              assetFeesToNumeraireBuybackWad: parseEther('0.2'),
+              assetFeesToBeneficiaryWad: parseEther('0.1'),
+              assetFeesToLpWad: parseEther('0.1'),
+              numeraireFeesToAssetBuybackWad: parseEther('0.25'),
+              numeraireFeesToNumeraireBuybackWad: parseEther('0.25'),
+              numeraireFeesToBeneficiaryWad: parseEther('0.25'),
+              numeraireFeesToLpWad: parseEther('0.25'),
+            },
+          },
+        },
+      };
+
+      await expect(
+        factory.encodeCreateDynamicAuctionParams(params),
+      ).rejects.toThrow('Rehype asset fee distribution must sum');
     });
 
     it('encodes dopplerHook migration with generic hook + proceeds split', async () => {
@@ -935,7 +1363,9 @@ describe('DopplerFactory', () => {
         })
         .withGovernance({ type: 'noOp' })
         .withMigration({ type: 'uniswapV4', fee: 3000, tickSpacing: 10 })
-        .withUserAddress('0x1234567890123456789012345678901234567890' as Address)
+        .withUserAddress(
+          '0x1234567890123456789012345678901234567890' as Address,
+        )
         .build();
 
       const params: CreateDynamicAuctionParams = {
@@ -964,7 +1394,8 @@ describe('DopplerFactory', () => {
         },
       };
 
-      const { createParams } = await factory.encodeCreateDynamicAuctionParams(params);
+      const { createParams } =
+        await factory.encodeCreateDynamicAuctionParams(params);
 
       const decoded = decodeAbiParameters(
         [

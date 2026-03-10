@@ -14,10 +14,12 @@ describe('Multicurve with RehypeDopplerHook (Base Sepolia) test', () => {
   const publicClient = getTestClient(chainId)
   const sdk = new DopplerSDK({ publicClient, chainId })
 
-  const REHYPE_DOPPLER_HOOK_ADDRESS = '0x636a756cee08775cc18780f52dd90b634f18ad37' as `0x${string}`
+  const REHYPE_DOPPLER_HOOK_ADDRESS =
+    addresses.rehypeDopplerHookInitializer as `0x${string}`
 
   let states: { tokenFactory?: number; governanceFactory?: number; initializer?: number; migrator?: number } = {}
   let airlockOwner: `0x${string}` | undefined
+  let isRehypeHookEnabled = false
 
   beforeAll(async () => {
     const airlockOwnerAbi = [
@@ -45,6 +47,7 @@ describe('Multicurve with RehypeDopplerHook (Base Sepolia) test', () => {
         functionName: 'isDopplerHookEnabled',
         args: [REHYPE_DOPPLER_HOOK_ADDRESS],
       })
+      isRehypeHookEnabled = hookFlag > 0n
       console.log('RehypeDopplerHook enabled flag:', hookFlag.toString())
     } catch (e) {
       console.log('Failed to check hook enabled:', e)
@@ -185,11 +188,20 @@ describe('Multicurve with RehypeDopplerHook (Base Sepolia) test', () => {
       .withRehypeDopplerHook({
         hookAddress: REHYPE_DOPPLER_HOOK_ADDRESS,
         buybackDestination: BUYBACK_DST,
-        customFee: 3000,
-        assetBuybackPercentWad: 200_000_000_000_000_000n,
-        numeraireBuybackPercentWad: 200_000_000_000_000_000n,
-        beneficiaryPercentWad: 300_000_000_000_000_000n,
-        lpPercentWad: 300_000_000_000_000_000n,
+        startFee: 3000,
+        endFee: 3000,
+        durationSeconds: 0,
+        feeRoutingMode: 0,
+        feeDistributionInfo: {
+          assetFeesToAssetBuybackWad: 200_000_000_000_000_000n,
+          assetFeesToNumeraireBuybackWad: 200_000_000_000_000_000n,
+          assetFeesToBeneficiaryWad: 300_000_000_000_000_000n,
+          assetFeesToLpWad: 300_000_000_000_000_000n,
+          numeraireFeesToAssetBuybackWad: 200_000_000_000_000_000n,
+          numeraireFeesToNumeraireBuybackWad: 200_000_000_000_000_000n,
+          numeraireFeesToBeneficiaryWad: 300_000_000_000_000_000n,
+          numeraireFeesToLpWad: 300_000_000_000_000_000n,
+        },
         farTick: 200_000,
       })
       .withGovernance({ type: 'noOp' })
@@ -203,7 +215,12 @@ describe('Multicurve with RehypeDopplerHook (Base Sepolia) test', () => {
     console.log('DopplerHookInitializer:', addresses.dopplerHookInitializer)
     console.log('RehypeDopplerHook:', REHYPE_DOPPLER_HOOK_ADDRESS)
     console.log('NoOpMigrator:', addresses.noOpMigrator)
-    
+
+    if (!isRehypeHookEnabled) {
+      await expect(sdk.factory.simulateCreateMulticurve(params)).rejects.toThrow()
+      return
+    }
+
     const { tokenAddress, poolId, gasEstimate } = await sdk.factory.simulateCreateMulticurve(params)
     
     console.log('Asset:', tokenAddress)
@@ -303,11 +320,20 @@ describe('Multicurve with RehypeDopplerHook (Base Sepolia) test', () => {
       .withRehypeDopplerHook({
         hookAddress: REHYPE_DOPPLER_HOOK_ADDRESS,
         buybackDestination: BUYBACK_DST,
-        customFee: 3000,
-        assetBuybackPercentWad: 250_000_000_000_000_000n,
-        numeraireBuybackPercentWad: 250_000_000_000_000_000n,
-        beneficiaryPercentWad: 250_000_000_000_000_000n,
-        lpPercentWad: 250_000_000_000_000_000n,
+        startFee: 3000,
+        endFee: 3000,
+        durationSeconds: 0,
+        feeRoutingMode: 0,
+        feeDistributionInfo: {
+          assetFeesToAssetBuybackWad: 250_000_000_000_000_000n,
+          assetFeesToNumeraireBuybackWad: 250_000_000_000_000_000n,
+          assetFeesToBeneficiaryWad: 250_000_000_000_000_000n,
+          assetFeesToLpWad: 250_000_000_000_000_000n,
+          numeraireFeesToAssetBuybackWad: 250_000_000_000_000_000n,
+          numeraireFeesToNumeraireBuybackWad: 250_000_000_000_000_000n,
+          numeraireFeesToBeneficiaryWad: 250_000_000_000_000_000n,
+          numeraireFeesToLpWad: 250_000_000_000_000_000n,
+        },
         graduationMarketCap: 40_000_000, // $40M graduation - within curve range
       })
       .withGovernance({ type: 'noOp' })
@@ -321,6 +347,11 @@ describe('Multicurve with RehypeDopplerHook (Base Sepolia) test', () => {
     console.log('withCurves() + graduationMarketCap - curves:', params.pool.curves.length)
     console.log('withCurves() + graduationMarketCap - farTick:', params.dopplerHook?.farTick)
     console.log('withCurves() + graduationMarketCap - curve ticks:', params.pool.curves.map(c => `[${c.tickLower}, ${c.tickUpper}]`).join(', '))
+
+    if (!isRehypeHookEnabled) {
+      await expect(sdk.factory.simulateCreateMulticurve(params)).rejects.toThrow()
+      return
+    }
 
     const { tokenAddress, poolId, gasEstimate } = await sdk.factory.simulateCreateMulticurve(params)
 
@@ -367,11 +398,20 @@ describe('Multicurve with RehypeDopplerHook (Base Sepolia) test', () => {
       .withRehypeDopplerHook({
         hookAddress: REHYPE_DOPPLER_HOOK_ADDRESS,
         buybackDestination: BUYBACK_DST,
-        customFee: 3000,
-        assetBuybackPercentWad: 250_000_000_000_000_000n,
-        numeraireBuybackPercentWad: 250_000_000_000_000_000n,
-        beneficiaryPercentWad: 250_000_000_000_000_000n,
-        lpPercentWad: 250_000_000_000_000_000n,
+        startFee: 3000,
+        endFee: 3000,
+        durationSeconds: 0,
+        feeRoutingMode: 0,
+        feeDistributionInfo: {
+          assetFeesToAssetBuybackWad: 250_000_000_000_000_000n,
+          assetFeesToNumeraireBuybackWad: 250_000_000_000_000_000n,
+          assetFeesToBeneficiaryWad: 250_000_000_000_000_000n,
+          assetFeesToLpWad: 250_000_000_000_000_000n,
+          numeraireFeesToAssetBuybackWad: 250_000_000_000_000_000n,
+          numeraireFeesToNumeraireBuybackWad: 250_000_000_000_000_000n,
+          numeraireFeesToBeneficiaryWad: 250_000_000_000_000_000n,
+          numeraireFeesToLpWad: 250_000_000_000_000_000n,
+        },
         farTick: -115000, // Explicit farTick within curve range
       })
       .withGovernance({ type: 'noOp' })
@@ -385,6 +425,11 @@ describe('Multicurve with RehypeDopplerHook (Base Sepolia) test', () => {
     console.log('withCurves() + explicit farTick - curves:', params.pool.curves.length)
     console.log('withCurves() + explicit farTick - farTick:', params.dopplerHook?.farTick)
     console.log('withCurves() + explicit farTick - curve ticks:', params.pool.curves.map(c => `[${c.tickLower}, ${c.tickUpper}]`).join(', '))
+
+    if (!isRehypeHookEnabled) {
+      await expect(sdk.factory.simulateCreateMulticurve(params)).rejects.toThrow()
+      return
+    }
 
     const { tokenAddress, poolId, gasEstimate } = await sdk.factory.simulateCreateMulticurve(params)
 

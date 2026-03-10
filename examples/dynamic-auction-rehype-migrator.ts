@@ -84,10 +84,17 @@ async function main() {
       rehype: {
         buybackDestination: account.address,
         customFee: 3000,
-        assetBuybackPercentWad: parseEther('0.25'),
-        numeraireBuybackPercentWad: parseEther('0.25'),
-        beneficiaryPercentWad: parseEther('0.25'),
-        lpPercentWad: parseEther('0.25'),
+        feeRoutingMode: 'directBuyback',
+        feeDistributionInfo: {
+          assetFeesToAssetBuybackWad: parseEther('0.25'),
+          assetFeesToNumeraireBuybackWad: parseEther('0.25'),
+          assetFeesToBeneficiaryWad: parseEther('0.25'),
+          assetFeesToLpWad: parseEther('0.25'),
+          numeraireFeesToAssetBuybackWad: parseEther('0.25'),
+          numeraireFeesToNumeraireBuybackWad: parseEther('0.25'),
+          numeraireFeesToBeneficiaryWad: parseEther('0.25'),
+          numeraireFeesToLpWad: parseEther('0.25'),
+        },
       },
       proceedsSplit: {
         recipient: account.address,
