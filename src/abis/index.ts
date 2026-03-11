@@ -1567,6 +1567,60 @@ export const v4MulticurveInitializerAbi = [
   { type: 'error', name: 'InvalidProtocolOwnerBeneficiary', inputs: [] },
 ] as const;
 
+export const dopplerHookInitializerAbi = [
+  {
+    type: 'function',
+    name: 'airlock',
+    inputs: [],
+    outputs: [{ name: '', type: 'address', internalType: 'contract Airlock' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'collectFees',
+    inputs: [{ name: 'poolId', type: 'bytes32', internalType: 'PoolId' }],
+    outputs: [
+      { name: 'fees0', type: 'uint128', internalType: 'uint128' },
+      { name: 'fees1', type: 'uint128', internalType: 'uint128' },
+    ],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'getState',
+    inputs: [{ name: 'asset', type: 'address', internalType: 'address' }],
+    outputs: [
+      { name: 'numeraire', type: 'address', internalType: 'address' },
+      {
+        name: 'totalTokensOnBondingCurve',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+      { name: 'dopplerHook', type: 'address', internalType: 'address' },
+      {
+        name: 'graduationDopplerHookCalldata',
+        type: 'bytes',
+        internalType: 'bytes',
+      },
+      { name: 'status', type: 'uint8', internalType: 'enum PoolStatus' },
+      {
+        name: 'poolKey',
+        type: 'tuple',
+        internalType: 'struct PoolKey',
+        components: [
+          { name: 'currency0', type: 'address', internalType: 'Currency' },
+          { name: 'currency1', type: 'address', internalType: 'Currency' },
+          { name: 'fee', type: 'uint24', internalType: 'uint24' },
+          { name: 'tickSpacing', type: 'int24', internalType: 'int24' },
+          { name: 'hooks', type: 'address', internalType: 'contract IHooks' },
+        ],
+      },
+      { name: 'farTick', type: 'int24', internalType: 'int24' },
+    ],
+    stateMutability: 'view',
+  },
+] as const;
+
 export const decayMulticurveInitializerHookAbi = [
   {
     type: 'function',
