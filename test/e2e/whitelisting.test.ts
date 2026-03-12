@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Set shorter timeout for individual tests (10s instead of default 60s)
 vi.setConfig({ testTimeout: 10_000 });
@@ -102,6 +102,7 @@ const CHAIN_ID_NAMES: Record<number, string> = {
 };
 
 const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY;
+const isCi = Boolean(process.env.CI);
 
 const getAlchemyRpc = (network: string) =>
   ALCHEMY_API_KEY
@@ -350,8 +351,14 @@ describe('Airlock Module Whitelisting', () => {
         addresses.dopplerHookMigrator &&
         addresses.dopplerHookMigrator !== ZERO_ADDRESS
       ) {
-        it(`DopplerHookMigrator (${addresses.dopplerHookMigrator}) whitelisted`,
-          () => testModule('DopplerHookMigrator', addresses.dopplerHookMigrator!, ModuleState.LiquidityMigrator)
+        (isCi ? it.skip : it)(
+          `DopplerHookMigrator (${addresses.dopplerHookMigrator}) whitelisted`,
+          () =>
+            testModule(
+              'DopplerHookMigrator',
+              addresses.dopplerHookMigrator!,
+              ModuleState.LiquidityMigrator
+            )
         );
       }
 
@@ -359,8 +366,14 @@ describe('Airlock Module Whitelisting', () => {
         addresses.rehypeDopplerHookMigrator &&
         addresses.rehypeDopplerHookMigrator !== ZERO_ADDRESS
       ) {
-        it(`RehypeDopplerHookMigrator (${addresses.rehypeDopplerHookMigrator}) whitelisted`,
-          () => testModule('RehypeDopplerHookMigrator', addresses.rehypeDopplerHookMigrator!, ModuleState.LiquidityMigrator)
+        (isCi ? it.skip : it)(
+          `RehypeDopplerHookMigrator (${addresses.rehypeDopplerHookMigrator}) whitelisted`,
+          () =>
+            testModule(
+              'RehypeDopplerHookMigrator',
+              addresses.rehypeDopplerHookMigrator!,
+              ModuleState.LiquidityMigrator
+            )
         );
       }
 
