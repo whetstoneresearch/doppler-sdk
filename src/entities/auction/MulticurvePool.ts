@@ -15,6 +15,7 @@ import {
 } from '../../types';
 import {
   decayMulticurveInitializerHookAbi,
+  dopplerHookInitializerAbi,
   v4MulticurveInitializerAbi,
   v4MulticurveMigratorAbi,
   streamableFeesLockerAbi,
@@ -28,6 +29,13 @@ import { computePoolId } from '../../utils/poolKey';
 interface InitializerDiscoveryResult {
   initializerAddress: Address;
   state: MulticurvePoolState;
+}
+
+interface ParsedInitializerState {
+  numeraire: Address;
+  status: number;
+  poolKey: V4PoolKey;
+  farTick: number;
 }
 
 /**
@@ -74,7 +82,8 @@ export class MulticurvePool {
   /**
    * Get current pool state from the multicurve initializer
    *
-   * Automatically discovers which initializer (standard, scheduled, or decay) contains the pool.
+   * Automatically discovers which initializer (standard, scheduled, decay, or
+   * doppler-hook) contains the pool.
    */
   async getState(): Promise<MulticurvePoolState> {
     const { state } = await this.findInitializerForPool();
@@ -85,19 +94,35 @@ export class MulticurvePool {
    * Find which initializer contains this pool and return both the address and state.
    *
    * Tries v4MulticurveInitializer first (more common), then falls back to
-   * v4ScheduledMulticurveInitializer and v4DecayMulticurveInitializer if needed.
+   * v4ScheduledMulticurveInitializer, v4DecayMulticurveInitializer, and
+   * dopplerHookInitializer if needed.
    */
   private async findInitializerForPool(): Promise<InitializerDiscoveryResult> {
     const chainId = await this.rpc.getChainId();
     const addresses = getAddresses(chainId as SupportedChainId);
 
-    // Build list of initializers to try, preferring non-scheduled (more common)
-    const initializersToTry: Address[] = [
-      addresses.v4MulticurveInitializer,
-      addresses.v4ScheduledMulticurveInitializer,
-      addresses.v4DecayMulticurveInitializer,
+    const initializersToTry = [
+      {
+        address: addresses.v4MulticurveInitializer,
+        kind: 'standard' as const,
+      },
+      {
+        address: addresses.v4ScheduledMulticurveInitializer,
+        kind: 'standard' as const,
+      },
+      {
+        address: addresses.v4DecayMulticurveInitializer,
+        kind: 'standard' as const,
+      },
+      {
+        address: addresses.dopplerHookInitializer,
+        kind: 'dopplerHook' as const,
+      },
     ].filter(
-      (addr): addr is Address => addr !== undefined && addr !== zeroAddress,
+      (
+        entry,
+      ): entry is { address: Address; kind: 'standard' | 'dopplerHook' } =>
+        entry.address !== undefined && entry.address !== zeroAddress,
     );
 
     if (initializersToTry.length === 0) {
@@ -108,31 +133,25 @@ export class MulticurvePool {
 
     const triedInitializers: Address[] = [];
 
-    for (const initializerAddress of initializersToTry) {
+    for (const initializer of initializersToTry) {
+      const { address: initializerAddress, kind } = initializer;
       triedInitializers.push(initializerAddress);
 
       const stateData = await this.rpc.readContract({
         address: initializerAddress,
-        abi: v4MulticurveInitializerAbi,
+        abi:
+          kind === 'dopplerHook'
+            ? dopplerHookInitializerAbi
+            : v4MulticurveInitializerAbi,
         functionName: 'getState',
         args: [this.tokenAddress],
       });
 
-      // Parse the returned tuple into a strongly typed PoolKey
-      const [numeraire, status, rawPoolKey, farTick] = stateData as readonly [
-        Address,
-        number,
-        {
-          currency0: Address;
-          currency1: Address;
-          fee: number;
-          tickSpacing: number;
-          hooks: Address;
-        } & readonly [Address, Address, number, number, Address],
-        number,
-      ];
-
-      const poolKey = this.parsePoolKey(rawPoolKey);
+      const parsedState =
+        kind === 'dopplerHook'
+          ? this.parseDopplerHookInitializerState(stateData)
+          : this.parseStandardInitializerState(stateData);
+      const { numeraire, status, poolKey, farTick } = parsedState;
 
       // Check if pool exists in this initializer
       // A non-existent pool will have zeroed hooks and tickSpacing
@@ -183,9 +202,13 @@ export class MulticurvePool {
 
     if (state.status === LockablePoolStatus.Locked) {
       const poolId = computePoolId(state.poolKey);
+      const collectFeesAbi =
+        initializerAddress === addresses.dopplerHookInitializer
+          ? dopplerHookInitializerAbi
+          : v4MulticurveInitializerAbi;
       return this.collectFeesFromContract(
         initializerAddress,
-        v4MulticurveInitializerAbi,
+        collectFeesAbi,
         poolId,
       );
     }
@@ -304,6 +327,28 @@ export class MulticurvePool {
     };
   }
 
+  private parseStandardInitializerState(stateData: unknown): ParsedInitializerState {
+    const state = stateData as any;
+    return {
+      numeraire: (state.numeraire ?? state[0]) as Address,
+      status: Number(state.status ?? state[1]),
+      poolKey: this.parsePoolKey(state.poolKey ?? state[2]),
+      farTick: Number(state.farTick ?? state[3]),
+    };
+  }
+
+  private parseDopplerHookInitializerState(
+    stateData: unknown,
+  ): ParsedInitializerState {
+    const state = stateData as any;
+    return {
+      numeraire: (state.numeraire ?? state[0]) as Address,
+      status: Number(state.status ?? state[4]),
+      poolKey: this.parsePoolKey(state.poolKey ?? state[5]),
+      farTick: Number(state.farTick ?? state[6]),
+    };
+  }
+
   private async resolveLockerAddress(
     migratorAddress: Address,
     configuredLocker?: Address,
@@ -324,7 +369,10 @@ export class MulticurvePool {
 
   private async collectFeesFromContract(
     contractAddress: Address,
-    abi: typeof v4MulticurveInitializerAbi | typeof streamableFeesLockerAbi,
+    abi:
+      | typeof dopplerHookInitializerAbi
+      | typeof v4MulticurveInitializerAbi
+      | typeof streamableFeesLockerAbi,
     poolId: Hex,
   ): Promise<{ fees0: bigint; fees1: bigint; transactionHash: Hash }> {
     const { request, result } = await this.rpc.simulateContract({

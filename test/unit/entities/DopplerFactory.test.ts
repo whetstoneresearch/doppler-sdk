@@ -264,7 +264,7 @@ describe('DopplerFactory', () => {
       expect(result.poolId).toBe(expectedPoolId);
     });
 
-    it('computes rehype multicurve poolId using configured hook address', async () => {
+    it('computes rehype multicurve poolId using the doppler-hook initializer as the pool hook', async () => {
       const params = multicurveParams();
       params.initializer = {
         type: 'rehype',
@@ -312,9 +312,46 @@ describe('DopplerFactory', () => {
           [
             currency0,
             currency1,
+            DYNAMIC_FEE_FLAG,
+            params.pool.tickSpacing,
+            params.modules.dopplerHookInitializer,
+          ],
+        ),
+      );
+
+      expect(result.poolId).toBe(expectedPoolId);
+      expect(publicClient.readContract).not.toHaveBeenCalled();
+    });
+
+    it('computes doppler-hook initializer poolId without a rehype hook using the static pool fee', async () => {
+      const params = multicurveParams();
+      params.modules = {
+        dopplerHookInitializer:
+          '0x7100000000000000000000000000000000000011' as Address,
+      };
+
+      const result = await factory.simulateCreateMulticurve(params);
+
+      const numeraire = params.sale.numeraire;
+      const currency0 =
+        mockTokenAddress < numeraire ? mockTokenAddress : numeraire;
+      const currency1 =
+        mockTokenAddress < numeraire ? numeraire : mockTokenAddress;
+      const expectedPoolId = keccak256(
+        encodeAbiParameters(
+          [
+            { type: 'address' },
+            { type: 'address' },
+            { type: 'uint24' },
+            { type: 'int24' },
+            { type: 'address' },
+          ],
+          [
+            currency0,
+            currency1,
             params.pool.fee,
             params.pool.tickSpacing,
-            mockHookAddress,
+            params.modules.dopplerHookInitializer,
           ],
         ),
       );
@@ -531,7 +568,7 @@ describe('DopplerFactory', () => {
             currency1,
             params.pool.fee,
             params.pool.tickSpacing,
-            ZERO_ADDRESS,
+            params.modules.dopplerHookInitializer,
           ],
         ),
       );

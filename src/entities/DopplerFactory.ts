@@ -3673,7 +3673,8 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
   }
 
   /**
-   * Compute the V4 poolId for a multicurve pool by reading the hook address from the initializer
+   * Compute the V4 poolId for a multicurve pool from the same pool-key fields
+   * the initializer will register on-chain.
    */
   private async computeMulticurvePoolId(
     params: CreateMulticurveParams<C>,
@@ -3684,9 +3685,16 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     const initializerMode = this.resolveMulticurveInitializerMode(params);
     let hookAddress: Address;
     if (initializerMode.type === 'rehype') {
-      // For DopplerHookInitializer mode, hook address comes from the encoded
-      // initializer payload (or defaults to zero when no hook config is set).
-      hookAddress = initializerMode.hookConfig?.hookAddress ?? ZERO_ADDRESS;
+      // DopplerHookInitializer pools are registered on Uniswap with the
+      // initializer itself as poolKey.hooks. The rehype hook lives separately
+      // in the encoded init payload and is not part of the Uniswap pool key.
+      hookAddress =
+        params.modules?.dopplerHookInitializer ??
+        addresses.dopplerHookInitializer ??
+        ZERO_ADDRESS;
+      if (hookAddress === ZERO_ADDRESS) {
+        throw new Error('DopplerHookInitializer address not configured');
+      }
     } else {
       const initializerAddress = (() => {
         if (initializerMode.type === 'decay') {
@@ -3724,7 +3732,10 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     const currency0 = tokenAddress < numeraire ? tokenAddress : numeraire;
     const currency1 = tokenAddress < numeraire ? numeraire : tokenAddress;
     const fee =
-      initializerMode.type === 'decay' ? DYNAMIC_FEE_FLAG : params.pool.fee;
+      initializerMode.type === 'decay' ||
+      (initializerMode.type === 'rehype' && initializerMode.hookConfig)
+        ? DYNAMIC_FEE_FLAG
+        : params.pool.fee;
 
     return this.computePoolId({
       currency0,
