@@ -33,7 +33,7 @@ export type {
   InitializeLaunchArgs,
   InitializeLaunchArgsArgs,
   CalldataBuf,
-} from '../generated/initializer/index.js';
+} from '@whetstone-research/doppler-program-clients/initializer';
 
 export {
   getInitConfigDecoder,
@@ -48,7 +48,7 @@ export {
   getInitializeLaunchArgsEncoder,
   getInitializeLaunchArgsDecoder,
   getInitializeLaunchArgsCodec,
-} from '../generated/initializer/index.js';
+} from '@whetstone-research/doppler-program-clients/initializer';
 
 // PDA helpers
 export {

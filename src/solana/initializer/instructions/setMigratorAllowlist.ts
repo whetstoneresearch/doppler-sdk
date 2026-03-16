@@ -6,7 +6,7 @@ import {
   ACCOUNT_ROLE_WRITABLE_SIGNER,
 } from '../../core/constants.js';
 import { INITIALIZER_PROGRAM_ID } from '../constants.js';
-import { getSetMigratorAllowlistInstructionDataEncoder } from '../../generated/initializer/instructions/setMigratorAllowlist.js';
+import { getSetMigratorAllowlistInstructionDataEncoder } from '@whetstone-research/doppler-program-clients/initializer';
 
 type AddressOrSigner = Address | TransactionSigner;
 

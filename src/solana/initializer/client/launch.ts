@@ -10,7 +10,7 @@ import type { Base64EncodedBytes } from '@solana/kit';
 import {
   getLaunchDecoder,
   type Launch,
-} from '../../generated/initializer/index.js';
+} from '@whetstone-research/doppler-program-clients/initializer';
 import {
   INITIALIZER_PROGRAM_ID,
   INITIALIZER_ACCOUNT_DISCRIMINATORS,

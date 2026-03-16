@@ -48,8 +48,7 @@
     "format:check": "oxfmt --check src/",
     "prepublishOnly": "npm run build",
 "generate:addresses": "node ./scripts/generate-addresses.mjs --source ../doppler/Deployments.json --out src/evm/deployments.generated.ts",
-    "generate-snapshot": "tsx ./scripts/snapshot-addresses.ts",
-    "generate:codecs": "tsx scripts/codegen.ts"
+    "generate-snapshot": "tsx ./scripts/snapshot-addresses.ts"
   },
   "prettier": {
     "printWidth": 80,
@@ -58,12 +57,9 @@
     "trailingComma": "es5"
   },
   "devDependencies": {
-    "@codama/nodes-from-anchor": "^1.3.9",
-    "@codama/renderers-js": "^2.0.3",
     "@types/node": "^24.3.0",
     "@types/react": "^18.0.0",
     "@vitest/coverage-v8": "^2.1.9",
-    "codama": "^1.5.1",
     "doppler-router": "^1.0.15",
     "dotenv": "^17.2.3",
     "glob": "^10.4.5",
@@ -78,6 +74,7 @@
     "vitest": "^2.1.9"
   },
   "dependencies": {
+    "@whetstone-research/doppler-program-clients": "file:../doppler-sol/packages/program-clients",
     "@solana/kit": "^6.3.1",
     "@solana/program-client-core": "^6.3.1",
     "@solana/wallet-standard-features": "^1.2.0",

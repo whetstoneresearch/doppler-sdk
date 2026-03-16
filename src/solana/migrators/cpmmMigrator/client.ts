@@ -3,7 +3,7 @@ import type { Rpc, GetAccountInfoApi } from '@solana/kit';
 import {
   getCpmmMigratorStateDecoder,
   type CpmmMigratorState,
-} from '../../generated/cpmmMigrator/accounts/cpmmMigratorState.js';
+} from '@whetstone-research/doppler-program-clients/cpmmMigrator';
 
 function base64ToBytes(base64: string): Uint8Array {
   const binary = atob(base64);
