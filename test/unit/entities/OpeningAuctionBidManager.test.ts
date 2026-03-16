@@ -215,7 +215,8 @@ describe('OpeningAuctionBidManager', () => {
         queues[key] = [...config];
       }
     }
-    vi.mocked(publicClient.readContract).mockImplementation(async (call: any) => {
+
+    const resolve = async (call: any) => {
       const fn = call?.functionName;
       if (handlers[fn]) {
         return await handlers[fn](call);
@@ -224,6 +225,22 @@ describe('OpeningAuctionBidManager', () => {
         return queues[fn].shift();
       }
       throw new Error(`Unexpected readContract call: ${fn}`);
+    };
+
+    vi.mocked(publicClient.readContract).mockImplementation(resolve);
+
+    vi.mocked(publicClient.multicall).mockImplementation(async (args: any) => {
+      const contracts = args?.contracts ?? [];
+      return Promise.all(
+        contracts.map(async (c: any) => {
+          try {
+            const result = await resolve(c);
+            return { status: 'success', result };
+          } catch {
+            return { status: 'failure', error: new Error('revert') };
+          }
+        }),
+      );
     });
   }
 

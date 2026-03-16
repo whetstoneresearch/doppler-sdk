@@ -396,35 +396,54 @@ describe('OpeningAuction', () => {
   });
 
   describe('getOwnerPositions', () => {
+    /** Helper: mock multicall for ownerPositions and readContract for the rest. */
+    function mockOwnerPositions(
+      ownerPositionsFn: (index: bigint) => bigint,
+      readContractFn?: (call: any) => any,
+    ) {
+      vi.mocked(publicClient.multicall).mockImplementation(async (args: any) => {
+        const contracts = args?.contracts ?? [];
+        return contracts.map((c: any) => {
+          if (c.functionName === 'ownerPositions') {
+            try {
+              return { status: 'success', result: ownerPositionsFn(c.args[1] as bigint) };
+            } catch {
+              return { status: 'failure', error: new Error('revert') };
+            }
+          }
+          return { status: 'failure', error: new Error(`Unexpected multicall: ${c.functionName}`) };
+        });
+      });
+      if (readContractFn) {
+        vi.mocked(publicClient.readContract).mockImplementation(async (call: any) => readContractFn(call));
+      }
+    }
+
     it('uses owner-indexed enumeration when available', async () => {
       const owner = '0x0000000000000000000000000000000000000001' as Address;
 
-      vi.mocked(publicClient.readContract).mockImplementation(async (call: any) => {
-        if (call?.functionName === 'ownerPositions') {
-          const index = call?.args?.[1] as bigint;
+      mockOwnerPositions(
+        (index) => {
           if (index === 0n) return 11n;
           if (index === 1n) return 22n;
           throw new Error('index out of bounds');
-        }
-        if (call?.functionName === 'positions') {
-          const id = call?.args?.[0] as bigint;
-          if (id === 11n) return [owner, -100, 0, 1000n, 0n, false];
-          if (id === 22n) return [owner, -80, 0, 0n, 0n, false];
-        }
-        throw new Error(`Unexpected: ${call?.functionName}`);
-      });
+        },
+        (call: any) => {
+          if (call?.functionName === 'positions') {
+            const id = call?.args?.[0] as bigint;
+            if (id === 11n) return [owner, -100, 0, 1000n, 0n, false];
+            if (id === 22n) return [owner, -80, 0, 0n, 0n, false];
+          }
+          throw new Error(`Unexpected: ${call?.functionName}`);
+        },
+      );
 
       const result = await auction.getOwnerPositions(owner);
       expect(result).toEqual([11n]);
     });
 
     it('returns empty array when ownerPositions(0) is out of bounds', async () => {
-      vi.mocked(publicClient.readContract).mockImplementation(async (call: any) => {
-        if (call?.functionName === 'ownerPositions') {
-          throw new Error('index out of bounds');
-        }
-        throw new Error(`Unexpected: ${call?.functionName}`);
-      });
+      mockOwnerPositions(() => { throw new Error('index out of bounds'); });
 
       const owner = '0x0000000000000000000000000000000000000001' as Address;
       const result = await auction.getOwnerPositions(owner);
@@ -434,15 +453,12 @@ describe('OpeningAuction', () => {
 
     it('throws when ownerPositions indexed enumeration is inconsistent', async () => {
       const owner = '0x0000000000000000000000000000000000000001' as Address;
-      vi.mocked(publicClient.readContract).mockImplementation(async (call: any) => {
-        if (call?.functionName === 'ownerPositions') {
-          const index = call?.args?.[1] as bigint;
-          if (index === 0n) return 11n;
-          if (index === 1n) throw new Error('index out of bounds');
-          if (index === 2n) return 22n; // fulfilled after reject => inconsistent
-          throw new Error('index out of bounds');
-        }
-        throw new Error(`Unexpected: ${call?.functionName}`);
+
+      mockOwnerPositions((index) => {
+        if (index === 0n) return 11n;
+        if (index === 1n) throw new Error('index out of bounds');
+        if (index === 2n) return 22n; // success after failure => inconsistent
+        throw new Error('index out of bounds');
       });
 
       await expect(auction.getOwnerPositions(owner)).rejects.toThrow(

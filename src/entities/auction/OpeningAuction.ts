@@ -774,67 +774,39 @@ export class OpeningAuction {
     const ids: bigint[] = [];
 
     for (let index = 0; index < MAX_INDEXED_SCAN; index += BATCH) {
-      const batch = Array.from({ length: BATCH }, (_, i) => BigInt(index + i));
+      const contracts = Array.from({ length: BATCH }, (_, i) => ({
+        address: this.hookAddress,
+        abi: openingAuctionEntityAbi,
+        functionName: 'ownerPositions' as const,
+        args: [owner, BigInt(index + i)] as const,
+      }));
 
-      const results = await Promise.allSettled(
-        batch.map((idx) => this.getOwnerPositionIdAt(owner, idx)),
-      );
+      const results = await this.rpc.multicall({
+        contracts,
+        allowFailure: true,
+      });
 
-      let firstRejectedOffset: number | null = null;
-      let sawFulfilledAfterReject = false;
+      let firstFailureOffset: number | null = null;
       for (let i = 0; i < results.length; i++) {
         const res = results[i];
-        if (res.status === 'fulfilled') {
-          if (firstRejectedOffset !== null) {
-            sawFulfilledAfterReject = true;
+        if (res.status === 'success') {
+          if (firstFailureOffset !== null) {
+            throw new Error('ownerPositions indexed enumeration inconsistent');
           }
-          const id = res.value;
+          const id = res.result as bigint;
           if (id > 0n) ids.push(id);
-        } else if (firstRejectedOffset === null) {
-          firstRejectedOffset = i;
+        } else if (firstFailureOffset === null) {
+          firstFailureOffset = i;
         }
       }
 
-      if (firstRejectedOffset === null) {
+      // Entire batch succeeded — keep scanning.
+      if (firstFailureOffset === null) {
         continue;
       }
 
-      if (sawFulfilledAfterReject) {
-        throw new Error('ownerPositions indexed enumeration inconsistent');
-      }
-
-      // ownerPositions(owner, 0) reverting means owner has no positions.
-      if (index === 0 && firstRejectedOffset === 0) {
-        return ids;
-      }
-
-      // Distinguish expected end-of-list (out-of-bounds) from transient RPC errors:
-      // previous index should still succeed while first failed index should still fail.
-      const firstFailedIndex = BigInt(index + firstRejectedOffset);
-      const lastSuccessIndex =
-        firstRejectedOffset > 0
-          ? BigInt(index + firstRejectedOffset - 1)
-          : index > 0
-            ? BigInt(index - 1)
-            : null;
-
-      if (lastSuccessIndex === null) {
-        throw new Error('ownerPositions indexed enumeration unavailable');
-      }
-
-      const [lastSuccessProbe, firstFailedProbe] = await Promise.allSettled([
-        this.getOwnerPositionIdAt(owner, lastSuccessIndex),
-        this.getOwnerPositionIdAt(owner, firstFailedIndex),
-      ]);
-
-      if (
-        lastSuccessProbe.status === 'fulfilled' &&
-        firstFailedProbe.status === 'rejected'
-      ) {
-        return ids;
-      }
-
-      throw new Error('ownerPositions indexed enumeration incomplete');
+      // Hit end of list (or owner has no positions).
+      return ids;
     }
 
     return ids;

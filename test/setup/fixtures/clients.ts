@@ -32,6 +32,7 @@ export const createMockPublicClient = (): SupportedPublicClient => {
   client.watchContractEvent = vi.fn().mockReturnValue(() => {});
   client.watchBlockNumber = vi.fn().mockReturnValue(() => {});
   client.getBlockNumber = vi.fn().mockResolvedValue(1000n);
+  client.multicall = vi.fn();
 
   const defaultCreateResult: readonly Address[] = [
     mockTokenAddress,
