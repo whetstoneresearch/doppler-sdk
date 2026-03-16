@@ -210,7 +210,8 @@ export interface ForkClients {
  */
 export function getForkClients(
   chainId: number,
-  accountIndex: number = 0
+  accountIndex: number = 0,
+  options?: { timeout?: number },
 ): ForkClients {
   const config = CHAIN_CONFIG[chainId]
   if (!config) {
@@ -222,7 +223,7 @@ export function getForkClients(
 
   const rpcUrl = getAnvilRpcUrl(chainId)
   const account = privateKeyToAccount(ANVIL_ACCOUNTS[accountIndex].privateKey)
-  const transport = http(rpcUrl)
+  const transport = http(rpcUrl, options?.timeout ? { timeout: options.timeout } : undefined)
 
   const publicClient = createPublicClient({
     chain: config.chain,

@@ -51,7 +51,8 @@ describe('Multicurve + NoOp (no migration) + Doppler404 (Base Sepolia fork)', ()
   beforeAll(async () => {
     await anvilManager.start(chainId)
 
-    const clients = getForkClients(chainId)
+    // Doppler404 create() simulations are heavy; use a longer transport timeout.
+    const clients = getForkClients(chainId, 0, { timeout: 90_000 })
     publicClient = clients.publicClient
     walletClient = clients.walletClient
     testClient = clients.testClient
