@@ -1,0 +1,1170 @@
+import { describe, it, expect } from 'vitest';
+import { parseEther, type Address } from 'viem';
+import { MulticurveBuilder } from '../../../../src/evm/builders';
+import { CHAIN_IDS } from '../../../../src/evm/addresses';
+import {
+  DEFAULT_MULTICURVE_LOWER_TICKS,
+  DEFAULT_MULTICURVE_MAX_SUPPLY_SHARES,
+  DEFAULT_MULTICURVE_NUM_POSITIONS,
+  DEFAULT_MULTICURVE_UPPER_TICKS,
+  DECAY_MAX_START_FEE,
+  FEE_TIERS,
+  TICK_SPACINGS,
+  WAD,
+  ZERO_ADDRESS,
+} from '../../../../src/evm/constants';
+
+// WETH on Base - token will be token1
+const WETH_BASE: Address = '0x4200000000000000000000000000000000000006';
+
+describe('MulticurveBuilder', () => {
+  it('sorts lockable beneficiaries by address during build', () => {
+    const beneficiaries = [
+      {
+        beneficiary: '0x0000000000000000000000000000000000000002' as Address,
+        shares: WAD / 10n,
+      },
+      {
+        beneficiary: '0x0000000000000000000000000000000000000001' as Address,
+        shares: WAD / 20n,
+      },
+      {
+        beneficiary: '0x0000000000000000000000000000000000000003' as Address,
+        shares: WAD / 5n,
+      },
+    ];
+
+    const builder = MulticurveBuilder.forChain(CHAIN_IDS.BASE)
+      .tokenConfig({
+        type: 'standard',
+        name: 'LockableToken',
+        symbol: 'LOCK',
+        tokenURI: 'ipfs://lock',
+      })
+      .saleConfig({
+        initialSupply: 1_000n * WAD,
+        numTokensToSell: 500n * WAD,
+        numeraire: ZERO_ADDRESS,
+      })
+      .poolConfig({
+        fee: 3000,
+        tickSpacing: 60,
+        curves: [
+          {
+            tickLower: 1000,
+            tickUpper: 2000,
+            numPositions: 2,
+            shares: WAD / 2n,
+          },
+          {
+            tickLower: 2000,
+            tickUpper: 3000,
+            numPositions: 2,
+            shares: WAD / 2n,
+          },
+        ],
+        beneficiaries,
+      })
+      .withGovernance({ type: 'default' })
+      .withMigration({ type: 'uniswapV2' })
+      .withUserAddress('0x00000000000000000000000000000000000000AA' as Address);
+
+    const params = builder.build();
+    const builtBeneficiaries = params.pool.beneficiaries ?? [];
+
+    expect(builtBeneficiaries.map((b) => b.beneficiary)).toEqual([
+      '0x0000000000000000000000000000000000000001',
+      '0x0000000000000000000000000000000000000002',
+      '0x0000000000000000000000000000000000000003',
+    ]);
+  });
+
+  it('configures curves from market cap presets using defaults', () => {
+    const expectedTickSpacing = (TICK_SPACINGS as Record<number, number>)[
+      FEE_TIERS.LOW
+    ];
+
+    const builder = MulticurveBuilder.forChain(CHAIN_IDS.BASE)
+      .tokenConfig({
+        type: 'standard',
+        name: 'PresetToken',
+        symbol: 'PRE',
+        tokenURI: 'ipfs://preset',
+      })
+      .saleConfig({
+        initialSupply: 1_000n * WAD,
+        numTokensToSell: 500n * WAD,
+        numeraire: ZERO_ADDRESS,
+      })
+      .withMarketCapPresets({ fee: FEE_TIERS.LOW })
+      .withGovernance({ type: 'default' })
+      .withMigration({ type: 'uniswapV2' })
+      .withUserAddress('0x00000000000000000000000000000000000000AA' as Address);
+
+    const params = builder.build();
+
+    expect(params.pool.fee).toBe(FEE_TIERS.LOW);
+    expect(params.pool.tickSpacing).toBe(expectedTickSpacing);
+    expect(params.pool.curves).toHaveLength(4);
+
+    const [low, medium, high, filler] = params.pool.curves;
+    expect(low).toEqual({
+      tickLower: DEFAULT_MULTICURVE_LOWER_TICKS[0],
+      tickUpper: DEFAULT_MULTICURVE_UPPER_TICKS[0],
+      numPositions: DEFAULT_MULTICURVE_NUM_POSITIONS[0],
+      shares: DEFAULT_MULTICURVE_MAX_SUPPLY_SHARES[0],
+    });
+    expect(medium).toEqual({
+      tickLower: DEFAULT_MULTICURVE_LOWER_TICKS[1],
+      tickUpper: DEFAULT_MULTICURVE_UPPER_TICKS[1],
+      numPositions: DEFAULT_MULTICURVE_NUM_POSITIONS[1],
+      shares: DEFAULT_MULTICURVE_MAX_SUPPLY_SHARES[1],
+    });
+    expect(high).toEqual({
+      tickLower: DEFAULT_MULTICURVE_LOWER_TICKS[2],
+      tickUpper: DEFAULT_MULTICURVE_UPPER_TICKS[2],
+      numPositions: DEFAULT_MULTICURVE_NUM_POSITIONS[2],
+      shares: DEFAULT_MULTICURVE_MAX_SUPPLY_SHARES[2],
+    });
+    expect(filler.shares).toBe(
+      WAD -
+        DEFAULT_MULTICURVE_MAX_SUPPLY_SHARES[0] -
+        DEFAULT_MULTICURVE_MAX_SUPPLY_SHARES[1] -
+        DEFAULT_MULTICURVE_MAX_SUPPLY_SHARES[2],
+    );
+    expect(filler.tickLower).toBe(DEFAULT_MULTICURVE_UPPER_TICKS[2]);
+    expect(filler.tickUpper).toBe(
+      filler.tickLower +
+        DEFAULT_MULTICURVE_NUM_POSITIONS[2] * expectedTickSpacing,
+    );
+  });
+
+  it('allows overriding preset parameters', () => {
+    const overrideShares = WAD / 2n;
+
+    const builder = MulticurveBuilder.forChain(CHAIN_IDS.BASE)
+      .tokenConfig({
+        type: 'standard',
+        name: 'OverrideToken',
+        symbol: 'OVR',
+        tokenURI: 'ipfs://override',
+      })
+      .saleConfig({
+        initialSupply: 1_000n * WAD,
+        numTokensToSell: 400n * WAD,
+        numeraire: ZERO_ADDRESS,
+      })
+      .withMarketCapPresets({
+        fee: 0,
+        tickSpacing: 100,
+        presets: ['high'],
+        overrides: {
+          high: {
+            shares: overrideShares,
+            numPositions: 22,
+            tickLower: -160_000,
+            tickUpper: -150_000,
+          },
+        },
+      })
+      .withGovernance({ type: 'default' })
+      .withMigration({ type: 'uniswapV2' })
+      .withUserAddress('0x00000000000000000000000000000000000000AB' as Address);
+
+    const params = builder.build();
+
+    expect(params.pool.fee).toBe(0);
+    expect(params.pool.tickSpacing).toBe(100);
+    expect(params.pool.curves).toHaveLength(2);
+
+    const [primary, filler] = params.pool.curves;
+
+    expect(primary).toEqual({
+      tickLower: -160_000,
+      tickUpper: -150_000,
+      numPositions: 22,
+      shares: overrideShares,
+    });
+    expect(filler.shares).toBe(WAD - overrideShares);
+    expect(filler.tickLower).toBe(-150_000);
+    expect(filler.tickUpper).toBe(-150_000 + 22 * 100);
+    expect(filler.numPositions).toBe(22);
+  });
+
+  describe('initializer modes', () => {
+    function buildBaseBuilder() {
+      return MulticurveBuilder.forChain(CHAIN_IDS.BASE_SEPOLIA)
+        .tokenConfig({
+          type: 'standard',
+          name: 'DecayToken',
+          symbol: 'DMC',
+          tokenURI: 'ipfs://decay',
+        })
+        .saleConfig({
+          initialSupply: parseEther('1000000000'),
+          numTokensToSell: parseEther('900000000'),
+          numeraire: WETH_BASE,
+        })
+        .poolConfig({
+          fee: 500,
+          tickSpacing: 10,
+          curves: [
+            {
+              tickLower: 0,
+              tickUpper: 220_000,
+              numPositions: 12,
+              shares: parseEther('0.5'),
+            },
+            {
+              tickLower: 20_000,
+              tickUpper: 220_000,
+              numPositions: 12,
+              shares: parseEther('0.5'),
+            },
+          ],
+        })
+        .withGovernance({ type: 'default' })
+        .withMigration({ type: 'uniswapV2' })
+        .withUserAddress(
+          '0x00000000000000000000000000000000000000AA' as Address,
+        );
+    }
+
+    it('builds decay initializer config and keeps pool.fee as terminal fee', () => {
+      const startTime = Math.floor(Date.now() / 1000) + 600;
+      const params = buildBaseBuilder()
+        .withDecay({
+          startTime,
+          startFee: 3000,
+          durationSeconds: 3600,
+        })
+        .build();
+
+      expect(params.pool.fee).toBe(500);
+      expect(params.initializer).toEqual({
+        type: 'decay',
+        startTime,
+        startFee: 3000,
+        durationSeconds: 3600,
+      });
+    });
+
+    it('defaults decay startTime to 0 when omitted', () => {
+      const params = buildBaseBuilder()
+        .withDecay({
+          startFee: 3000,
+          durationSeconds: 3600,
+        })
+        .build();
+
+      expect(params.initializer).toEqual({
+        type: 'decay',
+        startTime: 0,
+        startFee: 3000,
+        durationSeconds: 3600,
+      });
+    });
+
+    it('rejects decay startFee below terminal pool fee', () => {
+      const builder = buildBaseBuilder().withDecay({
+        startTime: Math.floor(Date.now() / 1000) + 600,
+        startFee: 100,
+        durationSeconds: 3600,
+      });
+
+      expect(() => builder.build()).toThrow(
+        'greater than or equal to terminal pool fee',
+      );
+    });
+
+    it('allows decay startFee up to 80%', () => {
+      const startTime = Math.floor(Date.now() / 1000) + 600;
+      const params = buildBaseBuilder()
+        .withDecay({
+          startTime,
+          startFee: DECAY_MAX_START_FEE,
+          durationSeconds: 3600,
+        })
+        .build();
+
+      expect(params.initializer).toEqual({
+        type: 'decay',
+        startTime,
+        startFee: DECAY_MAX_START_FEE,
+        durationSeconds: 3600,
+      });
+    });
+
+    it('rejects decay startFee above 80%', () => {
+      expect(() =>
+        buildBaseBuilder().withDecay({
+          startTime: Math.floor(Date.now() / 1000) + 600,
+          startFee: DECAY_MAX_START_FEE + 1,
+          durationSeconds: 3600,
+        }),
+      ).toThrow('must be between 0 and 800000');
+    });
+
+    it('prevents combining decay and scheduled initializers', () => {
+      const builder = buildBaseBuilder()
+        .withDecay({
+          startTime: Math.floor(Date.now() / 1000) + 600,
+          startFee: 3000,
+          durationSeconds: 3600,
+        });
+
+      expect(() =>
+        builder.withSchedule({
+          startTime: Math.floor(Date.now() / 1000) + 1200,
+        }),
+      ).toThrow("already configured as 'decay'");
+    });
+
+    it('supports overriding decay initializer address', () => {
+      const decayInitializer =
+        '0x9999999999999999999999999999999999999999' as Address;
+
+      const params = buildBaseBuilder()
+        .withDecay({
+          startTime: Math.floor(Date.now() / 1000) + 600,
+          startFee: 3000,
+          durationSeconds: 3600,
+        })
+        .withV4DecayMulticurveInitializer(decayInitializer)
+        .build();
+
+      expect(params.modules?.v4DecayMulticurveInitializer).toBe(decayInitializer);
+    });
+
+    it('builds rehype initializer config with fee schedule and distribution matrix', () => {
+      const params = buildBaseBuilder()
+        .withRehypeDopplerHook({
+          hookAddress: '0x9999999999999999999999999999999999999999' as Address,
+          buybackDestination:
+            '0x8888888888888888888888888888888888888888' as Address,
+          startFee: 6000,
+          endFee: 3000,
+          durationSeconds: 3600,
+          startingTime: 1_800_000_000,
+          feeRoutingMode: 1,
+          feeDistributionInfo: {
+            assetFeesToAssetBuybackWad: parseEther('0.2'),
+            assetFeesToNumeraireBuybackWad: parseEther('0.3'),
+            assetFeesToBeneficiaryWad: parseEther('0.1'),
+            assetFeesToLpWad: parseEther('0.4'),
+            numeraireFeesToAssetBuybackWad: parseEther('0.2'),
+            numeraireFeesToNumeraireBuybackWad: parseEther('0.3'),
+            numeraireFeesToBeneficiaryWad: parseEther('0.1'),
+            numeraireFeesToLpWad: parseEther('0.4'),
+          },
+        })
+        .build();
+
+      expect(params.initializer?.type).toBe('rehype');
+      const rehype = (params.initializer as { type: 'rehype'; config: any }).config;
+      expect(rehype.startFee).toBe(6000);
+      expect(rehype.endFee).toBe(3000);
+      expect(rehype.durationSeconds).toBe(3600);
+      expect(rehype.startingTime).toBe(1_800_000_000);
+      expect(rehype.feeRoutingMode).toBe(1);
+      expect(rehype.feeDistributionInfo.assetFeesToLpWad).toBe(
+        parseEther('0.4'),
+      );
+      expect(rehype.feeDistributionInfo.numeraireFeesToLpWad).toBe(
+        parseEther('0.4'),
+      );
+    });
+
+    it('normalizes legacy rehype fields into fee schedule and matrix fields', () => {
+      const params = buildBaseBuilder()
+        .withRehypeDopplerHook({
+          hookAddress: '0x9999999999999999999999999999999999999999' as Address,
+          buybackDestination:
+            '0x8888888888888888888888888888888888888888' as Address,
+          customFee: 3000,
+          assetBuybackPercentWad: parseEther('0.25'),
+          numeraireBuybackPercentWad: parseEther('0.25'),
+          beneficiaryPercentWad: parseEther('0.25'),
+          lpPercentWad: parseEther('0.25'),
+        })
+        .build();
+
+      const rehype = (params.initializer as { type: 'rehype'; config: any }).config;
+      expect(rehype.startFee).toBe(3000);
+      expect(rehype.endFee).toBe(3000);
+      expect(rehype.durationSeconds).toBe(0);
+      expect(rehype.feeRoutingMode).toBe(0);
+      expect(rehype.feeDistributionInfo.assetFeesToAssetBuybackWad).toBe(
+        parseEther('0.25'),
+      );
+      expect(rehype.feeDistributionInfo.numeraireFeesToAssetBuybackWad).toBe(
+        parseEther('0.25'),
+      );
+    });
+
+    it('rejects rehype configs where a distribution row does not sum to WAD', () => {
+      expect(() =>
+        buildBaseBuilder().withRehypeDopplerHook({
+          hookAddress: '0x9999999999999999999999999999999999999999' as Address,
+          buybackDestination:
+            '0x8888888888888888888888888888888888888888' as Address,
+          startFee: 3000,
+          endFee: 3000,
+          durationSeconds: 0,
+          feeDistributionInfo: {
+            assetFeesToAssetBuybackWad: parseEther('0.5'),
+            assetFeesToNumeraireBuybackWad: parseEther('0.2'),
+            assetFeesToBeneficiaryWad: parseEther('0.1'),
+            assetFeesToLpWad: parseEther('0.1'),
+            numeraireFeesToAssetBuybackWad: parseEther('0.25'),
+            numeraireFeesToNumeraireBuybackWad: parseEther('0.25'),
+            numeraireFeesToBeneficiaryWad: parseEther('0.25'),
+            numeraireFeesToLpWad: parseEther('0.25'),
+          },
+        }),
+      ).toThrow('asset fee distribution must sum');
+    });
+  });
+
+  describe('withCurves', () => {
+    it('configures curves from market cap ranges (no tick math)', () => {
+      const builder = MulticurveBuilder.forChain(CHAIN_IDS.BASE)
+        .tokenConfig({
+          type: 'standard',
+          name: 'MarketCapToken',
+          symbol: 'MCT',
+          tokenURI: 'ipfs://mct',
+        })
+        .saleConfig({
+          initialSupply: parseEther('1000000000'), // 1B tokens
+          numTokensToSell: parseEther('900000000'),
+          numeraire: WETH_BASE,
+        })
+        .withCurves({
+          numerairePrice: 3000, // ETH = $3000
+          curves: [
+            {
+              marketCap: { start: 500_000, end: 1_000_000 },
+              numPositions: 10,
+              shares: parseEther('0.3'),
+            },
+            {
+              marketCap: { start: 1_000_000, end: 5_000_000 },
+              numPositions: 20,
+              shares: parseEther('0.5'),
+            },
+            {
+              marketCap: { start: 5_000_000, end: 50_000_000 },
+              numPositions: 10,
+              shares: parseEther('0.2'),
+            },
+          ],
+        })
+        .withGovernance({ type: 'noOp' })
+        .withMigration({ type: 'uniswapV2' })
+        .withUserAddress(
+          '0x00000000000000000000000000000000000000AA' as Address,
+        );
+
+      const params = builder.build();
+
+      // Should have 3 curves
+      expect(params.pool.curves).toHaveLength(3);
+
+      // Each curve should have valid tick ranges (tickLower < tickUpper)
+      for (const curve of params.pool.curves) {
+        expect(curve.tickLower).toBeLessThan(curve.tickUpper);
+      }
+
+      // Shares should match what we specified
+      expect(params.pool.curves[0].shares).toBe(parseEther('0.3'));
+      expect(params.pool.curves[1].shares).toBe(parseEther('0.5'));
+      expect(params.pool.curves[2].shares).toBe(parseEther('0.2'));
+
+      // Total shares should be 100%
+      const totalShares = params.pool.curves.reduce(
+        (sum, c) => sum + c.shares,
+        0n,
+      );
+      expect(totalShares).toBe(WAD);
+    });
+
+    it('works with only a single curve', () => {
+      const builder = MulticurveBuilder.forChain(CHAIN_IDS.BASE)
+        .tokenConfig({
+          type: 'standard',
+          name: 'SingleCurve',
+          symbol: 'SC',
+          tokenURI: 'ipfs://sc',
+        })
+        .saleConfig({
+          initialSupply: parseEther('1000000000'),
+          numTokensToSell: parseEther('900000000'),
+          numeraire: WETH_BASE,
+        })
+        .withCurves({
+          numerairePrice: 3000,
+          curves: [
+            {
+              marketCap: { start: 1_000_000, end: 10_000_000 },
+              numPositions: 15,
+              shares: WAD,
+            },
+          ],
+        })
+        .withGovernance({ type: 'noOp' })
+        .withMigration({ type: 'uniswapV2' })
+        .withUserAddress(
+          '0x00000000000000000000000000000000000000AA' as Address,
+        );
+
+      const params = builder.build();
+
+      expect(params.pool.curves).toHaveLength(1);
+      expect(params.pool.curves[0].shares).toBe(WAD);
+      expect(params.pool.curves[0].numPositions).toBe(15);
+    });
+
+    it('throws if shares do not equal 100%', () => {
+      const builder = MulticurveBuilder.forChain(CHAIN_IDS.BASE)
+        .tokenConfig({
+          type: 'standard',
+          name: 'TooMuch',
+          symbol: 'TM',
+          tokenURI: 'ipfs://tm',
+        })
+        .saleConfig({
+          initialSupply: parseEther('1000000000'),
+          numTokensToSell: parseEther('900000000'),
+          numeraire: WETH_BASE,
+        });
+
+      // Exceeds 100%
+      expect(() => {
+        builder.withCurves({
+          numerairePrice: 3000,
+          curves: [
+            {
+              marketCap: { start: 500_000, end: 1_000_000 },
+              numPositions: 10,
+              shares: parseEther('0.6'),
+            },
+            {
+              marketCap: { start: 1_000_000, end: 5_000_000 },
+              numPositions: 20,
+              shares: parseEther('0.6'),
+            },
+          ],
+        });
+      }).toThrow('must equal 100%');
+
+      // Less than 100%
+      expect(() => {
+        builder.withCurves({
+          numerairePrice: 3000,
+          curves: [
+            {
+              marketCap: { start: 500_000, end: 1_000_000 },
+              numPositions: 10,
+              shares: parseEther('0.5'),
+            },
+            {
+              marketCap: { start: 1_000_000, end: 5_000_000 },
+              numPositions: 20,
+              shares: parseEther('0.3'),
+            },
+          ],
+        });
+      }).toThrow('must equal 100%');
+    });
+
+    it('allows withCurves before saleConfig (order-independent)', () => {
+      const builder = MulticurveBuilder.forChain(CHAIN_IDS.BASE)
+        .tokenConfig({
+          type: 'standard',
+          name: 'OrderFree',
+          symbol: 'OF',
+          tokenURI: 'ipfs://of',
+        })
+        .withCurves({
+          numerairePrice: 3000,
+          curves: [
+            {
+              marketCap: { start: 500_000, end: 1_000_000 },
+              numPositions: 10,
+              shares: WAD,
+            },
+          ],
+        })
+        .saleConfig({
+          initialSupply: parseEther('1000000000'),
+          numTokensToSell: parseEther('900000000'),
+          numeraire: WETH_BASE,
+        })
+        .withGovernance({ type: 'noOp' })
+        .withMigration({ type: 'uniswapV2' })
+        .withUserAddress(
+          '0x00000000000000000000000000000000000000AA' as Address,
+        );
+
+      const params = builder.build();
+      expect(params.pool.curves).toHaveLength(1);
+      expect(params.pool.curves[0].shares).toBe(WAD);
+    });
+
+    it('throws in build if saleConfig not provided', () => {
+      const builder = MulticurveBuilder.forChain(CHAIN_IDS.BASE)
+        .tokenConfig({
+          type: 'standard',
+          name: 'NoSale',
+          symbol: 'NS',
+          tokenURI: 'ipfs://ns',
+        })
+        .withCurves({
+          numerairePrice: 3000,
+          curves: [
+            {
+              marketCap: { start: 500_000, end: 1_000_000 },
+              numPositions: 10,
+              shares: WAD,
+            },
+          ],
+        })
+        .withGovernance({ type: 'noOp' })
+        .withMigration({ type: 'uniswapV2' })
+        .withUserAddress(
+          '0x00000000000000000000000000000000000000AA' as Address,
+        );
+
+      expect(() => builder.build()).toThrow('saleConfig is required');
+    });
+
+    it('throws if there is a gap between curves', () => {
+      const builder = MulticurveBuilder.forChain(CHAIN_IDS.BASE)
+        .tokenConfig({
+          type: 'standard',
+          name: 'GapToken',
+          symbol: 'GAP',
+          tokenURI: 'ipfs://gap',
+        })
+        .saleConfig({
+          initialSupply: parseEther('1000000000'),
+          numTokensToSell: parseEther('900000000'),
+          numeraire: WETH_BASE,
+        });
+
+      // Gap between first and second curve
+      expect(() => {
+        builder.withCurves({
+          numerairePrice: 3000,
+          curves: [
+            {
+              marketCap: { start: 500_000, end: 1_000_000 },
+              numPositions: 10,
+              shares: parseEther('0.5'),
+            },
+            {
+              marketCap: { start: 2_000_000, end: 5_000_000 },
+              numPositions: 20,
+              shares: parseEther('0.5'),
+            }, // Gap: 1M to 2M
+          ],
+        });
+      }).toThrow('Gap detected');
+
+      // Gap between additional curves
+      expect(() => {
+        builder.withCurves({
+          numerairePrice: 3000,
+          curves: [
+            {
+              marketCap: { start: 500_000, end: 1_000_000 },
+              numPositions: 10,
+              shares: parseEther('0.3'),
+            },
+            {
+              marketCap: { start: 1_000_000, end: 5_000_000 },
+              numPositions: 20,
+              shares: parseEther('0.4'),
+            },
+            {
+              marketCap: { start: 10_000_000, end: 50_000_000 },
+              numPositions: 10,
+              shares: parseEther('0.3'),
+            }, // Gap: 5M to 10M
+          ],
+        });
+      }).toThrow('Gap detected');
+    });
+
+    it('allows overlapping curves', () => {
+      const builder = MulticurveBuilder.forChain(CHAIN_IDS.BASE)
+        .tokenConfig({
+          type: 'standard',
+          name: 'OverlapToken',
+          symbol: 'OVR',
+          tokenURI: 'ipfs://ovr',
+        })
+        .saleConfig({
+          initialSupply: parseEther('1000000000'),
+          numTokensToSell: parseEther('900000000'),
+          numeraire: WETH_BASE,
+        })
+        .withCurves({
+          numerairePrice: 3000,
+          curves: [
+            {
+              marketCap: { start: 500_000, end: 2_000_000 },
+              numPositions: 10,
+              shares: parseEther('0.3'),
+            }, // Ends at $2M
+            {
+              marketCap: { start: 1_000_000, end: 5_000_000 },
+              numPositions: 20,
+              shares: parseEther('0.5'),
+            }, // Starts at $1M - overlaps!
+            {
+              marketCap: { start: 4_000_000, end: 50_000_000 },
+              numPositions: 10,
+              shares: parseEther('0.2'),
+            }, // Overlaps at $4-5M
+          ],
+        })
+        .withGovernance({ type: 'noOp' })
+        .withMigration({ type: 'uniswapV2' })
+        .withUserAddress(
+          '0x00000000000000000000000000000000000000AA' as Address,
+        );
+
+      const params = builder.build();
+      expect(params.pool.curves).toHaveLength(3);
+    });
+
+    it('throws if startMarketCap >= endMarketCap', () => {
+      const builder = MulticurveBuilder.forChain(CHAIN_IDS.BASE)
+        .tokenConfig({
+          type: 'standard',
+          name: 'BadRange',
+          symbol: 'BAD',
+          tokenURI: 'ipfs://bad',
+        })
+        .saleConfig({
+          initialSupply: parseEther('1000000000'),
+          numTokensToSell: parseEther('900000000'),
+          numeraire: WETH_BASE,
+        });
+
+      // Equal values
+      expect(() => {
+        builder.withCurves({
+          numerairePrice: 3000,
+          curves: [
+            {
+              marketCap: { start: 1_000_000, end: 1_000_000 },
+              numPositions: 10,
+              shares: WAD,
+            }, // Same as start
+          ],
+        });
+      }).toThrow('must be less than');
+
+      // Inverted
+      expect(() => {
+        builder.withCurves({
+          numerairePrice: 3000,
+          curves: [
+            {
+              marketCap: { start: 5_000_000, end: 1_000_000 },
+              numPositions: 10,
+              shares: WAD,
+            }, // Less than start
+          ],
+        });
+      }).toThrow('must be less than');
+    });
+
+    it('throws if numPositions is not positive', () => {
+      const builder = MulticurveBuilder.forChain(CHAIN_IDS.BASE)
+        .tokenConfig({
+          type: 'standard',
+          name: 'ZeroPos',
+          symbol: 'ZP',
+          tokenURI: 'ipfs://zp',
+        })
+        .saleConfig({
+          initialSupply: parseEther('1000000000'),
+          numTokensToSell: parseEther('900000000'),
+          numeraire: WETH_BASE,
+        });
+
+      expect(() => {
+        builder.withCurves({
+          numerairePrice: 3000,
+          curves: [
+            {
+              marketCap: { start: 500_000, end: 1_000_000 },
+              numPositions: 0,
+              shares: WAD,
+            },
+          ],
+        });
+      }).toThrow('numPositions must be greater than 0');
+    });
+
+    it('throws if numerairePrice is not positive', () => {
+      const builder = MulticurveBuilder.forChain(CHAIN_IDS.BASE)
+        .tokenConfig({
+          type: 'standard',
+          name: 'ZeroPrice',
+          symbol: 'ZPR',
+          tokenURI: 'ipfs://zpr',
+        })
+        .saleConfig({
+          initialSupply: parseEther('1000000000'),
+          numTokensToSell: parseEther('900000000'),
+          numeraire: WETH_BASE,
+        });
+
+      expect(() => {
+        builder.withCurves({
+          numerairePrice: 0,
+          curves: [
+            {
+              marketCap: { start: 500_000, end: 1_000_000 },
+              numPositions: 10,
+              shares: WAD,
+            },
+          ],
+        });
+      }).toThrow('numerairePrice must be greater than 0');
+    });
+
+    it('throws if market cap is not positive', () => {
+      const builder = MulticurveBuilder.forChain(CHAIN_IDS.BASE)
+        .tokenConfig({
+          type: 'standard',
+          name: 'ZeroCap',
+          symbol: 'ZC',
+          tokenURI: 'ipfs://zc',
+        })
+        .saleConfig({
+          initialSupply: parseEther('1000000000'),
+          numTokensToSell: parseEther('900000000'),
+          numeraire: WETH_BASE,
+        });
+
+      expect(() => {
+        builder.withCurves({
+          numerairePrice: 3000,
+          curves: [
+            {
+              marketCap: { start: 0, end: 1_000_000 },
+              numPositions: 10,
+              shares: WAD,
+            },
+          ],
+        });
+      }).toThrow('marketCap.start must be greater than 0');
+    });
+
+    it('throws if curves array is empty', () => {
+      const builder = MulticurveBuilder.forChain(CHAIN_IDS.BASE)
+        .tokenConfig({
+          type: 'standard',
+          name: 'EmptyCurves',
+          symbol: 'EC',
+          tokenURI: 'ipfs://ec',
+        })
+        .saleConfig({
+          initialSupply: parseEther('1000000000'),
+          numTokensToSell: parseEther('900000000'),
+          numeraire: WETH_BASE,
+        });
+
+      expect(() => {
+        builder.withCurves({
+          numerairePrice: 3000,
+          curves: [],
+        });
+      }).toThrow('curves array must contain at least one curve');
+    });
+
+    it('accepts curves in reverse order and outputs in ascending market cap order', () => {
+      const builder = MulticurveBuilder.forChain(CHAIN_IDS.BASE)
+        .tokenConfig({
+          type: 'standard',
+          name: 'ReverseOrder',
+          symbol: 'REV',
+          tokenURI: 'ipfs://rev',
+        })
+        .saleConfig({
+          initialSupply: parseEther('1000000000'),
+          numTokensToSell: parseEther('900000000'),
+          numeraire: WETH_BASE,
+        })
+        .withCurves({
+          numerairePrice: 3000,
+          curves: [
+            // Provided in reverse order (highest to lowest)
+            {
+              marketCap: { start: 5_000_000, end: 50_000_000 },
+              numPositions: 10,
+              shares: parseEther('0.2'),
+            },
+            {
+              marketCap: { start: 1_000_000, end: 5_000_000 },
+              numPositions: 20,
+              shares: parseEther('0.5'),
+            },
+            {
+              marketCap: { start: 500_000, end: 1_000_000 },
+              numPositions: 10,
+              shares: parseEther('0.3'),
+            },
+          ],
+        })
+        .withGovernance({ type: 'noOp' })
+        .withMigration({ type: 'uniswapV2' })
+        .withUserAddress(
+          '0x00000000000000000000000000000000000000AA' as Address,
+        );
+
+      const params = builder.build();
+
+      // Should have 3 curves
+      expect(params.pool.curves).toHaveLength(3);
+
+      // Output should be sorted by market cap (ascending), so shares should be in order: 0.3, 0.5, 0.2
+      expect(params.pool.curves[0].shares).toBe(parseEther('0.3'));
+      expect(params.pool.curves[1].shares).toBe(parseEther('0.5'));
+      expect(params.pool.curves[2].shares).toBe(parseEther('0.2'));
+
+      // With negated ticks, lower market cap = more negative tick
+      // So curves ordered by market cap ascending have ticks ascending (more negative to less negative)
+      expect(params.pool.curves[0].tickLower).toBeLessThan(
+        params.pool.curves[1].tickLower,
+      );
+      expect(params.pool.curves[1].tickLower).toBeLessThan(
+        params.pool.curves[2].tickLower,
+      );
+    });
+
+    it('accepts curves in random order and outputs in ascending market cap order', () => {
+      const builder = MulticurveBuilder.forChain(CHAIN_IDS.BASE)
+        .tokenConfig({
+          type: 'standard',
+          name: 'RandomOrder',
+          symbol: 'RND',
+          tokenURI: 'ipfs://rnd',
+        })
+        .saleConfig({
+          initialSupply: parseEther('1000000000'),
+          numTokensToSell: parseEther('900000000'),
+          numeraire: WETH_BASE,
+        })
+        .withCurves({
+          numerairePrice: 3000,
+          curves: [
+            // Provided in random order
+            {
+              marketCap: { start: 1_000_000, end: 5_000_000 },
+              numPositions: 20,
+              shares: parseEther('0.5'),
+            },
+            {
+              marketCap: { start: 5_000_000, end: 50_000_000 },
+              numPositions: 10,
+              shares: parseEther('0.2'),
+            },
+            {
+              marketCap: { start: 500_000, end: 1_000_000 },
+              numPositions: 10,
+              shares: parseEther('0.3'),
+            },
+          ],
+        })
+        .withGovernance({ type: 'noOp' })
+        .withMigration({ type: 'uniswapV2' })
+        .withUserAddress(
+          '0x00000000000000000000000000000000000000AA' as Address,
+        );
+
+      const params = builder.build();
+
+      // Output should be sorted by market cap (ascending), so shares should be in order: 0.3, 0.5, 0.2
+      expect(params.pool.curves[0].shares).toBe(parseEther('0.3'));
+      expect(params.pool.curves[1].shares).toBe(parseEther('0.5'));
+      expect(params.pool.curves[2].shares).toBe(parseEther('0.2'));
+    });
+
+    it('detects gap between curves regardless of input order', () => {
+      const builder = MulticurveBuilder.forChain(CHAIN_IDS.BASE)
+        .tokenConfig({
+          type: 'standard',
+          name: 'GapRandom',
+          symbol: 'GR',
+          tokenURI: 'ipfs://gr',
+        })
+        .saleConfig({
+          initialSupply: parseEther('1000000000'),
+          numTokensToSell: parseEther('900000000'),
+          numeraire: WETH_BASE,
+        });
+
+      // Gap between $1M and $2M, but curves provided out of order
+      expect(() => {
+        builder.withCurves({
+          numerairePrice: 3000,
+          curves: [
+            {
+              marketCap: { start: 2_000_000, end: 5_000_000 },
+              numPositions: 20,
+              shares: parseEther('0.5'),
+            },
+            {
+              marketCap: { start: 500_000, end: 1_000_000 },
+              numPositions: 10,
+              shares: parseEther('0.5'),
+            },
+          ],
+        });
+      }).toThrow('Gap detected');
+    });
+
+    it('sorts curves with same start by end market cap', () => {
+      const builder = MulticurveBuilder.forChain(CHAIN_IDS.BASE)
+        .tokenConfig({
+          type: 'standard',
+          name: 'SameStart',
+          symbol: 'SS',
+          tokenURI: 'ipfs://ss',
+        })
+        .saleConfig({
+          initialSupply: parseEther('1000000000'),
+          numTokensToSell: parseEther('900000000'),
+          numeraire: WETH_BASE,
+        })
+        .withCurves({
+          numerairePrice: 3000,
+          curves: [
+            // Both start at $500k, but different ends - should sort by end
+            {
+              marketCap: { start: 500_000, end: 5_000_000 },
+              numPositions: 15,
+              shares: parseEther('0.6'),
+            },
+            {
+              marketCap: { start: 500_000, end: 1_000_000 },
+              numPositions: 10,
+              shares: parseEther('0.4'),
+            },
+          ],
+        })
+        .withGovernance({ type: 'noOp' })
+        .withMigration({ type: 'uniswapV2' })
+        .withUserAddress(
+          '0x00000000000000000000000000000000000000AA' as Address,
+        );
+
+      const params = builder.build();
+
+      // Should be sorted by (start, end), so the one ending at $1M comes first
+      expect(params.pool.curves[0].shares).toBe(parseEther('0.4'));
+      expect(params.pool.curves[1].shares).toBe(parseEther('0.6'));
+    });
+
+    it('accepts "max" as end market cap for last curve', () => {
+      const builder = MulticurveBuilder.forChain(CHAIN_IDS.BASE)
+        .tokenConfig({
+          type: 'standard',
+          name: 'MaxEnd',
+          symbol: 'MAX',
+          tokenURI: 'ipfs://max',
+        })
+        .saleConfig({
+          initialSupply: parseEther('1000000000'),
+          numTokensToSell: parseEther('900000000'),
+          numeraire: WETH_BASE,
+        })
+        .withCurves({
+          numerairePrice: 3000,
+          curves: [
+            {
+              marketCap: { start: 500_000, end: 1_000_000 },
+              numPositions: 10,
+              shares: parseEther('0.3'),
+            },
+            {
+              marketCap: { start: 1_000_000, end: 5_000_000 },
+              numPositions: 20,
+              shares: parseEther('0.5'),
+            },
+            {
+              marketCap: { start: 5_000_000, end: 'max' },
+              numPositions: 10,
+              shares: parseEther('0.2'),
+            },
+          ],
+        })
+        .withGovernance({ type: 'noOp' })
+        .withMigration({ type: 'uniswapV2' })
+        .withUserAddress(
+          '0x00000000000000000000000000000000000000AA' as Address,
+        );
+
+      const params = builder.build();
+
+      expect(params.pool.curves).toHaveLength(3);
+      const lastCurve = params.pool.curves[2];
+      expect(lastCurve.tickUpper).toBeGreaterThan(lastCurve.tickLower);
+      // 'max' resolves to MAX_TICK rounded down: floor(887272/60)*60 = 887220 (tickSpacing=60 for default FEE_TIERS.MEDIUM)
+      expect(lastCurve.tickUpper).toBe(887220);
+    });
+
+    it('sorts curve with "max" end to last position', () => {
+      const builder = MulticurveBuilder.forChain(CHAIN_IDS.BASE)
+        .tokenConfig({
+          type: 'standard',
+          name: 'MaxSort',
+          symbol: 'MXS',
+          tokenURI: 'ipfs://mxs',
+        })
+        .saleConfig({
+          initialSupply: parseEther('1000000000'),
+          numTokensToSell: parseEther('900000000'),
+          numeraire: WETH_BASE,
+        })
+        .withCurves({
+          numerairePrice: 3000,
+          curves: [
+            {
+              marketCap: { start: 5_000_000, end: 'max' },
+              numPositions: 10,
+              shares: parseEther('0.2'),
+            },
+            {
+              marketCap: { start: 500_000, end: 1_000_000 },
+              numPositions: 10,
+              shares: parseEther('0.3'),
+            },
+            {
+              marketCap: { start: 1_000_000, end: 5_000_000 },
+              numPositions: 20,
+              shares: parseEther('0.5'),
+            },
+          ],
+        })
+        .withGovernance({ type: 'noOp' })
+        .withMigration({ type: 'uniswapV2' })
+        .withUserAddress(
+          '0x00000000000000000000000000000000000000AA' as Address,
+        );
+
+      const params = builder.build();
+
+      expect(params.pool.curves[0].shares).toBe(parseEther('0.3'));
+      expect(params.pool.curves[1].shares).toBe(parseEther('0.5'));
+      expect(params.pool.curves[2].shares).toBe(parseEther('0.2'));
+    });
+  });
+});

@@ -1,27 +1,18 @@
-import { defineConfig } from 'tsup'
-import { resolve } from 'path'
-import { glob } from 'glob'
-
-// Get all TypeScript files except tests and test utilities
-const entryPoints = glob.sync('src/**/!(*.test|*.spec).ts', {
-  ignore: ['src/test/**', '**/test/**', 'src/__tests__/**', '**/__tests__/**']
-})
+import { defineConfig } from 'tsup';
 
 export default defineConfig({
-  entry: entryPoints,
-  format: ['cjs', 'esm'],
+  entry: {
+    index: 'src/index.ts',
+    'evm/index': 'src/evm/index.ts',
+    'solana/index': 'src/solana/index.ts',
+    'solana/react/index': 'src/solana/react/index.ts',
+  },
+  format: ['esm'],
   dts: true,
   splitting: true,
   clean: true,
   outDir: 'dist',
   treeshake: true,
   sourcemap: true,
-  esbuildOptions(options) {
-    options.alias = {
-      '@': resolve(__dirname, './src')
-    }
-  },
-  external: [
-    'viem'
-  ]
-})
+  external: ['viem', 'react', '@solana/kit'],
+});
