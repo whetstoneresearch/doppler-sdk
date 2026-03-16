@@ -8,8 +8,8 @@ import {
   SYSTEM_PROGRAM_ID,
 } from '../../core/constants.js';
 import { INITIALIZER_PROGRAM_ID } from '../constants.js';
-import type { InitializeConfigArgsArgs } from '@whetstone-research/doppler-program-clients/initializer';
-import { getInitializeConfigInstructionDataEncoder } from '@whetstone-research/doppler-program-clients/initializer';
+import type { InitializeConfigArgsArgs } from '../../generated/initializer/index.js';
+import { getInitializeConfigInstructionDataEncoder } from '../../generated/initializer/index.js';
 
 type AddressOrSigner = Address | TransactionSigner;
 

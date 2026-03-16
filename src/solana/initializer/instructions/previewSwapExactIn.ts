@@ -3,7 +3,7 @@ import type { Instruction } from '@solana/kit';
 import { getStructCodec, getU64Codec } from '@solana/kit';
 import { ACCOUNT_ROLE_READONLY } from '../../core/constants.js';
 import { INITIALIZER_PROGRAM_ID } from '../constants.js';
-import { getPreviewSwapExactInInstructionDataEncoder } from '@whetstone-research/doppler-program-clients/initializer';
+import { getPreviewSwapExactInInstructionDataEncoder } from '../../generated/initializer/index.js';
 
 export interface PreviewSwapExactInResult {
   amountOut: bigint;

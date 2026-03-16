@@ -14,8 +14,8 @@ import {
   CURVE_PARAMS_FORMAT_XYK_V0,
   INITIALIZER_PROGRAM_ID,
 } from '../constants.js';
-import type { InitializeLaunchArgsArgs } from '@whetstone-research/doppler-program-clients/initializer';
-import { getInitializeLaunchInstructionDataEncoder } from '@whetstone-research/doppler-program-clients/initializer';
+import type { InitializeLaunchArgsArgs } from '../../generated/initializer/index.js';
+import { getInitializeLaunchInstructionDataEncoder } from '../../generated/initializer/index.js';
 
 type AddressOrSigner = Address | TransactionSigner;
 

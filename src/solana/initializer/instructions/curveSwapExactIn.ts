@@ -8,7 +8,7 @@ import {
   TOKEN_PROGRAM_ID,
 } from '../../core/constants.js';
 import { INITIALIZER_PROGRAM_ID } from '../constants.js';
-import { getCurveSwapExactInInstructionDataEncoder } from '@whetstone-research/doppler-program-clients/initializer';
+import { getCurveSwapExactInInstructionDataEncoder } from '../../generated/initializer/index.js';
 
 type AddressOrSigner = Address | TransactionSigner;
 

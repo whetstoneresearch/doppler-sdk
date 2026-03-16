@@ -1,0 +1,1752 @@
+{
+  "address": "41zP8ovFZvvxAncujgjYfHz5xvR8zZgwGGVfwCJG3WkK",
+  "metadata": {
+    "name": "prediction_migrator",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Prediction market migrator module for pot escrow and claims"
+  },
+  "instructions": [
+    {
+      "name": "claim",
+      "docs": [
+        "Claim winnings from a resolved prediction market.",
+        "",
+        "burn_amount: Number of winner tokens to burn (can be 0 for harvest-only).",
+        "",
+        "The accumulator pattern allows:",
+        "- Claims before all entries migrated (avoids market bricking)",
+        "- Harvesting additional pot as losing entries migrate (with burn_amount=0)",
+        "- Burning winner tokens for proportional share of the pot"
+      ],
+      "discriminator": [
+        62,
+        198,
+        214,
+        193,
+        213,
+        159,
+        108,
+        210
+      ],
+      "accounts": [
+        {
+          "name": "market",
+          "docs": [
+            "Market PDA"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  97,
+                  114,
+                  107,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "market.oracle",
+                "account": "Market"
+              }
+            ]
+          }
+        },
+        {
+          "name": "market_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  97,
+                  114,
+                  107,
+                  101,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "market"
+              }
+            ]
+          }
+        },
+        {
+          "name": "pot_vault",
+          "docs": [
+            "Pot vault holding quote tokens"
+          ],
+          "writable": true
+        },
+        {
+          "name": "winner_mint",
+          "docs": [
+            "Winner mint (must match market.winner_mint)"
+          ],
+          "writable": true
+        },
+        {
+          "name": "entry_by_mint",
+          "docs": [
+            "EntryByMint for validation that this mint belongs to this market"
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  110,
+                  116,
+                  114,
+                  121,
+                  95,
+                  98,
+                  121,
+                  95,
+                  109,
+                  105,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "market.oracle",
+                "account": "Market"
+              },
+              {
+                "kind": "account",
+                "path": "winner_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "claimer_winner_ata",
+          "docs": [
+            "Claimer's winner token account (source for burn)"
+          ],
+          "writable": true
+        },
+        {
+          "name": "claimer_quote_ata",
+          "docs": [
+            "Claimer's quote token account (destination for rewards)"
+          ],
+          "writable": true
+        },
+        {
+          "name": "claimer",
+          "docs": [
+            "Claimer wallet (signer)"
+          ],
+          "signer": true
+        },
+        {
+          "name": "receipt",
+          "docs": [
+            "Claim receipt PDA (created if first claim)"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  99,
+                  101,
+                  105,
+                  112,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "market"
+              },
+              {
+                "kind": "account",
+                "path": "claimer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "payer",
+          "docs": [
+            "Payer for receipt creation (can be same as claimer)"
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "burn_amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "migrate_entry",
+      "docs": [
+        "Migrate an entry after the oracle finalizes.",
+        "Called by initializer at migrate time via migrator migrate hook.",
+        "",
+        "Burns unsold base tokens, transfers quote to pot, records contribution.",
+        "If winning entry, records claimable_supply and initializes accumulator."
+      ],
+      "discriminator": [
+        239,
+        154,
+        55,
+        173,
+        110,
+        36,
+        188,
+        214
+      ],
+      "accounts": [
+        {
+          "name": "initializer_config"
+        },
+        {
+          "name": "launch",
+          "docs": [
+            "Launch account from initializer"
+          ]
+        },
+        {
+          "name": "launch_authority",
+          "docs": [
+            "Launch authority PDA - signed by initializer"
+          ],
+          "signer": true
+        },
+        {
+          "name": "base_mint",
+          "docs": [
+            "Base mint for this entry (will burn unsold)"
+          ],
+          "writable": true
+        },
+        {
+          "name": "quote_mint",
+          "docs": [
+            "Quote mint for this market"
+          ]
+        },
+        {
+          "name": "base_vault",
+          "docs": [
+            "Base vault from launch (source for burn)"
+          ],
+          "writable": true
+        },
+        {
+          "name": "quote_vault",
+          "docs": [
+            "Quote vault from launch (source for transfer)"
+          ],
+          "writable": true
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        },
+        {
+          "name": "oracle",
+          "docs": [
+            "The oracle that determines the winner.",
+            "Anchor enforces owner + discriminator (trusted_oracle_interface)."
+          ]
+        },
+        {
+          "name": "market",
+          "docs": [
+            "Market PDA"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  97,
+                  114,
+                  107,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "oracle"
+              }
+            ]
+          }
+        },
+        {
+          "name": "pot_vault",
+          "docs": [
+            "Pot vault for holding quote tokens"
+          ],
+          "writable": true
+        },
+        {
+          "name": "market_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  97,
+                  114,
+                  107,
+                  101,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "market"
+              }
+            ]
+          }
+        },
+        {
+          "name": "entry",
+          "docs": [
+            "Entry PDA"
+          ],
+          "writable": true
+        },
+        {
+          "name": "entry_by_mint",
+          "docs": [
+            "EntryByMint PDA (for validation)"
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  110,
+                  116,
+                  114,
+                  121,
+                  95,
+                  98,
+                  121,
+                  95,
+                  109,
+                  105,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "oracle"
+              },
+              {
+                "kind": "account",
+                "path": "base_mint"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "MigrateEntryArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "preview_payout_if_winner",
+      "docs": [
+        "Preview payout if a given mint wins.",
+        "Returns pot_used, claimable_supply_used, and payout_quote_for_token_amount via return data."
+      ],
+      "discriminator": [
+        228,
+        144,
+        72,
+        185,
+        234,
+        186,
+        183,
+        143
+      ],
+      "accounts": [
+        {
+          "name": "market",
+          "docs": [
+            "Market PDA"
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  97,
+                  114,
+                  107,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "market.oracle",
+                "account": "Market"
+              }
+            ]
+          }
+        },
+        {
+          "name": "candidate_mint",
+          "docs": [
+            "Candidate winner mint (may or may not match oracle winner)"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "PreviewPayoutIfWinnerArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "register_entry",
+      "docs": [
+        "Register an entry in the prediction market.",
+        "Called by initializer at launch creation time via migrator init hook.",
+        "",
+        "Creates Market PDA if first entry for this oracle.",
+        "Creates Entry PDA and EntryByMint reverse lookup."
+      ],
+      "discriminator": [
+        198,
+        25,
+        1,
+        183,
+        73,
+        219,
+        215,
+        14
+      ],
+      "accounts": [
+        {
+          "name": "initializer_config"
+        },
+        {
+          "name": "launch",
+          "docs": [
+            "Launch account from initializer"
+          ]
+        },
+        {
+          "name": "launch_authority",
+          "docs": [
+            "Launch authority PDA - signed by initializer"
+          ],
+          "signer": true
+        },
+        {
+          "name": "base_mint",
+          "docs": [
+            "Base mint for this entry"
+          ]
+        },
+        {
+          "name": "quote_mint",
+          "docs": [
+            "Quote mint for this market"
+          ]
+        },
+        {
+          "name": "base_vault"
+        },
+        {
+          "name": "quote_vault"
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        },
+        {
+          "name": "oracle",
+          "docs": [
+            "The oracle that this market is tied to"
+          ]
+        },
+        {
+          "name": "market",
+          "docs": [
+            "Market PDA - created if first entry"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  97,
+                  114,
+                  107,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "oracle"
+              }
+            ]
+          }
+        },
+        {
+          "name": "pot_vault",
+          "docs": [
+            "Pot vault for holding quote tokens"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  116,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "market"
+              }
+            ]
+          }
+        },
+        {
+          "name": "market_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  97,
+                  114,
+                  107,
+                  101,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "market"
+              }
+            ]
+          }
+        },
+        {
+          "name": "entry",
+          "docs": [
+            "Entry PDA for this entry"
+          ],
+          "writable": true
+        },
+        {
+          "name": "entry_by_mint",
+          "docs": [
+            "EntryByMint PDA for reverse lookup"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  110,
+                  116,
+                  114,
+                  121,
+                  95,
+                  98,
+                  121,
+                  95,
+                  109,
+                  105,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "oracle"
+              },
+              {
+                "kind": "account",
+                "path": "base_mint"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "RegisterEntryArgs"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "ClaimReceipt",
+      "discriminator": [
+        223,
+        233,
+        11,
+        229,
+        124,
+        165,
+        207,
+        28
+      ]
+    },
+    {
+      "name": "Entry",
+      "discriminator": [
+        63,
+        18,
+        152,
+        113,
+        215,
+        246,
+        221,
+        250
+      ]
+    },
+    {
+      "name": "EntryByMint",
+      "discriminator": [
+        188,
+        191,
+        157,
+        194,
+        68,
+        82,
+        181,
+        126
+      ]
+    },
+    {
+      "name": "Launch",
+      "discriminator": [
+        144,
+        51,
+        51,
+        163,
+        206,
+        85,
+        213,
+        38
+      ]
+    },
+    {
+      "name": "Market",
+      "discriminator": [
+        219,
+        190,
+        213,
+        55,
+        0,
+        227,
+        198,
+        154
+      ]
+    },
+    {
+      "name": "OracleState",
+      "discriminator": [
+        97,
+        156,
+        157,
+        189,
+        194,
+        73,
+        8,
+        15
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "AccumulatorUpdated",
+      "discriminator": [
+        107,
+        85,
+        107,
+        83,
+        31,
+        115,
+        47,
+        141
+      ]
+    },
+    {
+      "name": "EntryMigrated",
+      "discriminator": [
+        61,
+        128,
+        250,
+        71,
+        57,
+        216,
+        242,
+        214
+      ]
+    },
+    {
+      "name": "EntryRegistered",
+      "discriminator": [
+        13,
+        87,
+        129,
+        56,
+        232,
+        74,
+        238,
+        233
+      ]
+    },
+    {
+      "name": "MarketCreated",
+      "discriminator": [
+        88,
+        184,
+        130,
+        231,
+        226,
+        84,
+        6,
+        58
+      ]
+    },
+    {
+      "name": "MarketResolved",
+      "discriminator": [
+        89,
+        67,
+        230,
+        95,
+        143,
+        106,
+        199,
+        202
+      ]
+    },
+    {
+      "name": "RewardsClaimed",
+      "discriminator": [
+        75,
+        98,
+        88,
+        18,
+        219,
+        112,
+        88,
+        121
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "Unauthorized",
+      "msg": "Unauthorized"
+    },
+    {
+      "code": 6001,
+      "name": "QuoteMintMismatch",
+      "msg": "Quote mint mismatch"
+    },
+    {
+      "code": 6002,
+      "name": "EntryAlreadyRegistered",
+      "msg": "Entry already registered"
+    },
+    {
+      "code": 6003,
+      "name": "EntryNotRegistered",
+      "msg": "Entry not registered"
+    },
+    {
+      "code": 6004,
+      "name": "EntryAlreadyMigrated",
+      "msg": "Entry already migrated"
+    },
+    {
+      "code": 6005,
+      "name": "EntryNotMigrated",
+      "msg": "Entry not migrated"
+    },
+    {
+      "code": 6006,
+      "name": "OracleNotFinalized",
+      "msg": "Oracle not finalized"
+    },
+    {
+      "code": 6007,
+      "name": "MarketNotResolved",
+      "msg": "Market not resolved"
+    },
+    {
+      "code": 6008,
+      "name": "InvalidWinnerMint",
+      "msg": "Invalid winner mint"
+    },
+    {
+      "code": 6009,
+      "name": "InsufficientBalance",
+      "msg": "Insufficient balance"
+    },
+    {
+      "code": 6010,
+      "name": "MathOverflow",
+      "msg": "Math overflow"
+    },
+    {
+      "code": 6011,
+      "name": "InvalidEntryId",
+      "msg": "Invalid entry ID"
+    },
+    {
+      "code": 6012,
+      "name": "InvalidMarket",
+      "msg": "Invalid market"
+    },
+    {
+      "code": 6013,
+      "name": "InvalidVault",
+      "msg": "Invalid vault"
+    },
+    {
+      "code": 6014,
+      "name": "InvalidMint",
+      "msg": "Invalid mint"
+    },
+    {
+      "code": 6015,
+      "name": "WinningEntryNotMigrated",
+      "msg": "Winning entry not migrated"
+    },
+    {
+      "code": 6016,
+      "name": "NoPendingRewards",
+      "msg": "No pending rewards"
+    },
+    {
+      "code": 6017,
+      "name": "InvalidOracle",
+      "msg": "Invalid oracle"
+    },
+    {
+      "code": 6018,
+      "name": "ZeroClaimableSupply",
+      "msg": "Zero claimable supply"
+    },
+    {
+      "code": 6019,
+      "name": "InvalidInput",
+      "msg": "Invalid input"
+    }
+  ],
+  "types": [
+    {
+      "name": "AccumulatorUpdated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "market",
+            "type": "pubkey"
+          },
+          {
+            "name": "new_total_pot",
+            "type": "u64"
+          },
+          {
+            "name": "new_acc_quote_per_token",
+            "type": "u128"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CalldataBuf",
+      "docs": [
+        "Variable-length calldata buffer."
+      ],
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "len",
+            "type": "u16"
+          },
+          {
+            "name": "bytes",
+            "type": {
+              "array": [
+                "u8",
+                256
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "ClaimReceipt",
+      "docs": [
+        "ClaimReceipt PDA: tracks a user's claim state for a market.",
+        "Seeds: [b\"receipt\", market.as_ref(), claimer.as_ref()]"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "market",
+            "docs": [
+              "The market this receipt belongs to"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "claimer",
+            "docs": [
+              "The claimer's wallet"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "burned_amount",
+            "docs": [
+              "Total winner tokens burned by this user"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "reward_debt",
+            "docs": [
+              "Reward debt for accumulator accounting (scaled by ACC_SCALE)"
+            ],
+            "type": "u128"
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "Bump seed for this PDA"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "_reserved",
+            "docs": [
+              "Reserved for future use"
+            ],
+            "type": {
+              "array": [
+                "u8",
+                7
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Entry",
+      "docs": [
+        "Entry PDA: tracks a single entry/outcome in a prediction market.",
+        "Seeds: [b\"entry\", oracle.as_ref(), &entry_id]"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "oracle",
+            "docs": [
+              "The oracle this entry belongs to"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "entry_id",
+            "docs": [
+              "Unique identifier for this entry within the market"
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "base_mint",
+            "docs": [
+              "The token mint for this entry"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "contribution",
+            "docs": [
+              "Quote contributed when this entry was migrated"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "is_migrated",
+            "docs": [
+              "Whether this entry has been migrated"
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "Bump seed for this PDA"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "_reserved",
+            "docs": [
+              "Reserved for future use"
+            ],
+            "type": {
+              "array": [
+                "u8",
+                14
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "EntryByMint",
+      "docs": [
+        "EntryByMint PDA: reverse lookup from mint to entry_id.",
+        "Seeds: [b\"entry_by_mint\", oracle.as_ref(), base_mint.as_ref()]"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "oracle",
+            "docs": [
+              "The oracle this entry belongs to"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "base_mint",
+            "docs": [
+              "The base mint"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "entry_id",
+            "docs": [
+              "The entry_id for reverse lookup"
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "Bump seed for this PDA"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "_reserved",
+            "docs": [
+              "Reserved for future use"
+            ],
+            "type": {
+              "array": [
+                "u8",
+                7
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "EntryMigrated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "market",
+            "type": "pubkey"
+          },
+          {
+            "name": "oracle",
+            "type": "pubkey"
+          },
+          {
+            "name": "entry_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "base_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "contribution",
+            "type": "u64"
+          },
+          {
+            "name": "is_winner",
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "EntryRegistered",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "market",
+            "type": "pubkey"
+          },
+          {
+            "name": "oracle",
+            "type": "pubkey"
+          },
+          {
+            "name": "entry_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "base_mint",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Launch",
+      "docs": [
+        "Launch state account."
+      ],
+      "serialization": "bytemuckunsafe",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "namespace",
+            "type": "pubkey"
+          },
+          {
+            "name": "launch_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "phase",
+            "type": "u8"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "launch_authority_bump",
+            "type": "u8"
+          },
+          {
+            "name": "_pad0",
+            "type": {
+              "array": [
+                "u8",
+                5
+              ]
+            }
+          },
+          {
+            "name": "base_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "quote_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "base_vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "quote_vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "base_total_supply",
+            "type": "u64"
+          },
+          {
+            "name": "base_for_distribution",
+            "type": "u64"
+          },
+          {
+            "name": "base_for_liquidity",
+            "type": "u64"
+          },
+          {
+            "name": "base_for_curve",
+            "type": "u64"
+          },
+          {
+            "name": "curve_virtual_base",
+            "type": "u64"
+          },
+          {
+            "name": "curve_virtual_quote",
+            "type": "u64"
+          },
+          {
+            "name": "curve_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "_pad1",
+            "type": {
+              "array": [
+                "u8",
+                6
+              ]
+            }
+          },
+          {
+            "name": "allow_buy",
+            "type": "u8"
+          },
+          {
+            "name": "allow_sell",
+            "type": "u8"
+          },
+          {
+            "name": "_pad2",
+            "type": {
+              "array": [
+                "u8",
+                6
+              ]
+            }
+          },
+          {
+            "name": "sentinel_program",
+            "type": "pubkey"
+          },
+          {
+            "name": "sentinel_flags",
+            "type": "u32"
+          },
+          {
+            "name": "_pad3",
+            "type": {
+              "array": [
+                "u8",
+                4
+              ]
+            }
+          },
+          {
+            "name": "sentinel_calldata",
+            "type": {
+              "defined": {
+                "name": "CalldataBuf"
+              }
+            }
+          },
+          {
+            "name": "migrator_program",
+            "type": "pubkey"
+          },
+          {
+            "name": "migrator_init_calldata",
+            "type": {
+              "defined": {
+                "name": "CalldataBuf"
+              }
+            }
+          },
+          {
+            "name": "migrator_migrate_calldata",
+            "type": {
+              "defined": {
+                "name": "CalldataBuf"
+              }
+            }
+          },
+          {
+            "name": "_reserved",
+            "type": {
+              "array": [
+                "u8",
+                64
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Market",
+      "docs": [
+        "Market PDA: holds pot escrow and accounting for a prediction market.",
+        "Seeds: [b\"market\", oracle.as_ref()]"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "oracle",
+            "docs": [
+              "The oracle that determines the winner"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "quote_mint",
+            "docs": [
+              "Quote mint for this market (e.g., USDC)"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "pot_vault",
+            "docs": [
+              "The pot vault holding quote tokens"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "total_pot",
+            "docs": [
+              "Total quote migrated into pot (cumulative)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "total_claimed",
+            "docs": [
+              "Total quote claimed/paid out (cumulative)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "winner_mint",
+            "docs": [
+              "Winner mint (set when market resolves)"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "claimable_supply",
+            "docs": [
+              "Claimable supply of winner token (fixed after winning entry migrates)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "acc_quote_per_token",
+            "docs": [
+              "Scaled accumulator: total_pot * ACC_SCALE / claimable_supply",
+              "This tracks quote per token and increases as losing entries migrate"
+            ],
+            "type": "u128"
+          },
+          {
+            "name": "is_resolved",
+            "docs": [
+              "Whether the market has been resolved (winner determined)"
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "Bump seed for this PDA"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "market_authority_bump",
+            "docs": [
+              "Bump seed for market authority PDA"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "_reserved",
+            "docs": [
+              "Reserved for future use"
+            ],
+            "type": {
+              "array": [
+                "u8",
+                29
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "MarketCreated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "market",
+            "type": "pubkey"
+          },
+          {
+            "name": "oracle",
+            "type": "pubkey"
+          },
+          {
+            "name": "quote_mint",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MarketResolved",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "market",
+            "type": "pubkey"
+          },
+          {
+            "name": "oracle",
+            "type": "pubkey"
+          },
+          {
+            "name": "winner_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "claimable_supply",
+            "type": "u64"
+          },
+          {
+            "name": "total_pot",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MigrateEntryArgs",
+      "docs": [
+        "Arguments for migrate_entry instruction.",
+        "This is decoded from migrator_migrate_calldata passed by initializer."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "entry_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "OracleState",
+      "docs": [
+        "OracleState PDA - stores oracle configuration and finalization state.",
+        "",
+        "Seeds: [b\"oracle\", oracle_authority.as_ref(), &nonce.to_le_bytes()]"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "oracle_authority",
+            "docs": [
+              "The authority that can finalize this oracle."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "quote_mint",
+            "docs": [
+              "Optional quote mint for validation (Pubkey::default() if not used)."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "is_finalized",
+            "docs": [
+              "Whether the oracle has been finalized with a winner."
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "winning_mint",
+            "docs": [
+              "The winning mint (only valid if is_finalized == true)."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "nonce",
+            "docs": [
+              "Nonce used in PDA derivation."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "PDA bump seed."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "_reserved",
+            "docs": [
+              "Reserved for future use."
+            ],
+            "type": {
+              "array": [
+                "u8",
+                31
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "PreviewPayoutIfWinnerArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "candidate_winner_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "token_amount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RegisterEntryArgs",
+      "docs": [
+        "Arguments for register_entry instruction.",
+        "This is decoded from migrator_init_calldata passed by initializer."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "entry_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "RewardsClaimed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "market",
+            "type": "pubkey"
+          },
+          {
+            "name": "claimer",
+            "type": "pubkey"
+          },
+          {
+            "name": "burned_amount",
+            "type": "u64"
+          },
+          {
+            "name": "reward_amount",
+            "type": "u64"
+          },
+          {
+            "name": "total_burned",
+            "type": "u64"
+          }
+        ]
+      }
+    }
+  ]
+}

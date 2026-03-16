@@ -4,7 +4,7 @@ import {
   getMigrateArgsEncoder,
   type RegisterLaunchArgsArgs,
   type MigrateArgsArgs,
-} from '@whetstone-research/doppler-program-clients/cpmmMigrator';
+} from '../../generated/cpmmMigrator/index.js';
 import { CPMM_MIGRATOR_INSTRUCTION_DISCRIMINATORS } from './constants.js';
 
 export {
@@ -24,7 +24,7 @@ export type {
   MigrateArgsArgs,
   CpmmMigratorState,
   CpmmMigratorStateArgs,
-} from '@whetstone-research/doppler-program-clients/cpmmMigrator';
+} from '../../generated/cpmmMigrator/index.js';
 
 export {
   getRecipientEncoder,
@@ -39,7 +39,7 @@ export {
   getCpmmMigratorStateEncoder,
   getCpmmMigratorStateDecoder,
   getCpmmMigratorStateCodec,
-} from '@whetstone-research/doppler-program-clients/cpmmMigrator';
+} from '../../generated/cpmmMigrator/index.js';
 
 export { getCpmmMigratorStateAddress } from './pda.js';
 
