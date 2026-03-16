@@ -235,9 +235,8 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       .RehypeDopplerHookMigrator as Address,
     noOpMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
       .NoOpMigrator as Address,
-    governanceFactory: '0xb4deE32EB70A5E55f3D2d861F49Fb3D79f7a14d9' as Address,
-    noOpGovernanceFactory:
-      '0xe7dfbd5b0a2c3b4464653a9becdc489229ef090e' as Address,
+    governanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE].GovernanceFactory as Address,
+    noOpGovernanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE].NoOpGovernanceFactory as Address,
     launchpadGovernanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
       .LaunchpadGovernanceFactory as Address,
     streamableFeesLocker: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
@@ -317,7 +316,7 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     uniswapV4Quoter: '0x4A6513c898fe1B2d0E78d3b0e0A4a151589B1cBa' as Address,
   },
   [CHAIN_IDS.INK]: {
-    airlock: '0x014E1c0bd34f3B10546E554CB33B3293fECDD056' as Address,
+    airlock: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.INK].Airlock as Address,
     tokenFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.INK]
       .TokenFactory as Address,
     v3Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.INK]
@@ -383,8 +382,8 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     dopplerLens: '0x56dcd40a3f2d466f48e7f48bdbe5cc9b92ae4472' as Address,
     dopplerDeployer: '0x2f2bacd46d3f5c9ee052ab392b73711db89129db' as Address,
     poolManager: '0x00B036B58a818B1BC34d502D3fE730Db729e62AC' as Address,
-    v2Migrator: '0x44C448E38A2C3D206c9132E7f645510dFbBC946b' as Address,
-    v4Migrator: '0x44C448E38A2C3D206c9132E7f645510dFbBC946b' as Address,
+    v2Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.UNICHAIN_SEPOLIA].UniswapV2Migrator as Address,
+    v4Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.UNICHAIN_SEPOLIA].UniswapV4Migrator as Address,
     noOpMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.UNICHAIN_SEPOLIA]
       .NoOpMigrator as Address,
     governanceFactory: '0x1E4332EEfAE9e4967C2D186f7b2d439D778e81cC' as Address,

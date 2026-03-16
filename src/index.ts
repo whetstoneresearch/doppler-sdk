@@ -136,11 +136,7 @@ export type {
 
   // Governance helper types
   NoOpEnabledChainId,
-  NO_OP_ENABLED_CHAIN_IDS,
-  isNoOpEnabledChain,
   LaunchpadEnabledChainId,
-  LAUNCHPAD_ENABLED_CHAIN_IDS,
-  isLaunchpadEnabledChain,
   GovernanceOption,
   GovernanceLaunchpad,
 
@@ -156,6 +152,14 @@ export type {
 
   // Internal create() param shape (advanced)
   CreateParams,
+} from './types';
+
+// Export runtime governance helpers (not types)
+export {
+  NO_OP_ENABLED_CHAIN_IDS,
+  isNoOpEnabledChain,
+  LAUNCHPAD_ENABLED_CHAIN_IDS,
+  isLaunchpadEnabledChain,
 } from './types';
 
 // Also export module override type for advanced usage

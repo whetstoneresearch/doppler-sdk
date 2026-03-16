@@ -79,7 +79,15 @@ Deploy a decay multicurve pool on Base mainnet, then simulate buys across fee-de
 
 Create and simulate a multicurve launch on Ethereum Sepolia using no-op governance. Launches immediately tradable by default; set `ETH_SEPOLIA_START_DELAY_SECONDS>0` for scheduled mode. Broadcasts by default; set `EXECUTE_ETH_SEPOLIA=false` for simulation-only mode.
 
-### 19. [Swap + Transfer (Ethereum Sepolia)](./multicurve-swap-transfer-eth-sepolia.ts)
+### 19. [Opening Auction Lifecycle](./opening-auction-lifecycle.ts)
+
+Demonstrates the full opening auction lifecycle: creating an opening auction, monitoring its phase transitions, and settling the auction once it closes.
+
+### 20. [Opening Auction Bidding](./opening-auction-bidding.ts)
+
+Demonstrates bid placement, withdrawal, and management in an opening auction. Covers placing bids at specific tick ranges, checking bid status, and withdrawing or modifying bids.
+
+### 21. [Swap + Transfer (Ethereum Sepolia)](./multicurve-swap-transfer-eth-sepolia.ts)
 
 Use an existing Ethereum Sepolia multicurve token to quote and execute a buy swap through Universal Router, then optionally transfer purchased tokens to another address.
 

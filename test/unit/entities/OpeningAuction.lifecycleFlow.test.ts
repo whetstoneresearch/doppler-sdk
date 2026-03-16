@@ -283,12 +283,14 @@ describe('OpeningAuction lifecycle flow (mocked)', () => {
 
     expect(publicClient.waitForTransactionReceipt).toHaveBeenNthCalledWith(1, {
       hash: createTx,
+      confirmations: 2,
     });
     expect(publicClient.waitForTransactionReceipt).toHaveBeenNthCalledWith(2, {
       hash: settleTx,
     });
     expect(publicClient.waitForTransactionReceipt).toHaveBeenNthCalledWith(3, {
       hash: completeTx,
+      confirmations: 2,
     });
   });
 });

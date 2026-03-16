@@ -779,14 +779,6 @@ export interface HookInfo {
   maximumProceeds: bigint;
 }
 
-export interface OpeningAuctionPosition {
-  owner: Address;
-  tickLower: number;
-  tickUpper: number;
-  liquidity: bigint;
-  rewardDebtX128: bigint;
-  hasClaimedIncentives: boolean;
-}
 
 export interface OpeningAuctionState {
   numeraire: Address;

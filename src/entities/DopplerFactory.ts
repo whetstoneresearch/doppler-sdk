@@ -38,7 +38,6 @@ import type {
 import { RehypeFeeRoutingMode } from '../types';
 import type { ModuleAddressOverrides } from '../types';
 import { getAddresses } from '../addresses';
-import { zeroAddress } from 'viem';
 import {
   ZERO_ADDRESS,
   WAD,
@@ -47,7 +46,6 @@ import {
   DOPPLER_FLAGS,
   OPENING_AUCTION_FLAGS,
   DEFAULT_V3_NUM_POSITIONS,
-  DEFAULT_V3_YEARLY_MINT_RATE,
   DEFAULT_V3_MAX_SHARE_TO_BE_SOLD,
   DEFAULT_V4_YEARLY_MINT_RATE,
   DEFAULT_V3_INITIAL_VOTING_DELAY,
@@ -64,6 +62,8 @@ import {
   V4_MAX_FEE,
   OPENING_AUCTION_PHASE_SETTLED,
   OPENING_AUCTION_STATUS_ACTIVE,
+  INT24_MIN,
+  INT24_MAX,
 } from '../constants';
 import {
   computeOptimalGamma,
@@ -606,8 +606,9 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       // Fallback: use timestamp and account for deterministic generation
       const timestamp = Date.now();
       const timestampBytes = new Uint8Array(8);
+      const bigTimestamp = BigInt(timestamp);
       for (let i = 0; i < 8; i++) {
-        timestampBytes[i] = (timestamp >> (i * 8)) & 0xff;
+        timestampBytes[i] = Number((bigTimestamp >> BigInt(i * 8)) & 0xFFn);
       }
 
       // Fill array with timestamp and account-based entropy
@@ -728,7 +729,9 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       }
 
       const tokenAddress = simResult[0] as Address;
-      if (BigInt(tokenAddress) > numeraireBigInt) {
+      const isToken0 = BigInt(tokenAddress) < numeraireBigInt;
+      const wantToken0 = isToken0Expected(params.sale.numeraire);
+      if ((wantToken0 && isToken0) || (!wantToken0 && !isToken0)) {
         return createParams;
       }
 
@@ -1051,7 +1054,7 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     // Wait for transaction and get the receipt
     const receipt = await (
       this.publicClient as PublicClient
-    ).waitForTransactionReceipt({ hash });
+    ).waitForTransactionReceipt({ hash, confirmations: 2 });
 
     // Always extract actual addresses from event logs (source of truth)
     const actualAddresses = this.extractAddressesFromCreateEvent(receipt);
@@ -1402,7 +1405,10 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
           : 'standard',
       });
 
-    const liquidityMigratorData = this.encodeMigrationData(params.migration);
+    const liquidityMigratorData = this.encodeMigrationData(params.migration, {
+      numeraire: params.sale.numeraire,
+      overrides: params.modules,
+    });
 
     const governanceFactoryData: Hex = (() => {
       if (params.governance.type === 'noOp') {
@@ -1591,7 +1597,7 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
 
     const receipt = await (
       this.publicClient as PublicClient
-    ).waitForTransactionReceipt({ hash });
+    ).waitForTransactionReceipt({ hash, confirmations: 2 });
 
     const actualAddresses = this.extractAddressesFromCreateEvent(receipt);
     if (!actualAddresses) {
@@ -1673,7 +1679,7 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
         args.dopplerSalt !== undefined
           ? {
               dopplerSalt: args.dopplerSalt,
-              dopplerHookAddress: zeroAddress,
+              dopplerHookAddress: ZERO_ADDRESS,
             }
           : await this.mineDopplerCompletionSalt({
               asset: args.asset,
@@ -1811,7 +1817,7 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
         args.dopplerSalt !== undefined
           ? {
               dopplerSalt: args.dopplerSalt,
-              dopplerHookAddress: zeroAddress,
+              dopplerHookAddress: ZERO_ADDRESS,
             }
           : await this.mineDopplerCompletionSalt({
               asset: args.asset,
@@ -1843,6 +1849,7 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       const txHash = await this.walletClient.writeContract(request as any);
       const receipt = await (this.publicClient as PublicClient).waitForTransactionReceipt({
         hash: txHash,
+        confirmations: 2,
       });
       if (receipt.status === 'reverted') {
         const receiptError = new Error(
@@ -1866,12 +1873,20 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
         },
       );
 
+      const finalHookAddress =
+        dopplerHookAddress === ZERO_ADDRESS
+          ? completion.dopplerHookAddress
+          : dopplerHookAddress;
+
+      if (finalHookAddress === ZERO_ADDRESS) {
+        throw new Error(
+          'Unable to determine dopplerHookAddress after completeAuction. The on-chain getDopplerHook returned zero. Try calling getDopplerHook manually after the transaction confirms.',
+        );
+      }
+
       return {
         asset: args.asset,
-        dopplerHookAddress:
-          dopplerHookAddress === zeroAddress
-            ? completion.dopplerHookAddress
-            : dopplerHookAddress,
+        dopplerHookAddress: finalHookAddress,
         transactionHash: txHash,
         dopplerSalt: completion.dopplerSalt,
       };
@@ -3432,7 +3447,7 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       const tokenStd = params.token as StandardTokenConfig;
       const vestingDuration = params.vesting?.duration ?? BigInt(0);
       const yearlyMintRate =
-        tokenStd.yearlyMintRate ?? DEFAULT_V3_YEARLY_MINT_RATE;
+        tokenStd.yearlyMintRate ?? DEFAULT_V4_YEARLY_MINT_RATE;
 
       // Handle vesting recipients and amounts
       let vestingRecipients: Address[] = [];
@@ -3839,6 +3854,24 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
 
     const fallbackTickUpper = this.roundMaxTickDown(tickSpacing);
 
+    // Guard: if fallback range is invalid, step back by tickSpacing
+    if (fallbackTickLower >= fallbackTickUpper) {
+      // Cannot extend beyond max tick — adjust fallback to use a valid range
+      const adjustedLower = fallbackTickUpper - tickSpacing;
+      if (adjustedLower < fallbackTickLower) {
+        // No room for fallback curve — return sanitized curves without fallback
+        return sanitizedCurves;
+      }
+      // Otherwise use adjusted range
+      const fallbackCurve = {
+        tickLower: adjustedLower,
+        tickUpper: fallbackTickUpper,
+        numPositions: sanitizedCurves[sanitizedCurves.length - 1]?.numPositions ?? 1,
+        shares: missingShare,
+      };
+      return [...sanitizedCurves, fallbackCurve];
+    }
+
     const fallbackCurve = {
       // Extend from the most positive user tick out to the maximum supported tick bucket
       tickLower: fallbackTickLower,
@@ -4197,6 +4230,9 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     if (params.openingAuction.incentiveShareBps > 10_000) {
       throw new Error('openingAuction.incentiveShareBps cannot exceed 10_000');
     }
+    if (params.openingAuction.incentiveShareBps + params.openingAuction.shareToAuctionBps > 10_000) {
+      throw new Error('openingAuction.incentiveShareBps + shareToAuctionBps cannot exceed 10_000');
+    }
     if (params.openingAuction.auctionDuration <= 0) {
       throw new Error('openingAuction.auctionDuration must be positive');
     }
@@ -4227,6 +4263,19 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       );
     }
 
+    if (params.openingAuction.minAcceptableTickToken0 < INT24_MIN || params.openingAuction.minAcceptableTickToken0 > INT24_MAX) {
+      throw new Error(`openingAuction.minAcceptableTickToken0 must be within int24 range (${INT24_MIN} to ${INT24_MAX})`);
+    }
+    if (params.openingAuction.minAcceptableTickToken1 < INT24_MIN || params.openingAuction.minAcceptableTickToken1 > INT24_MAX) {
+      throw new Error(`openingAuction.minAcceptableTickToken1 must be within int24 range (${INT24_MIN} to ${INT24_MAX})`);
+    }
+    if (params.doppler.startTick < INT24_MIN || params.doppler.startTick > INT24_MAX) {
+      throw new Error(`doppler.startTick must be within int24 range (${INT24_MIN} to ${INT24_MAX})`);
+    }
+    if (params.doppler.endTick < INT24_MIN || params.doppler.endTick > INT24_MAX) {
+      throw new Error(`doppler.endTick must be within int24 range (${INT24_MIN} to ${INT24_MAX})`);
+    }
+
     const isToken0 = isToken0Expected(params.sale.numeraire);
     if (isToken0 && params.doppler.startTick < params.doppler.endTick) {
       throw new Error(
@@ -4244,6 +4293,10 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       params.doppler.gamma % params.doppler.tickSpacing !== 0
     ) {
       throw new Error('doppler.gamma must be divisible by doppler.tickSpacing');
+    }
+
+    if (params.migration.type === 'dopplerHook') {
+      throw new Error('dopplerHook migration type is not supported for opening auctions');
     }
   }
 
@@ -4345,29 +4398,13 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
   }
 
   /**
-   * Get the airlock contract address for the current chain
-   */
-  private getAirlockAddress(): Address {
-    const addresses = getAddresses(this.chainId);
-    return addresses.airlock;
-  }
-
-  /**
-   * Get the appropriate initializer address based on auction type
-   */
-  private getInitializerAddress(isStatic: boolean): Address {
-    const addresses = getAddresses(this.chainId);
-    return isStatic ? addresses.v3Initializer : addresses.v4Initializer;
-  }
-
-  /**
    * Get the Bundler contract address for the current chain
    * Used to perform atomic create + swap ("bundle") flows for static auctions
    */
   private getBundlerAddress(): Address {
     const addresses = getAddresses(this.chainId);
     const addr = addresses.bundler;
-    if (!addr || addr === zeroAddress) {
+    if (!addr || addr === ZERO_ADDRESS) {
       throw new Error('Bundler address not configured for this chain');
     }
     return addr;
@@ -5071,26 +5108,6 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     }
 
     throw new Error('AirlockMiner: could not find salt');
-  }
-
-  /**
-   * Computes the CREATE2 address for a contract deployment
-   * @param salt - The salt used for deployment
-   * @param initCodeHash - Hash of the initialization code
-   * @param deployer - Address of the deploying contract
-   * @returns The computed contract address
-   * @private
-   */
-  private computeCreate2Address(
-    salt: Hash,
-    initCodeHash: Hash,
-    deployer: Address,
-  ): Address {
-    const encoded = encodePacked(
-      ['bytes1', 'address', 'bytes32', 'bytes32'],
-      ['0xff', deployer, salt, initCodeHash],
-    );
-    return getAddress(`0x${keccak256(encoded).slice(-40)}`);
   }
 
   /**

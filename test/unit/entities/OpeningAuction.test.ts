@@ -133,7 +133,7 @@ describe('OpeningAuction', () => {
 
     it('computes client-side based on phase and isToken0', async () => {
       // Mock: getPosition, getPhase, getIsToken0, getEstimatedClearingTick
-      // Position at tickLower=-100, tickUpper=0; phase=2 (Active); isToken0=true; estimatedClearingTick=-50
+      // Position at tickLower=-100, tickUpper=0; phase=1 (Active); isToken0=true; estimatedClearingTick=-50
       vi.mocked(publicClient.readContract)
         .mockRejectedValueOnce(new Error('native isInRange unavailable'))
         .mockResolvedValueOnce([
@@ -144,7 +144,7 @@ describe('OpeningAuction', () => {
           0n,
           false,
         ] as any) // positions
-        .mockResolvedValueOnce(2) // phase (Active)
+        .mockResolvedValueOnce(1) // phase (Active)
         .mockResolvedValueOnce(true) // isToken0
         .mockResolvedValueOnce(-50); // estimatedClearingTick
 

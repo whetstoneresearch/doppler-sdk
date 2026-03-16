@@ -1272,13 +1272,13 @@ describe('OpeningAuctionBidManager', () => {
         },
         positions: [
           [ownerAddress, -120, -60, 5000n, 0n, false],
-          [ownerAddress, 0, 60, 3000n, 0n, false],
+          [ownerAddress, -150, -50, 3000n, 0n, false],
           // getMultiplePositionInfos
           [ownerAddress, -120, -60, 5000n, 0n, false],
-          [ownerAddress, 0, 60, 3000n, 0n, false],
+          [ownerAddress, -150, -50, 3000n, 0n, false],
           // isInRange
           [ownerAddress, -120, -60, 5000n, 0n, false],
-          [ownerAddress, 0, 60, 3000n, 0n, false],
+          [ownerAddress, -150, -50, 3000n, 0n, false],
         ],
         phase: [1, 1],
         isToken0: [true, true],

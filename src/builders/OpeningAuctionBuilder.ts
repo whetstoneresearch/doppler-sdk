@@ -7,6 +7,8 @@ import {
   DEFAULT_V4_YEARLY_MINT_RATE,
   DOPPLER_MAX_TICK_SPACING,
   FEE_TIERS,
+  INT24_MIN,
+  INT24_MAX,
   V4_MAX_FEE,
   ZERO_ADDRESS,
 } from '../constants';
@@ -429,6 +431,12 @@ export class OpeningAuctionBuilder<
     }
     if (this.openingAuction.minLiquidity <= 0n) {
       throw new Error('openingAuction.minLiquidity must be positive');
+    }
+    if (this.openingAuction.minAcceptableTickToken0 < INT24_MIN || this.openingAuction.minAcceptableTickToken0 > INT24_MAX) {
+      throw new Error(`openingAuction.minAcceptableTickToken0 must be within int24 range (${INT24_MIN} to ${INT24_MAX})`);
+    }
+    if (this.openingAuction.minAcceptableTickToken1 < INT24_MIN || this.openingAuction.minAcceptableTickToken1 > INT24_MAX) {
+      throw new Error(`openingAuction.minAcceptableTickToken1 must be within int24 range (${INT24_MIN} to ${INT24_MAX})`);
     }
 
     const duration = this.doppler.duration ?? DEFAULT_AUCTION_DURATION;

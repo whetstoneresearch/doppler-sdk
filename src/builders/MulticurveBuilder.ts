@@ -287,6 +287,9 @@ export class MulticurveBuilder<
     }
 
     // Validate fee if provided
+    if (params.fee !== undefined && params.fee < 0) {
+      throw new Error(`Curve fee cannot be negative (got ${params.fee})`);
+    }
     if (params.fee !== undefined && params.fee > V4_MAX_FEE) {
       throw new Error(
         `Fee ${params.fee} exceeds maximum allowed for V4 pools (${V4_MAX_FEE} = 10%). ` +

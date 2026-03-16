@@ -421,6 +421,8 @@ export interface OpeningAuctionWatchSettlementOptions {
 }
 
 import {
+  INT24_MIN,
+  INT24_MAX,
   OPENING_AUCTION_PHASE_NOT_STARTED,
   OPENING_AUCTION_PHASE_SETTLED,
 } from '../../constants';
@@ -653,8 +655,8 @@ export class OpeningAuction {
     if (!Number.isInteger(tick)) {
       throw new Error('tick must be an integer');
     }
-    if (tick < -8_388_608 || tick > 8_388_607) {
-      throw new Error('tick out of int24 bounds (-8388608..8388607)');
+    if (tick < INT24_MIN || tick > INT24_MAX) {
+      throw new Error(`tick out of int24 bounds (${INT24_MIN}..${INT24_MAX})`);
     }
     return await this.rpc.readContract({
       address: this.hookAddress,
@@ -857,11 +859,7 @@ export class OpeningAuction {
       refTick = await this.getEstimatedClearingTick();
     }
 
-    if (isToken0) {
-      return refTick < position.tickUpper;
-    } else {
-      return refTick >= position.tickLower;
-    }
+    return refTick >= position.tickLower && refTick < position.tickUpper;
   }
 
   async calculateIncentives(positionId: bigint): Promise<bigint> {
