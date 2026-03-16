@@ -20,6 +20,9 @@ Create a pool seeded with the low/medium/high market cap presets in one initiali
 
 Create a multicurve auction with fee streaming to multiple beneficiaries. Uses NoOp migration (no post-auction migration) to keep liquidity locked while distributing fees.
 
+### 4a. [Multicurve No-Migration + Doppler404 (DN404-style)](./multicurve-noop-doppler404.ts)
+Create a multicurve auction on Base Sepolia using NoOp migration (no liquidity migration) and a Doppler404 token. Defaults to simulation-only; set `EXECUTE=1` to broadcast.
+
 ### 5. [Multicurve Fee Collection](./multicurve-collect-fees.ts)
 
 Collect and distribute trading fees from a multicurve pool with lockable beneficiaries. Demonstrates how beneficiaries can claim accumulated fees from swap activity.
@@ -76,7 +79,15 @@ Deploy a decay multicurve pool on Base mainnet, then simulate buys across fee-de
 
 Create and simulate a multicurve launch on Ethereum Sepolia using no-op governance. Launches immediately tradable by default; set `ETH_SEPOLIA_START_DELAY_SECONDS>0` for scheduled mode. Broadcasts by default; set `EXECUTE_ETH_SEPOLIA=false` for simulation-only mode.
 
-### 19. [Swap + Transfer (Ethereum Sepolia)](./multicurve-swap-transfer-eth-sepolia.ts)
+### 19. [Opening Auction Lifecycle](./opening-auction-lifecycle.ts)
+
+Demonstrates the full opening auction lifecycle: creating an opening auction, monitoring its phase transitions, and settling the auction once it closes.
+
+### 20. [Opening Auction Bidding](./opening-auction-bidding.ts)
+
+Demonstrates bid placement, withdrawal, and management in an opening auction. Covers placing bids at specific tick ranges, checking bid status, and withdrawing or modifying bids.
+
+### 21. [Swap + Transfer (Ethereum Sepolia)](./multicurve-swap-transfer-eth-sepolia.ts)
 
 Use an existing Ethereum Sepolia multicurve token to quote and execute a buy swap through Universal Router, then optionally transfer purchased tokens to another address.
 

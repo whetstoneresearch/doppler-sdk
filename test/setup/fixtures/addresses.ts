@@ -74,8 +74,10 @@ export const mockAddresses: ChainAddresses = {
   bundler: getAddress('0x1800000000000000000000000000000000000023') as Address,
 };
 
+// Must be < WETH (0xC02a...) so that mineTokenOrder succeeds for static auctions
+// where WETH numeraire is > halfMaxUint160, meaning token should be currency0 (smaller address)
 export const mockTokenAddress = getAddress(
-  '0xfaaa000000000000000000000000000000000001',
+  '0x0aaa000000000000000000000000000000000001',
 ) as Address;
 export const mockPoolAddress = getAddress(
   '0xbbbb000000000000000000000000000000000002',
