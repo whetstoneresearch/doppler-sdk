@@ -35,7 +35,7 @@ import {
   type MaybeAccount,
   type MaybeEncodedAccount,
   type ReadonlyUint8Array,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export const ENTRY_BY_MINT_DISCRIMINATOR = new Uint8Array([
   188, 191, 157, 194, 68, 82, 181, 126,
@@ -78,12 +78,12 @@ export type EntryByMintArgs = {
 export function getEntryByMintEncoder(): FixedSizeEncoder<EntryByMintArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["oracle", getAddressEncoder()],
-      ["baseMint", getAddressEncoder()],
-      ["entryId", fixEncoderSize(getBytesEncoder(), 32)],
-      ["bump", getU8Encoder()],
-      ["reserved", fixEncoderSize(getBytesEncoder(), 7)],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['oracle', getAddressEncoder()],
+      ['baseMint', getAddressEncoder()],
+      ['entryId', fixEncoderSize(getBytesEncoder(), 32)],
+      ['bump', getU8Encoder()],
+      ['reserved', fixEncoderSize(getBytesEncoder(), 7)],
     ]),
     (value) => ({ ...value, discriminator: ENTRY_BY_MINT_DISCRIMINATOR }),
   );
@@ -92,12 +92,12 @@ export function getEntryByMintEncoder(): FixedSizeEncoder<EntryByMintArgs> {
 /** Gets the decoder for {@link EntryByMint} account data. */
 export function getEntryByMintDecoder(): FixedSizeDecoder<EntryByMint> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["oracle", getAddressDecoder()],
-    ["baseMint", getAddressDecoder()],
-    ["entryId", fixDecoderSize(getBytesDecoder(), 32)],
-    ["bump", getU8Decoder()],
-    ["reserved", fixDecoderSize(getBytesDecoder(), 7)],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['oracle', getAddressDecoder()],
+    ['baseMint', getAddressDecoder()],
+    ['entryId', fixDecoderSize(getBytesDecoder(), 32)],
+    ['bump', getU8Decoder()],
+    ['reserved', fixDecoderSize(getBytesDecoder(), 7)],
   ]);
 }
 

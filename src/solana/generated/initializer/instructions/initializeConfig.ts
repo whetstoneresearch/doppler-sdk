@@ -36,12 +36,12 @@ import {
   type TransactionSigner,
   type WritableAccount,
   type WritableSignerAccount,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   getAccountMetaFactory,
   type ResolvedInstructionAccount,
-} from "@solana/program-client-core";
-import { INITIALIZER_PROGRAM_ADDRESS } from "../programs";
+} from '@solana/program-client-core';
+import { INITIALIZER_PROGRAM_ADDRESS } from '../programs';
 
 export const INITIALIZE_CONFIG_DISCRIMINATOR = new Uint8Array([
   208, 127, 21, 1, 194, 190, 196, 70,
@@ -59,7 +59,7 @@ export type InitializeConfigInstruction<
   TAccountConfig extends string | AccountMeta<string> = string,
   TAccountProgramData extends string | AccountMeta<string> = string,
   TAccountSystemProgram extends string | AccountMeta<string> =
-    "11111111111111111111111111111111",
+    '11111111111111111111111111111111',
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -96,9 +96,9 @@ export type InitializeConfigInstructionDataArgs = {
 export function getInitializeConfigInstructionDataEncoder(): Encoder<InitializeConfigInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["migratorAllowlist", getArrayEncoder(getAddressEncoder())],
-      ["sentinelAllowlist", getArrayEncoder(getAddressEncoder())],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['migratorAllowlist', getArrayEncoder(getAddressEncoder())],
+      ['sentinelAllowlist', getArrayEncoder(getAddressEncoder())],
     ]),
     (value) => ({ ...value, discriminator: INITIALIZE_CONFIG_DISCRIMINATOR }),
   );
@@ -106,9 +106,9 @@ export function getInitializeConfigInstructionDataEncoder(): Encoder<InitializeC
 
 export function getInitializeConfigInstructionDataDecoder(): Decoder<InitializeConfigInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["migratorAllowlist", getArrayDecoder(getAddressDecoder())],
-    ["sentinelAllowlist", getArrayDecoder(getAddressDecoder())],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['migratorAllowlist', getArrayDecoder(getAddressDecoder())],
+    ['sentinelAllowlist', getArrayDecoder(getAddressDecoder())],
   ]);
 }
 
@@ -132,8 +132,8 @@ export type InitializeConfigAsyncInput<
   config?: Address<TAccountConfig>;
   programData: Address<TAccountProgramData>;
   systemProgram?: Address<TAccountSystemProgram>;
-  migratorAllowlist: InitializeConfigInstructionDataArgs["migratorAllowlist"];
-  sentinelAllowlist: InitializeConfigInstructionDataArgs["sentinelAllowlist"];
+  migratorAllowlist: InitializeConfigInstructionDataArgs['migratorAllowlist'];
+  sentinelAllowlist: InitializeConfigInstructionDataArgs['sentinelAllowlist'];
 };
 
 export async function getInitializeConfigInstructionAsync<
@@ -190,16 +190,16 @@ export async function getInitializeConfigInstructionAsync<
   }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
-      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("admin", accounts.admin),
-      getAccountMeta("config", accounts.config),
-      getAccountMeta("programData", accounts.programData),
-      getAccountMeta("systemProgram", accounts.systemProgram),
+      getAccountMeta('admin', accounts.admin),
+      getAccountMeta('config', accounts.config),
+      getAccountMeta('programData', accounts.programData),
+      getAccountMeta('systemProgram', accounts.systemProgram),
     ],
     data: getInitializeConfigInstructionDataEncoder().encode(
       args as InitializeConfigInstructionDataArgs,
@@ -224,8 +224,8 @@ export type InitializeConfigInput<
   config: Address<TAccountConfig>;
   programData: Address<TAccountProgramData>;
   systemProgram?: Address<TAccountSystemProgram>;
-  migratorAllowlist: InitializeConfigInstructionDataArgs["migratorAllowlist"];
-  sentinelAllowlist: InitializeConfigInstructionDataArgs["sentinelAllowlist"];
+  migratorAllowlist: InitializeConfigInstructionDataArgs['migratorAllowlist'];
+  sentinelAllowlist: InitializeConfigInstructionDataArgs['sentinelAllowlist'];
 };
 
 export function getInitializeConfigInstruction<
@@ -270,16 +270,16 @@ export function getInitializeConfigInstruction<
   // Resolve default values.
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
-      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("admin", accounts.admin),
-      getAccountMeta("config", accounts.config),
-      getAccountMeta("programData", accounts.programData),
-      getAccountMeta("systemProgram", accounts.systemProgram),
+      getAccountMeta('admin', accounts.admin),
+      getAccountMeta('config', accounts.config),
+      getAccountMeta('programData', accounts.programData),
+      getAccountMeta('systemProgram', accounts.systemProgram),
     ],
     data: getInitializeConfigInstructionDataEncoder().encode(
       args as InitializeConfigInstructionDataArgs,

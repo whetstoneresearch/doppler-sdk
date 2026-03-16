@@ -428,13 +428,8 @@ export class MulticurveBuilder<
     const feeDistributionInfo = this.resolveRehypeFeeDistributionInfo(params);
     this.validateRehypeDistribution(feeDistributionInfo);
 
-    const {
-      startFee,
-      endFee,
-      durationSeconds,
-      startingTime,
-      feeRoutingMode,
-    } = this.resolveRehypeFeeSchedule(params);
+    const { startFee, endFee, durationSeconds, startingTime, feeRoutingMode } =
+      this.resolveRehypeFeeSchedule(params);
 
     // Validate mutual exclusivity of graduation threshold options
     if (
@@ -462,7 +457,8 @@ export class MulticurveBuilder<
   }
 
   private parseUint32Value(value: number | bigint, label: string): number {
-    const normalized = typeof value === 'bigint' ? Number(value) : Number(value);
+    const normalized =
+      typeof value === 'bigint' ? Number(value) : Number(value);
     if (!Number.isFinite(normalized) || !Number.isInteger(normalized)) {
       throw new Error(`${label} must be an integer number of seconds`);
     }
@@ -532,7 +528,9 @@ export class MulticurveBuilder<
   }
 
   private validateRehypeDistribution(
-    feeDistributionInfo: NonNullable<RehypeDopplerHookConfig['feeDistributionInfo']>,
+    feeDistributionInfo: NonNullable<
+      RehypeDopplerHookConfig['feeDistributionInfo']
+    >,
   ): void {
     const assetRowTotal =
       feeDistributionInfo.assetFeesToAssetBuybackWad +
@@ -579,7 +577,11 @@ export class MulticurveBuilder<
     const startFee = Number(startFeeRaw);
     const endFee = Number(endFeeRaw);
 
-    if (!Number.isInteger(startFee) || startFee < 0 || startFee > MAX_REHYPE_FEE) {
+    if (
+      !Number.isInteger(startFee) ||
+      startFee < 0 ||
+      startFee > MAX_REHYPE_FEE
+    ) {
       throw new Error(
         `Rehype startFee must be an integer between 0 and ${MAX_REHYPE_FEE}`,
       );
@@ -596,8 +598,7 @@ export class MulticurveBuilder<
     }
 
     const durationRaw =
-      params.durationSeconds ??
-      (startFee === endFee ? 0 : undefined);
+      params.durationSeconds ?? (startFee === endFee ? 0 : undefined);
 
     if (durationRaw === undefined) {
       throw new Error(

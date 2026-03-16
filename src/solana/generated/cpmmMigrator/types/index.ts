@@ -6,9 +6,9 @@
  * @see https://github.com/codama-idl/codama
  */
 
-export * from "./calldataBuf";
-export * from "./launchMigrated";
-export * from "./launchRegistered";
-export * from "./migrateArgs";
-export * from "./recipient";
-export * from "./registerLaunchArgs";
+export * from './calldataBuf';
+export * from './launchMigrated';
+export * from './launchRegistered';
+export * from './migrateArgs';
+export * from './recipient';
+export * from './registerLaunchArgs';

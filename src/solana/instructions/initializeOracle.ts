@@ -10,7 +10,10 @@ import {
   ACCOUNT_ROLE_WRITABLE_SIGNER,
 } from '../core/constants.js';
 import type { InitializeOracleArgs } from '../core/types.js';
-import { initializeOracleArgsCodec, encodeInstructionData } from '../core/codecs.js';
+import {
+  initializeOracleArgsCodec,
+  encodeInstructionData,
+} from '../core/codecs.js';
 
 /**
  * Accounts required for initialize_oracle instruction

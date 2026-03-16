@@ -24,7 +24,7 @@ import {
   type Encoder,
   type Option,
   type OptionOrNullable,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type InitializePoolArgs = {
   mintA: Address;
@@ -46,23 +46,23 @@ export type InitializePoolArgsArgs = {
 
 export function getInitializePoolArgsEncoder(): Encoder<InitializePoolArgsArgs> {
   return getStructEncoder([
-    ["mintA", getAddressEncoder()],
-    ["mintB", getAddressEncoder()],
-    ["initialSwapFeeBps", getU16Encoder()],
-    ["initialFeeSplitBps", getU16Encoder()],
-    ["liquidityMeasureSide", getU8Encoder()],
-    ["numeraireMintOverride", getOptionEncoder(getAddressEncoder())],
+    ['mintA', getAddressEncoder()],
+    ['mintB', getAddressEncoder()],
+    ['initialSwapFeeBps', getU16Encoder()],
+    ['initialFeeSplitBps', getU16Encoder()],
+    ['liquidityMeasureSide', getU8Encoder()],
+    ['numeraireMintOverride', getOptionEncoder(getAddressEncoder())],
   ]);
 }
 
 export function getInitializePoolArgsDecoder(): Decoder<InitializePoolArgs> {
   return getStructDecoder([
-    ["mintA", getAddressDecoder()],
-    ["mintB", getAddressDecoder()],
-    ["initialSwapFeeBps", getU16Decoder()],
-    ["initialFeeSplitBps", getU16Decoder()],
-    ["liquidityMeasureSide", getU8Decoder()],
-    ["numeraireMintOverride", getOptionDecoder(getAddressDecoder())],
+    ['mintA', getAddressDecoder()],
+    ['mintB', getAddressDecoder()],
+    ['initialSwapFeeBps', getU16Decoder()],
+    ['initialFeeSplitBps', getU16Decoder()],
+    ['liquidityMeasureSide', getU8Decoder()],
+    ['numeraireMintOverride', getOptionDecoder(getAddressDecoder())],
   ]);
 }
 

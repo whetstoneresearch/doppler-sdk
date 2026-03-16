@@ -327,7 +327,9 @@ export class MulticurvePool {
     };
   }
 
-  private parseStandardInitializerState(stateData: unknown): ParsedInitializerState {
+  private parseStandardInitializerState(
+    stateData: unknown,
+  ): ParsedInitializerState {
     const state = stateData as any;
     return {
       numeraire: (state.numeraire ?? state[0]) as Address,

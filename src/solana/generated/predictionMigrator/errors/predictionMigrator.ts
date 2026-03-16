@@ -11,8 +11,8 @@ import {
   type Address,
   type SOLANA_ERROR__INSTRUCTION_ERROR__CUSTOM,
   type SolanaError,
-} from "@solana/kit";
-import { PREDICTION_MIGRATOR_PROGRAM_ADDRESS } from "../programs";
+} from '@solana/kit';
+import { PREDICTION_MIGRATOR_PROGRAM_ADDRESS } from '../programs';
 
 /** Unauthorized: Unauthorized */
 export const PREDICTION_MIGRATOR_ERROR__UNAUTHORIZED = 0x1770; // 6000
@@ -80,7 +80,7 @@ export type PredictionMigratorError =
 let predictionMigratorErrorMessages:
   | Record<PredictionMigratorError, string>
   | undefined;
-if (process.env.NODE_ENV !== "production") {
+if (process.env.NODE_ENV !== 'production') {
   predictionMigratorErrorMessages = {
     [PREDICTION_MIGRATOR_ERROR__ENTRY_ALREADY_MIGRATED]: `Entry already migrated`,
     [PREDICTION_MIGRATOR_ERROR__ENTRY_ALREADY_REGISTERED]: `Entry already registered`,
@@ -108,13 +108,13 @@ if (process.env.NODE_ENV !== "production") {
 export function getPredictionMigratorErrorMessage(
   code: PredictionMigratorError,
 ): string {
-  if (process.env.NODE_ENV !== "production") {
+  if (process.env.NODE_ENV !== 'production') {
     return (
       predictionMigratorErrorMessages as Record<PredictionMigratorError, string>
     )[code];
   }
 
-  return "Error message not available in production bundles.";
+  return 'Error message not available in production bundles.';
 }
 
 export function isPredictionMigratorError<

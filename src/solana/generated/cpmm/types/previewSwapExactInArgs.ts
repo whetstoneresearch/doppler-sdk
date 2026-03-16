@@ -17,7 +17,7 @@ import {
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type PreviewSwapExactInArgs = { amountIn: bigint; direction: number };
 
@@ -28,15 +28,15 @@ export type PreviewSwapExactInArgsArgs = {
 
 export function getPreviewSwapExactInArgsEncoder(): FixedSizeEncoder<PreviewSwapExactInArgsArgs> {
   return getStructEncoder([
-    ["amountIn", getU64Encoder()],
-    ["direction", getU8Encoder()],
+    ['amountIn', getU64Encoder()],
+    ['direction', getU8Encoder()],
   ]);
 }
 
 export function getPreviewSwapExactInArgsDecoder(): FixedSizeDecoder<PreviewSwapExactInArgs> {
   return getStructDecoder([
-    ["amountIn", getU64Decoder()],
-    ["direction", getU8Decoder()],
+    ['amountIn', getU64Decoder()],
+    ['direction', getU8Decoder()],
   ]);
 }
 

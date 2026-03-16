@@ -3,17 +3,23 @@ import { address, type Address } from '@solana/kit';
 /**
  * Program ID for the CPMM AMM (deployed to devnet)
  */
-export const PROGRAM_ID: Address = address('3HSrGs4jj92CGt7mkfeeoMofrRGVPUcDX8djAnp4FoD6');
+export const PROGRAM_ID: Address = address(
+  '3HSrGs4jj92CGt7mkfeeoMofrRGVPUcDX8djAnp4FoD6',
+);
 
 /**
  * Program ID for the Sentinel program (deployed to devnet)
  */
-export const SENTINEL_PROGRAM_ID: Address = address('EYgA9DZYuYLRWjgTz98fVgSZwk55NYUEL589oSKcNHMs');
+export const SENTINEL_PROGRAM_ID: Address = address(
+  'EYgA9DZYuYLRWjgTz98fVgSZwk55NYUEL589oSKcNHMs',
+);
 
 /**
  * SPL Token Program ID
  */
-export const TOKEN_PROGRAM_ID: Address = address('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
+export const TOKEN_PROGRAM_ID: Address = address(
+  'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
+);
 
 /**
  * Metaplex Token Metadata Program ID
@@ -25,7 +31,9 @@ export const TOKEN_METADATA_PROGRAM_ID: Address = address(
 /**
  * System Program ID
  */
-export const SYSTEM_PROGRAM_ID: Address = address('11111111111111111111111111111111');
+export const SYSTEM_PROGRAM_ID: Address = address(
+  '11111111111111111111111111111111',
+);
 
 // ============================================================================
 // Math Constants
@@ -123,31 +131,53 @@ export const ACCOUNT_ROLE_WRITABLE_SIGNER = 3;
  */
 export const INSTRUCTION_DISCRIMINATORS = {
   // SHA256("global:initialize_config")[0:8]
-  initializeConfig: new Uint8Array([0xd0, 0x7f, 0x15, 0x01, 0xc2, 0xbe, 0xc4, 0x46]),
+  initializeConfig: new Uint8Array([
+    0xd0, 0x7f, 0x15, 0x01, 0xc2, 0xbe, 0xc4, 0x46,
+  ]),
   // SHA256("global:initialize_pool")[0:8]
-  initializePool: new Uint8Array([0x5f, 0xb4, 0x0a, 0xac, 0x54, 0xae, 0xe8, 0x28]),
+  initializePool: new Uint8Array([
+    0x5f, 0xb4, 0x0a, 0xac, 0x54, 0xae, 0xe8, 0x28,
+  ]),
   // SHA256("global:initialize_oracle")[0:8]
-  initializeOracle: new Uint8Array([0x90, 0xdf, 0x83, 0x78, 0xc4, 0xfd, 0xb5, 0x63]),
+  initializeOracle: new Uint8Array([
+    0x90, 0xdf, 0x83, 0x78, 0xc4, 0xfd, 0xb5, 0x63,
+  ]),
   // SHA256("global:create_position")[0:8]
-  createPosition: new Uint8Array([0x30, 0xd7, 0xc5, 0x99, 0x60, 0xcb, 0xb4, 0x85]),
+  createPosition: new Uint8Array([
+    0x30, 0xd7, 0xc5, 0x99, 0x60, 0xcb, 0xb4, 0x85,
+  ]),
   // SHA256("global:add_liquidity")[0:8]
-  addLiquidity: new Uint8Array([0xb5, 0x9d, 0x59, 0x43, 0x8f, 0xb6, 0x34, 0x48]),
+  addLiquidity: new Uint8Array([
+    0xb5, 0x9d, 0x59, 0x43, 0x8f, 0xb6, 0x34, 0x48,
+  ]),
   // SHA256("global:remove_liquidity")[0:8]
-  removeLiquidity: new Uint8Array([0x50, 0x55, 0xd1, 0x48, 0x18, 0xce, 0xb1, 0x6c]),
+  removeLiquidity: new Uint8Array([
+    0x50, 0x55, 0xd1, 0x48, 0x18, 0xce, 0xb1, 0x6c,
+  ]),
   // SHA256("global:swap_exact_in")[0:8]
   swapExactIn: new Uint8Array([0x68, 0x68, 0x83, 0x56, 0xa1, 0xbd, 0xb4, 0xd8]),
   // SHA256("global:collect_fees")[0:8]
   collectFees: new Uint8Array([0xa4, 0x98, 0xcf, 0x63, 0x1e, 0xba, 0x13, 0xb6]),
   // SHA256("global:collect_protocol_fees")[0:8]
-  collectProtocolFees: new Uint8Array([0x16, 0x43, 0x17, 0x62, 0x96, 0xb2, 0x46, 0xdc]),
+  collectProtocolFees: new Uint8Array([
+    0x16, 0x43, 0x17, 0x62, 0x96, 0xb2, 0x46, 0xdc,
+  ]),
   // SHA256("global:close_position")[0:8]
-  closePosition: new Uint8Array([0x7b, 0x86, 0x51, 0x00, 0x31, 0x44, 0x62, 0x62]),
+  closePosition: new Uint8Array([
+    0x7b, 0x86, 0x51, 0x00, 0x31, 0x44, 0x62, 0x62,
+  ]),
   // SHA256("global:oracle_update")[0:8]
-  oracleUpdate: new Uint8Array([0x55, 0xd1, 0xf8, 0x8e, 0xba, 0xf9, 0x78, 0xef]),
+  oracleUpdate: new Uint8Array([
+    0x55, 0xd1, 0xf8, 0x8e, 0xba, 0xf9, 0x78, 0xef,
+  ]),
   // SHA256("global:oracle_consult")[0:8]
-  oracleConsult: new Uint8Array([0xef, 0xed, 0xff, 0xb1, 0x8e, 0x48, 0x60, 0xaf]),
+  oracleConsult: new Uint8Array([
+    0xef, 0xed, 0xff, 0xb1, 0x8e, 0x48, 0x60, 0xaf,
+  ]),
   // SHA256("global:quote_to_numeraire")[0:8]
-  quoteToNumeraire: new Uint8Array([0x04, 0x8e, 0xf9, 0xf0, 0x81, 0x0f, 0x8f, 0x39]),
+  quoteToNumeraire: new Uint8Array([
+    0x04, 0x8e, 0xf9, 0xf0, 0x81, 0x0f, 0x8f, 0x39,
+  ]),
   // SHA256("global:set_sentinel")[0:8]
   setSentinel: new Uint8Array([0x5e, 0xc8, 0x52, 0x81, 0x35, 0x95, 0xe8, 0x71]),
   // SHA256("global:set_fees")[0:8]
@@ -155,7 +185,9 @@ export const INSTRUCTION_DISCRIMINATORS = {
   // SHA256("global:set_route")[0:8]
   setRoute: new Uint8Array([0xf4, 0xe7, 0x03, 0x54, 0xe9, 0x3d, 0x92, 0x95]),
   // SHA256("global:transfer_admin")[0:8]
-  transferAdmin: new Uint8Array([0x2a, 0xf2, 0x42, 0x6a, 0xe4, 0x0a, 0x6f, 0x9c]),
+  transferAdmin: new Uint8Array([
+    0x2a, 0xf2, 0x42, 0x6a, 0xe4, 0x0a, 0x6f, 0x9c,
+  ]),
   // SHA256("global:pause")[0:8]
   pause: new Uint8Array([0xd3, 0x16, 0xdd, 0xfb, 0x4a, 0x79, 0xc1, 0x2f]),
   // SHA256("global:unpause")[0:8]

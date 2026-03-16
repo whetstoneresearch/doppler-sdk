@@ -25,13 +25,13 @@ import {
   type Instruction,
   type InstructionWithData,
   type ReadonlyUint8Array,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   addSelfFetchFunctions,
   addSelfPlanAndSendFunctions,
   type SelfFetchFunctions,
   type SelfPlanAndSendFunctions,
-} from "@solana/program-client-core";
+} from '@solana/program-client-core';
 import {
   getAmmConfigCodec,
   getOracleStateCodec,
@@ -45,7 +45,7 @@ import {
   type PoolArgs,
   type Position,
   type PositionArgs,
-} from "../accounts";
+} from '../accounts';
 import {
   getAddLiquidityInstructionAsync,
   getClosePositionInstruction,
@@ -131,10 +131,10 @@ import {
   type SwapExactInAsyncInput,
   type TransferAdminInput,
   type UnpauseInput,
-} from "../instructions";
+} from '../instructions';
 
 export const CPMM_PROGRAM_ADDRESS =
-  "3HSrGs4jj92CGt7mkfeeoMofrRGVPUcDX8djAnp4FoD6" as Address<"3HSrGs4jj92CGt7mkfeeoMofrRGVPUcDX8djAnp4FoD6">;
+  '3HSrGs4jj92CGt7mkfeeoMofrRGVPUcDX8djAnp4FoD6' as Address<'3HSrGs4jj92CGt7mkfeeoMofrRGVPUcDX8djAnp4FoD6'>;
 
 export enum CpmmAccount {
   AmmConfig,
@@ -146,7 +146,7 @@ export enum CpmmAccount {
 export function identifyCpmmAccount(
   account: { data: ReadonlyUint8Array } | ReadonlyUint8Array,
 ): CpmmAccount {
-  const data = "data" in account ? account.data : account;
+  const data = 'data' in account ? account.data : account;
   if (
     containsBytes(
       data,
@@ -193,7 +193,7 @@ export function identifyCpmmAccount(
   }
   throw new SolanaError(
     SOLANA_ERROR__PROGRAM_CLIENTS__FAILED_TO_IDENTIFY_ACCOUNT,
-    { accountData: data, programName: "cpmm" },
+    { accountData: data, programName: 'cpmm' },
   );
 }
 
@@ -224,7 +224,7 @@ export enum CpmmInstruction {
 export function identifyCpmmInstruction(
   instruction: { data: ReadonlyUint8Array } | ReadonlyUint8Array,
 ): CpmmInstruction {
-  const data = "data" in instruction ? instruction.data : instruction;
+  const data = 'data' in instruction ? instruction.data : instruction;
   if (
     containsBytes(
       data,
@@ -458,12 +458,12 @@ export function identifyCpmmInstruction(
   }
   throw new SolanaError(
     SOLANA_ERROR__PROGRAM_CLIENTS__FAILED_TO_IDENTIFY_INSTRUCTION,
-    { instructionData: data, programName: "cpmm" },
+    { instructionData: data, programName: 'cpmm' },
   );
 }
 
 export type ParsedCpmmInstruction<
-  TProgram extends string = "3HSrGs4jj92CGt7mkfeeoMofrRGVPUcDX8djAnp4FoD6",
+  TProgram extends string = '3HSrGs4jj92CGt7mkfeeoMofrRGVPUcDX8djAnp4FoD6',
 > =
   | ({
       instructionType: CpmmInstruction.AddLiquidity;
@@ -684,7 +684,7 @@ export function parseCpmmInstruction<TProgram extends string>(
     default:
       throw new SolanaError(
         SOLANA_ERROR__PROGRAM_CLIENTS__UNRECOGNIZED_INSTRUCTION_TYPE,
-        { instructionType: instructionType as string, programName: "cpmm" },
+        { instructionType: instructionType as string, programName: 'cpmm' },
       );
   }
 }
@@ -722,19 +722,19 @@ export type CpmmPluginInstructions = {
   ) => ReturnType<typeof getCollectProtocolFeesInstructionAsync> &
     SelfPlanAndSendFunctions;
   createPosition: (
-    input: MakeOptional<CreatePositionAsyncInput, "payer">,
+    input: MakeOptional<CreatePositionAsyncInput, 'payer'>,
   ) => ReturnType<typeof getCreatePositionInstructionAsync> &
     SelfPlanAndSendFunctions;
   initializeConfig: (
-    input: MakeOptional<InitializeConfigAsyncInput, "payer">,
+    input: MakeOptional<InitializeConfigAsyncInput, 'payer'>,
   ) => ReturnType<typeof getInitializeConfigInstructionAsync> &
     SelfPlanAndSendFunctions;
   initializeOracle: (
-    input: MakeOptional<InitializeOracleAsyncInput, "payer">,
+    input: MakeOptional<InitializeOracleAsyncInput, 'payer'>,
   ) => ReturnType<typeof getInitializeOracleInstructionAsync> &
     SelfPlanAndSendFunctions;
   initializePool: (
-    input: MakeOptional<InitializePoolAsyncInput, "payer">,
+    input: MakeOptional<InitializePoolAsyncInput, 'payer'>,
   ) => ReturnType<typeof getInitializePoolInstructionAsync> &
     SelfPlanAndSendFunctions;
   oracleConsult: (

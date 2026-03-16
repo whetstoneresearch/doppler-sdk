@@ -7,7 +7,11 @@
 import { useState, useCallback, useMemo } from 'react';
 import type { Address } from '@solana/kit';
 import type { Pool, SwapQuote, SwapDirection } from '../../core/types.js';
-import { getSwapQuote, getSwapQuoteExactOut, ratioToNumber } from '../../core/math.js';
+import {
+  getSwapQuote,
+  getSwapQuoteExactOut,
+  ratioToNumber,
+} from '../../core/math.js';
 import { BPS_DENOM } from '../../core/constants.js';
 import { useAmm } from '../providers/AmmContext.js';
 
@@ -204,7 +208,8 @@ export function useSwap(options: UseSwapOptions): UseSwapResult {
           maxAmountIn: 0n,
           direction,
           isValid: false,
-          error: err instanceof Error ? err.message : 'Failed to calculate quote',
+          error:
+            err instanceof Error ? err.message : 'Failed to calculate quote',
         };
       }
     } else {
@@ -229,7 +234,7 @@ export function useSwap(options: UseSwapOptions): UseSwapResult {
         const { amountIn, feeTotal } = getSwapQuoteExactOut(
           pool,
           state.outputAmount,
-          direction
+          direction,
         );
 
         // Calculate max input with slippage
@@ -264,11 +269,19 @@ export function useSwap(options: UseSwapOptions): UseSwapResult {
           maxAmountIn: 0n,
           direction,
           isValid: false,
-          error: err instanceof Error ? err.message : 'Failed to calculate quote',
+          error:
+            err instanceof Error ? err.message : 'Failed to calculate quote',
         };
       }
     }
-  }, [pool, direction, state.inputAmount, state.outputAmount, state.exactInput, state.slippageBps]);
+  }, [
+    pool,
+    direction,
+    state.inputAmount,
+    state.outputAmount,
+    state.exactInput,
+    state.slippageBps,
+  ]);
 
   const setInputToken = useCallback((token: Address | null) => {
     setState((s) => ({ ...s, inputToken: token }));

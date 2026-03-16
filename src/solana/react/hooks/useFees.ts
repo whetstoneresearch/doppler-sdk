@@ -10,13 +10,19 @@ import type { Position, Pool } from '../../core/types.js';
 import { getPendingFees } from '../../core/math.js';
 import { fetchPosition } from '../../client/position.js';
 import { fetchPool } from '../../client/pool.js';
-import { createCollectFeesInstruction, MAX_FEE_AMOUNT } from '../../instructions/collectFees.js';
+import {
+  createCollectFeesInstruction,
+  MAX_FEE_AMOUNT,
+} from '../../instructions/collectFees.js';
 import {
   appendTransactionMessageInstruction,
   createTransactionMessage,
   setTransactionMessageLifetimeUsingBlockhash,
 } from '@solana/kit';
-import { setTransactionMessageFeePayerSigner, signTransactionMessageWithSigners } from '@solana/kit';
+import {
+  setTransactionMessageFeePayerSigner,
+  signTransactionMessageWithSigners,
+} from '@solana/kit';
 import { getBase64EncodedWireTransaction } from '@solana/kit';
 import { useAmm } from '../providers/AmmContext.js';
 import { useWalletOptional } from '../providers/WalletContext.js';
@@ -24,7 +30,13 @@ import { useWalletOptional } from '../providers/WalletContext.js';
 /**
  * Transaction status
  */
-export type TransactionStatus = 'idle' | 'signing' | 'sending' | 'confirming' | 'success' | 'error';
+export type TransactionStatus =
+  | 'idle'
+  | 'signing'
+  | 'sending'
+  | 'confirming'
+  | 'success'
+  | 'error';
 
 /**
  * Pending fees data
@@ -128,9 +140,14 @@ export interface UseFeesOptions {
 export function useFees(
   positionAddress: Address | undefined,
   poolAddress: Address | undefined,
-  options: UseFeesOptions = {}
+  options: UseFeesOptions = {},
 ): UseFeesResult {
-  const { rpc, programId, commitment: defaultCommitment, refreshInterval: defaultRefreshInterval } = useAmm();
+  const {
+    rpc,
+    programId,
+    commitment: defaultCommitment,
+    refreshInterval: defaultRefreshInterval,
+  } = useAmm();
   const wallet = useWalletOptional();
 
   const {
@@ -142,7 +159,9 @@ export function useFees(
   } = options;
 
   const [pool, setPool] = useState<Pool | null>(providedPool ?? null);
-  const [position, setPosition] = useState<Position | null>(providedPosition ?? null);
+  const [position, setPosition] = useState<Position | null>(
+    providedPosition ?? null,
+  );
   const [loading, setLoading] = useState(true);
   const [refetching, setRefetching] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -199,16 +218,14 @@ export function useFees(
 
         if (!providedPosition && positionAddress) {
           promises.push(
-            fetchPosition(rpc, positionAddress, { programId, commitment })
+            fetchPosition(rpc, positionAddress, { programId, commitment }),
           );
         } else {
           promises.push(Promise.resolve(providedPosition));
         }
 
         if (!providedPool && poolAddress) {
-          promises.push(
-            fetchPool(rpc, poolAddress, { programId, commitment })
-          );
+          promises.push(fetchPool(rpc, poolAddress, { programId, commitment }));
         } else {
           promises.push(Promise.resolve(providedPool));
         }
@@ -230,7 +247,15 @@ export function useFees(
         }
       }
     },
-    [positionAddress, poolAddress, providedPool, providedPosition, rpc, programId, commitment]
+    [
+      positionAddress,
+      poolAddress,
+      providedPool,
+      providedPosition,
+      rpc,
+      programId,
+      commitment,
+    ],
   );
 
   const refetch = useCallback(async () => {
@@ -240,7 +265,13 @@ export function useFees(
   // Collect fees
   const collect = useCallback(
     async (collectOptions: CollectFeesOptions): Promise<string> => {
-      if (!pool || !poolAddress || !position || !positionAddress || !wallet?.address) {
+      if (
+        !pool ||
+        !poolAddress ||
+        !position ||
+        !positionAddress ||
+        !wallet?.address
+      ) {
         throw new Error('Pool, position, or wallet not available');
       }
 
@@ -275,21 +306,36 @@ export function useFees(
             user1: userToken1,
           },
           { max0, max1 },
-          programId
+          programId,
         );
 
-        const { value: latestBlockhash } = await rpc.getLatestBlockhash({ commitment }).send();
+        const { value: latestBlockhash } = await rpc
+          .getLatestBlockhash({ commitment })
+          .send();
 
         const baseMessage = createTransactionMessage({ version: 'legacy' });
-        const messageWithPayer = setTransactionMessageFeePayerSigner(wallet.signer, baseMessage);
-        const messageWithLifetime = setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, messageWithPayer);
-        const messageWithIx = appendTransactionMessageInstruction(ix, messageWithLifetime);
+        const messageWithPayer = setTransactionMessageFeePayerSigner(
+          wallet.signer,
+          baseMessage,
+        );
+        const messageWithLifetime = setTransactionMessageLifetimeUsingBlockhash(
+          latestBlockhash,
+          messageWithPayer,
+        );
+        const messageWithIx = appendTransactionMessageInstruction(
+          ix,
+          messageWithLifetime,
+        );
 
         setStatus('sending');
 
-        const signedTransaction = await signTransactionMessageWithSigners(messageWithIx);
-        const wireTransaction = getBase64EncodedWireTransaction(signedTransaction);
-        const signature = await rpc.sendTransaction(wireTransaction, { encoding: 'base64' }).send();
+        const signedTransaction =
+          await signTransactionMessageWithSigners(messageWithIx);
+        const wireTransaction =
+          getBase64EncodedWireTransaction(signedTransaction);
+        const signature = await rpc
+          .sendTransaction(wireTransaction, { encoding: 'base64' })
+          .send();
 
         setStatus('success');
         setTxSignature(signature);
@@ -305,7 +351,17 @@ export function useFees(
         throw error;
       }
     },
-    [pool, poolAddress, position, positionAddress, wallet, programId, rpc, commitment, fetchFeesData]
+    [
+      pool,
+      poolAddress,
+      position,
+      positionAddress,
+      wallet,
+      programId,
+      rpc,
+      commitment,
+      fetchFeesData,
+    ],
   );
 
   // Reset transaction status
@@ -378,7 +434,7 @@ export function useFees(
  */
 export function useFeesFromData(
   pool: Pool | null | undefined,
-  position: Position | null | undefined
+  position: Position | null | undefined,
 ): PendingFees | null {
   return useMemo<PendingFees | null>(() => {
     if (!pool || !position) return null;

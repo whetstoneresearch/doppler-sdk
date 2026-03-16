@@ -60,10 +60,12 @@ export async function fetchOracle(
   address: Address,
   config?: FetchOracleConfig,
 ): Promise<OracleState | null> {
-  const response = await rpc.getAccountInfo(address, {
-    encoding: 'base64',
-    commitment: config?.commitment,
-  }).send();
+  const response = await rpc
+    .getAccountInfo(address, {
+      encoding: 'base64',
+      commitment: config?.commitment,
+    })
+    .send();
 
   if (!response.value) {
     return null;
@@ -163,8 +165,10 @@ export function consultTwap(
   const nowTs = Math.max(0, Math.floor(currentTimestamp ?? Date.now() / 1000));
   const dtSinceLast = Math.max(0, nowTs - oracle.lastTimestamp);
 
-  const cum0Now = oracle.price0Cumulative + (oracle.truncPrice0Q64 * BigInt(dtSinceLast));
-  const cum1Now = oracle.price1Cumulative + (oracle.truncPrice1Q64 * BigInt(dtSinceLast));
+  const cum0Now =
+    oracle.price0Cumulative + oracle.truncPrice0Q64 * BigInt(dtSinceLast);
+  const cum1Now =
+    oracle.price1Cumulative + oracle.truncPrice1Q64 * BigInt(dtSinceLast);
 
   if (windowSeconds === 0) {
     return {
@@ -197,7 +201,10 @@ export function consultTwap(
   };
 }
 
-function selectSample(oracle: OracleState, targetTimestamp: number): OracleState['observations'][number] | null {
+function selectSample(
+  oracle: OracleState,
+  targetTimestamp: number,
+): OracleState['observations'][number] | null {
   let best: OracleState['observations'][number] | null = null;
   const base = {
     timestamp: oracle.lastTimestamp,
@@ -224,7 +231,8 @@ function selectSample(oracle: OracleState, targetTimestamp: number): OracleState
     return best;
   }
 
-  let oldest: OracleState['observations'][number] | null = base.timestamp !== 0 ? base : null;
+  let oldest: OracleState['observations'][number] | null =
+    base.timestamp !== 0 ? base : null;
   for (const obs of oracle.observations) {
     if (obs.timestamp === 0) {
       continue;
@@ -360,7 +368,8 @@ export function getOracleBufferStats(oracle: OracleState): {
     currentIndex,
     oldestTimestamp,
     newestTimestamp,
-    timeSpanSeconds: newestTimestamp > oldestTimestamp ? newestTimestamp - oldestTimestamp : 0,
+    timeSpanSeconds:
+      newestTimestamp > oldestTimestamp ? newestTimestamp - oldestTimestamp : 0,
   };
 }
 
@@ -382,12 +391,12 @@ export async function fetchOraclesBatch(
 
   // Derive all oracle addresses
   const oracleAddresses = await Promise.all(
-    pools.map(pool => getOracleAddress(pool, programId))
+    pools.map((pool) => getOracleAddress(pool, programId)),
   );
 
   // Fetch all oracles in parallel
   const results = await Promise.all(
-    oracleAddresses.map(([addr]) => fetchOracle(rpc, addr, config))
+    oracleAddresses.map(([addr]) => fetchOracle(rpc, addr, config)),
   );
 
   for (let i = 0; i < pools.length; i++) {
@@ -423,15 +432,13 @@ export function comparePoolAndOraclePrices(
   /** Difference as percentage (positive = pool > oracle) */
   divergencePct: number;
 } {
-  const poolPrice0 = pool.reserve0 > 0n
-    ? Number(pool.reserve1) / Number(pool.reserve0)
-    : 0;
+  const poolPrice0 =
+    pool.reserve0 > 0n ? Number(pool.reserve1) / Number(pool.reserve0) : 0;
 
   const oraclePrice0 = q64ToNumber(oracle.truncPrice0Q64);
 
-  const divergencePct = oraclePrice0 > 0
-    ? ((poolPrice0 - oraclePrice0) / oraclePrice0) * 100
-    : 0;
+  const divergencePct =
+    oraclePrice0 > 0 ? ((poolPrice0 - oraclePrice0) / oraclePrice0) * 100 : 0;
 
   return {
     poolPrice0,

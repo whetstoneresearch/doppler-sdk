@@ -7,7 +7,10 @@ import {
   ACCOUNT_ROLE_SIGNER,
 } from '../core/constants.js';
 import type { TransferAdminArgs } from '../core/types.js';
-import { transferAdminArgsCodec, encodeInstructionData } from '../core/codecs.js';
+import {
+  transferAdminArgsCodec,
+  encodeInstructionData,
+} from '../core/codecs.js';
 
 /**
  * Accounts required for transfer_admin instruction

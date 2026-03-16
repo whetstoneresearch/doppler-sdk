@@ -39,7 +39,7 @@ import {
   type MaybeAccount,
   type MaybeEncodedAccount,
   type ReadonlyUint8Array,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export const CLAIM_RECEIPT_DISCRIMINATOR = new Uint8Array([
   223, 233, 11, 229, 124, 165, 207, 28,
@@ -86,13 +86,13 @@ export type ClaimReceiptArgs = {
 export function getClaimReceiptEncoder(): FixedSizeEncoder<ClaimReceiptArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["market", getAddressEncoder()],
-      ["claimer", getAddressEncoder()],
-      ["burnedAmount", getU64Encoder()],
-      ["rewardDebt", getU128Encoder()],
-      ["bump", getU8Encoder()],
-      ["reserved", fixEncoderSize(getBytesEncoder(), 7)],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['market', getAddressEncoder()],
+      ['claimer', getAddressEncoder()],
+      ['burnedAmount', getU64Encoder()],
+      ['rewardDebt', getU128Encoder()],
+      ['bump', getU8Encoder()],
+      ['reserved', fixEncoderSize(getBytesEncoder(), 7)],
     ]),
     (value) => ({ ...value, discriminator: CLAIM_RECEIPT_DISCRIMINATOR }),
   );
@@ -101,13 +101,13 @@ export function getClaimReceiptEncoder(): FixedSizeEncoder<ClaimReceiptArgs> {
 /** Gets the decoder for {@link ClaimReceipt} account data. */
 export function getClaimReceiptDecoder(): FixedSizeDecoder<ClaimReceipt> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["market", getAddressDecoder()],
-    ["claimer", getAddressDecoder()],
-    ["burnedAmount", getU64Decoder()],
-    ["rewardDebt", getU128Decoder()],
-    ["bump", getU8Decoder()],
-    ["reserved", fixDecoderSize(getBytesDecoder(), 7)],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['market', getAddressDecoder()],
+    ['claimer', getAddressDecoder()],
+    ['burnedAmount', getU64Decoder()],
+    ['rewardDebt', getU128Decoder()],
+    ['bump', getU8Decoder()],
+    ['reserved', fixDecoderSize(getBytesDecoder(), 7)],
   ]);
 }
 

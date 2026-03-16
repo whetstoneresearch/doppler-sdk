@@ -20,10 +20,7 @@ export {
 } from './pool.js';
 
 // Config fetching
-export {
-  fetchConfig,
-  fetchConfigWithAddress,
-} from './config.js';
+export { fetchConfig, fetchConfigWithAddress } from './config.js';
 
 // Position fetching and utilities
 export {

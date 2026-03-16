@@ -56,10 +56,12 @@ export async function fetchLaunch(
   address: Address,
   config?: FetchLaunchesConfig,
 ): Promise<Launch | null> {
-  const response = await rpc.getAccountInfo(address, {
-    encoding: 'base64',
-    commitment: config?.commitment,
-  }).send();
+  const response = await rpc
+    .getAccountInfo(address, {
+      encoding: 'base64',
+      commitment: config?.commitment,
+    })
+    .send();
 
   if (!response.value) {
     return null;
@@ -77,20 +79,26 @@ export async function fetchAllLaunches(
   const discriminatorFilter = {
     memcmp: {
       offset: 0n,
-      bytes: bytesToBase64(INITIALIZER_ACCOUNT_DISCRIMINATORS.Launch) as Base64EncodedBytes,
+      bytes: bytesToBase64(
+        INITIALIZER_ACCOUNT_DISCRIMINATORS.Launch,
+      ) as Base64EncodedBytes,
       encoding: 'base64' as const,
     },
   };
 
-  const response = await rpc.getProgramAccounts(programId, {
-    encoding: 'base64',
-    commitment: config?.commitment,
-    filters: [discriminatorFilter],
-  }).send() as unknown;
+  const response = (await rpc
+    .getProgramAccounts(programId, {
+      encoding: 'base64',
+      commitment: config?.commitment,
+      filters: [discriminatorFilter],
+    })
+    .send()) as unknown;
 
-  const accounts = (Array.isArray(response)
-    ? response
-    : (response as { value: ProgramAccount[] }).value) as ProgramAccount[];
+  const accounts = (
+    Array.isArray(response)
+      ? response
+      : (response as { value: ProgramAccount[] }).value
+  ) as ProgramAccount[];
 
   const launches: LaunchWithAddress[] = [];
   const decoder = getLaunchDecoder();
@@ -121,7 +129,9 @@ export async function fetchLaunchesByAuthority(
   const discriminatorFilter = {
     memcmp: {
       offset: 0n,
-      bytes: bytesToBase64(INITIALIZER_ACCOUNT_DISCRIMINATORS.Launch) as Base64EncodedBytes,
+      bytes: bytesToBase64(
+        INITIALIZER_ACCOUNT_DISCRIMINATORS.Launch,
+      ) as Base64EncodedBytes,
       encoding: 'base64' as const,
     },
   };
@@ -129,20 +139,26 @@ export async function fetchLaunchesByAuthority(
   const authorityFilter = {
     memcmp: {
       offset: 8n,
-      bytes: bytesToBase64(addressCodec.encode(authority)) as Base64EncodedBytes,
+      bytes: bytesToBase64(
+        addressCodec.encode(authority),
+      ) as Base64EncodedBytes,
       encoding: 'base64' as const,
     },
   };
 
-  const response = await rpc.getProgramAccounts(programId, {
-    encoding: 'base64',
-    commitment: config?.commitment,
-    filters: [discriminatorFilter, authorityFilter],
-  }).send() as unknown;
+  const response = (await rpc
+    .getProgramAccounts(programId, {
+      encoding: 'base64',
+      commitment: config?.commitment,
+      filters: [discriminatorFilter, authorityFilter],
+    })
+    .send()) as unknown;
 
-  const accounts = (Array.isArray(response)
-    ? response
-    : (response as { value: ProgramAccount[] }).value) as ProgramAccount[];
+  const accounts = (
+    Array.isArray(response)
+      ? response
+      : (response as { value: ProgramAccount[] }).value
+  ) as ProgramAccount[];
 
   const launches: LaunchWithAddress[] = [];
   const decoder = getLaunchDecoder();
@@ -166,7 +182,11 @@ export async function launchExists(
   config?: FetchLaunchesConfig,
 ): Promise<boolean> {
   const programId = config?.programId ?? INITIALIZER_PROGRAM_ID;
-  const [launchAddress] = await getLaunchAddress(namespace, launchId, programId);
+  const [launchAddress] = await getLaunchAddress(
+    namespace,
+    launchId,
+    programId,
+  );
   const launch = await fetchLaunch(rpc, launchAddress, config);
   return launch !== null;
 }

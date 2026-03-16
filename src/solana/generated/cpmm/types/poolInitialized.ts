@@ -16,7 +16,7 @@ import {
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type PoolInitialized = {
   pool: Address;
@@ -30,21 +30,21 @@ export type PoolInitializedArgs = PoolInitialized;
 
 export function getPoolInitializedEncoder(): FixedSizeEncoder<PoolInitializedArgs> {
   return getStructEncoder([
-    ["pool", getAddressEncoder()],
-    ["token0Mint", getAddressEncoder()],
-    ["token1Mint", getAddressEncoder()],
-    ["vault0", getAddressEncoder()],
-    ["vault1", getAddressEncoder()],
+    ['pool', getAddressEncoder()],
+    ['token0Mint', getAddressEncoder()],
+    ['token1Mint', getAddressEncoder()],
+    ['vault0', getAddressEncoder()],
+    ['vault1', getAddressEncoder()],
   ]);
 }
 
 export function getPoolInitializedDecoder(): FixedSizeDecoder<PoolInitialized> {
   return getStructDecoder([
-    ["pool", getAddressDecoder()],
-    ["token0Mint", getAddressDecoder()],
-    ["token1Mint", getAddressDecoder()],
-    ["vault0", getAddressDecoder()],
-    ["vault1", getAddressDecoder()],
+    ['pool', getAddressDecoder()],
+    ['token0Mint', getAddressDecoder()],
+    ['token1Mint', getAddressDecoder()],
+    ['vault0', getAddressDecoder()],
+    ['vault1', getAddressDecoder()],
   ]);
 }
 

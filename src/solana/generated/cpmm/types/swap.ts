@@ -20,7 +20,7 @@ import {
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type Swap = {
   pool: Address;
@@ -44,25 +44,25 @@ export type SwapArgs = {
 
 export function getSwapEncoder(): FixedSizeEncoder<SwapArgs> {
   return getStructEncoder([
-    ["pool", getAddressEncoder()],
-    ["user", getAddressEncoder()],
-    ["direction", getU8Encoder()],
-    ["amountIn", getU64Encoder()],
-    ["amountOut", getU64Encoder()],
-    ["feeTotal", getU64Encoder()],
-    ["feeDist", getU64Encoder()],
+    ['pool', getAddressEncoder()],
+    ['user', getAddressEncoder()],
+    ['direction', getU8Encoder()],
+    ['amountIn', getU64Encoder()],
+    ['amountOut', getU64Encoder()],
+    ['feeTotal', getU64Encoder()],
+    ['feeDist', getU64Encoder()],
   ]);
 }
 
 export function getSwapDecoder(): FixedSizeDecoder<Swap> {
   return getStructDecoder([
-    ["pool", getAddressDecoder()],
-    ["user", getAddressDecoder()],
-    ["direction", getU8Decoder()],
-    ["amountIn", getU64Decoder()],
-    ["amountOut", getU64Decoder()],
-    ["feeTotal", getU64Decoder()],
-    ["feeDist", getU64Decoder()],
+    ['pool', getAddressDecoder()],
+    ['user', getAddressDecoder()],
+    ['direction', getU8Decoder()],
+    ['amountIn', getU64Decoder()],
+    ['amountOut', getU64Decoder()],
+    ['feeTotal', getU64Decoder()],
+    ['feeDist', getU64Decoder()],
   ]);
 }
 

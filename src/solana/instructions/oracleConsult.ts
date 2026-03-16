@@ -6,7 +6,10 @@ import {
   ACCOUNT_ROLE_READONLY,
 } from '../core/constants.js';
 import type { OracleConsultArgs } from '../core/types.js';
-import { oracleConsultArgsCodec, encodeInstructionData } from '../core/codecs.js';
+import {
+  oracleConsultArgsCodec,
+  encodeInstructionData,
+} from '../core/codecs.js';
 import { getStructCodec, getU128Codec, type Codec } from '@solana/kit';
 import type { ReadonlyUint8Array } from '@solana/kit';
 
@@ -38,7 +41,9 @@ const oracleConsultResultCodec: Codec<OracleConsultResult> = getStructCodec([
 /**
  * Decode oracle_consult return data
  */
-export function decodeOracleConsultResult(data: ReadonlyUint8Array): OracleConsultResult {
+export function decodeOracleConsultResult(
+  data: ReadonlyUint8Array,
+): OracleConsultResult {
   return oracleConsultResultCodec.decode(data);
 }
 

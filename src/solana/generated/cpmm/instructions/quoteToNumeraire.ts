@@ -35,12 +35,12 @@ import {
   type InstructionWithData,
   type ReadonlyAccount,
   type ReadonlyUint8Array,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   getAccountMetaFactory,
   type ResolvedInstructionAccount,
-} from "@solana/program-client-core";
-import { CPMM_PROGRAM_ADDRESS } from "../programs";
+} from '@solana/program-client-core';
+import { CPMM_PROGRAM_ADDRESS } from '../programs';
 
 export const QUOTE_TO_NUMERAIRE_DISCRIMINATOR = new Uint8Array([
   4, 142, 249, 240, 129, 15, 143, 57,
@@ -91,12 +91,12 @@ export type QuoteToNumeraireInstructionDataArgs = {
 export function getQuoteToNumeraireInstructionDataEncoder(): FixedSizeEncoder<QuoteToNumeraireInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["amount", getU128Encoder()],
-      ["side", getU8Encoder()],
-      ["maxHops", getU8Encoder()],
-      ["useTwap", getBooleanEncoder()],
-      ["windowSeconds", getU32Encoder()],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['amount', getU128Encoder()],
+      ['side', getU8Encoder()],
+      ['maxHops', getU8Encoder()],
+      ['useTwap', getBooleanEncoder()],
+      ['windowSeconds', getU32Encoder()],
     ]),
     (value) => ({ ...value, discriminator: QUOTE_TO_NUMERAIRE_DISCRIMINATOR }),
   );
@@ -104,12 +104,12 @@ export function getQuoteToNumeraireInstructionDataEncoder(): FixedSizeEncoder<Qu
 
 export function getQuoteToNumeraireInstructionDataDecoder(): FixedSizeDecoder<QuoteToNumeraireInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["amount", getU128Decoder()],
-    ["side", getU8Decoder()],
-    ["maxHops", getU8Decoder()],
-    ["useTwap", getBooleanDecoder()],
-    ["windowSeconds", getU32Decoder()],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['amount', getU128Decoder()],
+    ['side', getU8Decoder()],
+    ['maxHops', getU8Decoder()],
+    ['useTwap', getBooleanDecoder()],
+    ['windowSeconds', getU32Decoder()],
   ]);
 }
 
@@ -129,11 +129,11 @@ export type QuoteToNumeraireInput<
 > = {
   config: Address<TAccountConfig>;
   startPool: Address<TAccountStartPool>;
-  amount: QuoteToNumeraireInstructionDataArgs["amount"];
-  side: QuoteToNumeraireInstructionDataArgs["side"];
-  maxHops: QuoteToNumeraireInstructionDataArgs["maxHops"];
-  useTwap: QuoteToNumeraireInstructionDataArgs["useTwap"];
-  windowSeconds: QuoteToNumeraireInstructionDataArgs["windowSeconds"];
+  amount: QuoteToNumeraireInstructionDataArgs['amount'];
+  side: QuoteToNumeraireInstructionDataArgs['side'];
+  maxHops: QuoteToNumeraireInstructionDataArgs['maxHops'];
+  useTwap: QuoteToNumeraireInstructionDataArgs['useTwap'];
+  windowSeconds: QuoteToNumeraireInstructionDataArgs['windowSeconds'];
 };
 
 export function getQuoteToNumeraireInstruction<
@@ -164,11 +164,11 @@ export function getQuoteToNumeraireInstruction<
   // Original args.
   const args = { ...input };
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("config", accounts.config),
-      getAccountMeta("startPool", accounts.startPool),
+      getAccountMeta('config', accounts.config),
+      getAccountMeta('startPool', accounts.startPool),
     ],
     data: getQuoteToNumeraireInstructionDataEncoder().encode(
       args as QuoteToNumeraireInstructionDataArgs,

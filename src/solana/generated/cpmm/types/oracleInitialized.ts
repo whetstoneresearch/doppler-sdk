@@ -20,7 +20,7 @@ import {
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type OracleInitialized = {
   pool: Address;
@@ -38,19 +38,19 @@ export type OracleInitializedArgs = {
 
 export function getOracleInitializedEncoder(): FixedSizeEncoder<OracleInitializedArgs> {
   return getStructEncoder([
-    ["pool", getAddressEncoder()],
-    ["maxPriceChangeRatioQ64", getU128Encoder()],
-    ["observationIntervalSec", getU32Encoder()],
-    ["admin", getAddressEncoder()],
+    ['pool', getAddressEncoder()],
+    ['maxPriceChangeRatioQ64', getU128Encoder()],
+    ['observationIntervalSec', getU32Encoder()],
+    ['admin', getAddressEncoder()],
   ]);
 }
 
 export function getOracleInitializedDecoder(): FixedSizeDecoder<OracleInitialized> {
   return getStructDecoder([
-    ["pool", getAddressDecoder()],
-    ["maxPriceChangeRatioQ64", getU128Decoder()],
-    ["observationIntervalSec", getU32Decoder()],
-    ["admin", getAddressDecoder()],
+    ['pool', getAddressDecoder()],
+    ['maxPriceChangeRatioQ64', getU128Decoder()],
+    ['observationIntervalSec', getU32Decoder()],
+    ['admin', getAddressDecoder()],
   ]);
 }
 

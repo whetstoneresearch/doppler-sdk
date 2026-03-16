@@ -41,7 +41,7 @@ import {
   type MaybeAccount,
   type MaybeEncodedAccount,
   type ReadonlyUint8Array,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export const AMM_CONFIG_DISCRIMINATOR = new Uint8Array([
   218, 244, 33, 104, 203, 203, 43, 111,
@@ -86,19 +86,19 @@ export type AmmConfigArgs = {
 export function getAmmConfigEncoder(): FixedSizeEncoder<AmmConfigArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["admin", getAddressEncoder()],
-      ["paused", getBooleanEncoder()],
-      ["numeraireMint", getAddressEncoder()],
-      ["sentinelAllowlistLen", getU8Encoder()],
-      ["sentinelAllowlist", getArrayEncoder(getAddressEncoder(), { size: 32 })],
-      ["maxSwapFeeBps", getU16Encoder()],
-      ["maxFeeSplitBps", getU16Encoder()],
-      ["maxRouteHops", getU8Encoder()],
-      ["protocolFeeEnabled", getBooleanEncoder()],
-      ["protocolFeeBps", getU16Encoder()],
-      ["version", getU8Encoder()],
-      ["reserved", fixEncoderSize(getBytesEncoder(), 7)],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['admin', getAddressEncoder()],
+      ['paused', getBooleanEncoder()],
+      ['numeraireMint', getAddressEncoder()],
+      ['sentinelAllowlistLen', getU8Encoder()],
+      ['sentinelAllowlist', getArrayEncoder(getAddressEncoder(), { size: 32 })],
+      ['maxSwapFeeBps', getU16Encoder()],
+      ['maxFeeSplitBps', getU16Encoder()],
+      ['maxRouteHops', getU8Encoder()],
+      ['protocolFeeEnabled', getBooleanEncoder()],
+      ['protocolFeeBps', getU16Encoder()],
+      ['version', getU8Encoder()],
+      ['reserved', fixEncoderSize(getBytesEncoder(), 7)],
     ]),
     (value) => ({ ...value, discriminator: AMM_CONFIG_DISCRIMINATOR }),
   );
@@ -107,19 +107,19 @@ export function getAmmConfigEncoder(): FixedSizeEncoder<AmmConfigArgs> {
 /** Gets the decoder for {@link AmmConfig} account data. */
 export function getAmmConfigDecoder(): FixedSizeDecoder<AmmConfig> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["admin", getAddressDecoder()],
-    ["paused", getBooleanDecoder()],
-    ["numeraireMint", getAddressDecoder()],
-    ["sentinelAllowlistLen", getU8Decoder()],
-    ["sentinelAllowlist", getArrayDecoder(getAddressDecoder(), { size: 32 })],
-    ["maxSwapFeeBps", getU16Decoder()],
-    ["maxFeeSplitBps", getU16Decoder()],
-    ["maxRouteHops", getU8Decoder()],
-    ["protocolFeeEnabled", getBooleanDecoder()],
-    ["protocolFeeBps", getU16Decoder()],
-    ["version", getU8Decoder()],
-    ["reserved", fixDecoderSize(getBytesDecoder(), 7)],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['admin', getAddressDecoder()],
+    ['paused', getBooleanDecoder()],
+    ['numeraireMint', getAddressDecoder()],
+    ['sentinelAllowlistLen', getU8Decoder()],
+    ['sentinelAllowlist', getArrayDecoder(getAddressDecoder(), { size: 32 })],
+    ['maxSwapFeeBps', getU16Decoder()],
+    ['maxFeeSplitBps', getU16Decoder()],
+    ['maxRouteHops', getU8Decoder()],
+    ['protocolFeeEnabled', getBooleanDecoder()],
+    ['protocolFeeBps', getU16Decoder()],
+    ['version', getU8Decoder()],
+    ['reserved', fixDecoderSize(getBytesDecoder(), 7)],
   ]);
 }
 

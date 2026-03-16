@@ -15,7 +15,7 @@ import {
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
-} from "@solana/kit";
+} from '@solana/kit';
 
 /**
  * Arguments for migrate instruction.
@@ -37,15 +37,15 @@ export type MigrateArgsArgs = {
 
 export function getMigrateArgsEncoder(): FixedSizeEncoder<MigrateArgsArgs> {
   return getStructEncoder([
-    ["baseForDistribution", getU64Encoder()],
-    ["baseForLiquidity", getU64Encoder()],
+    ['baseForDistribution', getU64Encoder()],
+    ['baseForLiquidity', getU64Encoder()],
   ]);
 }
 
 export function getMigrateArgsDecoder(): FixedSizeDecoder<MigrateArgs> {
   return getStructDecoder([
-    ["baseForDistribution", getU64Decoder()],
-    ["baseForLiquidity", getU64Decoder()],
+    ['baseForDistribution', getU64Decoder()],
+    ['baseForLiquidity', getU64Decoder()],
   ]);
 }
 

@@ -45,12 +45,20 @@ export { getCpmmMigratorStateAddress } from './pda.js';
 
 export { fetchCpmmMigratorState } from './client.js';
 
-export function encodeRegisterLaunchCalldata(args: RegisterLaunchArgsArgs): Uint8Array {
+export function encodeRegisterLaunchCalldata(
+  args: RegisterLaunchArgsArgs,
+): Uint8Array {
   const encoded = new Uint8Array(getRegisterLaunchArgsEncoder().encode(args));
-  return mergeBytes([CPMM_MIGRATOR_INSTRUCTION_DISCRIMINATORS.registerLaunch, encoded]);
+  return mergeBytes([
+    CPMM_MIGRATOR_INSTRUCTION_DISCRIMINATORS.registerLaunch,
+    encoded,
+  ]);
 }
 
 export function encodeMigrateCalldata(args: MigrateArgsArgs): Uint8Array {
   const encoded = new Uint8Array(getMigrateArgsEncoder().encode(args));
-  return mergeBytes([CPMM_MIGRATOR_INSTRUCTION_DISCRIMINATORS.migrate, encoded]);
+  return mergeBytes([
+    CPMM_MIGRATOR_INSTRUCTION_DISCRIMINATORS.migrate,
+    encoded,
+  ]);
 }

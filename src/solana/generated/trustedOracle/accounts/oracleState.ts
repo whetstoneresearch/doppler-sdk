@@ -39,7 +39,7 @@ import {
   type MaybeAccount,
   type MaybeEncodedAccount,
   type ReadonlyUint8Array,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export const ORACLE_STATE_DISCRIMINATOR = new Uint8Array([
   97, 156, 157, 189, 194, 73, 8, 15,
@@ -90,14 +90,14 @@ export type OracleStateArgs = {
 export function getOracleStateEncoder(): FixedSizeEncoder<OracleStateArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["oracleAuthority", getAddressEncoder()],
-      ["quoteMint", getAddressEncoder()],
-      ["isFinalized", getBooleanEncoder()],
-      ["winningMint", getAddressEncoder()],
-      ["nonce", getU64Encoder()],
-      ["bump", getU8Encoder()],
-      ["reserved", fixEncoderSize(getBytesEncoder(), 31)],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['oracleAuthority', getAddressEncoder()],
+      ['quoteMint', getAddressEncoder()],
+      ['isFinalized', getBooleanEncoder()],
+      ['winningMint', getAddressEncoder()],
+      ['nonce', getU64Encoder()],
+      ['bump', getU8Encoder()],
+      ['reserved', fixEncoderSize(getBytesEncoder(), 31)],
     ]),
     (value) => ({ ...value, discriminator: ORACLE_STATE_DISCRIMINATOR }),
   );
@@ -106,14 +106,14 @@ export function getOracleStateEncoder(): FixedSizeEncoder<OracleStateArgs> {
 /** Gets the decoder for {@link OracleState} account data. */
 export function getOracleStateDecoder(): FixedSizeDecoder<OracleState> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["oracleAuthority", getAddressDecoder()],
-    ["quoteMint", getAddressDecoder()],
-    ["isFinalized", getBooleanDecoder()],
-    ["winningMint", getAddressDecoder()],
-    ["nonce", getU64Decoder()],
-    ["bump", getU8Decoder()],
-    ["reserved", fixDecoderSize(getBytesDecoder(), 31)],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['oracleAuthority', getAddressDecoder()],
+    ['quoteMint', getAddressDecoder()],
+    ['isFinalized', getBooleanDecoder()],
+    ['winningMint', getAddressDecoder()],
+    ['nonce', getU64Decoder()],
+    ['bump', getU8Decoder()],
+    ['reserved', fixDecoderSize(getBytesDecoder(), 31)],
   ]);
 }
 

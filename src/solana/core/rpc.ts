@@ -3,7 +3,9 @@ import type { Rpc, GetProgramAccountsApi } from '@solana/kit';
 // Extract the filter element type from the kit's GetProgramAccountsApi.
 // Using the last (most general) overload via Parameters<>.
 type ProgramAccountsFilter = NonNullable<
-  NonNullable<Parameters<Rpc<GetProgramAccountsApi>['getProgramAccounts']>[1]>['filters']
+  NonNullable<
+    Parameters<Rpc<GetProgramAccountsApi>['getProgramAccounts']>[1]
+  >['filters']
 >[number];
 
 /**
@@ -23,7 +25,9 @@ export type GetProgramAccountsRpc = {
   getProgramAccounts(
     program: Parameters<Rpc<GetProgramAccountsApi>['getProgramAccounts']>[0],
     config?: Omit<
-      NonNullable<Parameters<Rpc<GetProgramAccountsApi>['getProgramAccounts']>[1]>,
+      NonNullable<
+        Parameters<Rpc<GetProgramAccountsApi>['getProgramAccounts']>[1]
+      >,
       'filters'
     > & { filters?: ProgramAccountsFilter[] },
   ): { send(): Promise<unknown> };

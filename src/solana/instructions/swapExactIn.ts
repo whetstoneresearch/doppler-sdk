@@ -177,12 +177,10 @@ export function createSwapInstruction(params: {
   } = params;
 
   // Determine vaults and user accounts based on direction
-  const [vaultIn, vaultOut] = direction === 0
-    ? [vault0, vault1]
-    : [vault1, vault0];
-  const [userIn, userOut] = direction === 0
-    ? [userToken0, userToken1]
-    : [userToken1, userToken0];
+  const [vaultIn, vaultOut] =
+    direction === 0 ? [vault0, vault1] : [vault1, vault0];
+  const [userIn, userOut] =
+    direction === 0 ? [userToken0, userToken1] : [userToken1, userToken0];
 
   return createSwapExactInInstruction(
     {

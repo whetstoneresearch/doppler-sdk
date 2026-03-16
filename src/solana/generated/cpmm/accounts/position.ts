@@ -39,7 +39,7 @@ import {
   type MaybeAccount,
   type MaybeEncodedAccount,
   type ReadonlyUint8Array,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export const POSITION_DISCRIMINATOR = new Uint8Array([
   170, 188, 143, 228, 122, 64, 247, 208,
@@ -80,17 +80,17 @@ export type PositionArgs = {
 export function getPositionEncoder(): FixedSizeEncoder<PositionArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["pool", getAddressEncoder()],
-      ["owner", getAddressEncoder()],
-      ["positionId", getU64Encoder()],
-      ["shares", getU128Encoder()],
-      ["feeGrowthLast0Q64", getU128Encoder()],
-      ["feeGrowthLast1Q64", getU128Encoder()],
-      ["feeOwed0", getU64Encoder()],
-      ["feeOwed1", getU64Encoder()],
-      ["version", getU8Encoder()],
-      ["reserved", fixEncoderSize(getBytesEncoder(), 7)],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['pool', getAddressEncoder()],
+      ['owner', getAddressEncoder()],
+      ['positionId', getU64Encoder()],
+      ['shares', getU128Encoder()],
+      ['feeGrowthLast0Q64', getU128Encoder()],
+      ['feeGrowthLast1Q64', getU128Encoder()],
+      ['feeOwed0', getU64Encoder()],
+      ['feeOwed1', getU64Encoder()],
+      ['version', getU8Encoder()],
+      ['reserved', fixEncoderSize(getBytesEncoder(), 7)],
     ]),
     (value) => ({ ...value, discriminator: POSITION_DISCRIMINATOR }),
   );
@@ -99,17 +99,17 @@ export function getPositionEncoder(): FixedSizeEncoder<PositionArgs> {
 /** Gets the decoder for {@link Position} account data. */
 export function getPositionDecoder(): FixedSizeDecoder<Position> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["pool", getAddressDecoder()],
-    ["owner", getAddressDecoder()],
-    ["positionId", getU64Decoder()],
-    ["shares", getU128Decoder()],
-    ["feeGrowthLast0Q64", getU128Decoder()],
-    ["feeGrowthLast1Q64", getU128Decoder()],
-    ["feeOwed0", getU64Decoder()],
-    ["feeOwed1", getU64Decoder()],
-    ["version", getU8Decoder()],
-    ["reserved", fixDecoderSize(getBytesDecoder(), 7)],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['pool', getAddressDecoder()],
+    ['owner', getAddressDecoder()],
+    ['positionId', getU64Decoder()],
+    ['shares', getU128Decoder()],
+    ['feeGrowthLast0Q64', getU128Decoder()],
+    ['feeGrowthLast1Q64', getU128Decoder()],
+    ['feeOwed0', getU64Decoder()],
+    ['feeOwed1', getU64Decoder()],
+    ['version', getU8Decoder()],
+    ['reserved', fixDecoderSize(getBytesDecoder(), 7)],
   ]);
 }
 

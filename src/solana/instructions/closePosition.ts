@@ -46,12 +46,7 @@ export function createClosePositionInstruction(
   accounts: ClosePositionAccounts,
   programId: Address = PROGRAM_ID,
 ): Instruction {
-  const {
-    pool,
-    position,
-    owner,
-    rentRecipient,
-  } = accounts;
+  const { pool, position, owner, rentRecipient } = accounts;
 
   // Build account metas in order expected by the program
   // Order: pool, position, owner, rent_recipient

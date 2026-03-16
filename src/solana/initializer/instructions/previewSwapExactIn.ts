@@ -39,11 +39,15 @@ export function createPreviewSwapExactInInstruction(
     ? [...keys, { address: sentinelProgram, role: ACCOUNT_ROLE_READONLY }]
     : keys;
 
-  const data = new Uint8Array(getPreviewSwapExactInInstructionDataEncoder().encode(args));
+  const data = new Uint8Array(
+    getPreviewSwapExactInInstructionDataEncoder().encode(args),
+  );
 
   return { programAddress: programId, accounts: accountsList, data };
 }
 
-export function decodePreviewSwapExactInResult(data: Uint8Array): PreviewSwapExactInResult {
+export function decodePreviewSwapExactInResult(
+  data: Uint8Array,
+): PreviewSwapExactInResult {
   return previewSwapExactInResultCodec.decode(data);
 }

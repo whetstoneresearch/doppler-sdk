@@ -34,13 +34,13 @@ import {
   type TransactionSigner,
   type WritableAccount,
   type WritableSignerAccount,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   getAccountMetaFactory,
   getAddressFromResolvedInstructionAccount,
   type ResolvedInstructionAccount,
-} from "@solana/program-client-core";
-import { PREDICTION_MIGRATOR_PROGRAM_ADDRESS } from "../programs";
+} from '@solana/program-client-core';
+import { PREDICTION_MIGRATOR_PROGRAM_ADDRESS } from '../programs';
 
 export const MIGRATE_ENTRY_DISCRIMINATOR = new Uint8Array([
   239, 154, 55, 173, 110, 36, 188, 214,
@@ -63,11 +63,11 @@ export type MigrateEntryInstruction<
   TAccountQuoteVault extends string | AccountMeta<string> = string,
   TAccountPayer extends string | AccountMeta<string> = string,
   TAccountTokenProgram extends string | AccountMeta<string> =
-    "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
   TAccountSystemProgram extends string | AccountMeta<string> =
-    "11111111111111111111111111111111",
+    '11111111111111111111111111111111',
   TAccountRent extends string | AccountMeta<string> =
-    "SysvarRent111111111111111111111111111111111",
+    'SysvarRent111111111111111111111111111111111',
   TAccountOracle extends string | AccountMeta<string> = string,
   TAccountMarket extends string | AccountMeta<string> = string,
   TAccountPotVault extends string | AccountMeta<string> = string,
@@ -146,8 +146,8 @@ export type MigrateEntryInstructionDataArgs = { entryId: ReadonlyUint8Array };
 export function getMigrateEntryInstructionDataEncoder(): FixedSizeEncoder<MigrateEntryInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["entryId", fixEncoderSize(getBytesEncoder(), 32)],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['entryId', fixEncoderSize(getBytesEncoder(), 32)],
     ]),
     (value) => ({ ...value, discriminator: MIGRATE_ENTRY_DISCRIMINATOR }),
   );
@@ -155,8 +155,8 @@ export function getMigrateEntryInstructionDataEncoder(): FixedSizeEncoder<Migrat
 
 export function getMigrateEntryInstructionDataDecoder(): FixedSizeDecoder<MigrateEntryInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["entryId", fixDecoderSize(getBytesDecoder(), 32)],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['entryId', fixDecoderSize(getBytesDecoder(), 32)],
   ]);
 }
 
@@ -220,7 +220,7 @@ export type MigrateEntryAsyncInput<
   entry: Address<TAccountEntry>;
   /** EntryByMint PDA (for validation) */
   entryByMint?: Address<TAccountEntryByMint>;
-  entryId: MigrateEntryInstructionDataArgs["entryId"];
+  entryId: MigrateEntryInstructionDataArgs['entryId'];
 };
 
 export async function getMigrateEntryInstructionAsync<
@@ -329,15 +329,15 @@ export async function getMigrateEntryInstructionAsync<
   // Resolve default values.
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
-      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" as Address<"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA">;
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
-      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
   if (!accounts.rent.value) {
     accounts.rent.value =
-      "SysvarRent111111111111111111111111111111111" as Address<"SysvarRent111111111111111111111111111111111">;
+      'SysvarRent111111111111111111111111111111111' as Address<'SysvarRent111111111111111111111111111111111'>;
   }
   if (!accounts.market.value) {
     accounts.market.value = await getProgramDerivedAddress({
@@ -346,7 +346,7 @@ export async function getMigrateEntryInstructionAsync<
         getBytesEncoder().encode(new Uint8Array([109, 97, 114, 107, 101, 116])),
         getAddressEncoder().encode(
           getAddressFromResolvedInstructionAccount(
-            "oracle",
+            'oracle',
             accounts.oracle.value,
           ),
         ),
@@ -365,7 +365,7 @@ export async function getMigrateEntryInstructionAsync<
         ),
         getAddressEncoder().encode(
           getAddressFromResolvedInstructionAccount(
-            "market",
+            'market',
             accounts.market.value,
           ),
         ),
@@ -383,13 +383,13 @@ export async function getMigrateEntryInstructionAsync<
         ),
         getAddressEncoder().encode(
           getAddressFromResolvedInstructionAccount(
-            "oracle",
+            'oracle',
             accounts.oracle.value,
           ),
         ),
         getAddressEncoder().encode(
           getAddressFromResolvedInstructionAccount(
-            "baseMint",
+            'baseMint',
             accounts.baseMint.value,
           ),
         ),
@@ -397,26 +397,26 @@ export async function getMigrateEntryInstructionAsync<
     });
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("initializerConfig", accounts.initializerConfig),
-      getAccountMeta("launch", accounts.launch),
-      getAccountMeta("launchAuthority", accounts.launchAuthority),
-      getAccountMeta("baseMint", accounts.baseMint),
-      getAccountMeta("quoteMint", accounts.quoteMint),
-      getAccountMeta("baseVault", accounts.baseVault),
-      getAccountMeta("quoteVault", accounts.quoteVault),
-      getAccountMeta("payer", accounts.payer),
-      getAccountMeta("tokenProgram", accounts.tokenProgram),
-      getAccountMeta("systemProgram", accounts.systemProgram),
-      getAccountMeta("rent", accounts.rent),
-      getAccountMeta("oracle", accounts.oracle),
-      getAccountMeta("market", accounts.market),
-      getAccountMeta("potVault", accounts.potVault),
-      getAccountMeta("marketAuthority", accounts.marketAuthority),
-      getAccountMeta("entry", accounts.entry),
-      getAccountMeta("entryByMint", accounts.entryByMint),
+      getAccountMeta('initializerConfig', accounts.initializerConfig),
+      getAccountMeta('launch', accounts.launch),
+      getAccountMeta('launchAuthority', accounts.launchAuthority),
+      getAccountMeta('baseMint', accounts.baseMint),
+      getAccountMeta('quoteMint', accounts.quoteMint),
+      getAccountMeta('baseVault', accounts.baseVault),
+      getAccountMeta('quoteVault', accounts.quoteVault),
+      getAccountMeta('payer', accounts.payer),
+      getAccountMeta('tokenProgram', accounts.tokenProgram),
+      getAccountMeta('systemProgram', accounts.systemProgram),
+      getAccountMeta('rent', accounts.rent),
+      getAccountMeta('oracle', accounts.oracle),
+      getAccountMeta('market', accounts.market),
+      getAccountMeta('potVault', accounts.potVault),
+      getAccountMeta('marketAuthority', accounts.marketAuthority),
+      getAccountMeta('entry', accounts.entry),
+      getAccountMeta('entryByMint', accounts.entryByMint),
     ],
     data: getMigrateEntryInstructionDataEncoder().encode(
       args as MigrateEntryInstructionDataArgs,
@@ -494,7 +494,7 @@ export type MigrateEntryInput<
   entry: Address<TAccountEntry>;
   /** EntryByMint PDA (for validation) */
   entryByMint: Address<TAccountEntryByMint>;
-  entryId: MigrateEntryInstructionDataArgs["entryId"];
+  entryId: MigrateEntryInstructionDataArgs['entryId'];
 };
 
 export function getMigrateEntryInstruction<
@@ -601,37 +601,37 @@ export function getMigrateEntryInstruction<
   // Resolve default values.
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
-      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" as Address<"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA">;
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
-      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
   if (!accounts.rent.value) {
     accounts.rent.value =
-      "SysvarRent111111111111111111111111111111111" as Address<"SysvarRent111111111111111111111111111111111">;
+      'SysvarRent111111111111111111111111111111111' as Address<'SysvarRent111111111111111111111111111111111'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("initializerConfig", accounts.initializerConfig),
-      getAccountMeta("launch", accounts.launch),
-      getAccountMeta("launchAuthority", accounts.launchAuthority),
-      getAccountMeta("baseMint", accounts.baseMint),
-      getAccountMeta("quoteMint", accounts.quoteMint),
-      getAccountMeta("baseVault", accounts.baseVault),
-      getAccountMeta("quoteVault", accounts.quoteVault),
-      getAccountMeta("payer", accounts.payer),
-      getAccountMeta("tokenProgram", accounts.tokenProgram),
-      getAccountMeta("systemProgram", accounts.systemProgram),
-      getAccountMeta("rent", accounts.rent),
-      getAccountMeta("oracle", accounts.oracle),
-      getAccountMeta("market", accounts.market),
-      getAccountMeta("potVault", accounts.potVault),
-      getAccountMeta("marketAuthority", accounts.marketAuthority),
-      getAccountMeta("entry", accounts.entry),
-      getAccountMeta("entryByMint", accounts.entryByMint),
+      getAccountMeta('initializerConfig', accounts.initializerConfig),
+      getAccountMeta('launch', accounts.launch),
+      getAccountMeta('launchAuthority', accounts.launchAuthority),
+      getAccountMeta('baseMint', accounts.baseMint),
+      getAccountMeta('quoteMint', accounts.quoteMint),
+      getAccountMeta('baseVault', accounts.baseVault),
+      getAccountMeta('quoteVault', accounts.quoteVault),
+      getAccountMeta('payer', accounts.payer),
+      getAccountMeta('tokenProgram', accounts.tokenProgram),
+      getAccountMeta('systemProgram', accounts.systemProgram),
+      getAccountMeta('rent', accounts.rent),
+      getAccountMeta('oracle', accounts.oracle),
+      getAccountMeta('market', accounts.market),
+      getAccountMeta('potVault', accounts.potVault),
+      getAccountMeta('marketAuthority', accounts.marketAuthority),
+      getAccountMeta('entry', accounts.entry),
+      getAccountMeta('entryByMint', accounts.entryByMint),
     ],
     data: getMigrateEntryInstructionDataEncoder().encode(
       args as MigrateEntryInstructionDataArgs,

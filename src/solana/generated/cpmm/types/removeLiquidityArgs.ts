@@ -19,7 +19,7 @@ import {
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type RemoveLiquidityArgs = {
   sharesIn: bigint;
@@ -37,19 +37,19 @@ export type RemoveLiquidityArgsArgs = {
 
 export function getRemoveLiquidityArgsEncoder(): FixedSizeEncoder<RemoveLiquidityArgsArgs> {
   return getStructEncoder([
-    ["sharesIn", getU128Encoder()],
-    ["minAmount0Out", getU64Encoder()],
-    ["minAmount1Out", getU64Encoder()],
-    ["updateOracle", getBooleanEncoder()],
+    ['sharesIn', getU128Encoder()],
+    ['minAmount0Out', getU64Encoder()],
+    ['minAmount1Out', getU64Encoder()],
+    ['updateOracle', getBooleanEncoder()],
   ]);
 }
 
 export function getRemoveLiquidityArgsDecoder(): FixedSizeDecoder<RemoveLiquidityArgs> {
   return getStructDecoder([
-    ["sharesIn", getU128Decoder()],
-    ["minAmount0Out", getU64Decoder()],
-    ["minAmount1Out", getU64Decoder()],
-    ["updateOracle", getBooleanDecoder()],
+    ['sharesIn', getU128Decoder()],
+    ['minAmount0Out', getU64Decoder()],
+    ['minAmount1Out', getU64Decoder()],
+    ['updateOracle', getBooleanDecoder()],
   ]);
 }
 

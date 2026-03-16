@@ -15,18 +15,18 @@ import {
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type OracleConsultArgs = { windowSeconds: number };
 
 export type OracleConsultArgsArgs = OracleConsultArgs;
 
 export function getOracleConsultArgsEncoder(): FixedSizeEncoder<OracleConsultArgsArgs> {
-  return getStructEncoder([["windowSeconds", getU32Encoder()]]);
+  return getStructEncoder([['windowSeconds', getU32Encoder()]]);
 }
 
 export function getOracleConsultArgsDecoder(): FixedSizeDecoder<OracleConsultArgs> {
-  return getStructDecoder([["windowSeconds", getU32Decoder()]]);
+  return getStructDecoder([['windowSeconds', getU32Decoder()]]);
 }
 
 export function getOracleConsultArgsCodec(): FixedSizeCodec<

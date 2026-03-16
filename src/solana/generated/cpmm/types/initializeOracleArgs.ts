@@ -19,7 +19,7 @@ import {
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type InitializeOracleArgs = {
   maxPriceChangeRatioQ64: bigint;
@@ -35,17 +35,17 @@ export type InitializeOracleArgsArgs = {
 
 export function getInitializeOracleArgsEncoder(): FixedSizeEncoder<InitializeOracleArgsArgs> {
   return getStructEncoder([
-    ["maxPriceChangeRatioQ64", getU128Encoder()],
-    ["observationIntervalSec", getU32Encoder()],
-    ["numObservations", getU16Encoder()],
+    ['maxPriceChangeRatioQ64', getU128Encoder()],
+    ['observationIntervalSec', getU32Encoder()],
+    ['numObservations', getU16Encoder()],
   ]);
 }
 
 export function getInitializeOracleArgsDecoder(): FixedSizeDecoder<InitializeOracleArgs> {
   return getStructDecoder([
-    ["maxPriceChangeRatioQ64", getU128Decoder()],
-    ["observationIntervalSec", getU32Decoder()],
-    ["numObservations", getU16Decoder()],
+    ['maxPriceChangeRatioQ64', getU128Decoder()],
+    ['observationIntervalSec', getU32Decoder()],
+    ['numObservations', getU16Decoder()],
   ]);
 }
 

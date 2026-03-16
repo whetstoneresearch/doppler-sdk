@@ -25,13 +25,13 @@ import {
   type Instruction,
   type InstructionWithData,
   type ReadonlyUint8Array,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   addSelfFetchFunctions,
   addSelfPlanAndSendFunctions,
   type SelfFetchFunctions,
   type SelfPlanAndSendFunctions,
-} from "@solana/program-client-core";
+} from '@solana/program-client-core';
 import {
   getInitConfigCodec,
   getLaunchCodec,
@@ -39,7 +39,7 @@ import {
   type InitConfigArgs,
   type Launch,
   type LaunchArgs,
-} from "../accounts";
+} from '../accounts';
 import {
   getAbortLaunchInstructionAsync,
   getCurveSwapExactInInstructionAsync,
@@ -81,10 +81,10 @@ import {
   type SetMigratorAllowlistAsyncInput,
   type SetSentinelAllowlistAsyncInput,
   type UpdateTradingFlagsAsyncInput,
-} from "../instructions";
+} from '../instructions';
 
 export const INITIALIZER_PROGRAM_ADDRESS =
-  "4H9w6qMqqSh6DVW7BzYxPHFvLaQP7rbRiQnPYGPajQxq" as Address<"4H9w6qMqqSh6DVW7BzYxPHFvLaQP7rbRiQnPYGPajQxq">;
+  '4H9w6qMqqSh6DVW7BzYxPHFvLaQP7rbRiQnPYGPajQxq' as Address<'4H9w6qMqqSh6DVW7BzYxPHFvLaQP7rbRiQnPYGPajQxq'>;
 
 export enum InitializerAccount {
   InitConfig,
@@ -94,7 +94,7 @@ export enum InitializerAccount {
 export function identifyInitializerAccount(
   account: { data: ReadonlyUint8Array } | ReadonlyUint8Array,
 ): InitializerAccount {
-  const data = "data" in account ? account.data : account;
+  const data = 'data' in account ? account.data : account;
   if (
     containsBytes(
       data,
@@ -119,7 +119,7 @@ export function identifyInitializerAccount(
   }
   throw new SolanaError(
     SOLANA_ERROR__PROGRAM_CLIENTS__FAILED_TO_IDENTIFY_ACCOUNT,
-    { accountData: data, programName: "initializer" },
+    { accountData: data, programName: 'initializer' },
   );
 }
 
@@ -139,7 +139,7 @@ export enum InitializerInstruction {
 export function identifyInitializerInstruction(
   instruction: { data: ReadonlyUint8Array } | ReadonlyUint8Array,
 ): InitializerInstruction {
-  const data = "data" in instruction ? instruction.data : instruction;
+  const data = 'data' in instruction ? instruction.data : instruction;
   if (
     containsBytes(
       data,
@@ -252,12 +252,12 @@ export function identifyInitializerInstruction(
   }
   throw new SolanaError(
     SOLANA_ERROR__PROGRAM_CLIENTS__FAILED_TO_IDENTIFY_INSTRUCTION,
-    { instructionData: data, programName: "initializer" },
+    { instructionData: data, programName: 'initializer' },
   );
 }
 
 export type ParsedInitializerInstruction<
-  TProgram extends string = "4H9w6qMqqSh6DVW7BzYxPHFvLaQP7rbRiQnPYGPajQxq",
+  TProgram extends string = '4H9w6qMqqSh6DVW7BzYxPHFvLaQP7rbRiQnPYGPajQxq',
 > =
   | ({
       instructionType: InitializerInstruction.AbortLaunch;
@@ -370,7 +370,7 @@ export function parseInitializerInstruction<TProgram extends string>(
         SOLANA_ERROR__PROGRAM_CLIENTS__UNRECOGNIZED_INSTRUCTION_TYPE,
         {
           instructionType: instructionType as string,
-          programName: "initializer",
+          programName: 'initializer',
         },
       );
   }
@@ -402,11 +402,11 @@ export type InitializerPluginInstructions = {
   ) => ReturnType<typeof getInitializeConfigInstructionAsync> &
     SelfPlanAndSendFunctions;
   initializeLaunch: (
-    input: MakeOptional<InitializeLaunchAsyncInput, "payer">,
+    input: MakeOptional<InitializeLaunchAsyncInput, 'payer'>,
   ) => ReturnType<typeof getInitializeLaunchInstructionAsync> &
     SelfPlanAndSendFunctions;
   migrateLaunch: (
-    input: MakeOptional<MigrateLaunchAsyncInput, "payer">,
+    input: MakeOptional<MigrateLaunchAsyncInput, 'payer'>,
   ) => ReturnType<typeof getMigrateLaunchInstructionAsync> &
     SelfPlanAndSendFunctions;
   previewMigration: (

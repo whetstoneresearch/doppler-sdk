@@ -71,7 +71,11 @@ export function validateMarketCapParameters(
     );
   }
 
-  const tokenPriceUSD = marketCapToTokenPrice(marketCapUSD, tokenSupply, tokenDecimals);
+  const tokenPriceUSD = marketCapToTokenPrice(
+    marketCapUSD,
+    tokenSupply,
+    tokenDecimals,
+  );
 
   if (tokenPriceUSD < 0.000_001) {
     warnings.push(

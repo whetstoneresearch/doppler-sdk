@@ -37,7 +37,7 @@ import {
   type MaybeAccount,
   type MaybeEncodedAccount,
   type ReadonlyUint8Array,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export const INIT_CONFIG_DISCRIMINATOR = new Uint8Array([
   97, 166, 35, 7, 20, 2, 164, 126,
@@ -74,15 +74,15 @@ export type InitConfigArgs = {
 export function getInitConfigEncoder(): FixedSizeEncoder<InitConfigArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["admin", getAddressEncoder()],
-      ["migratorAllowlistLen", getU8Encoder()],
-      ["migratorAllowlist", getArrayEncoder(getAddressEncoder(), { size: 32 })],
-      ["sentinelAllowlistLen", getU8Encoder()],
-      ["sentinelAllowlist", getArrayEncoder(getAddressEncoder(), { size: 32 })],
-      ["bump", getU8Encoder()],
-      ["version", getU8Encoder()],
-      ["reserved", fixEncoderSize(getBytesEncoder(), 31)],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['admin', getAddressEncoder()],
+      ['migratorAllowlistLen', getU8Encoder()],
+      ['migratorAllowlist', getArrayEncoder(getAddressEncoder(), { size: 32 })],
+      ['sentinelAllowlistLen', getU8Encoder()],
+      ['sentinelAllowlist', getArrayEncoder(getAddressEncoder(), { size: 32 })],
+      ['bump', getU8Encoder()],
+      ['version', getU8Encoder()],
+      ['reserved', fixEncoderSize(getBytesEncoder(), 31)],
     ]),
     (value) => ({ ...value, discriminator: INIT_CONFIG_DISCRIMINATOR }),
   );
@@ -91,15 +91,15 @@ export function getInitConfigEncoder(): FixedSizeEncoder<InitConfigArgs> {
 /** Gets the decoder for {@link InitConfig} account data. */
 export function getInitConfigDecoder(): FixedSizeDecoder<InitConfig> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["admin", getAddressDecoder()],
-    ["migratorAllowlistLen", getU8Decoder()],
-    ["migratorAllowlist", getArrayDecoder(getAddressDecoder(), { size: 32 })],
-    ["sentinelAllowlistLen", getU8Decoder()],
-    ["sentinelAllowlist", getArrayDecoder(getAddressDecoder(), { size: 32 })],
-    ["bump", getU8Decoder()],
-    ["version", getU8Decoder()],
-    ["reserved", fixDecoderSize(getBytesDecoder(), 31)],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['admin', getAddressDecoder()],
+    ['migratorAllowlistLen', getU8Decoder()],
+    ['migratorAllowlist', getArrayDecoder(getAddressDecoder(), { size: 32 })],
+    ['sentinelAllowlistLen', getU8Decoder()],
+    ['sentinelAllowlist', getArrayDecoder(getAddressDecoder(), { size: 32 })],
+    ['bump', getU8Decoder()],
+    ['version', getU8Decoder()],
+    ['reserved', fixDecoderSize(getBytesDecoder(), 31)],
   ]);
 }
 

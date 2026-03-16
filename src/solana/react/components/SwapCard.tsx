@@ -71,7 +71,10 @@ function formatAmount(amount: bigint, decimals: number): string {
     return intPart.toLocaleString();
   }
 
-  const fracStr = fracPart.toString().padStart(decimals, '0').replace(/0+$/, '');
+  const fracStr = fracPart
+    .toString()
+    .padStart(decimals, '0')
+    .replace(/0+$/, '');
   return `${intPart.toLocaleString()}.${fracStr}`;
 }
 
@@ -144,7 +147,7 @@ export function SwapCard({
 }: SwapCardProps): JSX.Element {
   // Fetch pool if not provided
   const { pool: fetchedPool, loading: poolLoading } = usePool(
-    providedPool ? undefined : poolAddress
+    providedPool ? undefined : poolAddress,
   );
   const pool = providedPool ?? fetchedPool;
 
@@ -178,7 +181,7 @@ export function SwapCard({
       const amount = parseAmount(value, inputToken.decimals);
       setInputAmount(amount);
     },
-    [inputToken.decimals, setInputAmount]
+    [inputToken.decimals, setInputAmount],
   );
 
   // Handle output change (exact output mode)
@@ -189,7 +192,7 @@ export function SwapCard({
       const amount = parseAmount(value, outputToken.decimals);
       setOutputAmount(amount);
     },
-    [outputToken.decimals, setOutputAmount]
+    [outputToken.decimals, setOutputAmount],
   );
 
   // Handle max button
@@ -199,7 +202,14 @@ export function SwapCard({
 
   // Handle swap button
   const handleSwap = useCallback(async () => {
-    if (!canSwap || !quote || !state.inputToken || !state.outputToken || !onSwap) return;
+    if (
+      !canSwap ||
+      !quote ||
+      !state.inputToken ||
+      !state.outputToken ||
+      !onSwap
+    )
+      return;
 
     await onSwap({
       inputToken: state.inputToken,
@@ -217,7 +227,7 @@ export function SwapCard({
         setSlippage(Math.round(value * 100));
       }
     },
-    [setSlippage]
+    [setSlippage],
   );
 
   // Format display values
@@ -231,7 +241,12 @@ export function SwapCard({
       return formatAmount(quote.maxAmountIn, inputToken.decimals);
     }
     return '';
-  }, [state.exactInput, state.inputAmount, quote?.maxAmountIn, inputToken.decimals]);
+  }, [
+    state.exactInput,
+    state.inputAmount,
+    quote?.maxAmountIn,
+    inputToken.decimals,
+  ]);
 
   const outputDisplayValue = useMemo(() => {
     if (!state.exactInput) {
@@ -243,10 +258,16 @@ export function SwapCard({
       return formatAmount(quote.amountOut, outputToken.decimals);
     }
     return '';
-  }, [state.exactInput, state.outputAmount, quote?.amountOut, outputToken.decimals]);
+  }, [
+    state.exactInput,
+    state.outputAmount,
+    quote?.amountOut,
+    outputToken.decimals,
+  ]);
 
   // Determine button state
-  const buttonDisabled = disabled || swapping || poolLoading || !canSwap || !onSwap;
+  const buttonDisabled =
+    disabled || swapping || poolLoading || !canSwap || !onSwap;
   const buttonText = useMemo(() => {
     if (poolLoading) return 'Loading...';
     if (swapping) return 'Swapping...';
@@ -254,7 +275,8 @@ export function SwapCard({
     if (state.inputAmount === 0n && state.exactInput) return 'Enter amount';
     if (state.outputAmount === 0n && !state.exactInput) return 'Enter amount';
     if (quote?.error) return quote.error;
-    if (state.inputAmount > inputBalance && state.exactInput) return 'Insufficient balance';
+    if (state.inputAmount > inputBalance && state.exactInput)
+      return 'Insufficient balance';
     if (!canSwap) return 'Invalid swap';
     return 'Swap';
   }, [poolLoading, swapping, pool, state, quote, inputBalance, canSwap]);
@@ -287,7 +309,8 @@ export function SwapCard({
         <div className="flex justify-between text-sm text-gray-500 mb-1">
           <span>From</span>
           <span>
-            Balance: {formatAmount(inputBalance, inputToken.decimals)} {inputToken.symbol}
+            Balance: {formatAmount(inputBalance, inputToken.decimals)}{' '}
+            {inputToken.symbol}
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -348,7 +371,8 @@ export function SwapCard({
         <div className="flex justify-between text-sm text-gray-500 mb-1">
           <span>To</span>
           <span>
-            Balance: {formatAmount(outputBalance, outputToken.decimals)} {outputToken.symbol}
+            Balance: {formatAmount(outputBalance, outputToken.decimals)}{' '}
+            {outputToken.symbol}
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -380,7 +404,8 @@ export function SwapCard({
           <div className="flex justify-between">
             <span>Rate</span>
             <span>
-              1 {inputToken.symbol} = {quote.executionPrice.toFixed(6)} {outputToken.symbol}
+              1 {inputToken.symbol} = {quote.executionPrice.toFixed(6)}{' '}
+              {outputToken.symbol}
             </span>
           </div>
           <div className="flex justify-between">
@@ -392,13 +417,15 @@ export function SwapCard({
           <div className="flex justify-between">
             <span>Fee</span>
             <span>
-              {formatAmount(quote.feeTotal, inputToken.decimals)} {inputToken.symbol}
+              {formatAmount(quote.feeTotal, inputToken.decimals)}{' '}
+              {inputToken.symbol}
             </span>
           </div>
           <div className="flex justify-between">
             <span>Minimum received</span>
             <span>
-              {formatAmount(quote.minAmountOut, outputToken.decimals)} {outputToken.symbol}
+              {formatAmount(quote.minAmountOut, outputToken.decimals)}{' '}
+              {outputToken.symbol}
             </span>
           </div>
         </div>

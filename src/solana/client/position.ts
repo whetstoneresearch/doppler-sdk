@@ -94,10 +94,12 @@ export async function fetchPosition(
   address: Address,
   config?: FetchPositionsConfig,
 ): Promise<Position | null> {
-  const response = await rpc.getAccountInfo(address, {
-    encoding: 'base64',
-    commitment: config?.commitment,
-  }).send();
+  const response = await rpc
+    .getAccountInfo(address, {
+      encoding: 'base64',
+      commitment: config?.commitment,
+    })
+    .send();
 
   if (!response.value) {
     return null;
@@ -138,7 +140,9 @@ export async function fetchUserPositions(
     {
       memcmp: {
         offset: 0n,
-        bytes: bytesToBase64(ACCOUNT_DISCRIMINATORS.Position) as Base64EncodedBytes,
+        bytes: bytesToBase64(
+          ACCOUNT_DISCRIMINATORS.Position,
+        ) as Base64EncodedBytes,
         encoding: 'base64' as const,
       },
     },
@@ -163,15 +167,19 @@ export async function fetchUserPositions(
     });
   }
 
-  const response = await rpc.getProgramAccounts(programId, {
-    encoding: 'base64',
-    commitment: config?.commitment,
-    filters,
-  }).send() as unknown;
+  const response = (await rpc
+    .getProgramAccounts(programId, {
+      encoding: 'base64',
+      commitment: config?.commitment,
+      filters,
+    })
+    .send()) as unknown;
 
-  const accounts = (Array.isArray(response)
-    ? response
-    : (response as { value: ProgramAccount[] }).value) as ProgramAccount[];
+  const accounts = (
+    Array.isArray(response)
+      ? response
+      : (response as { value: ProgramAccount[] }).value
+  ) as ProgramAccount[];
 
   const positions: PositionWithAddress[] = [];
 
@@ -210,7 +218,9 @@ export async function fetchPoolPositions(
     {
       memcmp: {
         offset: 0n,
-        bytes: bytesToBase64(ACCOUNT_DISCRIMINATORS.Position) as Base64EncodedBytes,
+        bytes: bytesToBase64(
+          ACCOUNT_DISCRIMINATORS.Position,
+        ) as Base64EncodedBytes,
         encoding: 'base64' as const,
       },
     },
@@ -224,15 +234,19 @@ export async function fetchPoolPositions(
     },
   ];
 
-  const response = await rpc.getProgramAccounts(programId, {
-    encoding: 'base64',
-    commitment: config?.commitment,
-    filters,
-  }).send() as unknown;
+  const response = (await rpc
+    .getProgramAccounts(programId, {
+      encoding: 'base64',
+      commitment: config?.commitment,
+      filters,
+    })
+    .send()) as unknown;
 
-  const accounts = (Array.isArray(response)
-    ? response
-    : (response as { value: ProgramAccount[] }).value) as ProgramAccount[];
+  const accounts = (
+    Array.isArray(response)
+      ? response
+      : (response as { value: ProgramAccount[] }).value
+  ) as ProgramAccount[];
 
   const positions: PositionWithAddress[] = [];
 
@@ -270,7 +284,10 @@ export async function fetchPoolPositions(
  * }
  * ```
  */
-export function getPositionValue(pool: Pool, position: Position): PositionValue {
+export function getPositionValue(
+  pool: Pool,
+  position: Position,
+): PositionValue {
   if (pool.totalShares === 0n) {
     return {
       amount0: 0n,
@@ -322,7 +339,12 @@ export async function fetchPositionByParams(
   config?: FetchPositionsConfig,
 ): Promise<PositionWithAddress | null> {
   const programId = config?.programId ?? PROGRAM_ID;
-  const [address] = await getPositionAddress(pool, owner, positionId, programId);
+  const [address] = await getPositionAddress(
+    pool,
+    owner,
+    positionId,
+    programId,
+  );
 
   const position = await fetchPosition(rpc, address, config);
 
@@ -351,7 +373,12 @@ export async function getPositionAddressFromParams(
   positionId: bigint,
   programId: Address = PROGRAM_ID,
 ): Promise<Address> {
-  const [address] = await getPositionAddress(pool, owner, positionId, programId);
+  const [address] = await getPositionAddress(
+    pool,
+    owner,
+    positionId,
+    programId,
+  );
   return address;
 }
 
@@ -371,7 +398,7 @@ export async function fetchPositionsBatch(
   const positions = new Map<Address, Position>();
 
   const results = await Promise.all(
-    addresses.map(addr => fetchPosition(rpc, addr, config))
+    addresses.map((addr) => fetchPosition(rpc, addr, config)),
   );
 
   for (let i = 0; i < addresses.length; i++) {
@@ -408,7 +435,12 @@ export function sortPositionsByShares(
   descending = true,
 ): PositionWithAddress[] {
   return [...positions].sort((a, b) => {
-    const cmp = a.account.shares < b.account.shares ? -1 : a.account.shares > b.account.shares ? 1 : 0;
+    const cmp =
+      a.account.shares < b.account.shares
+        ? -1
+        : a.account.shares > b.account.shares
+          ? 1
+          : 0;
     return descending ? -cmp : cmp;
   });
 }

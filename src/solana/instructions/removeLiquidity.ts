@@ -9,7 +9,10 @@ import {
   ACCOUNT_ROLE_SIGNER,
 } from '../core/constants.js';
 import type { RemoveLiquidityArgs } from '../core/types.js';
-import { removeLiquidityArgsCodec, encodeInstructionData } from '../core/codecs.js';
+import {
+  removeLiquidityArgsCodec,
+  encodeInstructionData,
+} from '../core/codecs.js';
 
 /**
  * Accounts required for remove_liquidity instruction

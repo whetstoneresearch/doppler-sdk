@@ -74,28 +74,39 @@ export enum CpmmErrorCode {
  */
 export const CPMM_ERROR_MESSAGES: Record<CpmmErrorCode, string> = {
   [CpmmErrorCode.Unauthorized]: 'Unauthorized: Caller lacks required authority',
-  [CpmmErrorCode.PoolLocked]: 'Pool is currently locked (reentrancy protection)',
-  [CpmmErrorCode.InvalidFee]: 'Invalid fee value (exceeds max or invalid range)',
-  [CpmmErrorCode.InvalidFeeSplit]: 'Invalid fee split value (exceeds max or invalid range)',
+  [CpmmErrorCode.PoolLocked]:
+    'Pool is currently locked (reentrancy protection)',
+  [CpmmErrorCode.InvalidFee]:
+    'Invalid fee value (exceeds max or invalid range)',
+  [CpmmErrorCode.InvalidFeeSplit]:
+    'Invalid fee split value (exceeds max or invalid range)',
   [CpmmErrorCode.InvalidDirection]: 'Invalid swap direction (must be 0 or 1)',
-  [CpmmErrorCode.InsufficientLiquidity]: 'Insufficient liquidity for this operation',
-  [CpmmErrorCode.SlippageExceeded]: 'Slippage exceeded: Output amount less than minimum',
+  [CpmmErrorCode.InsufficientLiquidity]:
+    'Insufficient liquidity for this operation',
+  [CpmmErrorCode.SlippageExceeded]:
+    'Slippage exceeded: Output amount less than minimum',
   [CpmmErrorCode.MathOverflow]: 'Math operation overflowed',
   [CpmmErrorCode.InvalidMintOrder]: 'Token mints not in canonical order',
   [CpmmErrorCode.SameMintPair]: 'Cannot create pool with identical tokens',
   [CpmmErrorCode.InvalidVault]: 'Vault account is invalid or does not match',
-  [CpmmErrorCode.InvalidPosition]: 'Position account is invalid or does not match',
-  [CpmmErrorCode.PositionNotEmpty]: 'Cannot close position with non-zero shares or fees',
+  [CpmmErrorCode.InvalidPosition]:
+    'Position account is invalid or does not match',
+  [CpmmErrorCode.PositionNotEmpty]:
+    'Cannot close position with non-zero shares or fees',
   [CpmmErrorCode.InvalidRoute]: 'Invalid route configuration',
   [CpmmErrorCode.NotSupportedInV0_1]: 'Not supported in v0.1',
   [CpmmErrorCode.OracleNotInitialized]: 'Oracle not initialized for this pool',
   [CpmmErrorCode.ZeroSharesOut]: 'Zero shares out',
   [CpmmErrorCode.SentinelRejected]: 'Sentinel program rejected the operation',
   [CpmmErrorCode.SentinelCpiFailed]: 'Sentinel CPI call failed',
-  [CpmmErrorCode.SentinelProgramNotProvided]: 'Sentinel program account not provided',
-  [CpmmErrorCode.SentinelProgramNotExecutable]: 'Sentinel program account is not executable',
-  [CpmmErrorCode.SentinelReturnDataMissing]: 'Sentinel return data missing or wrong program id',
-  [CpmmErrorCode.SentinelReturnDataInvalid]: 'Sentinel return data invalid length or could not deserialize',
+  [CpmmErrorCode.SentinelProgramNotProvided]:
+    'Sentinel program account not provided',
+  [CpmmErrorCode.SentinelProgramNotExecutable]:
+    'Sentinel program account is not executable',
+  [CpmmErrorCode.SentinelReturnDataMissing]:
+    'Sentinel return data missing or wrong program id',
+  [CpmmErrorCode.SentinelReturnDataInvalid]:
+    'Sentinel return data invalid length or could not deserialize',
   [CpmmErrorCode.SentinelNotAllowlisted]: 'Sentinel program not in allowlist',
   [CpmmErrorCode.TotalSharesZero]: 'Pool has zero shares (no liquidity)',
   [CpmmErrorCode.AmountZero]: 'Amount cannot be zero',
@@ -134,7 +145,9 @@ export function parseErrorFromLogs(logs: string[]): CpmmError | null {
   // or custom error pattern: "Program log: Error Code: ..."
   for (const log of logs) {
     // Pattern 1: Anchor error with code
-    const anchorMatch = log.match(/AnchorError.*Error Code:\s*(\w+)\.\s*Error Number:\s*(\d+)/);
+    const anchorMatch = log.match(
+      /AnchorError.*Error Code:\s*(\w+)\.\s*Error Number:\s*(\d+)/,
+    );
     if (anchorMatch) {
       const errorNumber = parseInt(anchorMatch[2], 10);
       if (errorNumber >= 6000 && errorNumber <= 6030) {
@@ -157,7 +170,10 @@ export function parseErrorFromLogs(logs: string[]): CpmmError | null {
       const message = customMatch[1].toLowerCase();
       // Try to match message to error code
       for (const [code, msg] of Object.entries(CPMM_ERROR_MESSAGES)) {
-        if (msg.toLowerCase().includes(message) || message.includes(msg.toLowerCase())) {
+        if (
+          msg.toLowerCase().includes(message) ||
+          message.includes(msg.toLowerCase())
+        ) {
           return new CpmmError(parseInt(code) as CpmmErrorCode, logs);
         }
       }

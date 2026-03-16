@@ -32,12 +32,12 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   getAccountMetaFactory,
   type ResolvedInstructionAccount,
-} from "@solana/program-client-core";
-import { CPMM_PROGRAM_ADDRESS } from "../programs";
+} from '@solana/program-client-core';
+import { CPMM_PROGRAM_ADDRESS } from '../programs';
 
 export const TRANSFER_ADMIN_DISCRIMINATOR = new Uint8Array([
   42, 242, 66, 106, 228, 10, 111, 156,
@@ -79,8 +79,8 @@ export type TransferAdminInstructionDataArgs = { newAdmin: Address };
 export function getTransferAdminInstructionDataEncoder(): FixedSizeEncoder<TransferAdminInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["newAdmin", getAddressEncoder()],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['newAdmin', getAddressEncoder()],
     ]),
     (value) => ({ ...value, discriminator: TRANSFER_ADMIN_DISCRIMINATOR }),
   );
@@ -88,8 +88,8 @@ export function getTransferAdminInstructionDataEncoder(): FixedSizeEncoder<Trans
 
 export function getTransferAdminInstructionDataDecoder(): FixedSizeDecoder<TransferAdminInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["newAdmin", getAddressDecoder()],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['newAdmin', getAddressDecoder()],
   ]);
 }
 
@@ -109,7 +109,7 @@ export type TransferAdminInput<
 > = {
   config: Address<TAccountConfig>;
   admin: TransactionSigner<TAccountAdmin>;
-  newAdmin: TransferAdminInstructionDataArgs["newAdmin"];
+  newAdmin: TransferAdminInstructionDataArgs['newAdmin'];
 };
 
 export function getTransferAdminInstruction<
@@ -136,11 +136,11 @@ export function getTransferAdminInstruction<
   // Original args.
   const args = { ...input };
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("config", accounts.config),
-      getAccountMeta("admin", accounts.admin),
+      getAccountMeta('config', accounts.config),
+      getAccountMeta('admin', accounts.admin),
     ],
     data: getTransferAdminInstructionDataEncoder().encode(
       args as TransferAdminInstructionDataArgs,

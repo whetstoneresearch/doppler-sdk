@@ -20,7 +20,7 @@ import {
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type AccumulatorUpdated = {
   market: Address;
@@ -36,17 +36,17 @@ export type AccumulatorUpdatedArgs = {
 
 export function getAccumulatorUpdatedEncoder(): FixedSizeEncoder<AccumulatorUpdatedArgs> {
   return getStructEncoder([
-    ["market", getAddressEncoder()],
-    ["newTotalPot", getU64Encoder()],
-    ["newAccQuotePerToken", getU128Encoder()],
+    ['market', getAddressEncoder()],
+    ['newTotalPot', getU64Encoder()],
+    ['newAccQuotePerToken', getU128Encoder()],
   ]);
 }
 
 export function getAccumulatorUpdatedDecoder(): FixedSizeDecoder<AccumulatorUpdated> {
   return getStructDecoder([
-    ["market", getAddressDecoder()],
-    ["newTotalPot", getU64Decoder()],
-    ["newAccQuotePerToken", getU128Decoder()],
+    ['market', getAddressDecoder()],
+    ['newTotalPot', getU64Decoder()],
+    ['newAccQuotePerToken', getU128Decoder()],
   ]);
 }
 

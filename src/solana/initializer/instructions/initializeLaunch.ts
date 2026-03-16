@@ -19,13 +19,24 @@ import { getInitializeLaunchInstructionDataEncoder } from '../../generated/initi
 
 type AddressOrSigner = Address | TransactionSigner;
 
-function isTransactionSigner(value: AddressOrSigner): value is TransactionSigner {
-  return typeof value === 'object' && value !== null && 'address' in value && 'signTransactions' in value;
+function isTransactionSigner(
+  value: AddressOrSigner,
+): value is TransactionSigner {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'address' in value &&
+    'signTransactions' in value
+  );
 }
 
 function createAccountMeta(
   value: AddressOrSigner,
-  role: typeof ACCOUNT_ROLE_READONLY | typeof ACCOUNT_ROLE_WRITABLE | typeof ACCOUNT_ROLE_SIGNER | typeof ACCOUNT_ROLE_WRITABLE_SIGNER,
+  role:
+    | typeof ACCOUNT_ROLE_READONLY
+    | typeof ACCOUNT_ROLE_WRITABLE
+    | typeof ACCOUNT_ROLE_SIGNER
+    | typeof ACCOUNT_ROLE_WRITABLE_SIGNER,
 ): AccountMeta | AccountSignerMeta {
   if (isTransactionSigner(value)) {
     return { address: value.address, role, signer: value };
@@ -49,11 +60,18 @@ export interface InitializeLaunchAccounts {
   rent: Address;
 }
 
-function validateInitializeLaunchCurveParams(args: InitializeLaunchArgsArgs): void {
+function validateInitializeLaunchCurveParams(
+  args: InitializeLaunchArgsArgs,
+): void {
   if (args.curveKind !== CURVE_KIND_XYK) {
-    throw new Error(`unsupported curve kind: ${args.curveKind}; only CURVE_KIND_XYK is currently enabled`);
+    throw new Error(
+      `unsupported curve kind: ${args.curveKind}; only CURVE_KIND_XYK is currently enabled`,
+    );
   }
-  if (args.curveParams.length !== 1 || args.curveParams[0] !== CURVE_PARAMS_FORMAT_XYK_V0) {
+  if (
+    args.curveParams.length !== 1 ||
+    args.curveParams[0] !== CURVE_PARAMS_FORMAT_XYK_V0
+  ) {
     throw new Error('xyk curve params must be [CURVE_PARAMS_FORMAT_XYK_V0]');
   }
 }
@@ -104,7 +122,9 @@ export function createInitializeLaunchInstruction(
   keys.push({ address: systemProgram, role: ACCOUNT_ROLE_READONLY });
   keys.push({ address: rent, role: ACCOUNT_ROLE_READONLY });
 
-  const data = new Uint8Array(getInitializeLaunchInstructionDataEncoder().encode(args));
+  const data = new Uint8Array(
+    getInitializeLaunchInstructionDataEncoder().encode(args),
+  );
 
   return {
     programAddress: programId,

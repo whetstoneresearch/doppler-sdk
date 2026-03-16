@@ -15,13 +15,23 @@ import { encodeInstructionData } from '../../core/codecs.js';
 
 type AddressOrSigner = Address | TransactionSigner;
 
-function isTransactionSigner(value: AddressOrSigner): value is TransactionSigner {
-  return typeof value === 'object' && value !== null && 'address' in value && 'signTransactions' in value;
+function isTransactionSigner(
+  value: AddressOrSigner,
+): value is TransactionSigner {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'address' in value &&
+    'signTransactions' in value
+  );
 }
 
 function createAccountMeta(
   value: AddressOrSigner,
-  role: typeof ACCOUNT_ROLE_READONLY | typeof ACCOUNT_ROLE_WRITABLE | typeof ACCOUNT_ROLE_SIGNER,
+  role:
+    | typeof ACCOUNT_ROLE_READONLY
+    | typeof ACCOUNT_ROLE_WRITABLE
+    | typeof ACCOUNT_ROLE_SIGNER,
 ): AccountMeta | AccountSignerMeta {
   if (isTransactionSigner(value)) {
     return { address: value.address, role, signer: value };
@@ -75,4 +85,3 @@ export function createAbortLaunchInstruction(
 
   return { programAddress: programId, accounts: keys, data };
 }
-

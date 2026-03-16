@@ -11,8 +11,8 @@ import {
   type Address,
   type SOLANA_ERROR__INSTRUCTION_ERROR__CUSTOM,
   type SolanaError,
-} from "@solana/kit";
-import { TRUSTED_ORACLE_PROGRAM_ADDRESS } from "../programs";
+} from '@solana/kit';
+import { TRUSTED_ORACLE_PROGRAM_ADDRESS } from '../programs';
 
 /** Unauthorized: Unauthorized: only oracle authority can perform this action */
 export const TRUSTED_ORACLE_ERROR__UNAUTHORIZED = 0x1770; // 6000
@@ -30,7 +30,7 @@ export type TrustedOracleError =
   | typeof TRUSTED_ORACLE_ERROR__UNAUTHORIZED;
 
 let trustedOracleErrorMessages: Record<TrustedOracleError, string> | undefined;
-if (process.env.NODE_ENV !== "production") {
+if (process.env.NODE_ENV !== 'production') {
   trustedOracleErrorMessages = {
     [TRUSTED_ORACLE_ERROR__ALREADY_FINALIZED]: `Oracle already finalized`,
     [TRUSTED_ORACLE_ERROR__INVALID_WINNING_MINT]: `Invalid winning mint`,
@@ -40,13 +40,13 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 export function getTrustedOracleErrorMessage(code: TrustedOracleError): string {
-  if (process.env.NODE_ENV !== "production") {
+  if (process.env.NODE_ENV !== 'production') {
     return (trustedOracleErrorMessages as Record<TrustedOracleError, string>)[
       code
     ];
   }
 
-  return "Error message not available in production bundles.";
+  return 'Error message not available in production bundles.';
 }
 
 export function isTrustedOracleError<

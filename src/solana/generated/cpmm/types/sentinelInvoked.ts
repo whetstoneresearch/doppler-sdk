@@ -20,7 +20,7 @@ import {
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type SentinelInvoked = {
   pool: Address;
@@ -34,21 +34,21 @@ export type SentinelInvokedArgs = SentinelInvoked;
 
 export function getSentinelInvokedEncoder(): FixedSizeEncoder<SentinelInvokedArgs> {
   return getStructEncoder([
-    ["pool", getAddressEncoder()],
-    ["action", getU8Encoder()],
-    ["allow", getU8Encoder()],
-    ["newFeeBps", getU16Encoder()],
-    ["newSplitBps", getU16Encoder()],
+    ['pool', getAddressEncoder()],
+    ['action', getU8Encoder()],
+    ['allow', getU8Encoder()],
+    ['newFeeBps', getU16Encoder()],
+    ['newSplitBps', getU16Encoder()],
   ]);
 }
 
 export function getSentinelInvokedDecoder(): FixedSizeDecoder<SentinelInvoked> {
   return getStructDecoder([
-    ["pool", getAddressDecoder()],
-    ["action", getU8Decoder()],
-    ["allow", getU8Decoder()],
-    ["newFeeBps", getU16Decoder()],
-    ["newSplitBps", getU16Decoder()],
+    ['pool', getAddressDecoder()],
+    ['action', getU8Decoder()],
+    ['allow', getU8Decoder()],
+    ['newFeeBps', getU16Decoder()],
+    ['newSplitBps', getU16Decoder()],
   ]);
 }
 

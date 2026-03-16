@@ -28,13 +28,13 @@ import {
   type Encoder,
   type Option,
   type OptionOrNullable,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   getRecipientDecoder,
   getRecipientEncoder,
   type Recipient,
   type RecipientArgs,
-} from ".";
+} from '.';
 
 /**
  * Arguments for register_launch instruction.
@@ -60,23 +60,23 @@ export type RegisterLaunchArgsArgs = {
 
 export function getRegisterLaunchArgsEncoder(): Encoder<RegisterLaunchArgsArgs> {
   return getStructEncoder([
-    ["cpmmConfig", getAddressEncoder()],
-    ["initialSwapFeeBps", getU16Encoder()],
-    ["initialFeeSplitBps", getU16Encoder()],
-    ["recipients", getArrayEncoder(getRecipientEncoder())],
-    ["minRaiseQuote", getU64Encoder()],
-    ["minMigrationPriceQ64Opt", getOptionEncoder(getU128Encoder())],
+    ['cpmmConfig', getAddressEncoder()],
+    ['initialSwapFeeBps', getU16Encoder()],
+    ['initialFeeSplitBps', getU16Encoder()],
+    ['recipients', getArrayEncoder(getRecipientEncoder())],
+    ['minRaiseQuote', getU64Encoder()],
+    ['minMigrationPriceQ64Opt', getOptionEncoder(getU128Encoder())],
   ]);
 }
 
 export function getRegisterLaunchArgsDecoder(): Decoder<RegisterLaunchArgs> {
   return getStructDecoder([
-    ["cpmmConfig", getAddressDecoder()],
-    ["initialSwapFeeBps", getU16Decoder()],
-    ["initialFeeSplitBps", getU16Decoder()],
-    ["recipients", getArrayDecoder(getRecipientDecoder())],
-    ["minRaiseQuote", getU64Decoder()],
-    ["minMigrationPriceQ64Opt", getOptionDecoder(getU128Decoder())],
+    ['cpmmConfig', getAddressDecoder()],
+    ['initialSwapFeeBps', getU16Decoder()],
+    ['initialFeeSplitBps', getU16Decoder()],
+    ['recipients', getArrayDecoder(getRecipientDecoder())],
+    ['minRaiseQuote', getU64Decoder()],
+    ['minMigrationPriceQ64Opt', getOptionDecoder(getU128Decoder())],
   ]);
 }
 

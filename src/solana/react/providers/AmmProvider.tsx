@@ -119,7 +119,9 @@ export function useAmm(): AmmContextValue {
  * @param config - Configuration for the AMM context
  * @returns AMM context value
  */
-export function createAmmContextValue(config: AmmContextConfig): AmmContextValue {
+export function createAmmContextValue(
+  config: AmmContextConfig,
+): AmmContextValue {
   const {
     endpoint,
     programId,
@@ -188,8 +190,15 @@ export function AmmProvider({
   defaultSlippageBps = 50,
 }: AmmProviderProps): JSX.Element {
   const value = useMemo(
-    () => createAmmContextValue({ endpoint, programId, commitment, refreshInterval, defaultSlippageBps }),
-    [endpoint, programId, commitment, refreshInterval, defaultSlippageBps]
+    () =>
+      createAmmContextValue({
+        endpoint,
+        programId,
+        commitment,
+        refreshInterval,
+        defaultSlippageBps,
+      }),
+    [endpoint, programId, commitment, refreshInterval, defaultSlippageBps],
   );
 
   return <AmmContext.Provider value={value}>{children}</AmmContext.Provider>;

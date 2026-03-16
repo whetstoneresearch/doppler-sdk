@@ -6,11 +6,11 @@ import { address, type Address } from '@solana/kit';
  * Source of truth: programs/initializer/src/lib.rs
  */
 export const INITIALIZER_PROGRAM_ID: Address = address(
-  '4H9w6qMqqSh6DVW7BzYxPHFvLaQP7rbRiQnPYGPajQxq'
+  '4H9w6qMqqSh6DVW7BzYxPHFvLaQP7rbRiQnPYGPajQxq',
 );
 
 export const BPF_LOADER_UPGRADEABLE_PROGRAM_ID: Address = address(
-  'BPFLoaderUpgradeab1e11111111111111111111111'
+  'BPFLoaderUpgradeab1e11111111111111111111111',
 );
 
 // ============================================================================
@@ -55,23 +55,39 @@ export const SENTINEL_NO_CHANGE = 0xffff;
 
 export const INITIALIZER_INSTRUCTION_DISCRIMINATORS = {
   // SHA256("global:initialize_config")[0:8]
-  initializeConfig: new Uint8Array([0xd0, 0x7f, 0x15, 0x01, 0xc2, 0xbe, 0xc4, 0x46]),
+  initializeConfig: new Uint8Array([
+    0xd0, 0x7f, 0x15, 0x01, 0xc2, 0xbe, 0xc4, 0x46,
+  ]),
   // SHA256("global:set_migrator_allowlist")[0:8]
-  setMigratorAllowlist: new Uint8Array([0xd1, 0x5a, 0xb5, 0x68, 0x63, 0x6c, 0xe9, 0xa8]),
+  setMigratorAllowlist: new Uint8Array([
+    0xd1, 0x5a, 0xb5, 0x68, 0x63, 0x6c, 0xe9, 0xa8,
+  ]),
   // SHA256("global:set_sentinel_allowlist")[0:8]
-  setSentinelAllowlist: new Uint8Array([0xe9, 0x48, 0xb4, 0xf6, 0xab, 0x75, 0x15, 0x32]),
+  setSentinelAllowlist: new Uint8Array([
+    0xe9, 0x48, 0xb4, 0xf6, 0xab, 0x75, 0x15, 0x32,
+  ]),
   // SHA256("global:initialize_launch")[0:8]
-  initializeLaunch: new Uint8Array([0x5a, 0xc9, 0xdc, 0x8e, 0x70, 0xfd, 0x64, 0x0d]),
+  initializeLaunch: new Uint8Array([
+    0x5a, 0xc9, 0xdc, 0x8e, 0x70, 0xfd, 0x64, 0x0d,
+  ]),
   // SHA256("global:curve_swap_exact_in")[0:8]
-  curveSwapExactIn: new Uint8Array([0xc4, 0xf7, 0xc3, 0x7e, 0xe3, 0x1b, 0xa6, 0x5d]),
+  curveSwapExactIn: new Uint8Array([
+    0xc4, 0xf7, 0xc3, 0x7e, 0xe3, 0x1b, 0xa6, 0x5d,
+  ]),
   // SHA256("global:migrate_launch")[0:8]
-  migrateLaunch: new Uint8Array([0x13, 0xc7, 0x77, 0x67, 0x0d, 0x1e, 0x0c, 0xcd]),
+  migrateLaunch: new Uint8Array([
+    0x13, 0xc7, 0x77, 0x67, 0x0d, 0x1e, 0x0c, 0xcd,
+  ]),
   // SHA256("global:abort_launch")[0:8]
   abortLaunch: new Uint8Array([0x2c, 0x70, 0xc0, 0xeb, 0xe3, 0x3d, 0xb3, 0x07]),
   // SHA256("global:preview_swap_exact_in")[0:8]
-  previewSwapExactIn: new Uint8Array([0x32, 0x82, 0x1f, 0x45, 0x93, 0x3a, 0xde, 0xb2]),
+  previewSwapExactIn: new Uint8Array([
+    0x32, 0x82, 0x1f, 0x45, 0x93, 0x3a, 0xde, 0xb2,
+  ]),
   // SHA256("global:preview_migration")[0:8]
-  previewMigration: new Uint8Array([0xd8, 0xb4, 0xd1, 0x70, 0x3e, 0x10, 0x0f, 0x3f]),
+  previewMigration: new Uint8Array([
+    0xd8, 0xb4, 0xd1, 0x70, 0x3e, 0x10, 0x0f, 0x3f,
+  ]),
 } as const;
 
 // ============================================================================

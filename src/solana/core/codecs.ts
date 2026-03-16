@@ -67,7 +67,7 @@ const u256Codec: Codec<bigint> = transformCodec(
     if (value < 0n) {
       throw new Error('u256 cannot be negative');
     }
-    if ((value >> 256n) !== 0n) {
+    if (value >> 256n !== 0n) {
       throw new Error('u256 overflow');
     }
     const mask = (1n << 64n) - 1n;
@@ -108,7 +108,10 @@ export const ammConfigDataCodec: Codec<AmmConfig> = getStructCodec([
   ['paused', boolCodec],
   ['numeraireMint', addressCodec],
   ['sentinelAllowlistLen', u8Codec],
-  ['sentinelAllowlist', getArrayCodec(addressCodec, { size: MAX_SENTINEL_ALLOWLIST })],
+  [
+    'sentinelAllowlist',
+    getArrayCodec(addressCodec, { size: MAX_SENTINEL_ALLOWLIST }),
+  ],
   ['maxSwapFeeBps', u16Codec],
   ['maxFeeSplitBps', u16Codec],
   ['maxRouteHops', u8Codec],
@@ -176,27 +179,26 @@ export const oracleStateDataCodec: Codec<OracleState> = getStructCodec([
   ['lastObservationTimestamp', u32Codec],
   ['observationIntervalSec', u32Codec],
   ['observationIndex', u16Codec],
-  ['observations', getArrayCodec(observationCodec, { size: MAX_ORACLE_OBSERVATIONS })],
+  [
+    'observations',
+    getArrayCodec(observationCodec, { size: MAX_ORACLE_OBSERVATIONS }),
+  ],
   ['version', u8Codec],
   ['reserved', reservedBytesCodec],
 ]);
 
-const ammConfigDecoder = getHiddenPrefixDecoder(
-  ammConfigDataCodec,
-  [getConstantDecoder(ACCOUNT_DISCRIMINATORS.AmmConfig)],
-);
-const poolDecoder = getHiddenPrefixDecoder(
-  poolDataCodec,
-  [getConstantDecoder(ACCOUNT_DISCRIMINATORS.Pool)],
-);
-const positionDecoder = getHiddenPrefixDecoder(
-  positionDataCodec,
-  [getConstantDecoder(ACCOUNT_DISCRIMINATORS.Position)],
-);
-const oracleStateDecoder = getHiddenPrefixDecoder(
-  oracleStateDataCodec,
-  [getConstantDecoder(ACCOUNT_DISCRIMINATORS.OracleState)],
-);
+const ammConfigDecoder = getHiddenPrefixDecoder(ammConfigDataCodec, [
+  getConstantDecoder(ACCOUNT_DISCRIMINATORS.AmmConfig),
+]);
+const poolDecoder = getHiddenPrefixDecoder(poolDataCodec, [
+  getConstantDecoder(ACCOUNT_DISCRIMINATORS.Pool),
+]);
+const positionDecoder = getHiddenPrefixDecoder(positionDataCodec, [
+  getConstantDecoder(ACCOUNT_DISCRIMINATORS.Position),
+]);
+const oracleStateDecoder = getHiddenPrefixDecoder(oracleStateDataCodec, [
+  getConstantDecoder(ACCOUNT_DISCRIMINATORS.OracleState),
+]);
 
 /**
  * Decode AmmConfig from raw account data (including discriminator)
@@ -266,68 +268,75 @@ export const swapExactInArgsCodec = getStructCodec([
   ['updateOracle', boolCodec],
 ]) as Codec<SwapExactInArgs>;
 
-const addLiquidityArgsWithOracleCodec: Codec<AddLiquidityArgs & { updateOracle: boolean }> = getStructCodec([
+const addLiquidityArgsWithOracleCodec: Codec<
+  AddLiquidityArgs & { updateOracle: boolean }
+> = getStructCodec([
   ['amount0Max', u64Codec],
   ['amount1Max', u64Codec],
   ['minSharesOut', u128Codec],
   ['updateOracle', boolCodec],
 ]);
 
-export const addLiquidityArgsCodec: Codec<AddLiquidityArgsWithOracle> = transformCodec(
-  addLiquidityArgsWithOracleCodec,
-  (value: AddLiquidityArgsWithOracle) => ({
-    ...value,
-    updateOracle: value.updateOracle ?? false,
-  }),
-  (value) => value,
-);
+export const addLiquidityArgsCodec: Codec<AddLiquidityArgsWithOracle> =
+  transformCodec(
+    addLiquidityArgsWithOracleCodec,
+    (value: AddLiquidityArgsWithOracle) => ({
+      ...value,
+      updateOracle: value.updateOracle ?? false,
+    }),
+    (value) => value,
+  );
 
-export const removeLiquidityArgsCodec: Codec<RemoveLiquidityArgs> = getStructCodec([
-  ['sharesIn', u128Codec],
-  ['minAmount0Out', u64Codec],
-  ['minAmount1Out', u64Codec],
-  ['updateOracle', boolCodec],
-]);
+export const removeLiquidityArgsCodec: Codec<RemoveLiquidityArgs> =
+  getStructCodec([
+    ['sharesIn', u128Codec],
+    ['minAmount0Out', u64Codec],
+    ['minAmount1Out', u64Codec],
+    ['updateOracle', boolCodec],
+  ]);
 
 export const collectFeesArgsCodec: Codec<CollectFeesArgs> = getStructCodec([
   ['max0', u64Codec],
   ['max1', u64Codec],
 ]);
 
-export const collectProtocolFeesArgsCodec: Codec<CollectProtocolFeesArgs> = getStructCodec([
-  ['max0', u64Codec],
-  ['max1', u64Codec],
-]);
+export const collectProtocolFeesArgsCodec: Codec<CollectProtocolFeesArgs> =
+  getStructCodec([
+    ['max0', u64Codec],
+    ['max1', u64Codec],
+  ]);
 
-export const createPositionArgsCodec: Codec<CreatePositionArgs> = getStructCodec([
-  ['positionId', u64Codec],
-]);
+export const createPositionArgsCodec: Codec<CreatePositionArgs> =
+  getStructCodec([['positionId', u64Codec]]);
 
-export const initializeConfigArgsCodec: Codec<InitializeConfigArgs> = getStructCodec([
-  ['admin', addressCodec],
-  ['numeraireMint', addressCodec],
-  ['maxSwapFeeBps', u16Codec],
-  ['maxFeeSplitBps', u16Codec],
-  ['maxRouteHops', u8Codec],
-  ['protocolFeeEnabled', boolCodec],
-  ['protocolFeeBps', u16Codec],
-  ['sentinelAllowlist', getArrayCodec(addressCodec, { size: u32Codec })],
-]);
+export const initializeConfigArgsCodec: Codec<InitializeConfigArgs> =
+  getStructCodec([
+    ['admin', addressCodec],
+    ['numeraireMint', addressCodec],
+    ['maxSwapFeeBps', u16Codec],
+    ['maxFeeSplitBps', u16Codec],
+    ['maxRouteHops', u8Codec],
+    ['protocolFeeEnabled', boolCodec],
+    ['protocolFeeBps', u16Codec],
+    ['sentinelAllowlist', getArrayCodec(addressCodec, { size: u32Codec })],
+  ]);
 
-export const initializePoolArgsCodec: Codec<InitializePoolArgs> = getStructCodec([
-  ['mintA', addressCodec],
-  ['mintB', addressCodec],
-  ['initialSwapFeeBps', u16Codec],
-  ['initialFeeSplitBps', u16Codec],
-  ['liquidityMeasureSide', u8Codec],
-  ['numeraireMintOverride', optionAddressCodec],
-]);
+export const initializePoolArgsCodec: Codec<InitializePoolArgs> =
+  getStructCodec([
+    ['mintA', addressCodec],
+    ['mintB', addressCodec],
+    ['initialSwapFeeBps', u16Codec],
+    ['initialFeeSplitBps', u16Codec],
+    ['liquidityMeasureSide', u8Codec],
+    ['numeraireMintOverride', optionAddressCodec],
+  ]);
 
-export const initializeOracleArgsCodec: Codec<InitializeOracleArgs> = getStructCodec([
-  ['maxPriceChangeRatioQ64', u128Codec],
-  ['observationIntervalSec', u32Codec],
-  ['numObservations', u16Codec],
-]);
+export const initializeOracleArgsCodec: Codec<InitializeOracleArgs> =
+  getStructCodec([
+    ['maxPriceChangeRatioQ64', u128Codec],
+    ['observationIntervalSec', u32Codec],
+    ['numObservations', u16Codec],
+  ]);
 
 export const setSentinelArgsCodec: Codec<SetSentinelArgs> = getStructCodec([
   ['sentinelProgram', addressCodec],
@@ -352,13 +361,14 @@ export const oracleConsultArgsCodec: Codec<OracleConsultArgs> = getStructCodec([
   ['windowSeconds', u32Codec],
 ]);
 
-export const quoteToNumeraireArgsCodec: Codec<QuoteToNumeraireArgs> = getStructCodec([
-  ['amount', u128Codec],
-  ['side', u8Codec],
-  ['maxHops', u8Codec],
-  ['useTwap', boolCodec],
-  ['windowSeconds', u32Codec],
-]);
+export const quoteToNumeraireArgsCodec: Codec<QuoteToNumeraireArgs> =
+  getStructCodec([
+    ['amount', u128Codec],
+    ['side', u8Codec],
+    ['maxHops', u8Codec],
+    ['useTwap', boolCodec],
+    ['windowSeconds', u32Codec],
+  ]);
 
 /** Encode SwapExactIn args */
 export function encodeSwapExactInArgs(args: SwapExactInArgs): Uint8Array {
@@ -366,12 +376,16 @@ export function encodeSwapExactInArgs(args: SwapExactInArgs): Uint8Array {
 }
 
 /** Encode AddLiquidity args */
-export function encodeAddLiquidityArgs(args: AddLiquidityArgsWithOracle): Uint8Array {
+export function encodeAddLiquidityArgs(
+  args: AddLiquidityArgsWithOracle,
+): Uint8Array {
   return new Uint8Array(addLiquidityArgsCodec.encode(args));
 }
 
 /** Encode RemoveLiquidity args */
-export function encodeRemoveLiquidityArgs(args: RemoveLiquidityArgs): Uint8Array {
+export function encodeRemoveLiquidityArgs(
+  args: RemoveLiquidityArgs,
+): Uint8Array {
   return new Uint8Array(removeLiquidityArgsCodec.encode(args));
 }
 
@@ -381,7 +395,9 @@ export function encodeCollectFeesArgs(args: CollectFeesArgs): Uint8Array {
 }
 
 /** Encode CollectProtocolFees args */
-export function encodeCollectProtocolFeesArgs(args: CollectProtocolFeesArgs): Uint8Array {
+export function encodeCollectProtocolFeesArgs(
+  args: CollectProtocolFeesArgs,
+): Uint8Array {
   return new Uint8Array(collectProtocolFeesArgsCodec.encode(args));
 }
 
@@ -391,7 +407,9 @@ export function encodeCreatePositionArgs(args: CreatePositionArgs): Uint8Array {
 }
 
 /** Encode InitializeConfig args */
-export function encodeInitializeConfigArgs(args: InitializeConfigArgs): Uint8Array {
+export function encodeInitializeConfigArgs(
+  args: InitializeConfigArgs,
+): Uint8Array {
   return new Uint8Array(initializeConfigArgsCodec.encode(args));
 }
 
@@ -401,7 +419,9 @@ export function encodeInitializePoolArgs(args: InitializePoolArgs): Uint8Array {
 }
 
 /** Encode InitializeOracle args */
-export function encodeInitializeOracleArgs(args: InitializeOracleArgs): Uint8Array {
+export function encodeInitializeOracleArgs(
+  args: InitializeOracleArgs,
+): Uint8Array {
   return new Uint8Array(initializeOracleArgsCodec.encode(args));
 }
 
@@ -431,6 +451,8 @@ export function encodeOracleConsultArgs(args: OracleConsultArgs): Uint8Array {
 }
 
 /** Encode QuoteToNumeraire args */
-export function encodeQuoteToNumeraireArgs(args: QuoteToNumeraireArgs): Uint8Array {
+export function encodeQuoteToNumeraireArgs(
+  args: QuoteToNumeraireArgs,
+): Uint8Array {
   return new Uint8Array(quoteToNumeraireArgsCodec.encode(args));
 }

@@ -39,7 +39,7 @@ import {
   type MaybeAccount,
   type MaybeEncodedAccount,
   type ReadonlyUint8Array,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export const ENTRY_DISCRIMINATOR = new Uint8Array([
   63, 18, 152, 113, 215, 246, 221, 250,
@@ -88,14 +88,14 @@ export type EntryArgs = {
 export function getEntryEncoder(): FixedSizeEncoder<EntryArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["oracle", getAddressEncoder()],
-      ["entryId", fixEncoderSize(getBytesEncoder(), 32)],
-      ["baseMint", getAddressEncoder()],
-      ["contribution", getU64Encoder()],
-      ["isMigrated", getBooleanEncoder()],
-      ["bump", getU8Encoder()],
-      ["reserved", fixEncoderSize(getBytesEncoder(), 14)],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['oracle', getAddressEncoder()],
+      ['entryId', fixEncoderSize(getBytesEncoder(), 32)],
+      ['baseMint', getAddressEncoder()],
+      ['contribution', getU64Encoder()],
+      ['isMigrated', getBooleanEncoder()],
+      ['bump', getU8Encoder()],
+      ['reserved', fixEncoderSize(getBytesEncoder(), 14)],
     ]),
     (value) => ({ ...value, discriminator: ENTRY_DISCRIMINATOR }),
   );
@@ -104,14 +104,14 @@ export function getEntryEncoder(): FixedSizeEncoder<EntryArgs> {
 /** Gets the decoder for {@link Entry} account data. */
 export function getEntryDecoder(): FixedSizeDecoder<Entry> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["oracle", getAddressDecoder()],
-    ["entryId", fixDecoderSize(getBytesDecoder(), 32)],
-    ["baseMint", getAddressDecoder()],
-    ["contribution", getU64Decoder()],
-    ["isMigrated", getBooleanDecoder()],
-    ["bump", getU8Decoder()],
-    ["reserved", fixDecoderSize(getBytesDecoder(), 14)],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['oracle', getAddressDecoder()],
+    ['entryId', fixDecoderSize(getBytesDecoder(), 32)],
+    ['baseMint', getAddressDecoder()],
+    ['contribution', getU64Decoder()],
+    ['isMigrated', getBooleanDecoder()],
+    ['bump', getU8Decoder()],
+    ['reserved', fixDecoderSize(getBytesDecoder(), 14)],
   ]);
 }
 

@@ -42,12 +42,12 @@ import {
   type TransactionSigner,
   type WritableAccount,
   type WritableSignerAccount,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   getAccountMetaFactory,
   type ResolvedInstructionAccount,
-} from "@solana/program-client-core";
-import { CPMM_PROGRAM_ADDRESS } from "../programs";
+} from '@solana/program-client-core';
+import { CPMM_PROGRAM_ADDRESS } from '../programs';
 
 export const INITIALIZE_CONFIG_DISCRIMINATOR = new Uint8Array([
   208, 127, 21, 1, 194, 190, 196, 70,
@@ -64,7 +64,7 @@ export type InitializeConfigInstruction<
   TAccountConfig extends string | AccountMeta<string> = string,
   TAccountPayer extends string | AccountMeta<string> = string,
   TAccountSystemProgram extends string | AccountMeta<string> =
-    "11111111111111111111111111111111",
+    '11111111111111111111111111111111',
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -110,15 +110,15 @@ export type InitializeConfigInstructionDataArgs = {
 export function getInitializeConfigInstructionDataEncoder(): Encoder<InitializeConfigInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["admin", getAddressEncoder()],
-      ["numeraireMint", getAddressEncoder()],
-      ["maxSwapFeeBps", getU16Encoder()],
-      ["maxFeeSplitBps", getU16Encoder()],
-      ["maxRouteHops", getU8Encoder()],
-      ["protocolFeeEnabled", getBooleanEncoder()],
-      ["protocolFeeBps", getU16Encoder()],
-      ["sentinelAllowlist", getArrayEncoder(getAddressEncoder())],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['admin', getAddressEncoder()],
+      ['numeraireMint', getAddressEncoder()],
+      ['maxSwapFeeBps', getU16Encoder()],
+      ['maxFeeSplitBps', getU16Encoder()],
+      ['maxRouteHops', getU8Encoder()],
+      ['protocolFeeEnabled', getBooleanEncoder()],
+      ['protocolFeeBps', getU16Encoder()],
+      ['sentinelAllowlist', getArrayEncoder(getAddressEncoder())],
     ]),
     (value) => ({ ...value, discriminator: INITIALIZE_CONFIG_DISCRIMINATOR }),
   );
@@ -126,15 +126,15 @@ export function getInitializeConfigInstructionDataEncoder(): Encoder<InitializeC
 
 export function getInitializeConfigInstructionDataDecoder(): Decoder<InitializeConfigInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["admin", getAddressDecoder()],
-    ["numeraireMint", getAddressDecoder()],
-    ["maxSwapFeeBps", getU16Decoder()],
-    ["maxFeeSplitBps", getU16Decoder()],
-    ["maxRouteHops", getU8Decoder()],
-    ["protocolFeeEnabled", getBooleanDecoder()],
-    ["protocolFeeBps", getU16Decoder()],
-    ["sentinelAllowlist", getArrayDecoder(getAddressDecoder())],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['admin', getAddressDecoder()],
+    ['numeraireMint', getAddressDecoder()],
+    ['maxSwapFeeBps', getU16Decoder()],
+    ['maxFeeSplitBps', getU16Decoder()],
+    ['maxRouteHops', getU8Decoder()],
+    ['protocolFeeEnabled', getBooleanDecoder()],
+    ['protocolFeeBps', getU16Decoder()],
+    ['sentinelAllowlist', getArrayDecoder(getAddressDecoder())],
   ]);
 }
 
@@ -156,14 +156,14 @@ export type InitializeConfigAsyncInput<
   config?: Address<TAccountConfig>;
   payer: TransactionSigner<TAccountPayer>;
   systemProgram?: Address<TAccountSystemProgram>;
-  admin: InitializeConfigInstructionDataArgs["admin"];
-  numeraireMint: InitializeConfigInstructionDataArgs["numeraireMint"];
-  maxSwapFeeBps: InitializeConfigInstructionDataArgs["maxSwapFeeBps"];
-  maxFeeSplitBps: InitializeConfigInstructionDataArgs["maxFeeSplitBps"];
-  maxRouteHops: InitializeConfigInstructionDataArgs["maxRouteHops"];
-  protocolFeeEnabled: InitializeConfigInstructionDataArgs["protocolFeeEnabled"];
-  protocolFeeBps: InitializeConfigInstructionDataArgs["protocolFeeBps"];
-  sentinelAllowlist: InitializeConfigInstructionDataArgs["sentinelAllowlist"];
+  admin: InitializeConfigInstructionDataArgs['admin'];
+  numeraireMint: InitializeConfigInstructionDataArgs['numeraireMint'];
+  maxSwapFeeBps: InitializeConfigInstructionDataArgs['maxSwapFeeBps'];
+  maxFeeSplitBps: InitializeConfigInstructionDataArgs['maxFeeSplitBps'];
+  maxRouteHops: InitializeConfigInstructionDataArgs['maxRouteHops'];
+  protocolFeeEnabled: InitializeConfigInstructionDataArgs['protocolFeeEnabled'];
+  protocolFeeBps: InitializeConfigInstructionDataArgs['protocolFeeBps'];
+  sentinelAllowlist: InitializeConfigInstructionDataArgs['sentinelAllowlist'];
 };
 
 export async function getInitializeConfigInstructionAsync<
@@ -214,15 +214,15 @@ export async function getInitializeConfigInstructionAsync<
   }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
-      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("config", accounts.config),
-      getAccountMeta("payer", accounts.payer),
-      getAccountMeta("systemProgram", accounts.systemProgram),
+      getAccountMeta('config', accounts.config),
+      getAccountMeta('payer', accounts.payer),
+      getAccountMeta('systemProgram', accounts.systemProgram),
     ],
     data: getInitializeConfigInstructionDataEncoder().encode(
       args as InitializeConfigInstructionDataArgs,
@@ -244,14 +244,14 @@ export type InitializeConfigInput<
   config: Address<TAccountConfig>;
   payer: TransactionSigner<TAccountPayer>;
   systemProgram?: Address<TAccountSystemProgram>;
-  admin: InitializeConfigInstructionDataArgs["admin"];
-  numeraireMint: InitializeConfigInstructionDataArgs["numeraireMint"];
-  maxSwapFeeBps: InitializeConfigInstructionDataArgs["maxSwapFeeBps"];
-  maxFeeSplitBps: InitializeConfigInstructionDataArgs["maxFeeSplitBps"];
-  maxRouteHops: InitializeConfigInstructionDataArgs["maxRouteHops"];
-  protocolFeeEnabled: InitializeConfigInstructionDataArgs["protocolFeeEnabled"];
-  protocolFeeBps: InitializeConfigInstructionDataArgs["protocolFeeBps"];
-  sentinelAllowlist: InitializeConfigInstructionDataArgs["sentinelAllowlist"];
+  admin: InitializeConfigInstructionDataArgs['admin'];
+  numeraireMint: InitializeConfigInstructionDataArgs['numeraireMint'];
+  maxSwapFeeBps: InitializeConfigInstructionDataArgs['maxSwapFeeBps'];
+  maxFeeSplitBps: InitializeConfigInstructionDataArgs['maxFeeSplitBps'];
+  maxRouteHops: InitializeConfigInstructionDataArgs['maxRouteHops'];
+  protocolFeeEnabled: InitializeConfigInstructionDataArgs['protocolFeeEnabled'];
+  protocolFeeBps: InitializeConfigInstructionDataArgs['protocolFeeBps'];
+  sentinelAllowlist: InitializeConfigInstructionDataArgs['sentinelAllowlist'];
 };
 
 export function getInitializeConfigInstruction<
@@ -292,15 +292,15 @@ export function getInitializeConfigInstruction<
   // Resolve default values.
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
-      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("config", accounts.config),
-      getAccountMeta("payer", accounts.payer),
-      getAccountMeta("systemProgram", accounts.systemProgram),
+      getAccountMeta('config', accounts.config),
+      getAccountMeta('payer', accounts.payer),
+      getAccountMeta('systemProgram', accounts.systemProgram),
     ],
     data: getInitializeConfigInstructionDataEncoder().encode(
       args as InitializeConfigInstructionDataArgs,

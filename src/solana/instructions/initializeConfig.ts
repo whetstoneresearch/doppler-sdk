@@ -9,7 +9,10 @@ import {
   ACCOUNT_ROLE_WRITABLE_SIGNER,
 } from '../core/constants.js';
 import type { InitializeConfigArgs } from '../core/types.js';
-import { initializeConfigArgsCodec, encodeInstructionData } from '../core/codecs.js';
+import {
+  initializeConfigArgsCodec,
+  encodeInstructionData,
+} from '../core/codecs.js';
 
 /**
  * Accounts required for initialize_config instruction
@@ -60,11 +63,7 @@ export function createInitializeConfigInstruction(
   args: InitializeConfigArgs,
   programId: Address = PROGRAM_ID,
 ): Instruction {
-  const {
-    config,
-    payer,
-    systemProgram = SYSTEM_PROGRAM_ID,
-  } = accounts;
+  const { config, payer, systemProgram = SYSTEM_PROGRAM_ID } = accounts;
 
   // Build account metas in order expected by the program
   const keys: AccountMeta[] = [

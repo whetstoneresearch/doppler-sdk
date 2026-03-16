@@ -29,9 +29,7 @@ export interface WalletState {
  */
 export interface WalletContextValue extends WalletState {
   /** Sign and send a transaction */
-  signAndSendTransaction?: (
-    transaction: unknown
-  ) => Promise<string>;
+  signAndSendTransaction?: (transaction: unknown) => Promise<string>;
 }
 
 export const WalletContext = createContext<WalletContextValue | null>(null);
@@ -85,7 +83,7 @@ export function WalletProvider({
       ...wallet,
       signAndSendTransaction,
     }),
-    [wallet, signAndSendTransaction]
+    [wallet, signAndSendTransaction],
   );
 
   return (

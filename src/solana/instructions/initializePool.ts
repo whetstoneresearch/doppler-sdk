@@ -11,20 +11,30 @@ import {
   ACCOUNT_ROLE_WRITABLE_SIGNER,
 } from '../core/constants.js';
 import type { InitializePoolArgs } from '../core/types.js';
-import { initializePoolArgsCodec, encodeInstructionData } from '../core/codecs.js';
+import {
+  initializePoolArgsCodec,
+  encodeInstructionData,
+} from '../core/codecs.js';
 
 /** Type that can be either an Address or a TransactionSigner */
 type AddressOrSigner = Address | TransactionSigner;
 
 /** Check if value is a TransactionSigner (duck typing) */
-function isTransactionSigner(value: AddressOrSigner): value is TransactionSigner {
-  return typeof value === 'object' && value !== null && 'address' in value && 'signTransactions' in value;
+function isTransactionSigner(
+  value: AddressOrSigner,
+): value is TransactionSigner {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'address' in value &&
+    'signTransactions' in value
+  );
 }
 
 /** Create an account meta, embedding signer if provided */
 function createSignerAccountMeta(
   value: AddressOrSigner,
-  role: typeof ACCOUNT_ROLE_WRITABLE_SIGNER
+  role: typeof ACCOUNT_ROLE_WRITABLE_SIGNER,
 ): AccountMeta | AccountSignerMeta {
   if (isTransactionSigner(value)) {
     return {

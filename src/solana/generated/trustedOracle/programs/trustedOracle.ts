@@ -24,18 +24,18 @@ import {
   type Instruction,
   type InstructionWithData,
   type ReadonlyUint8Array,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   addSelfFetchFunctions,
   addSelfPlanAndSendFunctions,
   type SelfFetchFunctions,
   type SelfPlanAndSendFunctions,
-} from "@solana/program-client-core";
+} from '@solana/program-client-core';
 import {
   getOracleStateCodec,
   type OracleState,
   type OracleStateArgs,
-} from "../accounts";
+} from '../accounts';
 import {
   getFinalizeInstruction,
   getInitializeOracleInstruction,
@@ -45,10 +45,10 @@ import {
   type InitializeOracleInput,
   type ParsedFinalizeInstruction,
   type ParsedInitializeOracleInstruction,
-} from "../instructions";
+} from '../instructions';
 
 export const TRUSTED_ORACLE_PROGRAM_ADDRESS =
-  "HkET1QY3BZdcKkbeHgKHMSFn3R8sewrJWnqAi54WwSEz" as Address<"HkET1QY3BZdcKkbeHgKHMSFn3R8sewrJWnqAi54WwSEz">;
+  'HkET1QY3BZdcKkbeHgKHMSFn3R8sewrJWnqAi54WwSEz' as Address<'HkET1QY3BZdcKkbeHgKHMSFn3R8sewrJWnqAi54WwSEz'>;
 
 export enum TrustedOracleAccount {
   OracleState,
@@ -57,7 +57,7 @@ export enum TrustedOracleAccount {
 export function identifyTrustedOracleAccount(
   account: { data: ReadonlyUint8Array } | ReadonlyUint8Array,
 ): TrustedOracleAccount {
-  const data = "data" in account ? account.data : account;
+  const data = 'data' in account ? account.data : account;
   if (
     containsBytes(
       data,
@@ -71,7 +71,7 @@ export function identifyTrustedOracleAccount(
   }
   throw new SolanaError(
     SOLANA_ERROR__PROGRAM_CLIENTS__FAILED_TO_IDENTIFY_ACCOUNT,
-    { accountData: data, programName: "trustedOracle" },
+    { accountData: data, programName: 'trustedOracle' },
   );
 }
 
@@ -83,7 +83,7 @@ export enum TrustedOracleInstruction {
 export function identifyTrustedOracleInstruction(
   instruction: { data: ReadonlyUint8Array } | ReadonlyUint8Array,
 ): TrustedOracleInstruction {
-  const data = "data" in instruction ? instruction.data : instruction;
+  const data = 'data' in instruction ? instruction.data : instruction;
   if (
     containsBytes(
       data,
@@ -108,12 +108,12 @@ export function identifyTrustedOracleInstruction(
   }
   throw new SolanaError(
     SOLANA_ERROR__PROGRAM_CLIENTS__FAILED_TO_IDENTIFY_INSTRUCTION,
-    { instructionData: data, programName: "trustedOracle" },
+    { instructionData: data, programName: 'trustedOracle' },
   );
 }
 
 export type ParsedTrustedOracleInstruction<
-  TProgram extends string = "HkET1QY3BZdcKkbeHgKHMSFn3R8sewrJWnqAi54WwSEz",
+  TProgram extends string = 'HkET1QY3BZdcKkbeHgKHMSFn3R8sewrJWnqAi54WwSEz',
 > =
   | ({
       instructionType: TrustedOracleInstruction.Finalize;
@@ -146,7 +146,7 @@ export function parseTrustedOracleInstruction<TProgram extends string>(
         SOLANA_ERROR__PROGRAM_CLIENTS__UNRECOGNIZED_INSTRUCTION_TYPE,
         {
           instructionType: instructionType as string,
-          programName: "trustedOracle",
+          programName: 'trustedOracle',
         },
       );
   }

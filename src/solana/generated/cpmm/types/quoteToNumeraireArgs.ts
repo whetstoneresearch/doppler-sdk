@@ -21,7 +21,7 @@ import {
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type QuoteToNumeraireArgs = {
   amount: bigint;
@@ -41,21 +41,21 @@ export type QuoteToNumeraireArgsArgs = {
 
 export function getQuoteToNumeraireArgsEncoder(): FixedSizeEncoder<QuoteToNumeraireArgsArgs> {
   return getStructEncoder([
-    ["amount", getU128Encoder()],
-    ["side", getU8Encoder()],
-    ["maxHops", getU8Encoder()],
-    ["useTwap", getBooleanEncoder()],
-    ["windowSeconds", getU32Encoder()],
+    ['amount', getU128Encoder()],
+    ['side', getU8Encoder()],
+    ['maxHops', getU8Encoder()],
+    ['useTwap', getBooleanEncoder()],
+    ['windowSeconds', getU32Encoder()],
   ]);
 }
 
 export function getQuoteToNumeraireArgsDecoder(): FixedSizeDecoder<QuoteToNumeraireArgs> {
   return getStructDecoder([
-    ["amount", getU128Decoder()],
-    ["side", getU8Decoder()],
-    ["maxHops", getU8Decoder()],
-    ["useTwap", getBooleanDecoder()],
-    ["windowSeconds", getU32Decoder()],
+    ['amount', getU128Decoder()],
+    ['side', getU8Decoder()],
+    ['maxHops', getU8Decoder()],
+    ['useTwap', getBooleanDecoder()],
+    ['windowSeconds', getU32Decoder()],
   ]);
 }
 

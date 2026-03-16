@@ -5,8 +5,15 @@
  */
 
 import { useState, useCallback, useMemo } from 'react';
-import type { Pool, AddLiquidityQuote, RemoveLiquidityQuote } from '../../core/types.js';
-import { getAddLiquidityQuote, getRemoveLiquidityQuote } from '../../core/math.js';
+import type {
+  Pool,
+  AddLiquidityQuote,
+  RemoveLiquidityQuote,
+} from '../../core/types.js';
+import {
+  getAddLiquidityQuote,
+  getRemoveLiquidityQuote,
+} from '../../core/math.js';
 import { BPS_DENOM } from '../../core/constants.js';
 import { useAmm } from '../providers/AmmContext.js';
 
@@ -196,7 +203,11 @@ export function useLiquidity(options: UseLiquidityOptions): UseLiquidityResult {
     }
 
     try {
-      const quote = getAddLiquidityQuote(pool, addState.amount0, addState.amount1);
+      const quote = getAddLiquidityQuote(
+        pool,
+        addState.amount0,
+        addState.amount1,
+      );
 
       // Calculate min shares with slippage
       const slippageFactor = BPS_DENOM - BigInt(addState.slippageBps);
@@ -273,25 +284,29 @@ export function useLiquidity(options: UseLiquidityOptions): UseLiquidityResult {
     setAddState((s) => ({ ...s, amount1: amount }));
   }, []);
 
-  const setShares = useCallback((shares: bigint) => {
-    setRemoveState((s) => ({
-      ...s,
-      shares,
-      percentage: userShares > 0n ? Number((shares * 100n) / userShares) : 0,
-    }));
-  }, [userShares]);
+  const setShares = useCallback(
+    (shares: bigint) => {
+      setRemoveState((s) => ({
+        ...s,
+        shares,
+        percentage: userShares > 0n ? Number((shares * 100n) / userShares) : 0,
+      }));
+    },
+    [userShares],
+  );
 
   const setPercentage = useCallback(
     (percentage: number) => {
       const clampedPercentage = Math.min(100, Math.max(0, percentage));
-      const shares = (userShares * BigInt(Math.round(clampedPercentage))) / 100n;
+      const shares =
+        (userShares * BigInt(Math.round(clampedPercentage))) / 100n;
       setRemoveState((s) => ({
         ...s,
         shares,
         percentage: clampedPercentage,
       }));
     },
-    [userShares]
+    [userShares],
   );
 
   const setSlippage = useCallback((bps: number) => {
@@ -313,11 +328,18 @@ export function useLiquidity(options: UseLiquidityOptions): UseLiquidityResult {
   }, [defaultSlippageBps]);
 
   const canAdd = useMemo(() => {
-    return !!(addQuote?.isValid && (addState.amount0 > 0n || addState.amount1 > 0n));
+    return !!(
+      addQuote?.isValid &&
+      (addState.amount0 > 0n || addState.amount1 > 0n)
+    );
   }, [addQuote, addState]);
 
   const canRemove = useMemo(() => {
-    return !!(removeQuote?.isValid && removeState.shares > 0n && removeState.shares <= userShares);
+    return !!(
+      removeQuote?.isValid &&
+      removeState.shares > 0n &&
+      removeState.shares <= userShares
+    );
   }, [removeQuote, removeState.shares, userShares]);
 
   return {

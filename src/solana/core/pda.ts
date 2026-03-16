@@ -109,10 +109,7 @@ export async function getPoolAuthorityAddress(
 ): Promise<ProgramDerivedAddress> {
   return getProgramDerivedAddress({
     programAddress: programId,
-    seeds: [
-      textEncoder.encode(SEED_AUTHORITY),
-      addressCodec.encode(pool),
-    ],
+    seeds: [textEncoder.encode(SEED_AUTHORITY), addressCodec.encode(pool)],
   });
 }
 
@@ -151,10 +148,7 @@ export async function getOracleAddress(
 ): Promise<ProgramDerivedAddress> {
   return getProgramDerivedAddress({
     programAddress: programId,
-    seeds: [
-      textEncoder.encode(SEED_ORACLE),
-      addressCodec.encode(pool),
-    ],
+    seeds: [textEncoder.encode(SEED_ORACLE), addressCodec.encode(pool)],
   });
 }
 
@@ -249,13 +243,14 @@ export async function getLiquidityAddresses(
   protocolPosition: ProgramDerivedAddress;
   oracle: ProgramDerivedAddress;
 }> {
-  const [config, authority, position, protocolPosition, oracle] = await Promise.all([
-    getConfigAddress(programId),
-    getPoolAuthorityAddress(pool, programId),
-    getPositionAddress(pool, owner, positionId, programId),
-    getProtocolPositionAddress(pool, programId),
-    getOracleAddress(pool, programId),
-  ]);
+  const [config, authority, position, protocolPosition, oracle] =
+    await Promise.all([
+      getConfigAddress(programId),
+      getPoolAuthorityAddress(pool, programId),
+      getPositionAddress(pool, owner, positionId, programId),
+      getProtocolPositionAddress(pool, programId),
+      getOracleAddress(pool, programId),
+    ]);
 
   return { config, authority, position, protocolPosition, oracle };
 }

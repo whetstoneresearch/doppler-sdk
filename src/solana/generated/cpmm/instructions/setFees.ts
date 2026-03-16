@@ -33,12 +33,12 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   getAccountMetaFactory,
   type ResolvedInstructionAccount,
-} from "@solana/program-client-core";
-import { CPMM_PROGRAM_ADDRESS } from "../programs";
+} from '@solana/program-client-core';
+import { CPMM_PROGRAM_ADDRESS } from '../programs';
 
 export const SET_FEES_DISCRIMINATOR = new Uint8Array([
   137, 178, 49, 58, 0, 245, 242, 190,
@@ -86,9 +86,9 @@ export type SetFeesInstructionDataArgs = {
 export function getSetFeesInstructionDataEncoder(): FixedSizeEncoder<SetFeesInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["swapFeeBps", getU16Encoder()],
-      ["feeSplitBps", getU16Encoder()],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['swapFeeBps', getU16Encoder()],
+      ['feeSplitBps', getU16Encoder()],
     ]),
     (value) => ({ ...value, discriminator: SET_FEES_DISCRIMINATOR }),
   );
@@ -96,9 +96,9 @@ export function getSetFeesInstructionDataEncoder(): FixedSizeEncoder<SetFeesInst
 
 export function getSetFeesInstructionDataDecoder(): FixedSizeDecoder<SetFeesInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["swapFeeBps", getU16Decoder()],
-    ["feeSplitBps", getU16Decoder()],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['swapFeeBps', getU16Decoder()],
+    ['feeSplitBps', getU16Decoder()],
   ]);
 }
 
@@ -120,8 +120,8 @@ export type SetFeesInput<
   config: Address<TAccountConfig>;
   pool: Address<TAccountPool>;
   admin: TransactionSigner<TAccountAdmin>;
-  swapFeeBps: SetFeesInstructionDataArgs["swapFeeBps"];
-  feeSplitBps: SetFeesInstructionDataArgs["feeSplitBps"];
+  swapFeeBps: SetFeesInstructionDataArgs['swapFeeBps'];
+  feeSplitBps: SetFeesInstructionDataArgs['feeSplitBps'];
 };
 
 export function getSetFeesInstruction<
@@ -155,12 +155,12 @@ export function getSetFeesInstruction<
   // Original args.
   const args = { ...input };
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("config", accounts.config),
-      getAccountMeta("pool", accounts.pool),
-      getAccountMeta("admin", accounts.admin),
+      getAccountMeta('config', accounts.config),
+      getAccountMeta('pool', accounts.pool),
+      getAccountMeta('admin', accounts.admin),
     ],
     data: getSetFeesInstructionDataEncoder().encode(
       args as SetFeesInstructionDataArgs,

@@ -222,9 +222,11 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     dopplerDeployer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
       .DopplerDeployer as Address,
     poolManager: '0x498581ff718922c3f8e6a244956af099b2652b2b' as Address,
-    rehypeDopplerHookInitializer: "0x6AB5aE3191c914dE8437431091776Fc90f314bE4" as Address,
-    rehypeDopplerHook: "0x6AB5aE3191c914dE8437431091776Fc90f314bE4" as Address,
-    dopplerHookInitializer: "0xBDF938149ac6a781F94FAa0ed45E6A0e984c6544" as Address,
+    rehypeDopplerHookInitializer:
+      '0x6AB5aE3191c914dE8437431091776Fc90f314bE4' as Address,
+    rehypeDopplerHook: '0x6AB5aE3191c914dE8437431091776Fc90f314bE4' as Address,
+    dopplerHookInitializer:
+      '0xBDF938149ac6a781F94FAa0ed45E6A0e984c6544' as Address,
     v2Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
       .UniswapV2Migrator as Address,
     v4Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]

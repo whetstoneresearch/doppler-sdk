@@ -67,7 +67,10 @@ function formatAmount(amount: bigint, decimals: number): string {
     return intPart.toLocaleString();
   }
 
-  const fracStr = fracPart.toString().padStart(decimals, '0').replace(/0+$/, '');
+  const fracStr = fracPart
+    .toString()
+    .padStart(decimals, '0')
+    .replace(/0+$/, '');
   return `${intPart.toLocaleString()}.${fracStr}`;
 }
 
@@ -158,7 +161,7 @@ export function LiquidityPanel({
 }: LiquidityPanelProps): JSX.Element {
   // Fetch pool if not provided
   const { pool: fetchedPool, loading: poolLoading } = usePool(
-    providedPool ? undefined : poolAddress
+    providedPool ? undefined : poolAddress,
   );
   const pool = providedPool ?? fetchedPool;
 
@@ -200,7 +203,7 @@ export function LiquidityPanel({
       const amount = parseAmount(value, token0.decimals);
       setAmount0(amount);
     },
-    [token0.decimals, setAmount0]
+    [token0.decimals, setAmount0],
   );
 
   // Handle amount1 change
@@ -212,7 +215,7 @@ export function LiquidityPanel({
       const amount = parseAmount(value, token1.decimals);
       setAmount1(amount);
     },
-    [token1.decimals, setAmount1]
+    [token1.decimals, setAmount1],
   );
 
   // Handle max buttons
@@ -232,7 +235,7 @@ export function LiquidityPanel({
       const value = parseInt(e.target.value, 10);
       setPercentage(value);
     },
-    [setPercentage]
+    [setPercentage],
   );
 
   // Handle quick percentage buttons
@@ -240,7 +243,7 @@ export function LiquidityPanel({
     (percent: number) => {
       setPercentage(percent);
     },
-    [setPercentage]
+    [setPercentage],
   );
 
   // Handle slippage change
@@ -251,7 +254,7 @@ export function LiquidityPanel({
         setSlippage(Math.round(value * 100));
       }
     },
-    [setSlippage]
+    [setSlippage],
   );
 
   // Handle add liquidity
@@ -284,25 +287,37 @@ export function LiquidityPanel({
       setAmount0Input('');
       setAmount1Input('');
     },
-    [setMode, reset]
+    [setMode, reset],
   );
 
   // Button state for add
-  const addButtonDisabled = disabled || processing || poolLoading || !canAdd || !onAddLiquidity;
+  const addButtonDisabled =
+    disabled || processing || poolLoading || !canAdd || !onAddLiquidity;
   const addButtonText = useMemo(() => {
     if (poolLoading) return 'Loading...';
     if (processing) return 'Processing...';
     if (!pool) return 'Pool not found';
-    if (addState.amount0 === 0n && addState.amount1 === 0n) return 'Enter amounts';
+    if (addState.amount0 === 0n && addState.amount1 === 0n)
+      return 'Enter amounts';
     if (addQuote?.error) return addQuote.error;
     if (addState.amount0 > balance0) return 'Insufficient token0 balance';
     if (addState.amount1 > balance1) return 'Insufficient token1 balance';
     if (!canAdd) return 'Invalid amounts';
     return 'Add Liquidity';
-  }, [poolLoading, processing, pool, addState, addQuote, balance0, balance1, canAdd]);
+  }, [
+    poolLoading,
+    processing,
+    pool,
+    addState,
+    addQuote,
+    balance0,
+    balance1,
+    canAdd,
+  ]);
 
   // Button state for remove
-  const removeButtonDisabled = disabled || processing || poolLoading || !canRemove || !onRemoveLiquidity;
+  const removeButtonDisabled =
+    disabled || processing || poolLoading || !canRemove || !onRemoveLiquidity;
   const removeButtonText = useMemo(() => {
     if (poolLoading) return 'Loading...';
     if (processing) return 'Processing...';
@@ -312,9 +327,18 @@ export function LiquidityPanel({
     if (removeQuote?.error) return removeQuote.error;
     if (!canRemove) return 'Invalid amount';
     return 'Remove Liquidity';
-  }, [poolLoading, processing, pool, userShares, removeState.shares, removeQuote, canRemove]);
+  }, [
+    poolLoading,
+    processing,
+    pool,
+    userShares,
+    removeState.shares,
+    removeQuote,
+    canRemove,
+  ]);
 
-  const currentSlippage = mode === 'add' ? addState.slippageBps : removeState.slippageBps;
+  const currentSlippage =
+    mode === 'add' ? addState.slippageBps : removeState.slippageBps;
 
   return (
     <div className={`bg-white rounded-lg shadow-md p-4 ${className}`}>
@@ -465,7 +489,9 @@ export function LiquidityPanel({
           {/* Current position info */}
           <div className="bg-gray-50 rounded-lg p-3 mb-4">
             <div className="text-sm text-gray-500 mb-2">Your Position</div>
-            <div className="text-xl font-medium">{formatShares(userShares)} shares</div>
+            <div className="text-xl font-medium">
+              {formatShares(userShares)} shares
+            </div>
           </div>
 
           {/* Percentage slider */}
@@ -521,8 +547,10 @@ export function LiquidityPanel({
                 </div>
               </div>
               <div className="text-xs text-gray-400 mt-2">
-                Min: {formatAmount(removeQuote.minAmount0Out, token0.decimals)} {token0.symbol} /{' '}
-                {formatAmount(removeQuote.minAmount1Out, token1.decimals)} {token1.symbol}
+                Min: {formatAmount(removeQuote.minAmount0Out, token0.decimals)}{' '}
+                {token0.symbol} /{' '}
+                {formatAmount(removeQuote.minAmount1Out, token1.decimals)}{' '}
+                {token1.symbol}
               </div>
             </div>
           )}

@@ -101,8 +101,8 @@ function getWallets(): SolanaWallet[] {
     const registered = registry.get?.() ?? [];
     for (const wallet of registered) {
       // Check if wallet supports Solana chains and connect feature
-      const supportsSolana = wallet.chains?.some(
-        (chain: string) => chain.startsWith('solana:')
+      const supportsSolana = wallet.chains?.some((chain: string) =>
+        chain.startsWith('solana:'),
       );
       if (supportsSolana && isConnectableWallet(wallet)) {
         wallets.push(wallet);
@@ -323,14 +323,23 @@ export function WalletProvider({
     if (autoConnect && wallet && !connected && !connecting) {
       // Try silent connect first
       const connectFeature = wallet.features['standard:connect'];
-      connectFeature.connect({ silent: true }).then((result: Awaited<ReturnType<StandardConnectFeature['standard:connect']['connect']>>) => {
-        if (result.accounts.length > 0) {
-          setAccount(result.accounts[0]);
-          onConnect?.(result.accounts[0]);
-        }
-      }).catch(() => {
-        // Silent connect failed, that's okay
-      });
+      connectFeature
+        .connect({ silent: true })
+        .then(
+          (
+            result: Awaited<
+              ReturnType<StandardConnectFeature['standard:connect']['connect']>
+            >,
+          ) => {
+            if (result.accounts.length > 0) {
+              setAccount(result.accounts[0]);
+              onConnect?.(result.accounts[0]);
+            }
+          },
+        )
+        .catch(() => {
+          // Silent connect failed, that's okay
+        });
     }
   }, [autoConnect, wallet, connected, connecting, onConnect]);
 
@@ -370,8 +379,20 @@ export function WalletProvider({
       disconnect,
       error,
     }),
-    [wallet, account, connected, connecting, wallets, select, connect, disconnect, error]
+    [
+      wallet,
+      account,
+      connected,
+      connecting,
+      wallets,
+      select,
+      connect,
+      disconnect,
+      error,
+    ],
   );
 
-  return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;
+  return (
+    <WalletContext.Provider value={value}>{children}</WalletContext.Provider>
+  );
 }

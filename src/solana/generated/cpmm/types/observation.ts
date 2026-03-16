@@ -19,7 +19,7 @@ import {
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type Observation = {
   timestamp: number;
@@ -35,17 +35,17 @@ export type ObservationArgs = {
 
 export function getObservationEncoder(): FixedSizeEncoder<ObservationArgs> {
   return getStructEncoder([
-    ["timestamp", getU32Encoder()],
-    ["price0Cumulative", getArrayEncoder(getU64Encoder(), { size: 4 })],
-    ["price1Cumulative", getArrayEncoder(getU64Encoder(), { size: 4 })],
+    ['timestamp', getU32Encoder()],
+    ['price0Cumulative', getArrayEncoder(getU64Encoder(), { size: 4 })],
+    ['price1Cumulative', getArrayEncoder(getU64Encoder(), { size: 4 })],
   ]);
 }
 
 export function getObservationDecoder(): FixedSizeDecoder<Observation> {
   return getStructDecoder([
-    ["timestamp", getU32Decoder()],
-    ["price0Cumulative", getArrayDecoder(getU64Decoder(), { size: 4 })],
-    ["price1Cumulative", getArrayDecoder(getU64Decoder(), { size: 4 })],
+    ['timestamp', getU32Decoder()],
+    ['price0Cumulative', getArrayDecoder(getU64Decoder(), { size: 4 })],
+    ['price1Cumulative', getArrayDecoder(getU64Decoder(), { size: 4 })],
   ]);
 }
 

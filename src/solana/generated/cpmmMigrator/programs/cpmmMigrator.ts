@@ -25,13 +25,13 @@ import {
   type Instruction,
   type InstructionWithData,
   type ReadonlyUint8Array,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   addSelfFetchFunctions,
   addSelfPlanAndSendFunctions,
   type SelfFetchFunctions,
   type SelfPlanAndSendFunctions,
-} from "@solana/program-client-core";
+} from '@solana/program-client-core';
 import {
   getCpmmMigratorStateCodec,
   getLaunchCodec,
@@ -39,7 +39,7 @@ import {
   type CpmmMigratorStateArgs,
   type Launch,
   type LaunchArgs,
-} from "../accounts";
+} from '../accounts';
 import {
   getMigrateInstructionAsync,
   getRegisterLaunchInstructionAsync,
@@ -49,10 +49,10 @@ import {
   type ParsedMigrateInstruction,
   type ParsedRegisterLaunchInstruction,
   type RegisterLaunchAsyncInput,
-} from "../instructions";
+} from '../instructions';
 
 export const CPMM_MIGRATOR_PROGRAM_ADDRESS =
-  "CpmmMig1111111111111111111111111111111111111" as Address<"CpmmMig1111111111111111111111111111111111111">;
+  'CpmmMig1111111111111111111111111111111111111' as Address<'CpmmMig1111111111111111111111111111111111111'>;
 
 export enum CpmmMigratorAccount {
   CpmmMigratorState,
@@ -62,7 +62,7 @@ export enum CpmmMigratorAccount {
 export function identifyCpmmMigratorAccount(
   account: { data: ReadonlyUint8Array } | ReadonlyUint8Array,
 ): CpmmMigratorAccount {
-  const data = "data" in account ? account.data : account;
+  const data = 'data' in account ? account.data : account;
   if (
     containsBytes(
       data,
@@ -87,7 +87,7 @@ export function identifyCpmmMigratorAccount(
   }
   throw new SolanaError(
     SOLANA_ERROR__PROGRAM_CLIENTS__FAILED_TO_IDENTIFY_ACCOUNT,
-    { accountData: data, programName: "cpmmMigrator" },
+    { accountData: data, programName: 'cpmmMigrator' },
   );
 }
 
@@ -99,7 +99,7 @@ export enum CpmmMigratorInstruction {
 export function identifyCpmmMigratorInstruction(
   instruction: { data: ReadonlyUint8Array } | ReadonlyUint8Array,
 ): CpmmMigratorInstruction {
-  const data = "data" in instruction ? instruction.data : instruction;
+  const data = 'data' in instruction ? instruction.data : instruction;
   if (
     containsBytes(
       data,
@@ -124,12 +124,12 @@ export function identifyCpmmMigratorInstruction(
   }
   throw new SolanaError(
     SOLANA_ERROR__PROGRAM_CLIENTS__FAILED_TO_IDENTIFY_INSTRUCTION,
-    { instructionData: data, programName: "cpmmMigrator" },
+    { instructionData: data, programName: 'cpmmMigrator' },
   );
 }
 
 export type ParsedCpmmMigratorInstruction<
-  TProgram extends string = "CpmmMig1111111111111111111111111111111111111",
+  TProgram extends string = 'CpmmMig1111111111111111111111111111111111111',
 > =
   | ({
       instructionType: CpmmMigratorInstruction.Migrate;
@@ -162,7 +162,7 @@ export function parseCpmmMigratorInstruction<TProgram extends string>(
         SOLANA_ERROR__PROGRAM_CLIENTS__UNRECOGNIZED_INSTRUCTION_TYPE,
         {
           instructionType: instructionType as string,
-          programName: "cpmmMigrator",
+          programName: 'cpmmMigrator',
         },
       );
   }
@@ -182,10 +182,10 @@ export type CpmmMigratorPluginAccounts = {
 
 export type CpmmMigratorPluginInstructions = {
   migrate: (
-    input: MakeOptional<MigrateAsyncInput, "payer">,
+    input: MakeOptional<MigrateAsyncInput, 'payer'>,
   ) => ReturnType<typeof getMigrateInstructionAsync> & SelfPlanAndSendFunctions;
   registerLaunch: (
-    input: MakeOptional<RegisterLaunchAsyncInput, "payer">,
+    input: MakeOptional<RegisterLaunchAsyncInput, 'payer'>,
   ) => ReturnType<typeof getRegisterLaunchInstructionAsync> &
     SelfPlanAndSendFunctions;
 };

@@ -79,7 +79,10 @@ export function ConnectWallet({
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setDropdownOpen(false);
         setSelectorOpen(false);
       }
@@ -113,7 +116,7 @@ export function ConnectWallet({
   }, [wallets, wallet, showWalletSelector, select, connect]);
 
   const handleSelectWallet = useCallback(
-    async (selectedWallet: typeof wallets[number]) => {
+    async (selectedWallet: (typeof wallets)[number]) => {
       select(selectedWallet);
       setSelectorOpen(false);
       // Connect after selection
@@ -121,7 +124,7 @@ export function ConnectWallet({
         await connect();
       }, 100);
     },
-    [select, connect]
+    [select, connect],
   );
 
   const handleDisconnect = useCallback(async () => {
@@ -166,11 +169,7 @@ export function ConnectWallet({
               className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
             >
               {w.icon && (
-                <img
-                  src={w.icon}
-                  alt={`${w.name} icon`}
-                  className="w-5 h-5"
-                />
+                <img src={w.icon} alt={`${w.name} icon`} className="w-5 h-5" />
               )}
               <span>{w.name}</span>
             </button>

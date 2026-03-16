@@ -6,7 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
-export * from "./ammConfig";
-export * from "./oracleState";
-export * from "./pool";
-export * from "./position";
+export * from './ammConfig';
+export * from './oracleState';
+export * from './pool';
+export * from './position';

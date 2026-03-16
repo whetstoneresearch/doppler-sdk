@@ -31,12 +31,12 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   getAccountMetaFactory,
   type ResolvedInstructionAccount,
-} from "@solana/program-client-core";
-import { CPMM_PROGRAM_ADDRESS } from "../programs";
+} from '@solana/program-client-core';
+import { CPMM_PROGRAM_ADDRESS } from '../programs';
 
 export const CLOSE_POSITION_DISCRIMINATOR = new Uint8Array([
   123, 134, 81, 0, 49, 68, 98, 98,
@@ -84,14 +84,14 @@ export type ClosePositionInstructionDataArgs = {};
 
 export function getClosePositionInstructionDataEncoder(): FixedSizeEncoder<ClosePositionInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([["discriminator", fixEncoderSize(getBytesEncoder(), 8)]]),
+    getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
     (value) => ({ ...value, discriminator: CLOSE_POSITION_DISCRIMINATOR }),
   );
 }
 
 export function getClosePositionInstructionDataDecoder(): FixedSizeDecoder<ClosePositionInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
   ]);
 }
 
@@ -153,13 +153,13 @@ export function getClosePositionInstruction<
     ResolvedInstructionAccount
   >;
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("pool", accounts.pool),
-      getAccountMeta("position", accounts.position),
-      getAccountMeta("owner", accounts.owner),
-      getAccountMeta("rentRecipient", accounts.rentRecipient),
+      getAccountMeta('pool', accounts.pool),
+      getAccountMeta('position', accounts.position),
+      getAccountMeta('owner', accounts.owner),
+      getAccountMeta('rentRecipient', accounts.rentRecipient),
     ],
     data: getClosePositionInstructionDataEncoder().encode({}),
     programAddress,

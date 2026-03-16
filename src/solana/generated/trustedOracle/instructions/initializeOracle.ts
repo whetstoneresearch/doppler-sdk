@@ -35,12 +35,12 @@ import {
   type TransactionSigner,
   type WritableAccount,
   type WritableSignerAccount,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   getAccountMetaFactory,
   type ResolvedInstructionAccount,
-} from "@solana/program-client-core";
-import { TRUSTED_ORACLE_PROGRAM_ADDRESS } from "../programs";
+} from '@solana/program-client-core';
+import { TRUSTED_ORACLE_PROGRAM_ADDRESS } from '../programs';
 
 export const INITIALIZE_ORACLE_DISCRIMINATOR = new Uint8Array([
   144, 223, 131, 120, 196, 253, 181, 99,
@@ -57,7 +57,7 @@ export type InitializeOracleInstruction<
   TAccountOracleAuthority extends string | AccountMeta<string> = string,
   TAccountOracleState extends string | AccountMeta<string> = string,
   TAccountSystemProgram extends string | AccountMeta<string> =
-    "11111111111111111111111111111111",
+    '11111111111111111111111111111111',
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -95,9 +95,9 @@ export type InitializeOracleInstructionDataArgs = {
 export function getInitializeOracleInstructionDataEncoder(): FixedSizeEncoder<InitializeOracleInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["nonce", getU64Encoder()],
-      ["quoteMint", getAddressEncoder()],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['nonce', getU64Encoder()],
+      ['quoteMint', getAddressEncoder()],
     ]),
     (value) => ({ ...value, discriminator: INITIALIZE_ORACLE_DISCRIMINATOR }),
   );
@@ -105,9 +105,9 @@ export function getInitializeOracleInstructionDataEncoder(): FixedSizeEncoder<In
 
 export function getInitializeOracleInstructionDataDecoder(): FixedSizeDecoder<InitializeOracleInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["nonce", getU64Decoder()],
-    ["quoteMint", getAddressDecoder()],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['nonce', getU64Decoder()],
+    ['quoteMint', getAddressDecoder()],
   ]);
 }
 
@@ -130,8 +130,8 @@ export type InitializeOracleInput<
   oracleAuthority: TransactionSigner<TAccountOracleAuthority>;
   oracleState: Address<TAccountOracleState>;
   systemProgram?: Address<TAccountSystemProgram>;
-  nonce: InitializeOracleInstructionDataArgs["nonce"];
-  quoteMint: InitializeOracleInstructionDataArgs["quoteMint"];
+  nonce: InitializeOracleInstructionDataArgs['nonce'];
+  quoteMint: InitializeOracleInstructionDataArgs['quoteMint'];
 };
 
 export function getInitializeOracleInstruction<
@@ -173,15 +173,15 @@ export function getInitializeOracleInstruction<
   // Resolve default values.
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
-      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("oracleAuthority", accounts.oracleAuthority),
-      getAccountMeta("oracleState", accounts.oracleState),
-      getAccountMeta("systemProgram", accounts.systemProgram),
+      getAccountMeta('oracleAuthority', accounts.oracleAuthority),
+      getAccountMeta('oracleState', accounts.oracleState),
+      getAccountMeta('systemProgram', accounts.systemProgram),
     ],
     data: getInitializeOracleInstructionDataEncoder().encode(
       args as InitializeOracleInstructionDataArgs,

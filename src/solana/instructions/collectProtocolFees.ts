@@ -9,7 +9,10 @@ import {
   ACCOUNT_ROLE_SIGNER,
 } from '../core/constants.js';
 import type { CollectProtocolFeesArgs } from '../core/types.js';
-import { collectProtocolFeesArgsCodec, encodeInstructionData } from '../core/codecs.js';
+import {
+  collectProtocolFeesArgsCodec,
+  encodeInstructionData,
+} from '../core/codecs.js';
 
 /**
  * Accounts required for collect_protocol_fees instruction

@@ -76,7 +76,7 @@ export function AmmProvider({
       refreshInterval,
       defaultSlippageBps,
     }),
-    [rpc, programId, commitment, refreshInterval, defaultSlippageBps]
+    [rpc, programId, commitment, refreshInterval, defaultSlippageBps],
   );
 
   return <AmmContext.Provider value={value}>{children}</AmmContext.Provider>;

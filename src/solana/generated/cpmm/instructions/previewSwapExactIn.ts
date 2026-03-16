@@ -31,12 +31,12 @@ import {
   type InstructionWithData,
   type ReadonlyAccount,
   type ReadonlyUint8Array,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   getAccountMetaFactory,
   type ResolvedInstructionAccount,
-} from "@solana/program-client-core";
-import { CPMM_PROGRAM_ADDRESS } from "../programs";
+} from '@solana/program-client-core';
+import { CPMM_PROGRAM_ADDRESS } from '../programs';
 
 export const PREVIEW_SWAP_EXACT_IN_DISCRIMINATOR = new Uint8Array([
   50, 130, 31, 69, 147, 58, 222, 178,
@@ -81,9 +81,9 @@ export type PreviewSwapExactInInstructionDataArgs = {
 export function getPreviewSwapExactInInstructionDataEncoder(): FixedSizeEncoder<PreviewSwapExactInInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["amountIn", getU64Encoder()],
-      ["direction", getU8Encoder()],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['amountIn', getU64Encoder()],
+      ['direction', getU8Encoder()],
     ]),
     (value) => ({
       ...value,
@@ -94,9 +94,9 @@ export function getPreviewSwapExactInInstructionDataEncoder(): FixedSizeEncoder<
 
 export function getPreviewSwapExactInInstructionDataDecoder(): FixedSizeDecoder<PreviewSwapExactInInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["amountIn", getU64Decoder()],
-    ["direction", getU8Decoder()],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['amountIn', getU64Decoder()],
+    ['direction', getU8Decoder()],
   ]);
 }
 
@@ -116,8 +116,8 @@ export type PreviewSwapExactInInput<
 > = {
   config: Address<TAccountConfig>;
   pool: Address<TAccountPool>;
-  amountIn: PreviewSwapExactInInstructionDataArgs["amountIn"];
-  direction: PreviewSwapExactInInstructionDataArgs["direction"];
+  amountIn: PreviewSwapExactInInstructionDataArgs['amountIn'];
+  direction: PreviewSwapExactInInstructionDataArgs['direction'];
 };
 
 export function getPreviewSwapExactInInstruction<
@@ -148,11 +148,11 @@ export function getPreviewSwapExactInInstruction<
   // Original args.
   const args = { ...input };
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("config", accounts.config),
-      getAccountMeta("pool", accounts.pool),
+      getAccountMeta('config', accounts.config),
+      getAccountMeta('pool', accounts.pool),
     ],
     data: getPreviewSwapExactInInstructionDataEncoder().encode(
       args as PreviewSwapExactInInstructionDataArgs,

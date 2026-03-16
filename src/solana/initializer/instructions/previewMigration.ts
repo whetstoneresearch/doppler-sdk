@@ -47,6 +47,8 @@ export function createPreviewMigrationInstruction(
   return { programAddress: programId, accounts: keys, data };
 }
 
-export function decodePreviewMigrationResult(data: Uint8Array): PreviewMigrationResult {
+export function decodePreviewMigrationResult(
+  data: Uint8Array,
+): PreviewMigrationResult {
   return previewMigrationResultCodec.decode(data);
 }

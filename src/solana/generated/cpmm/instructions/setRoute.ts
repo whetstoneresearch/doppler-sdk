@@ -33,12 +33,12 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   getAccountMetaFactory,
   type ResolvedInstructionAccount,
-} from "@solana/program-client-core";
-import { CPMM_PROGRAM_ADDRESS } from "../programs";
+} from '@solana/program-client-core';
+import { CPMM_PROGRAM_ADDRESS } from '../programs';
 
 export const SET_ROUTE_DISCRIMINATOR = new Uint8Array([
   244, 231, 3, 84, 233, 61, 146, 149,
@@ -90,9 +90,9 @@ export type SetRouteInstructionDataArgs = {
 export function getSetRouteInstructionDataEncoder(): FixedSizeEncoder<SetRouteInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["routeNextPool", getAddressEncoder()],
-      ["routeBridgeMint", getAddressEncoder()],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['routeNextPool', getAddressEncoder()],
+      ['routeBridgeMint', getAddressEncoder()],
     ]),
     (value) => ({ ...value, discriminator: SET_ROUTE_DISCRIMINATOR }),
   );
@@ -100,9 +100,9 @@ export function getSetRouteInstructionDataEncoder(): FixedSizeEncoder<SetRouteIn
 
 export function getSetRouteInstructionDataDecoder(): FixedSizeDecoder<SetRouteInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["routeNextPool", getAddressDecoder()],
-    ["routeBridgeMint", getAddressDecoder()],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['routeNextPool', getAddressDecoder()],
+    ['routeBridgeMint', getAddressDecoder()],
   ]);
 }
 
@@ -126,8 +126,8 @@ export type SetRouteInput<
   pool: Address<TAccountPool>;
   nextPool?: Address<TAccountNextPool>;
   admin: TransactionSigner<TAccountAdmin>;
-  routeNextPool: SetRouteInstructionDataArgs["routeNextPool"];
-  routeBridgeMint: SetRouteInstructionDataArgs["routeBridgeMint"];
+  routeNextPool: SetRouteInstructionDataArgs['routeNextPool'];
+  routeBridgeMint: SetRouteInstructionDataArgs['routeBridgeMint'];
 };
 
 export function getSetRouteInstruction<
@@ -169,13 +169,13 @@ export function getSetRouteInstruction<
   // Original args.
   const args = { ...input };
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("config", accounts.config),
-      getAccountMeta("pool", accounts.pool),
-      getAccountMeta("nextPool", accounts.nextPool),
-      getAccountMeta("admin", accounts.admin),
+      getAccountMeta('config', accounts.config),
+      getAccountMeta('pool', accounts.pool),
+      getAccountMeta('nextPool', accounts.nextPool),
+      getAccountMeta('admin', accounts.admin),
     ],
     data: getSetRouteInstructionDataEncoder().encode(
       args as SetRouteInstructionDataArgs,

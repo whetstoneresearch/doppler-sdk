@@ -33,10 +33,12 @@ export async function fetchConfig(
   commitment?: 'processed' | 'confirmed' | 'finalized',
 ): Promise<AmmConfig | null> {
   const [configAddress] = await getConfigAddress(programId);
-  const response = await rpc.getAccountInfo(configAddress, {
-    encoding: 'base64',
-    commitment,
-  }).send();
+  const response = await rpc
+    .getAccountInfo(configAddress, {
+      encoding: 'base64',
+      commitment,
+    })
+    .send();
 
   if (!response.value) {
     return null;

@@ -32,12 +32,12 @@ import {
   type TransactionSigner,
   type WritableAccount,
   type WritableSignerAccount,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   getAccountMetaFactory,
   type ResolvedInstructionAccount,
-} from "@solana/program-client-core";
-import { INITIALIZER_PROGRAM_ADDRESS } from "../programs";
+} from '@solana/program-client-core';
+import { INITIALIZER_PROGRAM_ADDRESS } from '../programs';
 
 export const ABORT_LAUNCH_DISCRIMINATOR = new Uint8Array([
   44, 112, 192, 235, 227, 61, 179, 7,
@@ -60,7 +60,7 @@ export type AbortLaunchInstruction<
   TAccountAuthorityBaseAccount extends string | AccountMeta<string> = string,
   TAccountBaseMint extends string | AccountMeta<string> = string,
   TAccountTokenProgram extends string | AccountMeta<string> =
-    "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -104,14 +104,14 @@ export type AbortLaunchInstructionDataArgs = {};
 
 export function getAbortLaunchInstructionDataEncoder(): FixedSizeEncoder<AbortLaunchInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([["discriminator", fixEncoderSize(getBytesEncoder(), 8)]]),
+    getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
     (value) => ({ ...value, discriminator: ABORT_LAUNCH_DISCRIMINATOR }),
   );
 }
 
 export function getAbortLaunchInstructionDataDecoder(): FixedSizeDecoder<AbortLaunchInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
   ]);
 }
 
@@ -229,21 +229,21 @@ export async function getAbortLaunchInstructionAsync<
   }
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
-      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" as Address<"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA">;
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("config", accounts.config),
-      getAccountMeta("launch", accounts.launch),
-      getAccountMeta("launchAuthority", accounts.launchAuthority),
-      getAccountMeta("baseVault", accounts.baseVault),
-      getAccountMeta("quoteVault", accounts.quoteVault),
-      getAccountMeta("authority", accounts.authority),
-      getAccountMeta("authorityBaseAccount", accounts.authorityBaseAccount),
-      getAccountMeta("baseMint", accounts.baseMint),
-      getAccountMeta("tokenProgram", accounts.tokenProgram),
+      getAccountMeta('config', accounts.config),
+      getAccountMeta('launch', accounts.launch),
+      getAccountMeta('launchAuthority', accounts.launchAuthority),
+      getAccountMeta('baseVault', accounts.baseVault),
+      getAccountMeta('quoteVault', accounts.quoteVault),
+      getAccountMeta('authority', accounts.authority),
+      getAccountMeta('authorityBaseAccount', accounts.authorityBaseAccount),
+      getAccountMeta('baseMint', accounts.baseMint),
+      getAccountMeta('tokenProgram', accounts.tokenProgram),
     ],
     data: getAbortLaunchInstructionDataEncoder().encode({}),
     programAddress,
@@ -353,21 +353,21 @@ export function getAbortLaunchInstruction<
   // Resolve default values.
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
-      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" as Address<"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA">;
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("config", accounts.config),
-      getAccountMeta("launch", accounts.launch),
-      getAccountMeta("launchAuthority", accounts.launchAuthority),
-      getAccountMeta("baseVault", accounts.baseVault),
-      getAccountMeta("quoteVault", accounts.quoteVault),
-      getAccountMeta("authority", accounts.authority),
-      getAccountMeta("authorityBaseAccount", accounts.authorityBaseAccount),
-      getAccountMeta("baseMint", accounts.baseMint),
-      getAccountMeta("tokenProgram", accounts.tokenProgram),
+      getAccountMeta('config', accounts.config),
+      getAccountMeta('launch', accounts.launch),
+      getAccountMeta('launchAuthority', accounts.launchAuthority),
+      getAccountMeta('baseVault', accounts.baseVault),
+      getAccountMeta('quoteVault', accounts.quoteVault),
+      getAccountMeta('authority', accounts.authority),
+      getAccountMeta('authorityBaseAccount', accounts.authorityBaseAccount),
+      getAccountMeta('baseMint', accounts.baseMint),
+      getAccountMeta('tokenProgram', accounts.tokenProgram),
     ],
     data: getAbortLaunchInstructionDataEncoder().encode({}),
     programAddress,

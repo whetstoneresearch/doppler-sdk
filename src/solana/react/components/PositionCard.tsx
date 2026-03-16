@@ -57,7 +57,11 @@ function formatAmount(amount: bigint, decimals: number): string {
     return intPart.toLocaleString();
   }
 
-  const fracStr = fracPart.toString().padStart(decimals, '0').slice(0, 6).replace(/0+$/, '');
+  const fracStr = fracPart
+    .toString()
+    .padStart(decimals, '0')
+    .slice(0, 6)
+    .replace(/0+$/, '');
   if (fracStr === '') {
     return intPart.toLocaleString();
   }
@@ -142,7 +146,7 @@ export function PositionCard({
 }: PositionCardProps): JSX.Element {
   // Fetch pool if not provided
   const { pool: fetchedPool, loading: poolLoading } = usePool(
-    providedPool ? undefined : poolAddress
+    providedPool ? undefined : poolAddress,
   );
   const pool = providedPool ?? fetchedPool;
 
@@ -155,11 +159,9 @@ export function PositionCard({
     pendingFees: fetchedPendingFees,
     value,
     refetch,
-  } = usePosition(
-    providedPosition ? undefined : poolAddress,
-    positionId,
-    { pool: pool ?? undefined }
-  );
+  } = usePosition(providedPosition ? undefined : poolAddress, positionId, {
+    pool: pool ?? undefined,
+  });
 
   const position = providedPosition ?? fetchedPosition;
   const positionAddress = providedPositionAddress ?? fetchedPositionAddress;
@@ -257,7 +259,9 @@ export function PositionCard({
       <div className="bg-gray-50 rounded-lg p-3 mb-3">
         <div className="flex justify-between items-center">
           <span className="text-sm text-gray-500">LP Shares</span>
-          <span className="font-bold text-lg">{formatShares(position.shares)}</span>
+          <span className="font-bold text-lg">
+            {formatShares(position.shares)}
+          </span>
         </div>
         {value && (
           <div className="text-right text-sm text-gray-500 mt-1">
@@ -269,7 +273,9 @@ export function PositionCard({
       {/* Value in tokens */}
       {value && (
         <div className="bg-gray-50 rounded-lg p-3 mb-3">
-          <span className="text-sm text-gray-500 block mb-2">Position Value</span>
+          <span className="text-sm text-gray-500 block mb-2">
+            Position Value
+          </span>
           <div className="grid grid-cols-2 gap-2">
             <div>
               <span className="text-xs text-gray-400">{token0.symbol}</span>
@@ -301,13 +307,17 @@ export function PositionCard({
           <div className="grid grid-cols-2 gap-2">
             <div>
               <span className="text-xs text-gray-400">{token0.symbol}</span>
-              <p className={`font-medium ${pendingFees.pending0 > 0n ? 'text-green-700' : 'text-gray-500'}`}>
+              <p
+                className={`font-medium ${pendingFees.pending0 > 0n ? 'text-green-700' : 'text-gray-500'}`}
+              >
                 {formatAmount(pendingFees.pending0, token0.decimals)}
               </p>
             </div>
             <div>
               <span className="text-xs text-gray-400">{token1.symbol}</span>
-              <p className={`font-medium ${pendingFees.pending1 > 0n ? 'text-green-700' : 'text-gray-500'}`}>
+              <p
+                className={`font-medium ${pendingFees.pending1 > 0n ? 'text-green-700' : 'text-gray-500'}`}
+              >
                 {formatAmount(pendingFees.pending1, token1.decimals)}
               </p>
             </div>
@@ -331,8 +341,8 @@ export function PositionCard({
           {collecting
             ? 'Collecting...'
             : canCollect
-            ? 'Collect Fees'
-            : 'No fees to collect'}
+              ? 'Collect Fees'
+              : 'No fees to collect'}
         </button>
       )}
 
@@ -343,10 +353,12 @@ export function PositionCard({
             <span className="text-gray-500">Total Value (incl. fees)</span>
             <div className="text-right">
               <p className="font-medium">
-                {formatAmount(value.totalValue0, token0.decimals)} {token0.symbol}
+                {formatAmount(value.totalValue0, token0.decimals)}{' '}
+                {token0.symbol}
               </p>
               <p className="text-gray-400 text-xs">
-                {formatAmount(value.totalValue1, token1.decimals)} {token1.symbol}
+                {formatAmount(value.totalValue1, token1.decimals)}{' '}
+                {token1.symbol}
               </p>
             </div>
           </div>

@@ -10,8 +10,15 @@ import { getSetSentinelAllowlistInstructionDataEncoder } from '../../generated/i
 
 type AddressOrSigner = Address | TransactionSigner;
 
-function isTransactionSigner(value: AddressOrSigner): value is TransactionSigner {
-  return typeof value === 'object' && value !== null && 'address' in value && 'signTransactions' in value;
+function isTransactionSigner(
+  value: AddressOrSigner,
+): value is TransactionSigner {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'address' in value &&
+    'signTransactions' in value
+  );
 }
 
 function createSignerAccountMeta(

@@ -10,7 +10,10 @@ import {
   ACCOUNT_ROLE_WRITABLE_SIGNER,
 } from '../core/constants.js';
 import type { CreatePositionArgs } from '../core/types.js';
-import { createPositionArgsCodec, encodeInstructionData } from '../core/codecs.js';
+import {
+  createPositionArgsCodec,
+  encodeInstructionData,
+} from '../core/codecs.js';
 
 /**
  * Accounts required for create_position instruction

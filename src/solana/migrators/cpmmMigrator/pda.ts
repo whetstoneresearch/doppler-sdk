@@ -15,10 +15,6 @@ export async function getCpmmMigratorStateAddress(
 ): Promise<ProgramDerivedAddress> {
   return getProgramDerivedAddress({
     programAddress: programId,
-    seeds: [
-      textEncoder.encode(SEED_STATE),
-      addressCodec.encode(launch),
-    ],
+    seeds: [textEncoder.encode(SEED_STATE), addressCodec.encode(launch)],
   });
 }
-

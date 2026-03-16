@@ -25,13 +25,13 @@ import {
   type Instruction,
   type InstructionWithData,
   type ReadonlyUint8Array,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   addSelfFetchFunctions,
   addSelfPlanAndSendFunctions,
   type SelfFetchFunctions,
   type SelfPlanAndSendFunctions,
-} from "@solana/program-client-core";
+} from '@solana/program-client-core';
 import {
   getClaimReceiptCodec,
   getEntryByMintCodec,
@@ -51,7 +51,7 @@ import {
   type MarketArgs,
   type OracleState,
   type OracleStateArgs,
-} from "../accounts";
+} from '../accounts';
 import {
   getClaimInstructionAsync,
   getMigrateEntryInstructionAsync,
@@ -69,10 +69,10 @@ import {
   type ParsedRegisterEntryInstruction,
   type PreviewPayoutIfWinnerInput,
   type RegisterEntryAsyncInput,
-} from "../instructions";
+} from '../instructions';
 
 export const PREDICTION_MIGRATOR_PROGRAM_ADDRESS =
-  "41zP8ovFZvvxAncujgjYfHz5xvR8zZgwGGVfwCJG3WkK" as Address<"41zP8ovFZvvxAncujgjYfHz5xvR8zZgwGGVfwCJG3WkK">;
+  '41zP8ovFZvvxAncujgjYfHz5xvR8zZgwGGVfwCJG3WkK' as Address<'41zP8ovFZvvxAncujgjYfHz5xvR8zZgwGGVfwCJG3WkK'>;
 
 export enum PredictionMigratorAccount {
   ClaimReceipt,
@@ -86,7 +86,7 @@ export enum PredictionMigratorAccount {
 export function identifyPredictionMigratorAccount(
   account: { data: ReadonlyUint8Array } | ReadonlyUint8Array,
 ): PredictionMigratorAccount {
-  const data = "data" in account ? account.data : account;
+  const data = 'data' in account ? account.data : account;
   if (
     containsBytes(
       data,
@@ -155,7 +155,7 @@ export function identifyPredictionMigratorAccount(
   }
   throw new SolanaError(
     SOLANA_ERROR__PROGRAM_CLIENTS__FAILED_TO_IDENTIFY_ACCOUNT,
-    { accountData: data, programName: "predictionMigrator" },
+    { accountData: data, programName: 'predictionMigrator' },
   );
 }
 
@@ -169,7 +169,7 @@ export enum PredictionMigratorInstruction {
 export function identifyPredictionMigratorInstruction(
   instruction: { data: ReadonlyUint8Array } | ReadonlyUint8Array,
 ): PredictionMigratorInstruction {
-  const data = "data" in instruction ? instruction.data : instruction;
+  const data = 'data' in instruction ? instruction.data : instruction;
   if (
     containsBytes(
       data,
@@ -216,12 +216,12 @@ export function identifyPredictionMigratorInstruction(
   }
   throw new SolanaError(
     SOLANA_ERROR__PROGRAM_CLIENTS__FAILED_TO_IDENTIFY_INSTRUCTION,
-    { instructionData: data, programName: "predictionMigrator" },
+    { instructionData: data, programName: 'predictionMigrator' },
   );
 }
 
 export type ParsedPredictionMigratorInstruction<
-  TProgram extends string = "41zP8ovFZvvxAncujgjYfHz5xvR8zZgwGGVfwCJG3WkK",
+  TProgram extends string = '41zP8ovFZvvxAncujgjYfHz5xvR8zZgwGGVfwCJG3WkK',
 > =
   | ({
       instructionType: PredictionMigratorInstruction.Claim;
@@ -274,7 +274,7 @@ export function parsePredictionMigratorInstruction<TProgram extends string>(
         SOLANA_ERROR__PROGRAM_CLIENTS__UNRECOGNIZED_INSTRUCTION_TYPE,
         {
           instructionType: instructionType as string,
-          programName: "predictionMigrator",
+          programName: 'predictionMigrator',
         },
       );
   }
@@ -302,10 +302,10 @@ export type PredictionMigratorPluginAccounts = {
 
 export type PredictionMigratorPluginInstructions = {
   claim: (
-    input: MakeOptional<ClaimAsyncInput, "payer">,
+    input: MakeOptional<ClaimAsyncInput, 'payer'>,
   ) => ReturnType<typeof getClaimInstructionAsync> & SelfPlanAndSendFunctions;
   migrateEntry: (
-    input: MakeOptional<MigrateEntryAsyncInput, "payer">,
+    input: MakeOptional<MigrateEntryAsyncInput, 'payer'>,
   ) => ReturnType<typeof getMigrateEntryInstructionAsync> &
     SelfPlanAndSendFunctions;
   previewPayoutIfWinner: (
@@ -313,7 +313,7 @@ export type PredictionMigratorPluginInstructions = {
   ) => ReturnType<typeof getPreviewPayoutIfWinnerInstruction> &
     SelfPlanAndSendFunctions;
   registerEntry: (
-    input: MakeOptional<RegisterEntryAsyncInput, "payer">,
+    input: MakeOptional<RegisterEntryAsyncInput, 'payer'>,
   ) => ReturnType<typeof getRegisterEntryInstructionAsync> &
     SelfPlanAndSendFunctions;
 };

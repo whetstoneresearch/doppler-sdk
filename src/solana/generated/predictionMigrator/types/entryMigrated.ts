@@ -25,7 +25,7 @@ import {
   type FixedSizeDecoder,
   type FixedSizeEncoder,
   type ReadonlyUint8Array,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type EntryMigrated = {
   market: Address;
@@ -47,23 +47,23 @@ export type EntryMigratedArgs = {
 
 export function getEntryMigratedEncoder(): FixedSizeEncoder<EntryMigratedArgs> {
   return getStructEncoder([
-    ["market", getAddressEncoder()],
-    ["oracle", getAddressEncoder()],
-    ["entryId", fixEncoderSize(getBytesEncoder(), 32)],
-    ["baseMint", getAddressEncoder()],
-    ["contribution", getU64Encoder()],
-    ["isWinner", getBooleanEncoder()],
+    ['market', getAddressEncoder()],
+    ['oracle', getAddressEncoder()],
+    ['entryId', fixEncoderSize(getBytesEncoder(), 32)],
+    ['baseMint', getAddressEncoder()],
+    ['contribution', getU64Encoder()],
+    ['isWinner', getBooleanEncoder()],
   ]);
 }
 
 export function getEntryMigratedDecoder(): FixedSizeDecoder<EntryMigrated> {
   return getStructDecoder([
-    ["market", getAddressDecoder()],
-    ["oracle", getAddressDecoder()],
-    ["entryId", fixDecoderSize(getBytesDecoder(), 32)],
-    ["baseMint", getAddressDecoder()],
-    ["contribution", getU64Decoder()],
-    ["isWinner", getBooleanDecoder()],
+    ['market', getAddressDecoder()],
+    ['oracle', getAddressDecoder()],
+    ['entryId', fixDecoderSize(getBytesDecoder(), 32)],
+    ['baseMint', getAddressDecoder()],
+    ['contribution', getU64Decoder()],
+    ['isWinner', getBooleanDecoder()],
   ]);
 }
 

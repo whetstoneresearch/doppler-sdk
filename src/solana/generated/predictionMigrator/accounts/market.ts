@@ -41,7 +41,7 @@ import {
   type MaybeAccount,
   type MaybeEncodedAccount,
   type ReadonlyUint8Array,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export const MARKET_DISCRIMINATOR = new Uint8Array([
   219, 190, 213, 55, 0, 227, 198, 154,
@@ -116,19 +116,19 @@ export type MarketArgs = {
 export function getMarketEncoder(): FixedSizeEncoder<MarketArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["oracle", getAddressEncoder()],
-      ["quoteMint", getAddressEncoder()],
-      ["potVault", getAddressEncoder()],
-      ["totalPot", getU64Encoder()],
-      ["totalClaimed", getU64Encoder()],
-      ["winnerMint", getAddressEncoder()],
-      ["claimableSupply", getU64Encoder()],
-      ["accQuotePerToken", getU128Encoder()],
-      ["isResolved", getBooleanEncoder()],
-      ["bump", getU8Encoder()],
-      ["marketAuthorityBump", getU8Encoder()],
-      ["reserved", fixEncoderSize(getBytesEncoder(), 29)],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['oracle', getAddressEncoder()],
+      ['quoteMint', getAddressEncoder()],
+      ['potVault', getAddressEncoder()],
+      ['totalPot', getU64Encoder()],
+      ['totalClaimed', getU64Encoder()],
+      ['winnerMint', getAddressEncoder()],
+      ['claimableSupply', getU64Encoder()],
+      ['accQuotePerToken', getU128Encoder()],
+      ['isResolved', getBooleanEncoder()],
+      ['bump', getU8Encoder()],
+      ['marketAuthorityBump', getU8Encoder()],
+      ['reserved', fixEncoderSize(getBytesEncoder(), 29)],
     ]),
     (value) => ({ ...value, discriminator: MARKET_DISCRIMINATOR }),
   );
@@ -137,19 +137,19 @@ export function getMarketEncoder(): FixedSizeEncoder<MarketArgs> {
 /** Gets the decoder for {@link Market} account data. */
 export function getMarketDecoder(): FixedSizeDecoder<Market> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["oracle", getAddressDecoder()],
-    ["quoteMint", getAddressDecoder()],
-    ["potVault", getAddressDecoder()],
-    ["totalPot", getU64Decoder()],
-    ["totalClaimed", getU64Decoder()],
-    ["winnerMint", getAddressDecoder()],
-    ["claimableSupply", getU64Decoder()],
-    ["accQuotePerToken", getU128Decoder()],
-    ["isResolved", getBooleanDecoder()],
-    ["bump", getU8Decoder()],
-    ["marketAuthorityBump", getU8Decoder()],
-    ["reserved", fixDecoderSize(getBytesDecoder(), 29)],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['oracle', getAddressDecoder()],
+    ['quoteMint', getAddressDecoder()],
+    ['potVault', getAddressDecoder()],
+    ['totalPot', getU64Decoder()],
+    ['totalClaimed', getU64Decoder()],
+    ['winnerMint', getAddressDecoder()],
+    ['claimableSupply', getU64Decoder()],
+    ['accQuotePerToken', getU128Decoder()],
+    ['isResolved', getBooleanDecoder()],
+    ['bump', getU8Decoder()],
+    ['marketAuthorityBump', getU8Decoder()],
+    ['reserved', fixDecoderSize(getBytesDecoder(), 29)],
   ]);
 }
 

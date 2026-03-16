@@ -73,10 +73,12 @@ export async function fetchPool(
   address: Address,
   config?: FetchPoolsConfig,
 ): Promise<Pool | null> {
-  const response = await rpc.getAccountInfo(address, {
-    encoding: 'base64',
-    commitment: config?.commitment,
-  }).send();
+  const response = await rpc
+    .getAccountInfo(address, {
+      encoding: 'base64',
+      commitment: config?.commitment,
+    })
+    .send();
 
   if (!response.value) {
     return null;
@@ -118,15 +120,19 @@ export async function fetchAllPools(
     },
   };
 
-  const response = await rpc.getProgramAccounts(programId, {
-    encoding: 'base64',
-    commitment: config?.commitment,
-    filters: [discriminatorFilter],
-  }).send() as unknown;
+  const response = (await rpc
+    .getProgramAccounts(programId, {
+      encoding: 'base64',
+      commitment: config?.commitment,
+      filters: [discriminatorFilter],
+    })
+    .send()) as unknown;
 
-  const accounts = (Array.isArray(response)
-    ? response
-    : (response as { value: ProgramAccount[] }).value) as ProgramAccount[];
+  const accounts = (
+    Array.isArray(response)
+      ? response
+      : (response as { value: ProgramAccount[] }).value
+  ) as ProgramAccount[];
 
   const pools: PoolWithAddress[] = [];
 
@@ -214,7 +220,7 @@ export async function fetchPoolsBatch(
 
   // Fetch all in parallel
   const results = await Promise.all(
-    addresses.map(addr => fetchPool(rpc, addr, config))
+    addresses.map((addr) => fetchPool(rpc, addr, config)),
   );
 
   for (let i = 0; i < addresses.length; i++) {
@@ -285,7 +291,7 @@ export function filterPoolsByMint(
   mint: Address,
 ): PoolWithAddress[] {
   return pools.filter(
-    ({ account }) => account.token0Mint === mint || account.token1Mint === mint
+    ({ account }) => account.token0Mint === mint || account.token1Mint === mint,
   );
 }
 

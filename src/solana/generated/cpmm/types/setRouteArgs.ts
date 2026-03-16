@@ -16,7 +16,7 @@ import {
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type SetRouteArgs = { routeNextPool: Address; routeBridgeMint: Address };
 
@@ -24,15 +24,15 @@ export type SetRouteArgsArgs = SetRouteArgs;
 
 export function getSetRouteArgsEncoder(): FixedSizeEncoder<SetRouteArgsArgs> {
   return getStructEncoder([
-    ["routeNextPool", getAddressEncoder()],
-    ["routeBridgeMint", getAddressEncoder()],
+    ['routeNextPool', getAddressEncoder()],
+    ['routeBridgeMint', getAddressEncoder()],
   ]);
 }
 
 export function getSetRouteArgsDecoder(): FixedSizeDecoder<SetRouteArgs> {
   return getStructDecoder([
-    ["routeNextPool", getAddressDecoder()],
-    ["routeBridgeMint", getAddressDecoder()],
+    ['routeNextPool', getAddressDecoder()],
+    ['routeBridgeMint', getAddressDecoder()],
   ]);
 }
 

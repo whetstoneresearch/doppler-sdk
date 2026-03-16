@@ -18,7 +18,7 @@ import {
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type SentinelAllowlistUpdated = { config: Address; newLen: number };
 
@@ -26,15 +26,15 @@ export type SentinelAllowlistUpdatedArgs = SentinelAllowlistUpdated;
 
 export function getSentinelAllowlistUpdatedEncoder(): FixedSizeEncoder<SentinelAllowlistUpdatedArgs> {
   return getStructEncoder([
-    ["config", getAddressEncoder()],
-    ["newLen", getU8Encoder()],
+    ['config', getAddressEncoder()],
+    ['newLen', getU8Encoder()],
   ]);
 }
 
 export function getSentinelAllowlistUpdatedDecoder(): FixedSizeDecoder<SentinelAllowlistUpdated> {
   return getStructDecoder([
-    ["config", getAddressDecoder()],
-    ["newLen", getU8Decoder()],
+    ['config', getAddressDecoder()],
+    ['newLen', getU8Decoder()],
   ]);
 }
 

@@ -19,7 +19,7 @@ import {
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type SwapExactInArgs = {
   amountIn: bigint;
@@ -37,19 +37,19 @@ export type SwapExactInArgsArgs = {
 
 export function getSwapExactInArgsEncoder(): FixedSizeEncoder<SwapExactInArgsArgs> {
   return getStructEncoder([
-    ["amountIn", getU64Encoder()],
-    ["minAmountOut", getU64Encoder()],
-    ["direction", getU8Encoder()],
-    ["updateOracle", getBooleanEncoder()],
+    ['amountIn', getU64Encoder()],
+    ['minAmountOut', getU64Encoder()],
+    ['direction', getU8Encoder()],
+    ['updateOracle', getBooleanEncoder()],
   ]);
 }
 
 export function getSwapExactInArgsDecoder(): FixedSizeDecoder<SwapExactInArgs> {
   return getStructDecoder([
-    ["amountIn", getU64Decoder()],
-    ["minAmountOut", getU64Decoder()],
-    ["direction", getU8Decoder()],
-    ["updateOracle", getBooleanDecoder()],
+    ['amountIn', getU64Decoder()],
+    ['minAmountOut', getU64Decoder()],
+    ['direction', getU8Decoder()],
+    ['updateOracle', getBooleanDecoder()],
   ]);
 }
 

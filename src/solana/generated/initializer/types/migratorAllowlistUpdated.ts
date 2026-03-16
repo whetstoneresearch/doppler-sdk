@@ -18,7 +18,7 @@ import {
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type MigratorAllowlistUpdated = { config: Address; newLen: number };
 
@@ -26,15 +26,15 @@ export type MigratorAllowlistUpdatedArgs = MigratorAllowlistUpdated;
 
 export function getMigratorAllowlistUpdatedEncoder(): FixedSizeEncoder<MigratorAllowlistUpdatedArgs> {
   return getStructEncoder([
-    ["config", getAddressEncoder()],
-    ["newLen", getU8Encoder()],
+    ['config', getAddressEncoder()],
+    ['newLen', getU8Encoder()],
   ]);
 }
 
 export function getMigratorAllowlistUpdatedDecoder(): FixedSizeDecoder<MigratorAllowlistUpdated> {
   return getStructDecoder([
-    ["config", getAddressDecoder()],
-    ["newLen", getU8Decoder()],
+    ['config', getAddressDecoder()],
+    ['newLen', getU8Decoder()],
   ]);
 }
 

@@ -32,12 +32,12 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   getAccountMetaFactory,
   type ResolvedInstructionAccount,
-} from "@solana/program-client-core";
-import { TRUSTED_ORACLE_PROGRAM_ADDRESS } from "../programs";
+} from '@solana/program-client-core';
+import { TRUSTED_ORACLE_PROGRAM_ADDRESS } from '../programs';
 
 export const FINALIZE_DISCRIMINATOR = new Uint8Array([
   171, 61, 218, 56, 127, 115, 12, 217,
@@ -77,8 +77,8 @@ export type FinalizeInstructionDataArgs = { winningMint: Address };
 export function getFinalizeInstructionDataEncoder(): FixedSizeEncoder<FinalizeInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["winningMint", getAddressEncoder()],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['winningMint', getAddressEncoder()],
     ]),
     (value) => ({ ...value, discriminator: FINALIZE_DISCRIMINATOR }),
   );
@@ -86,8 +86,8 @@ export function getFinalizeInstructionDataEncoder(): FixedSizeEncoder<FinalizeIn
 
 export function getFinalizeInstructionDataDecoder(): FixedSizeDecoder<FinalizeInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["winningMint", getAddressDecoder()],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['winningMint', getAddressDecoder()],
   ]);
 }
 
@@ -108,7 +108,7 @@ export type FinalizeInput<
   /** The oracle authority - must sign to finalize */
   oracleAuthority: TransactionSigner<TAccountOracleAuthority>;
   oracleState: Address<TAccountOracleState>;
-  winningMint: FinalizeInstructionDataArgs["winningMint"];
+  winningMint: FinalizeInstructionDataArgs['winningMint'];
 };
 
 export function getFinalizeInstruction<
@@ -143,11 +143,11 @@ export function getFinalizeInstruction<
   // Original args.
   const args = { ...input };
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("oracleAuthority", accounts.oracleAuthority),
-      getAccountMeta("oracleState", accounts.oracleState),
+      getAccountMeta('oracleAuthority', accounts.oracleAuthority),
+      getAccountMeta('oracleState', accounts.oracleState),
     ],
     data: getFinalizeInstructionDataEncoder().encode(
       args as FinalizeInstructionDataArgs,

@@ -83,9 +83,14 @@ export interface UsePositionOptions {
 export function usePosition(
   poolAddress: Address | undefined,
   positionId: bigint = 0n,
-  options: UsePositionOptions = {}
+  options: UsePositionOptions = {},
 ): UsePositionResult {
-  const { rpc, programId, commitment: defaultCommitment, refreshInterval: defaultRefreshInterval } = useAmm();
+  const {
+    rpc,
+    programId,
+    commitment: defaultCommitment,
+    refreshInterval: defaultRefreshInterval,
+  } = useAmm();
   const wallet = useWalletOptional();
 
   const {
@@ -119,13 +124,20 @@ export function usePosition(
     try {
       // Import PDA derivation
       const { getPositionAddress } = await import('../../core/pda.js');
-      const [posAddr] = await getPositionAddress(poolAddress, ownerAddress, positionId, programId);
+      const [posAddr] = await getPositionAddress(
+        poolAddress,
+        ownerAddress,
+        positionId,
+        programId,
+      );
       setPositionAddress(posAddr);
 
       // Fetch position and pool in parallel
       const [positionData, poolData] = await Promise.all([
         fetchPosition(rpc, posAddr, { programId, commitment }),
-        providedPool ? Promise.resolve(providedPool) : fetchPool(rpc, poolAddress, { programId, commitment }),
+        providedPool
+          ? Promise.resolve(providedPool)
+          : fetchPool(rpc, poolAddress, { programId, commitment }),
       ]);
 
       if (mountedRef.current) {
@@ -141,7 +153,15 @@ export function usePosition(
         setLoading(false);
       }
     }
-  }, [poolAddress, ownerAddress, positionId, rpc, programId, commitment, providedPool]);
+  }, [
+    poolAddress,
+    ownerAddress,
+    positionId,
+    rpc,
+    programId,
+    commitment,
+    providedPool,
+  ]);
 
   const refetch = useCallback(async () => {
     await fetchPositionData();
@@ -235,9 +255,14 @@ export interface UseUserPositionsResult {
  */
 export function useUserPositions(
   poolFilter?: Address,
-  options: Omit<UsePositionOptions, 'pool'> = {}
+  options: Omit<UsePositionOptions, 'pool'> = {},
 ): UseUserPositionsResult {
-  const { rpc, programId, commitment: defaultCommitment, refreshInterval: defaultRefreshInterval } = useAmm();
+  const {
+    rpc,
+    programId,
+    commitment: defaultCommitment,
+    refreshInterval: defaultRefreshInterval,
+  } = useAmm();
   const wallet = useWalletOptional();
 
   const {
@@ -264,10 +289,15 @@ export function useUserPositions(
     setError(null);
 
     try {
-      const positionsData = await fetchUserPositions(rpc, ownerAddress, poolFilter, {
-        programId,
-        commitment,
-      });
+      const positionsData = await fetchUserPositions(
+        rpc,
+        ownerAddress,
+        poolFilter,
+        {
+          programId,
+          commitment,
+        },
+      );
 
       if (mountedRef.current) {
         // Filter out positions with zero shares by default

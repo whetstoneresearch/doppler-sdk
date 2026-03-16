@@ -13,8 +13,15 @@ import { getInitializeConfigInstructionDataEncoder } from '../../generated/initi
 
 type AddressOrSigner = Address | TransactionSigner;
 
-function isTransactionSigner(value: AddressOrSigner): value is TransactionSigner {
-  return typeof value === 'object' && value !== null && 'address' in value && 'signTransactions' in value;
+function isTransactionSigner(
+  value: AddressOrSigner,
+): value is TransactionSigner {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'address' in value &&
+    'signTransactions' in value
+  );
 }
 
 function createSignerAccountMeta(
@@ -39,7 +46,12 @@ export function createInitializeConfigInstruction(
   args: InitializeConfigArgsArgs,
   programId: Address = INITIALIZER_PROGRAM_ID,
 ): Instruction {
-  const { admin, config, programData, systemProgram = SYSTEM_PROGRAM_ID } = accounts;
+  const {
+    admin,
+    config,
+    programData,
+    systemProgram = SYSTEM_PROGRAM_ID,
+  } = accounts;
 
   const keys: (AccountMeta | AccountSignerMeta)[] = [
     createSignerAccountMeta(admin, ACCOUNT_ROLE_WRITABLE_SIGNER),
@@ -48,7 +60,9 @@ export function createInitializeConfigInstruction(
     { address: systemProgram, role: ACCOUNT_ROLE_READONLY },
   ];
 
-  const data = new Uint8Array(getInitializeConfigInstructionDataEncoder().encode(args));
+  const data = new Uint8Array(
+    getInitializeConfigInstructionDataEncoder().encode(args),
+  );
 
   return { programAddress: programId, accounts: keys, data };
 }

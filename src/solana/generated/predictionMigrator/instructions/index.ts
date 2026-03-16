@@ -6,7 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
-export * from "./claim";
-export * from "./migrateEntry";
-export * from "./previewPayoutIfWinner";
-export * from "./registerEntry";
+export * from './claim';
+export * from './migrateEntry';
+export * from './previewPayoutIfWinner';
+export * from './registerEntry';

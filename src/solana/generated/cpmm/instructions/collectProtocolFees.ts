@@ -35,13 +35,13 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   getAccountMetaFactory,
   getAddressFromResolvedInstructionAccount,
   type ResolvedInstructionAccount,
-} from "@solana/program-client-core";
-import { CPMM_PROGRAM_ADDRESS } from "../programs";
+} from '@solana/program-client-core';
+import { CPMM_PROGRAM_ADDRESS } from '../programs';
 
 export const COLLECT_PROTOCOL_FEES_DISCRIMINATOR = new Uint8Array([
   22, 67, 23, 98, 150, 178, 70, 220,
@@ -67,7 +67,7 @@ export type CollectProtocolFeesInstruction<
   TAccountRecipient0 extends string | AccountMeta<string> = string,
   TAccountRecipient1 extends string | AccountMeta<string> = string,
   TAccountTokenProgram extends string | AccountMeta<string> =
-    "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -128,9 +128,9 @@ export type CollectProtocolFeesInstructionDataArgs = {
 export function getCollectProtocolFeesInstructionDataEncoder(): FixedSizeEncoder<CollectProtocolFeesInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["max0", getU64Encoder()],
-      ["max1", getU64Encoder()],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['max0', getU64Encoder()],
+      ['max1', getU64Encoder()],
     ]),
     (value) => ({
       ...value,
@@ -141,9 +141,9 @@ export function getCollectProtocolFeesInstructionDataEncoder(): FixedSizeEncoder
 
 export function getCollectProtocolFeesInstructionDataDecoder(): FixedSizeDecoder<CollectProtocolFeesInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["max0", getU64Decoder()],
-    ["max1", getU64Decoder()],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['max0', getU64Decoder()],
+    ['max1', getU64Decoder()],
   ]);
 }
 
@@ -183,8 +183,8 @@ export type CollectProtocolFeesAsyncInput<
   recipient0: Address<TAccountRecipient0>;
   recipient1: Address<TAccountRecipient1>;
   tokenProgram?: Address<TAccountTokenProgram>;
-  max0: CollectProtocolFeesInstructionDataArgs["max0"];
-  max1: CollectProtocolFeesInstructionDataArgs["max1"];
+  max0: CollectProtocolFeesInstructionDataArgs['max0'];
+  max1: CollectProtocolFeesInstructionDataArgs['max1'];
 };
 
 export async function getCollectProtocolFeesInstructionAsync<
@@ -272,31 +272,31 @@ export async function getCollectProtocolFeesInstructionAsync<
           new Uint8Array([97, 117, 116, 104, 111, 114, 105, 116, 121]),
         ),
         getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount("pool", accounts.pool.value),
+          getAddressFromResolvedInstructionAccount('pool', accounts.pool.value),
         ),
       ],
     });
   }
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
-      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" as Address<"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA">;
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("config", accounts.config),
-      getAccountMeta("pool", accounts.pool),
-      getAccountMeta("protocolPosition", accounts.protocolPosition),
-      getAccountMeta("admin", accounts.admin),
-      getAccountMeta("authority", accounts.authority),
-      getAccountMeta("vault0", accounts.vault0),
-      getAccountMeta("vault1", accounts.vault1),
-      getAccountMeta("token0Mint", accounts.token0Mint),
-      getAccountMeta("token1Mint", accounts.token1Mint),
-      getAccountMeta("recipient0", accounts.recipient0),
-      getAccountMeta("recipient1", accounts.recipient1),
-      getAccountMeta("tokenProgram", accounts.tokenProgram),
+      getAccountMeta('config', accounts.config),
+      getAccountMeta('pool', accounts.pool),
+      getAccountMeta('protocolPosition', accounts.protocolPosition),
+      getAccountMeta('admin', accounts.admin),
+      getAccountMeta('authority', accounts.authority),
+      getAccountMeta('vault0', accounts.vault0),
+      getAccountMeta('vault1', accounts.vault1),
+      getAccountMeta('token0Mint', accounts.token0Mint),
+      getAccountMeta('token1Mint', accounts.token1Mint),
+      getAccountMeta('recipient0', accounts.recipient0),
+      getAccountMeta('recipient1', accounts.recipient1),
+      getAccountMeta('tokenProgram', accounts.tokenProgram),
     ],
     data: getCollectProtocolFeesInstructionDataEncoder().encode(
       args as CollectProtocolFeesInstructionDataArgs,
@@ -345,8 +345,8 @@ export type CollectProtocolFeesInput<
   recipient0: Address<TAccountRecipient0>;
   recipient1: Address<TAccountRecipient1>;
   tokenProgram?: Address<TAccountTokenProgram>;
-  max0: CollectProtocolFeesInstructionDataArgs["max0"];
-  max1: CollectProtocolFeesInstructionDataArgs["max1"];
+  max0: CollectProtocolFeesInstructionDataArgs['max0'];
+  max1: CollectProtocolFeesInstructionDataArgs['max1'];
 };
 
 export function getCollectProtocolFeesInstruction<
@@ -426,24 +426,24 @@ export function getCollectProtocolFeesInstruction<
   // Resolve default values.
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
-      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" as Address<"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA">;
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("config", accounts.config),
-      getAccountMeta("pool", accounts.pool),
-      getAccountMeta("protocolPosition", accounts.protocolPosition),
-      getAccountMeta("admin", accounts.admin),
-      getAccountMeta("authority", accounts.authority),
-      getAccountMeta("vault0", accounts.vault0),
-      getAccountMeta("vault1", accounts.vault1),
-      getAccountMeta("token0Mint", accounts.token0Mint),
-      getAccountMeta("token1Mint", accounts.token1Mint),
-      getAccountMeta("recipient0", accounts.recipient0),
-      getAccountMeta("recipient1", accounts.recipient1),
-      getAccountMeta("tokenProgram", accounts.tokenProgram),
+      getAccountMeta('config', accounts.config),
+      getAccountMeta('pool', accounts.pool),
+      getAccountMeta('protocolPosition', accounts.protocolPosition),
+      getAccountMeta('admin', accounts.admin),
+      getAccountMeta('authority', accounts.authority),
+      getAccountMeta('vault0', accounts.vault0),
+      getAccountMeta('vault1', accounts.vault1),
+      getAccountMeta('token0Mint', accounts.token0Mint),
+      getAccountMeta('token1Mint', accounts.token1Mint),
+      getAccountMeta('recipient0', accounts.recipient0),
+      getAccountMeta('recipient1', accounts.recipient1),
+      getAccountMeta('tokenProgram', accounts.tokenProgram),
     ],
     data: getCollectProtocolFeesInstructionDataEncoder().encode(
       args as CollectProtocolFeesInstructionDataArgs,

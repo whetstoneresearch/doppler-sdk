@@ -30,12 +30,12 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   getAccountMetaFactory,
   type ResolvedInstructionAccount,
-} from "@solana/program-client-core";
-import { CPMM_PROGRAM_ADDRESS } from "../programs";
+} from '@solana/program-client-core';
+import { CPMM_PROGRAM_ADDRESS } from '../programs';
 
 export const UNPAUSE_DISCRIMINATOR = new Uint8Array([
   169, 144, 4, 38, 10, 141, 188, 255,
@@ -71,14 +71,14 @@ export type UnpauseInstructionDataArgs = {};
 
 export function getUnpauseInstructionDataEncoder(): FixedSizeEncoder<UnpauseInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([["discriminator", fixEncoderSize(getBytesEncoder(), 8)]]),
+    getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
     (value) => ({ ...value, discriminator: UNPAUSE_DISCRIMINATOR }),
   );
 }
 
 export function getUnpauseInstructionDataDecoder(): FixedSizeDecoder<UnpauseInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
   ]);
 }
 
@@ -121,11 +121,11 @@ export function getUnpauseInstruction<
     ResolvedInstructionAccount
   >;
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("config", accounts.config),
-      getAccountMeta("admin", accounts.admin),
+      getAccountMeta('config', accounts.config),
+      getAccountMeta('admin', accounts.admin),
     ],
     data: getUnpauseInstructionDataEncoder().encode({}),
     programAddress,

@@ -49,13 +49,13 @@ import {
   type Option,
   type OptionOrNullable,
   type ReadonlyUint8Array,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   getRecipientDecoder,
   getRecipientEncoder,
   type Recipient,
   type RecipientArgs,
-} from "../types";
+} from '../types';
 
 export const CPMM_MIGRATOR_STATE_DISCRIMINATOR = new Uint8Array([
   169, 86, 255, 187, 37, 248, 11, 176,
@@ -126,19 +126,19 @@ export type CpmmMigratorStateArgs = {
 export function getCpmmMigratorStateEncoder(): Encoder<CpmmMigratorStateArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["launch", getAddressEncoder()],
-      ["admin", getAddressEncoder()],
-      ["cpmmConfig", getAddressEncoder()],
-      ["initialSwapFeeBps", getU16Encoder()],
-      ["initialFeeSplitBps", getU16Encoder()],
-      ["pad0", fixEncoderSize(getBytesEncoder(), 4)],
-      ["recipients", getArrayEncoder(getRecipientEncoder(), { size: 2 })],
-      ["minRaiseQuote", getU64Encoder()],
-      ["minMigrationPriceQ64Opt", getOptionEncoder(getU128Encoder())],
-      ["isMigrated", getBooleanEncoder()],
-      ["bump", getU8Encoder()],
-      ["reserved", fixEncoderSize(getBytesEncoder(), 14)],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['launch', getAddressEncoder()],
+      ['admin', getAddressEncoder()],
+      ['cpmmConfig', getAddressEncoder()],
+      ['initialSwapFeeBps', getU16Encoder()],
+      ['initialFeeSplitBps', getU16Encoder()],
+      ['pad0', fixEncoderSize(getBytesEncoder(), 4)],
+      ['recipients', getArrayEncoder(getRecipientEncoder(), { size: 2 })],
+      ['minRaiseQuote', getU64Encoder()],
+      ['minMigrationPriceQ64Opt', getOptionEncoder(getU128Encoder())],
+      ['isMigrated', getBooleanEncoder()],
+      ['bump', getU8Encoder()],
+      ['reserved', fixEncoderSize(getBytesEncoder(), 14)],
     ]),
     (value) => ({ ...value, discriminator: CPMM_MIGRATOR_STATE_DISCRIMINATOR }),
   );
@@ -147,19 +147,19 @@ export function getCpmmMigratorStateEncoder(): Encoder<CpmmMigratorStateArgs> {
 /** Gets the decoder for {@link CpmmMigratorState} account data. */
 export function getCpmmMigratorStateDecoder(): Decoder<CpmmMigratorState> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["launch", getAddressDecoder()],
-    ["admin", getAddressDecoder()],
-    ["cpmmConfig", getAddressDecoder()],
-    ["initialSwapFeeBps", getU16Decoder()],
-    ["initialFeeSplitBps", getU16Decoder()],
-    ["pad0", fixDecoderSize(getBytesDecoder(), 4)],
-    ["recipients", getArrayDecoder(getRecipientDecoder(), { size: 2 })],
-    ["minRaiseQuote", getU64Decoder()],
-    ["minMigrationPriceQ64Opt", getOptionDecoder(getU128Decoder())],
-    ["isMigrated", getBooleanDecoder()],
-    ["bump", getU8Decoder()],
-    ["reserved", fixDecoderSize(getBytesDecoder(), 14)],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['launch', getAddressDecoder()],
+    ['admin', getAddressDecoder()],
+    ['cpmmConfig', getAddressDecoder()],
+    ['initialSwapFeeBps', getU16Decoder()],
+    ['initialFeeSplitBps', getU16Decoder()],
+    ['pad0', fixDecoderSize(getBytesDecoder(), 4)],
+    ['recipients', getArrayDecoder(getRecipientDecoder(), { size: 2 })],
+    ['minRaiseQuote', getU64Decoder()],
+    ['minMigrationPriceQ64Opt', getOptionDecoder(getU128Decoder())],
+    ['isMigrated', getBooleanDecoder()],
+    ['bump', getU8Decoder()],
+    ['reserved', fixDecoderSize(getBytesDecoder(), 14)],
   ]);
 }
 

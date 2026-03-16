@@ -108,9 +108,14 @@ export interface UseOracleOptions {
  */
 export function useOracle(
   poolAddress: Address | undefined,
-  options: UseOracleOptions = {}
+  options: UseOracleOptions = {},
 ): UseOracleResult {
-  const { rpc, programId, commitment: defaultCommitment, refreshInterval: defaultRefreshInterval } = useAmm();
+  const {
+    rpc,
+    programId,
+    commitment: defaultCommitment,
+    refreshInterval: defaultRefreshInterval,
+  } = useAmm();
 
   const {
     refreshInterval = defaultRefreshInterval,
@@ -170,7 +175,7 @@ export function useOracle(
       if (!oracle || !oracle.initialized) return null;
       return consultTwap(oracle, windowSeconds);
     },
-    [oracle]
+    [oracle],
   );
 
   // Current spot prices
@@ -199,7 +204,7 @@ export function useOracle(
       if (!oracle || !oracle.initialized) return true;
       return isOracleStale(oracle, maxAgeSeconds);
     },
-    [oracle]
+    [oracle],
   );
 
   // Buffer stats
@@ -220,7 +225,7 @@ export function useOracle(
       if (!oracle || !oracle.initialized) return null;
       return comparePoolAndOraclePrices(pool, oracle);
     },
-    [oracle]
+    [oracle],
   );
 
   // Initial fetch
@@ -272,7 +277,7 @@ export function useOracle(
 export function useTwap(
   poolAddress: Address | undefined,
   windowSeconds: number,
-  options: UseOracleOptions = {}
+  options: UseOracleOptions = {},
 ): {
   twap: TwapResult | null;
   loading: boolean;
@@ -299,14 +304,19 @@ export function useTwap(
  */
 export function useOracles(
   poolAddresses: Address[],
-  options: UseOracleOptions = {}
+  options: UseOracleOptions = {},
 ): {
   oracles: Map<Address, OracleWithAddress>;
   loading: boolean;
   error: Error | null;
   refetch: () => Promise<void>;
 } {
-  const { rpc, programId, commitment: defaultCommitment, refreshInterval: defaultRefreshInterval } = useAmm();
+  const {
+    rpc,
+    programId,
+    commitment: defaultCommitment,
+    refreshInterval: defaultRefreshInterval,
+  } = useAmm();
 
   const {
     refreshInterval = defaultRefreshInterval,
@@ -314,7 +324,9 @@ export function useOracles(
     commitment = defaultCommitment,
   } = options;
 
-  const [oracles, setOracles] = useState<Map<Address, OracleWithAddress>>(new Map());
+  const [oracles, setOracles] = useState<Map<Address, OracleWithAddress>>(
+    new Map(),
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
@@ -334,12 +346,15 @@ export function useOracles(
       const results = await Promise.all(
         poolAddresses.map(async (poolAddr) => {
           try {
-            const result = await getOracleForPool(rpc, poolAddr, { programId, commitment });
+            const result = await getOracleForPool(rpc, poolAddr, {
+              programId,
+              commitment,
+            });
             return [poolAddr, result] as const;
           } catch {
             return [poolAddr, null] as const;
           }
-        })
+        }),
       );
 
       if (mountedRef.current) {

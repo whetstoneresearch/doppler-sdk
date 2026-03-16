@@ -47,7 +47,11 @@ function formatAmount(amount: bigint, decimals: number): string {
     return intPart.toLocaleString();
   }
 
-  const fracStr = fracPart.toString().padStart(decimals, '0').slice(0, 4).replace(/0+$/, '');
+  const fracStr = fracPart
+    .toString()
+    .padStart(decimals, '0')
+    .slice(0, 4)
+    .replace(/0+$/, '');
   if (fracStr === '') {
     return intPart.toLocaleString();
   }
@@ -60,7 +64,8 @@ function formatAmount(amount: bigint, decimals: number): string {
 function formatPrice(price: number): string {
   if (price === 0) return '0';
   if (price >= 1000000) return price.toExponential(4);
-  if (price >= 1) return price.toLocaleString(undefined, { maximumFractionDigits: 6 });
+  if (price >= 1)
+    return price.toLocaleString(undefined, { maximumFractionDigits: 6 });
   if (price >= 0.0001) return price.toFixed(6);
   return price.toExponential(4);
 }
@@ -130,9 +135,13 @@ export function PoolStats({
   variant = 'full',
 }: PoolStatsProps): JSX.Element {
   // Fetch pool if not provided
-  const { pool: fetchedPool, loading, error, refetch, refetching } = usePool(
-    providedPool ? undefined : poolAddress
-  );
+  const {
+    pool: fetchedPool,
+    loading,
+    error,
+    refetch,
+    refetching,
+  } = usePool(providedPool ? undefined : poolAddress);
   const pool = providedPool ?? fetchedPool;
 
   // Calculate derived values
@@ -247,7 +256,9 @@ export function PoolStats({
       <div className="grid grid-cols-2 gap-4">
         {/* TVL */}
         <div className="col-span-2 p-3 bg-gray-50 rounded-lg">
-          <span className="text-sm text-gray-500">Total Value Locked (TVL)</span>
+          <span className="text-sm text-gray-500">
+            Total Value Locked (TVL)
+          </span>
           <p className="text-xl font-bold">{formatTvl(stats.tvl0, token0)}</p>
           <p className="text-sm text-gray-500">
             ({formatTvl(stats.tvl1, token1)})

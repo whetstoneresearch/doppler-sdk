@@ -1,5 +1,11 @@
 import { BPS_DENOM, Q64_ONE } from './constants.js';
-import type { Pool, SwapQuote, AddLiquidityQuote, RemoveLiquidityQuote, SwapDirection } from './types.js';
+import type {
+  Pool,
+  SwapQuote,
+  AddLiquidityQuote,
+  RemoveLiquidityQuote,
+  SwapDirection,
+} from './types.js';
 
 // ============================================================================
 // Q64.64 Fixed-Point Arithmetic
@@ -21,7 +27,9 @@ export function q64ToNumber(q64: bigint): number {
 export function numberToQ64(n: number): bigint {
   const intPart = Math.floor(n);
   const fracPart = n - intPart;
-  return (BigInt(intPart) << 64n) + BigInt(Math.round(fracPart * Number(Q64_ONE)));
+  return (
+    (BigInt(intPart) << 64n) + BigInt(Math.round(fracPart * Number(Q64_ONE)))
+  );
 }
 
 /**
@@ -141,9 +149,10 @@ export function getSwapQuote(
   }
 
   // Get reserves based on direction
-  const [reserveIn, reserveOut] = direction === 0
-    ? [pool.reserve0, pool.reserve1]
-    : [pool.reserve1, pool.reserve0];
+  const [reserveIn, reserveOut] =
+    direction === 0
+      ? [pool.reserve0, pool.reserve1]
+      : [pool.reserve1, pool.reserve0];
 
   if (reserveIn === 0n || reserveOut === 0n) {
     throw new Error('Pool has zero liquidity');
@@ -161,7 +170,8 @@ export function getSwapQuote(
   // Calculate price impact
   const spotPrice = ratioToNumber(reserveOut, reserveIn);
   const executionPrice = ratioToNumber(amountOut, amountIn);
-  const priceImpact = spotPrice === 0 ? 0 : Math.abs(spotPrice - executionPrice) / spotPrice;
+  const priceImpact =
+    spotPrice === 0 ? 0 : Math.abs(spotPrice - executionPrice) / spotPrice;
 
   return {
     amountOut,
@@ -182,9 +192,10 @@ export function getSwapQuoteExactOut(
   direction: SwapDirection,
 ): { amountIn: bigint; feeTotal: bigint } {
   // Get reserves based on direction
-  const [reserveIn, reserveOut] = direction === 0
-    ? [pool.reserve0, pool.reserve1]
-    : [pool.reserve1, pool.reserve0];
+  const [reserveIn, reserveOut] =
+    direction === 0
+      ? [pool.reserve0, pool.reserve1]
+      : [pool.reserve1, pool.reserve0];
 
   if (reserveIn === 0n || reserveOut === 0n) {
     throw new Error('Pool has zero liquidity');
@@ -202,7 +213,10 @@ export function getSwapQuoteExactOut(
   // Reverse fee calculation:
   // amountInEff = amountIn - feeTotal = amountIn * (1 - feeBps/10000)
   // => amountIn = amountInEff * 10000 / (10000 - feeBps)
-  const amountIn = ceilDiv(amountInEff * BPS_DENOM, BPS_DENOM - BigInt(pool.swapFeeBps));
+  const amountIn = ceilDiv(
+    amountInEff * BPS_DENOM,
+    BPS_DENOM - BigInt(pool.swapFeeBps),
+  );
   const feeTotal = amountIn - amountInEff;
 
   return { amountIn, feeTotal };
@@ -315,7 +329,13 @@ export function calculateAccruedFees(
  */
 export function getPendingFees(
   pool: Pool,
-  position: { shares: bigint; feeGrowthLast0Q64: bigint; feeGrowthLast1Q64: bigint; feeOwed0: bigint; feeOwed1: bigint },
+  position: {
+    shares: bigint;
+    feeGrowthLast0Q64: bigint;
+    feeGrowthLast1Q64: bigint;
+    feeOwed0: bigint;
+    feeOwed1: bigint;
+  },
 ): { pending0: bigint; pending1: bigint } {
   const accrued0 = calculateAccruedFees(
     position.shares,
@@ -397,9 +417,10 @@ export function calculateTwap(
   if (dt === 0n) return 0n;
 
   // Handle wrapping (cumulative values can wrap around)
-  const cumulativeDiff = cumulativeEnd >= cumulativeStart
-    ? cumulativeEnd - cumulativeStart
-    : (1n << 256n) - cumulativeStart + cumulativeEnd;
+  const cumulativeDiff =
+    cumulativeEnd >= cumulativeStart
+      ? cumulativeEnd - cumulativeStart
+      : (1n << 256n) - cumulativeStart + cumulativeEnd;
 
   return cumulativeDiff / dt;
 }
@@ -413,6 +434,11 @@ export function calculateTwapNumber(
   timestampStart: number,
   timestampEnd: number,
 ): number {
-  const twapQ64 = calculateTwap(cumulativeStart, cumulativeEnd, timestampStart, timestampEnd);
+  const twapQ64 = calculateTwap(
+    cumulativeStart,
+    cumulativeEnd,
+    timestampStart,
+    timestampEnd,
+  );
   return q64ToNumber(twapQ64);
 }

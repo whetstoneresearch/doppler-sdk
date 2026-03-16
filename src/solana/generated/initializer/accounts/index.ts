@@ -6,5 +6,5 @@
  * @see https://github.com/codama-idl/codama
  */
 
-export * from "./initConfig";
-export * from "./launch";
+export * from './initConfig';
+export * from './launch';

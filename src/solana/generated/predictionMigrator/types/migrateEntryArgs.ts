@@ -18,7 +18,7 @@ import {
   type FixedSizeDecoder,
   type FixedSizeEncoder,
   type ReadonlyUint8Array,
-} from "@solana/kit";
+} from '@solana/kit';
 
 /**
  * Arguments for migrate_entry instruction.
@@ -29,11 +29,11 @@ export type MigrateEntryArgs = { entryId: ReadonlyUint8Array };
 export type MigrateEntryArgsArgs = MigrateEntryArgs;
 
 export function getMigrateEntryArgsEncoder(): FixedSizeEncoder<MigrateEntryArgsArgs> {
-  return getStructEncoder([["entryId", fixEncoderSize(getBytesEncoder(), 32)]]);
+  return getStructEncoder([['entryId', fixEncoderSize(getBytesEncoder(), 32)]]);
 }
 
 export function getMigrateEntryArgsDecoder(): FixedSizeDecoder<MigrateEntryArgs> {
-  return getStructDecoder([["entryId", fixDecoderSize(getBytesDecoder(), 32)]]);
+  return getStructDecoder([['entryId', fixDecoderSize(getBytesDecoder(), 32)]]);
 }
 
 export function getMigrateEntryArgsCodec(): FixedSizeCodec<

@@ -6,8 +6,16 @@ import {
   ACCOUNT_ROLE_READONLY,
 } from '../core/constants.js';
 import type { QuoteToNumeraireArgs } from '../core/types.js';
-import { quoteToNumeraireArgsCodec, encodeInstructionData } from '../core/codecs.js';
-import { getStructCodec, getU128Codec, getU8Codec, type Codec } from '@solana/kit';
+import {
+  quoteToNumeraireArgsCodec,
+  encodeInstructionData,
+} from '../core/codecs.js';
+import {
+  getStructCodec,
+  getU128Codec,
+  getU8Codec,
+  type Codec,
+} from '@solana/kit';
 import type { ReadonlyUint8Array } from '@solana/kit';
 
 /**
@@ -39,16 +47,19 @@ export interface QuoteToNumeraireResult {
   hopsUsed: number;
 }
 
-const quoteToNumeraireResultCodec: Codec<QuoteToNumeraireResult> = getStructCodec([
-  ['amountInNumeraire', getU128Codec()],
-  ['endMint', getAddressCodec()],
-  ['hopsUsed', getU8Codec()],
-]);
+const quoteToNumeraireResultCodec: Codec<QuoteToNumeraireResult> =
+  getStructCodec([
+    ['amountInNumeraire', getU128Codec()],
+    ['endMint', getAddressCodec()],
+    ['hopsUsed', getU8Codec()],
+  ]);
 
 /**
  * Decode quote_to_numeraire return data
  */
-export function decodeQuoteToNumeraireResult(data: ReadonlyUint8Array): QuoteToNumeraireResult {
+export function decodeQuoteToNumeraireResult(
+  data: ReadonlyUint8Array,
+): QuoteToNumeraireResult {
   return quoteToNumeraireResultCodec.decode(data);
 }
 

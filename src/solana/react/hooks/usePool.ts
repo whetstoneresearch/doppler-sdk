@@ -66,9 +66,14 @@ export interface UsePoolOptions {
  */
 export function usePool(
   poolAddress: Address | undefined,
-  options: UsePoolOptions = {}
+  options: UsePoolOptions = {},
 ): UsePoolResult {
-  const { rpc, programId, commitment: defaultCommitment, refreshInterval: defaultRefreshInterval } = useAmm();
+  const {
+    rpc,
+    programId,
+    commitment: defaultCommitment,
+    refreshInterval: defaultRefreshInterval,
+  } = useAmm();
 
   const {
     refreshInterval = defaultRefreshInterval,
@@ -119,7 +124,7 @@ export function usePool(
         }
       }
     },
-    [poolAddress, rpc, programId, commitment]
+    [poolAddress, rpc, programId, commitment],
   );
 
   const refetch = useCallback(async () => {
@@ -172,14 +177,19 @@ export function usePool(
  */
 export function usePools(
   poolAddresses: Address[],
-  options: UsePoolOptions = {}
+  options: UsePoolOptions = {},
 ): {
   pools: Map<Address, Pool>;
   loading: boolean;
   error: Error | null;
   refetch: () => Promise<void>;
 } {
-  const { rpc, programId, commitment: defaultCommitment, refreshInterval: defaultRefreshInterval } = useAmm();
+  const {
+    rpc,
+    programId,
+    commitment: defaultCommitment,
+    refreshInterval: defaultRefreshInterval,
+  } = useAmm();
 
   const {
     refreshInterval = defaultRefreshInterval,
@@ -208,8 +218,8 @@ export function usePools(
         poolAddresses.map((addr) =>
           fetchPool(rpc, addr, { programId, commitment })
             .then((pool) => [addr, pool] as const)
-            .catch(() => [addr, null] as const)
-        )
+            .catch(() => [addr, null] as const),
+        ),
       );
 
       if (mountedRef.current) {

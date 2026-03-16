@@ -35,12 +35,12 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   getAccountMetaFactory,
   type ResolvedInstructionAccount,
-} from "@solana/program-client-core";
-import { INITIALIZER_PROGRAM_ADDRESS } from "../programs";
+} from '@solana/program-client-core';
+import { INITIALIZER_PROGRAM_ADDRESS } from '../programs';
 
 export const SET_MIGRATOR_ALLOWLIST_DISCRIMINATOR = new Uint8Array([
   209, 90, 181, 104, 99, 108, 233, 168,
@@ -84,8 +84,8 @@ export type SetMigratorAllowlistInstructionDataArgs = {
 export function getSetMigratorAllowlistInstructionDataEncoder(): Encoder<SetMigratorAllowlistInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["allowlist", getArrayEncoder(getAddressEncoder())],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['allowlist', getArrayEncoder(getAddressEncoder())],
     ]),
     (value) => ({
       ...value,
@@ -96,8 +96,8 @@ export function getSetMigratorAllowlistInstructionDataEncoder(): Encoder<SetMigr
 
 export function getSetMigratorAllowlistInstructionDataDecoder(): Decoder<SetMigratorAllowlistInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["allowlist", getArrayDecoder(getAddressDecoder())],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['allowlist', getArrayDecoder(getAddressDecoder())],
   ]);
 }
 
@@ -117,7 +117,7 @@ export type SetMigratorAllowlistAsyncInput<
 > = {
   admin: TransactionSigner<TAccountAdmin>;
   config?: Address<TAccountConfig>;
-  allowlist: SetMigratorAllowlistInstructionDataArgs["allowlist"];
+  allowlist: SetMigratorAllowlistInstructionDataArgs['allowlist'];
 };
 
 export async function getSetMigratorAllowlistInstructionAsync<
@@ -162,11 +162,11 @@ export async function getSetMigratorAllowlistInstructionAsync<
     });
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("admin", accounts.admin),
-      getAccountMeta("config", accounts.config),
+      getAccountMeta('admin', accounts.admin),
+      getAccountMeta('config', accounts.config),
     ],
     data: getSetMigratorAllowlistInstructionDataEncoder().encode(
       args as SetMigratorAllowlistInstructionDataArgs,
@@ -185,7 +185,7 @@ export type SetMigratorAllowlistInput<
 > = {
   admin: TransactionSigner<TAccountAdmin>;
   config: Address<TAccountConfig>;
-  allowlist: SetMigratorAllowlistInstructionDataArgs["allowlist"];
+  allowlist: SetMigratorAllowlistInstructionDataArgs['allowlist'];
 };
 
 export function getSetMigratorAllowlistInstruction<
@@ -216,11 +216,11 @@ export function getSetMigratorAllowlistInstruction<
   // Original args.
   const args = { ...input };
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("admin", accounts.admin),
-      getAccountMeta("config", accounts.config),
+      getAccountMeta('admin', accounts.admin),
+      getAccountMeta('config', accounts.config),
     ],
     data: getSetMigratorAllowlistInstructionDataEncoder().encode(
       args as SetMigratorAllowlistInstructionDataArgs,

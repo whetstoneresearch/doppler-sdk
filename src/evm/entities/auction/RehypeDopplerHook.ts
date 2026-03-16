@@ -1,10 +1,4 @@
-import type {
-  Address,
-  Hash,
-  Hex,
-  PublicClient,
-  WalletClient,
-} from 'viem';
+import type { Address, Hash, Hex, PublicClient, WalletClient } from 'viem';
 import type { SupportedPublicClient } from '../../types';
 import { rehypeDopplerHookAbi } from '../../abis';
 import { decodeBalanceDelta } from '../../utils';

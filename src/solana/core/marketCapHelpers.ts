@@ -91,7 +91,11 @@ export function validateMarketCapParameters(
     );
   }
 
-  const tokenPriceUSD = marketCapToTokenPrice(marketCapUSD, baseTotalSupply, baseDecimals);
+  const tokenPriceUSD = marketCapToTokenPrice(
+    marketCapUSD,
+    baseTotalSupply,
+    baseDecimals,
+  );
 
   if (tokenPriceUSD < 0.000_001) {
     warnings.push(
@@ -153,18 +157,20 @@ export function marketCapToCurveParams(input: MarketCapToCurveParamsInput): {
     virtualBase,
   } = input;
 
-  if (startMarketCapUSD <= 0) throw new Error('startMarketCapUSD must be positive');
+  if (startMarketCapUSD <= 0)
+    throw new Error('startMarketCapUSD must be positive');
   if (endMarketCapUSD <= 0) throw new Error('endMarketCapUSD must be positive');
   if (startMarketCapUSD >= endMarketCapUSD) {
     throw new Error('startMarketCapUSD must be less than endMarketCapUSD');
   }
   if (baseForCurve <= 0n) throw new Error('baseForCurve must be positive');
-  if (baseForCurve > baseTotalSupply) throw new Error('baseForCurve cannot exceed baseTotalSupply');
-  if (numerairePriceUSD <= 0) throw new Error('numerairePriceUSD must be positive');
+  if (baseForCurve > baseTotalSupply)
+    throw new Error('baseForCurve cannot exceed baseTotalSupply');
+  if (numerairePriceUSD <= 0)
+    throw new Error('numerairePriceUSD must be positive');
 
-  const canonicalVirtualBase = virtualBase !== undefined && virtualBase > 0n
-    ? virtualBase
-    : baseForCurve;
+  const canonicalVirtualBase =
+    virtualBase !== undefined && virtualBase > 0n ? virtualBase : baseForCurve;
 
   return {
     start: _marketCapToCurveParams(
@@ -203,12 +209,13 @@ export function marketCapToSingleCurveParams(
 ): CurveParams {
   if (marketCapUSD <= 0) throw new Error('marketCapUSD must be positive');
   if (baseForCurve <= 0n) throw new Error('baseForCurve must be positive');
-  if (baseForCurve > baseTotalSupply) throw new Error('baseForCurve cannot exceed baseTotalSupply');
-  if (numerairePriceUSD <= 0) throw new Error('numerairePriceUSD must be positive');
+  if (baseForCurve > baseTotalSupply)
+    throw new Error('baseForCurve cannot exceed baseTotalSupply');
+  if (numerairePriceUSD <= 0)
+    throw new Error('numerairePriceUSD must be positive');
 
-  const canonicalVirtualBase = virtualBase !== undefined && virtualBase > 0n
-    ? virtualBase
-    : baseForCurve;
+  const canonicalVirtualBase =
+    virtualBase !== undefined && virtualBase > 0n ? virtualBase : baseForCurve;
 
   return _marketCapToCurveParams(
     marketCapUSD,
@@ -246,7 +253,9 @@ export function marketCapToSingleCurveParams(
  *   numerairePriceUSD: 150,
  * });
  */
-export function curveParamsToMarketCap(input: CurveParamsToMarketCapInput): number {
+export function curveParamsToMarketCap(
+  input: CurveParamsToMarketCapInput,
+): number {
   const {
     curveVirtualBase,
     curveVirtualQuote,
@@ -258,8 +267,10 @@ export function curveParamsToMarketCap(input: CurveParamsToMarketCapInput): numb
     numerairePriceUSD,
   } = input;
 
-  if (curveVirtualBase <= 0n) throw new Error('curveVirtualBase must be positive');
-  if (curveVirtualQuote <= 0n) throw new Error('curveVirtualQuote must be positive');
+  if (curveVirtualBase <= 0n)
+    throw new Error('curveVirtualBase must be positive');
+  if (curveVirtualQuote <= 0n)
+    throw new Error('curveVirtualQuote must be positive');
   if (baseReserve < 0n) throw new Error('baseReserve must be non-negative');
   if (quoteReserve < 0n) throw new Error('quoteReserve must be non-negative');
 
@@ -277,7 +288,6 @@ export function curveParamsToMarketCap(input: CurveParamsToMarketCapInput): numb
   return spotPriceUSD * supplyHuman;
 }
 
-
 // ============================================================================
 // Internal
 // ============================================================================
@@ -291,7 +301,11 @@ function _marketCapToCurveParams(
   numerairePriceUSD: number,
   curveVirtualBase: bigint,
 ): CurveParams {
-  const tokenPriceUSD = marketCapToTokenPrice(marketCapUSD, baseTotalSupply, baseDecimals);
+  const tokenPriceUSD = marketCapToTokenPrice(
+    marketCapUSD,
+    baseTotalSupply,
+    baseDecimals,
+  );
   const priceInNumeraire = tokenPriceUSD / numerairePriceUSD;
 
   // Convert to raw units: quote_units / base_units
@@ -303,7 +317,9 @@ function _marketCapToCurveParams(
   const effectiveDenominator = baseForCurve + curveVirtualBase;
 
   const PRECISION = 1_000_000_000n;
-  const rawPriceScaled = BigInt(Math.round(rawPriceQuotePerBase * Number(PRECISION)));
+  const rawPriceScaled = BigInt(
+    Math.round(rawPriceQuotePerBase * Number(PRECISION)),
+  );
   const curveVirtualQuote = (effectiveDenominator * rawPriceScaled) / PRECISION;
 
   if (curveVirtualQuote <= 0n) {

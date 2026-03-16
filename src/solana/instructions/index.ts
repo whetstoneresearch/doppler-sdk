@@ -23,10 +23,7 @@ export {
 } from './initializeOracle.js';
 
 // Admin controls
-export {
-  createSetFeesInstruction,
-  type SetFeesAccounts,
-} from './setFees.js';
+export { createSetFeesInstruction, type SetFeesAccounts } from './setFees.js';
 
 export {
   createSetSentinelInstruction,
@@ -38,25 +35,16 @@ export {
   type SetRouteAccounts,
 } from './setRoute.js';
 
-export {
-  createPauseInstruction,
-  type PauseAccounts,
-} from './pause.js';
+export { createPauseInstruction, type PauseAccounts } from './pause.js';
 
-export {
-  createUnpauseInstruction,
-  type UnpauseAccounts,
-} from './unpause.js';
+export { createUnpauseInstruction, type UnpauseAccounts } from './unpause.js';
 
 export {
   createTransferAdminInstruction,
   type TransferAdminAccounts,
 } from './transferAdmin.js';
 
-export {
-  createSkimInstruction,
-  type SkimAccounts,
-} from './skim.js';
+export { createSkimInstruction, type SkimAccounts } from './skim.js';
 
 // ============================================================================
 // Trading Instructions

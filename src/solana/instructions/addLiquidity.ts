@@ -30,12 +30,13 @@ export interface AddLiquidityArgsWithOracle extends AddLiquidityArgs {
 /**
  * Codec for AddLiquidity args including updateOracle
  */
-const addLiquidityArgsWithOracleCodec: Codec<AddLiquidityArgsWithOracle> = getStructCodec([
-  ['amount0Max', getU64Codec()],
-  ['amount1Max', getU64Codec()],
-  ['minSharesOut', getU128Codec()],
-  ['updateOracle', getBooleanCodec()],
-]);
+const addLiquidityArgsWithOracleCodec: Codec<AddLiquidityArgsWithOracle> =
+  getStructCodec([
+    ['amount0Max', getU64Codec()],
+    ['amount1Max', getU64Codec()],
+    ['minSharesOut', getU128Codec()],
+    ['updateOracle', getBooleanCodec()],
+  ]);
 
 /**
  * Accounts required for add_liquidity instruction

@@ -34,12 +34,12 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   getAccountMetaFactory,
   type ResolvedInstructionAccount,
-} from "@solana/program-client-core";
-import { INITIALIZER_PROGRAM_ADDRESS } from "../programs";
+} from '@solana/program-client-core';
+import { INITIALIZER_PROGRAM_ADDRESS } from '../programs';
 
 export const UPDATE_TRADING_FLAGS_DISCRIMINATOR = new Uint8Array([
   40, 204, 40, 16, 219, 190, 133, 78,
@@ -89,9 +89,9 @@ export type UpdateTradingFlagsInstructionDataArgs = {
 export function getUpdateTradingFlagsInstructionDataEncoder(): FixedSizeEncoder<UpdateTradingFlagsInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["allowBuy", getU8Encoder()],
-      ["allowSell", getU8Encoder()],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['allowBuy', getU8Encoder()],
+      ['allowSell', getU8Encoder()],
     ]),
     (value) => ({
       ...value,
@@ -102,9 +102,9 @@ export function getUpdateTradingFlagsInstructionDataEncoder(): FixedSizeEncoder<
 
 export function getUpdateTradingFlagsInstructionDataDecoder(): FixedSizeDecoder<UpdateTradingFlagsInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["allowBuy", getU8Decoder()],
-    ["allowSell", getU8Decoder()],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['allowBuy', getU8Decoder()],
+    ['allowSell', getU8Decoder()],
   ]);
 }
 
@@ -127,8 +127,8 @@ export type UpdateTradingFlagsAsyncInput<
   launch: Address<TAccountLaunch>;
   /** Authority of the launch (must match launch.authority or config.admin) */
   authority: TransactionSigner<TAccountAuthority>;
-  allowBuy: UpdateTradingFlagsInstructionDataArgs["allowBuy"];
-  allowSell: UpdateTradingFlagsInstructionDataArgs["allowSell"];
+  allowBuy: UpdateTradingFlagsInstructionDataArgs['allowBuy'];
+  allowSell: UpdateTradingFlagsInstructionDataArgs['allowSell'];
 };
 
 export async function getUpdateTradingFlagsInstructionAsync<
@@ -180,12 +180,12 @@ export async function getUpdateTradingFlagsInstructionAsync<
     });
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("config", accounts.config),
-      getAccountMeta("launch", accounts.launch),
-      getAccountMeta("authority", accounts.authority),
+      getAccountMeta('config', accounts.config),
+      getAccountMeta('launch', accounts.launch),
+      getAccountMeta('authority', accounts.authority),
     ],
     data: getUpdateTradingFlagsInstructionDataEncoder().encode(
       args as UpdateTradingFlagsInstructionDataArgs,
@@ -208,8 +208,8 @@ export type UpdateTradingFlagsInput<
   launch: Address<TAccountLaunch>;
   /** Authority of the launch (must match launch.authority or config.admin) */
   authority: TransactionSigner<TAccountAuthority>;
-  allowBuy: UpdateTradingFlagsInstructionDataArgs["allowBuy"];
-  allowSell: UpdateTradingFlagsInstructionDataArgs["allowSell"];
+  allowBuy: UpdateTradingFlagsInstructionDataArgs['allowBuy'];
+  allowSell: UpdateTradingFlagsInstructionDataArgs['allowSell'];
 };
 
 export function getUpdateTradingFlagsInstruction<
@@ -247,12 +247,12 @@ export function getUpdateTradingFlagsInstruction<
   // Original args.
   const args = { ...input };
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("config", accounts.config),
-      getAccountMeta("launch", accounts.launch),
-      getAccountMeta("authority", accounts.authority),
+      getAccountMeta('config', accounts.config),
+      getAccountMeta('launch', accounts.launch),
+      getAccountMeta('authority', accounts.authority),
     ],
     data: getUpdateTradingFlagsInstructionDataEncoder().encode(
       args as UpdateTradingFlagsInstructionDataArgs,

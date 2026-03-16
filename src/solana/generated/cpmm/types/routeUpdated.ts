@@ -16,7 +16,7 @@ import {
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type RouteUpdated = {
   pool: Address;
@@ -29,19 +29,19 @@ export type RouteUpdatedArgs = RouteUpdated;
 
 export function getRouteUpdatedEncoder(): FixedSizeEncoder<RouteUpdatedArgs> {
   return getStructEncoder([
-    ["pool", getAddressEncoder()],
-    ["routeNextPool", getAddressEncoder()],
-    ["routeBridgeMint", getAddressEncoder()],
-    ["admin", getAddressEncoder()],
+    ['pool', getAddressEncoder()],
+    ['routeNextPool', getAddressEncoder()],
+    ['routeBridgeMint', getAddressEncoder()],
+    ['admin', getAddressEncoder()],
   ]);
 }
 
 export function getRouteUpdatedDecoder(): FixedSizeDecoder<RouteUpdated> {
   return getStructDecoder([
-    ["pool", getAddressDecoder()],
-    ["routeNextPool", getAddressDecoder()],
-    ["routeBridgeMint", getAddressDecoder()],
-    ["admin", getAddressDecoder()],
+    ['pool', getAddressDecoder()],
+    ['routeNextPool', getAddressDecoder()],
+    ['routeBridgeMint', getAddressDecoder()],
+    ['admin', getAddressDecoder()],
   ]);
 }
 

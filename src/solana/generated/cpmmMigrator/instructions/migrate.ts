@@ -36,13 +36,13 @@ import {
   type TransactionSigner,
   type WritableAccount,
   type WritableSignerAccount,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   getAccountMetaFactory,
   getAddressFromResolvedInstructionAccount,
   type ResolvedInstructionAccount,
-} from "@solana/program-client-core";
-import { CPMM_MIGRATOR_PROGRAM_ADDRESS } from "../programs";
+} from '@solana/program-client-core';
+import { CPMM_MIGRATOR_PROGRAM_ADDRESS } from '../programs';
 
 export const MIGRATE_DISCRIMINATOR = new Uint8Array([
   155, 234, 231, 146, 236, 158, 162, 30,
@@ -63,11 +63,11 @@ export type MigrateInstruction<
   TAccountQuoteVault extends string | AccountMeta<string> = string,
   TAccountPayer extends string | AccountMeta<string> = string,
   TAccountTokenProgram extends string | AccountMeta<string> =
-    "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
   TAccountSystemProgram extends string | AccountMeta<string> =
-    "11111111111111111111111111111111",
+    '11111111111111111111111111111111',
   TAccountRent extends string | AccountMeta<string> =
-    "SysvarRent111111111111111111111111111111111",
+    'SysvarRent111111111111111111111111111111111',
   TAccountState extends string | AccountMeta<string> = string,
   TAccountCpmmConfig extends string | AccountMeta<string> = string,
   TAccountPool extends string | AccountMeta<string> = string,
@@ -77,7 +77,7 @@ export type MigrateInstruction<
   TAccountProtocolPosition extends string | AccountMeta<string> = string,
   TAccountLaunchLpPosition extends string | AccountMeta<string> = string,
   TAccountCpmmProgram extends string | AccountMeta<string> =
-    "3HSrGs4jj92CGt7mkfeeoMofrRGVPUcDX8djAnp4FoD6",
+    '3HSrGs4jj92CGt7mkfeeoMofrRGVPUcDX8djAnp4FoD6',
   TAccountAdminBaseAta extends string | AccountMeta<string> = string,
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
@@ -171,9 +171,9 @@ export type MigrateInstructionDataArgs = {
 export function getMigrateInstructionDataEncoder(): FixedSizeEncoder<MigrateInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["baseForDistribution", getU64Encoder()],
-      ["baseForLiquidity", getU64Encoder()],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['baseForDistribution', getU64Encoder()],
+      ['baseForLiquidity', getU64Encoder()],
     ]),
     (value) => ({ ...value, discriminator: MIGRATE_DISCRIMINATOR }),
   );
@@ -181,9 +181,9 @@ export function getMigrateInstructionDataEncoder(): FixedSizeEncoder<MigrateInst
 
 export function getMigrateInstructionDataDecoder(): FixedSizeDecoder<MigrateInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["baseForDistribution", getU64Decoder()],
-    ["baseForLiquidity", getU64Decoder()],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['baseForDistribution', getU64Decoder()],
+    ['baseForLiquidity', getU64Decoder()],
   ]);
 }
 
@@ -252,8 +252,8 @@ export type MigrateAsyncInput<
   cpmmProgram?: Address<TAccountCpmmProgram>;
   /** Admin's base token ATA for returning unsold curve tokens */
   adminBaseAta: Address<TAccountAdminBaseAta>;
-  baseForDistribution: MigrateInstructionDataArgs["baseForDistribution"];
-  baseForLiquidity: MigrateInstructionDataArgs["baseForLiquidity"];
+  baseForDistribution: MigrateInstructionDataArgs['baseForDistribution'];
+  baseForLiquidity: MigrateInstructionDataArgs['baseForLiquidity'];
 };
 
 export async function getMigrateInstructionAsync<
@@ -381,15 +381,15 @@ export async function getMigrateInstructionAsync<
   // Resolve default values.
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
-      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" as Address<"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA">;
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
-      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
   if (!accounts.rent.value) {
     accounts.rent.value =
-      "SysvarRent111111111111111111111111111111111" as Address<"SysvarRent111111111111111111111111111111111">;
+      'SysvarRent111111111111111111111111111111111' as Address<'SysvarRent111111111111111111111111111111111'>;
   }
   if (!accounts.state.value) {
     accounts.state.value = await getProgramDerivedAddress({
@@ -398,7 +398,7 @@ export async function getMigrateInstructionAsync<
         getBytesEncoder().encode(new Uint8Array([115, 116, 97, 116, 101])),
         getAddressEncoder().encode(
           getAddressFromResolvedInstructionAccount(
-            "launch",
+            'launch',
             accounts.launch.value,
           ),
         ),
@@ -407,33 +407,33 @@ export async function getMigrateInstructionAsync<
   }
   if (!accounts.cpmmProgram.value) {
     accounts.cpmmProgram.value =
-      "3HSrGs4jj92CGt7mkfeeoMofrRGVPUcDX8djAnp4FoD6" as Address<"3HSrGs4jj92CGt7mkfeeoMofrRGVPUcDX8djAnp4FoD6">;
+      '3HSrGs4jj92CGt7mkfeeoMofrRGVPUcDX8djAnp4FoD6' as Address<'3HSrGs4jj92CGt7mkfeeoMofrRGVPUcDX8djAnp4FoD6'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("initializerConfig", accounts.initializerConfig),
-      getAccountMeta("launch", accounts.launch),
-      getAccountMeta("launchAuthority", accounts.launchAuthority),
-      getAccountMeta("baseMint", accounts.baseMint),
-      getAccountMeta("quoteMint", accounts.quoteMint),
-      getAccountMeta("baseVault", accounts.baseVault),
-      getAccountMeta("quoteVault", accounts.quoteVault),
-      getAccountMeta("payer", accounts.payer),
-      getAccountMeta("tokenProgram", accounts.tokenProgram),
-      getAccountMeta("systemProgram", accounts.systemProgram),
-      getAccountMeta("rent", accounts.rent),
-      getAccountMeta("state", accounts.state),
-      getAccountMeta("cpmmConfig", accounts.cpmmConfig),
-      getAccountMeta("pool", accounts.pool),
-      getAccountMeta("poolAuthority", accounts.poolAuthority),
-      getAccountMeta("poolVault0", accounts.poolVault0),
-      getAccountMeta("poolVault1", accounts.poolVault1),
-      getAccountMeta("protocolPosition", accounts.protocolPosition),
-      getAccountMeta("launchLpPosition", accounts.launchLpPosition),
-      getAccountMeta("cpmmProgram", accounts.cpmmProgram),
-      getAccountMeta("adminBaseAta", accounts.adminBaseAta),
+      getAccountMeta('initializerConfig', accounts.initializerConfig),
+      getAccountMeta('launch', accounts.launch),
+      getAccountMeta('launchAuthority', accounts.launchAuthority),
+      getAccountMeta('baseMint', accounts.baseMint),
+      getAccountMeta('quoteMint', accounts.quoteMint),
+      getAccountMeta('baseVault', accounts.baseVault),
+      getAccountMeta('quoteVault', accounts.quoteVault),
+      getAccountMeta('payer', accounts.payer),
+      getAccountMeta('tokenProgram', accounts.tokenProgram),
+      getAccountMeta('systemProgram', accounts.systemProgram),
+      getAccountMeta('rent', accounts.rent),
+      getAccountMeta('state', accounts.state),
+      getAccountMeta('cpmmConfig', accounts.cpmmConfig),
+      getAccountMeta('pool', accounts.pool),
+      getAccountMeta('poolAuthority', accounts.poolAuthority),
+      getAccountMeta('poolVault0', accounts.poolVault0),
+      getAccountMeta('poolVault1', accounts.poolVault1),
+      getAccountMeta('protocolPosition', accounts.protocolPosition),
+      getAccountMeta('launchLpPosition', accounts.launchLpPosition),
+      getAccountMeta('cpmmProgram', accounts.cpmmProgram),
+      getAccountMeta('adminBaseAta', accounts.adminBaseAta),
     ],
     data: getMigrateInstructionDataEncoder().encode(
       args as MigrateInstructionDataArgs,
@@ -520,8 +520,8 @@ export type MigrateInput<
   cpmmProgram?: Address<TAccountCpmmProgram>;
   /** Admin's base token ATA for returning unsold curve tokens */
   adminBaseAta: Address<TAccountAdminBaseAta>;
-  baseForDistribution: MigrateInstructionDataArgs["baseForDistribution"];
-  baseForLiquidity: MigrateInstructionDataArgs["baseForLiquidity"];
+  baseForDistribution: MigrateInstructionDataArgs['baseForDistribution'];
+  baseForLiquidity: MigrateInstructionDataArgs['baseForLiquidity'];
 };
 
 export function getMigrateInstruction<
@@ -647,45 +647,45 @@ export function getMigrateInstruction<
   // Resolve default values.
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
-      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" as Address<"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA">;
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
-      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
   if (!accounts.rent.value) {
     accounts.rent.value =
-      "SysvarRent111111111111111111111111111111111" as Address<"SysvarRent111111111111111111111111111111111">;
+      'SysvarRent111111111111111111111111111111111' as Address<'SysvarRent111111111111111111111111111111111'>;
   }
   if (!accounts.cpmmProgram.value) {
     accounts.cpmmProgram.value =
-      "3HSrGs4jj92CGt7mkfeeoMofrRGVPUcDX8djAnp4FoD6" as Address<"3HSrGs4jj92CGt7mkfeeoMofrRGVPUcDX8djAnp4FoD6">;
+      '3HSrGs4jj92CGt7mkfeeoMofrRGVPUcDX8djAnp4FoD6' as Address<'3HSrGs4jj92CGt7mkfeeoMofrRGVPUcDX8djAnp4FoD6'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("initializerConfig", accounts.initializerConfig),
-      getAccountMeta("launch", accounts.launch),
-      getAccountMeta("launchAuthority", accounts.launchAuthority),
-      getAccountMeta("baseMint", accounts.baseMint),
-      getAccountMeta("quoteMint", accounts.quoteMint),
-      getAccountMeta("baseVault", accounts.baseVault),
-      getAccountMeta("quoteVault", accounts.quoteVault),
-      getAccountMeta("payer", accounts.payer),
-      getAccountMeta("tokenProgram", accounts.tokenProgram),
-      getAccountMeta("systemProgram", accounts.systemProgram),
-      getAccountMeta("rent", accounts.rent),
-      getAccountMeta("state", accounts.state),
-      getAccountMeta("cpmmConfig", accounts.cpmmConfig),
-      getAccountMeta("pool", accounts.pool),
-      getAccountMeta("poolAuthority", accounts.poolAuthority),
-      getAccountMeta("poolVault0", accounts.poolVault0),
-      getAccountMeta("poolVault1", accounts.poolVault1),
-      getAccountMeta("protocolPosition", accounts.protocolPosition),
-      getAccountMeta("launchLpPosition", accounts.launchLpPosition),
-      getAccountMeta("cpmmProgram", accounts.cpmmProgram),
-      getAccountMeta("adminBaseAta", accounts.adminBaseAta),
+      getAccountMeta('initializerConfig', accounts.initializerConfig),
+      getAccountMeta('launch', accounts.launch),
+      getAccountMeta('launchAuthority', accounts.launchAuthority),
+      getAccountMeta('baseMint', accounts.baseMint),
+      getAccountMeta('quoteMint', accounts.quoteMint),
+      getAccountMeta('baseVault', accounts.baseVault),
+      getAccountMeta('quoteVault', accounts.quoteVault),
+      getAccountMeta('payer', accounts.payer),
+      getAccountMeta('tokenProgram', accounts.tokenProgram),
+      getAccountMeta('systemProgram', accounts.systemProgram),
+      getAccountMeta('rent', accounts.rent),
+      getAccountMeta('state', accounts.state),
+      getAccountMeta('cpmmConfig', accounts.cpmmConfig),
+      getAccountMeta('pool', accounts.pool),
+      getAccountMeta('poolAuthority', accounts.poolAuthority),
+      getAccountMeta('poolVault0', accounts.poolVault0),
+      getAccountMeta('poolVault1', accounts.poolVault1),
+      getAccountMeta('protocolPosition', accounts.protocolPosition),
+      getAccountMeta('launchLpPosition', accounts.launchLpPosition),
+      getAccountMeta('cpmmProgram', accounts.cpmmProgram),
+      getAccountMeta('adminBaseAta', accounts.adminBaseAta),
     ],
     data: getMigrateInstructionDataEncoder().encode(
       args as MigrateInstructionDataArgs,
