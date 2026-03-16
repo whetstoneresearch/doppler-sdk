@@ -14,5 +14,5 @@ export default defineConfig({
   outDir: 'dist',
   treeshake: true,
   sourcemap: true,
-  external: ['viem', 'react', '@solana/kit'],
+  external: ['viem', 'react', '@solana/kit', '@solana/program-client-core', '@wallet-standard/base', '@wallet-standard/features'],
 });
