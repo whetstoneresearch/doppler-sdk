@@ -19,7 +19,7 @@ on:
 
 jobs:
   verify-codecs:
-    name: Verify Solana Codecs
+    name: Verify Codecs
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

@@ -132,17 +132,45 @@ jobs:
           ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
         timeout-minutes: 30
 
+  # Solana unit tests
+  solana-tests:
+    name: Solana Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Solana unit tests
+        run: pnpm test:solana
+
   # Summary job for branch protection
   test-summary:
     name: Test Summary
     runs-on: ubuntu-latest
-    needs: [unit-tests]
+    needs: [unit-tests, solana-tests]
     if: always()
     steps:
       - name: Check test results
         run: |
           if [ "${{ needs.unit-tests.result }}" != "success" ]; then
             echo "Unit tests failed"
+            exit 1
+          fi
+          if [ "${{ needs.solana-tests.result }}" != "success" ]; then
+            echo "Solana tests failed"
             exit 1
           fi
           echo "All required tests passed"
