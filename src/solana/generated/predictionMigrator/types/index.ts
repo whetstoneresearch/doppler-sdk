@@ -6,13 +6,13 @@
  * @see https://github.com/codama-idl/codama
  */
 
-export * from "./accumulatorUpdated";
-export * from "./calldataBuf";
-export * from "./entryMigrated";
-export * from "./entryRegistered";
-export * from "./marketCreated";
-export * from "./marketResolved";
-export * from "./migrateEntryArgs";
-export * from "./previewPayoutIfWinnerArgs";
-export * from "./registerEntryArgs";
-export * from "./rewardsClaimed";
+export * from './accumulatorUpdated';
+export * from './calldataBuf';
+export * from './entryMigrated';
+export * from './entryRegistered';
+export * from './marketCreated';
+export * from './marketResolved';
+export * from './migrateEntryArgs';
+export * from './previewPayoutIfWinnerArgs';
+export * from './registerEntryArgs';
+export * from './rewardsClaimed';

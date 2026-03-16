@@ -20,7 +20,7 @@ import {
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type AddLiquidity = {
   pool: Address;
@@ -40,21 +40,21 @@ export type AddLiquidityArgs = {
 
 export function getAddLiquidityEncoder(): FixedSizeEncoder<AddLiquidityArgs> {
   return getStructEncoder([
-    ["pool", getAddressEncoder()],
-    ["owner", getAddressEncoder()],
-    ["amount0", getU64Encoder()],
-    ["amount1", getU64Encoder()],
-    ["sharesOut", getU128Encoder()],
+    ['pool', getAddressEncoder()],
+    ['owner', getAddressEncoder()],
+    ['amount0', getU64Encoder()],
+    ['amount1', getU64Encoder()],
+    ['sharesOut', getU128Encoder()],
   ]);
 }
 
 export function getAddLiquidityDecoder(): FixedSizeDecoder<AddLiquidity> {
   return getStructDecoder([
-    ["pool", getAddressDecoder()],
-    ["owner", getAddressDecoder()],
-    ["amount0", getU64Decoder()],
-    ["amount1", getU64Decoder()],
-    ["sharesOut", getU128Decoder()],
+    ['pool', getAddressDecoder()],
+    ['owner', getAddressDecoder()],
+    ['amount0', getU64Decoder()],
+    ['amount1', getU64Decoder()],
+    ['sharesOut', getU128Decoder()],
   ]);
 }
 

@@ -35,13 +35,13 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   getAccountMetaFactory,
   getAddressFromResolvedInstructionAccount,
   type ResolvedInstructionAccount,
-} from "@solana/program-client-core";
-import { CPMM_PROGRAM_ADDRESS } from "../programs";
+} from '@solana/program-client-core';
+import { CPMM_PROGRAM_ADDRESS } from '../programs';
 
 export const COLLECT_FEES_DISCRIMINATOR = new Uint8Array([
   164, 152, 207, 99, 30, 186, 19, 182,
@@ -49,7 +49,7 @@ export const COLLECT_FEES_DISCRIMINATOR = new Uint8Array([
 
 export function getCollectFeesDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    COLLECT_FEES_DISCRIMINATOR,
+    COLLECT_FEES_DISCRIMINATOR
   );
 }
 
@@ -66,7 +66,7 @@ export type CollectFeesInstruction<
   TAccountUser0 extends string | AccountMeta<string> = string,
   TAccountUser1 extends string | AccountMeta<string> = string,
   TAccountTokenProgram extends string | AccountMeta<string> =
-    "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -124,19 +124,19 @@ export type CollectFeesInstructionDataArgs = {
 export function getCollectFeesInstructionDataEncoder(): FixedSizeEncoder<CollectFeesInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["max0", getU64Encoder()],
-      ["max1", getU64Encoder()],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['max0', getU64Encoder()],
+      ['max1', getU64Encoder()],
     ]),
-    (value) => ({ ...value, discriminator: COLLECT_FEES_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: COLLECT_FEES_DISCRIMINATOR })
   );
 }
 
 export function getCollectFeesInstructionDataDecoder(): FixedSizeDecoder<CollectFeesInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["max0", getU64Decoder()],
-    ["max1", getU64Decoder()],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['max0', getU64Decoder()],
+    ['max1', getU64Decoder()],
   ]);
 }
 
@@ -146,7 +146,7 @@ export function getCollectFeesInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getCollectFeesInstructionDataEncoder(),
-    getCollectFeesInstructionDataDecoder(),
+    getCollectFeesInstructionDataDecoder()
   );
 }
 
@@ -174,8 +174,8 @@ export type CollectFeesAsyncInput<
   user0: Address<TAccountUser0>;
   user1: Address<TAccountUser1>;
   tokenProgram?: Address<TAccountTokenProgram>;
-  max0: CollectFeesInstructionDataArgs["max0"];
-  max1: CollectFeesInstructionDataArgs["max1"];
+  max0: CollectFeesInstructionDataArgs['max0'];
+  max1: CollectFeesInstructionDataArgs['max1'];
 };
 
 export async function getCollectFeesInstructionAsync<
@@ -205,7 +205,7 @@ export async function getCollectFeesInstructionAsync<
     TAccountUser1,
     TAccountTokenProgram
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): Promise<
   CollectFeesInstruction<
     TProgramAddress,
@@ -253,36 +253,36 @@ export async function getCollectFeesInstructionAsync<
       programAddress,
       seeds: [
         getBytesEncoder().encode(
-          new Uint8Array([97, 117, 116, 104, 111, 114, 105, 116, 121]),
+          new Uint8Array([97, 117, 116, 104, 111, 114, 105, 116, 121])
         ),
         getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount("pool", accounts.pool.value),
+          getAddressFromResolvedInstructionAccount('pool', accounts.pool.value)
         ),
       ],
     });
   }
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
-      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" as Address<"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA">;
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("pool", accounts.pool),
-      getAccountMeta("position", accounts.position),
-      getAccountMeta("owner", accounts.owner),
-      getAccountMeta("authority", accounts.authority),
-      getAccountMeta("vault0", accounts.vault0),
-      getAccountMeta("vault1", accounts.vault1),
-      getAccountMeta("token0Mint", accounts.token0Mint),
-      getAccountMeta("token1Mint", accounts.token1Mint),
-      getAccountMeta("user0", accounts.user0),
-      getAccountMeta("user1", accounts.user1),
-      getAccountMeta("tokenProgram", accounts.tokenProgram),
+      getAccountMeta('pool', accounts.pool),
+      getAccountMeta('position', accounts.position),
+      getAccountMeta('owner', accounts.owner),
+      getAccountMeta('authority', accounts.authority),
+      getAccountMeta('vault0', accounts.vault0),
+      getAccountMeta('vault1', accounts.vault1),
+      getAccountMeta('token0Mint', accounts.token0Mint),
+      getAccountMeta('token1Mint', accounts.token1Mint),
+      getAccountMeta('user0', accounts.user0),
+      getAccountMeta('user1', accounts.user1),
+      getAccountMeta('tokenProgram', accounts.tokenProgram),
     ],
     data: getCollectFeesInstructionDataEncoder().encode(
-      args as CollectFeesInstructionDataArgs,
+      args as CollectFeesInstructionDataArgs
     ),
     programAddress,
   } as CollectFeesInstruction<
@@ -325,8 +325,8 @@ export type CollectFeesInput<
   user0: Address<TAccountUser0>;
   user1: Address<TAccountUser1>;
   tokenProgram?: Address<TAccountTokenProgram>;
-  max0: CollectFeesInstructionDataArgs["max0"];
-  max1: CollectFeesInstructionDataArgs["max1"];
+  max0: CollectFeesInstructionDataArgs['max0'];
+  max1: CollectFeesInstructionDataArgs['max1'];
 };
 
 export function getCollectFeesInstruction<
@@ -356,7 +356,7 @@ export function getCollectFeesInstruction<
     TAccountUser1,
     TAccountTokenProgram
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): CollectFeesInstruction<
   TProgramAddress,
   TAccountPool,
@@ -399,26 +399,26 @@ export function getCollectFeesInstruction<
   // Resolve default values.
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
-      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" as Address<"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA">;
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("pool", accounts.pool),
-      getAccountMeta("position", accounts.position),
-      getAccountMeta("owner", accounts.owner),
-      getAccountMeta("authority", accounts.authority),
-      getAccountMeta("vault0", accounts.vault0),
-      getAccountMeta("vault1", accounts.vault1),
-      getAccountMeta("token0Mint", accounts.token0Mint),
-      getAccountMeta("token1Mint", accounts.token1Mint),
-      getAccountMeta("user0", accounts.user0),
-      getAccountMeta("user1", accounts.user1),
-      getAccountMeta("tokenProgram", accounts.tokenProgram),
+      getAccountMeta('pool', accounts.pool),
+      getAccountMeta('position', accounts.position),
+      getAccountMeta('owner', accounts.owner),
+      getAccountMeta('authority', accounts.authority),
+      getAccountMeta('vault0', accounts.vault0),
+      getAccountMeta('vault1', accounts.vault1),
+      getAccountMeta('token0Mint', accounts.token0Mint),
+      getAccountMeta('token1Mint', accounts.token1Mint),
+      getAccountMeta('user0', accounts.user0),
+      getAccountMeta('user1', accounts.user1),
+      getAccountMeta('tokenProgram', accounts.tokenProgram),
     ],
     data: getCollectFeesInstructionDataEncoder().encode(
-      args as CollectFeesInstructionDataArgs,
+      args as CollectFeesInstructionDataArgs
     ),
     programAddress,
   } as CollectFeesInstruction<
@@ -464,7 +464,7 @@ export function parseCollectFeesInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>,
+    InstructionWithData<ReadonlyUint8Array>
 ): ParsedCollectFeesInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 11) {
     throw new SolanaError(
@@ -472,7 +472,7 @@ export function parseCollectFeesInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 11,
-      },
+      }
     );
   }
   let accountIndex = 0;

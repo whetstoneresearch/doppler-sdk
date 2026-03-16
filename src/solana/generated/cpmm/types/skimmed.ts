@@ -18,7 +18,7 @@ import {
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type Skimmed = { pool: Address; amount0: bigint; amount1: bigint };
 
@@ -30,17 +30,17 @@ export type SkimmedArgs = {
 
 export function getSkimmedEncoder(): FixedSizeEncoder<SkimmedArgs> {
   return getStructEncoder([
-    ["pool", getAddressEncoder()],
-    ["amount0", getU64Encoder()],
-    ["amount1", getU64Encoder()],
+    ['pool', getAddressEncoder()],
+    ['amount0', getU64Encoder()],
+    ['amount1', getU64Encoder()],
   ]);
 }
 
 export function getSkimmedDecoder(): FixedSizeDecoder<Skimmed> {
   return getStructDecoder([
-    ["pool", getAddressDecoder()],
-    ["amount0", getU64Decoder()],
-    ["amount1", getU64Decoder()],
+    ['pool', getAddressDecoder()],
+    ['amount0', getU64Decoder()],
+    ['amount1', getU64Decoder()],
   ]);
 }
 

@@ -35,12 +35,12 @@ import {
   type InstructionWithData,
   type ReadonlyAccount,
   type ReadonlyUint8Array,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   getAccountMetaFactory,
   type ResolvedInstructionAccount,
-} from "@solana/program-client-core";
-import { CPMM_PROGRAM_ADDRESS } from "../programs";
+} from '@solana/program-client-core';
+import { CPMM_PROGRAM_ADDRESS } from '../programs';
 
 export const QUOTE_TO_NUMERAIRE_DISCRIMINATOR = new Uint8Array([
   4, 142, 249, 240, 129, 15, 143, 57,
@@ -48,7 +48,7 @@ export const QUOTE_TO_NUMERAIRE_DISCRIMINATOR = new Uint8Array([
 
 export function getQuoteToNumeraireDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    QUOTE_TO_NUMERAIRE_DISCRIMINATOR,
+    QUOTE_TO_NUMERAIRE_DISCRIMINATOR
   );
 }
 
@@ -91,25 +91,25 @@ export type QuoteToNumeraireInstructionDataArgs = {
 export function getQuoteToNumeraireInstructionDataEncoder(): FixedSizeEncoder<QuoteToNumeraireInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["amount", getU128Encoder()],
-      ["side", getU8Encoder()],
-      ["maxHops", getU8Encoder()],
-      ["useTwap", getBooleanEncoder()],
-      ["windowSeconds", getU32Encoder()],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['amount', getU128Encoder()],
+      ['side', getU8Encoder()],
+      ['maxHops', getU8Encoder()],
+      ['useTwap', getBooleanEncoder()],
+      ['windowSeconds', getU32Encoder()],
     ]),
-    (value) => ({ ...value, discriminator: QUOTE_TO_NUMERAIRE_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: QUOTE_TO_NUMERAIRE_DISCRIMINATOR })
   );
 }
 
 export function getQuoteToNumeraireInstructionDataDecoder(): FixedSizeDecoder<QuoteToNumeraireInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["amount", getU128Decoder()],
-    ["side", getU8Decoder()],
-    ["maxHops", getU8Decoder()],
-    ["useTwap", getBooleanDecoder()],
-    ["windowSeconds", getU32Decoder()],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['amount', getU128Decoder()],
+    ['side', getU8Decoder()],
+    ['maxHops', getU8Decoder()],
+    ['useTwap', getBooleanDecoder()],
+    ['windowSeconds', getU32Decoder()],
   ]);
 }
 
@@ -119,7 +119,7 @@ export function getQuoteToNumeraireInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getQuoteToNumeraireInstructionDataEncoder(),
-    getQuoteToNumeraireInstructionDataDecoder(),
+    getQuoteToNumeraireInstructionDataDecoder()
   );
 }
 
@@ -129,11 +129,11 @@ export type QuoteToNumeraireInput<
 > = {
   config: Address<TAccountConfig>;
   startPool: Address<TAccountStartPool>;
-  amount: QuoteToNumeraireInstructionDataArgs["amount"];
-  side: QuoteToNumeraireInstructionDataArgs["side"];
-  maxHops: QuoteToNumeraireInstructionDataArgs["maxHops"];
-  useTwap: QuoteToNumeraireInstructionDataArgs["useTwap"];
-  windowSeconds: QuoteToNumeraireInstructionDataArgs["windowSeconds"];
+  amount: QuoteToNumeraireInstructionDataArgs['amount'];
+  side: QuoteToNumeraireInstructionDataArgs['side'];
+  maxHops: QuoteToNumeraireInstructionDataArgs['maxHops'];
+  useTwap: QuoteToNumeraireInstructionDataArgs['useTwap'];
+  windowSeconds: QuoteToNumeraireInstructionDataArgs['windowSeconds'];
 };
 
 export function getQuoteToNumeraireInstruction<
@@ -142,7 +142,7 @@ export function getQuoteToNumeraireInstruction<
   TProgramAddress extends Address = typeof CPMM_PROGRAM_ADDRESS,
 >(
   input: QuoteToNumeraireInput<TAccountConfig, TAccountStartPool>,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): QuoteToNumeraireInstruction<
   TProgramAddress,
   TAccountConfig,
@@ -164,14 +164,14 @@ export function getQuoteToNumeraireInstruction<
   // Original args.
   const args = { ...input };
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("config", accounts.config),
-      getAccountMeta("startPool", accounts.startPool),
+      getAccountMeta('config', accounts.config),
+      getAccountMeta('startPool', accounts.startPool),
     ],
     data: getQuoteToNumeraireInstructionDataEncoder().encode(
-      args as QuoteToNumeraireInstructionDataArgs,
+      args as QuoteToNumeraireInstructionDataArgs
     ),
     programAddress,
   } as QuoteToNumeraireInstruction<
@@ -199,7 +199,7 @@ export function parseQuoteToNumeraireInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>,
+    InstructionWithData<ReadonlyUint8Array>
 ): ParsedQuoteToNumeraireInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 2) {
     throw new SolanaError(
@@ -207,7 +207,7 @@ export function parseQuoteToNumeraireInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 2,
-      },
+      }
     );
   }
   let accountIndex = 0;

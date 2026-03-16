@@ -18,7 +18,7 @@ import {
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type LaunchMigrated = {
   launch: Address;
@@ -36,19 +36,19 @@ export type LaunchMigratedArgs = {
 
 export function getLaunchMigratedEncoder(): FixedSizeEncoder<LaunchMigratedArgs> {
   return getStructEncoder([
-    ["launch", getAddressEncoder()],
-    ["pool", getAddressEncoder()],
-    ["quoteForLiquidity", getU64Encoder()],
-    ["baseForLiquidity", getU64Encoder()],
+    ['launch', getAddressEncoder()],
+    ['pool', getAddressEncoder()],
+    ['quoteForLiquidity', getU64Encoder()],
+    ['baseForLiquidity', getU64Encoder()],
   ]);
 }
 
 export function getLaunchMigratedDecoder(): FixedSizeDecoder<LaunchMigrated> {
   return getStructDecoder([
-    ["launch", getAddressDecoder()],
-    ["pool", getAddressDecoder()],
-    ["quoteForLiquidity", getU64Decoder()],
-    ["baseForLiquidity", getU64Decoder()],
+    ['launch', getAddressDecoder()],
+    ['pool', getAddressDecoder()],
+    ['quoteForLiquidity', getU64Decoder()],
+    ['baseForLiquidity', getU64Decoder()],
   ]);
 }
 

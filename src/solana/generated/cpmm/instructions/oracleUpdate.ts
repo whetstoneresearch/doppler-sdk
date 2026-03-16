@@ -30,13 +30,13 @@ import {
   type ReadonlyAccount,
   type ReadonlyUint8Array,
   type WritableAccount,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   getAccountMetaFactory,
   getAddressFromResolvedInstructionAccount,
   type ResolvedInstructionAccount,
-} from "@solana/program-client-core";
-import { CPMM_PROGRAM_ADDRESS } from "../programs";
+} from '@solana/program-client-core';
+import { CPMM_PROGRAM_ADDRESS } from '../programs';
 
 export const ORACLE_UPDATE_DISCRIMINATOR = new Uint8Array([
   85, 209, 248, 142, 186, 249, 120, 239,
@@ -44,7 +44,7 @@ export const ORACLE_UPDATE_DISCRIMINATOR = new Uint8Array([
 
 export function getOracleUpdateDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    ORACLE_UPDATE_DISCRIMINATOR,
+    ORACLE_UPDATE_DISCRIMINATOR
   );
 }
 
@@ -73,14 +73,14 @@ export type OracleUpdateInstructionDataArgs = {};
 
 export function getOracleUpdateInstructionDataEncoder(): FixedSizeEncoder<OracleUpdateInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([["discriminator", fixEncoderSize(getBytesEncoder(), 8)]]),
-    (value) => ({ ...value, discriminator: ORACLE_UPDATE_DISCRIMINATOR }),
+    getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
+    (value) => ({ ...value, discriminator: ORACLE_UPDATE_DISCRIMINATOR })
   );
 }
 
 export function getOracleUpdateInstructionDataDecoder(): FixedSizeDecoder<OracleUpdateInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
   ]);
 }
 
@@ -90,7 +90,7 @@ export function getOracleUpdateInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getOracleUpdateInstructionDataEncoder(),
-    getOracleUpdateInstructionDataDecoder(),
+    getOracleUpdateInstructionDataDecoder()
   );
 }
 
@@ -108,7 +108,7 @@ export async function getOracleUpdateInstructionAsync<
   TProgramAddress extends Address = typeof CPMM_PROGRAM_ADDRESS,
 >(
   input: OracleUpdateAsyncInput<TAccountPool, TAccountOracle>,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): Promise<
   OracleUpdateInstruction<TProgramAddress, TAccountPool, TAccountOracle>
 > {
@@ -132,17 +132,17 @@ export async function getOracleUpdateInstructionAsync<
       seeds: [
         getBytesEncoder().encode(new Uint8Array([111, 114, 97, 99, 108, 101])),
         getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount("pool", accounts.pool.value),
+          getAddressFromResolvedInstructionAccount('pool', accounts.pool.value)
         ),
       ],
     });
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("pool", accounts.pool),
-      getAccountMeta("oracle", accounts.oracle),
+      getAccountMeta('pool', accounts.pool),
+      getAccountMeta('oracle', accounts.oracle),
     ],
     data: getOracleUpdateInstructionDataEncoder().encode({}),
     programAddress,
@@ -163,7 +163,7 @@ export function getOracleUpdateInstruction<
   TProgramAddress extends Address = typeof CPMM_PROGRAM_ADDRESS,
 >(
   input: OracleUpdateInput<TAccountPool, TAccountOracle>,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): OracleUpdateInstruction<TProgramAddress, TAccountPool, TAccountOracle> {
   // Program address.
   const programAddress = config?.programAddress ?? CPMM_PROGRAM_ADDRESS;
@@ -178,11 +178,11 @@ export function getOracleUpdateInstruction<
     ResolvedInstructionAccount
   >;
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("pool", accounts.pool),
-      getAccountMeta("oracle", accounts.oracle),
+      getAccountMeta('pool', accounts.pool),
+      getAccountMeta('oracle', accounts.oracle),
     ],
     data: getOracleUpdateInstructionDataEncoder().encode({}),
     programAddress,
@@ -207,7 +207,7 @@ export function parseOracleUpdateInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>,
+    InstructionWithData<ReadonlyUint8Array>
 ): ParsedOracleUpdateInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 2) {
     throw new SolanaError(
@@ -215,7 +215,7 @@ export function parseOracleUpdateInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 2,
-      },
+      }
     );
   }
   let accountIndex = 0;

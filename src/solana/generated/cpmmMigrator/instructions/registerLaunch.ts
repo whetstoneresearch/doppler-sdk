@@ -47,19 +47,19 @@ import {
   type TransactionSigner,
   type WritableAccount,
   type WritableSignerAccount,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   getAccountMetaFactory,
   getAddressFromResolvedInstructionAccount,
   type ResolvedInstructionAccount,
-} from "@solana/program-client-core";
-import { CPMM_MIGRATOR_PROGRAM_ADDRESS } from "../programs";
+} from '@solana/program-client-core';
+import { CPMM_MIGRATOR_PROGRAM_ADDRESS } from '../programs';
 import {
   getRecipientDecoder,
   getRecipientEncoder,
   type Recipient,
   type RecipientArgs,
-} from "../types";
+} from '../types';
 
 export const REGISTER_LAUNCH_DISCRIMINATOR = new Uint8Array([
   114, 114, 67, 23, 41, 70, 0, 225,
@@ -67,7 +67,7 @@ export const REGISTER_LAUNCH_DISCRIMINATOR = new Uint8Array([
 
 export function getRegisterLaunchDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    REGISTER_LAUNCH_DISCRIMINATOR,
+    REGISTER_LAUNCH_DISCRIMINATOR
   );
 }
 
@@ -82,11 +82,11 @@ export type RegisterLaunchInstruction<
   TAccountQuoteVault extends string | AccountMeta<string> = string,
   TAccountPayer extends string | AccountMeta<string> = string,
   TAccountTokenProgram extends string | AccountMeta<string> =
-    "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
   TAccountSystemProgram extends string | AccountMeta<string> =
-    "11111111111111111111111111111111",
+    '11111111111111111111111111111111',
   TAccountRent extends string | AccountMeta<string> =
-    "SysvarRent111111111111111111111111111111111",
+    'SysvarRent111111111111111111111111111111111',
   TAccountState extends string | AccountMeta<string> = string,
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
@@ -157,27 +157,27 @@ export type RegisterLaunchInstructionDataArgs = {
 export function getRegisterLaunchInstructionDataEncoder(): Encoder<RegisterLaunchInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["cpmmConfig", getAddressEncoder()],
-      ["initialSwapFeeBps", getU16Encoder()],
-      ["initialFeeSplitBps", getU16Encoder()],
-      ["recipients", getArrayEncoder(getRecipientEncoder())],
-      ["minRaiseQuote", getU64Encoder()],
-      ["minMigrationPriceQ64Opt", getOptionEncoder(getU128Encoder())],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['cpmmConfig', getAddressEncoder()],
+      ['initialSwapFeeBps', getU16Encoder()],
+      ['initialFeeSplitBps', getU16Encoder()],
+      ['recipients', getArrayEncoder(getRecipientEncoder())],
+      ['minRaiseQuote', getU64Encoder()],
+      ['minMigrationPriceQ64Opt', getOptionEncoder(getU128Encoder())],
     ]),
-    (value) => ({ ...value, discriminator: REGISTER_LAUNCH_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: REGISTER_LAUNCH_DISCRIMINATOR })
   );
 }
 
 export function getRegisterLaunchInstructionDataDecoder(): Decoder<RegisterLaunchInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["cpmmConfig", getAddressDecoder()],
-    ["initialSwapFeeBps", getU16Decoder()],
-    ["initialFeeSplitBps", getU16Decoder()],
-    ["recipients", getArrayDecoder(getRecipientDecoder())],
-    ["minRaiseQuote", getU64Decoder()],
-    ["minMigrationPriceQ64Opt", getOptionDecoder(getU128Decoder())],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['cpmmConfig', getAddressDecoder()],
+    ['initialSwapFeeBps', getU16Decoder()],
+    ['initialFeeSplitBps', getU16Decoder()],
+    ['recipients', getArrayDecoder(getRecipientDecoder())],
+    ['minRaiseQuote', getU64Decoder()],
+    ['minMigrationPriceQ64Opt', getOptionDecoder(getU128Decoder())],
   ]);
 }
 
@@ -187,7 +187,7 @@ export function getRegisterLaunchInstructionDataCodec(): Codec<
 > {
   return combineCodec(
     getRegisterLaunchInstructionDataEncoder(),
-    getRegisterLaunchInstructionDataDecoder(),
+    getRegisterLaunchInstructionDataDecoder()
   );
 }
 
@@ -223,12 +223,12 @@ export type RegisterLaunchAsyncInput<
   rent?: Address<TAccountRent>;
   /** The CpmmMigratorState PDA to create */
   state?: Address<TAccountState>;
-  cpmmConfig: RegisterLaunchInstructionDataArgs["cpmmConfig"];
-  initialSwapFeeBps: RegisterLaunchInstructionDataArgs["initialSwapFeeBps"];
-  initialFeeSplitBps: RegisterLaunchInstructionDataArgs["initialFeeSplitBps"];
-  recipients: RegisterLaunchInstructionDataArgs["recipients"];
-  minRaiseQuote: RegisterLaunchInstructionDataArgs["minRaiseQuote"];
-  minMigrationPriceQ64Opt: RegisterLaunchInstructionDataArgs["minMigrationPriceQ64Opt"];
+  cpmmConfig: RegisterLaunchInstructionDataArgs['cpmmConfig'];
+  initialSwapFeeBps: RegisterLaunchInstructionDataArgs['initialSwapFeeBps'];
+  initialFeeSplitBps: RegisterLaunchInstructionDataArgs['initialFeeSplitBps'];
+  recipients: RegisterLaunchInstructionDataArgs['recipients'];
+  minRaiseQuote: RegisterLaunchInstructionDataArgs['minRaiseQuote'];
+  minMigrationPriceQ64Opt: RegisterLaunchInstructionDataArgs['minMigrationPriceQ64Opt'];
 };
 
 export async function getRegisterLaunchInstructionAsync<
@@ -260,7 +260,7 @@ export async function getRegisterLaunchInstructionAsync<
     TAccountRent,
     TAccountState
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): Promise<
   RegisterLaunchInstruction<
     TProgramAddress,
@@ -314,15 +314,15 @@ export async function getRegisterLaunchInstructionAsync<
   // Resolve default values.
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
-      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" as Address<"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA">;
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
-      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
   if (!accounts.rent.value) {
     accounts.rent.value =
-      "SysvarRent111111111111111111111111111111111" as Address<"SysvarRent111111111111111111111111111111111">;
+      'SysvarRent111111111111111111111111111111111' as Address<'SysvarRent111111111111111111111111111111111'>;
   }
   if (!accounts.state.value) {
     accounts.state.value = await getProgramDerivedAddress({
@@ -331,32 +331,32 @@ export async function getRegisterLaunchInstructionAsync<
         getBytesEncoder().encode(new Uint8Array([115, 116, 97, 116, 101])),
         getAddressEncoder().encode(
           getAddressFromResolvedInstructionAccount(
-            "launch",
-            accounts.launch.value,
-          ),
+            'launch',
+            accounts.launch.value
+          )
         ),
       ],
     });
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("initializerConfig", accounts.initializerConfig),
-      getAccountMeta("launch", accounts.launch),
-      getAccountMeta("launchAuthority", accounts.launchAuthority),
-      getAccountMeta("baseMint", accounts.baseMint),
-      getAccountMeta("quoteMint", accounts.quoteMint),
-      getAccountMeta("baseVault", accounts.baseVault),
-      getAccountMeta("quoteVault", accounts.quoteVault),
-      getAccountMeta("payer", accounts.payer),
-      getAccountMeta("tokenProgram", accounts.tokenProgram),
-      getAccountMeta("systemProgram", accounts.systemProgram),
-      getAccountMeta("rent", accounts.rent),
-      getAccountMeta("state", accounts.state),
+      getAccountMeta('initializerConfig', accounts.initializerConfig),
+      getAccountMeta('launch', accounts.launch),
+      getAccountMeta('launchAuthority', accounts.launchAuthority),
+      getAccountMeta('baseMint', accounts.baseMint),
+      getAccountMeta('quoteMint', accounts.quoteMint),
+      getAccountMeta('baseVault', accounts.baseVault),
+      getAccountMeta('quoteVault', accounts.quoteVault),
+      getAccountMeta('payer', accounts.payer),
+      getAccountMeta('tokenProgram', accounts.tokenProgram),
+      getAccountMeta('systemProgram', accounts.systemProgram),
+      getAccountMeta('rent', accounts.rent),
+      getAccountMeta('state', accounts.state),
     ],
     data: getRegisterLaunchInstructionDataEncoder().encode(
-      args as RegisterLaunchInstructionDataArgs,
+      args as RegisterLaunchInstructionDataArgs
     ),
     programAddress,
   } as RegisterLaunchInstruction<
@@ -408,12 +408,12 @@ export type RegisterLaunchInput<
   rent?: Address<TAccountRent>;
   /** The CpmmMigratorState PDA to create */
   state: Address<TAccountState>;
-  cpmmConfig: RegisterLaunchInstructionDataArgs["cpmmConfig"];
-  initialSwapFeeBps: RegisterLaunchInstructionDataArgs["initialSwapFeeBps"];
-  initialFeeSplitBps: RegisterLaunchInstructionDataArgs["initialFeeSplitBps"];
-  recipients: RegisterLaunchInstructionDataArgs["recipients"];
-  minRaiseQuote: RegisterLaunchInstructionDataArgs["minRaiseQuote"];
-  minMigrationPriceQ64Opt: RegisterLaunchInstructionDataArgs["minMigrationPriceQ64Opt"];
+  cpmmConfig: RegisterLaunchInstructionDataArgs['cpmmConfig'];
+  initialSwapFeeBps: RegisterLaunchInstructionDataArgs['initialSwapFeeBps'];
+  initialFeeSplitBps: RegisterLaunchInstructionDataArgs['initialFeeSplitBps'];
+  recipients: RegisterLaunchInstructionDataArgs['recipients'];
+  minRaiseQuote: RegisterLaunchInstructionDataArgs['minRaiseQuote'];
+  minMigrationPriceQ64Opt: RegisterLaunchInstructionDataArgs['minMigrationPriceQ64Opt'];
 };
 
 export function getRegisterLaunchInstruction<
@@ -445,7 +445,7 @@ export function getRegisterLaunchInstruction<
     TAccountRent,
     TAccountState
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): RegisterLaunchInstruction<
   TProgramAddress,
   TAccountInitializerConfig,
@@ -497,35 +497,35 @@ export function getRegisterLaunchInstruction<
   // Resolve default values.
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
-      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" as Address<"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA">;
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
-      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
   if (!accounts.rent.value) {
     accounts.rent.value =
-      "SysvarRent111111111111111111111111111111111" as Address<"SysvarRent111111111111111111111111111111111">;
+      'SysvarRent111111111111111111111111111111111' as Address<'SysvarRent111111111111111111111111111111111'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("initializerConfig", accounts.initializerConfig),
-      getAccountMeta("launch", accounts.launch),
-      getAccountMeta("launchAuthority", accounts.launchAuthority),
-      getAccountMeta("baseMint", accounts.baseMint),
-      getAccountMeta("quoteMint", accounts.quoteMint),
-      getAccountMeta("baseVault", accounts.baseVault),
-      getAccountMeta("quoteVault", accounts.quoteVault),
-      getAccountMeta("payer", accounts.payer),
-      getAccountMeta("tokenProgram", accounts.tokenProgram),
-      getAccountMeta("systemProgram", accounts.systemProgram),
-      getAccountMeta("rent", accounts.rent),
-      getAccountMeta("state", accounts.state),
+      getAccountMeta('initializerConfig', accounts.initializerConfig),
+      getAccountMeta('launch', accounts.launch),
+      getAccountMeta('launchAuthority', accounts.launchAuthority),
+      getAccountMeta('baseMint', accounts.baseMint),
+      getAccountMeta('quoteMint', accounts.quoteMint),
+      getAccountMeta('baseVault', accounts.baseVault),
+      getAccountMeta('quoteVault', accounts.quoteVault),
+      getAccountMeta('payer', accounts.payer),
+      getAccountMeta('tokenProgram', accounts.tokenProgram),
+      getAccountMeta('systemProgram', accounts.systemProgram),
+      getAccountMeta('rent', accounts.rent),
+      getAccountMeta('state', accounts.state),
     ],
     data: getRegisterLaunchInstructionDataEncoder().encode(
-      args as RegisterLaunchInstructionDataArgs,
+      args as RegisterLaunchInstructionDataArgs
     ),
     programAddress,
   } as RegisterLaunchInstruction<
@@ -579,7 +579,7 @@ export function parseRegisterLaunchInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>,
+    InstructionWithData<ReadonlyUint8Array>
 ): ParsedRegisterLaunchInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 12) {
     throw new SolanaError(
@@ -587,7 +587,7 @@ export function parseRegisterLaunchInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 12,
-      },
+      }
     );
   }
   let accountIndex = 0;

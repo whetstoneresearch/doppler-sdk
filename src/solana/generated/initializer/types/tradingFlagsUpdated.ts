@@ -18,7 +18,7 @@ import {
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type TradingFlagsUpdated = {
   launch: Address;
@@ -30,17 +30,17 @@ export type TradingFlagsUpdatedArgs = TradingFlagsUpdated;
 
 export function getTradingFlagsUpdatedEncoder(): FixedSizeEncoder<TradingFlagsUpdatedArgs> {
   return getStructEncoder([
-    ["launch", getAddressEncoder()],
-    ["allowBuy", getU8Encoder()],
-    ["allowSell", getU8Encoder()],
+    ['launch', getAddressEncoder()],
+    ['allowBuy', getU8Encoder()],
+    ['allowSell', getU8Encoder()],
   ]);
 }
 
 export function getTradingFlagsUpdatedDecoder(): FixedSizeDecoder<TradingFlagsUpdated> {
   return getStructDecoder([
-    ["launch", getAddressDecoder()],
-    ["allowBuy", getU8Decoder()],
-    ["allowSell", getU8Decoder()],
+    ['launch', getAddressDecoder()],
+    ['allowBuy', getU8Decoder()],
+    ['allowSell', getU8Decoder()],
   ]);
 }
 
@@ -50,6 +50,6 @@ export function getTradingFlagsUpdatedCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getTradingFlagsUpdatedEncoder(),
-    getTradingFlagsUpdatedDecoder(),
+    getTradingFlagsUpdatedDecoder()
   );
 }

@@ -18,7 +18,7 @@ import {
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type Recipient = { wallet: Address; amount: bigint };
 
@@ -26,15 +26,15 @@ export type RecipientArgs = { wallet: Address; amount: number | bigint };
 
 export function getRecipientEncoder(): FixedSizeEncoder<RecipientArgs> {
   return getStructEncoder([
-    ["wallet", getAddressEncoder()],
-    ["amount", getU64Encoder()],
+    ['wallet', getAddressEncoder()],
+    ['amount', getU64Encoder()],
   ]);
 }
 
 export function getRecipientDecoder(): FixedSizeDecoder<Recipient> {
   return getStructDecoder([
-    ["wallet", getAddressDecoder()],
-    ["amount", getU64Decoder()],
+    ['wallet', getAddressDecoder()],
+    ['amount', getU64Decoder()],
   ]);
 }
 

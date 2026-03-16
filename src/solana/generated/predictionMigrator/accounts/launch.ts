@@ -41,13 +41,13 @@ import {
   type MaybeAccount,
   type MaybeEncodedAccount,
   type ReadonlyUint8Array,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   getCalldataBufDecoder,
   getCalldataBufEncoder,
   type CalldataBuf,
   type CalldataBufArgs,
-} from "../types";
+} from '../types';
 
 export const LAUNCH_DISCRIMINATOR = new Uint8Array([
   144, 51, 51, 163, 206, 85, 213, 38,
@@ -128,76 +128,76 @@ export type LaunchArgs = {
 export function getLaunchEncoder(): FixedSizeEncoder<LaunchArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["authority", getAddressEncoder()],
-      ["namespace", getAddressEncoder()],
-      ["launchId", fixEncoderSize(getBytesEncoder(), 32)],
-      ["phase", getU8Encoder()],
-      ["bump", getU8Encoder()],
-      ["launchAuthorityBump", getU8Encoder()],
-      ["pad0", fixEncoderSize(getBytesEncoder(), 5)],
-      ["baseMint", getAddressEncoder()],
-      ["quoteMint", getAddressEncoder()],
-      ["baseVault", getAddressEncoder()],
-      ["quoteVault", getAddressEncoder()],
-      ["baseTotalSupply", getU64Encoder()],
-      ["baseForDistribution", getU64Encoder()],
-      ["baseForLiquidity", getU64Encoder()],
-      ["baseForCurve", getU64Encoder()],
-      ["curveVirtualBase", getU64Encoder()],
-      ["curveVirtualQuote", getU64Encoder()],
-      ["curveFeeBps", getU16Encoder()],
-      ["pad1", fixEncoderSize(getBytesEncoder(), 6)],
-      ["allowBuy", getU8Encoder()],
-      ["allowSell", getU8Encoder()],
-      ["pad2", fixEncoderSize(getBytesEncoder(), 6)],
-      ["sentinelProgram", getAddressEncoder()],
-      ["sentinelFlags", getU32Encoder()],
-      ["pad3", fixEncoderSize(getBytesEncoder(), 4)],
-      ["sentinelCalldata", getCalldataBufEncoder()],
-      ["migratorProgram", getAddressEncoder()],
-      ["migratorInitCalldata", getCalldataBufEncoder()],
-      ["migratorMigrateCalldata", getCalldataBufEncoder()],
-      ["reserved", fixEncoderSize(getBytesEncoder(), 64)],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['authority', getAddressEncoder()],
+      ['namespace', getAddressEncoder()],
+      ['launchId', fixEncoderSize(getBytesEncoder(), 32)],
+      ['phase', getU8Encoder()],
+      ['bump', getU8Encoder()],
+      ['launchAuthorityBump', getU8Encoder()],
+      ['pad0', fixEncoderSize(getBytesEncoder(), 5)],
+      ['baseMint', getAddressEncoder()],
+      ['quoteMint', getAddressEncoder()],
+      ['baseVault', getAddressEncoder()],
+      ['quoteVault', getAddressEncoder()],
+      ['baseTotalSupply', getU64Encoder()],
+      ['baseForDistribution', getU64Encoder()],
+      ['baseForLiquidity', getU64Encoder()],
+      ['baseForCurve', getU64Encoder()],
+      ['curveVirtualBase', getU64Encoder()],
+      ['curveVirtualQuote', getU64Encoder()],
+      ['curveFeeBps', getU16Encoder()],
+      ['pad1', fixEncoderSize(getBytesEncoder(), 6)],
+      ['allowBuy', getU8Encoder()],
+      ['allowSell', getU8Encoder()],
+      ['pad2', fixEncoderSize(getBytesEncoder(), 6)],
+      ['sentinelProgram', getAddressEncoder()],
+      ['sentinelFlags', getU32Encoder()],
+      ['pad3', fixEncoderSize(getBytesEncoder(), 4)],
+      ['sentinelCalldata', getCalldataBufEncoder()],
+      ['migratorProgram', getAddressEncoder()],
+      ['migratorInitCalldata', getCalldataBufEncoder()],
+      ['migratorMigrateCalldata', getCalldataBufEncoder()],
+      ['reserved', fixEncoderSize(getBytesEncoder(), 64)],
     ]),
-    (value) => ({ ...value, discriminator: LAUNCH_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: LAUNCH_DISCRIMINATOR })
   );
 }
 
 /** Gets the decoder for {@link Launch} account data. */
 export function getLaunchDecoder(): FixedSizeDecoder<Launch> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["authority", getAddressDecoder()],
-    ["namespace", getAddressDecoder()],
-    ["launchId", fixDecoderSize(getBytesDecoder(), 32)],
-    ["phase", getU8Decoder()],
-    ["bump", getU8Decoder()],
-    ["launchAuthorityBump", getU8Decoder()],
-    ["pad0", fixDecoderSize(getBytesDecoder(), 5)],
-    ["baseMint", getAddressDecoder()],
-    ["quoteMint", getAddressDecoder()],
-    ["baseVault", getAddressDecoder()],
-    ["quoteVault", getAddressDecoder()],
-    ["baseTotalSupply", getU64Decoder()],
-    ["baseForDistribution", getU64Decoder()],
-    ["baseForLiquidity", getU64Decoder()],
-    ["baseForCurve", getU64Decoder()],
-    ["curveVirtualBase", getU64Decoder()],
-    ["curveVirtualQuote", getU64Decoder()],
-    ["curveFeeBps", getU16Decoder()],
-    ["pad1", fixDecoderSize(getBytesDecoder(), 6)],
-    ["allowBuy", getU8Decoder()],
-    ["allowSell", getU8Decoder()],
-    ["pad2", fixDecoderSize(getBytesDecoder(), 6)],
-    ["sentinelProgram", getAddressDecoder()],
-    ["sentinelFlags", getU32Decoder()],
-    ["pad3", fixDecoderSize(getBytesDecoder(), 4)],
-    ["sentinelCalldata", getCalldataBufDecoder()],
-    ["migratorProgram", getAddressDecoder()],
-    ["migratorInitCalldata", getCalldataBufDecoder()],
-    ["migratorMigrateCalldata", getCalldataBufDecoder()],
-    ["reserved", fixDecoderSize(getBytesDecoder(), 64)],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['authority', getAddressDecoder()],
+    ['namespace', getAddressDecoder()],
+    ['launchId', fixDecoderSize(getBytesDecoder(), 32)],
+    ['phase', getU8Decoder()],
+    ['bump', getU8Decoder()],
+    ['launchAuthorityBump', getU8Decoder()],
+    ['pad0', fixDecoderSize(getBytesDecoder(), 5)],
+    ['baseMint', getAddressDecoder()],
+    ['quoteMint', getAddressDecoder()],
+    ['baseVault', getAddressDecoder()],
+    ['quoteVault', getAddressDecoder()],
+    ['baseTotalSupply', getU64Decoder()],
+    ['baseForDistribution', getU64Decoder()],
+    ['baseForLiquidity', getU64Decoder()],
+    ['baseForCurve', getU64Decoder()],
+    ['curveVirtualBase', getU64Decoder()],
+    ['curveVirtualQuote', getU64Decoder()],
+    ['curveFeeBps', getU16Decoder()],
+    ['pad1', fixDecoderSize(getBytesDecoder(), 6)],
+    ['allowBuy', getU8Decoder()],
+    ['allowSell', getU8Decoder()],
+    ['pad2', fixDecoderSize(getBytesDecoder(), 6)],
+    ['sentinelProgram', getAddressDecoder()],
+    ['sentinelFlags', getU32Decoder()],
+    ['pad3', fixDecoderSize(getBytesDecoder(), 4)],
+    ['sentinelCalldata', getCalldataBufDecoder()],
+    ['migratorProgram', getAddressDecoder()],
+    ['migratorInitCalldata', getCalldataBufDecoder()],
+    ['migratorMigrateCalldata', getCalldataBufDecoder()],
+    ['reserved', fixDecoderSize(getBytesDecoder(), 64)],
   ]);
 }
 
@@ -207,24 +207,24 @@ export function getLaunchCodec(): FixedSizeCodec<LaunchArgs, Launch> {
 }
 
 export function decodeLaunch<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress>,
+  encodedAccount: EncodedAccount<TAddress>
 ): Account<Launch, TAddress>;
 export function decodeLaunch<TAddress extends string = string>(
-  encodedAccount: MaybeEncodedAccount<TAddress>,
+  encodedAccount: MaybeEncodedAccount<TAddress>
 ): MaybeAccount<Launch, TAddress>;
 export function decodeLaunch<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>,
+  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>
 ): Account<Launch, TAddress> | MaybeAccount<Launch, TAddress> {
   return decodeAccount(
     encodedAccount as MaybeEncodedAccount<TAddress>,
-    getLaunchDecoder(),
+    getLaunchDecoder()
   );
 }
 
 export async function fetchLaunch<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
-  config?: FetchAccountConfig,
+  config?: FetchAccountConfig
 ): Promise<Account<Launch, TAddress>> {
   const maybeAccount = await fetchMaybeLaunch(rpc, address, config);
   assertAccountExists(maybeAccount);
@@ -234,7 +234,7 @@ export async function fetchLaunch<TAddress extends string = string>(
 export async function fetchMaybeLaunch<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
-  config?: FetchAccountConfig,
+  config?: FetchAccountConfig
 ): Promise<MaybeAccount<Launch, TAddress>> {
   const maybeAccount = await fetchEncodedAccount(rpc, address, config);
   return decodeLaunch(maybeAccount);
@@ -243,7 +243,7 @@ export async function fetchMaybeLaunch<TAddress extends string = string>(
 export async function fetchAllLaunch(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
-  config?: FetchAccountsConfig,
+  config?: FetchAccountsConfig
 ): Promise<Account<Launch>[]> {
   const maybeAccounts = await fetchAllMaybeLaunch(rpc, addresses, config);
   assertAccountsExist(maybeAccounts);
@@ -253,7 +253,7 @@ export async function fetchAllLaunch(
 export async function fetchAllMaybeLaunch(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
-  config?: FetchAccountsConfig,
+  config?: FetchAccountsConfig
 ): Promise<MaybeAccount<Launch>[]> {
   const maybeAccounts = await fetchEncodedAccounts(rpc, addresses, config);
   return maybeAccounts.map((maybeAccount) => decodeLaunch(maybeAccount));

@@ -36,14 +36,14 @@ import {
   type TransactionSigner,
   type WritableAccount,
   type WritableSignerAccount,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   getAccountMetaFactory,
   getAddressFromResolvedInstructionAccount,
   getNonNullResolvedInstructionInput,
   type ResolvedInstructionAccount,
-} from "@solana/program-client-core";
-import { CPMM_PROGRAM_ADDRESS } from "../programs";
+} from '@solana/program-client-core';
+import { CPMM_PROGRAM_ADDRESS } from '../programs';
 
 export const CREATE_POSITION_DISCRIMINATOR = new Uint8Array([
   48, 215, 197, 153, 96, 203, 180, 133,
@@ -51,7 +51,7 @@ export const CREATE_POSITION_DISCRIMINATOR = new Uint8Array([
 
 export function getCreatePositionDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    CREATE_POSITION_DISCRIMINATOR,
+    CREATE_POSITION_DISCRIMINATOR
   );
 }
 
@@ -62,7 +62,7 @@ export type CreatePositionInstruction<
   TAccountOwner extends string | AccountMeta<string> = string,
   TAccountPayer extends string | AccountMeta<string> = string,
   TAccountSystemProgram extends string | AccountMeta<string> =
-    "11111111111111111111111111111111",
+    '11111111111111111111111111111111',
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -99,17 +99,17 @@ export type CreatePositionInstructionDataArgs = { positionId: number | bigint };
 export function getCreatePositionInstructionDataEncoder(): FixedSizeEncoder<CreatePositionInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["positionId", getU64Encoder()],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['positionId', getU64Encoder()],
     ]),
-    (value) => ({ ...value, discriminator: CREATE_POSITION_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: CREATE_POSITION_DISCRIMINATOR })
   );
 }
 
 export function getCreatePositionInstructionDataDecoder(): FixedSizeDecoder<CreatePositionInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["positionId", getU64Decoder()],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['positionId', getU64Decoder()],
   ]);
 }
 
@@ -119,7 +119,7 @@ export function getCreatePositionInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getCreatePositionInstructionDataEncoder(),
-    getCreatePositionInstructionDataDecoder(),
+    getCreatePositionInstructionDataDecoder()
   );
 }
 
@@ -135,7 +135,7 @@ export type CreatePositionAsyncInput<
   owner: TransactionSigner<TAccountOwner>;
   payer: TransactionSigner<TAccountPayer>;
   systemProgram?: Address<TAccountSystemProgram>;
-  positionId: CreatePositionInstructionDataArgs["positionId"];
+  positionId: CreatePositionInstructionDataArgs['positionId'];
 };
 
 export async function getCreatePositionInstructionAsync<
@@ -153,7 +153,7 @@ export async function getCreatePositionInstructionAsync<
     TAccountPayer,
     TAccountSystemProgram
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): Promise<
   CreatePositionInstruction<
     TProgramAddress,
@@ -189,39 +189,39 @@ export async function getCreatePositionInstructionAsync<
       programAddress,
       seeds: [
         getBytesEncoder().encode(
-          new Uint8Array([112, 111, 115, 105, 116, 105, 111, 110]),
+          new Uint8Array([112, 111, 115, 105, 116, 105, 111, 110])
         ),
         getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount("pool", accounts.pool.value),
+          getAddressFromResolvedInstructionAccount('pool', accounts.pool.value)
         ),
         getAddressEncoder().encode(
           getAddressFromResolvedInstructionAccount(
-            "owner",
-            accounts.owner.value,
-          ),
+            'owner',
+            accounts.owner.value
+          )
         ),
         getU64Encoder().encode(
-          getNonNullResolvedInstructionInput("positionId", args.positionId),
+          getNonNullResolvedInstructionInput('positionId', args.positionId)
         ),
       ],
     });
   }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
-      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("pool", accounts.pool),
-      getAccountMeta("position", accounts.position),
-      getAccountMeta("owner", accounts.owner),
-      getAccountMeta("payer", accounts.payer),
-      getAccountMeta("systemProgram", accounts.systemProgram),
+      getAccountMeta('pool', accounts.pool),
+      getAccountMeta('position', accounts.position),
+      getAccountMeta('owner', accounts.owner),
+      getAccountMeta('payer', accounts.payer),
+      getAccountMeta('systemProgram', accounts.systemProgram),
     ],
     data: getCreatePositionInstructionDataEncoder().encode(
-      args as CreatePositionInstructionDataArgs,
+      args as CreatePositionInstructionDataArgs
     ),
     programAddress,
   } as CreatePositionInstruction<
@@ -246,7 +246,7 @@ export type CreatePositionInput<
   owner: TransactionSigner<TAccountOwner>;
   payer: TransactionSigner<TAccountPayer>;
   systemProgram?: Address<TAccountSystemProgram>;
-  positionId: CreatePositionInstructionDataArgs["positionId"];
+  positionId: CreatePositionInstructionDataArgs['positionId'];
 };
 
 export function getCreatePositionInstruction<
@@ -264,7 +264,7 @@ export function getCreatePositionInstruction<
     TAccountPayer,
     TAccountSystemProgram
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): CreatePositionInstruction<
   TProgramAddress,
   TAccountPool,
@@ -295,20 +295,20 @@ export function getCreatePositionInstruction<
   // Resolve default values.
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
-      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("pool", accounts.pool),
-      getAccountMeta("position", accounts.position),
-      getAccountMeta("owner", accounts.owner),
-      getAccountMeta("payer", accounts.payer),
-      getAccountMeta("systemProgram", accounts.systemProgram),
+      getAccountMeta('pool', accounts.pool),
+      getAccountMeta('position', accounts.position),
+      getAccountMeta('owner', accounts.owner),
+      getAccountMeta('payer', accounts.payer),
+      getAccountMeta('systemProgram', accounts.systemProgram),
     ],
     data: getCreatePositionInstructionDataEncoder().encode(
-      args as CreatePositionInstructionDataArgs,
+      args as CreatePositionInstructionDataArgs
     ),
     programAddress,
   } as CreatePositionInstruction<
@@ -342,7 +342,7 @@ export function parseCreatePositionInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>,
+    InstructionWithData<ReadonlyUint8Array>
 ): ParsedCreatePositionInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 5) {
     throw new SolanaError(
@@ -350,7 +350,7 @@ export function parseCreatePositionInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 5,
-      },
+      }
     );
   }
   let accountIndex = 0;

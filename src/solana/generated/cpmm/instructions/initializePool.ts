@@ -42,13 +42,13 @@ import {
   type TransactionSigner,
   type WritableAccount,
   type WritableSignerAccount,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   getAccountMetaFactory,
   getAddressFromResolvedInstructionAccount,
   type ResolvedInstructionAccount,
-} from "@solana/program-client-core";
-import { CPMM_PROGRAM_ADDRESS } from "../programs";
+} from '@solana/program-client-core';
+import { CPMM_PROGRAM_ADDRESS } from '../programs';
 
 export const INITIALIZE_POOL_DISCRIMINATOR = new Uint8Array([
   95, 180, 10, 172, 84, 174, 232, 40,
@@ -56,7 +56,7 @@ export const INITIALIZE_POOL_DISCRIMINATOR = new Uint8Array([
 
 export function getInitializePoolDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    INITIALIZE_POOL_DISCRIMINATOR,
+    INITIALIZE_POOL_DISCRIMINATOR
   );
 }
 
@@ -72,11 +72,11 @@ export type InitializePoolInstruction<
   TAccountToken1Mint extends string | AccountMeta<string> = string,
   TAccountPayer extends string | AccountMeta<string> = string,
   TAccountTokenProgram extends string | AccountMeta<string> =
-    "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
   TAccountSystemProgram extends string | AccountMeta<string> =
-    "11111111111111111111111111111111",
+    '11111111111111111111111111111111',
   TAccountRent extends string | AccountMeta<string> =
-    "SysvarRent111111111111111111111111111111111",
+    'SysvarRent111111111111111111111111111111111',
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -147,27 +147,27 @@ export type InitializePoolInstructionDataArgs = {
 export function getInitializePoolInstructionDataEncoder(): Encoder<InitializePoolInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["mintA", getAddressEncoder()],
-      ["mintB", getAddressEncoder()],
-      ["initialSwapFeeBps", getU16Encoder()],
-      ["initialFeeSplitBps", getU16Encoder()],
-      ["liquidityMeasureSide", getU8Encoder()],
-      ["numeraireMintOverride", getOptionEncoder(getAddressEncoder())],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['mintA', getAddressEncoder()],
+      ['mintB', getAddressEncoder()],
+      ['initialSwapFeeBps', getU16Encoder()],
+      ['initialFeeSplitBps', getU16Encoder()],
+      ['liquidityMeasureSide', getU8Encoder()],
+      ['numeraireMintOverride', getOptionEncoder(getAddressEncoder())],
     ]),
-    (value) => ({ ...value, discriminator: INITIALIZE_POOL_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: INITIALIZE_POOL_DISCRIMINATOR })
   );
 }
 
 export function getInitializePoolInstructionDataDecoder(): Decoder<InitializePoolInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["mintA", getAddressDecoder()],
-    ["mintB", getAddressDecoder()],
-    ["initialSwapFeeBps", getU16Decoder()],
-    ["initialFeeSplitBps", getU16Decoder()],
-    ["liquidityMeasureSide", getU8Decoder()],
-    ["numeraireMintOverride", getOptionDecoder(getAddressDecoder())],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['mintA', getAddressDecoder()],
+    ['mintB', getAddressDecoder()],
+    ['initialSwapFeeBps', getU16Decoder()],
+    ['initialFeeSplitBps', getU16Decoder()],
+    ['liquidityMeasureSide', getU8Decoder()],
+    ['numeraireMintOverride', getOptionDecoder(getAddressDecoder())],
   ]);
 }
 
@@ -177,7 +177,7 @@ export function getInitializePoolInstructionDataCodec(): Codec<
 > {
   return combineCodec(
     getInitializePoolInstructionDataEncoder(),
-    getInitializePoolInstructionDataDecoder(),
+    getInitializePoolInstructionDataDecoder()
   );
 }
 
@@ -207,12 +207,12 @@ export type InitializePoolAsyncInput<
   tokenProgram?: Address<TAccountTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
   rent?: Address<TAccountRent>;
-  mintA: InitializePoolInstructionDataArgs["mintA"];
-  mintB: InitializePoolInstructionDataArgs["mintB"];
-  initialSwapFeeBps: InitializePoolInstructionDataArgs["initialSwapFeeBps"];
-  initialFeeSplitBps: InitializePoolInstructionDataArgs["initialFeeSplitBps"];
-  liquidityMeasureSide: InitializePoolInstructionDataArgs["liquidityMeasureSide"];
-  numeraireMintOverride: InitializePoolInstructionDataArgs["numeraireMintOverride"];
+  mintA: InitializePoolInstructionDataArgs['mintA'];
+  mintB: InitializePoolInstructionDataArgs['mintB'];
+  initialSwapFeeBps: InitializePoolInstructionDataArgs['initialSwapFeeBps'];
+  initialFeeSplitBps: InitializePoolInstructionDataArgs['initialFeeSplitBps'];
+  liquidityMeasureSide: InitializePoolInstructionDataArgs['liquidityMeasureSide'];
+  numeraireMintOverride: InitializePoolInstructionDataArgs['numeraireMintOverride'];
 };
 
 export async function getInitializePoolInstructionAsync<
@@ -244,7 +244,7 @@ export async function getInitializePoolInstructionAsync<
     TAccountSystemProgram,
     TAccountRent
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): Promise<
   InitializePoolInstruction<
     TProgramAddress,
@@ -299,15 +299,15 @@ export async function getInitializePoolInstructionAsync<
         getBytesEncoder().encode(new Uint8Array([112, 111, 111, 108])),
         getAddressEncoder().encode(
           getAddressFromResolvedInstructionAccount(
-            "token0Mint",
-            accounts.token0Mint.value,
-          ),
+            'token0Mint',
+            accounts.token0Mint.value
+          )
         ),
         getAddressEncoder().encode(
           getAddressFromResolvedInstructionAccount(
-            "token1Mint",
-            accounts.token1Mint.value,
-          ),
+            'token1Mint',
+            accounts.token1Mint.value
+          )
         ),
       ],
     });
@@ -320,10 +320,10 @@ export async function getInitializePoolInstructionAsync<
           new Uint8Array([
             112, 114, 111, 116, 111, 99, 111, 108, 95, 112, 111, 115, 105, 116,
             105, 111, 110,
-          ]),
+          ])
         ),
         getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount("pool", accounts.pool.value),
+          getAddressFromResolvedInstructionAccount('pool', accounts.pool.value)
         ),
       ],
     });
@@ -333,45 +333,45 @@ export async function getInitializePoolInstructionAsync<
       programAddress,
       seeds: [
         getBytesEncoder().encode(
-          new Uint8Array([97, 117, 116, 104, 111, 114, 105, 116, 121]),
+          new Uint8Array([97, 117, 116, 104, 111, 114, 105, 116, 121])
         ),
         getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount("pool", accounts.pool.value),
+          getAddressFromResolvedInstructionAccount('pool', accounts.pool.value)
         ),
       ],
     });
   }
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
-      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" as Address<"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA">;
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
-      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
   if (!accounts.rent.value) {
     accounts.rent.value =
-      "SysvarRent111111111111111111111111111111111" as Address<"SysvarRent111111111111111111111111111111111">;
+      'SysvarRent111111111111111111111111111111111' as Address<'SysvarRent111111111111111111111111111111111'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("config", accounts.config),
-      getAccountMeta("pool", accounts.pool),
-      getAccountMeta("protocolPosition", accounts.protocolPosition),
-      getAccountMeta("authority", accounts.authority),
-      getAccountMeta("vault0", accounts.vault0),
-      getAccountMeta("vault1", accounts.vault1),
-      getAccountMeta("token0Mint", accounts.token0Mint),
-      getAccountMeta("token1Mint", accounts.token1Mint),
-      getAccountMeta("payer", accounts.payer),
-      getAccountMeta("tokenProgram", accounts.tokenProgram),
-      getAccountMeta("systemProgram", accounts.systemProgram),
-      getAccountMeta("rent", accounts.rent),
+      getAccountMeta('config', accounts.config),
+      getAccountMeta('pool', accounts.pool),
+      getAccountMeta('protocolPosition', accounts.protocolPosition),
+      getAccountMeta('authority', accounts.authority),
+      getAccountMeta('vault0', accounts.vault0),
+      getAccountMeta('vault1', accounts.vault1),
+      getAccountMeta('token0Mint', accounts.token0Mint),
+      getAccountMeta('token1Mint', accounts.token1Mint),
+      getAccountMeta('payer', accounts.payer),
+      getAccountMeta('tokenProgram', accounts.tokenProgram),
+      getAccountMeta('systemProgram', accounts.systemProgram),
+      getAccountMeta('rent', accounts.rent),
     ],
     data: getInitializePoolInstructionDataEncoder().encode(
-      args as InitializePoolInstructionDataArgs,
+      args as InitializePoolInstructionDataArgs
     ),
     programAddress,
   } as InitializePoolInstruction<
@@ -417,12 +417,12 @@ export type InitializePoolInput<
   tokenProgram?: Address<TAccountTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
   rent?: Address<TAccountRent>;
-  mintA: InitializePoolInstructionDataArgs["mintA"];
-  mintB: InitializePoolInstructionDataArgs["mintB"];
-  initialSwapFeeBps: InitializePoolInstructionDataArgs["initialSwapFeeBps"];
-  initialFeeSplitBps: InitializePoolInstructionDataArgs["initialFeeSplitBps"];
-  liquidityMeasureSide: InitializePoolInstructionDataArgs["liquidityMeasureSide"];
-  numeraireMintOverride: InitializePoolInstructionDataArgs["numeraireMintOverride"];
+  mintA: InitializePoolInstructionDataArgs['mintA'];
+  mintB: InitializePoolInstructionDataArgs['mintB'];
+  initialSwapFeeBps: InitializePoolInstructionDataArgs['initialSwapFeeBps'];
+  initialFeeSplitBps: InitializePoolInstructionDataArgs['initialFeeSplitBps'];
+  liquidityMeasureSide: InitializePoolInstructionDataArgs['liquidityMeasureSide'];
+  numeraireMintOverride: InitializePoolInstructionDataArgs['numeraireMintOverride'];
 };
 
 export function getInitializePoolInstruction<
@@ -454,7 +454,7 @@ export function getInitializePoolInstruction<
     TAccountSystemProgram,
     TAccountRent
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): InitializePoolInstruction<
   TProgramAddress,
   TAccountConfig,
@@ -502,35 +502,35 @@ export function getInitializePoolInstruction<
   // Resolve default values.
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
-      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" as Address<"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA">;
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
-      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
   if (!accounts.rent.value) {
     accounts.rent.value =
-      "SysvarRent111111111111111111111111111111111" as Address<"SysvarRent111111111111111111111111111111111">;
+      'SysvarRent111111111111111111111111111111111' as Address<'SysvarRent111111111111111111111111111111111'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("config", accounts.config),
-      getAccountMeta("pool", accounts.pool),
-      getAccountMeta("protocolPosition", accounts.protocolPosition),
-      getAccountMeta("authority", accounts.authority),
-      getAccountMeta("vault0", accounts.vault0),
-      getAccountMeta("vault1", accounts.vault1),
-      getAccountMeta("token0Mint", accounts.token0Mint),
-      getAccountMeta("token1Mint", accounts.token1Mint),
-      getAccountMeta("payer", accounts.payer),
-      getAccountMeta("tokenProgram", accounts.tokenProgram),
-      getAccountMeta("systemProgram", accounts.systemProgram),
-      getAccountMeta("rent", accounts.rent),
+      getAccountMeta('config', accounts.config),
+      getAccountMeta('pool', accounts.pool),
+      getAccountMeta('protocolPosition', accounts.protocolPosition),
+      getAccountMeta('authority', accounts.authority),
+      getAccountMeta('vault0', accounts.vault0),
+      getAccountMeta('vault1', accounts.vault1),
+      getAccountMeta('token0Mint', accounts.token0Mint),
+      getAccountMeta('token1Mint', accounts.token1Mint),
+      getAccountMeta('payer', accounts.payer),
+      getAccountMeta('tokenProgram', accounts.tokenProgram),
+      getAccountMeta('systemProgram', accounts.systemProgram),
+      getAccountMeta('rent', accounts.rent),
     ],
     data: getInitializePoolInstructionDataEncoder().encode(
-      args as InitializePoolInstructionDataArgs,
+      args as InitializePoolInstructionDataArgs
     ),
     programAddress,
   } as InitializePoolInstruction<
@@ -578,7 +578,7 @@ export function parseInitializePoolInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>,
+    InstructionWithData<ReadonlyUint8Array>
 ): ParsedInitializePoolInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 12) {
     throw new SolanaError(
@@ -586,7 +586,7 @@ export function parseInitializePoolInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 12,
-      },
+      }
     );
   }
   let accountIndex = 0;

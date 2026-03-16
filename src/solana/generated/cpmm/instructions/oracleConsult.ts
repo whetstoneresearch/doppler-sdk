@@ -31,13 +31,13 @@ import {
   type InstructionWithData,
   type ReadonlyAccount,
   type ReadonlyUint8Array,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   getAccountMetaFactory,
   getAddressFromResolvedInstructionAccount,
   type ResolvedInstructionAccount,
-} from "@solana/program-client-core";
-import { CPMM_PROGRAM_ADDRESS } from "../programs";
+} from '@solana/program-client-core';
+import { CPMM_PROGRAM_ADDRESS } from '../programs';
 
 export const ORACLE_CONSULT_DISCRIMINATOR = new Uint8Array([
   239, 237, 255, 177, 142, 72, 96, 175,
@@ -45,7 +45,7 @@ export const ORACLE_CONSULT_DISCRIMINATOR = new Uint8Array([
 
 export function getOracleConsultDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    ORACLE_CONSULT_DISCRIMINATOR,
+    ORACLE_CONSULT_DISCRIMINATOR
   );
 }
 
@@ -78,17 +78,17 @@ export type OracleConsultInstructionDataArgs = { windowSeconds: number };
 export function getOracleConsultInstructionDataEncoder(): FixedSizeEncoder<OracleConsultInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["windowSeconds", getU32Encoder()],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['windowSeconds', getU32Encoder()],
     ]),
-    (value) => ({ ...value, discriminator: ORACLE_CONSULT_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: ORACLE_CONSULT_DISCRIMINATOR })
   );
 }
 
 export function getOracleConsultInstructionDataDecoder(): FixedSizeDecoder<OracleConsultInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["windowSeconds", getU32Decoder()],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['windowSeconds', getU32Decoder()],
   ]);
 }
 
@@ -98,7 +98,7 @@ export function getOracleConsultInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getOracleConsultInstructionDataEncoder(),
-    getOracleConsultInstructionDataDecoder(),
+    getOracleConsultInstructionDataDecoder()
   );
 }
 
@@ -108,7 +108,7 @@ export type OracleConsultAsyncInput<
 > = {
   pool: Address<TAccountPool>;
   oracle?: Address<TAccountOracle>;
-  windowSeconds: OracleConsultInstructionDataArgs["windowSeconds"];
+  windowSeconds: OracleConsultInstructionDataArgs['windowSeconds'];
 };
 
 export async function getOracleConsultInstructionAsync<
@@ -117,7 +117,7 @@ export async function getOracleConsultInstructionAsync<
   TProgramAddress extends Address = typeof CPMM_PROGRAM_ADDRESS,
 >(
   input: OracleConsultAsyncInput<TAccountPool, TAccountOracle>,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): Promise<
   OracleConsultInstruction<TProgramAddress, TAccountPool, TAccountOracle>
 > {
@@ -144,20 +144,20 @@ export async function getOracleConsultInstructionAsync<
       seeds: [
         getBytesEncoder().encode(new Uint8Array([111, 114, 97, 99, 108, 101])),
         getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount("pool", accounts.pool.value),
+          getAddressFromResolvedInstructionAccount('pool', accounts.pool.value)
         ),
       ],
     });
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("pool", accounts.pool),
-      getAccountMeta("oracle", accounts.oracle),
+      getAccountMeta('pool', accounts.pool),
+      getAccountMeta('oracle', accounts.oracle),
     ],
     data: getOracleConsultInstructionDataEncoder().encode(
-      args as OracleConsultInstructionDataArgs,
+      args as OracleConsultInstructionDataArgs
     ),
     programAddress,
   } as OracleConsultInstruction<TProgramAddress, TAccountPool, TAccountOracle>);
@@ -169,7 +169,7 @@ export type OracleConsultInput<
 > = {
   pool: Address<TAccountPool>;
   oracle: Address<TAccountOracle>;
-  windowSeconds: OracleConsultInstructionDataArgs["windowSeconds"];
+  windowSeconds: OracleConsultInstructionDataArgs['windowSeconds'];
 };
 
 export function getOracleConsultInstruction<
@@ -178,7 +178,7 @@ export function getOracleConsultInstruction<
   TProgramAddress extends Address = typeof CPMM_PROGRAM_ADDRESS,
 >(
   input: OracleConsultInput<TAccountPool, TAccountOracle>,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): OracleConsultInstruction<TProgramAddress, TAccountPool, TAccountOracle> {
   // Program address.
   const programAddress = config?.programAddress ?? CPMM_PROGRAM_ADDRESS;
@@ -196,14 +196,14 @@ export function getOracleConsultInstruction<
   // Original args.
   const args = { ...input };
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("pool", accounts.pool),
-      getAccountMeta("oracle", accounts.oracle),
+      getAccountMeta('pool', accounts.pool),
+      getAccountMeta('oracle', accounts.oracle),
     ],
     data: getOracleConsultInstructionDataEncoder().encode(
-      args as OracleConsultInstructionDataArgs,
+      args as OracleConsultInstructionDataArgs
     ),
     programAddress,
   } as OracleConsultInstruction<TProgramAddress, TAccountPool, TAccountOracle>);
@@ -227,7 +227,7 @@ export function parseOracleConsultInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>,
+    InstructionWithData<ReadonlyUint8Array>
 ): ParsedOracleConsultInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 2) {
     throw new SolanaError(
@@ -235,7 +235,7 @@ export function parseOracleConsultInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 2,
-      },
+      }
     );
   }
   let accountIndex = 0;

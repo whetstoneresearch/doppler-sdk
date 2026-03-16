@@ -16,18 +16,18 @@ import {
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type TransferAdminArgs = { newAdmin: Address };
 
 export type TransferAdminArgsArgs = TransferAdminArgs;
 
 export function getTransferAdminArgsEncoder(): FixedSizeEncoder<TransferAdminArgsArgs> {
-  return getStructEncoder([["newAdmin", getAddressEncoder()]]);
+  return getStructEncoder([['newAdmin', getAddressEncoder()]]);
 }
 
 export function getTransferAdminArgsDecoder(): FixedSizeDecoder<TransferAdminArgs> {
-  return getStructDecoder([["newAdmin", getAddressDecoder()]]);
+  return getStructDecoder([['newAdmin', getAddressDecoder()]]);
 }
 
 export function getTransferAdminArgsCodec(): FixedSizeCodec<
@@ -36,6 +36,6 @@ export function getTransferAdminArgsCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getTransferAdminArgsEncoder(),
-    getTransferAdminArgsDecoder(),
+    getTransferAdminArgsDecoder()
   );
 }

@@ -25,7 +25,7 @@ import {
   type FixedSizeDecoder,
   type FixedSizeEncoder,
   type ReadonlyUint8Array,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type LaunchInitialized = {
   launch: Address;
@@ -53,29 +53,29 @@ export type LaunchInitializedArgs = {
 
 export function getLaunchInitializedEncoder(): FixedSizeEncoder<LaunchInitializedArgs> {
   return getStructEncoder([
-    ["launch", getAddressEncoder()],
-    ["namespace", getAddressEncoder()],
-    ["launchId", fixEncoderSize(getBytesEncoder(), 32)],
-    ["baseMint", getAddressEncoder()],
-    ["quoteMint", getAddressEncoder()],
-    ["baseTotalSupply", getU64Encoder()],
-    ["curveKind", getU8Encoder()],
-    ["migratorProgram", getAddressEncoder()],
-    ["sentinelProgram", getAddressEncoder()],
+    ['launch', getAddressEncoder()],
+    ['namespace', getAddressEncoder()],
+    ['launchId', fixEncoderSize(getBytesEncoder(), 32)],
+    ['baseMint', getAddressEncoder()],
+    ['quoteMint', getAddressEncoder()],
+    ['baseTotalSupply', getU64Encoder()],
+    ['curveKind', getU8Encoder()],
+    ['migratorProgram', getAddressEncoder()],
+    ['sentinelProgram', getAddressEncoder()],
   ]);
 }
 
 export function getLaunchInitializedDecoder(): FixedSizeDecoder<LaunchInitialized> {
   return getStructDecoder([
-    ["launch", getAddressDecoder()],
-    ["namespace", getAddressDecoder()],
-    ["launchId", fixDecoderSize(getBytesDecoder(), 32)],
-    ["baseMint", getAddressDecoder()],
-    ["quoteMint", getAddressDecoder()],
-    ["baseTotalSupply", getU64Decoder()],
-    ["curveKind", getU8Decoder()],
-    ["migratorProgram", getAddressDecoder()],
-    ["sentinelProgram", getAddressDecoder()],
+    ['launch', getAddressDecoder()],
+    ['namespace', getAddressDecoder()],
+    ['launchId', fixDecoderSize(getBytesDecoder(), 32)],
+    ['baseMint', getAddressDecoder()],
+    ['quoteMint', getAddressDecoder()],
+    ['baseTotalSupply', getU64Decoder()],
+    ['curveKind', getU8Decoder()],
+    ['migratorProgram', getAddressDecoder()],
+    ['sentinelProgram', getAddressDecoder()],
   ]);
 }
 
@@ -85,6 +85,6 @@ export function getLaunchInitializedCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getLaunchInitializedEncoder(),
-    getLaunchInitializedDecoder(),
+    getLaunchInitializedDecoder()
   );
 }

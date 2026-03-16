@@ -18,7 +18,7 @@ import {
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type PositionCreated = {
   pool: Address;
@@ -36,19 +36,19 @@ export type PositionCreatedArgs = {
 
 export function getPositionCreatedEncoder(): FixedSizeEncoder<PositionCreatedArgs> {
   return getStructEncoder([
-    ["pool", getAddressEncoder()],
-    ["owner", getAddressEncoder()],
-    ["position", getAddressEncoder()],
-    ["positionId", getU64Encoder()],
+    ['pool', getAddressEncoder()],
+    ['owner', getAddressEncoder()],
+    ['position', getAddressEncoder()],
+    ['positionId', getU64Encoder()],
   ]);
 }
 
 export function getPositionCreatedDecoder(): FixedSizeDecoder<PositionCreated> {
   return getStructDecoder([
-    ["pool", getAddressDecoder()],
-    ["owner", getAddressDecoder()],
-    ["position", getAddressDecoder()],
-    ["positionId", getU64Decoder()],
+    ['pool', getAddressDecoder()],
+    ['owner', getAddressDecoder()],
+    ['position', getAddressDecoder()],
+    ['positionId', getU64Decoder()],
   ]);
 }
 

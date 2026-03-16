@@ -15,7 +15,7 @@ import {
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type CollectFeesArgs = { max0: bigint; max1: bigint };
 
@@ -26,15 +26,15 @@ export type CollectFeesArgsArgs = {
 
 export function getCollectFeesArgsEncoder(): FixedSizeEncoder<CollectFeesArgsArgs> {
   return getStructEncoder([
-    ["max0", getU64Encoder()],
-    ["max1", getU64Encoder()],
+    ['max0', getU64Encoder()],
+    ['max1', getU64Encoder()],
   ]);
 }
 
 export function getCollectFeesArgsDecoder(): FixedSizeDecoder<CollectFeesArgs> {
   return getStructDecoder([
-    ["max0", getU64Decoder()],
-    ["max1", getU64Decoder()],
+    ['max0', getU64Decoder()],
+    ['max1', getU64Decoder()],
   ]);
 }
 

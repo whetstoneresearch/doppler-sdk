@@ -18,7 +18,7 @@ import {
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type SentinelUpdated = {
   pool: Address;
@@ -31,19 +31,19 @@ export type SentinelUpdatedArgs = SentinelUpdated;
 
 export function getSentinelUpdatedEncoder(): FixedSizeEncoder<SentinelUpdatedArgs> {
   return getStructEncoder([
-    ["pool", getAddressEncoder()],
-    ["sentinelProgram", getAddressEncoder()],
-    ["sentinelFlags", getU32Encoder()],
-    ["admin", getAddressEncoder()],
+    ['pool', getAddressEncoder()],
+    ['sentinelProgram', getAddressEncoder()],
+    ['sentinelFlags', getU32Encoder()],
+    ['admin', getAddressEncoder()],
   ]);
 }
 
 export function getSentinelUpdatedDecoder(): FixedSizeDecoder<SentinelUpdated> {
   return getStructDecoder([
-    ["pool", getAddressDecoder()],
-    ["sentinelProgram", getAddressDecoder()],
-    ["sentinelFlags", getU32Decoder()],
-    ["admin", getAddressDecoder()],
+    ['pool', getAddressDecoder()],
+    ['sentinelProgram', getAddressDecoder()],
+    ['sentinelFlags', getU32Decoder()],
+    ['admin', getAddressDecoder()],
   ]);
 }
 

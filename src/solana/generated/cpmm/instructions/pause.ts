@@ -30,12 +30,12 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   getAccountMetaFactory,
   type ResolvedInstructionAccount,
-} from "@solana/program-client-core";
-import { CPMM_PROGRAM_ADDRESS } from "../programs";
+} from '@solana/program-client-core';
+import { CPMM_PROGRAM_ADDRESS } from '../programs';
 
 export const PAUSE_DISCRIMINATOR = new Uint8Array([
   211, 22, 221, 251, 74, 121, 193, 47,
@@ -71,14 +71,14 @@ export type PauseInstructionDataArgs = {};
 
 export function getPauseInstructionDataEncoder(): FixedSizeEncoder<PauseInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([["discriminator", fixEncoderSize(getBytesEncoder(), 8)]]),
-    (value) => ({ ...value, discriminator: PAUSE_DISCRIMINATOR }),
+    getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
+    (value) => ({ ...value, discriminator: PAUSE_DISCRIMINATOR })
   );
 }
 
 export function getPauseInstructionDataDecoder(): FixedSizeDecoder<PauseInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
   ]);
 }
 
@@ -88,7 +88,7 @@ export function getPauseInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getPauseInstructionDataEncoder(),
-    getPauseInstructionDataDecoder(),
+    getPauseInstructionDataDecoder()
   );
 }
 
@@ -106,7 +106,7 @@ export function getPauseInstruction<
   TProgramAddress extends Address = typeof CPMM_PROGRAM_ADDRESS,
 >(
   input: PauseInput<TAccountConfig, TAccountAdmin>,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): PauseInstruction<TProgramAddress, TAccountConfig, TAccountAdmin> {
   // Program address.
   const programAddress = config?.programAddress ?? CPMM_PROGRAM_ADDRESS;
@@ -121,11 +121,11 @@ export function getPauseInstruction<
     ResolvedInstructionAccount
   >;
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("config", accounts.config),
-      getAccountMeta("admin", accounts.admin),
+      getAccountMeta('config', accounts.config),
+      getAccountMeta('admin', accounts.admin),
     ],
     data: getPauseInstructionDataEncoder().encode({}),
     programAddress,
@@ -150,7 +150,7 @@ export function parsePauseInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>,
+    InstructionWithData<ReadonlyUint8Array>
 ): ParsedPauseInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 2) {
     throw new SolanaError(
@@ -158,7 +158,7 @@ export function parsePauseInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 2,
-      },
+      }
     );
   }
   let accountIndex = 0;

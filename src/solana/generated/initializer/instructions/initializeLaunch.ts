@@ -47,13 +47,13 @@ import {
   type TransactionSigner,
   type WritableAccount,
   type WritableSignerAccount,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   getAccountMetaFactory,
   getAddressFromResolvedInstructionAccount,
   type ResolvedInstructionAccount,
-} from "@solana/program-client-core";
-import { INITIALIZER_PROGRAM_ADDRESS } from "../programs";
+} from '@solana/program-client-core';
+import { INITIALIZER_PROGRAM_ADDRESS } from '../programs';
 
 export const INITIALIZE_LAUNCH_DISCRIMINATOR = new Uint8Array([
   90, 201, 220, 142, 112, 253, 100, 13,
@@ -61,7 +61,7 @@ export const INITIALIZE_LAUNCH_DISCRIMINATOR = new Uint8Array([
 
 export function getInitializeLaunchDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    INITIALIZE_LAUNCH_DISCRIMINATOR,
+    INITIALIZE_LAUNCH_DISCRIMINATOR
   );
 }
 
@@ -78,11 +78,11 @@ export type InitializeLaunchInstruction<
   TAccountAuthority extends string | AccountMeta<string> = string,
   TAccountMigratorProgram extends string | AccountMeta<string> = string,
   TAccountTokenProgram extends string | AccountMeta<string> =
-    "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
   TAccountSystemProgram extends string | AccountMeta<string> =
-    "11111111111111111111111111111111",
+    '11111111111111111111111111111111',
   TAccountRent extends string | AccountMeta<string> =
-    "SysvarRent111111111111111111111111111111111",
+    'SysvarRent111111111111111111111111111111111',
   TAccountMetadataAccount extends string | AccountMeta<string> = string,
   TAccountMetadataProgram extends string | AccountMeta<string> = string,
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
@@ -224,84 +224,84 @@ export type InitializeLaunchInstructionDataArgs = {
 export function getInitializeLaunchInstructionDataEncoder(): Encoder<InitializeLaunchInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["namespace", getAddressEncoder()],
-      ["launchId", fixEncoderSize(getBytesEncoder(), 32)],
-      ["baseDecimals", getU8Encoder()],
-      ["baseTotalSupply", getU64Encoder()],
-      ["baseForDistribution", getU64Encoder()],
-      ["baseForLiquidity", getU64Encoder()],
-      ["curveVirtualBase", getU64Encoder()],
-      ["curveVirtualQuote", getU64Encoder()],
-      ["curveFeeBps", getU16Encoder()],
-      ["curveKind", getU8Encoder()],
-      ["curveParams", addEncoderSizePrefix(getBytesEncoder(), getU32Encoder())],
-      ["allowBuy", getU8Encoder()],
-      ["allowSell", getU8Encoder()],
-      ["sentinelProgram", getAddressEncoder()],
-      ["sentinelFlags", getU32Encoder()],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['namespace', getAddressEncoder()],
+      ['launchId', fixEncoderSize(getBytesEncoder(), 32)],
+      ['baseDecimals', getU8Encoder()],
+      ['baseTotalSupply', getU64Encoder()],
+      ['baseForDistribution', getU64Encoder()],
+      ['baseForLiquidity', getU64Encoder()],
+      ['curveVirtualBase', getU64Encoder()],
+      ['curveVirtualQuote', getU64Encoder()],
+      ['curveFeeBps', getU16Encoder()],
+      ['curveKind', getU8Encoder()],
+      ['curveParams', addEncoderSizePrefix(getBytesEncoder(), getU32Encoder())],
+      ['allowBuy', getU8Encoder()],
+      ['allowSell', getU8Encoder()],
+      ['sentinelProgram', getAddressEncoder()],
+      ['sentinelFlags', getU32Encoder()],
       [
-        "sentinelCalldata",
+        'sentinelCalldata',
         addEncoderSizePrefix(getBytesEncoder(), getU32Encoder()),
       ],
-      ["migratorProgram", getAddressEncoder()],
+      ['migratorProgram', getAddressEncoder()],
       [
-        "migratorInitCalldata",
+        'migratorInitCalldata',
         addEncoderSizePrefix(getBytesEncoder(), getU32Encoder()),
       ],
       [
-        "migratorMigrateCalldata",
+        'migratorMigrateCalldata',
         addEncoderSizePrefix(getBytesEncoder(), getU32Encoder()),
       ],
-      ["sentinelRemainingAccountsHash", fixEncoderSize(getBytesEncoder(), 32)],
-      ["migratorRemainingAccountsHash", fixEncoderSize(getBytesEncoder(), 32)],
-      ["metadataName", addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
+      ['sentinelRemainingAccountsHash', fixEncoderSize(getBytesEncoder(), 32)],
+      ['migratorRemainingAccountsHash', fixEncoderSize(getBytesEncoder(), 32)],
+      ['metadataName', addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
       [
-        "metadataSymbol",
+        'metadataSymbol',
         addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder()),
       ],
-      ["metadataUri", addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
+      ['metadataUri', addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
     ]),
-    (value) => ({ ...value, discriminator: INITIALIZE_LAUNCH_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: INITIALIZE_LAUNCH_DISCRIMINATOR })
   );
 }
 
 export function getInitializeLaunchInstructionDataDecoder(): Decoder<InitializeLaunchInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["namespace", getAddressDecoder()],
-    ["launchId", fixDecoderSize(getBytesDecoder(), 32)],
-    ["baseDecimals", getU8Decoder()],
-    ["baseTotalSupply", getU64Decoder()],
-    ["baseForDistribution", getU64Decoder()],
-    ["baseForLiquidity", getU64Decoder()],
-    ["curveVirtualBase", getU64Decoder()],
-    ["curveVirtualQuote", getU64Decoder()],
-    ["curveFeeBps", getU16Decoder()],
-    ["curveKind", getU8Decoder()],
-    ["curveParams", addDecoderSizePrefix(getBytesDecoder(), getU32Decoder())],
-    ["allowBuy", getU8Decoder()],
-    ["allowSell", getU8Decoder()],
-    ["sentinelProgram", getAddressDecoder()],
-    ["sentinelFlags", getU32Decoder()],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['namespace', getAddressDecoder()],
+    ['launchId', fixDecoderSize(getBytesDecoder(), 32)],
+    ['baseDecimals', getU8Decoder()],
+    ['baseTotalSupply', getU64Decoder()],
+    ['baseForDistribution', getU64Decoder()],
+    ['baseForLiquidity', getU64Decoder()],
+    ['curveVirtualBase', getU64Decoder()],
+    ['curveVirtualQuote', getU64Decoder()],
+    ['curveFeeBps', getU16Decoder()],
+    ['curveKind', getU8Decoder()],
+    ['curveParams', addDecoderSizePrefix(getBytesDecoder(), getU32Decoder())],
+    ['allowBuy', getU8Decoder()],
+    ['allowSell', getU8Decoder()],
+    ['sentinelProgram', getAddressDecoder()],
+    ['sentinelFlags', getU32Decoder()],
     [
-      "sentinelCalldata",
+      'sentinelCalldata',
       addDecoderSizePrefix(getBytesDecoder(), getU32Decoder()),
     ],
-    ["migratorProgram", getAddressDecoder()],
+    ['migratorProgram', getAddressDecoder()],
     [
-      "migratorInitCalldata",
+      'migratorInitCalldata',
       addDecoderSizePrefix(getBytesDecoder(), getU32Decoder()),
     ],
     [
-      "migratorMigrateCalldata",
+      'migratorMigrateCalldata',
       addDecoderSizePrefix(getBytesDecoder(), getU32Decoder()),
     ],
-    ["sentinelRemainingAccountsHash", fixDecoderSize(getBytesDecoder(), 32)],
-    ["migratorRemainingAccountsHash", fixDecoderSize(getBytesDecoder(), 32)],
-    ["metadataName", addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
-    ["metadataSymbol", addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
-    ["metadataUri", addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
+    ['sentinelRemainingAccountsHash', fixDecoderSize(getBytesDecoder(), 32)],
+    ['migratorRemainingAccountsHash', fixDecoderSize(getBytesDecoder(), 32)],
+    ['metadataName', addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
+    ['metadataSymbol', addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
+    ['metadataUri', addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
   ]);
 }
 
@@ -311,7 +311,7 @@ export function getInitializeLaunchInstructionDataCodec(): Codec<
 > {
   return combineCodec(
     getInitializeLaunchInstructionDataEncoder(),
-    getInitializeLaunchInstructionDataDecoder(),
+    getInitializeLaunchInstructionDataDecoder()
   );
 }
 
@@ -351,30 +351,30 @@ export type InitializeLaunchAsyncInput<
   metadataAccount?: Address<TAccountMetadataAccount>;
   /** Metaplex Token Metadata program. */
   metadataProgram?: Address<TAccountMetadataProgram>;
-  namespace: InitializeLaunchInstructionDataArgs["namespace"];
-  launchId: InitializeLaunchInstructionDataArgs["launchId"];
-  baseDecimals: InitializeLaunchInstructionDataArgs["baseDecimals"];
-  baseTotalSupply: InitializeLaunchInstructionDataArgs["baseTotalSupply"];
-  baseForDistribution: InitializeLaunchInstructionDataArgs["baseForDistribution"];
-  baseForLiquidity: InitializeLaunchInstructionDataArgs["baseForLiquidity"];
-  curveVirtualBase: InitializeLaunchInstructionDataArgs["curveVirtualBase"];
-  curveVirtualQuote: InitializeLaunchInstructionDataArgs["curveVirtualQuote"];
-  curveFeeBps: InitializeLaunchInstructionDataArgs["curveFeeBps"];
-  curveKind: InitializeLaunchInstructionDataArgs["curveKind"];
-  curveParams: InitializeLaunchInstructionDataArgs["curveParams"];
-  allowBuy: InitializeLaunchInstructionDataArgs["allowBuy"];
-  allowSell: InitializeLaunchInstructionDataArgs["allowSell"];
-  sentinelProgram: InitializeLaunchInstructionDataArgs["sentinelProgram"];
-  sentinelFlags: InitializeLaunchInstructionDataArgs["sentinelFlags"];
-  sentinelCalldata: InitializeLaunchInstructionDataArgs["sentinelCalldata"];
-  migratorProgramArg: InitializeLaunchInstructionDataArgs["migratorProgram"];
-  migratorInitCalldata: InitializeLaunchInstructionDataArgs["migratorInitCalldata"];
-  migratorMigrateCalldata: InitializeLaunchInstructionDataArgs["migratorMigrateCalldata"];
-  sentinelRemainingAccountsHash: InitializeLaunchInstructionDataArgs["sentinelRemainingAccountsHash"];
-  migratorRemainingAccountsHash: InitializeLaunchInstructionDataArgs["migratorRemainingAccountsHash"];
-  metadataName: InitializeLaunchInstructionDataArgs["metadataName"];
-  metadataSymbol: InitializeLaunchInstructionDataArgs["metadataSymbol"];
-  metadataUri: InitializeLaunchInstructionDataArgs["metadataUri"];
+  namespace: InitializeLaunchInstructionDataArgs['namespace'];
+  launchId: InitializeLaunchInstructionDataArgs['launchId'];
+  baseDecimals: InitializeLaunchInstructionDataArgs['baseDecimals'];
+  baseTotalSupply: InitializeLaunchInstructionDataArgs['baseTotalSupply'];
+  baseForDistribution: InitializeLaunchInstructionDataArgs['baseForDistribution'];
+  baseForLiquidity: InitializeLaunchInstructionDataArgs['baseForLiquidity'];
+  curveVirtualBase: InitializeLaunchInstructionDataArgs['curveVirtualBase'];
+  curveVirtualQuote: InitializeLaunchInstructionDataArgs['curveVirtualQuote'];
+  curveFeeBps: InitializeLaunchInstructionDataArgs['curveFeeBps'];
+  curveKind: InitializeLaunchInstructionDataArgs['curveKind'];
+  curveParams: InitializeLaunchInstructionDataArgs['curveParams'];
+  allowBuy: InitializeLaunchInstructionDataArgs['allowBuy'];
+  allowSell: InitializeLaunchInstructionDataArgs['allowSell'];
+  sentinelProgram: InitializeLaunchInstructionDataArgs['sentinelProgram'];
+  sentinelFlags: InitializeLaunchInstructionDataArgs['sentinelFlags'];
+  sentinelCalldata: InitializeLaunchInstructionDataArgs['sentinelCalldata'];
+  migratorProgramArg: InitializeLaunchInstructionDataArgs['migratorProgram'];
+  migratorInitCalldata: InitializeLaunchInstructionDataArgs['migratorInitCalldata'];
+  migratorMigrateCalldata: InitializeLaunchInstructionDataArgs['migratorMigrateCalldata'];
+  sentinelRemainingAccountsHash: InitializeLaunchInstructionDataArgs['sentinelRemainingAccountsHash'];
+  migratorRemainingAccountsHash: InitializeLaunchInstructionDataArgs['migratorRemainingAccountsHash'];
+  metadataName: InitializeLaunchInstructionDataArgs['metadataName'];
+  metadataSymbol: InitializeLaunchInstructionDataArgs['metadataSymbol'];
+  metadataUri: InitializeLaunchInstructionDataArgs['metadataUri'];
 };
 
 export async function getInitializeLaunchInstructionAsync<
@@ -412,7 +412,7 @@ export async function getInitializeLaunchInstructionAsync<
     TAccountMetadataAccount,
     TAccountMetadataProgram
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): Promise<
   InitializeLaunchInstruction<
     TProgramAddress,
@@ -477,7 +477,7 @@ export async function getInitializeLaunchInstructionAsync<
       programAddress,
       seeds: [
         getBytesEncoder().encode(
-          new Uint8Array([99, 111, 110, 102, 105, 103, 95, 118, 51]),
+          new Uint8Array([99, 111, 110, 102, 105, 103, 95, 118, 51])
         ),
       ],
     });
@@ -490,51 +490,51 @@ export async function getInitializeLaunchInstructionAsync<
           new Uint8Array([
             108, 97, 117, 110, 99, 104, 95, 97, 117, 116, 104, 111, 114, 105,
             116, 121, 95, 118, 51,
-          ]),
+          ])
         ),
         getAddressEncoder().encode(
           getAddressFromResolvedInstructionAccount(
-            "launch",
-            accounts.launch.value,
-          ),
+            'launch',
+            accounts.launch.value
+          )
         ),
       ],
     });
   }
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
-      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" as Address<"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA">;
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
-      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
   if (!accounts.rent.value) {
     accounts.rent.value =
-      "SysvarRent111111111111111111111111111111111" as Address<"SysvarRent111111111111111111111111111111111">;
+      'SysvarRent111111111111111111111111111111111' as Address<'SysvarRent111111111111111111111111111111111'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("config", accounts.config),
-      getAccountMeta("launch", accounts.launch),
-      getAccountMeta("launchAuthority", accounts.launchAuthority),
-      getAccountMeta("baseMint", accounts.baseMint),
-      getAccountMeta("quoteMint", accounts.quoteMint),
-      getAccountMeta("baseVault", accounts.baseVault),
-      getAccountMeta("quoteVault", accounts.quoteVault),
-      getAccountMeta("payer", accounts.payer),
-      getAccountMeta("authority", accounts.authority),
-      getAccountMeta("migratorProgram", accounts.migratorProgram),
-      getAccountMeta("tokenProgram", accounts.tokenProgram),
-      getAccountMeta("systemProgram", accounts.systemProgram),
-      getAccountMeta("rent", accounts.rent),
-      getAccountMeta("metadataAccount", accounts.metadataAccount),
-      getAccountMeta("metadataProgram", accounts.metadataProgram),
+      getAccountMeta('config', accounts.config),
+      getAccountMeta('launch', accounts.launch),
+      getAccountMeta('launchAuthority', accounts.launchAuthority),
+      getAccountMeta('baseMint', accounts.baseMint),
+      getAccountMeta('quoteMint', accounts.quoteMint),
+      getAccountMeta('baseVault', accounts.baseVault),
+      getAccountMeta('quoteVault', accounts.quoteVault),
+      getAccountMeta('payer', accounts.payer),
+      getAccountMeta('authority', accounts.authority),
+      getAccountMeta('migratorProgram', accounts.migratorProgram),
+      getAccountMeta('tokenProgram', accounts.tokenProgram),
+      getAccountMeta('systemProgram', accounts.systemProgram),
+      getAccountMeta('rent', accounts.rent),
+      getAccountMeta('metadataAccount', accounts.metadataAccount),
+      getAccountMeta('metadataProgram', accounts.metadataProgram),
     ],
     data: getInitializeLaunchInstructionDataEncoder().encode(
-      args as InitializeLaunchInstructionDataArgs,
+      args as InitializeLaunchInstructionDataArgs
     ),
     programAddress,
   } as InitializeLaunchInstruction<
@@ -593,30 +593,30 @@ export type InitializeLaunchInput<
   metadataAccount?: Address<TAccountMetadataAccount>;
   /** Metaplex Token Metadata program. */
   metadataProgram?: Address<TAccountMetadataProgram>;
-  namespace: InitializeLaunchInstructionDataArgs["namespace"];
-  launchId: InitializeLaunchInstructionDataArgs["launchId"];
-  baseDecimals: InitializeLaunchInstructionDataArgs["baseDecimals"];
-  baseTotalSupply: InitializeLaunchInstructionDataArgs["baseTotalSupply"];
-  baseForDistribution: InitializeLaunchInstructionDataArgs["baseForDistribution"];
-  baseForLiquidity: InitializeLaunchInstructionDataArgs["baseForLiquidity"];
-  curveVirtualBase: InitializeLaunchInstructionDataArgs["curveVirtualBase"];
-  curveVirtualQuote: InitializeLaunchInstructionDataArgs["curveVirtualQuote"];
-  curveFeeBps: InitializeLaunchInstructionDataArgs["curveFeeBps"];
-  curveKind: InitializeLaunchInstructionDataArgs["curveKind"];
-  curveParams: InitializeLaunchInstructionDataArgs["curveParams"];
-  allowBuy: InitializeLaunchInstructionDataArgs["allowBuy"];
-  allowSell: InitializeLaunchInstructionDataArgs["allowSell"];
-  sentinelProgram: InitializeLaunchInstructionDataArgs["sentinelProgram"];
-  sentinelFlags: InitializeLaunchInstructionDataArgs["sentinelFlags"];
-  sentinelCalldata: InitializeLaunchInstructionDataArgs["sentinelCalldata"];
-  migratorProgramArg: InitializeLaunchInstructionDataArgs["migratorProgram"];
-  migratorInitCalldata: InitializeLaunchInstructionDataArgs["migratorInitCalldata"];
-  migratorMigrateCalldata: InitializeLaunchInstructionDataArgs["migratorMigrateCalldata"];
-  sentinelRemainingAccountsHash: InitializeLaunchInstructionDataArgs["sentinelRemainingAccountsHash"];
-  migratorRemainingAccountsHash: InitializeLaunchInstructionDataArgs["migratorRemainingAccountsHash"];
-  metadataName: InitializeLaunchInstructionDataArgs["metadataName"];
-  metadataSymbol: InitializeLaunchInstructionDataArgs["metadataSymbol"];
-  metadataUri: InitializeLaunchInstructionDataArgs["metadataUri"];
+  namespace: InitializeLaunchInstructionDataArgs['namespace'];
+  launchId: InitializeLaunchInstructionDataArgs['launchId'];
+  baseDecimals: InitializeLaunchInstructionDataArgs['baseDecimals'];
+  baseTotalSupply: InitializeLaunchInstructionDataArgs['baseTotalSupply'];
+  baseForDistribution: InitializeLaunchInstructionDataArgs['baseForDistribution'];
+  baseForLiquidity: InitializeLaunchInstructionDataArgs['baseForLiquidity'];
+  curveVirtualBase: InitializeLaunchInstructionDataArgs['curveVirtualBase'];
+  curveVirtualQuote: InitializeLaunchInstructionDataArgs['curveVirtualQuote'];
+  curveFeeBps: InitializeLaunchInstructionDataArgs['curveFeeBps'];
+  curveKind: InitializeLaunchInstructionDataArgs['curveKind'];
+  curveParams: InitializeLaunchInstructionDataArgs['curveParams'];
+  allowBuy: InitializeLaunchInstructionDataArgs['allowBuy'];
+  allowSell: InitializeLaunchInstructionDataArgs['allowSell'];
+  sentinelProgram: InitializeLaunchInstructionDataArgs['sentinelProgram'];
+  sentinelFlags: InitializeLaunchInstructionDataArgs['sentinelFlags'];
+  sentinelCalldata: InitializeLaunchInstructionDataArgs['sentinelCalldata'];
+  migratorProgramArg: InitializeLaunchInstructionDataArgs['migratorProgram'];
+  migratorInitCalldata: InitializeLaunchInstructionDataArgs['migratorInitCalldata'];
+  migratorMigrateCalldata: InitializeLaunchInstructionDataArgs['migratorMigrateCalldata'];
+  sentinelRemainingAccountsHash: InitializeLaunchInstructionDataArgs['sentinelRemainingAccountsHash'];
+  migratorRemainingAccountsHash: InitializeLaunchInstructionDataArgs['migratorRemainingAccountsHash'];
+  metadataName: InitializeLaunchInstructionDataArgs['metadataName'];
+  metadataSymbol: InitializeLaunchInstructionDataArgs['metadataSymbol'];
+  metadataUri: InitializeLaunchInstructionDataArgs['metadataUri'];
 };
 
 export function getInitializeLaunchInstruction<
@@ -654,7 +654,7 @@ export function getInitializeLaunchInstruction<
     TAccountMetadataAccount,
     TAccountMetadataProgram
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): InitializeLaunchInstruction<
   TProgramAddress,
   TAccountConfig,
@@ -714,38 +714,38 @@ export function getInitializeLaunchInstruction<
   // Resolve default values.
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
-      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" as Address<"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA">;
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
-      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
   if (!accounts.rent.value) {
     accounts.rent.value =
-      "SysvarRent111111111111111111111111111111111" as Address<"SysvarRent111111111111111111111111111111111">;
+      'SysvarRent111111111111111111111111111111111' as Address<'SysvarRent111111111111111111111111111111111'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("config", accounts.config),
-      getAccountMeta("launch", accounts.launch),
-      getAccountMeta("launchAuthority", accounts.launchAuthority),
-      getAccountMeta("baseMint", accounts.baseMint),
-      getAccountMeta("quoteMint", accounts.quoteMint),
-      getAccountMeta("baseVault", accounts.baseVault),
-      getAccountMeta("quoteVault", accounts.quoteVault),
-      getAccountMeta("payer", accounts.payer),
-      getAccountMeta("authority", accounts.authority),
-      getAccountMeta("migratorProgram", accounts.migratorProgram),
-      getAccountMeta("tokenProgram", accounts.tokenProgram),
-      getAccountMeta("systemProgram", accounts.systemProgram),
-      getAccountMeta("rent", accounts.rent),
-      getAccountMeta("metadataAccount", accounts.metadataAccount),
-      getAccountMeta("metadataProgram", accounts.metadataProgram),
+      getAccountMeta('config', accounts.config),
+      getAccountMeta('launch', accounts.launch),
+      getAccountMeta('launchAuthority', accounts.launchAuthority),
+      getAccountMeta('baseMint', accounts.baseMint),
+      getAccountMeta('quoteMint', accounts.quoteMint),
+      getAccountMeta('baseVault', accounts.baseVault),
+      getAccountMeta('quoteVault', accounts.quoteVault),
+      getAccountMeta('payer', accounts.payer),
+      getAccountMeta('authority', accounts.authority),
+      getAccountMeta('migratorProgram', accounts.migratorProgram),
+      getAccountMeta('tokenProgram', accounts.tokenProgram),
+      getAccountMeta('systemProgram', accounts.systemProgram),
+      getAccountMeta('rent', accounts.rent),
+      getAccountMeta('metadataAccount', accounts.metadataAccount),
+      getAccountMeta('metadataProgram', accounts.metadataProgram),
     ],
     data: getInitializeLaunchInstructionDataEncoder().encode(
-      args as InitializeLaunchInstructionDataArgs,
+      args as InitializeLaunchInstructionDataArgs
     ),
     programAddress,
   } as InitializeLaunchInstruction<
@@ -803,7 +803,7 @@ export function parseInitializeLaunchInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>,
+    InstructionWithData<ReadonlyUint8Array>
 ): ParsedInitializeLaunchInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 15) {
     throw new SolanaError(
@@ -811,7 +811,7 @@ export function parseInitializeLaunchInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 15,
-      },
+      }
     );
   }
   let accountIndex = 0;

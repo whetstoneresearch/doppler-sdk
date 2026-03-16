@@ -18,7 +18,7 @@ import {
   type Codec,
   type Decoder,
   type Encoder,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type InitializeConfigArgs = {
   migratorAllowlist: Array<Address>;
@@ -29,15 +29,15 @@ export type InitializeConfigArgsArgs = InitializeConfigArgs;
 
 export function getInitializeConfigArgsEncoder(): Encoder<InitializeConfigArgsArgs> {
   return getStructEncoder([
-    ["migratorAllowlist", getArrayEncoder(getAddressEncoder())],
-    ["sentinelAllowlist", getArrayEncoder(getAddressEncoder())],
+    ['migratorAllowlist', getArrayEncoder(getAddressEncoder())],
+    ['sentinelAllowlist', getArrayEncoder(getAddressEncoder())],
   ]);
 }
 
 export function getInitializeConfigArgsDecoder(): Decoder<InitializeConfigArgs> {
   return getStructDecoder([
-    ["migratorAllowlist", getArrayDecoder(getAddressDecoder())],
-    ["sentinelAllowlist", getArrayDecoder(getAddressDecoder())],
+    ['migratorAllowlist', getArrayDecoder(getAddressDecoder())],
+    ['sentinelAllowlist', getArrayDecoder(getAddressDecoder())],
   ]);
 }
 
@@ -47,6 +47,6 @@ export function getInitializeConfigArgsCodec(): Codec<
 > {
   return combineCodec(
     getInitializeConfigArgsEncoder(),
-    getInitializeConfigArgsDecoder(),
+    getInitializeConfigArgsDecoder()
   );
 }

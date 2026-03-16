@@ -36,13 +36,13 @@ import {
   type TransactionSigner,
   type WritableAccount,
   type WritableSignerAccount,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   getAccountMetaFactory,
   getAddressFromResolvedInstructionAccount,
   type ResolvedInstructionAccount,
-} from "@solana/program-client-core";
-import { PREDICTION_MIGRATOR_PROGRAM_ADDRESS } from "../programs";
+} from '@solana/program-client-core';
+import { PREDICTION_MIGRATOR_PROGRAM_ADDRESS } from '../programs';
 
 export const CLAIM_DISCRIMINATOR = new Uint8Array([
   62, 198, 214, 193, 213, 159, 108, 210,
@@ -65,9 +65,9 @@ export type ClaimInstruction<
   TAccountReceipt extends string | AccountMeta<string> = string,
   TAccountPayer extends string | AccountMeta<string> = string,
   TAccountTokenProgram extends string | AccountMeta<string> =
-    "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
   TAccountSystemProgram extends string | AccountMeta<string> =
-    "11111111111111111111111111111111",
+    '11111111111111111111111111111111',
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -125,17 +125,17 @@ export type ClaimInstructionDataArgs = { burnAmount: number | bigint };
 export function getClaimInstructionDataEncoder(): FixedSizeEncoder<ClaimInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["burnAmount", getU64Encoder()],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['burnAmount', getU64Encoder()],
     ]),
-    (value) => ({ ...value, discriminator: CLAIM_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: CLAIM_DISCRIMINATOR })
   );
 }
 
 export function getClaimInstructionDataDecoder(): FixedSizeDecoder<ClaimInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["burnAmount", getU64Decoder()],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['burnAmount', getU64Decoder()],
   ]);
 }
 
@@ -145,7 +145,7 @@ export function getClaimInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getClaimInstructionDataEncoder(),
-    getClaimInstructionDataDecoder(),
+    getClaimInstructionDataDecoder()
   );
 }
 
@@ -184,7 +184,7 @@ export type ClaimAsyncInput<
   payer: TransactionSigner<TAccountPayer>;
   tokenProgram?: Address<TAccountTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
-  burnAmount: ClaimInstructionDataArgs["burnAmount"];
+  burnAmount: ClaimInstructionDataArgs['burnAmount'];
 };
 
 export async function getClaimInstructionAsync<
@@ -216,7 +216,7 @@ export async function getClaimInstructionAsync<
     TAccountTokenProgram,
     TAccountSystemProgram
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): Promise<
   ClaimInstruction<
     TProgramAddress,
@@ -276,13 +276,13 @@ export async function getClaimInstructionAsync<
           new Uint8Array([
             109, 97, 114, 107, 101, 116, 95, 97, 117, 116, 104, 111, 114, 105,
             116, 121,
-          ]),
+          ])
         ),
         getAddressEncoder().encode(
           getAddressFromResolvedInstructionAccount(
-            "market",
-            accounts.market.value,
-          ),
+            'market',
+            accounts.market.value
+          )
         ),
       ],
     });
@@ -292,50 +292,50 @@ export async function getClaimInstructionAsync<
       programAddress,
       seeds: [
         getBytesEncoder().encode(
-          new Uint8Array([114, 101, 99, 101, 105, 112, 116]),
+          new Uint8Array([114, 101, 99, 101, 105, 112, 116])
         ),
         getAddressEncoder().encode(
           getAddressFromResolvedInstructionAccount(
-            "market",
-            accounts.market.value,
-          ),
+            'market',
+            accounts.market.value
+          )
         ),
         getAddressEncoder().encode(
           getAddressFromResolvedInstructionAccount(
-            "claimer",
-            accounts.claimer.value,
-          ),
+            'claimer',
+            accounts.claimer.value
+          )
         ),
       ],
     });
   }
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
-      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" as Address<"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA">;
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
-      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("market", accounts.market),
-      getAccountMeta("marketAuthority", accounts.marketAuthority),
-      getAccountMeta("potVault", accounts.potVault),
-      getAccountMeta("winnerMint", accounts.winnerMint),
-      getAccountMeta("entryByMint", accounts.entryByMint),
-      getAccountMeta("claimerWinnerAta", accounts.claimerWinnerAta),
-      getAccountMeta("claimerQuoteAta", accounts.claimerQuoteAta),
-      getAccountMeta("claimer", accounts.claimer),
-      getAccountMeta("receipt", accounts.receipt),
-      getAccountMeta("payer", accounts.payer),
-      getAccountMeta("tokenProgram", accounts.tokenProgram),
-      getAccountMeta("systemProgram", accounts.systemProgram),
+      getAccountMeta('market', accounts.market),
+      getAccountMeta('marketAuthority', accounts.marketAuthority),
+      getAccountMeta('potVault', accounts.potVault),
+      getAccountMeta('winnerMint', accounts.winnerMint),
+      getAccountMeta('entryByMint', accounts.entryByMint),
+      getAccountMeta('claimerWinnerAta', accounts.claimerWinnerAta),
+      getAccountMeta('claimerQuoteAta', accounts.claimerQuoteAta),
+      getAccountMeta('claimer', accounts.claimer),
+      getAccountMeta('receipt', accounts.receipt),
+      getAccountMeta('payer', accounts.payer),
+      getAccountMeta('tokenProgram', accounts.tokenProgram),
+      getAccountMeta('systemProgram', accounts.systemProgram),
     ],
     data: getClaimInstructionDataEncoder().encode(
-      args as ClaimInstructionDataArgs,
+      args as ClaimInstructionDataArgs
     ),
     programAddress,
   } as ClaimInstruction<
@@ -390,7 +390,7 @@ export type ClaimInput<
   payer: TransactionSigner<TAccountPayer>;
   tokenProgram?: Address<TAccountTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
-  burnAmount: ClaimInstructionDataArgs["burnAmount"];
+  burnAmount: ClaimInstructionDataArgs['burnAmount'];
 };
 
 export function getClaimInstruction<
@@ -422,7 +422,7 @@ export function getClaimInstruction<
     TAccountTokenProgram,
     TAccountSystemProgram
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): ClaimInstruction<
   TProgramAddress,
   TAccountMarket,
@@ -474,31 +474,31 @@ export function getClaimInstruction<
   // Resolve default values.
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
-      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" as Address<"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA">;
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
-      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("market", accounts.market),
-      getAccountMeta("marketAuthority", accounts.marketAuthority),
-      getAccountMeta("potVault", accounts.potVault),
-      getAccountMeta("winnerMint", accounts.winnerMint),
-      getAccountMeta("entryByMint", accounts.entryByMint),
-      getAccountMeta("claimerWinnerAta", accounts.claimerWinnerAta),
-      getAccountMeta("claimerQuoteAta", accounts.claimerQuoteAta),
-      getAccountMeta("claimer", accounts.claimer),
-      getAccountMeta("receipt", accounts.receipt),
-      getAccountMeta("payer", accounts.payer),
-      getAccountMeta("tokenProgram", accounts.tokenProgram),
-      getAccountMeta("systemProgram", accounts.systemProgram),
+      getAccountMeta('market', accounts.market),
+      getAccountMeta('marketAuthority', accounts.marketAuthority),
+      getAccountMeta('potVault', accounts.potVault),
+      getAccountMeta('winnerMint', accounts.winnerMint),
+      getAccountMeta('entryByMint', accounts.entryByMint),
+      getAccountMeta('claimerWinnerAta', accounts.claimerWinnerAta),
+      getAccountMeta('claimerQuoteAta', accounts.claimerQuoteAta),
+      getAccountMeta('claimer', accounts.claimer),
+      getAccountMeta('receipt', accounts.receipt),
+      getAccountMeta('payer', accounts.payer),
+      getAccountMeta('tokenProgram', accounts.tokenProgram),
+      getAccountMeta('systemProgram', accounts.systemProgram),
     ],
     data: getClaimInstructionDataEncoder().encode(
-      args as ClaimInstructionDataArgs,
+      args as ClaimInstructionDataArgs
     ),
     programAddress,
   } as ClaimInstruction<
@@ -555,7 +555,7 @@ export function parseClaimInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>,
+    InstructionWithData<ReadonlyUint8Array>
 ): ParsedClaimInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 12) {
     throw new SolanaError(
@@ -563,7 +563,7 @@ export function parseClaimInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 12,
-      },
+      }
     );
   }
   let accountIndex = 0;

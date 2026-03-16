@@ -31,12 +31,12 @@ import {
   type InstructionWithData,
   type ReadonlyAccount,
   type ReadonlyUint8Array,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   getAccountMetaFactory,
   type ResolvedInstructionAccount,
-} from "@solana/program-client-core";
-import { PREDICTION_MIGRATOR_PROGRAM_ADDRESS } from "../programs";
+} from '@solana/program-client-core';
+import { PREDICTION_MIGRATOR_PROGRAM_ADDRESS } from '../programs';
 
 export const PREVIEW_PAYOUT_IF_WINNER_DISCRIMINATOR = new Uint8Array([
   228, 144, 72, 185, 234, 186, 183, 143,
@@ -44,7 +44,7 @@ export const PREVIEW_PAYOUT_IF_WINNER_DISCRIMINATOR = new Uint8Array([
 
 export function getPreviewPayoutIfWinnerDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    PREVIEW_PAYOUT_IF_WINNER_DISCRIMINATOR,
+    PREVIEW_PAYOUT_IF_WINNER_DISCRIMINATOR
   );
 }
 
@@ -81,22 +81,22 @@ export type PreviewPayoutIfWinnerInstructionDataArgs = {
 export function getPreviewPayoutIfWinnerInstructionDataEncoder(): FixedSizeEncoder<PreviewPayoutIfWinnerInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["candidateWinnerMint", getAddressEncoder()],
-      ["tokenAmount", getU64Encoder()],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['candidateWinnerMint', getAddressEncoder()],
+      ['tokenAmount', getU64Encoder()],
     ]),
     (value) => ({
       ...value,
       discriminator: PREVIEW_PAYOUT_IF_WINNER_DISCRIMINATOR,
-    }),
+    })
   );
 }
 
 export function getPreviewPayoutIfWinnerInstructionDataDecoder(): FixedSizeDecoder<PreviewPayoutIfWinnerInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["candidateWinnerMint", getAddressDecoder()],
-    ["tokenAmount", getU64Decoder()],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['candidateWinnerMint', getAddressDecoder()],
+    ['tokenAmount', getU64Decoder()],
   ]);
 }
 
@@ -106,7 +106,7 @@ export function getPreviewPayoutIfWinnerInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getPreviewPayoutIfWinnerInstructionDataEncoder(),
-    getPreviewPayoutIfWinnerInstructionDataDecoder(),
+    getPreviewPayoutIfWinnerInstructionDataDecoder()
   );
 }
 
@@ -118,8 +118,8 @@ export type PreviewPayoutIfWinnerInput<
   market: Address<TAccountMarket>;
   /** Candidate winner mint (may or may not match oracle winner) */
   candidateMint: Address<TAccountCandidateMint>;
-  candidateWinnerMint: PreviewPayoutIfWinnerInstructionDataArgs["candidateWinnerMint"];
-  tokenAmount: PreviewPayoutIfWinnerInstructionDataArgs["tokenAmount"];
+  candidateWinnerMint: PreviewPayoutIfWinnerInstructionDataArgs['candidateWinnerMint'];
+  tokenAmount: PreviewPayoutIfWinnerInstructionDataArgs['tokenAmount'];
 };
 
 export function getPreviewPayoutIfWinnerInstruction<
@@ -128,7 +128,7 @@ export function getPreviewPayoutIfWinnerInstruction<
   TProgramAddress extends Address = typeof PREDICTION_MIGRATOR_PROGRAM_ADDRESS,
 >(
   input: PreviewPayoutIfWinnerInput<TAccountMarket, TAccountCandidateMint>,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): PreviewPayoutIfWinnerInstruction<
   TProgramAddress,
   TAccountMarket,
@@ -151,14 +151,14 @@ export function getPreviewPayoutIfWinnerInstruction<
   // Original args.
   const args = { ...input };
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("market", accounts.market),
-      getAccountMeta("candidateMint", accounts.candidateMint),
+      getAccountMeta('market', accounts.market),
+      getAccountMeta('candidateMint', accounts.candidateMint),
     ],
     data: getPreviewPayoutIfWinnerInstructionDataEncoder().encode(
-      args as PreviewPayoutIfWinnerInstructionDataArgs,
+      args as PreviewPayoutIfWinnerInstructionDataArgs
     ),
     programAddress,
   } as PreviewPayoutIfWinnerInstruction<
@@ -188,7 +188,7 @@ export function parsePreviewPayoutIfWinnerInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>,
+    InstructionWithData<ReadonlyUint8Array>
 ): ParsedPreviewPayoutIfWinnerInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 2) {
     throw new SolanaError(
@@ -196,7 +196,7 @@ export function parsePreviewPayoutIfWinnerInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 2,
-      },
+      }
     );
   }
   let accountIndex = 0;
@@ -209,7 +209,7 @@ export function parsePreviewPayoutIfWinnerInstruction<
     programAddress: instruction.programAddress,
     accounts: { market: getNextAccount(), candidateMint: getNextAccount() },
     data: getPreviewPayoutIfWinnerInstructionDataDecoder().decode(
-      instruction.data,
+      instruction.data
     ),
   };
 }

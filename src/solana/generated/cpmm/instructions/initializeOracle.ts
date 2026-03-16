@@ -40,13 +40,13 @@ import {
   type TransactionSigner,
   type WritableAccount,
   type WritableSignerAccount,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   getAccountMetaFactory,
   getAddressFromResolvedInstructionAccount,
   type ResolvedInstructionAccount,
-} from "@solana/program-client-core";
-import { CPMM_PROGRAM_ADDRESS } from "../programs";
+} from '@solana/program-client-core';
+import { CPMM_PROGRAM_ADDRESS } from '../programs';
 
 export const INITIALIZE_ORACLE_DISCRIMINATOR = new Uint8Array([
   144, 223, 131, 120, 196, 253, 181, 99,
@@ -54,7 +54,7 @@ export const INITIALIZE_ORACLE_DISCRIMINATOR = new Uint8Array([
 
 export function getInitializeOracleDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    INITIALIZE_ORACLE_DISCRIMINATOR,
+    INITIALIZE_ORACLE_DISCRIMINATOR
   );
 }
 
@@ -66,7 +66,7 @@ export type InitializeOracleInstruction<
   TAccountAdmin extends string | AccountMeta<string> = string,
   TAccountPayer extends string | AccountMeta<string> = string,
   TAccountSystemProgram extends string | AccountMeta<string> =
-    "11111111111111111111111111111111",
+    '11111111111111111111111111111111',
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -112,21 +112,21 @@ export type InitializeOracleInstructionDataArgs = {
 export function getInitializeOracleInstructionDataEncoder(): FixedSizeEncoder<InitializeOracleInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["maxPriceChangeRatioQ64", getU128Encoder()],
-      ["observationIntervalSec", getU32Encoder()],
-      ["numObservations", getU16Encoder()],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['maxPriceChangeRatioQ64', getU128Encoder()],
+      ['observationIntervalSec', getU32Encoder()],
+      ['numObservations', getU16Encoder()],
     ]),
-    (value) => ({ ...value, discriminator: INITIALIZE_ORACLE_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: INITIALIZE_ORACLE_DISCRIMINATOR })
   );
 }
 
 export function getInitializeOracleInstructionDataDecoder(): FixedSizeDecoder<InitializeOracleInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["maxPriceChangeRatioQ64", getU128Decoder()],
-    ["observationIntervalSec", getU32Decoder()],
-    ["numObservations", getU16Decoder()],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['maxPriceChangeRatioQ64', getU128Decoder()],
+    ['observationIntervalSec', getU32Decoder()],
+    ['numObservations', getU16Decoder()],
   ]);
 }
 
@@ -136,7 +136,7 @@ export function getInitializeOracleInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getInitializeOracleInstructionDataEncoder(),
-    getInitializeOracleInstructionDataDecoder(),
+    getInitializeOracleInstructionDataDecoder()
   );
 }
 
@@ -154,9 +154,9 @@ export type InitializeOracleAsyncInput<
   admin: TransactionSigner<TAccountAdmin>;
   payer: TransactionSigner<TAccountPayer>;
   systemProgram?: Address<TAccountSystemProgram>;
-  maxPriceChangeRatioQ64: InitializeOracleInstructionDataArgs["maxPriceChangeRatioQ64"];
-  observationIntervalSec: InitializeOracleInstructionDataArgs["observationIntervalSec"];
-  numObservations: InitializeOracleInstructionDataArgs["numObservations"];
+  maxPriceChangeRatioQ64: InitializeOracleInstructionDataArgs['maxPriceChangeRatioQ64'];
+  observationIntervalSec: InitializeOracleInstructionDataArgs['observationIntervalSec'];
+  numObservations: InitializeOracleInstructionDataArgs['numObservations'];
 };
 
 export async function getInitializeOracleInstructionAsync<
@@ -176,7 +176,7 @@ export async function getInitializeOracleInstructionAsync<
     TAccountPayer,
     TAccountSystemProgram
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): Promise<
   InitializeOracleInstruction<
     TProgramAddress,
@@ -215,28 +215,28 @@ export async function getInitializeOracleInstructionAsync<
       seeds: [
         getBytesEncoder().encode(new Uint8Array([111, 114, 97, 99, 108, 101])),
         getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount("pool", accounts.pool.value),
+          getAddressFromResolvedInstructionAccount('pool', accounts.pool.value)
         ),
       ],
     });
   }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
-      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("config", accounts.config),
-      getAccountMeta("pool", accounts.pool),
-      getAccountMeta("oracle", accounts.oracle),
-      getAccountMeta("admin", accounts.admin),
-      getAccountMeta("payer", accounts.payer),
-      getAccountMeta("systemProgram", accounts.systemProgram),
+      getAccountMeta('config', accounts.config),
+      getAccountMeta('pool', accounts.pool),
+      getAccountMeta('oracle', accounts.oracle),
+      getAccountMeta('admin', accounts.admin),
+      getAccountMeta('payer', accounts.payer),
+      getAccountMeta('systemProgram', accounts.systemProgram),
     ],
     data: getInitializeOracleInstructionDataEncoder().encode(
-      args as InitializeOracleInstructionDataArgs,
+      args as InitializeOracleInstructionDataArgs
     ),
     programAddress,
   } as InitializeOracleInstruction<
@@ -264,9 +264,9 @@ export type InitializeOracleInput<
   admin: TransactionSigner<TAccountAdmin>;
   payer: TransactionSigner<TAccountPayer>;
   systemProgram?: Address<TAccountSystemProgram>;
-  maxPriceChangeRatioQ64: InitializeOracleInstructionDataArgs["maxPriceChangeRatioQ64"];
-  observationIntervalSec: InitializeOracleInstructionDataArgs["observationIntervalSec"];
-  numObservations: InitializeOracleInstructionDataArgs["numObservations"];
+  maxPriceChangeRatioQ64: InitializeOracleInstructionDataArgs['maxPriceChangeRatioQ64'];
+  observationIntervalSec: InitializeOracleInstructionDataArgs['observationIntervalSec'];
+  numObservations: InitializeOracleInstructionDataArgs['numObservations'];
 };
 
 export function getInitializeOracleInstruction<
@@ -286,7 +286,7 @@ export function getInitializeOracleInstruction<
     TAccountPayer,
     TAccountSystemProgram
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): InitializeOracleInstruction<
   TProgramAddress,
   TAccountConfig,
@@ -319,21 +319,21 @@ export function getInitializeOracleInstruction<
   // Resolve default values.
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
-      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("config", accounts.config),
-      getAccountMeta("pool", accounts.pool),
-      getAccountMeta("oracle", accounts.oracle),
-      getAccountMeta("admin", accounts.admin),
-      getAccountMeta("payer", accounts.payer),
-      getAccountMeta("systemProgram", accounts.systemProgram),
+      getAccountMeta('config', accounts.config),
+      getAccountMeta('pool', accounts.pool),
+      getAccountMeta('oracle', accounts.oracle),
+      getAccountMeta('admin', accounts.admin),
+      getAccountMeta('payer', accounts.payer),
+      getAccountMeta('systemProgram', accounts.systemProgram),
     ],
     data: getInitializeOracleInstructionDataEncoder().encode(
-      args as InitializeOracleInstructionDataArgs,
+      args as InitializeOracleInstructionDataArgs
     ),
     programAddress,
   } as InitializeOracleInstruction<
@@ -369,7 +369,7 @@ export function parseInitializeOracleInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>,
+    InstructionWithData<ReadonlyUint8Array>
 ): ParsedInitializeOracleInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 6) {
     throw new SolanaError(
@@ -377,7 +377,7 @@ export function parseInitializeOracleInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 6,
-      },
+      }
     );
   }
   let accountIndex = 0;

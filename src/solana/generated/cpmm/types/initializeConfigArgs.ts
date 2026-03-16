@@ -24,7 +24,7 @@ import {
   type Codec,
   type Decoder,
   type Encoder,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type InitializeConfigArgs = {
   admin: Address;
@@ -41,27 +41,27 @@ export type InitializeConfigArgsArgs = InitializeConfigArgs;
 
 export function getInitializeConfigArgsEncoder(): Encoder<InitializeConfigArgsArgs> {
   return getStructEncoder([
-    ["admin", getAddressEncoder()],
-    ["numeraireMint", getAddressEncoder()],
-    ["maxSwapFeeBps", getU16Encoder()],
-    ["maxFeeSplitBps", getU16Encoder()],
-    ["maxRouteHops", getU8Encoder()],
-    ["protocolFeeEnabled", getBooleanEncoder()],
-    ["protocolFeeBps", getU16Encoder()],
-    ["sentinelAllowlist", getArrayEncoder(getAddressEncoder())],
+    ['admin', getAddressEncoder()],
+    ['numeraireMint', getAddressEncoder()],
+    ['maxSwapFeeBps', getU16Encoder()],
+    ['maxFeeSplitBps', getU16Encoder()],
+    ['maxRouteHops', getU8Encoder()],
+    ['protocolFeeEnabled', getBooleanEncoder()],
+    ['protocolFeeBps', getU16Encoder()],
+    ['sentinelAllowlist', getArrayEncoder(getAddressEncoder())],
   ]);
 }
 
 export function getInitializeConfigArgsDecoder(): Decoder<InitializeConfigArgs> {
   return getStructDecoder([
-    ["admin", getAddressDecoder()],
-    ["numeraireMint", getAddressDecoder()],
-    ["maxSwapFeeBps", getU16Decoder()],
-    ["maxFeeSplitBps", getU16Decoder()],
-    ["maxRouteHops", getU8Decoder()],
-    ["protocolFeeEnabled", getBooleanDecoder()],
-    ["protocolFeeBps", getU16Decoder()],
-    ["sentinelAllowlist", getArrayDecoder(getAddressDecoder())],
+    ['admin', getAddressDecoder()],
+    ['numeraireMint', getAddressDecoder()],
+    ['maxSwapFeeBps', getU16Decoder()],
+    ['maxFeeSplitBps', getU16Decoder()],
+    ['maxRouteHops', getU8Decoder()],
+    ['protocolFeeEnabled', getBooleanDecoder()],
+    ['protocolFeeBps', getU16Decoder()],
+    ['sentinelAllowlist', getArrayDecoder(getAddressDecoder())],
   ]);
 }
 
@@ -71,6 +71,6 @@ export function getInitializeConfigArgsCodec(): Codec<
 > {
   return combineCodec(
     getInitializeConfigArgsEncoder(),
-    getInitializeConfigArgsDecoder(),
+    getInitializeConfigArgsDecoder()
   );
 }

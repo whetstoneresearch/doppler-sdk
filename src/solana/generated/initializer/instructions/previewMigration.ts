@@ -27,12 +27,12 @@ import {
   type InstructionWithData,
   type ReadonlyAccount,
   type ReadonlyUint8Array,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   getAccountMetaFactory,
   type ResolvedInstructionAccount,
-} from "@solana/program-client-core";
-import { INITIALIZER_PROGRAM_ADDRESS } from "../programs";
+} from '@solana/program-client-core';
+import { INITIALIZER_PROGRAM_ADDRESS } from '../programs';
 
 export const PREVIEW_MIGRATION_DISCRIMINATOR = new Uint8Array([
   216, 180, 209, 112, 62, 16, 15, 63,
@@ -40,7 +40,7 @@ export const PREVIEW_MIGRATION_DISCRIMINATOR = new Uint8Array([
 
 export function getPreviewMigrationDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    PREVIEW_MIGRATION_DISCRIMINATOR,
+    PREVIEW_MIGRATION_DISCRIMINATOR
   );
 }
 
@@ -79,14 +79,14 @@ export type PreviewMigrationInstructionDataArgs = {};
 
 export function getPreviewMigrationInstructionDataEncoder(): FixedSizeEncoder<PreviewMigrationInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([["discriminator", fixEncoderSize(getBytesEncoder(), 8)]]),
-    (value) => ({ ...value, discriminator: PREVIEW_MIGRATION_DISCRIMINATOR }),
+    getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
+    (value) => ({ ...value, discriminator: PREVIEW_MIGRATION_DISCRIMINATOR })
   );
 }
 
 export function getPreviewMigrationInstructionDataDecoder(): FixedSizeDecoder<PreviewMigrationInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
   ]);
 }
 
@@ -96,7 +96,7 @@ export function getPreviewMigrationInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getPreviewMigrationInstructionDataEncoder(),
-    getPreviewMigrationInstructionDataDecoder(),
+    getPreviewMigrationInstructionDataDecoder()
   );
 }
 
@@ -125,7 +125,7 @@ export function getPreviewMigrationInstruction<
     TAccountBaseVault,
     TAccountQuoteVault
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): PreviewMigrationInstruction<
   TProgramAddress,
   TAccountLaunch,
@@ -148,13 +148,13 @@ export function getPreviewMigrationInstruction<
     ResolvedInstructionAccount
   >;
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("launch", accounts.launch),
-      getAccountMeta("baseMint", accounts.baseMint),
-      getAccountMeta("baseVault", accounts.baseVault),
-      getAccountMeta("quoteVault", accounts.quoteVault),
+      getAccountMeta('launch', accounts.launch),
+      getAccountMeta('baseMint', accounts.baseMint),
+      getAccountMeta('baseVault', accounts.baseVault),
+      getAccountMeta('quoteVault', accounts.quoteVault),
     ],
     data: getPreviewMigrationInstructionDataEncoder().encode({}),
     programAddress,
@@ -187,7 +187,7 @@ export function parsePreviewMigrationInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>,
+    InstructionWithData<ReadonlyUint8Array>
 ): ParsedPreviewMigrationInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 4) {
     throw new SolanaError(
@@ -195,7 +195,7 @@ export function parsePreviewMigrationInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 4,
-      },
+      }
     );
   }
   let accountIndex = 0;

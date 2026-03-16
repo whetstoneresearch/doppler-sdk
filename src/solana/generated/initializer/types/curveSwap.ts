@@ -20,7 +20,7 @@ import {
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type CurveSwap = {
   launch: Address;
@@ -46,27 +46,27 @@ export type CurveSwapArgs = {
 
 export function getCurveSwapEncoder(): FixedSizeEncoder<CurveSwapArgs> {
   return getStructEncoder([
-    ["launch", getAddressEncoder()],
-    ["user", getAddressEncoder()],
-    ["direction", getU8Encoder()],
-    ["amountIn", getU64Encoder()],
-    ["amountOut", getU64Encoder()],
-    ["feePaid", getU64Encoder()],
-    ["postBaseReserve", getU64Encoder()],
-    ["postQuoteReserve", getU64Encoder()],
+    ['launch', getAddressEncoder()],
+    ['user', getAddressEncoder()],
+    ['direction', getU8Encoder()],
+    ['amountIn', getU64Encoder()],
+    ['amountOut', getU64Encoder()],
+    ['feePaid', getU64Encoder()],
+    ['postBaseReserve', getU64Encoder()],
+    ['postQuoteReserve', getU64Encoder()],
   ]);
 }
 
 export function getCurveSwapDecoder(): FixedSizeDecoder<CurveSwap> {
   return getStructDecoder([
-    ["launch", getAddressDecoder()],
-    ["user", getAddressDecoder()],
-    ["direction", getU8Decoder()],
-    ["amountIn", getU64Decoder()],
-    ["amountOut", getU64Decoder()],
-    ["feePaid", getU64Decoder()],
-    ["postBaseReserve", getU64Decoder()],
-    ["postQuoteReserve", getU64Decoder()],
+    ['launch', getAddressDecoder()],
+    ['user', getAddressDecoder()],
+    ['direction', getU8Decoder()],
+    ['amountIn', getU64Decoder()],
+    ['amountOut', getU64Decoder()],
+    ['feePaid', getU64Decoder()],
+    ['postBaseReserve', getU64Decoder()],
+    ['postQuoteReserve', getU64Decoder()],
   ]);
 }
 

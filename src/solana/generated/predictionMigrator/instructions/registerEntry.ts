@@ -34,13 +34,13 @@ import {
   type TransactionSigner,
   type WritableAccount,
   type WritableSignerAccount,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   getAccountMetaFactory,
   getAddressFromResolvedInstructionAccount,
   type ResolvedInstructionAccount,
-} from "@solana/program-client-core";
-import { PREDICTION_MIGRATOR_PROGRAM_ADDRESS } from "../programs";
+} from '@solana/program-client-core';
+import { PREDICTION_MIGRATOR_PROGRAM_ADDRESS } from '../programs';
 
 export const REGISTER_ENTRY_DISCRIMINATOR = new Uint8Array([
   198, 25, 1, 183, 73, 219, 215, 14,
@@ -48,7 +48,7 @@ export const REGISTER_ENTRY_DISCRIMINATOR = new Uint8Array([
 
 export function getRegisterEntryDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    REGISTER_ENTRY_DISCRIMINATOR,
+    REGISTER_ENTRY_DISCRIMINATOR
   );
 }
 
@@ -63,11 +63,11 @@ export type RegisterEntryInstruction<
   TAccountQuoteVault extends string | AccountMeta<string> = string,
   TAccountPayer extends string | AccountMeta<string> = string,
   TAccountTokenProgram extends string | AccountMeta<string> =
-    "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
   TAccountSystemProgram extends string | AccountMeta<string> =
-    "11111111111111111111111111111111",
+    '11111111111111111111111111111111',
   TAccountRent extends string | AccountMeta<string> =
-    "SysvarRent111111111111111111111111111111111",
+    'SysvarRent111111111111111111111111111111111',
   TAccountOracle extends string | AccountMeta<string> = string,
   TAccountMarket extends string | AccountMeta<string> = string,
   TAccountPotVault extends string | AccountMeta<string> = string,
@@ -146,17 +146,17 @@ export type RegisterEntryInstructionDataArgs = { entryId: ReadonlyUint8Array };
 export function getRegisterEntryInstructionDataEncoder(): FixedSizeEncoder<RegisterEntryInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["entryId", fixEncoderSize(getBytesEncoder(), 32)],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['entryId', fixEncoderSize(getBytesEncoder(), 32)],
     ]),
-    (value) => ({ ...value, discriminator: REGISTER_ENTRY_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: REGISTER_ENTRY_DISCRIMINATOR })
   );
 }
 
 export function getRegisterEntryInstructionDataDecoder(): FixedSizeDecoder<RegisterEntryInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["entryId", fixDecoderSize(getBytesDecoder(), 32)],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['entryId', fixDecoderSize(getBytesDecoder(), 32)],
   ]);
 }
 
@@ -166,7 +166,7 @@ export function getRegisterEntryInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getRegisterEntryInstructionDataEncoder(),
-    getRegisterEntryInstructionDataDecoder(),
+    getRegisterEntryInstructionDataDecoder()
   );
 }
 
@@ -215,7 +215,7 @@ export type RegisterEntryAsyncInput<
   entry: Address<TAccountEntry>;
   /** EntryByMint PDA for reverse lookup */
   entryByMint?: Address<TAccountEntryByMint>;
-  entryId: RegisterEntryInstructionDataArgs["entryId"];
+  entryId: RegisterEntryInstructionDataArgs['entryId'];
 };
 
 export async function getRegisterEntryInstructionAsync<
@@ -257,7 +257,7 @@ export async function getRegisterEntryInstructionAsync<
     TAccountEntry,
     TAccountEntryByMint
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): Promise<
   RegisterEntryInstruction<
     TProgramAddress,
@@ -324,15 +324,15 @@ export async function getRegisterEntryInstructionAsync<
   // Resolve default values.
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
-      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" as Address<"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA">;
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
-      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
   if (!accounts.rent.value) {
     accounts.rent.value =
-      "SysvarRent111111111111111111111111111111111" as Address<"SysvarRent111111111111111111111111111111111">;
+      'SysvarRent111111111111111111111111111111111' as Address<'SysvarRent111111111111111111111111111111111'>;
   }
   if (!accounts.market.value) {
     accounts.market.value = await getProgramDerivedAddress({
@@ -341,9 +341,9 @@ export async function getRegisterEntryInstructionAsync<
         getBytesEncoder().encode(new Uint8Array([109, 97, 114, 107, 101, 116])),
         getAddressEncoder().encode(
           getAddressFromResolvedInstructionAccount(
-            "oracle",
-            accounts.oracle.value,
-          ),
+            'oracle',
+            accounts.oracle.value
+          )
         ),
       ],
     });
@@ -353,13 +353,13 @@ export async function getRegisterEntryInstructionAsync<
       programAddress,
       seeds: [
         getBytesEncoder().encode(
-          new Uint8Array([112, 111, 116, 95, 118, 97, 117, 108, 116]),
+          new Uint8Array([112, 111, 116, 95, 118, 97, 117, 108, 116])
         ),
         getAddressEncoder().encode(
           getAddressFromResolvedInstructionAccount(
-            "market",
-            accounts.market.value,
-          ),
+            'market',
+            accounts.market.value
+          )
         ),
       ],
     });
@@ -372,13 +372,13 @@ export async function getRegisterEntryInstructionAsync<
           new Uint8Array([
             109, 97, 114, 107, 101, 116, 95, 97, 117, 116, 104, 111, 114, 105,
             116, 121,
-          ]),
+          ])
         ),
         getAddressEncoder().encode(
           getAddressFromResolvedInstructionAccount(
-            "market",
-            accounts.market.value,
-          ),
+            'market',
+            accounts.market.value
+          )
         ),
       ],
     });
@@ -390,47 +390,47 @@ export async function getRegisterEntryInstructionAsync<
         getBytesEncoder().encode(
           new Uint8Array([
             101, 110, 116, 114, 121, 95, 98, 121, 95, 109, 105, 110, 116,
-          ]),
+          ])
         ),
         getAddressEncoder().encode(
           getAddressFromResolvedInstructionAccount(
-            "oracle",
-            accounts.oracle.value,
-          ),
+            'oracle',
+            accounts.oracle.value
+          )
         ),
         getAddressEncoder().encode(
           getAddressFromResolvedInstructionAccount(
-            "baseMint",
-            accounts.baseMint.value,
-          ),
+            'baseMint',
+            accounts.baseMint.value
+          )
         ),
       ],
     });
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("initializerConfig", accounts.initializerConfig),
-      getAccountMeta("launch", accounts.launch),
-      getAccountMeta("launchAuthority", accounts.launchAuthority),
-      getAccountMeta("baseMint", accounts.baseMint),
-      getAccountMeta("quoteMint", accounts.quoteMint),
-      getAccountMeta("baseVault", accounts.baseVault),
-      getAccountMeta("quoteVault", accounts.quoteVault),
-      getAccountMeta("payer", accounts.payer),
-      getAccountMeta("tokenProgram", accounts.tokenProgram),
-      getAccountMeta("systemProgram", accounts.systemProgram),
-      getAccountMeta("rent", accounts.rent),
-      getAccountMeta("oracle", accounts.oracle),
-      getAccountMeta("market", accounts.market),
-      getAccountMeta("potVault", accounts.potVault),
-      getAccountMeta("marketAuthority", accounts.marketAuthority),
-      getAccountMeta("entry", accounts.entry),
-      getAccountMeta("entryByMint", accounts.entryByMint),
+      getAccountMeta('initializerConfig', accounts.initializerConfig),
+      getAccountMeta('launch', accounts.launch),
+      getAccountMeta('launchAuthority', accounts.launchAuthority),
+      getAccountMeta('baseMint', accounts.baseMint),
+      getAccountMeta('quoteMint', accounts.quoteMint),
+      getAccountMeta('baseVault', accounts.baseVault),
+      getAccountMeta('quoteVault', accounts.quoteVault),
+      getAccountMeta('payer', accounts.payer),
+      getAccountMeta('tokenProgram', accounts.tokenProgram),
+      getAccountMeta('systemProgram', accounts.systemProgram),
+      getAccountMeta('rent', accounts.rent),
+      getAccountMeta('oracle', accounts.oracle),
+      getAccountMeta('market', accounts.market),
+      getAccountMeta('potVault', accounts.potVault),
+      getAccountMeta('marketAuthority', accounts.marketAuthority),
+      getAccountMeta('entry', accounts.entry),
+      getAccountMeta('entryByMint', accounts.entryByMint),
     ],
     data: getRegisterEntryInstructionDataEncoder().encode(
-      args as RegisterEntryInstructionDataArgs,
+      args as RegisterEntryInstructionDataArgs
     ),
     programAddress,
   } as RegisterEntryInstruction<
@@ -500,7 +500,7 @@ export type RegisterEntryInput<
   entry: Address<TAccountEntry>;
   /** EntryByMint PDA for reverse lookup */
   entryByMint: Address<TAccountEntryByMint>;
-  entryId: RegisterEntryInstructionDataArgs["entryId"];
+  entryId: RegisterEntryInstructionDataArgs['entryId'];
 };
 
 export function getRegisterEntryInstruction<
@@ -542,7 +542,7 @@ export function getRegisterEntryInstruction<
     TAccountEntry,
     TAccountEntryByMint
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): RegisterEntryInstruction<
   TProgramAddress,
   TAccountInitializerConfig,
@@ -607,40 +607,40 @@ export function getRegisterEntryInstruction<
   // Resolve default values.
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
-      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" as Address<"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA">;
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
-      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
   if (!accounts.rent.value) {
     accounts.rent.value =
-      "SysvarRent111111111111111111111111111111111" as Address<"SysvarRent111111111111111111111111111111111">;
+      'SysvarRent111111111111111111111111111111111' as Address<'SysvarRent111111111111111111111111111111111'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("initializerConfig", accounts.initializerConfig),
-      getAccountMeta("launch", accounts.launch),
-      getAccountMeta("launchAuthority", accounts.launchAuthority),
-      getAccountMeta("baseMint", accounts.baseMint),
-      getAccountMeta("quoteMint", accounts.quoteMint),
-      getAccountMeta("baseVault", accounts.baseVault),
-      getAccountMeta("quoteVault", accounts.quoteVault),
-      getAccountMeta("payer", accounts.payer),
-      getAccountMeta("tokenProgram", accounts.tokenProgram),
-      getAccountMeta("systemProgram", accounts.systemProgram),
-      getAccountMeta("rent", accounts.rent),
-      getAccountMeta("oracle", accounts.oracle),
-      getAccountMeta("market", accounts.market),
-      getAccountMeta("potVault", accounts.potVault),
-      getAccountMeta("marketAuthority", accounts.marketAuthority),
-      getAccountMeta("entry", accounts.entry),
-      getAccountMeta("entryByMint", accounts.entryByMint),
+      getAccountMeta('initializerConfig', accounts.initializerConfig),
+      getAccountMeta('launch', accounts.launch),
+      getAccountMeta('launchAuthority', accounts.launchAuthority),
+      getAccountMeta('baseMint', accounts.baseMint),
+      getAccountMeta('quoteMint', accounts.quoteMint),
+      getAccountMeta('baseVault', accounts.baseVault),
+      getAccountMeta('quoteVault', accounts.quoteVault),
+      getAccountMeta('payer', accounts.payer),
+      getAccountMeta('tokenProgram', accounts.tokenProgram),
+      getAccountMeta('systemProgram', accounts.systemProgram),
+      getAccountMeta('rent', accounts.rent),
+      getAccountMeta('oracle', accounts.oracle),
+      getAccountMeta('market', accounts.market),
+      getAccountMeta('potVault', accounts.potVault),
+      getAccountMeta('marketAuthority', accounts.marketAuthority),
+      getAccountMeta('entry', accounts.entry),
+      getAccountMeta('entryByMint', accounts.entryByMint),
     ],
     data: getRegisterEntryInstructionDataEncoder().encode(
-      args as RegisterEntryInstructionDataArgs,
+      args as RegisterEntryInstructionDataArgs
     ),
     programAddress,
   } as RegisterEntryInstruction<
@@ -707,7 +707,7 @@ export function parseRegisterEntryInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>,
+    InstructionWithData<ReadonlyUint8Array>
 ): ParsedRegisterEntryInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 17) {
     throw new SolanaError(
@@ -715,7 +715,7 @@ export function parseRegisterEntryInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 17,
-      },
+      }
     );
   }
   let accountIndex = 0;

@@ -18,7 +18,7 @@ import {
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type CollectProtocolFees = {
   pool: Address;
@@ -38,21 +38,21 @@ export type CollectProtocolFeesArgs = {
 
 export function getCollectProtocolFeesEncoder(): FixedSizeEncoder<CollectProtocolFeesArgs> {
   return getStructEncoder([
-    ["pool", getAddressEncoder()],
-    ["amount0", getU64Encoder()],
-    ["amount1", getU64Encoder()],
-    ["recipient0", getAddressEncoder()],
-    ["recipient1", getAddressEncoder()],
+    ['pool', getAddressEncoder()],
+    ['amount0', getU64Encoder()],
+    ['amount1', getU64Encoder()],
+    ['recipient0', getAddressEncoder()],
+    ['recipient1', getAddressEncoder()],
   ]);
 }
 
 export function getCollectProtocolFeesDecoder(): FixedSizeDecoder<CollectProtocolFees> {
   return getStructDecoder([
-    ["pool", getAddressDecoder()],
-    ["amount0", getU64Decoder()],
-    ["amount1", getU64Decoder()],
-    ["recipient0", getAddressDecoder()],
-    ["recipient1", getAddressDecoder()],
+    ['pool', getAddressDecoder()],
+    ['amount0', getU64Decoder()],
+    ['amount1', getU64Decoder()],
+    ['recipient0', getAddressDecoder()],
+    ['recipient1', getAddressDecoder()],
   ]);
 }
 
@@ -62,6 +62,6 @@ export function getCollectProtocolFeesCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getCollectProtocolFeesEncoder(),
-    getCollectProtocolFeesDecoder(),
+    getCollectProtocolFeesDecoder()
   );
 }

@@ -11,8 +11,8 @@ import {
   type Address,
   type SOLANA_ERROR__INSTRUCTION_ERROR__CUSTOM,
   type SolanaError,
-} from "@solana/kit";
-import { CPMM_MIGRATOR_PROGRAM_ADDRESS } from "../programs";
+} from '@solana/kit';
+import { CPMM_MIGRATOR_PROGRAM_ADDRESS } from '../programs';
 
 /** Unauthorized: Unauthorized */
 export const CPMM_MIGRATOR_ERROR__UNAUTHORIZED = 0x1770; // 6000
@@ -75,7 +75,7 @@ export type CpmmMigratorError =
   | typeof CPMM_MIGRATOR_ERROR__UNAUTHORIZED;
 
 let cpmmMigratorErrorMessages: Record<CpmmMigratorError, string> | undefined;
-if (process.env.NODE_ENV !== "production") {
+if (process.env.NODE_ENV !== 'production') {
   cpmmMigratorErrorMessages = {
     [CPMM_MIGRATOR_ERROR__ALREADY_MIGRATED]: `Already migrated`,
     [CPMM_MIGRATOR_ERROR__EXTRA_RECIPIENT_ACCOUNTS]: `Extra recipient accounts`,
@@ -100,13 +100,13 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 export function getCpmmMigratorErrorMessage(code: CpmmMigratorError): string {
-  if (process.env.NODE_ENV !== "production") {
+  if (process.env.NODE_ENV !== 'production') {
     return (cpmmMigratorErrorMessages as Record<CpmmMigratorError, string>)[
       code
     ];
   }
 
-  return "Error message not available in production bundles.";
+  return 'Error message not available in production bundles.';
 }
 
 export function isCpmmMigratorError<
@@ -116,13 +116,13 @@ export function isCpmmMigratorError<
   transactionMessage: {
     instructions: Record<number, { programAddress: Address }>;
   },
-  code?: TProgramErrorCode,
+  code?: TProgramErrorCode
 ): error is SolanaError<typeof SOLANA_ERROR__INSTRUCTION_ERROR__CUSTOM> &
   Readonly<{ context: Readonly<{ code: TProgramErrorCode }> }> {
   return isProgramError<TProgramErrorCode>(
     error,
     transactionMessage,
     CPMM_MIGRATOR_PROGRAM_ADDRESS,
-    code,
+    code
   );
 }

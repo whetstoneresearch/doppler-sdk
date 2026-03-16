@@ -20,7 +20,7 @@ import {
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type SentinelError = {
   pool: Address;
@@ -36,17 +36,17 @@ export type SentinelErrorArgs = {
 
 export function getSentinelErrorEncoder(): FixedSizeEncoder<SentinelErrorArgs> {
   return getStructEncoder([
-    ["pool", getAddressEncoder()],
-    ["action", getU8Encoder()],
-    ["errorCode", getU64Encoder()],
+    ['pool', getAddressEncoder()],
+    ['action', getU8Encoder()],
+    ['errorCode', getU64Encoder()],
   ]);
 }
 
 export function getSentinelErrorDecoder(): FixedSizeDecoder<SentinelError> {
   return getStructDecoder([
-    ["pool", getAddressDecoder()],
-    ["action", getU8Decoder()],
-    ["errorCode", getU64Decoder()],
+    ['pool', getAddressDecoder()],
+    ['action', getU8Decoder()],
+    ['errorCode', getU64Decoder()],
   ]);
 }
 

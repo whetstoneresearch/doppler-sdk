@@ -18,7 +18,7 @@ import {
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type LaunchRegistered = {
   launch: Address;
@@ -36,19 +36,19 @@ export type LaunchRegisteredArgs = {
 
 export function getLaunchRegisteredEncoder(): FixedSizeEncoder<LaunchRegisteredArgs> {
   return getStructEncoder([
-    ["launch", getAddressEncoder()],
-    ["state", getAddressEncoder()],
-    ["cpmmConfig", getAddressEncoder()],
-    ["minRaiseQuote", getU64Encoder()],
+    ['launch', getAddressEncoder()],
+    ['state', getAddressEncoder()],
+    ['cpmmConfig', getAddressEncoder()],
+    ['minRaiseQuote', getU64Encoder()],
   ]);
 }
 
 export function getLaunchRegisteredDecoder(): FixedSizeDecoder<LaunchRegistered> {
   return getStructDecoder([
-    ["launch", getAddressDecoder()],
-    ["state", getAddressDecoder()],
-    ["cpmmConfig", getAddressDecoder()],
-    ["minRaiseQuote", getU64Decoder()],
+    ['launch', getAddressDecoder()],
+    ['state', getAddressDecoder()],
+    ['cpmmConfig', getAddressDecoder()],
+    ['minRaiseQuote', getU64Decoder()],
   ]);
 }
 
@@ -58,6 +58,6 @@ export function getLaunchRegisteredCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getLaunchRegisteredEncoder(),
-    getLaunchRegisteredDecoder(),
+    getLaunchRegisteredDecoder()
   );
 }

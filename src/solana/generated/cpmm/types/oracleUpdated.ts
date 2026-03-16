@@ -20,7 +20,7 @@ import {
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type OracleUpdated = {
   pool: Address;
@@ -42,23 +42,23 @@ export type OracleUpdatedArgs = {
 
 export function getOracleUpdatedEncoder(): FixedSizeEncoder<OracleUpdatedArgs> {
   return getStructEncoder([
-    ["pool", getAddressEncoder()],
-    ["slot", getU64Encoder()],
-    ["truncPrice0Q64", getU128Encoder()],
-    ["truncPrice1Q64", getU128Encoder()],
-    ["deviation0Q64", getU128Encoder()],
-    ["deviation1Q64", getU128Encoder()],
+    ['pool', getAddressEncoder()],
+    ['slot', getU64Encoder()],
+    ['truncPrice0Q64', getU128Encoder()],
+    ['truncPrice1Q64', getU128Encoder()],
+    ['deviation0Q64', getU128Encoder()],
+    ['deviation1Q64', getU128Encoder()],
   ]);
 }
 
 export function getOracleUpdatedDecoder(): FixedSizeDecoder<OracleUpdated> {
   return getStructDecoder([
-    ["pool", getAddressDecoder()],
-    ["slot", getU64Decoder()],
-    ["truncPrice0Q64", getU128Decoder()],
-    ["truncPrice1Q64", getU128Decoder()],
-    ["deviation0Q64", getU128Decoder()],
-    ["deviation1Q64", getU128Decoder()],
+    ['pool', getAddressDecoder()],
+    ['slot', getU64Decoder()],
+    ['truncPrice0Q64', getU128Decoder()],
+    ['truncPrice1Q64', getU128Decoder()],
+    ['deviation0Q64', getU128Decoder()],
+    ['deviation1Q64', getU128Decoder()],
   ]);
 }
 

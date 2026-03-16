@@ -49,13 +49,13 @@ import {
   type Option,
   type OptionOrNullable,
   type ReadonlyUint8Array,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   getRecipientDecoder,
   getRecipientEncoder,
   type Recipient,
   type RecipientArgs,
-} from "../types";
+} from '../types';
 
 export const CPMM_MIGRATOR_STATE_DISCRIMINATOR = new Uint8Array([
   169, 86, 255, 187, 37, 248, 11, 176,
@@ -63,7 +63,7 @@ export const CPMM_MIGRATOR_STATE_DISCRIMINATOR = new Uint8Array([
 
 export function getCpmmMigratorStateDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    CPMM_MIGRATOR_STATE_DISCRIMINATOR,
+    CPMM_MIGRATOR_STATE_DISCRIMINATOR
   );
 }
 
@@ -126,40 +126,40 @@ export type CpmmMigratorStateArgs = {
 export function getCpmmMigratorStateEncoder(): Encoder<CpmmMigratorStateArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["launch", getAddressEncoder()],
-      ["admin", getAddressEncoder()],
-      ["cpmmConfig", getAddressEncoder()],
-      ["initialSwapFeeBps", getU16Encoder()],
-      ["initialFeeSplitBps", getU16Encoder()],
-      ["pad0", fixEncoderSize(getBytesEncoder(), 4)],
-      ["recipients", getArrayEncoder(getRecipientEncoder(), { size: 2 })],
-      ["minRaiseQuote", getU64Encoder()],
-      ["minMigrationPriceQ64Opt", getOptionEncoder(getU128Encoder())],
-      ["isMigrated", getBooleanEncoder()],
-      ["bump", getU8Encoder()],
-      ["reserved", fixEncoderSize(getBytesEncoder(), 14)],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['launch', getAddressEncoder()],
+      ['admin', getAddressEncoder()],
+      ['cpmmConfig', getAddressEncoder()],
+      ['initialSwapFeeBps', getU16Encoder()],
+      ['initialFeeSplitBps', getU16Encoder()],
+      ['pad0', fixEncoderSize(getBytesEncoder(), 4)],
+      ['recipients', getArrayEncoder(getRecipientEncoder(), { size: 2 })],
+      ['minRaiseQuote', getU64Encoder()],
+      ['minMigrationPriceQ64Opt', getOptionEncoder(getU128Encoder())],
+      ['isMigrated', getBooleanEncoder()],
+      ['bump', getU8Encoder()],
+      ['reserved', fixEncoderSize(getBytesEncoder(), 14)],
     ]),
-    (value) => ({ ...value, discriminator: CPMM_MIGRATOR_STATE_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: CPMM_MIGRATOR_STATE_DISCRIMINATOR })
   );
 }
 
 /** Gets the decoder for {@link CpmmMigratorState} account data. */
 export function getCpmmMigratorStateDecoder(): Decoder<CpmmMigratorState> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["launch", getAddressDecoder()],
-    ["admin", getAddressDecoder()],
-    ["cpmmConfig", getAddressDecoder()],
-    ["initialSwapFeeBps", getU16Decoder()],
-    ["initialFeeSplitBps", getU16Decoder()],
-    ["pad0", fixDecoderSize(getBytesDecoder(), 4)],
-    ["recipients", getArrayDecoder(getRecipientDecoder(), { size: 2 })],
-    ["minRaiseQuote", getU64Decoder()],
-    ["minMigrationPriceQ64Opt", getOptionDecoder(getU128Decoder())],
-    ["isMigrated", getBooleanDecoder()],
-    ["bump", getU8Decoder()],
-    ["reserved", fixDecoderSize(getBytesDecoder(), 14)],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['launch', getAddressDecoder()],
+    ['admin', getAddressDecoder()],
+    ['cpmmConfig', getAddressDecoder()],
+    ['initialSwapFeeBps', getU16Decoder()],
+    ['initialFeeSplitBps', getU16Decoder()],
+    ['pad0', fixDecoderSize(getBytesDecoder(), 4)],
+    ['recipients', getArrayDecoder(getRecipientDecoder(), { size: 2 })],
+    ['minRaiseQuote', getU64Decoder()],
+    ['minMigrationPriceQ64Opt', getOptionDecoder(getU128Decoder())],
+    ['isMigrated', getBooleanDecoder()],
+    ['bump', getU8Decoder()],
+    ['reserved', fixDecoderSize(getBytesDecoder(), 14)],
   ]);
 }
 
@@ -170,31 +170,31 @@ export function getCpmmMigratorStateCodec(): Codec<
 > {
   return combineCodec(
     getCpmmMigratorStateEncoder(),
-    getCpmmMigratorStateDecoder(),
+    getCpmmMigratorStateDecoder()
   );
 }
 
 export function decodeCpmmMigratorState<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress>,
+  encodedAccount: EncodedAccount<TAddress>
 ): Account<CpmmMigratorState, TAddress>;
 export function decodeCpmmMigratorState<TAddress extends string = string>(
-  encodedAccount: MaybeEncodedAccount<TAddress>,
+  encodedAccount: MaybeEncodedAccount<TAddress>
 ): MaybeAccount<CpmmMigratorState, TAddress>;
 export function decodeCpmmMigratorState<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>,
+  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>
 ):
   | Account<CpmmMigratorState, TAddress>
   | MaybeAccount<CpmmMigratorState, TAddress> {
   return decodeAccount(
     encodedAccount as MaybeEncodedAccount<TAddress>,
-    getCpmmMigratorStateDecoder(),
+    getCpmmMigratorStateDecoder()
   );
 }
 
 export async function fetchCpmmMigratorState<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
-  config?: FetchAccountConfig,
+  config?: FetchAccountConfig
 ): Promise<Account<CpmmMigratorState, TAddress>> {
   const maybeAccount = await fetchMaybeCpmmMigratorState(rpc, address, config);
   assertAccountExists(maybeAccount);
@@ -206,7 +206,7 @@ export async function fetchMaybeCpmmMigratorState<
 >(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
-  config?: FetchAccountConfig,
+  config?: FetchAccountConfig
 ): Promise<MaybeAccount<CpmmMigratorState, TAddress>> {
   const maybeAccount = await fetchEncodedAccount(rpc, address, config);
   return decodeCpmmMigratorState(maybeAccount);
@@ -215,12 +215,12 @@ export async function fetchMaybeCpmmMigratorState<
 export async function fetchAllCpmmMigratorState(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
-  config?: FetchAccountsConfig,
+  config?: FetchAccountsConfig
 ): Promise<Account<CpmmMigratorState>[]> {
   const maybeAccounts = await fetchAllMaybeCpmmMigratorState(
     rpc,
     addresses,
-    config,
+    config
   );
   assertAccountsExist(maybeAccounts);
   return maybeAccounts;
@@ -229,10 +229,10 @@ export async function fetchAllCpmmMigratorState(
 export async function fetchAllMaybeCpmmMigratorState(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
-  config?: FetchAccountsConfig,
+  config?: FetchAccountsConfig
 ): Promise<MaybeAccount<CpmmMigratorState>[]> {
   const maybeAccounts = await fetchEncodedAccounts(rpc, addresses, config);
   return maybeAccounts.map((maybeAccount) =>
-    decodeCpmmMigratorState(maybeAccount),
+    decodeCpmmMigratorState(maybeAccount)
   );
 }

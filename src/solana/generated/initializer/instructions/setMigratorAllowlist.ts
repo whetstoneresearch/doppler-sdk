@@ -35,12 +35,12 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   getAccountMetaFactory,
   type ResolvedInstructionAccount,
-} from "@solana/program-client-core";
-import { INITIALIZER_PROGRAM_ADDRESS } from "../programs";
+} from '@solana/program-client-core';
+import { INITIALIZER_PROGRAM_ADDRESS } from '../programs';
 
 export const SET_MIGRATOR_ALLOWLIST_DISCRIMINATOR = new Uint8Array([
   209, 90, 181, 104, 99, 108, 233, 168,
@@ -48,7 +48,7 @@ export const SET_MIGRATOR_ALLOWLIST_DISCRIMINATOR = new Uint8Array([
 
 export function getSetMigratorAllowlistDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    SET_MIGRATOR_ALLOWLIST_DISCRIMINATOR,
+    SET_MIGRATOR_ALLOWLIST_DISCRIMINATOR
   );
 }
 
@@ -84,20 +84,20 @@ export type SetMigratorAllowlistInstructionDataArgs = {
 export function getSetMigratorAllowlistInstructionDataEncoder(): Encoder<SetMigratorAllowlistInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["allowlist", getArrayEncoder(getAddressEncoder())],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['allowlist', getArrayEncoder(getAddressEncoder())],
     ]),
     (value) => ({
       ...value,
       discriminator: SET_MIGRATOR_ALLOWLIST_DISCRIMINATOR,
-    }),
+    })
   );
 }
 
 export function getSetMigratorAllowlistInstructionDataDecoder(): Decoder<SetMigratorAllowlistInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["allowlist", getArrayDecoder(getAddressDecoder())],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['allowlist', getArrayDecoder(getAddressDecoder())],
   ]);
 }
 
@@ -107,7 +107,7 @@ export function getSetMigratorAllowlistInstructionDataCodec(): Codec<
 > {
   return combineCodec(
     getSetMigratorAllowlistInstructionDataEncoder(),
-    getSetMigratorAllowlistInstructionDataDecoder(),
+    getSetMigratorAllowlistInstructionDataDecoder()
   );
 }
 
@@ -117,7 +117,7 @@ export type SetMigratorAllowlistAsyncInput<
 > = {
   admin: TransactionSigner<TAccountAdmin>;
   config?: Address<TAccountConfig>;
-  allowlist: SetMigratorAllowlistInstructionDataArgs["allowlist"];
+  allowlist: SetMigratorAllowlistInstructionDataArgs['allowlist'];
 };
 
 export async function getSetMigratorAllowlistInstructionAsync<
@@ -126,7 +126,7 @@ export async function getSetMigratorAllowlistInstructionAsync<
   TProgramAddress extends Address = typeof INITIALIZER_PROGRAM_ADDRESS,
 >(
   input: SetMigratorAllowlistAsyncInput<TAccountAdmin, TAccountConfig>,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): Promise<
   SetMigratorAllowlistInstruction<
     TProgramAddress,
@@ -156,20 +156,20 @@ export async function getSetMigratorAllowlistInstructionAsync<
       programAddress,
       seeds: [
         getBytesEncoder().encode(
-          new Uint8Array([99, 111, 110, 102, 105, 103, 95, 118, 51]),
+          new Uint8Array([99, 111, 110, 102, 105, 103, 95, 118, 51])
         ),
       ],
     });
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("admin", accounts.admin),
-      getAccountMeta("config", accounts.config),
+      getAccountMeta('admin', accounts.admin),
+      getAccountMeta('config', accounts.config),
     ],
     data: getSetMigratorAllowlistInstructionDataEncoder().encode(
-      args as SetMigratorAllowlistInstructionDataArgs,
+      args as SetMigratorAllowlistInstructionDataArgs
     ),
     programAddress,
   } as SetMigratorAllowlistInstruction<
@@ -185,7 +185,7 @@ export type SetMigratorAllowlistInput<
 > = {
   admin: TransactionSigner<TAccountAdmin>;
   config: Address<TAccountConfig>;
-  allowlist: SetMigratorAllowlistInstructionDataArgs["allowlist"];
+  allowlist: SetMigratorAllowlistInstructionDataArgs['allowlist'];
 };
 
 export function getSetMigratorAllowlistInstruction<
@@ -194,7 +194,7 @@ export function getSetMigratorAllowlistInstruction<
   TProgramAddress extends Address = typeof INITIALIZER_PROGRAM_ADDRESS,
 >(
   input: SetMigratorAllowlistInput<TAccountAdmin, TAccountConfig>,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): SetMigratorAllowlistInstruction<
   TProgramAddress,
   TAccountAdmin,
@@ -216,14 +216,14 @@ export function getSetMigratorAllowlistInstruction<
   // Original args.
   const args = { ...input };
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("admin", accounts.admin),
-      getAccountMeta("config", accounts.config),
+      getAccountMeta('admin', accounts.admin),
+      getAccountMeta('config', accounts.config),
     ],
     data: getSetMigratorAllowlistInstructionDataEncoder().encode(
-      args as SetMigratorAllowlistInstructionDataArgs,
+      args as SetMigratorAllowlistInstructionDataArgs
     ),
     programAddress,
   } as SetMigratorAllowlistInstruction<
@@ -251,7 +251,7 @@ export function parseSetMigratorAllowlistInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>,
+    InstructionWithData<ReadonlyUint8Array>
 ): ParsedSetMigratorAllowlistInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 2) {
     throw new SolanaError(
@@ -259,7 +259,7 @@ export function parseSetMigratorAllowlistInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 2,
-      },
+      }
     );
   }
   let accountIndex = 0;
@@ -272,7 +272,7 @@ export function parseSetMigratorAllowlistInstruction<
     programAddress: instruction.programAddress,
     accounts: { admin: getNextAccount(), config: getNextAccount() },
     data: getSetMigratorAllowlistInstructionDataDecoder().decode(
-      instruction.data,
+      instruction.data
     ),
   };
 }

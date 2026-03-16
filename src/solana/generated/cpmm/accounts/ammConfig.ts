@@ -41,7 +41,7 @@ import {
   type MaybeAccount,
   type MaybeEncodedAccount,
   type ReadonlyUint8Array,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export const AMM_CONFIG_DISCRIMINATOR = new Uint8Array([
   218, 244, 33, 104, 203, 203, 43, 111,
@@ -86,40 +86,40 @@ export type AmmConfigArgs = {
 export function getAmmConfigEncoder(): FixedSizeEncoder<AmmConfigArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["admin", getAddressEncoder()],
-      ["paused", getBooleanEncoder()],
-      ["numeraireMint", getAddressEncoder()],
-      ["sentinelAllowlistLen", getU8Encoder()],
-      ["sentinelAllowlist", getArrayEncoder(getAddressEncoder(), { size: 32 })],
-      ["maxSwapFeeBps", getU16Encoder()],
-      ["maxFeeSplitBps", getU16Encoder()],
-      ["maxRouteHops", getU8Encoder()],
-      ["protocolFeeEnabled", getBooleanEncoder()],
-      ["protocolFeeBps", getU16Encoder()],
-      ["version", getU8Encoder()],
-      ["reserved", fixEncoderSize(getBytesEncoder(), 7)],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['admin', getAddressEncoder()],
+      ['paused', getBooleanEncoder()],
+      ['numeraireMint', getAddressEncoder()],
+      ['sentinelAllowlistLen', getU8Encoder()],
+      ['sentinelAllowlist', getArrayEncoder(getAddressEncoder(), { size: 32 })],
+      ['maxSwapFeeBps', getU16Encoder()],
+      ['maxFeeSplitBps', getU16Encoder()],
+      ['maxRouteHops', getU8Encoder()],
+      ['protocolFeeEnabled', getBooleanEncoder()],
+      ['protocolFeeBps', getU16Encoder()],
+      ['version', getU8Encoder()],
+      ['reserved', fixEncoderSize(getBytesEncoder(), 7)],
     ]),
-    (value) => ({ ...value, discriminator: AMM_CONFIG_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: AMM_CONFIG_DISCRIMINATOR })
   );
 }
 
 /** Gets the decoder for {@link AmmConfig} account data. */
 export function getAmmConfigDecoder(): FixedSizeDecoder<AmmConfig> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["admin", getAddressDecoder()],
-    ["paused", getBooleanDecoder()],
-    ["numeraireMint", getAddressDecoder()],
-    ["sentinelAllowlistLen", getU8Decoder()],
-    ["sentinelAllowlist", getArrayDecoder(getAddressDecoder(), { size: 32 })],
-    ["maxSwapFeeBps", getU16Decoder()],
-    ["maxFeeSplitBps", getU16Decoder()],
-    ["maxRouteHops", getU8Decoder()],
-    ["protocolFeeEnabled", getBooleanDecoder()],
-    ["protocolFeeBps", getU16Decoder()],
-    ["version", getU8Decoder()],
-    ["reserved", fixDecoderSize(getBytesDecoder(), 7)],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['admin', getAddressDecoder()],
+    ['paused', getBooleanDecoder()],
+    ['numeraireMint', getAddressDecoder()],
+    ['sentinelAllowlistLen', getU8Decoder()],
+    ['sentinelAllowlist', getArrayDecoder(getAddressDecoder(), { size: 32 })],
+    ['maxSwapFeeBps', getU16Decoder()],
+    ['maxFeeSplitBps', getU16Decoder()],
+    ['maxRouteHops', getU8Decoder()],
+    ['protocolFeeEnabled', getBooleanDecoder()],
+    ['protocolFeeBps', getU16Decoder()],
+    ['version', getU8Decoder()],
+    ['reserved', fixDecoderSize(getBytesDecoder(), 7)],
   ]);
 }
 
@@ -129,24 +129,24 @@ export function getAmmConfigCodec(): FixedSizeCodec<AmmConfigArgs, AmmConfig> {
 }
 
 export function decodeAmmConfig<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress>,
+  encodedAccount: EncodedAccount<TAddress>
 ): Account<AmmConfig, TAddress>;
 export function decodeAmmConfig<TAddress extends string = string>(
-  encodedAccount: MaybeEncodedAccount<TAddress>,
+  encodedAccount: MaybeEncodedAccount<TAddress>
 ): MaybeAccount<AmmConfig, TAddress>;
 export function decodeAmmConfig<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>,
+  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>
 ): Account<AmmConfig, TAddress> | MaybeAccount<AmmConfig, TAddress> {
   return decodeAccount(
     encodedAccount as MaybeEncodedAccount<TAddress>,
-    getAmmConfigDecoder(),
+    getAmmConfigDecoder()
   );
 }
 
 export async function fetchAmmConfig<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
-  config?: FetchAccountConfig,
+  config?: FetchAccountConfig
 ): Promise<Account<AmmConfig, TAddress>> {
   const maybeAccount = await fetchMaybeAmmConfig(rpc, address, config);
   assertAccountExists(maybeAccount);
@@ -156,7 +156,7 @@ export async function fetchAmmConfig<TAddress extends string = string>(
 export async function fetchMaybeAmmConfig<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
-  config?: FetchAccountConfig,
+  config?: FetchAccountConfig
 ): Promise<MaybeAccount<AmmConfig, TAddress>> {
   const maybeAccount = await fetchEncodedAccount(rpc, address, config);
   return decodeAmmConfig(maybeAccount);
@@ -165,7 +165,7 @@ export async function fetchMaybeAmmConfig<TAddress extends string = string>(
 export async function fetchAllAmmConfig(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
-  config?: FetchAccountsConfig,
+  config?: FetchAccountsConfig
 ): Promise<Account<AmmConfig>[]> {
   const maybeAccounts = await fetchAllMaybeAmmConfig(rpc, addresses, config);
   assertAccountsExist(maybeAccounts);
@@ -175,7 +175,7 @@ export async function fetchAllAmmConfig(
 export async function fetchAllMaybeAmmConfig(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
-  config?: FetchAccountsConfig,
+  config?: FetchAccountsConfig
 ): Promise<MaybeAccount<AmmConfig>[]> {
   const maybeAccounts = await fetchEncodedAccounts(rpc, addresses, config);
   return maybeAccounts.map((maybeAccount) => decodeAmmConfig(maybeAccount));

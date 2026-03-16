@@ -11,8 +11,8 @@ import {
   type Address,
   type SOLANA_ERROR__INSTRUCTION_ERROR__CUSTOM,
   type SolanaError,
-} from "@solana/kit";
-import { INITIALIZER_PROGRAM_ADDRESS } from "../programs";
+} from '@solana/kit';
+import { INITIALIZER_PROGRAM_ADDRESS } from '../programs';
 
 /** Unauthorized: Unauthorized */
 export const INITIALIZER_ERROR__UNAUTHORIZED = 0x1770; // 6000
@@ -123,7 +123,7 @@ export type InitializerError =
   | typeof INITIALIZER_ERROR__WRONG_SENTINEL;
 
 let initializerErrorMessages: Record<InitializerError, string> | undefined;
-if (process.env.NODE_ENV !== "production") {
+if (process.env.NODE_ENV !== 'production') {
   initializerErrorMessages = {
     [INITIALIZER_ERROR__ALLOWLIST_FULL]: `Allowlist full`,
     [INITIALIZER_ERROR__ALREADY_MIGRATED]: `Already migrated`,
@@ -164,11 +164,11 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 export function getInitializerErrorMessage(code: InitializerError): string {
-  if (process.env.NODE_ENV !== "production") {
+  if (process.env.NODE_ENV !== 'production') {
     return (initializerErrorMessages as Record<InitializerError, string>)[code];
   }
 
-  return "Error message not available in production bundles.";
+  return 'Error message not available in production bundles.';
 }
 
 export function isInitializerError<TProgramErrorCode extends InitializerError>(
@@ -176,13 +176,13 @@ export function isInitializerError<TProgramErrorCode extends InitializerError>(
   transactionMessage: {
     instructions: Record<number, { programAddress: Address }>;
   },
-  code?: TProgramErrorCode,
+  code?: TProgramErrorCode
 ): error is SolanaError<typeof SOLANA_ERROR__INSTRUCTION_ERROR__CUSTOM> &
   Readonly<{ context: Readonly<{ code: TProgramErrorCode }> }> {
   return isProgramError<TProgramErrorCode>(
     error,
     transactionMessage,
     INITIALIZER_PROGRAM_ADDRESS,
-    code,
+    code
   );
 }

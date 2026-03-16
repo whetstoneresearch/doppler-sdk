@@ -18,7 +18,7 @@ import {
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type ConfigInitialized = {
   admin: Address;
@@ -30,17 +30,17 @@ export type ConfigInitializedArgs = ConfigInitialized;
 
 export function getConfigInitializedEncoder(): FixedSizeEncoder<ConfigInitializedArgs> {
   return getStructEncoder([
-    ["admin", getAddressEncoder()],
-    ["migratorAllowlistLen", getU8Encoder()],
-    ["sentinelAllowlistLen", getU8Encoder()],
+    ['admin', getAddressEncoder()],
+    ['migratorAllowlistLen', getU8Encoder()],
+    ['sentinelAllowlistLen', getU8Encoder()],
   ]);
 }
 
 export function getConfigInitializedDecoder(): FixedSizeDecoder<ConfigInitialized> {
   return getStructDecoder([
-    ["admin", getAddressDecoder()],
-    ["migratorAllowlistLen", getU8Decoder()],
-    ["sentinelAllowlistLen", getU8Decoder()],
+    ['admin', getAddressDecoder()],
+    ['migratorAllowlistLen', getU8Decoder()],
+    ['sentinelAllowlistLen', getU8Decoder()],
   ]);
 }
 
@@ -50,6 +50,6 @@ export function getConfigInitializedCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getConfigInitializedEncoder(),
-    getConfigInitializedDecoder(),
+    getConfigInitializedDecoder()
   );
 }

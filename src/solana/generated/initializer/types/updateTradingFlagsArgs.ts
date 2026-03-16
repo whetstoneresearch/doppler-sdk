@@ -15,7 +15,7 @@ import {
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type UpdateTradingFlagsArgs = { allowBuy: number; allowSell: number };
 
@@ -23,15 +23,15 @@ export type UpdateTradingFlagsArgsArgs = UpdateTradingFlagsArgs;
 
 export function getUpdateTradingFlagsArgsEncoder(): FixedSizeEncoder<UpdateTradingFlagsArgsArgs> {
   return getStructEncoder([
-    ["allowBuy", getU8Encoder()],
-    ["allowSell", getU8Encoder()],
+    ['allowBuy', getU8Encoder()],
+    ['allowSell', getU8Encoder()],
   ]);
 }
 
 export function getUpdateTradingFlagsArgsDecoder(): FixedSizeDecoder<UpdateTradingFlagsArgs> {
   return getStructDecoder([
-    ["allowBuy", getU8Decoder()],
-    ["allowSell", getU8Decoder()],
+    ['allowBuy', getU8Decoder()],
+    ['allowSell', getU8Decoder()],
   ]);
 }
 
@@ -41,6 +41,6 @@ export function getUpdateTradingFlagsArgsCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getUpdateTradingFlagsArgsEncoder(),
-    getUpdateTradingFlagsArgsDecoder(),
+    getUpdateTradingFlagsArgsDecoder()
   );
 }

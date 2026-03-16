@@ -11,8 +11,8 @@ import {
   type Address,
   type SOLANA_ERROR__INSTRUCTION_ERROR__CUSTOM,
   type SolanaError,
-} from "@solana/kit";
-import { CPMM_PROGRAM_ADDRESS } from "../programs";
+} from '@solana/kit';
+import { CPMM_PROGRAM_ADDRESS } from '../programs';
 
 /** Unauthorized: Unauthorized */
 export const CPMM_ERROR__UNAUTHORIZED = 0x1770; // 6000
@@ -111,7 +111,7 @@ export type CpmmError =
   | typeof CPMM_ERROR__ZERO_SHARES_OUT;
 
 let cpmmErrorMessages: Record<CpmmError, string> | undefined;
-if (process.env.NODE_ENV !== "production") {
+if (process.env.NODE_ENV !== 'production') {
   cpmmErrorMessages = {
     [CPMM_ERROR__AMOUNT_ZERO]: `Amount zero`,
     [CPMM_ERROR__INSUFFICIENT_LIQUIDITY]: `Insufficient liquidity`,
@@ -148,11 +148,11 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 export function getCpmmErrorMessage(code: CpmmError): string {
-  if (process.env.NODE_ENV !== "production") {
+  if (process.env.NODE_ENV !== 'production') {
     return (cpmmErrorMessages as Record<CpmmError, string>)[code];
   }
 
-  return "Error message not available in production bundles.";
+  return 'Error message not available in production bundles.';
 }
 
 export function isCpmmError<TProgramErrorCode extends CpmmError>(
@@ -160,13 +160,13 @@ export function isCpmmError<TProgramErrorCode extends CpmmError>(
   transactionMessage: {
     instructions: Record<number, { programAddress: Address }>;
   },
-  code?: TProgramErrorCode,
+  code?: TProgramErrorCode
 ): error is SolanaError<typeof SOLANA_ERROR__INSTRUCTION_ERROR__CUSTOM> &
   Readonly<{ context: Readonly<{ code: TProgramErrorCode }> }> {
   return isProgramError<TProgramErrorCode>(
     error,
     transactionMessage,
     CPMM_PROGRAM_ADDRESS,
-    code,
+    code
   );
 }

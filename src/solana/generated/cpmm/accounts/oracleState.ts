@@ -47,13 +47,13 @@ import {
   type MaybeAccount,
   type MaybeEncodedAccount,
   type ReadonlyUint8Array,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   getObservationDecoder,
   getObservationEncoder,
   type Observation,
   type ObservationArgs,
-} from "../types";
+} from '../types';
 
 export const ORACLE_STATE_DISCRIMINATOR = new Uint8Array([
   97, 156, 157, 189, 194, 73, 8, 15,
@@ -61,7 +61,7 @@ export const ORACLE_STATE_DISCRIMINATOR = new Uint8Array([
 
 export function getOracleStateDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    ORACLE_STATE_DISCRIMINATOR,
+    ORACLE_STATE_DISCRIMINATOR
   );
 }
 
@@ -110,50 +110,50 @@ export type OracleStateArgs = {
 export function getOracleStateEncoder(): FixedSizeEncoder<OracleStateArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["pool", getAddressEncoder()],
-      ["initialized", getBooleanEncoder()],
-      ["maxPriceChangeRatioQ64", getU128Encoder()],
-      ["lastSlot", getU64Encoder()],
-      ["truncPrice0Q64", getU128Encoder()],
-      ["truncPrice1Q64", getU128Encoder()],
-      ["deviation0Q64", getU128Encoder()],
-      ["deviation1Q64", getU128Encoder()],
-      ["price0Cumulative", getArrayEncoder(getU64Encoder(), { size: 4 })],
-      ["price1Cumulative", getArrayEncoder(getU64Encoder(), { size: 4 })],
-      ["lastTimestamp", getU32Encoder()],
-      ["lastObservationTimestamp", getU32Encoder()],
-      ["observationIntervalSec", getU32Encoder()],
-      ["observationIndex", getU16Encoder()],
-      ["observations", getArrayEncoder(getObservationEncoder(), { size: 64 })],
-      ["version", getU8Encoder()],
-      ["reserved", fixEncoderSize(getBytesEncoder(), 7)],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['pool', getAddressEncoder()],
+      ['initialized', getBooleanEncoder()],
+      ['maxPriceChangeRatioQ64', getU128Encoder()],
+      ['lastSlot', getU64Encoder()],
+      ['truncPrice0Q64', getU128Encoder()],
+      ['truncPrice1Q64', getU128Encoder()],
+      ['deviation0Q64', getU128Encoder()],
+      ['deviation1Q64', getU128Encoder()],
+      ['price0Cumulative', getArrayEncoder(getU64Encoder(), { size: 4 })],
+      ['price1Cumulative', getArrayEncoder(getU64Encoder(), { size: 4 })],
+      ['lastTimestamp', getU32Encoder()],
+      ['lastObservationTimestamp', getU32Encoder()],
+      ['observationIntervalSec', getU32Encoder()],
+      ['observationIndex', getU16Encoder()],
+      ['observations', getArrayEncoder(getObservationEncoder(), { size: 64 })],
+      ['version', getU8Encoder()],
+      ['reserved', fixEncoderSize(getBytesEncoder(), 7)],
     ]),
-    (value) => ({ ...value, discriminator: ORACLE_STATE_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: ORACLE_STATE_DISCRIMINATOR })
   );
 }
 
 /** Gets the decoder for {@link OracleState} account data. */
 export function getOracleStateDecoder(): FixedSizeDecoder<OracleState> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["pool", getAddressDecoder()],
-    ["initialized", getBooleanDecoder()],
-    ["maxPriceChangeRatioQ64", getU128Decoder()],
-    ["lastSlot", getU64Decoder()],
-    ["truncPrice0Q64", getU128Decoder()],
-    ["truncPrice1Q64", getU128Decoder()],
-    ["deviation0Q64", getU128Decoder()],
-    ["deviation1Q64", getU128Decoder()],
-    ["price0Cumulative", getArrayDecoder(getU64Decoder(), { size: 4 })],
-    ["price1Cumulative", getArrayDecoder(getU64Decoder(), { size: 4 })],
-    ["lastTimestamp", getU32Decoder()],
-    ["lastObservationTimestamp", getU32Decoder()],
-    ["observationIntervalSec", getU32Decoder()],
-    ["observationIndex", getU16Decoder()],
-    ["observations", getArrayDecoder(getObservationDecoder(), { size: 64 })],
-    ["version", getU8Decoder()],
-    ["reserved", fixDecoderSize(getBytesDecoder(), 7)],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['pool', getAddressDecoder()],
+    ['initialized', getBooleanDecoder()],
+    ['maxPriceChangeRatioQ64', getU128Decoder()],
+    ['lastSlot', getU64Decoder()],
+    ['truncPrice0Q64', getU128Decoder()],
+    ['truncPrice1Q64', getU128Decoder()],
+    ['deviation0Q64', getU128Decoder()],
+    ['deviation1Q64', getU128Decoder()],
+    ['price0Cumulative', getArrayDecoder(getU64Decoder(), { size: 4 })],
+    ['price1Cumulative', getArrayDecoder(getU64Decoder(), { size: 4 })],
+    ['lastTimestamp', getU32Decoder()],
+    ['lastObservationTimestamp', getU32Decoder()],
+    ['observationIntervalSec', getU32Decoder()],
+    ['observationIndex', getU16Decoder()],
+    ['observations', getArrayDecoder(getObservationDecoder(), { size: 64 })],
+    ['version', getU8Decoder()],
+    ['reserved', fixDecoderSize(getBytesDecoder(), 7)],
   ]);
 }
 
@@ -166,24 +166,24 @@ export function getOracleStateCodec(): FixedSizeCodec<
 }
 
 export function decodeOracleState<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress>,
+  encodedAccount: EncodedAccount<TAddress>
 ): Account<OracleState, TAddress>;
 export function decodeOracleState<TAddress extends string = string>(
-  encodedAccount: MaybeEncodedAccount<TAddress>,
+  encodedAccount: MaybeEncodedAccount<TAddress>
 ): MaybeAccount<OracleState, TAddress>;
 export function decodeOracleState<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>,
+  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>
 ): Account<OracleState, TAddress> | MaybeAccount<OracleState, TAddress> {
   return decodeAccount(
     encodedAccount as MaybeEncodedAccount<TAddress>,
-    getOracleStateDecoder(),
+    getOracleStateDecoder()
   );
 }
 
 export async function fetchOracleState<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
-  config?: FetchAccountConfig,
+  config?: FetchAccountConfig
 ): Promise<Account<OracleState, TAddress>> {
   const maybeAccount = await fetchMaybeOracleState(rpc, address, config);
   assertAccountExists(maybeAccount);
@@ -193,7 +193,7 @@ export async function fetchOracleState<TAddress extends string = string>(
 export async function fetchMaybeOracleState<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
-  config?: FetchAccountConfig,
+  config?: FetchAccountConfig
 ): Promise<MaybeAccount<OracleState, TAddress>> {
   const maybeAccount = await fetchEncodedAccount(rpc, address, config);
   return decodeOracleState(maybeAccount);
@@ -202,7 +202,7 @@ export async function fetchMaybeOracleState<TAddress extends string = string>(
 export async function fetchAllOracleState(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
-  config?: FetchAccountsConfig,
+  config?: FetchAccountsConfig
 ): Promise<Account<OracleState>[]> {
   const maybeAccounts = await fetchAllMaybeOracleState(rpc, addresses, config);
   assertAccountsExist(maybeAccounts);
@@ -212,7 +212,7 @@ export async function fetchAllOracleState(
 export async function fetchAllMaybeOracleState(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
-  config?: FetchAccountsConfig,
+  config?: FetchAccountsConfig
 ): Promise<MaybeAccount<OracleState>[]> {
   const maybeAccounts = await fetchEncodedAccounts(rpc, addresses, config);
   return maybeAccounts.map((maybeAccount) => decodeOracleState(maybeAccount));

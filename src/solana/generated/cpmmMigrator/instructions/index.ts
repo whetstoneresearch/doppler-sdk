@@ -6,5 +6,5 @@
  * @see https://github.com/codama-idl/codama
  */
 
-export * from "./migrate";
-export * from "./registerLaunch";
+export * from './migrate';
+export * from './registerLaunch';

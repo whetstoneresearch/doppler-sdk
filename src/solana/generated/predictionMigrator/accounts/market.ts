@@ -41,7 +41,7 @@ import {
   type MaybeAccount,
   type MaybeEncodedAccount,
   type ReadonlyUint8Array,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export const MARKET_DISCRIMINATOR = new Uint8Array([
   219, 190, 213, 55, 0, 227, 198, 154,
@@ -116,40 +116,40 @@ export type MarketArgs = {
 export function getMarketEncoder(): FixedSizeEncoder<MarketArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["oracle", getAddressEncoder()],
-      ["quoteMint", getAddressEncoder()],
-      ["potVault", getAddressEncoder()],
-      ["totalPot", getU64Encoder()],
-      ["totalClaimed", getU64Encoder()],
-      ["winnerMint", getAddressEncoder()],
-      ["claimableSupply", getU64Encoder()],
-      ["accQuotePerToken", getU128Encoder()],
-      ["isResolved", getBooleanEncoder()],
-      ["bump", getU8Encoder()],
-      ["marketAuthorityBump", getU8Encoder()],
-      ["reserved", fixEncoderSize(getBytesEncoder(), 29)],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['oracle', getAddressEncoder()],
+      ['quoteMint', getAddressEncoder()],
+      ['potVault', getAddressEncoder()],
+      ['totalPot', getU64Encoder()],
+      ['totalClaimed', getU64Encoder()],
+      ['winnerMint', getAddressEncoder()],
+      ['claimableSupply', getU64Encoder()],
+      ['accQuotePerToken', getU128Encoder()],
+      ['isResolved', getBooleanEncoder()],
+      ['bump', getU8Encoder()],
+      ['marketAuthorityBump', getU8Encoder()],
+      ['reserved', fixEncoderSize(getBytesEncoder(), 29)],
     ]),
-    (value) => ({ ...value, discriminator: MARKET_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: MARKET_DISCRIMINATOR })
   );
 }
 
 /** Gets the decoder for {@link Market} account data. */
 export function getMarketDecoder(): FixedSizeDecoder<Market> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["oracle", getAddressDecoder()],
-    ["quoteMint", getAddressDecoder()],
-    ["potVault", getAddressDecoder()],
-    ["totalPot", getU64Decoder()],
-    ["totalClaimed", getU64Decoder()],
-    ["winnerMint", getAddressDecoder()],
-    ["claimableSupply", getU64Decoder()],
-    ["accQuotePerToken", getU128Decoder()],
-    ["isResolved", getBooleanDecoder()],
-    ["bump", getU8Decoder()],
-    ["marketAuthorityBump", getU8Decoder()],
-    ["reserved", fixDecoderSize(getBytesDecoder(), 29)],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['oracle', getAddressDecoder()],
+    ['quoteMint', getAddressDecoder()],
+    ['potVault', getAddressDecoder()],
+    ['totalPot', getU64Decoder()],
+    ['totalClaimed', getU64Decoder()],
+    ['winnerMint', getAddressDecoder()],
+    ['claimableSupply', getU64Decoder()],
+    ['accQuotePerToken', getU128Decoder()],
+    ['isResolved', getBooleanDecoder()],
+    ['bump', getU8Decoder()],
+    ['marketAuthorityBump', getU8Decoder()],
+    ['reserved', fixDecoderSize(getBytesDecoder(), 29)],
   ]);
 }
 
@@ -159,24 +159,24 @@ export function getMarketCodec(): FixedSizeCodec<MarketArgs, Market> {
 }
 
 export function decodeMarket<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress>,
+  encodedAccount: EncodedAccount<TAddress>
 ): Account<Market, TAddress>;
 export function decodeMarket<TAddress extends string = string>(
-  encodedAccount: MaybeEncodedAccount<TAddress>,
+  encodedAccount: MaybeEncodedAccount<TAddress>
 ): MaybeAccount<Market, TAddress>;
 export function decodeMarket<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>,
+  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>
 ): Account<Market, TAddress> | MaybeAccount<Market, TAddress> {
   return decodeAccount(
     encodedAccount as MaybeEncodedAccount<TAddress>,
-    getMarketDecoder(),
+    getMarketDecoder()
   );
 }
 
 export async function fetchMarket<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
-  config?: FetchAccountConfig,
+  config?: FetchAccountConfig
 ): Promise<Account<Market, TAddress>> {
   const maybeAccount = await fetchMaybeMarket(rpc, address, config);
   assertAccountExists(maybeAccount);
@@ -186,7 +186,7 @@ export async function fetchMarket<TAddress extends string = string>(
 export async function fetchMaybeMarket<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
-  config?: FetchAccountConfig,
+  config?: FetchAccountConfig
 ): Promise<MaybeAccount<Market, TAddress>> {
   const maybeAccount = await fetchEncodedAccount(rpc, address, config);
   return decodeMarket(maybeAccount);
@@ -195,7 +195,7 @@ export async function fetchMaybeMarket<TAddress extends string = string>(
 export async function fetchAllMarket(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
-  config?: FetchAccountsConfig,
+  config?: FetchAccountsConfig
 ): Promise<Account<Market>[]> {
   const maybeAccounts = await fetchAllMaybeMarket(rpc, addresses, config);
   assertAccountsExist(maybeAccounts);
@@ -205,7 +205,7 @@ export async function fetchAllMarket(
 export async function fetchAllMaybeMarket(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
-  config?: FetchAccountsConfig,
+  config?: FetchAccountsConfig
 ): Promise<MaybeAccount<Market>[]> {
   const maybeAccounts = await fetchEncodedAccounts(rpc, addresses, config);
   return maybeAccounts.map((maybeAccount) => decodeMarket(maybeAccount));

@@ -35,12 +35,12 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   getAccountMetaFactory,
   type ResolvedInstructionAccount,
-} from "@solana/program-client-core";
-import { INITIALIZER_PROGRAM_ADDRESS } from "../programs";
+} from '@solana/program-client-core';
+import { INITIALIZER_PROGRAM_ADDRESS } from '../programs';
 
 export const SET_SENTINEL_ALLOWLIST_DISCRIMINATOR = new Uint8Array([
   233, 72, 180, 246, 171, 117, 21, 50,
@@ -48,7 +48,7 @@ export const SET_SENTINEL_ALLOWLIST_DISCRIMINATOR = new Uint8Array([
 
 export function getSetSentinelAllowlistDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    SET_SENTINEL_ALLOWLIST_DISCRIMINATOR,
+    SET_SENTINEL_ALLOWLIST_DISCRIMINATOR
   );
 }
 
@@ -84,20 +84,20 @@ export type SetSentinelAllowlistInstructionDataArgs = {
 export function getSetSentinelAllowlistInstructionDataEncoder(): Encoder<SetSentinelAllowlistInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["allowlist", getArrayEncoder(getAddressEncoder())],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['allowlist', getArrayEncoder(getAddressEncoder())],
     ]),
     (value) => ({
       ...value,
       discriminator: SET_SENTINEL_ALLOWLIST_DISCRIMINATOR,
-    }),
+    })
   );
 }
 
 export function getSetSentinelAllowlistInstructionDataDecoder(): Decoder<SetSentinelAllowlistInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["allowlist", getArrayDecoder(getAddressDecoder())],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['allowlist', getArrayDecoder(getAddressDecoder())],
   ]);
 }
 
@@ -107,7 +107,7 @@ export function getSetSentinelAllowlistInstructionDataCodec(): Codec<
 > {
   return combineCodec(
     getSetSentinelAllowlistInstructionDataEncoder(),
-    getSetSentinelAllowlistInstructionDataDecoder(),
+    getSetSentinelAllowlistInstructionDataDecoder()
   );
 }
 
@@ -117,7 +117,7 @@ export type SetSentinelAllowlistAsyncInput<
 > = {
   admin: TransactionSigner<TAccountAdmin>;
   config?: Address<TAccountConfig>;
-  allowlist: SetSentinelAllowlistInstructionDataArgs["allowlist"];
+  allowlist: SetSentinelAllowlistInstructionDataArgs['allowlist'];
 };
 
 export async function getSetSentinelAllowlistInstructionAsync<
@@ -126,7 +126,7 @@ export async function getSetSentinelAllowlistInstructionAsync<
   TProgramAddress extends Address = typeof INITIALIZER_PROGRAM_ADDRESS,
 >(
   input: SetSentinelAllowlistAsyncInput<TAccountAdmin, TAccountConfig>,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): Promise<
   SetSentinelAllowlistInstruction<
     TProgramAddress,
@@ -156,20 +156,20 @@ export async function getSetSentinelAllowlistInstructionAsync<
       programAddress,
       seeds: [
         getBytesEncoder().encode(
-          new Uint8Array([99, 111, 110, 102, 105, 103, 95, 118, 51]),
+          new Uint8Array([99, 111, 110, 102, 105, 103, 95, 118, 51])
         ),
       ],
     });
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("admin", accounts.admin),
-      getAccountMeta("config", accounts.config),
+      getAccountMeta('admin', accounts.admin),
+      getAccountMeta('config', accounts.config),
     ],
     data: getSetSentinelAllowlistInstructionDataEncoder().encode(
-      args as SetSentinelAllowlistInstructionDataArgs,
+      args as SetSentinelAllowlistInstructionDataArgs
     ),
     programAddress,
   } as SetSentinelAllowlistInstruction<
@@ -185,7 +185,7 @@ export type SetSentinelAllowlistInput<
 > = {
   admin: TransactionSigner<TAccountAdmin>;
   config: Address<TAccountConfig>;
-  allowlist: SetSentinelAllowlistInstructionDataArgs["allowlist"];
+  allowlist: SetSentinelAllowlistInstructionDataArgs['allowlist'];
 };
 
 export function getSetSentinelAllowlistInstruction<
@@ -194,7 +194,7 @@ export function getSetSentinelAllowlistInstruction<
   TProgramAddress extends Address = typeof INITIALIZER_PROGRAM_ADDRESS,
 >(
   input: SetSentinelAllowlistInput<TAccountAdmin, TAccountConfig>,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): SetSentinelAllowlistInstruction<
   TProgramAddress,
   TAccountAdmin,
@@ -216,14 +216,14 @@ export function getSetSentinelAllowlistInstruction<
   // Original args.
   const args = { ...input };
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("admin", accounts.admin),
-      getAccountMeta("config", accounts.config),
+      getAccountMeta('admin', accounts.admin),
+      getAccountMeta('config', accounts.config),
     ],
     data: getSetSentinelAllowlistInstructionDataEncoder().encode(
-      args as SetSentinelAllowlistInstructionDataArgs,
+      args as SetSentinelAllowlistInstructionDataArgs
     ),
     programAddress,
   } as SetSentinelAllowlistInstruction<
@@ -251,7 +251,7 @@ export function parseSetSentinelAllowlistInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>,
+    InstructionWithData<ReadonlyUint8Array>
 ): ParsedSetSentinelAllowlistInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 2) {
     throw new SolanaError(
@@ -259,7 +259,7 @@ export function parseSetSentinelAllowlistInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 2,
-      },
+      }
     );
   }
   let accountIndex = 0;
@@ -272,7 +272,7 @@ export function parseSetSentinelAllowlistInstruction<
     programAddress: instruction.programAddress,
     accounts: { admin: getNextAccount(), config: getNextAccount() },
     data: getSetSentinelAllowlistInstructionDataDecoder().decode(
-      instruction.data,
+      instruction.data
     ),
   };
 }

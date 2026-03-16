@@ -35,12 +35,12 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   getAccountMetaFactory,
   type ResolvedInstructionAccount,
-} from "@solana/program-client-core";
-import { CPMM_PROGRAM_ADDRESS } from "../programs";
+} from '@solana/program-client-core';
+import { CPMM_PROGRAM_ADDRESS } from '../programs';
 
 export const SET_SENTINEL_DISCRIMINATOR = new Uint8Array([
   94, 200, 82, 129, 53, 149, 232, 113,
@@ -48,7 +48,7 @@ export const SET_SENTINEL_DISCRIMINATOR = new Uint8Array([
 
 export function getSetSentinelDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    SET_SENTINEL_DISCRIMINATOR,
+    SET_SENTINEL_DISCRIMINATOR
   );
 }
 
@@ -90,19 +90,19 @@ export type SetSentinelInstructionDataArgs = {
 export function getSetSentinelInstructionDataEncoder(): FixedSizeEncoder<SetSentinelInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["sentinelProgram", getAddressEncoder()],
-      ["sentinelFlags", getU32Encoder()],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['sentinelProgram', getAddressEncoder()],
+      ['sentinelFlags', getU32Encoder()],
     ]),
-    (value) => ({ ...value, discriminator: SET_SENTINEL_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: SET_SENTINEL_DISCRIMINATOR })
   );
 }
 
 export function getSetSentinelInstructionDataDecoder(): FixedSizeDecoder<SetSentinelInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["sentinelProgram", getAddressDecoder()],
-    ["sentinelFlags", getU32Decoder()],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['sentinelProgram', getAddressDecoder()],
+    ['sentinelFlags', getU32Decoder()],
   ]);
 }
 
@@ -112,7 +112,7 @@ export function getSetSentinelInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getSetSentinelInstructionDataEncoder(),
-    getSetSentinelInstructionDataDecoder(),
+    getSetSentinelInstructionDataDecoder()
   );
 }
 
@@ -124,8 +124,8 @@ export type SetSentinelInput<
   config: Address<TAccountConfig>;
   pool: Address<TAccountPool>;
   admin: TransactionSigner<TAccountAdmin>;
-  sentinelProgram: SetSentinelInstructionDataArgs["sentinelProgram"];
-  sentinelFlags: SetSentinelInstructionDataArgs["sentinelFlags"];
+  sentinelProgram: SetSentinelInstructionDataArgs['sentinelProgram'];
+  sentinelFlags: SetSentinelInstructionDataArgs['sentinelFlags'];
 };
 
 export function getSetSentinelInstruction<
@@ -135,7 +135,7 @@ export function getSetSentinelInstruction<
   TProgramAddress extends Address = typeof CPMM_PROGRAM_ADDRESS,
 >(
   input: SetSentinelInput<TAccountConfig, TAccountPool, TAccountAdmin>,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): SetSentinelInstruction<
   TProgramAddress,
   TAccountConfig,
@@ -159,15 +159,15 @@ export function getSetSentinelInstruction<
   // Original args.
   const args = { ...input };
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("config", accounts.config),
-      getAccountMeta("pool", accounts.pool),
-      getAccountMeta("admin", accounts.admin),
+      getAccountMeta('config', accounts.config),
+      getAccountMeta('pool', accounts.pool),
+      getAccountMeta('admin', accounts.admin),
     ],
     data: getSetSentinelInstructionDataEncoder().encode(
-      args as SetSentinelInstructionDataArgs,
+      args as SetSentinelInstructionDataArgs
     ),
     programAddress,
   } as SetSentinelInstruction<
@@ -197,7 +197,7 @@ export function parseSetSentinelInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>,
+    InstructionWithData<ReadonlyUint8Array>
 ): ParsedSetSentinelInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 3) {
     throw new SolanaError(
@@ -205,7 +205,7 @@ export function parseSetSentinelInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 3,
-      },
+      }
     );
   }
   let accountIndex = 0;

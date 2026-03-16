@@ -33,12 +33,12 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   getAccountMetaFactory,
   type ResolvedInstructionAccount,
-} from "@solana/program-client-core";
-import { CPMM_PROGRAM_ADDRESS } from "../programs";
+} from '@solana/program-client-core';
+import { CPMM_PROGRAM_ADDRESS } from '../programs';
 
 export const SET_FEES_DISCRIMINATOR = new Uint8Array([
   137, 178, 49, 58, 0, 245, 242, 190,
@@ -86,19 +86,19 @@ export type SetFeesInstructionDataArgs = {
 export function getSetFeesInstructionDataEncoder(): FixedSizeEncoder<SetFeesInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["swapFeeBps", getU16Encoder()],
-      ["feeSplitBps", getU16Encoder()],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['swapFeeBps', getU16Encoder()],
+      ['feeSplitBps', getU16Encoder()],
     ]),
-    (value) => ({ ...value, discriminator: SET_FEES_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: SET_FEES_DISCRIMINATOR })
   );
 }
 
 export function getSetFeesInstructionDataDecoder(): FixedSizeDecoder<SetFeesInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["swapFeeBps", getU16Decoder()],
-    ["feeSplitBps", getU16Decoder()],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['swapFeeBps', getU16Decoder()],
+    ['feeSplitBps', getU16Decoder()],
   ]);
 }
 
@@ -108,7 +108,7 @@ export function getSetFeesInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getSetFeesInstructionDataEncoder(),
-    getSetFeesInstructionDataDecoder(),
+    getSetFeesInstructionDataDecoder()
   );
 }
 
@@ -120,8 +120,8 @@ export type SetFeesInput<
   config: Address<TAccountConfig>;
   pool: Address<TAccountPool>;
   admin: TransactionSigner<TAccountAdmin>;
-  swapFeeBps: SetFeesInstructionDataArgs["swapFeeBps"];
-  feeSplitBps: SetFeesInstructionDataArgs["feeSplitBps"];
+  swapFeeBps: SetFeesInstructionDataArgs['swapFeeBps'];
+  feeSplitBps: SetFeesInstructionDataArgs['feeSplitBps'];
 };
 
 export function getSetFeesInstruction<
@@ -131,7 +131,7 @@ export function getSetFeesInstruction<
   TProgramAddress extends Address = typeof CPMM_PROGRAM_ADDRESS,
 >(
   input: SetFeesInput<TAccountConfig, TAccountPool, TAccountAdmin>,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): SetFeesInstruction<
   TProgramAddress,
   TAccountConfig,
@@ -155,15 +155,15 @@ export function getSetFeesInstruction<
   // Original args.
   const args = { ...input };
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("config", accounts.config),
-      getAccountMeta("pool", accounts.pool),
-      getAccountMeta("admin", accounts.admin),
+      getAccountMeta('config', accounts.config),
+      getAccountMeta('pool', accounts.pool),
+      getAccountMeta('admin', accounts.admin),
     ],
     data: getSetFeesInstructionDataEncoder().encode(
-      args as SetFeesInstructionDataArgs,
+      args as SetFeesInstructionDataArgs
     ),
     programAddress,
   } as SetFeesInstruction<
@@ -193,7 +193,7 @@ export function parseSetFeesInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>,
+    InstructionWithData<ReadonlyUint8Array>
 ): ParsedSetFeesInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 3) {
     throw new SolanaError(
@@ -201,7 +201,7 @@ export function parseSetFeesInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 3,
-      },
+      }
     );
   }
   let accountIndex = 0;

@@ -39,13 +39,13 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   getAccountMetaFactory,
   getAddressFromResolvedInstructionAccount,
   type ResolvedInstructionAccount,
-} from "@solana/program-client-core";
-import { CPMM_PROGRAM_ADDRESS } from "../programs";
+} from '@solana/program-client-core';
+import { CPMM_PROGRAM_ADDRESS } from '../programs';
 
 export const ADD_LIQUIDITY_DISCRIMINATOR = new Uint8Array([
   181, 157, 89, 67, 143, 182, 52, 72,
@@ -53,7 +53,7 @@ export const ADD_LIQUIDITY_DISCRIMINATOR = new Uint8Array([
 
 export function getAddLiquidityDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    ADD_LIQUIDITY_DISCRIMINATOR,
+    ADD_LIQUIDITY_DISCRIMINATOR
   );
 }
 
@@ -72,7 +72,7 @@ export type AddLiquidityInstruction<
   TAccountUser0 extends string | AccountMeta<string> = string,
   TAccountUser1 extends string | AccountMeta<string> = string,
   TAccountTokenProgram extends string | AccountMeta<string> =
-    "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
   TAccountOracle extends string | AccountMeta<string> = string,
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
@@ -144,23 +144,23 @@ export type AddLiquidityInstructionDataArgs = {
 export function getAddLiquidityInstructionDataEncoder(): FixedSizeEncoder<AddLiquidityInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["amount0Max", getU64Encoder()],
-      ["amount1Max", getU64Encoder()],
-      ["minSharesOut", getU128Encoder()],
-      ["updateOracle", getBooleanEncoder()],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['amount0Max', getU64Encoder()],
+      ['amount1Max', getU64Encoder()],
+      ['minSharesOut', getU128Encoder()],
+      ['updateOracle', getBooleanEncoder()],
     ]),
-    (value) => ({ ...value, discriminator: ADD_LIQUIDITY_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: ADD_LIQUIDITY_DISCRIMINATOR })
   );
 }
 
 export function getAddLiquidityInstructionDataDecoder(): FixedSizeDecoder<AddLiquidityInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["amount0Max", getU64Decoder()],
-    ["amount1Max", getU64Decoder()],
-    ["minSharesOut", getU128Decoder()],
-    ["updateOracle", getBooleanDecoder()],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['amount0Max', getU64Decoder()],
+    ['amount1Max', getU64Decoder()],
+    ['minSharesOut', getU128Decoder()],
+    ['updateOracle', getBooleanDecoder()],
   ]);
 }
 
@@ -170,7 +170,7 @@ export function getAddLiquidityInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getAddLiquidityInstructionDataEncoder(),
-    getAddLiquidityInstructionDataDecoder(),
+    getAddLiquidityInstructionDataDecoder()
   );
 }
 
@@ -204,10 +204,10 @@ export type AddLiquidityAsyncInput<
   user1: Address<TAccountUser1>;
   tokenProgram?: Address<TAccountTokenProgram>;
   oracle?: Address<TAccountOracle>;
-  amount0Max: AddLiquidityInstructionDataArgs["amount0Max"];
-  amount1Max: AddLiquidityInstructionDataArgs["amount1Max"];
-  minSharesOut: AddLiquidityInstructionDataArgs["minSharesOut"];
-  updateOracle: AddLiquidityInstructionDataArgs["updateOracle"];
+  amount0Max: AddLiquidityInstructionDataArgs['amount0Max'];
+  amount1Max: AddLiquidityInstructionDataArgs['amount1Max'];
+  minSharesOut: AddLiquidityInstructionDataArgs['minSharesOut'];
+  updateOracle: AddLiquidityInstructionDataArgs['updateOracle'];
 };
 
 export async function getAddLiquidityInstructionAsync<
@@ -243,7 +243,7 @@ export async function getAddLiquidityInstructionAsync<
     TAccountTokenProgram,
     TAccountOracle
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): Promise<
   AddLiquidityInstruction<
     TProgramAddress,
@@ -300,39 +300,39 @@ export async function getAddLiquidityInstructionAsync<
       programAddress,
       seeds: [
         getBytesEncoder().encode(
-          new Uint8Array([97, 117, 116, 104, 111, 114, 105, 116, 121]),
+          new Uint8Array([97, 117, 116, 104, 111, 114, 105, 116, 121])
         ),
         getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount("pool", accounts.pool.value),
+          getAddressFromResolvedInstructionAccount('pool', accounts.pool.value)
         ),
       ],
     });
   }
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
-      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" as Address<"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA">;
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("config", accounts.config),
-      getAccountMeta("pool", accounts.pool),
-      getAccountMeta("position", accounts.position),
-      getAccountMeta("protocolPosition", accounts.protocolPosition),
-      getAccountMeta("owner", accounts.owner),
-      getAccountMeta("authority", accounts.authority),
-      getAccountMeta("vault0", accounts.vault0),
-      getAccountMeta("vault1", accounts.vault1),
-      getAccountMeta("token0Mint", accounts.token0Mint),
-      getAccountMeta("token1Mint", accounts.token1Mint),
-      getAccountMeta("user0", accounts.user0),
-      getAccountMeta("user1", accounts.user1),
-      getAccountMeta("tokenProgram", accounts.tokenProgram),
-      getAccountMeta("oracle", accounts.oracle),
+      getAccountMeta('config', accounts.config),
+      getAccountMeta('pool', accounts.pool),
+      getAccountMeta('position', accounts.position),
+      getAccountMeta('protocolPosition', accounts.protocolPosition),
+      getAccountMeta('owner', accounts.owner),
+      getAccountMeta('authority', accounts.authority),
+      getAccountMeta('vault0', accounts.vault0),
+      getAccountMeta('vault1', accounts.vault1),
+      getAccountMeta('token0Mint', accounts.token0Mint),
+      getAccountMeta('token1Mint', accounts.token1Mint),
+      getAccountMeta('user0', accounts.user0),
+      getAccountMeta('user1', accounts.user1),
+      getAccountMeta('tokenProgram', accounts.tokenProgram),
+      getAccountMeta('oracle', accounts.oracle),
     ],
     data: getAddLiquidityInstructionDataEncoder().encode(
-      args as AddLiquidityInstructionDataArgs,
+      args as AddLiquidityInstructionDataArgs
     ),
     programAddress,
   } as AddLiquidityInstruction<
@@ -384,10 +384,10 @@ export type AddLiquidityInput<
   user1: Address<TAccountUser1>;
   tokenProgram?: Address<TAccountTokenProgram>;
   oracle?: Address<TAccountOracle>;
-  amount0Max: AddLiquidityInstructionDataArgs["amount0Max"];
-  amount1Max: AddLiquidityInstructionDataArgs["amount1Max"];
-  minSharesOut: AddLiquidityInstructionDataArgs["minSharesOut"];
-  updateOracle: AddLiquidityInstructionDataArgs["updateOracle"];
+  amount0Max: AddLiquidityInstructionDataArgs['amount0Max'];
+  amount1Max: AddLiquidityInstructionDataArgs['amount1Max'];
+  minSharesOut: AddLiquidityInstructionDataArgs['minSharesOut'];
+  updateOracle: AddLiquidityInstructionDataArgs['updateOracle'];
 };
 
 export function getAddLiquidityInstruction<
@@ -423,7 +423,7 @@ export function getAddLiquidityInstruction<
     TAccountTokenProgram,
     TAccountOracle
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): AddLiquidityInstruction<
   TProgramAddress,
   TAccountConfig,
@@ -475,29 +475,29 @@ export function getAddLiquidityInstruction<
   // Resolve default values.
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
-      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" as Address<"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA">;
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("config", accounts.config),
-      getAccountMeta("pool", accounts.pool),
-      getAccountMeta("position", accounts.position),
-      getAccountMeta("protocolPosition", accounts.protocolPosition),
-      getAccountMeta("owner", accounts.owner),
-      getAccountMeta("authority", accounts.authority),
-      getAccountMeta("vault0", accounts.vault0),
-      getAccountMeta("vault1", accounts.vault1),
-      getAccountMeta("token0Mint", accounts.token0Mint),
-      getAccountMeta("token1Mint", accounts.token1Mint),
-      getAccountMeta("user0", accounts.user0),
-      getAccountMeta("user1", accounts.user1),
-      getAccountMeta("tokenProgram", accounts.tokenProgram),
-      getAccountMeta("oracle", accounts.oracle),
+      getAccountMeta('config', accounts.config),
+      getAccountMeta('pool', accounts.pool),
+      getAccountMeta('position', accounts.position),
+      getAccountMeta('protocolPosition', accounts.protocolPosition),
+      getAccountMeta('owner', accounts.owner),
+      getAccountMeta('authority', accounts.authority),
+      getAccountMeta('vault0', accounts.vault0),
+      getAccountMeta('vault1', accounts.vault1),
+      getAccountMeta('token0Mint', accounts.token0Mint),
+      getAccountMeta('token1Mint', accounts.token1Mint),
+      getAccountMeta('user0', accounts.user0),
+      getAccountMeta('user1', accounts.user1),
+      getAccountMeta('tokenProgram', accounts.tokenProgram),
+      getAccountMeta('oracle', accounts.oracle),
     ],
     data: getAddLiquidityInstructionDataEncoder().encode(
-      args as AddLiquidityInstructionDataArgs,
+      args as AddLiquidityInstructionDataArgs
     ),
     programAddress,
   } as AddLiquidityInstruction<
@@ -549,7 +549,7 @@ export function parseAddLiquidityInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>,
+    InstructionWithData<ReadonlyUint8Array>
 ): ParsedAddLiquidityInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 14) {
     throw new SolanaError(
@@ -557,7 +557,7 @@ export function parseAddLiquidityInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 14,
-      },
+      }
     );
   }
   let accountIndex = 0;

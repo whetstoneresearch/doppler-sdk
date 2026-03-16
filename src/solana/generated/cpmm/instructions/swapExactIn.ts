@@ -39,13 +39,13 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   getAccountMetaFactory,
   getAddressFromResolvedInstructionAccount,
   type ResolvedInstructionAccount,
-} from "@solana/program-client-core";
-import { CPMM_PROGRAM_ADDRESS } from "../programs";
+} from '@solana/program-client-core';
+import { CPMM_PROGRAM_ADDRESS } from '../programs';
 
 export const SWAP_EXACT_IN_DISCRIMINATOR = new Uint8Array([
   104, 104, 131, 86, 161, 189, 180, 216,
@@ -53,7 +53,7 @@ export const SWAP_EXACT_IN_DISCRIMINATOR = new Uint8Array([
 
 export function getSwapExactInDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    SWAP_EXACT_IN_DISCRIMINATOR,
+    SWAP_EXACT_IN_DISCRIMINATOR
   );
 }
 
@@ -70,7 +70,7 @@ export type SwapExactInInstruction<
   TAccountUserOut extends string | AccountMeta<string> = string,
   TAccountTrader extends string | AccountMeta<string> = string,
   TAccountTokenProgram extends string | AccountMeta<string> =
-    "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
   TAccountOracle extends string | AccountMeta<string> = string,
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
@@ -136,23 +136,23 @@ export type SwapExactInInstructionDataArgs = {
 export function getSwapExactInInstructionDataEncoder(): FixedSizeEncoder<SwapExactInInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["amountIn", getU64Encoder()],
-      ["minAmountOut", getU64Encoder()],
-      ["direction", getU8Encoder()],
-      ["updateOracle", getBooleanEncoder()],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['amountIn', getU64Encoder()],
+      ['minAmountOut', getU64Encoder()],
+      ['direction', getU8Encoder()],
+      ['updateOracle', getBooleanEncoder()],
     ]),
-    (value) => ({ ...value, discriminator: SWAP_EXACT_IN_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: SWAP_EXACT_IN_DISCRIMINATOR })
   );
 }
 
 export function getSwapExactInInstructionDataDecoder(): FixedSizeDecoder<SwapExactInInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["amountIn", getU64Decoder()],
-    ["minAmountOut", getU64Decoder()],
-    ["direction", getU8Decoder()],
-    ["updateOracle", getBooleanDecoder()],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['amountIn', getU64Decoder()],
+    ['minAmountOut', getU64Decoder()],
+    ['direction', getU8Decoder()],
+    ['updateOracle', getBooleanDecoder()],
   ]);
 }
 
@@ -162,7 +162,7 @@ export function getSwapExactInInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getSwapExactInInstructionDataEncoder(),
-    getSwapExactInInstructionDataDecoder(),
+    getSwapExactInInstructionDataDecoder()
   );
 }
 
@@ -192,10 +192,10 @@ export type SwapExactInAsyncInput<
   trader: TransactionSigner<TAccountTrader>;
   tokenProgram?: Address<TAccountTokenProgram>;
   oracle?: Address<TAccountOracle>;
-  amountIn: SwapExactInInstructionDataArgs["amountIn"];
-  minAmountOut: SwapExactInInstructionDataArgs["minAmountOut"];
-  direction: SwapExactInInstructionDataArgs["direction"];
-  updateOracle: SwapExactInInstructionDataArgs["updateOracle"];
+  amountIn: SwapExactInInstructionDataArgs['amountIn'];
+  minAmountOut: SwapExactInInstructionDataArgs['minAmountOut'];
+  direction: SwapExactInInstructionDataArgs['direction'];
+  updateOracle: SwapExactInInstructionDataArgs['updateOracle'];
 };
 
 export async function getSwapExactInInstructionAsync<
@@ -227,7 +227,7 @@ export async function getSwapExactInInstructionAsync<
     TAccountTokenProgram,
     TAccountOracle
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): Promise<
   SwapExactInInstruction<
     TProgramAddress,
@@ -277,37 +277,37 @@ export async function getSwapExactInInstructionAsync<
       programAddress,
       seeds: [
         getBytesEncoder().encode(
-          new Uint8Array([97, 117, 116, 104, 111, 114, 105, 116, 121]),
+          new Uint8Array([97, 117, 116, 104, 111, 114, 105, 116, 121])
         ),
         getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount("pool", accounts.pool.value),
+          getAddressFromResolvedInstructionAccount('pool', accounts.pool.value)
         ),
       ],
     });
   }
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
-      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" as Address<"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA">;
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("config", accounts.config),
-      getAccountMeta("pool", accounts.pool),
-      getAccountMeta("authority", accounts.authority),
-      getAccountMeta("vaultIn", accounts.vaultIn),
-      getAccountMeta("vaultOut", accounts.vaultOut),
-      getAccountMeta("token0Mint", accounts.token0Mint),
-      getAccountMeta("token1Mint", accounts.token1Mint),
-      getAccountMeta("userIn", accounts.userIn),
-      getAccountMeta("userOut", accounts.userOut),
-      getAccountMeta("trader", accounts.trader),
-      getAccountMeta("tokenProgram", accounts.tokenProgram),
-      getAccountMeta("oracle", accounts.oracle),
+      getAccountMeta('config', accounts.config),
+      getAccountMeta('pool', accounts.pool),
+      getAccountMeta('authority', accounts.authority),
+      getAccountMeta('vaultIn', accounts.vaultIn),
+      getAccountMeta('vaultOut', accounts.vaultOut),
+      getAccountMeta('token0Mint', accounts.token0Mint),
+      getAccountMeta('token1Mint', accounts.token1Mint),
+      getAccountMeta('userIn', accounts.userIn),
+      getAccountMeta('userOut', accounts.userOut),
+      getAccountMeta('trader', accounts.trader),
+      getAccountMeta('tokenProgram', accounts.tokenProgram),
+      getAccountMeta('oracle', accounts.oracle),
     ],
     data: getSwapExactInInstructionDataEncoder().encode(
-      args as SwapExactInInstructionDataArgs,
+      args as SwapExactInInstructionDataArgs
     ),
     programAddress,
   } as SwapExactInInstruction<
@@ -353,10 +353,10 @@ export type SwapExactInInput<
   trader: TransactionSigner<TAccountTrader>;
   tokenProgram?: Address<TAccountTokenProgram>;
   oracle?: Address<TAccountOracle>;
-  amountIn: SwapExactInInstructionDataArgs["amountIn"];
-  minAmountOut: SwapExactInInstructionDataArgs["minAmountOut"];
-  direction: SwapExactInInstructionDataArgs["direction"];
-  updateOracle: SwapExactInInstructionDataArgs["updateOracle"];
+  amountIn: SwapExactInInstructionDataArgs['amountIn'];
+  minAmountOut: SwapExactInInstructionDataArgs['minAmountOut'];
+  direction: SwapExactInInstructionDataArgs['direction'];
+  updateOracle: SwapExactInInstructionDataArgs['updateOracle'];
 };
 
 export function getSwapExactInInstruction<
@@ -388,7 +388,7 @@ export function getSwapExactInInstruction<
     TAccountTokenProgram,
     TAccountOracle
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): SwapExactInInstruction<
   TProgramAddress,
   TAccountConfig,
@@ -433,27 +433,27 @@ export function getSwapExactInInstruction<
   // Resolve default values.
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
-      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" as Address<"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA">;
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("config", accounts.config),
-      getAccountMeta("pool", accounts.pool),
-      getAccountMeta("authority", accounts.authority),
-      getAccountMeta("vaultIn", accounts.vaultIn),
-      getAccountMeta("vaultOut", accounts.vaultOut),
-      getAccountMeta("token0Mint", accounts.token0Mint),
-      getAccountMeta("token1Mint", accounts.token1Mint),
-      getAccountMeta("userIn", accounts.userIn),
-      getAccountMeta("userOut", accounts.userOut),
-      getAccountMeta("trader", accounts.trader),
-      getAccountMeta("tokenProgram", accounts.tokenProgram),
-      getAccountMeta("oracle", accounts.oracle),
+      getAccountMeta('config', accounts.config),
+      getAccountMeta('pool', accounts.pool),
+      getAccountMeta('authority', accounts.authority),
+      getAccountMeta('vaultIn', accounts.vaultIn),
+      getAccountMeta('vaultOut', accounts.vaultOut),
+      getAccountMeta('token0Mint', accounts.token0Mint),
+      getAccountMeta('token1Mint', accounts.token1Mint),
+      getAccountMeta('userIn', accounts.userIn),
+      getAccountMeta('userOut', accounts.userOut),
+      getAccountMeta('trader', accounts.trader),
+      getAccountMeta('tokenProgram', accounts.tokenProgram),
+      getAccountMeta('oracle', accounts.oracle),
     ],
     data: getSwapExactInInstructionDataEncoder().encode(
-      args as SwapExactInInstructionDataArgs,
+      args as SwapExactInInstructionDataArgs
     ),
     programAddress,
   } as SwapExactInInstruction<
@@ -501,7 +501,7 @@ export function parseSwapExactInInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>,
+    InstructionWithData<ReadonlyUint8Array>
 ): ParsedSwapExactInInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 12) {
     throw new SolanaError(
@@ -509,7 +509,7 @@ export function parseSwapExactInInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 12,
-      },
+      }
     );
   }
   let accountIndex = 0;

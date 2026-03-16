@@ -37,7 +37,7 @@ import {
   type MaybeAccount,
   type MaybeEncodedAccount,
   type ReadonlyUint8Array,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export const INIT_CONFIG_DISCRIMINATOR = new Uint8Array([
   97, 166, 35, 7, 20, 2, 164, 126,
@@ -74,32 +74,32 @@ export type InitConfigArgs = {
 export function getInitConfigEncoder(): FixedSizeEncoder<InitConfigArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["admin", getAddressEncoder()],
-      ["migratorAllowlistLen", getU8Encoder()],
-      ["migratorAllowlist", getArrayEncoder(getAddressEncoder(), { size: 32 })],
-      ["sentinelAllowlistLen", getU8Encoder()],
-      ["sentinelAllowlist", getArrayEncoder(getAddressEncoder(), { size: 32 })],
-      ["bump", getU8Encoder()],
-      ["version", getU8Encoder()],
-      ["reserved", fixEncoderSize(getBytesEncoder(), 31)],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['admin', getAddressEncoder()],
+      ['migratorAllowlistLen', getU8Encoder()],
+      ['migratorAllowlist', getArrayEncoder(getAddressEncoder(), { size: 32 })],
+      ['sentinelAllowlistLen', getU8Encoder()],
+      ['sentinelAllowlist', getArrayEncoder(getAddressEncoder(), { size: 32 })],
+      ['bump', getU8Encoder()],
+      ['version', getU8Encoder()],
+      ['reserved', fixEncoderSize(getBytesEncoder(), 31)],
     ]),
-    (value) => ({ ...value, discriminator: INIT_CONFIG_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: INIT_CONFIG_DISCRIMINATOR })
   );
 }
 
 /** Gets the decoder for {@link InitConfig} account data. */
 export function getInitConfigDecoder(): FixedSizeDecoder<InitConfig> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["admin", getAddressDecoder()],
-    ["migratorAllowlistLen", getU8Decoder()],
-    ["migratorAllowlist", getArrayDecoder(getAddressDecoder(), { size: 32 })],
-    ["sentinelAllowlistLen", getU8Decoder()],
-    ["sentinelAllowlist", getArrayDecoder(getAddressDecoder(), { size: 32 })],
-    ["bump", getU8Decoder()],
-    ["version", getU8Decoder()],
-    ["reserved", fixDecoderSize(getBytesDecoder(), 31)],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['admin', getAddressDecoder()],
+    ['migratorAllowlistLen', getU8Decoder()],
+    ['migratorAllowlist', getArrayDecoder(getAddressDecoder(), { size: 32 })],
+    ['sentinelAllowlistLen', getU8Decoder()],
+    ['sentinelAllowlist', getArrayDecoder(getAddressDecoder(), { size: 32 })],
+    ['bump', getU8Decoder()],
+    ['version', getU8Decoder()],
+    ['reserved', fixDecoderSize(getBytesDecoder(), 31)],
   ]);
 }
 
@@ -112,24 +112,24 @@ export function getInitConfigCodec(): FixedSizeCodec<
 }
 
 export function decodeInitConfig<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress>,
+  encodedAccount: EncodedAccount<TAddress>
 ): Account<InitConfig, TAddress>;
 export function decodeInitConfig<TAddress extends string = string>(
-  encodedAccount: MaybeEncodedAccount<TAddress>,
+  encodedAccount: MaybeEncodedAccount<TAddress>
 ): MaybeAccount<InitConfig, TAddress>;
 export function decodeInitConfig<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>,
+  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>
 ): Account<InitConfig, TAddress> | MaybeAccount<InitConfig, TAddress> {
   return decodeAccount(
     encodedAccount as MaybeEncodedAccount<TAddress>,
-    getInitConfigDecoder(),
+    getInitConfigDecoder()
   );
 }
 
 export async function fetchInitConfig<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
-  config?: FetchAccountConfig,
+  config?: FetchAccountConfig
 ): Promise<Account<InitConfig, TAddress>> {
   const maybeAccount = await fetchMaybeInitConfig(rpc, address, config);
   assertAccountExists(maybeAccount);
@@ -139,7 +139,7 @@ export async function fetchInitConfig<TAddress extends string = string>(
 export async function fetchMaybeInitConfig<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
-  config?: FetchAccountConfig,
+  config?: FetchAccountConfig
 ): Promise<MaybeAccount<InitConfig, TAddress>> {
   const maybeAccount = await fetchEncodedAccount(rpc, address, config);
   return decodeInitConfig(maybeAccount);
@@ -148,7 +148,7 @@ export async function fetchMaybeInitConfig<TAddress extends string = string>(
 export async function fetchAllInitConfig(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
-  config?: FetchAccountsConfig,
+  config?: FetchAccountsConfig
 ): Promise<Account<InitConfig>[]> {
   const maybeAccounts = await fetchAllMaybeInitConfig(rpc, addresses, config);
   assertAccountsExist(maybeAccounts);
@@ -158,7 +158,7 @@ export async function fetchAllInitConfig(
 export async function fetchAllMaybeInitConfig(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
-  config?: FetchAccountsConfig,
+  config?: FetchAccountsConfig
 ): Promise<MaybeAccount<InitConfig>[]> {
   const maybeAccounts = await fetchEncodedAccounts(rpc, addresses, config);
   return maybeAccounts.map((maybeAccount) => decodeInitConfig(maybeAccount));

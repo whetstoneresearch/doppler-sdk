@@ -18,7 +18,7 @@ import {
   type FixedSizeDecoder,
   type FixedSizeEncoder,
   type ReadonlyUint8Array,
-} from "@solana/kit";
+} from '@solana/kit';
 
 /**
  * Arguments for register_entry instruction.
@@ -29,11 +29,11 @@ export type RegisterEntryArgs = { entryId: ReadonlyUint8Array };
 export type RegisterEntryArgsArgs = RegisterEntryArgs;
 
 export function getRegisterEntryArgsEncoder(): FixedSizeEncoder<RegisterEntryArgsArgs> {
-  return getStructEncoder([["entryId", fixEncoderSize(getBytesEncoder(), 32)]]);
+  return getStructEncoder([['entryId', fixEncoderSize(getBytesEncoder(), 32)]]);
 }
 
 export function getRegisterEntryArgsDecoder(): FixedSizeDecoder<RegisterEntryArgs> {
-  return getStructDecoder([["entryId", fixDecoderSize(getBytesDecoder(), 32)]]);
+  return getStructDecoder([['entryId', fixDecoderSize(getBytesDecoder(), 32)]]);
 }
 
 export function getRegisterEntryArgsCodec(): FixedSizeCodec<
@@ -42,6 +42,6 @@ export function getRegisterEntryArgsCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getRegisterEntryArgsEncoder(),
-    getRegisterEntryArgsDecoder(),
+    getRegisterEntryArgsDecoder()
   );
 }

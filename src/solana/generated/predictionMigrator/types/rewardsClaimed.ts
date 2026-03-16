@@ -18,7 +18,7 @@ import {
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type RewardsClaimed = {
   market: Address;
@@ -38,21 +38,21 @@ export type RewardsClaimedArgs = {
 
 export function getRewardsClaimedEncoder(): FixedSizeEncoder<RewardsClaimedArgs> {
   return getStructEncoder([
-    ["market", getAddressEncoder()],
-    ["claimer", getAddressEncoder()],
-    ["burnedAmount", getU64Encoder()],
-    ["rewardAmount", getU64Encoder()],
-    ["totalBurned", getU64Encoder()],
+    ['market', getAddressEncoder()],
+    ['claimer', getAddressEncoder()],
+    ['burnedAmount', getU64Encoder()],
+    ['rewardAmount', getU64Encoder()],
+    ['totalBurned', getU64Encoder()],
   ]);
 }
 
 export function getRewardsClaimedDecoder(): FixedSizeDecoder<RewardsClaimed> {
   return getStructDecoder([
-    ["market", getAddressDecoder()],
-    ["claimer", getAddressDecoder()],
-    ["burnedAmount", getU64Decoder()],
-    ["rewardAmount", getU64Decoder()],
-    ["totalBurned", getU64Decoder()],
+    ['market', getAddressDecoder()],
+    ['claimer', getAddressDecoder()],
+    ['burnedAmount', getU64Decoder()],
+    ['rewardAmount', getU64Decoder()],
+    ['totalBurned', getU64Decoder()],
   ]);
 }
 

@@ -20,7 +20,7 @@ import {
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type FeesUpdated = {
   pool: Address;
@@ -35,23 +35,23 @@ export type FeesUpdatedArgs = FeesUpdated;
 
 export function getFeesUpdatedEncoder(): FixedSizeEncoder<FeesUpdatedArgs> {
   return getStructEncoder([
-    ["pool", getAddressEncoder()],
-    ["prevSwapFeeBps", getU16Encoder()],
-    ["prevFeeSplitBps", getU16Encoder()],
-    ["swapFeeBps", getU16Encoder()],
-    ["feeSplitBps", getU16Encoder()],
-    ["source", getU8Encoder()],
+    ['pool', getAddressEncoder()],
+    ['prevSwapFeeBps', getU16Encoder()],
+    ['prevFeeSplitBps', getU16Encoder()],
+    ['swapFeeBps', getU16Encoder()],
+    ['feeSplitBps', getU16Encoder()],
+    ['source', getU8Encoder()],
   ]);
 }
 
 export function getFeesUpdatedDecoder(): FixedSizeDecoder<FeesUpdated> {
   return getStructDecoder([
-    ["pool", getAddressDecoder()],
-    ["prevSwapFeeBps", getU16Decoder()],
-    ["prevFeeSplitBps", getU16Decoder()],
-    ["swapFeeBps", getU16Decoder()],
-    ["feeSplitBps", getU16Decoder()],
-    ["source", getU8Decoder()],
+    ['pool', getAddressDecoder()],
+    ['prevSwapFeeBps', getU16Decoder()],
+    ['prevFeeSplitBps', getU16Decoder()],
+    ['swapFeeBps', getU16Decoder()],
+    ['feeSplitBps', getU16Decoder()],
+    ['source', getU8Decoder()],
   ]);
 }
 

@@ -15,18 +15,18 @@ import {
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type CreatePositionArgs = { positionId: bigint };
 
 export type CreatePositionArgsArgs = { positionId: number | bigint };
 
 export function getCreatePositionArgsEncoder(): FixedSizeEncoder<CreatePositionArgsArgs> {
-  return getStructEncoder([["positionId", getU64Encoder()]]);
+  return getStructEncoder([['positionId', getU64Encoder()]]);
 }
 
 export function getCreatePositionArgsDecoder(): FixedSizeDecoder<CreatePositionArgs> {
-  return getStructDecoder([["positionId", getU64Decoder()]]);
+  return getStructDecoder([['positionId', getU64Decoder()]]);
 }
 
 export function getCreatePositionArgsCodec(): FixedSizeCodec<
@@ -35,6 +35,6 @@ export function getCreatePositionArgsCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getCreatePositionArgsEncoder(),
-    getCreatePositionArgsDecoder(),
+    getCreatePositionArgsDecoder()
   );
 }

@@ -21,7 +21,7 @@ import {
   type FixedSizeDecoder,
   type FixedSizeEncoder,
   type ReadonlyUint8Array,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type EntryRegistered = {
   market: Address;
@@ -34,19 +34,19 @@ export type EntryRegisteredArgs = EntryRegistered;
 
 export function getEntryRegisteredEncoder(): FixedSizeEncoder<EntryRegisteredArgs> {
   return getStructEncoder([
-    ["market", getAddressEncoder()],
-    ["oracle", getAddressEncoder()],
-    ["entryId", fixEncoderSize(getBytesEncoder(), 32)],
-    ["baseMint", getAddressEncoder()],
+    ['market', getAddressEncoder()],
+    ['oracle', getAddressEncoder()],
+    ['entryId', fixEncoderSize(getBytesEncoder(), 32)],
+    ['baseMint', getAddressEncoder()],
   ]);
 }
 
 export function getEntryRegisteredDecoder(): FixedSizeDecoder<EntryRegistered> {
   return getStructDecoder([
-    ["market", getAddressDecoder()],
-    ["oracle", getAddressDecoder()],
-    ["entryId", fixDecoderSize(getBytesDecoder(), 32)],
-    ["baseMint", getAddressDecoder()],
+    ['market', getAddressDecoder()],
+    ['oracle', getAddressDecoder()],
+    ['entryId', fixDecoderSize(getBytesDecoder(), 32)],
+    ['baseMint', getAddressDecoder()],
   ]);
 }
 

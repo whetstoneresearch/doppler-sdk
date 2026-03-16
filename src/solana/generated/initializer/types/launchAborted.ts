@@ -16,18 +16,18 @@ import {
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type LaunchAborted = { launch: Address };
 
 export type LaunchAbortedArgs = LaunchAborted;
 
 export function getLaunchAbortedEncoder(): FixedSizeEncoder<LaunchAbortedArgs> {
-  return getStructEncoder([["launch", getAddressEncoder()]]);
+  return getStructEncoder([['launch', getAddressEncoder()]]);
 }
 
 export function getLaunchAbortedDecoder(): FixedSizeDecoder<LaunchAborted> {
-  return getStructDecoder([["launch", getAddressDecoder()]]);
+  return getStructDecoder([['launch', getAddressDecoder()]]);
 }
 
 export function getLaunchAbortedCodec(): FixedSizeCodec<

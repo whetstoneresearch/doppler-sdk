@@ -15,7 +15,7 @@ import {
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type SetFeesArgs = { swapFeeBps: number; feeSplitBps: number };
 
@@ -23,15 +23,15 @@ export type SetFeesArgsArgs = SetFeesArgs;
 
 export function getSetFeesArgsEncoder(): FixedSizeEncoder<SetFeesArgsArgs> {
   return getStructEncoder([
-    ["swapFeeBps", getU16Encoder()],
-    ["feeSplitBps", getU16Encoder()],
+    ['swapFeeBps', getU16Encoder()],
+    ['feeSplitBps', getU16Encoder()],
   ]);
 }
 
 export function getSetFeesArgsDecoder(): FixedSizeDecoder<SetFeesArgs> {
   return getStructDecoder([
-    ["swapFeeBps", getU16Decoder()],
-    ["feeSplitBps", getU16Decoder()],
+    ['swapFeeBps', getU16Decoder()],
+    ['feeSplitBps', getU16Decoder()],
   ]);
 }
 

@@ -18,7 +18,7 @@ import {
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type PreviewPayoutIfWinnerArgs = {
   candidateWinnerMint: Address;
@@ -32,15 +32,15 @@ export type PreviewPayoutIfWinnerArgsArgs = {
 
 export function getPreviewPayoutIfWinnerArgsEncoder(): FixedSizeEncoder<PreviewPayoutIfWinnerArgsArgs> {
   return getStructEncoder([
-    ["candidateWinnerMint", getAddressEncoder()],
-    ["tokenAmount", getU64Encoder()],
+    ['candidateWinnerMint', getAddressEncoder()],
+    ['tokenAmount', getU64Encoder()],
   ]);
 }
 
 export function getPreviewPayoutIfWinnerArgsDecoder(): FixedSizeDecoder<PreviewPayoutIfWinnerArgs> {
   return getStructDecoder([
-    ["candidateWinnerMint", getAddressDecoder()],
-    ["tokenAmount", getU64Decoder()],
+    ['candidateWinnerMint', getAddressDecoder()],
+    ['tokenAmount', getU64Decoder()],
   ]);
 }
 
@@ -50,6 +50,6 @@ export function getPreviewPayoutIfWinnerArgsCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getPreviewPayoutIfWinnerArgsEncoder(),
-    getPreviewPayoutIfWinnerArgsDecoder(),
+    getPreviewPayoutIfWinnerArgsDecoder()
   );
 }

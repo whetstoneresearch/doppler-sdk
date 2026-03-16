@@ -43,7 +43,7 @@ import {
   type MaybeAccount,
   type MaybeEncodedAccount,
   type ReadonlyUint8Array,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export const POOL_DISCRIMINATOR = new Uint8Array([
   241, 154, 109, 4, 17, 177, 109, 188,
@@ -118,70 +118,70 @@ export type PoolArgs = {
 export function getPoolEncoder(): FixedSizeEncoder<PoolArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["config", getAddressEncoder()],
-      ["token0Mint", getAddressEncoder()],
-      ["token1Mint", getAddressEncoder()],
-      ["vault0", getAddressEncoder()],
-      ["vault1", getAddressEncoder()],
-      ["authority", getAddressEncoder()],
-      ["bump", getU8Encoder()],
-      ["reserve0", getU64Encoder()],
-      ["reserve1", getU64Encoder()],
-      ["totalShares", getU128Encoder()],
-      ["swapFeeBps", getU16Encoder()],
-      ["feeSplitBps", getU16Encoder()],
-      ["feeGrowthGlobal0Q64", getU128Encoder()],
-      ["feeGrowthGlobal1Q64", getU128Encoder()],
-      ["feesUnclaimed0", getU64Encoder()],
-      ["feesUnclaimed1", getU64Encoder()],
-      ["sentinelProgram", getAddressEncoder()],
-      ["sentinelFlags", getU32Encoder()],
-      ["numeraireMint", getAddressEncoder()],
-      ["liquidityMeasureSide", getU8Encoder()],
-      ["routeNextPool", getAddressEncoder()],
-      ["routeBridgeMint", getAddressEncoder()],
-      ["kLast", getU128Encoder()],
-      ["protocolPosition", getAddressEncoder()],
-      ["locked", getU8Encoder()],
-      ["version", getU8Encoder()],
-      ["reserved", fixEncoderSize(getBytesEncoder(), 7)],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['config', getAddressEncoder()],
+      ['token0Mint', getAddressEncoder()],
+      ['token1Mint', getAddressEncoder()],
+      ['vault0', getAddressEncoder()],
+      ['vault1', getAddressEncoder()],
+      ['authority', getAddressEncoder()],
+      ['bump', getU8Encoder()],
+      ['reserve0', getU64Encoder()],
+      ['reserve1', getU64Encoder()],
+      ['totalShares', getU128Encoder()],
+      ['swapFeeBps', getU16Encoder()],
+      ['feeSplitBps', getU16Encoder()],
+      ['feeGrowthGlobal0Q64', getU128Encoder()],
+      ['feeGrowthGlobal1Q64', getU128Encoder()],
+      ['feesUnclaimed0', getU64Encoder()],
+      ['feesUnclaimed1', getU64Encoder()],
+      ['sentinelProgram', getAddressEncoder()],
+      ['sentinelFlags', getU32Encoder()],
+      ['numeraireMint', getAddressEncoder()],
+      ['liquidityMeasureSide', getU8Encoder()],
+      ['routeNextPool', getAddressEncoder()],
+      ['routeBridgeMint', getAddressEncoder()],
+      ['kLast', getU128Encoder()],
+      ['protocolPosition', getAddressEncoder()],
+      ['locked', getU8Encoder()],
+      ['version', getU8Encoder()],
+      ['reserved', fixEncoderSize(getBytesEncoder(), 7)],
     ]),
-    (value) => ({ ...value, discriminator: POOL_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: POOL_DISCRIMINATOR })
   );
 }
 
 /** Gets the decoder for {@link Pool} account data. */
 export function getPoolDecoder(): FixedSizeDecoder<Pool> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["config", getAddressDecoder()],
-    ["token0Mint", getAddressDecoder()],
-    ["token1Mint", getAddressDecoder()],
-    ["vault0", getAddressDecoder()],
-    ["vault1", getAddressDecoder()],
-    ["authority", getAddressDecoder()],
-    ["bump", getU8Decoder()],
-    ["reserve0", getU64Decoder()],
-    ["reserve1", getU64Decoder()],
-    ["totalShares", getU128Decoder()],
-    ["swapFeeBps", getU16Decoder()],
-    ["feeSplitBps", getU16Decoder()],
-    ["feeGrowthGlobal0Q64", getU128Decoder()],
-    ["feeGrowthGlobal1Q64", getU128Decoder()],
-    ["feesUnclaimed0", getU64Decoder()],
-    ["feesUnclaimed1", getU64Decoder()],
-    ["sentinelProgram", getAddressDecoder()],
-    ["sentinelFlags", getU32Decoder()],
-    ["numeraireMint", getAddressDecoder()],
-    ["liquidityMeasureSide", getU8Decoder()],
-    ["routeNextPool", getAddressDecoder()],
-    ["routeBridgeMint", getAddressDecoder()],
-    ["kLast", getU128Decoder()],
-    ["protocolPosition", getAddressDecoder()],
-    ["locked", getU8Decoder()],
-    ["version", getU8Decoder()],
-    ["reserved", fixDecoderSize(getBytesDecoder(), 7)],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['config', getAddressDecoder()],
+    ['token0Mint', getAddressDecoder()],
+    ['token1Mint', getAddressDecoder()],
+    ['vault0', getAddressDecoder()],
+    ['vault1', getAddressDecoder()],
+    ['authority', getAddressDecoder()],
+    ['bump', getU8Decoder()],
+    ['reserve0', getU64Decoder()],
+    ['reserve1', getU64Decoder()],
+    ['totalShares', getU128Decoder()],
+    ['swapFeeBps', getU16Decoder()],
+    ['feeSplitBps', getU16Decoder()],
+    ['feeGrowthGlobal0Q64', getU128Decoder()],
+    ['feeGrowthGlobal1Q64', getU128Decoder()],
+    ['feesUnclaimed0', getU64Decoder()],
+    ['feesUnclaimed1', getU64Decoder()],
+    ['sentinelProgram', getAddressDecoder()],
+    ['sentinelFlags', getU32Decoder()],
+    ['numeraireMint', getAddressDecoder()],
+    ['liquidityMeasureSide', getU8Decoder()],
+    ['routeNextPool', getAddressDecoder()],
+    ['routeBridgeMint', getAddressDecoder()],
+    ['kLast', getU128Decoder()],
+    ['protocolPosition', getAddressDecoder()],
+    ['locked', getU8Decoder()],
+    ['version', getU8Decoder()],
+    ['reserved', fixDecoderSize(getBytesDecoder(), 7)],
   ]);
 }
 
@@ -191,24 +191,24 @@ export function getPoolCodec(): FixedSizeCodec<PoolArgs, Pool> {
 }
 
 export function decodePool<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress>,
+  encodedAccount: EncodedAccount<TAddress>
 ): Account<Pool, TAddress>;
 export function decodePool<TAddress extends string = string>(
-  encodedAccount: MaybeEncodedAccount<TAddress>,
+  encodedAccount: MaybeEncodedAccount<TAddress>
 ): MaybeAccount<Pool, TAddress>;
 export function decodePool<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>,
+  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>
 ): Account<Pool, TAddress> | MaybeAccount<Pool, TAddress> {
   return decodeAccount(
     encodedAccount as MaybeEncodedAccount<TAddress>,
-    getPoolDecoder(),
+    getPoolDecoder()
   );
 }
 
 export async function fetchPool<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
-  config?: FetchAccountConfig,
+  config?: FetchAccountConfig
 ): Promise<Account<Pool, TAddress>> {
   const maybeAccount = await fetchMaybePool(rpc, address, config);
   assertAccountExists(maybeAccount);
@@ -218,7 +218,7 @@ export async function fetchPool<TAddress extends string = string>(
 export async function fetchMaybePool<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
-  config?: FetchAccountConfig,
+  config?: FetchAccountConfig
 ): Promise<MaybeAccount<Pool, TAddress>> {
   const maybeAccount = await fetchEncodedAccount(rpc, address, config);
   return decodePool(maybeAccount);
@@ -227,7 +227,7 @@ export async function fetchMaybePool<TAddress extends string = string>(
 export async function fetchAllPool(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
-  config?: FetchAccountsConfig,
+  config?: FetchAccountsConfig
 ): Promise<Account<Pool>[]> {
   const maybeAccounts = await fetchAllMaybePool(rpc, addresses, config);
   assertAccountsExist(maybeAccounts);
@@ -237,7 +237,7 @@ export async function fetchAllPool(
 export async function fetchAllMaybePool(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
-  config?: FetchAccountsConfig,
+  config?: FetchAccountsConfig
 ): Promise<MaybeAccount<Pool>[]> {
   const maybeAccounts = await fetchEncodedAccounts(rpc, addresses, config);
   return maybeAccounts.map((maybeAccount) => decodePool(maybeAccount));

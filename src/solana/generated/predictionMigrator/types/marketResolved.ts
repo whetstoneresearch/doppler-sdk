@@ -18,7 +18,7 @@ import {
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type MarketResolved = {
   market: Address;
@@ -38,21 +38,21 @@ export type MarketResolvedArgs = {
 
 export function getMarketResolvedEncoder(): FixedSizeEncoder<MarketResolvedArgs> {
   return getStructEncoder([
-    ["market", getAddressEncoder()],
-    ["oracle", getAddressEncoder()],
-    ["winnerMint", getAddressEncoder()],
-    ["claimableSupply", getU64Encoder()],
-    ["totalPot", getU64Encoder()],
+    ['market', getAddressEncoder()],
+    ['oracle', getAddressEncoder()],
+    ['winnerMint', getAddressEncoder()],
+    ['claimableSupply', getU64Encoder()],
+    ['totalPot', getU64Encoder()],
   ]);
 }
 
 export function getMarketResolvedDecoder(): FixedSizeDecoder<MarketResolved> {
   return getStructDecoder([
-    ["market", getAddressDecoder()],
-    ["oracle", getAddressDecoder()],
-    ["winnerMint", getAddressDecoder()],
-    ["claimableSupply", getU64Decoder()],
-    ["totalPot", getU64Decoder()],
+    ['market', getAddressDecoder()],
+    ['oracle', getAddressDecoder()],
+    ['winnerMint', getAddressDecoder()],
+    ['claimableSupply', getU64Decoder()],
+    ['totalPot', getU64Decoder()],
   ]);
 }
 

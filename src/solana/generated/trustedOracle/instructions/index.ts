@@ -6,5 +6,5 @@
  * @see https://github.com/codama-idl/codama
  */
 
-export * from "./finalize";
-export * from "./initializeOracle";
+export * from './finalize';
+export * from './initializeOracle';

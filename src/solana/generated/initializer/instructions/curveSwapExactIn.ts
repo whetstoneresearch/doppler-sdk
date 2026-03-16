@@ -36,12 +36,12 @@ import {
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
-} from "@solana/kit";
+} from '@solana/kit';
 import {
   getAccountMetaFactory,
   type ResolvedInstructionAccount,
-} from "@solana/program-client-core";
-import { INITIALIZER_PROGRAM_ADDRESS } from "../programs";
+} from '@solana/program-client-core';
+import { INITIALIZER_PROGRAM_ADDRESS } from '../programs';
 
 export const CURVE_SWAP_EXACT_IN_DISCRIMINATOR = new Uint8Array([
   196, 247, 195, 126, 227, 27, 166, 93,
@@ -49,7 +49,7 @@ export const CURVE_SWAP_EXACT_IN_DISCRIMINATOR = new Uint8Array([
 
 export function getCurveSwapExactInDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    CURVE_SWAP_EXACT_IN_DISCRIMINATOR,
+    CURVE_SWAP_EXACT_IN_DISCRIMINATOR
   );
 }
 
@@ -67,7 +67,7 @@ export type CurveSwapExactInInstruction<
   TAccountUser extends string | AccountMeta<string> = string,
   TAccountSentinelProgram extends string | AccountMeta<string> = string,
   TAccountTokenProgram extends string | AccountMeta<string> =
-    "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -129,21 +129,21 @@ export type CurveSwapExactInInstructionDataArgs = {
 export function getCurveSwapExactInInstructionDataEncoder(): FixedSizeEncoder<CurveSwapExactInInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["amountIn", getU64Encoder()],
-      ["minAmountOut", getU64Encoder()],
-      ["direction", getU8Encoder()],
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['amountIn', getU64Encoder()],
+      ['minAmountOut', getU64Encoder()],
+      ['direction', getU8Encoder()],
     ]),
-    (value) => ({ ...value, discriminator: CURVE_SWAP_EXACT_IN_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: CURVE_SWAP_EXACT_IN_DISCRIMINATOR })
   );
 }
 
 export function getCurveSwapExactInInstructionDataDecoder(): FixedSizeDecoder<CurveSwapExactInInstructionData> {
   return getStructDecoder([
-    ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["amountIn", getU64Decoder()],
-    ["minAmountOut", getU64Decoder()],
-    ["direction", getU8Decoder()],
+    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['amountIn', getU64Decoder()],
+    ['minAmountOut', getU64Decoder()],
+    ['direction', getU8Decoder()],
   ]);
 }
 
@@ -153,7 +153,7 @@ export function getCurveSwapExactInInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getCurveSwapExactInInstructionDataEncoder(),
-    getCurveSwapExactInInstructionDataDecoder(),
+    getCurveSwapExactInInstructionDataDecoder()
   );
 }
 
@@ -184,9 +184,9 @@ export type CurveSwapExactInAsyncInput<
   /** Optional sentinel program (must match launch.sentinel_program if set) */
   sentinelProgram?: Address<TAccountSentinelProgram>;
   tokenProgram?: Address<TAccountTokenProgram>;
-  amountIn: CurveSwapExactInInstructionDataArgs["amountIn"];
-  minAmountOut: CurveSwapExactInInstructionDataArgs["minAmountOut"];
-  direction: CurveSwapExactInInstructionDataArgs["direction"];
+  amountIn: CurveSwapExactInInstructionDataArgs['amountIn'];
+  minAmountOut: CurveSwapExactInInstructionDataArgs['minAmountOut'];
+  direction: CurveSwapExactInInstructionDataArgs['direction'];
 };
 
 export async function getCurveSwapExactInInstructionAsync<
@@ -218,7 +218,7 @@ export async function getCurveSwapExactInInstructionAsync<
     TAccountSentinelProgram,
     TAccountTokenProgram
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): Promise<
   CurveSwapExactInInstruction<
     TProgramAddress,
@@ -277,34 +277,34 @@ export async function getCurveSwapExactInInstructionAsync<
       programAddress,
       seeds: [
         getBytesEncoder().encode(
-          new Uint8Array([99, 111, 110, 102, 105, 103, 95, 118, 51]),
+          new Uint8Array([99, 111, 110, 102, 105, 103, 95, 118, 51])
         ),
       ],
     });
   }
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
-      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" as Address<"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA">;
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("config", accounts.config),
-      getAccountMeta("launch", accounts.launch),
-      getAccountMeta("launchAuthority", accounts.launchAuthority),
-      getAccountMeta("baseVault", accounts.baseVault),
-      getAccountMeta("quoteVault", accounts.quoteVault),
-      getAccountMeta("userBaseAccount", accounts.userBaseAccount),
-      getAccountMeta("userQuoteAccount", accounts.userQuoteAccount),
-      getAccountMeta("baseMint", accounts.baseMint),
-      getAccountMeta("quoteMint", accounts.quoteMint),
-      getAccountMeta("user", accounts.user),
-      getAccountMeta("sentinelProgram", accounts.sentinelProgram),
-      getAccountMeta("tokenProgram", accounts.tokenProgram),
+      getAccountMeta('config', accounts.config),
+      getAccountMeta('launch', accounts.launch),
+      getAccountMeta('launchAuthority', accounts.launchAuthority),
+      getAccountMeta('baseVault', accounts.baseVault),
+      getAccountMeta('quoteVault', accounts.quoteVault),
+      getAccountMeta('userBaseAccount', accounts.userBaseAccount),
+      getAccountMeta('userQuoteAccount', accounts.userQuoteAccount),
+      getAccountMeta('baseMint', accounts.baseMint),
+      getAccountMeta('quoteMint', accounts.quoteMint),
+      getAccountMeta('user', accounts.user),
+      getAccountMeta('sentinelProgram', accounts.sentinelProgram),
+      getAccountMeta('tokenProgram', accounts.tokenProgram),
     ],
     data: getCurveSwapExactInInstructionDataEncoder().encode(
-      args as CurveSwapExactInInstructionDataArgs,
+      args as CurveSwapExactInInstructionDataArgs
     ),
     programAddress,
   } as CurveSwapExactInInstruction<
@@ -351,9 +351,9 @@ export type CurveSwapExactInInput<
   /** Optional sentinel program (must match launch.sentinel_program if set) */
   sentinelProgram?: Address<TAccountSentinelProgram>;
   tokenProgram?: Address<TAccountTokenProgram>;
-  amountIn: CurveSwapExactInInstructionDataArgs["amountIn"];
-  minAmountOut: CurveSwapExactInInstructionDataArgs["minAmountOut"];
-  direction: CurveSwapExactInInstructionDataArgs["direction"];
+  amountIn: CurveSwapExactInInstructionDataArgs['amountIn'];
+  minAmountOut: CurveSwapExactInInstructionDataArgs['minAmountOut'];
+  direction: CurveSwapExactInInstructionDataArgs['direction'];
 };
 
 export function getCurveSwapExactInInstruction<
@@ -385,7 +385,7 @@ export function getCurveSwapExactInInstruction<
     TAccountSentinelProgram,
     TAccountTokenProgram
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): CurveSwapExactInInstruction<
   TProgramAddress,
   TAccountConfig,
@@ -439,27 +439,27 @@ export function getCurveSwapExactInInstruction<
   // Resolve default values.
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
-      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" as Address<"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA">;
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta("config", accounts.config),
-      getAccountMeta("launch", accounts.launch),
-      getAccountMeta("launchAuthority", accounts.launchAuthority),
-      getAccountMeta("baseVault", accounts.baseVault),
-      getAccountMeta("quoteVault", accounts.quoteVault),
-      getAccountMeta("userBaseAccount", accounts.userBaseAccount),
-      getAccountMeta("userQuoteAccount", accounts.userQuoteAccount),
-      getAccountMeta("baseMint", accounts.baseMint),
-      getAccountMeta("quoteMint", accounts.quoteMint),
-      getAccountMeta("user", accounts.user),
-      getAccountMeta("sentinelProgram", accounts.sentinelProgram),
-      getAccountMeta("tokenProgram", accounts.tokenProgram),
+      getAccountMeta('config', accounts.config),
+      getAccountMeta('launch', accounts.launch),
+      getAccountMeta('launchAuthority', accounts.launchAuthority),
+      getAccountMeta('baseVault', accounts.baseVault),
+      getAccountMeta('quoteVault', accounts.quoteVault),
+      getAccountMeta('userBaseAccount', accounts.userBaseAccount),
+      getAccountMeta('userQuoteAccount', accounts.userQuoteAccount),
+      getAccountMeta('baseMint', accounts.baseMint),
+      getAccountMeta('quoteMint', accounts.quoteMint),
+      getAccountMeta('user', accounts.user),
+      getAccountMeta('sentinelProgram', accounts.sentinelProgram),
+      getAccountMeta('tokenProgram', accounts.tokenProgram),
     ],
     data: getCurveSwapExactInInstructionDataEncoder().encode(
-      args as CurveSwapExactInInstructionDataArgs,
+      args as CurveSwapExactInInstructionDataArgs
     ),
     programAddress,
   } as CurveSwapExactInInstruction<
@@ -508,7 +508,7 @@ export function parseCurveSwapExactInInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>,
+    InstructionWithData<ReadonlyUint8Array>
 ): ParsedCurveSwapExactInInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 12) {
     throw new SolanaError(
@@ -516,7 +516,7 @@ export function parseCurveSwapExactInInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 12,
-      },
+      }
     );
   }
   let accountIndex = 0;

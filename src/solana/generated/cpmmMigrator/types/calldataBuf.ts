@@ -20,7 +20,7 @@ import {
   type FixedSizeDecoder,
   type FixedSizeEncoder,
   type ReadonlyUint8Array,
-} from "@solana/kit";
+} from '@solana/kit';
 
 /** Variable-length calldata buffer. */
 export type CalldataBuf = { len: number; bytes: ReadonlyUint8Array };
@@ -29,15 +29,15 @@ export type CalldataBufArgs = CalldataBuf;
 
 export function getCalldataBufEncoder(): FixedSizeEncoder<CalldataBufArgs> {
   return getStructEncoder([
-    ["len", getU16Encoder()],
-    ["bytes", fixEncoderSize(getBytesEncoder(), 256)],
+    ['len', getU16Encoder()],
+    ['bytes', fixEncoderSize(getBytesEncoder(), 256)],
   ]);
 }
 
 export function getCalldataBufDecoder(): FixedSizeDecoder<CalldataBuf> {
   return getStructDecoder([
-    ["len", getU16Decoder()],
-    ["bytes", fixDecoderSize(getBytesDecoder(), 256)],
+    ['len', getU16Decoder()],
+    ['bytes', fixDecoderSize(getBytesDecoder(), 256)],
   ]);
 }
 

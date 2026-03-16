@@ -18,7 +18,7 @@ import {
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type InitializeOracleArgs = {
   /** Nonce for PDA derivation (allows multiple oracles per authority) */
@@ -36,15 +36,15 @@ export type InitializeOracleArgsArgs = {
 
 export function getInitializeOracleArgsEncoder(): FixedSizeEncoder<InitializeOracleArgsArgs> {
   return getStructEncoder([
-    ["nonce", getU64Encoder()],
-    ["quoteMint", getAddressEncoder()],
+    ['nonce', getU64Encoder()],
+    ['quoteMint', getAddressEncoder()],
   ]);
 }
 
 export function getInitializeOracleArgsDecoder(): FixedSizeDecoder<InitializeOracleArgs> {
   return getStructDecoder([
-    ["nonce", getU64Decoder()],
-    ["quoteMint", getAddressDecoder()],
+    ['nonce', getU64Decoder()],
+    ['quoteMint', getAddressDecoder()],
   ]);
 }
 
@@ -54,6 +54,6 @@ export function getInitializeOracleArgsCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getInitializeOracleArgsEncoder(),
-    getInitializeOracleArgsDecoder(),
+    getInitializeOracleArgsDecoder()
   );
 }

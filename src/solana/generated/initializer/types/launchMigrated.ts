@@ -18,7 +18,7 @@ import {
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
-} from "@solana/kit";
+} from '@solana/kit';
 
 export type LaunchMigrated = {
   launch: Address;
@@ -36,19 +36,19 @@ export type LaunchMigratedArgs = {
 
 export function getLaunchMigratedEncoder(): FixedSizeEncoder<LaunchMigratedArgs> {
   return getStructEncoder([
-    ["launch", getAddressEncoder()],
-    ["migratorProgram", getAddressEncoder()],
-    ["baseVaultAmount", getU64Encoder()],
-    ["quoteVaultAmount", getU64Encoder()],
+    ['launch', getAddressEncoder()],
+    ['migratorProgram', getAddressEncoder()],
+    ['baseVaultAmount', getU64Encoder()],
+    ['quoteVaultAmount', getU64Encoder()],
   ]);
 }
 
 export function getLaunchMigratedDecoder(): FixedSizeDecoder<LaunchMigrated> {
   return getStructDecoder([
-    ["launch", getAddressDecoder()],
-    ["migratorProgram", getAddressDecoder()],
-    ["baseVaultAmount", getU64Decoder()],
-    ["quoteVaultAmount", getU64Decoder()],
+    ['launch', getAddressDecoder()],
+    ['migratorProgram', getAddressDecoder()],
+    ['baseVaultAmount', getU64Decoder()],
+    ['quoteVaultAmount', getU64Decoder()],
   ]);
 }
 
