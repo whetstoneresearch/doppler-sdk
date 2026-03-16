@@ -6,12 +6,12 @@
  * @see https://github.com/codama-idl/codama
  */
 
-export * from './addLiquidity';
+export { AddLiquidity, getAddLiquidityEncoder, getAddLiquidityDecoder, getAddLiquidityCodec } from './addLiquidity';
 export * from './addLiquidityArgs';
 export * from './adminTransferred';
-export * from './collectFees';
+export { CollectFees, getCollectFeesEncoder, getCollectFeesDecoder, getCollectFeesCodec } from './collectFees';
 export * from './collectFeesArgs';
-export * from './collectProtocolFees';
+export { CollectProtocolFees, getCollectProtocolFeesEncoder, getCollectProtocolFeesDecoder, getCollectProtocolFeesCodec } from './collectProtocolFees';
 export * from './collectProtocolFeesArgs';
 export * from './createPositionArgs';
 export * from './feesUpdated';
@@ -28,7 +28,7 @@ export * from './positionClosed';
 export * from './positionCreated';
 export * from './previewSwapExactInArgs';
 export * from './quoteToNumeraireArgs';
-export * from './removeLiquidity';
+export { RemoveLiquidity, getRemoveLiquidityEncoder, getRemoveLiquidityDecoder, getRemoveLiquidityCodec } from './removeLiquidity';
 export * from './removeLiquidityArgs';
 export * from './routeUpdated';
 export * from './sentinelError';

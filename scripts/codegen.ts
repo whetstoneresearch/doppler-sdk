@@ -87,4 +87,29 @@ for (const program of PROGRAMS) {
   console.log(`  ✓ ${program.idl_name} → src/solana/generated/${program.out_dir}/`);
 }
 
+// Fix TS2308: Codama generates event types (e.g. AddLiquidity) in their own
+// file (addLiquidity.ts) alongside an encoder-input type named AddLiquidityArgs.
+// When the instruction-args file (addLiquidityArgs.ts) also exports AddLiquidityArgs,
+// the barrel re-export `export * from './addLiquidity'` causes a name collision.
+// Patch the cpmm types index to use explicit exports for the event files,
+// dropping the conflicting *Args encoder-input type (the instruction-args
+// version takes precedence as it is what SDK consumers actually use).
+const cpmm_types_index_path = path.join(GENERATED_DIR, 'cpmm', 'types', 'index.ts');
+const CONFLICTING_EVENTS: Array<{ file: string; type: string; fns: string[] }> = [
+  { file: 'addLiquidity',       type: 'AddLiquidity',       fns: ['getAddLiquidityEncoder',       'getAddLiquidityDecoder',       'getAddLiquidityCodec']       },
+  { file: 'collectFees',        type: 'CollectFees',        fns: ['getCollectFeesEncoder',        'getCollectFeesDecoder',        'getCollectFeesCodec']        },
+  { file: 'collectProtocolFees',type: 'CollectProtocolFees',fns: ['getCollectProtocolFeesEncoder','getCollectProtocolFeesDecoder','getCollectProtocolFeesCodec'] },
+  { file: 'removeLiquidity',    type: 'RemoveLiquidity',    fns: ['getRemoveLiquidityEncoder',    'getRemoveLiquidityDecoder',    'getRemoveLiquidityCodec']    },
+];
+let cpmm_types_index = fs.readFileSync(cpmm_types_index_path, 'utf-8');
+for (const { file, type, fns } of CONFLICTING_EVENTS) {
+  const explicit_exports = [type, ...fns].join(', ');
+  cpmm_types_index = cpmm_types_index.replace(
+    new RegExp(`export \\* from '\\.\/${file}';`),
+    `export { ${explicit_exports} } from './${file}';`,
+  );
+}
+fs.writeFileSync(cpmm_types_index_path, cpmm_types_index);
+console.log('  ✓ patched cpmm/types/index.ts (resolved AddLiquidityArgs / CollectFeesArgs naming collision)');
+
 console.log('\nCodegen complete.');
