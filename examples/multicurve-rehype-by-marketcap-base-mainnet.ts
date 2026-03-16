@@ -26,7 +26,7 @@ import {
   V4ActionBuilder,
   V4ActionType,
 } from 'doppler-router';
-import { DopplerSDK, getAddresses } from '../src';
+import { DopplerSDK, getAddresses } from '../src/evm';
 import {
   parseEther,
   createPublicClient,

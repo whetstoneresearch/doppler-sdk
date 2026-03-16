@@ -1,7 +1,7 @@
 import './env'
 
 import { createPublicClient, createWalletClient, http, parseEther, formatEther } from 'viem';
-import { DopplerSDK, DAY_SECONDS } from '../src';
+import { DopplerSDK, DAY_SECONDS } from '../src/evm';
 import { baseSepolia } from 'viem/chains';
 import { privateKeyToAccount } from 'viem/accounts';
 

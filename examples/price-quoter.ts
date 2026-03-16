@@ -10,7 +10,7 @@ import './env'
 
 // UNCOMMENT IF RUNNING LOCALLY
 // import { DopplerSDK } from '@whetstone-research/doppler-sdk';
-import { DopplerSDK } from '../src';
+import { DopplerSDK } from '../src/evm';
 
 import { createPublicClient, http, parseEther, formatEther, type Address } from 'viem'
 import { baseSepolia } from 'viem/chains'

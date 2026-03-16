@@ -1,6 +1,6 @@
 import './env'
 
-import { DopplerSDK, getAirlockOwner } from '../src';
+import { DopplerSDK, getAirlockOwner } from '../src/evm';
 import { parseEther, createPublicClient, createWalletClient, http } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { baseSepolia } from 'viem/chains';

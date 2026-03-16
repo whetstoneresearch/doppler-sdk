@@ -12,7 +12,7 @@
  */
 import './env'
 
-import { DopplerSDK, getAddresses } from '../src'
+import { DopplerSDK, getAddresses } from '../src/evm'
 import { GraphQLClient } from 'graphql-request'
 import { createPublicClient, http, formatEther, formatUnits, parseEther, type Address } from 'viem'
 import { baseSepolia } from 'viem/chains'

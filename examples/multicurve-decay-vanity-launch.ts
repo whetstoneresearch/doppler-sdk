@@ -28,7 +28,7 @@
  */
 import './env'
 
-import { DopplerSDK, WAD, getAddresses, mineTokenAddress, airlockAbi } from '../src'
+import { DopplerSDK, WAD, getAddresses, mineTokenAddress, airlockAbi } from '../src/evm'
 import {
   parseEther,
   createPublicClient,

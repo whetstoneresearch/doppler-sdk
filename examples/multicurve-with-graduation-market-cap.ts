@@ -19,7 +19,7 @@
  */
 import './env';
 
-import { DopplerSDK, WAD, getAddresses } from '../src';
+import { DopplerSDK, WAD, getAddresses } from '../src/evm';
 import {
   parseEther,
   createPublicClient,

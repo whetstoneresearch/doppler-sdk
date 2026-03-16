@@ -11,7 +11,7 @@ import './env'
 // UNCOMMENT IF RUNNING LOCALLY
 // import { DopplerSDK, DynamicAuctionBuilder } from '@whetstone-research/doppler-sdk';
 
-import { DAY_SECONDS, DopplerSDK } from '../src';
+import { DAY_SECONDS, DopplerSDK } from '../src/evm';
 
 import {
   createPublicClient,

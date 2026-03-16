@@ -9,7 +9,7 @@
  */
 import './env'
 
-import { CHAIN_IDS, DopplerSDK, getAddresses } from '../src'
+import { CHAIN_IDS, DopplerSDK, getAddresses } from '../src/evm'
 import { CommandBuilder, V4ActionBuilder, V4ActionType } from 'doppler-router'
 import {
   createPublicClient,

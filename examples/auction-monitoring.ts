@@ -11,7 +11,7 @@ import './env'
 // UNCOMMENT IF RUNNING LOCALLY
 // import { DopplerSDK } from '@whetstone-research/doppler-sdk';
 
-import { DopplerSDK } from '../src';
+import { DopplerSDK } from '../src/evm';
 import {
   http,
   formatEther,
