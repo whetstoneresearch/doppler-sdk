@@ -8,8 +8,8 @@ import {
 } from '../../setup/fixtures/clients';
 import { mockAddresses } from '../../setup/fixtures/addresses';
 
-vi.mock('../../../src/addresses', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../../src/addresses')>();
+vi.mock('../../../../src/evm/addresses', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../../src/evm/addresses')>();
   return {
     ...actual,
     getAddresses: vi.fn(() => mockAddresses),

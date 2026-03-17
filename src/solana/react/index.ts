@@ -110,24 +110,3 @@ export type {
   UseOracleOptions,
 } from './hooks/index.js';
 
-// ============================================================================
-// Components
-// ============================================================================
-
-export {
-  ConnectWallet,
-  SwapCard,
-  LiquidityPanel,
-  PoolStats,
-  PositionCard,
-} from './components/index.js';
-
-// Component types
-export type {
-  ConnectWalletProps,
-  SwapCardProps,
-  TokenInfo,
-  LiquidityPanelProps,
-  PoolStatsProps,
-  PositionCardProps,
-} from './components/index.js';

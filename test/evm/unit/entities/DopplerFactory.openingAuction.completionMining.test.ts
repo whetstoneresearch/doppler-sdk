@@ -11,8 +11,8 @@ import {
 import { mockAddresses } from '../../setup/fixtures/addresses';
 import { MAX_TICK, MIN_TICK } from '../../../../src/evm/utils/tickMath';
 
-vi.mock('../../../src/addresses', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../../src/addresses')>();
+vi.mock('../../../../src/evm/addresses', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../../src/evm/addresses')>();
   return {
     ...actual,
     getAddresses: vi.fn(() => mockAddresses),

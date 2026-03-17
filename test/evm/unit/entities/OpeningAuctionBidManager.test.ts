@@ -1512,7 +1512,7 @@ describe('DopplerSDK.getOpeningAuctionBidManager', () => {
   // We need to mock getOpeningAuctionPositionManager since it reads from chain.
 
   it('creates an OpeningAuctionBidManager via SDK entrypoint', async () => {
-    const { DopplerSDK } = await import('../../../src/DopplerSDK');
+    const { DopplerSDK } = await import('../../../../src/evm/DopplerSDK');
 
     const publicClient = createMockPublicClient();
     const walletClient = createMockWalletClient();
@@ -1545,7 +1545,7 @@ describe('DopplerSDK.getOpeningAuctionBidManager', () => {
   });
 
   it('throws when no positionManagerAddress is available on chain', async () => {
-    const { DopplerSDK } = await import('../../../src/DopplerSDK');
+    const { DopplerSDK } = await import('../../../../src/evm/DopplerSDK');
 
     const publicClient = createMockPublicClient();
     const walletClient = createMockWalletClient();

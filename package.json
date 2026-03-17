@@ -8,12 +8,7 @@
     "type": "git",
     "url": "https://github.com/whetstoneresearch/doppler-sdk"
   },
-  "types": "dist/index.d.ts",
   "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
-    },
     "./evm": {
       "import": "./dist/evm/index.js",
       "types": "./dist/evm/index.d.ts"

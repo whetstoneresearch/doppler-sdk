@@ -29,7 +29,7 @@ describe('C1: Runtime values must not be exported as type-only', () => {
   it('NO_OP_ENABLED_CHAIN_IDS should be a runtime value, not undefined', async () => {
     // Import from the public index barrel — if exported as `export type`,
     // these will be `undefined` at runtime.
-    const indexModule = await import('../../src/index');
+    const indexModule = await import('../../../src/evm/index');
 
     // These are runtime values in types.ts. The index.ts exports them inside
     // `export type { ... }` which strips them at compile time.
@@ -39,18 +39,18 @@ describe('C1: Runtime values must not be exported as type-only', () => {
   });
 
   it('isNoOpEnabledChain should be a callable function, not undefined', async () => {
-    const indexModule = await import('../../src/index');
+    const indexModule = await import('../../../src/evm/index');
     expect(typeof indexModule.isNoOpEnabledChain).toBe('function');
   });
 
   it('LAUNCHPAD_ENABLED_CHAIN_IDS should be a runtime value, not undefined', async () => {
-    const indexModule = await import('../../src/index');
+    const indexModule = await import('../../../src/evm/index');
     expect(indexModule.LAUNCHPAD_ENABLED_CHAIN_IDS).toBeDefined();
     expect(Array.isArray(indexModule.LAUNCHPAD_ENABLED_CHAIN_IDS)).toBe(true);
   });
 
   it('isLaunchpadEnabledChain should be a callable function, not undefined', async () => {
-    const indexModule = await import('../../src/index');
+    const indexModule = await import('../../../src/evm/index');
     expect(typeof indexModule.isLaunchpadEnabledChain).toBe('function');
   });
 });
@@ -87,9 +87,9 @@ describe('H2: Fallback curve should not have tickLower >= tickUpper', () => {
   it('fallback curve generated when user curve tickUpper equals roundMaxTickDown', async () => {
     // Import DopplerFactory to test normalizeMulticurveCurves (it's private,
     // so we test the observable behavior through the public API)
-    const { DopplerFactory } = await import('../../src/entities/DopplerFactory');
-    const { MAX_TICK } = await import('../../src/utils');
-    const { WAD } = await import('../../src/constants');
+    const { DopplerFactory } = await import('../../../src/evm/entities/DopplerFactory');
+    const { MAX_TICK } = await import('../../../src/evm/utils');
+    const { WAD } = await import('../../../src/evm/constants');
 
     const tickSpacing = 10;
     const roundedMaxTick = Math.floor(MAX_TICK / tickSpacing) * tickSpacing;
@@ -138,13 +138,13 @@ describe('H3: Opening auction encodeMigrationData should pass numeraire for dopp
     // The static auction path at line 257 passes { numeraire, overrides }
     // The opening auction path at line 1405 passes NO options argument.
     // We verify by reading the source code structure.
-    const { DopplerFactory } = await import('../../src/entities/DopplerFactory');
+    const { DopplerFactory } = await import('../../../src/evm/entities/DopplerFactory');
     const source = DopplerFactory.prototype.encodeCreateOpeningAuctionParams?.toString() ?? '';
 
     // For a more reliable test, let's check what the method actually does by
     // looking for the pattern in the source code
     const factorySource = fs.readFileSync(
-      path.resolve(process.cwd(), 'src/entities/DopplerFactory.ts'),
+      path.resolve(process.cwd(), 'src/evm/entities/DopplerFactory.ts'),
       'utf-8',
     );
 
@@ -178,7 +178,7 @@ describe('H5: completeOpeningAuction should not return zeroAddress when dopplerS
     // This means the caller gets zeroAddress with no warning.
 
     const factorySource = fs.readFileSync(
-      path.resolve(process.cwd(), 'src/entities/DopplerFactory.ts'),
+      path.resolve(process.cwd(), 'src/evm/entities/DopplerFactory.ts'),
       'utf-8',
     );
 
@@ -230,7 +230,7 @@ describe('H7: Timestamp byte extraction should not lose entropy for bits > 32', 
     // The fix replaced `(timestamp >> (i * 8)) & 0xff` with BigInt-based extraction.
     // Verify the production code uses BigInt, not the broken >> operator.
     const source = fs.readFileSync(
-      path.resolve(process.cwd(), 'src/entities/DopplerFactory.ts'),
+      path.resolve(process.cwd(), 'src/evm/entities/DopplerFactory.ts'),
       'utf-8',
     );
 
@@ -282,7 +282,7 @@ describe('H1: mineTokenOrder should handle isToken0=true for high numeraire addr
     // (smaller address), but the check would never match.
 
     const factorySource = fs.readFileSync(
-      path.resolve(process.cwd(), 'src/entities/DopplerFactory.ts'),
+      path.resolve(process.cwd(), 'src/evm/entities/DopplerFactory.ts'),
       'utf-8',
     );
 
@@ -306,7 +306,7 @@ describe('H1: mineTokenOrder should handle isToken0=true for high numeraire addr
 describe('M5: Builder should validate tick values against int24 bounds', () => {
   it('OpeningAuctionBuilder build() should check minAcceptableTick against int24 range', () => {
     const builderSource = fs.readFileSync(
-      path.resolve(process.cwd(), 'src/builders/OpeningAuctionBuilder.ts'),
+      path.resolve(process.cwd(), 'src/evm/builders/OpeningAuctionBuilder.ts'),
       'utf-8',
     );
 
@@ -325,7 +325,7 @@ describe('M5: Builder should validate tick values against int24 bounds', () => {
 
   it('validateOpeningAuctionParams should check ticks against int24 range', () => {
     const factorySource = fs.readFileSync(
-      path.resolve(process.cwd(), 'src/entities/DopplerFactory.ts'),
+      path.resolve(process.cwd(), 'src/evm/entities/DopplerFactory.ts'),
       'utf-8',
     );
 
@@ -348,7 +348,7 @@ describe('M5: Builder should validate tick values against int24 bounds', () => {
 describe('M9: incentiveShareBps + shareToAuctionBps should not exceed 10_000', () => {
   it('validateOpeningAuctionParams should check combined bps', () => {
     const factorySource = fs.readFileSync(
-      path.resolve(process.cwd(), 'src/entities/DopplerFactory.ts'),
+      path.resolve(process.cwd(), 'src/evm/entities/DopplerFactory.ts'),
       'utf-8',
     );
 
@@ -416,7 +416,7 @@ describe('H4: CreateOpeningAuctionParams types should be consistent', () => {
     // The builder version uses ResolvedOpeningAuctionDopplerConfig (gamma required)
     // The types.ts version uses OpeningAuctionDopplerConfig (gamma optional)
     // Verify by checking that the builder's gamma is required
-    const { OpeningAuctionBuilder } = await import('../../src/builders/OpeningAuctionBuilder');
+    const { OpeningAuctionBuilder } = await import('../../../src/evm/builders/OpeningAuctionBuilder');
 
     const builder = new OpeningAuctionBuilder(84532);
     builder.tokenConfig({
@@ -507,7 +507,7 @@ describe('T1: Phase constant values should match their semantic names', () => {
 describe('T2: decodeDelta should correctly decode negative (signed) int128 values', () => {
   it('decodes negative amount0 from a BalanceDelta', async () => {
     const { OpeningAuctionPositionManager } = await import(
-      '../../src/entities/auction/OpeningAuctionPositionManager'
+      '../../../src/evm/entities/auction/OpeningAuctionPositionManager'
     );
 
     // Encode a negative amount0 (-5) and positive amount1 (7) into a BalanceDelta
@@ -525,7 +525,7 @@ describe('T2: decodeDelta should correctly decode negative (signed) int128 value
 
   it('decodes negative amount1 from a BalanceDelta', async () => {
     const { OpeningAuctionPositionManager } = await import(
-      '../../src/entities/auction/OpeningAuctionPositionManager'
+      '../../../src/evm/entities/auction/OpeningAuctionPositionManager'
     );
 
     const posFive = 5n;
@@ -540,7 +540,7 @@ describe('T2: decodeDelta should correctly decode negative (signed) int128 value
 
   it('decodes both negative amounts from a BalanceDelta', async () => {
     const { OpeningAuctionPositionManager } = await import(
-      '../../src/entities/auction/OpeningAuctionPositionManager'
+      '../../../src/evm/entities/auction/OpeningAuctionPositionManager'
     );
 
     const negThree = -3n;
@@ -567,7 +567,7 @@ describe('L2: getLiquidityAtTick should use INT24_MIN/INT24_MAX constants', () =
 
   it('OpeningAuction source should reference INT24_MIN/INT24_MAX, not hardcoded values', async () => {
     const source = fs.readFileSync(
-      path.resolve(process.cwd(), 'src/entities/auction/OpeningAuction.ts'),
+      path.resolve(process.cwd(), 'src/evm/entities/auction/OpeningAuction.ts'),
       'utf-8',
     );
 
@@ -593,7 +593,7 @@ describe('L2: getLiquidityAtTick should use INT24_MIN/INT24_MAX constants', () =
 describe('L11: Dead private methods should not exist', () => {
   it('getAirlockAddress is never called', async () => {
     const source = fs.readFileSync(
-      path.resolve(process.cwd(), 'src/entities/DopplerFactory.ts'),
+      path.resolve(process.cwd(), 'src/evm/entities/DopplerFactory.ts'),
       'utf-8',
     );
 
@@ -609,7 +609,7 @@ describe('L11: Dead private methods should not exist', () => {
 
   it('getInitializerAddress is never called', async () => {
     const source = fs.readFileSync(
-      path.resolve(process.cwd(), 'src/entities/DopplerFactory.ts'),
+      path.resolve(process.cwd(), 'src/evm/entities/DopplerFactory.ts'),
       'utf-8',
     );
 
@@ -622,7 +622,7 @@ describe('L11: Dead private methods should not exist', () => {
 
   it('computeCreate2Address (non-Fast) is never called', async () => {
     const source = fs.readFileSync(
-      path.resolve(process.cwd(), 'src/entities/DopplerFactory.ts'),
+      path.resolve(process.cwd(), 'src/evm/entities/DopplerFactory.ts'),
       'utf-8',
     );
 
@@ -644,7 +644,7 @@ describe('L11: Dead private methods should not exist', () => {
 describe('L12: Multicurve should use DEFAULT_V4_YEARLY_MINT_RATE', () => {
   it('both constants have the same value currently', async () => {
     const { DEFAULT_V3_YEARLY_MINT_RATE, DEFAULT_V4_YEARLY_MINT_RATE } = await import(
-      '../../src/constants'
+      '../../../src/evm/constants'
     );
     // This test documents that they are currently equal.
     // If they diverge, the multicurve path would silently use the wrong rate.
@@ -653,7 +653,7 @@ describe('L12: Multicurve should use DEFAULT_V4_YEARLY_MINT_RATE', () => {
 
   it('multicurve token factory encoding should use V4 rate, not V3', async () => {
     const source = fs.readFileSync(
-      path.resolve(process.cwd(), 'src/entities/DopplerFactory.ts'),
+      path.resolve(process.cwd(), 'src/evm/entities/DopplerFactory.ts'),
       'utf-8',
     );
 
@@ -673,7 +673,7 @@ describe('L12: Multicurve should use DEFAULT_V4_YEARLY_MINT_RATE', () => {
 describe('L13: Should use consistent zero address constant', () => {
   it('DopplerFactory uses both viem zeroAddress and constants ZERO_ADDRESS', async () => {
     const source = fs.readFileSync(
-      path.resolve(process.cwd(), 'src/entities/DopplerFactory.ts'),
+      path.resolve(process.cwd(), 'src/evm/entities/DopplerFactory.ts'),
       'utf-8',
     );
 
@@ -696,7 +696,7 @@ describe('L13: Should use consistent zero address constant', () => {
 describe('M10: Transaction receipt confirmation counts should be consistent', () => {
   it('create method receipt calls should have confirmations: 2', () => {
     const source = fs.readFileSync(
-      path.resolve(process.cwd(), 'src/entities/DopplerFactory.ts'),
+      path.resolve(process.cwd(), 'src/evm/entities/DopplerFactory.ts'),
       'utf-8',
     );
 
@@ -729,7 +729,7 @@ describe('M10: Transaction receipt confirmation counts should be consistent', ()
 describe('M8: Opening auction should validate migration type compatibility', () => {
   it('dopplerHook migration type should be explicitly handled or rejected', async () => {
     const source = fs.readFileSync(
-      path.resolve(process.cwd(), 'src/entities/DopplerFactory.ts'),
+      path.resolve(process.cwd(), 'src/evm/entities/DopplerFactory.ts'),
       'utf-8',
     );
 
@@ -777,7 +777,7 @@ describe('D1: Examples README should list all example files', () => {
 describe('L5: encodeOwnerHookData packed format should produce valid hex', () => {
   it('packed format should return a valid 42-char hex address', async () => {
     const { OpeningAuctionPositionManager } = await import(
-      '../../src/entities/auction/OpeningAuctionPositionManager'
+      '../../../src/evm/entities/auction/OpeningAuctionPositionManager'
     );
 
     const testAddress = '0x1234567890123456789012345678901234567890' as Address;
@@ -791,7 +791,7 @@ describe('L5: encodeOwnerHookData packed format should produce valid hex', () =>
 
   it('abi format should produce ABI-encoded address (66 chars)', async () => {
     const { OpeningAuctionPositionManager } = await import(
-      '../../src/entities/auction/OpeningAuctionPositionManager'
+      '../../../src/evm/entities/auction/OpeningAuctionPositionManager'
     );
 
     const testAddress = '0x1234567890123456789012345678901234567890' as Address;
@@ -817,7 +817,7 @@ describe('M1: isInRange should check both tick bounds', () => {
     // This test documents the current behavior.
 
     const source = fs.readFileSync(
-      path.resolve(process.cwd(), 'src/entities/auction/OpeningAuction.ts'),
+      path.resolve(process.cwd(), 'src/evm/entities/auction/OpeningAuction.ts'),
       'utf-8',
     );
 
@@ -847,7 +847,7 @@ describe('M7: MulticurveBuilder fee validation should reject negative fees', () 
   it('negative fee check exists in MulticurveBuilder source', () => {
     // Check that fee < 0 validation exists somewhere in the builder
     const source = fs.readFileSync(
-      path.resolve(process.cwd(), 'src/builders/MulticurveBuilder.ts'),
+      path.resolve(process.cwd(), 'src/evm/builders/MulticurveBuilder.ts'),
       'utf-8',
     );
 
@@ -863,12 +863,12 @@ describe('M7: MulticurveBuilder fee validation should reject negative fees', () 
 describe('L15: OpeningAuctionPosition should be defined in only one place', () => {
   it('types.ts OpeningAuctionPosition should not duplicate entity definition', async () => {
     const typesSource = fs.readFileSync(
-      path.resolve(process.cwd(), 'src/types.ts'),
+      path.resolve(process.cwd(), 'src/evm/types.ts'),
       'utf-8',
     );
 
     const entitySource = fs.readFileSync(
-      path.resolve(process.cwd(), 'src/entities/auction/OpeningAuction.ts'),
+      path.resolve(process.cwd(), 'src/evm/entities/auction/OpeningAuction.ts'),
       'utf-8',
     );
 
@@ -886,7 +886,7 @@ describe('L15: OpeningAuctionPosition should be defined in only one place', () =
 describe('M6: Factory should resolve startingTime from top-level params, not params.doppler', () => {
   it('Factory checks params.doppler.startTimeOffset which builder never populates', async () => {
     const source = fs.readFileSync(
-      path.resolve(process.cwd(), 'src/entities/DopplerFactory.ts'),
+      path.resolve(process.cwd(), 'src/evm/entities/DopplerFactory.ts'),
       'utf-8',
     );
 
