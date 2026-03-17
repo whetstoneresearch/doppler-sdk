@@ -1,0 +1,40 @@
+name: Verify Solana Codecs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/solana/generated/**"
+      - "scripts/idl/**"
+      - "scripts/codegen.ts"
+      - ".github/workflows/verify-solana-codecs.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/solana/generated/**"
+      - "scripts/idl/**"
+      - "scripts/codegen.ts"
+      - ".github/workflows/verify-solana-codecs.yml"
+    types: [opened, ready_for_review, synchronize, reopened]
+
+jobs:
+  verify-codecs:
+    name: Verify Codecs
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+      - run: pnpm install --frozen-lockfile
+      - name: Regenerate codecs from committed IDLs
+        run: pnpm generate:codecs
+      - name: Check generated codecs are up to date
+        run: |
+          if ! git diff --exit-code src/solana/generated/; then
+            echo "Solana codecs are out of date. Run 'pnpm generate:codecs' and commit the result."
+            exit 1
+          fi

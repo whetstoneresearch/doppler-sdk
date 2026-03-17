@@ -5,7 +5,7 @@
  */
 import './env';
 
-import { DAY_SECONDS, DopplerSDK } from '../src';
+import { DAY_SECONDS, DopplerSDK } from '../src/evm';
 
 import {
   createPublicClient,

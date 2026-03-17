@@ -9,7 +9,7 @@
  */
 import './env'
 
-import { DopplerSDK, WAD, getAddresses } from '../src'
+import { DopplerSDK, WAD, getAddresses } from '../src/evm'
 import { CommandBuilder, V4ActionBuilder, V4ActionType, getPermitSignature } from 'doppler-router'
 import { createPublicClient, createWalletClient, http, parseEther, maxUint256 } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'

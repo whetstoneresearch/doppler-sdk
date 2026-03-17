@@ -25,29 +25,29 @@ function getIncludePatterns(): string[] {
   if (!testChain) {
     // Run all fork tests
     return [
-      'test/fork/**/*.test.ts',
-      'test/integration/**/*.test.ts',
+      'test/evm/fork/**/*.test.ts',
+      'test/evm/integration/**/*.test.ts',
     ]
   }
 
   // Map chain names to chain-specific fork test patterns.
   const chainPatterns: Record<string, string[]> = {
     base: [
-      'test/fork/base/**/*.test.ts',
-      'test/integration/**/*.test.ts',
+      'test/evm/fork/base/**/*.test.ts',
+      'test/evm/integration/**/*.test.ts',
     ],
     'base-sepolia': [
-      'test/fork/base-sepolia/**/*.test.ts',
-      'test/integration/**/*.test.ts',
+      'test/evm/fork/base-sepolia/**/*.test.ts',
+      'test/evm/integration/**/*.test.ts',
     ],
-    mainnet: ['test/fork/mainnet/**/*.test.ts'],
-    'eth-sepolia': ['test/fork/eth-sepolia/**/*.test.ts'],
-    monad: ['test/fork/**/*.monad-mainnet.test.ts'],
+    mainnet: ['test/evm/fork/mainnet/**/*.test.ts'],
+    'eth-sepolia': ['test/evm/fork/eth-sepolia/**/*.test.ts'],
+    monad: ['test/evm/fork/**/*.monad-mainnet.test.ts'],
   }
 
   return chainPatterns[testChain] || [
-    'test/fork/**/*.test.ts',
-    'test/integration/**/*.test.ts',
+    'test/evm/fork/**/*.test.ts',
+    'test/evm/integration/**/*.test.ts',
   ]
 }
 
@@ -62,9 +62,9 @@ export default defineConfig({
     exclude: [
       'node_modules/',
       'dist/',
-      'test/setup/**',
-      'test/unit/**',
-      'test/e2e/**',
+      'test/evm/setup/**',
+      'test/evm/unit/**',
+      'test/evm/e2e/**',
     ],
     // Fork tests run sequentially to share Anvil state
     maxConcurrency: 1,
@@ -73,9 +73,9 @@ export default defineConfig({
     testTimeout: 120_000,
     hookTimeout: 120_000,
     // Global setup starts Anvil
-    globalSetup: ['./test/setup/globalSetup.ts'],
+    globalSetup: ['./test/evm/setup/globalSetup.ts'],
     // Setup file for custom matchers and snapshot hooks
-    setupFiles: ['./test/setup/vitest.setup.ts'],
+    setupFiles: ['./test/evm/setup/vitest.setup.ts'],
     // Env vars for fork mode
     env: {
       ...(baseTest.env ?? {}),

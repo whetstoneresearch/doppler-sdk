@@ -14,17 +14,16 @@ export default mergeConfig(
   defineConfig({
     test: {
       include: [
-        'test/e2e/**/*.test.ts',
-        // Airlock whitelisting test runs against live network
-        'test/airlock-whitelisting.test.ts',
+        'test/evm/e2e/**/*.test.ts',
+        'test/evm/airlock-whitelisting.test.ts',
       ],
       exclude: [
         'node_modules/',
         'dist/',
-        'test/setup/**',
-        'test/unit/**',
-        'test/fork/**',
-        'test/integration/**',
+        'test/evm/setup/**',
+        'test/evm/unit/**',
+        'test/evm/fork/**',
+        'test/evm/integration/**',
       ],
       // Live tests must run sequentially with rate limiting
       maxConcurrency: 1,
@@ -37,7 +36,7 @@ export default mergeConfig(
         shuffle: false,
       },
       // Setup file for custom matchers
-      setupFiles: ['./test/setup/vitest.setup.ts'],
+      setupFiles: ['./test/evm/setup/vitest.setup.ts'],
       // Env vars for live mode
       env: {
         LIVE_TEST_ENABLED: 'true',

@@ -1,0 +1,878 @@
+{
+  "address": "CpmmMig1111111111111111111111111111111111111",
+  "metadata": {
+    "name": "cpmm_migrator",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "CPMM migrator module for initializer"
+  },
+  "instructions": [
+    {
+      "name": "migrate",
+      "docs": [
+        "Migrate a launch to a CPMM pool.",
+        "Called by initializer during migrate_launch."
+      ],
+      "discriminator": [
+        155,
+        234,
+        231,
+        146,
+        236,
+        158,
+        162,
+        30
+      ],
+      "accounts": [
+        {
+          "name": "initializer_config"
+        },
+        {
+          "name": "launch",
+          "docs": [
+            "Launch from initializer.",
+            "",
+            "Using the interface crate type here avoids brittle byte-offset parsing."
+          ]
+        },
+        {
+          "name": "launch_authority",
+          "docs": [
+            "Launch authority PDA from initializer (signer for vault transfers)"
+          ],
+          "signer": true
+        },
+        {
+          "name": "base_mint"
+        },
+        {
+          "name": "quote_mint"
+        },
+        {
+          "name": "base_vault",
+          "docs": [
+            "Base token vault owned by launch_authority"
+          ],
+          "writable": true
+        },
+        {
+          "name": "quote_vault",
+          "docs": [
+            "Quote token vault owned by launch_authority"
+          ],
+          "writable": true
+        },
+        {
+          "name": "payer",
+          "docs": [
+            "Payer for account creation"
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        },
+        {
+          "name": "state",
+          "docs": [
+            "The CpmmMigratorState PDA"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "launch"
+              }
+            ]
+          }
+        },
+        {
+          "name": "cpmm_config"
+        },
+        {
+          "name": "pool",
+          "writable": true
+        },
+        {
+          "name": "pool_authority"
+        },
+        {
+          "name": "pool_vault0",
+          "writable": true
+        },
+        {
+          "name": "pool_vault1",
+          "writable": true
+        },
+        {
+          "name": "protocol_position",
+          "writable": true
+        },
+        {
+          "name": "launch_lp_position",
+          "writable": true
+        },
+        {
+          "name": "cpmm_program",
+          "address": "3HSrGs4jj92CGt7mkfeeoMofrRGVPUcDX8djAnp4FoD6"
+        },
+        {
+          "name": "admin_base_ata",
+          "docs": [
+            "Admin's base token ATA for returning unsold curve tokens"
+          ],
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "MigrateArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "register_launch",
+      "docs": [
+        "Register a launch with this migrator.",
+        "Called by initializer during initialize_launch as the init hook."
+      ],
+      "discriminator": [
+        114,
+        114,
+        67,
+        23,
+        41,
+        70,
+        0,
+        225
+      ],
+      "accounts": [
+        {
+          "name": "initializer_config"
+        },
+        {
+          "name": "launch"
+        },
+        {
+          "name": "launch_authority",
+          "signer": true
+        },
+        {
+          "name": "base_mint",
+          "docs": [
+            "Base token mint"
+          ]
+        },
+        {
+          "name": "quote_mint",
+          "docs": [
+            "Quote token mint"
+          ]
+        },
+        {
+          "name": "base_vault",
+          "docs": [
+            "Base token vault owned by launch_authority"
+          ]
+        },
+        {
+          "name": "quote_vault",
+          "docs": [
+            "Quote token vault owned by launch_authority"
+          ]
+        },
+        {
+          "name": "payer",
+          "docs": [
+            "Payer for account creation"
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        },
+        {
+          "name": "state",
+          "docs": [
+            "The CpmmMigratorState PDA to create"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "launch"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "RegisterLaunchArgs"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "CpmmMigratorState",
+      "discriminator": [
+        169,
+        86,
+        255,
+        187,
+        37,
+        248,
+        11,
+        176
+      ]
+    },
+    {
+      "name": "Launch",
+      "discriminator": [
+        144,
+        51,
+        51,
+        163,
+        206,
+        85,
+        213,
+        38
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "LaunchMigrated",
+      "discriminator": [
+        135,
+        27,
+        61,
+        35,
+        85,
+        170,
+        159,
+        33
+      ]
+    },
+    {
+      "name": "LaunchRegistered",
+      "discriminator": [
+        158,
+        211,
+        66,
+        169,
+        249,
+        238,
+        122,
+        253
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "Unauthorized",
+      "msg": "Unauthorized"
+    },
+    {
+      "code": 6001,
+      "name": "InvalidPhase",
+      "msg": "Invalid phase"
+    },
+    {
+      "code": 6002,
+      "name": "InvalidAmount",
+      "msg": "Invalid amount"
+    },
+    {
+      "code": 6003,
+      "name": "InvalidVault",
+      "msg": "Invalid vault"
+    },
+    {
+      "code": 6004,
+      "name": "InvalidMint",
+      "msg": "Invalid mint"
+    },
+    {
+      "code": 6005,
+      "name": "MathOverflow",
+      "msg": "Math overflow"
+    },
+    {
+      "code": 6006,
+      "name": "InvalidConfig",
+      "msg": "Invalid config"
+    },
+    {
+      "code": 6007,
+      "name": "MinRaiseNotMet",
+      "msg": "Minimum raise not met"
+    },
+    {
+      "code": 6008,
+      "name": "PriceFloorNotMet",
+      "msg": "Price floor not met"
+    },
+    {
+      "code": 6009,
+      "name": "MissingRecipientAccount",
+      "msg": "Missing recipient account"
+    },
+    {
+      "code": 6010,
+      "name": "InvalidRecipientAccount",
+      "msg": "Invalid recipient account"
+    },
+    {
+      "code": 6011,
+      "name": "ExtraRecipientAccounts",
+      "msg": "Extra recipient accounts"
+    },
+    {
+      "code": 6012,
+      "name": "PoolAlreadyInitialized",
+      "msg": "Pool already initialized"
+    },
+    {
+      "code": 6013,
+      "name": "PositionAlreadyInitialized",
+      "msg": "Position already initialized"
+    },
+    {
+      "code": 6014,
+      "name": "AlreadyMigrated",
+      "msg": "Already migrated"
+    },
+    {
+      "code": 6015,
+      "name": "TooManyRecipients",
+      "msg": "Too many recipients"
+    },
+    {
+      "code": 6016,
+      "name": "InvalidRecipient",
+      "msg": "Invalid recipient"
+    },
+    {
+      "code": 6017,
+      "name": "InvalidLaunch",
+      "msg": "Invalid launch"
+    },
+    {
+      "code": 6018,
+      "name": "LaunchConfigMismatch",
+      "msg": "Launch configuration mismatch"
+    }
+  ],
+  "types": [
+    {
+      "name": "CalldataBuf",
+      "docs": [
+        "Variable-length calldata buffer."
+      ],
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "len",
+            "type": "u16"
+          },
+          {
+            "name": "bytes",
+            "type": {
+              "array": [
+                "u8",
+                256
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "CpmmMigratorState",
+      "docs": [
+        "State PDA for a launch registered with this migrator.",
+        "Seeds: [b\"state\", launch.as_ref()]"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "launch",
+            "docs": [
+              "The launch this state is associated with"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "admin",
+            "docs": [
+              "Admin who registered this launch (receives unsold curve base tokens)"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "cpmm_config",
+            "docs": [
+              "CPMM config to use for pool initialization"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "initial_swap_fee_bps",
+            "docs": [
+              "Initial swap fee for the CPMM pool (basis points)"
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "initial_fee_split_bps",
+            "docs": [
+              "Initial fee split for the CPMM pool (basis points)"
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "_pad0",
+            "docs": [
+              "Padding for alignment"
+            ],
+            "type": {
+              "array": [
+                "u8",
+                4
+              ]
+            }
+          },
+          {
+            "name": "recipients",
+            "docs": [
+              "Recipients for base token distribution at migration"
+            ],
+            "type": {
+              "array": [
+                {
+                  "defined": {
+                    "name": "Recipient"
+                  }
+                },
+                2
+              ]
+            }
+          },
+          {
+            "name": "min_raise_quote",
+            "docs": [
+              "Minimum quote tokens required to migrate"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "min_migration_price_q64_opt",
+            "docs": [
+              "Optional minimum price floor (Q64 fixed point)"
+            ],
+            "type": {
+              "option": "u128"
+            }
+          },
+          {
+            "name": "is_migrated",
+            "docs": [
+              "Whether this launch has been migrated"
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "Bump seed for this PDA"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "_reserved",
+            "docs": [
+              "Reserved for future use"
+            ],
+            "type": {
+              "array": [
+                "u8",
+                14
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Launch",
+      "docs": [
+        "Launch state account."
+      ],
+      "serialization": "bytemuckunsafe",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "namespace",
+            "type": "pubkey"
+          },
+          {
+            "name": "launch_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "phase",
+            "type": "u8"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "launch_authority_bump",
+            "type": "u8"
+          },
+          {
+            "name": "_pad0",
+            "type": {
+              "array": [
+                "u8",
+                5
+              ]
+            }
+          },
+          {
+            "name": "base_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "quote_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "base_vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "quote_vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "base_total_supply",
+            "type": "u64"
+          },
+          {
+            "name": "base_for_distribution",
+            "type": "u64"
+          },
+          {
+            "name": "base_for_liquidity",
+            "type": "u64"
+          },
+          {
+            "name": "base_for_curve",
+            "type": "u64"
+          },
+          {
+            "name": "curve_virtual_base",
+            "type": "u64"
+          },
+          {
+            "name": "curve_virtual_quote",
+            "type": "u64"
+          },
+          {
+            "name": "curve_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "_pad1",
+            "type": {
+              "array": [
+                "u8",
+                6
+              ]
+            }
+          },
+          {
+            "name": "allow_buy",
+            "type": "u8"
+          },
+          {
+            "name": "allow_sell",
+            "type": "u8"
+          },
+          {
+            "name": "_pad2",
+            "type": {
+              "array": [
+                "u8",
+                6
+              ]
+            }
+          },
+          {
+            "name": "sentinel_program",
+            "type": "pubkey"
+          },
+          {
+            "name": "sentinel_flags",
+            "type": "u32"
+          },
+          {
+            "name": "_pad3",
+            "type": {
+              "array": [
+                "u8",
+                4
+              ]
+            }
+          },
+          {
+            "name": "sentinel_calldata",
+            "type": {
+              "defined": {
+                "name": "CalldataBuf"
+              }
+            }
+          },
+          {
+            "name": "migrator_program",
+            "type": "pubkey"
+          },
+          {
+            "name": "migrator_init_calldata",
+            "type": {
+              "defined": {
+                "name": "CalldataBuf"
+              }
+            }
+          },
+          {
+            "name": "migrator_migrate_calldata",
+            "type": {
+              "defined": {
+                "name": "CalldataBuf"
+              }
+            }
+          },
+          {
+            "name": "_reserved",
+            "type": {
+              "array": [
+                "u8",
+                64
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "LaunchMigrated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "launch",
+            "type": "pubkey"
+          },
+          {
+            "name": "pool",
+            "type": "pubkey"
+          },
+          {
+            "name": "quote_for_liquidity",
+            "type": "u64"
+          },
+          {
+            "name": "base_for_liquidity",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "LaunchRegistered",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "launch",
+            "type": "pubkey"
+          },
+          {
+            "name": "state",
+            "type": "pubkey"
+          },
+          {
+            "name": "cpmm_config",
+            "type": "pubkey"
+          },
+          {
+            "name": "min_raise_quote",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MigrateArgs",
+      "docs": [
+        "Arguments for migrate instruction.",
+        "These are deserialized from the migrator_migrate_calldata passed by initializer."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "base_for_distribution",
+            "docs": [
+              "Base tokens reserved for distribution to recipients"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "base_for_liquidity",
+            "docs": [
+              "Base tokens reserved for CPMM liquidity"
+            ],
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Recipient",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RegisterLaunchArgs",
+      "docs": [
+        "Arguments for register_launch instruction.",
+        "These are deserialized from the migrator_init_calldata passed by initializer."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "cpmm_config",
+            "type": "pubkey"
+          },
+          {
+            "name": "initial_swap_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "initial_fee_split_bps",
+            "type": "u16"
+          },
+          {
+            "name": "recipients",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "Recipient"
+                }
+              }
+            }
+          },
+          {
+            "name": "min_raise_quote",
+            "type": "u64"
+          },
+          {
+            "name": "min_migration_price_q64_opt",
+            "type": {
+              "option": "u128"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

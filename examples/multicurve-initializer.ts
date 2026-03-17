@@ -11,7 +11,7 @@
  */
 import './env'
 
-import { DopplerSDK, FEE_TIERS, WAD } from '../src'
+import { DopplerSDK, FEE_TIERS, WAD } from '../src/evm'
 import { createPublicClient, createWalletClient, http } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { baseSepolia } from 'viem/chains'

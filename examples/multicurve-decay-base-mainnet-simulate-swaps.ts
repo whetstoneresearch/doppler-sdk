@@ -28,7 +28,7 @@ import {
   getAddresses,
   type MulticurveDecayFeeSchedule,
   type V4PoolKey,
-} from '../src';
+} from '../src/evm';
 import {
   CommandBuilder,
   CommandType,

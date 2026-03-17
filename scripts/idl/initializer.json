@@ -1,0 +1,1656 @@
+{
+  "address": "4H9w6qMqqSh6DVW7BzYxPHFvLaQP7rbRiQnPYGPajQxq",
+  "metadata": {
+    "name": "initializer",
+    "version": "1.0.0",
+    "spec": "0.1.0",
+    "description": "Initializer program with bonding-curve launch, sentinel hooks, and programmable migration"
+  },
+  "instructions": [
+    {
+      "name": "abort_launch",
+      "discriminator": [
+        44,
+        112,
+        192,
+        235,
+        227,
+        61,
+        179,
+        7
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103,
+                  95,
+                  118,
+                  51
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "launch",
+          "writable": true
+        },
+        {
+          "name": "launch_authority"
+        },
+        {
+          "name": "base_vault",
+          "writable": true
+        },
+        {
+          "name": "quote_vault",
+          "writable": true
+        },
+        {
+          "name": "authority",
+          "docs": [
+            "Authority of the launch (must match launch.authority).",
+            "Receives reclaimed vault rent on close."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "authority_base_account",
+          "docs": [
+            "Destination for remaining base tokens"
+          ],
+          "writable": true
+        },
+        {
+          "name": "base_mint"
+        },
+        {
+          "name": "token_program"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "curve_swap_exact_in",
+      "discriminator": [
+        196,
+        247,
+        195,
+        126,
+        227,
+        27,
+        166,
+        93
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103,
+                  95,
+                  118,
+                  51
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "launch",
+          "writable": true
+        },
+        {
+          "name": "launch_authority"
+        },
+        {
+          "name": "base_vault",
+          "writable": true
+        },
+        {
+          "name": "quote_vault",
+          "writable": true
+        },
+        {
+          "name": "user_base_account",
+          "writable": true
+        },
+        {
+          "name": "user_quote_account",
+          "writable": true
+        },
+        {
+          "name": "base_mint"
+        },
+        {
+          "name": "quote_mint"
+        },
+        {
+          "name": "user",
+          "signer": true
+        },
+        {
+          "name": "sentinel_program",
+          "docs": [
+            "Optional sentinel program (must match launch.sentinel_program if set)"
+          ],
+          "optional": true
+        },
+        {
+          "name": "token_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount_in",
+          "type": "u64"
+        },
+        {
+          "name": "min_amount_out",
+          "type": "u64"
+        },
+        {
+          "name": "direction",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "initialize_config",
+      "discriminator": [
+        208,
+        127,
+        21,
+        1,
+        194,
+        190,
+        196,
+        70
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103,
+                  95,
+                  118,
+                  51
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program_data"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "InitializeConfigArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "initialize_launch",
+      "discriminator": [
+        90,
+        201,
+        220,
+        142,
+        112,
+        253,
+        100,
+        13
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103,
+                  95,
+                  118,
+                  51
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "launch",
+          "writable": true
+        },
+        {
+          "name": "launch_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  97,
+                  117,
+                  110,
+                  99,
+                  104,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121,
+                  95,
+                  118,
+                  51
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "launch"
+              }
+            ]
+          }
+        },
+        {
+          "name": "base_mint",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "quote_mint"
+        },
+        {
+          "name": "base_vault",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "quote_vault",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "authority",
+          "docs": [
+            "Optional authority (creator/admin). If not provided, launch is permissionless."
+          ],
+          "signer": true,
+          "optional": true
+        },
+        {
+          "name": "migrator_program",
+          "docs": [
+            "Optional migrator program for init hook"
+          ],
+          "optional": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        },
+        {
+          "name": "metadata_account",
+          "docs": [
+            "Metadata account (PDA derived from base_mint via Metaplex Token Metadata)."
+          ],
+          "writable": true,
+          "optional": true
+        },
+        {
+          "name": "metadata_program",
+          "docs": [
+            "Metaplex Token Metadata program."
+          ],
+          "optional": true
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "InitializeLaunchArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "migrate_launch",
+      "discriminator": [
+        19,
+        199,
+        119,
+        103,
+        13,
+        30,
+        12,
+        205
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103,
+                  95,
+                  118,
+                  51
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "launch",
+          "writable": true
+        },
+        {
+          "name": "launch_authority"
+        },
+        {
+          "name": "base_mint"
+        },
+        {
+          "name": "quote_mint"
+        },
+        {
+          "name": "base_vault",
+          "writable": true
+        },
+        {
+          "name": "quote_vault",
+          "writable": true
+        },
+        {
+          "name": "migrator_program"
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "preview_migration",
+      "discriminator": [
+        216,
+        180,
+        209,
+        112,
+        62,
+        16,
+        15,
+        63
+      ],
+      "accounts": [
+        {
+          "name": "launch"
+        },
+        {
+          "name": "base_mint"
+        },
+        {
+          "name": "base_vault"
+        },
+        {
+          "name": "quote_vault"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "preview_swap_exact_in",
+      "discriminator": [
+        50,
+        130,
+        31,
+        69,
+        147,
+        58,
+        222,
+        178
+      ],
+      "accounts": [
+        {
+          "name": "launch"
+        },
+        {
+          "name": "base_vault"
+        },
+        {
+          "name": "quote_vault"
+        },
+        {
+          "name": "sentinel_program",
+          "docs": [
+            "Optional sentinel program (must match launch.sentinel_program if set)"
+          ],
+          "optional": true
+        }
+      ],
+      "args": [
+        {
+          "name": "amount_in",
+          "type": "u64"
+        },
+        {
+          "name": "direction",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "set_migrator_allowlist",
+      "discriminator": [
+        209,
+        90,
+        181,
+        104,
+        99,
+        108,
+        233,
+        168
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103,
+                  95,
+                  118,
+                  51
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "allowlist",
+          "type": {
+            "vec": "pubkey"
+          }
+        }
+      ]
+    },
+    {
+      "name": "set_sentinel_allowlist",
+      "discriminator": [
+        233,
+        72,
+        180,
+        246,
+        171,
+        117,
+        21,
+        50
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103,
+                  95,
+                  118,
+                  51
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "allowlist",
+          "type": {
+            "vec": "pubkey"
+          }
+        }
+      ]
+    },
+    {
+      "name": "update_trading_flags",
+      "discriminator": [
+        40,
+        204,
+        40,
+        16,
+        219,
+        190,
+        133,
+        78
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103,
+                  95,
+                  118,
+                  51
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "launch",
+          "writable": true
+        },
+        {
+          "name": "authority",
+          "docs": [
+            "Authority of the launch (must match launch.authority or config.admin)"
+          ],
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "UpdateTradingFlagsArgs"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "InitConfig",
+      "discriminator": [
+        97,
+        166,
+        35,
+        7,
+        20,
+        2,
+        164,
+        126
+      ]
+    },
+    {
+      "name": "Launch",
+      "discriminator": [
+        144,
+        51,
+        51,
+        163,
+        206,
+        85,
+        213,
+        38
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "ConfigInitialized",
+      "discriminator": [
+        181,
+        49,
+        200,
+        156,
+        19,
+        167,
+        178,
+        91
+      ]
+    },
+    {
+      "name": "CurveSwap",
+      "discriminator": [
+        173,
+        168,
+        37,
+        87,
+        103,
+        169,
+        133,
+        249
+      ]
+    },
+    {
+      "name": "LaunchAborted",
+      "discriminator": [
+        243,
+        47,
+        210,
+        249,
+        74,
+        119,
+        96,
+        183
+      ]
+    },
+    {
+      "name": "LaunchInitialized",
+      "discriminator": [
+        60,
+        143,
+        196,
+        55,
+        214,
+        166,
+        10,
+        63
+      ]
+    },
+    {
+      "name": "LaunchMigrated",
+      "discriminator": [
+        135,
+        27,
+        61,
+        35,
+        85,
+        170,
+        159,
+        33
+      ]
+    },
+    {
+      "name": "MigratorAllowlistUpdated",
+      "discriminator": [
+        34,
+        219,
+        188,
+        168,
+        225,
+        87,
+        165,
+        251
+      ]
+    },
+    {
+      "name": "SentinelAllowlistUpdated",
+      "discriminator": [
+        95,
+        249,
+        152,
+        167,
+        206,
+        254,
+        158,
+        235
+      ]
+    },
+    {
+      "name": "TradingFlagsUpdated",
+      "discriminator": [
+        157,
+        244,
+        58,
+        59,
+        234,
+        223,
+        49,
+        155
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "Unauthorized",
+      "msg": "Unauthorized"
+    },
+    {
+      "code": 6001,
+      "name": "InvalidPhase",
+      "msg": "Invalid phase"
+    },
+    {
+      "code": 6002,
+      "name": "InvalidAmount",
+      "msg": "Invalid amount"
+    },
+    {
+      "code": 6003,
+      "name": "InvalidVault",
+      "msg": "Invalid vault"
+    },
+    {
+      "code": 6004,
+      "name": "InvalidMint",
+      "msg": "Invalid mint"
+    },
+    {
+      "code": 6005,
+      "name": "MathOverflow",
+      "msg": "Math overflow"
+    },
+    {
+      "code": 6006,
+      "name": "InvalidCurveParams",
+      "msg": "Invalid curve params"
+    },
+    {
+      "code": 6007,
+      "name": "SlippageExceeded",
+      "msg": "Slippage exceeded"
+    },
+    {
+      "code": 6008,
+      "name": "CurveLiquidityInsufficient",
+      "msg": "Curve liquidity insufficient"
+    },
+    {
+      "code": 6009,
+      "name": "CalldataTooLarge",
+      "msg": "Calldata too large"
+    },
+    {
+      "code": 6010,
+      "name": "MigratorNotAllowlisted",
+      "msg": "Migrator not allowlisted"
+    },
+    {
+      "code": 6011,
+      "name": "SentinelNotAllowlisted",
+      "msg": "Sentinel not allowlisted"
+    },
+    {
+      "code": 6012,
+      "name": "WrongMigrator",
+      "msg": "Wrong migrator program"
+    },
+    {
+      "code": 6013,
+      "name": "WrongSentinel",
+      "msg": "Wrong sentinel program"
+    },
+    {
+      "code": 6014,
+      "name": "MigratorCpiFailed",
+      "msg": "Migrator CPI failed"
+    },
+    {
+      "code": 6015,
+      "name": "SentinelCpiFailed",
+      "msg": "Sentinel CPI failed"
+    },
+    {
+      "code": 6016,
+      "name": "SentinelRejected",
+      "msg": "Sentinel rejected"
+    },
+    {
+      "code": 6017,
+      "name": "BuyNotAllowed",
+      "msg": "Buy not allowed"
+    },
+    {
+      "code": 6018,
+      "name": "SellNotAllowed",
+      "msg": "Sell not allowed"
+    },
+    {
+      "code": 6019,
+      "name": "InvalidDirection",
+      "msg": "Invalid direction"
+    },
+    {
+      "code": 6020,
+      "name": "AllowlistFull",
+      "msg": "Allowlist full"
+    },
+    {
+      "code": 6021,
+      "name": "InvalidInput",
+      "msg": "Invalid input"
+    },
+    {
+      "code": 6022,
+      "name": "AlreadyMigrated",
+      "msg": "Already migrated"
+    },
+    {
+      "code": 6023,
+      "name": "QuoteVaultNotEmpty",
+      "msg": "Quote vault not empty"
+    },
+    {
+      "code": 6024,
+      "name": "LaunchLocked",
+      "msg": "Launch locked"
+    },
+    {
+      "code": 6025,
+      "name": "InvalidCurveKind",
+      "msg": "Invalid curve kind"
+    },
+    {
+      "code": 6026,
+      "name": "CurveParamsInvalid",
+      "msg": "Curve params invalid"
+    },
+    {
+      "code": 6027,
+      "name": "RemainingAccountOverlap",
+      "msg": "Remaining account overlaps with protocol account"
+    },
+    {
+      "code": 6028,
+      "name": "MissingRemainingAccountsCommitment",
+      "msg": "Missing remaining accounts commitment"
+    },
+    {
+      "code": 6029,
+      "name": "RemainingAccountsCommitmentMismatch",
+      "msg": "Remaining accounts commitment mismatch"
+    },
+    {
+      "code": 6030,
+      "name": "InvalidOracle",
+      "msg": "Invalid oracle account"
+    },
+    {
+      "code": 6031,
+      "name": "MissingMetadataAccounts",
+      "msg": "Missing metadata accounts"
+    },
+    {
+      "code": 6032,
+      "name": "InvalidMetadataProgram",
+      "msg": "Invalid metadata program"
+    },
+    {
+      "code": 6033,
+      "name": "InvalidMetadataAccount",
+      "msg": "Invalid metadata account"
+    },
+    {
+      "code": 6034,
+      "name": "MetadataCpiFailed",
+      "msg": "Metadata CPI failed"
+    }
+  ],
+  "types": [
+    {
+      "name": "CalldataBuf",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "len",
+            "type": "u16"
+          },
+          {
+            "name": "bytes",
+            "type": {
+              "array": [
+                "u8",
+                256
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "ConfigInitialized",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "migrator_allowlist_len",
+            "type": "u8"
+          },
+          {
+            "name": "sentinel_allowlist_len",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CurveSwap",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "launch",
+            "type": "pubkey"
+          },
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "direction",
+            "type": "u8"
+          },
+          {
+            "name": "amount_in",
+            "type": "u64"
+          },
+          {
+            "name": "amount_out",
+            "type": "u64"
+          },
+          {
+            "name": "fee_paid",
+            "type": "u64"
+          },
+          {
+            "name": "post_base_reserve",
+            "type": "u64"
+          },
+          {
+            "name": "post_quote_reserve",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "InitConfig",
+      "serialization": "bytemuckunsafe",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "migrator_allowlist_len",
+            "type": "u8"
+          },
+          {
+            "name": "migrator_allowlist",
+            "type": {
+              "array": [
+                "pubkey",
+                32
+              ]
+            }
+          },
+          {
+            "name": "sentinel_allowlist_len",
+            "type": "u8"
+          },
+          {
+            "name": "sentinel_allowlist",
+            "type": {
+              "array": [
+                "pubkey",
+                32
+              ]
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "version",
+            "type": "u8"
+          },
+          {
+            "name": "_reserved",
+            "type": {
+              "array": [
+                "u8",
+                31
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "InitializeConfigArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "migrator_allowlist",
+            "type": {
+              "vec": "pubkey"
+            }
+          },
+          {
+            "name": "sentinel_allowlist",
+            "type": {
+              "vec": "pubkey"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "InitializeLaunchArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "namespace",
+            "type": "pubkey"
+          },
+          {
+            "name": "launch_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "base_decimals",
+            "type": "u8"
+          },
+          {
+            "name": "base_total_supply",
+            "type": "u64"
+          },
+          {
+            "name": "base_for_distribution",
+            "type": "u64"
+          },
+          {
+            "name": "base_for_liquidity",
+            "type": "u64"
+          },
+          {
+            "name": "curve_virtual_base",
+            "type": "u64"
+          },
+          {
+            "name": "curve_virtual_quote",
+            "type": "u64"
+          },
+          {
+            "name": "curve_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "curve_kind",
+            "type": "u8"
+          },
+          {
+            "name": "curve_params",
+            "type": "bytes"
+          },
+          {
+            "name": "allow_buy",
+            "type": "u8"
+          },
+          {
+            "name": "allow_sell",
+            "type": "u8"
+          },
+          {
+            "name": "sentinel_program",
+            "type": "pubkey"
+          },
+          {
+            "name": "sentinel_flags",
+            "type": "u32"
+          },
+          {
+            "name": "sentinel_calldata",
+            "type": "bytes"
+          },
+          {
+            "name": "migrator_program",
+            "type": "pubkey"
+          },
+          {
+            "name": "migrator_init_calldata",
+            "type": "bytes"
+          },
+          {
+            "name": "migrator_migrate_calldata",
+            "type": "bytes"
+          },
+          {
+            "name": "sentinel_remaining_accounts_hash",
+            "docs": [
+              "Commitment hash for swap/preview sentinel remaining accounts.",
+              "Computed as hash(u32_len || pubkey_0 || ... || pubkey_n)."
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "migrator_remaining_accounts_hash",
+            "docs": [
+              "Commitment hash for migrate remaining accounts.",
+              "Computed as hash(u32_len || pubkey_0 || ... || pubkey_n)."
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "metadata_name",
+            "docs": [
+              "Token name for on-chain metadata. If empty, metadata creation is skipped."
+            ],
+            "type": "string"
+          },
+          {
+            "name": "metadata_symbol",
+            "docs": [
+              "Token symbol for on-chain metadata."
+            ],
+            "type": "string"
+          },
+          {
+            "name": "metadata_uri",
+            "docs": [
+              "Metadata JSON URI for on-chain metadata."
+            ],
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Launch",
+      "serialization": "bytemuckunsafe",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "namespace",
+            "type": "pubkey"
+          },
+          {
+            "name": "launch_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "phase",
+            "type": "u8"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "launch_authority_bump",
+            "type": "u8"
+          },
+          {
+            "name": "_pad0",
+            "type": {
+              "array": [
+                "u8",
+                5
+              ]
+            }
+          },
+          {
+            "name": "base_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "quote_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "base_vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "quote_vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "base_total_supply",
+            "type": "u64"
+          },
+          {
+            "name": "base_for_distribution",
+            "type": "u64"
+          },
+          {
+            "name": "base_for_liquidity",
+            "type": "u64"
+          },
+          {
+            "name": "base_for_curve",
+            "type": "u64"
+          },
+          {
+            "name": "curve_virtual_base",
+            "type": "u64"
+          },
+          {
+            "name": "curve_virtual_quote",
+            "type": "u64"
+          },
+          {
+            "name": "curve_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "_pad1",
+            "type": {
+              "array": [
+                "u8",
+                6
+              ]
+            }
+          },
+          {
+            "name": "allow_buy",
+            "type": "u8"
+          },
+          {
+            "name": "allow_sell",
+            "type": "u8"
+          },
+          {
+            "name": "_pad2",
+            "type": {
+              "array": [
+                "u8",
+                6
+              ]
+            }
+          },
+          {
+            "name": "sentinel_program",
+            "type": "pubkey"
+          },
+          {
+            "name": "sentinel_flags",
+            "type": "u32"
+          },
+          {
+            "name": "_pad3",
+            "type": {
+              "array": [
+                "u8",
+                4
+              ]
+            }
+          },
+          {
+            "name": "sentinel_calldata",
+            "type": {
+              "defined": {
+                "name": "CalldataBuf"
+              }
+            }
+          },
+          {
+            "name": "migrator_program",
+            "type": "pubkey"
+          },
+          {
+            "name": "migrator_init_calldata",
+            "type": {
+              "defined": {
+                "name": "CalldataBuf"
+              }
+            }
+          },
+          {
+            "name": "migrator_migrate_calldata",
+            "type": {
+              "defined": {
+                "name": "CalldataBuf"
+              }
+            }
+          },
+          {
+            "name": "curve_kind",
+            "type": "u8"
+          },
+          {
+            "name": "swap_lock",
+            "type": "u8"
+          },
+          {
+            "name": "_pad4",
+            "type": {
+              "array": [
+                "u8",
+                6
+              ]
+            }
+          },
+          {
+            "name": "curve_params",
+            "type": {
+              "defined": {
+                "name": "CalldataBuf"
+              }
+            }
+          },
+          {
+            "name": "quote_deposited",
+            "type": "u64"
+          },
+          {
+            "name": "_reserved",
+            "type": {
+              "array": [
+                "u8",
+                64
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "LaunchAborted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "launch",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "LaunchInitialized",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "launch",
+            "type": "pubkey"
+          },
+          {
+            "name": "namespace",
+            "type": "pubkey"
+          },
+          {
+            "name": "launch_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "base_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "quote_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "base_total_supply",
+            "type": "u64"
+          },
+          {
+            "name": "curve_kind",
+            "type": "u8"
+          },
+          {
+            "name": "migrator_program",
+            "type": "pubkey"
+          },
+          {
+            "name": "sentinel_program",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "LaunchMigrated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "launch",
+            "type": "pubkey"
+          },
+          {
+            "name": "migrator_program",
+            "type": "pubkey"
+          },
+          {
+            "name": "base_vault_amount",
+            "type": "u64"
+          },
+          {
+            "name": "quote_vault_amount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MigratorAllowlistUpdated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "config",
+            "type": "pubkey"
+          },
+          {
+            "name": "new_len",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SentinelAllowlistUpdated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "config",
+            "type": "pubkey"
+          },
+          {
+            "name": "new_len",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TradingFlagsUpdated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "launch",
+            "type": "pubkey"
+          },
+          {
+            "name": "allow_buy",
+            "type": "u8"
+          },
+          {
+            "name": "allow_sell",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "UpdateTradingFlagsArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "allow_buy",
+            "type": "u8"
+          },
+          {
+            "name": "allow_sell",
+            "type": "u8"
+          }
+        ]
+      }
+    }
+  ]
+}

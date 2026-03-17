@@ -8,7 +8,7 @@
  */
 import './env'
 
-import { DopplerSDK, WAD } from '../src'
+import { DopplerSDK, WAD } from '../src/evm'
 import { createPublicClient, createWalletClient, http, parseEther } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { baseSepolia } from 'viem/chains'

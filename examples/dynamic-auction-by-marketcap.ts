@@ -13,7 +13,7 @@
  */
 import './env'
 
-import { DopplerSDK, DAY_SECONDS } from '../src'
+import { DopplerSDK, DAY_SECONDS } from '../src/evm'
 import { parseEther, formatEther, createPublicClient, createWalletClient, http } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { baseSepolia } from 'viem/chains'

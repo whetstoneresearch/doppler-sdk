@@ -10,7 +10,7 @@
  */
 import './env'
 
-import { CHAIN_IDS, DopplerSDK, WAD, getAddresses } from '../src'
+import { CHAIN_IDS, DopplerSDK, WAD, getAddresses } from '../src/evm'
 import { createPublicClient, createWalletClient, http, parseEther } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { sepolia } from 'viem/chains'

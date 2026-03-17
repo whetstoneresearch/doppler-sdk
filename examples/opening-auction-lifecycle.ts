@@ -39,7 +39,7 @@ import {
   OpeningAuctionStatus,
   ZERO_ADDRESS,
   getAddresses,
-} from '../src'
+} from '../src/evm'
 import {
   createPublicClient,
   createWalletClient,

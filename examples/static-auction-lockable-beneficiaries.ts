@@ -23,7 +23,7 @@
  */
 import './env'
 
-import { DopplerSDK, getAirlockOwner, WAD } from '../src'
+import { DopplerSDK, getAirlockOwner, WAD } from '../src/evm'
 import { parseEther, createPublicClient, createWalletClient, http } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { baseSepolia } from 'viem/chains'

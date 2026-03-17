@@ -8,7 +8,7 @@ import {
   DopplerFactory,
   type MigrationEncoder,
   type MigrationConfig
-} from '../src'
+} from '../src/evm'
 
 /**
  * Example: Using a custom migration encoder with DopplerFactory

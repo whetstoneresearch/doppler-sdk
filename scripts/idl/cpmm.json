@@ -1,0 +1,2939 @@
+{
+  "address": "3HSrGs4jj92CGt7mkfeeoMofrRGVPUcDX8djAnp4FoD6",
+  "metadata": {
+    "name": "cpmm",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "CPMM base layer program"
+  },
+  "instructions": [
+    {
+      "name": "add_liquidity",
+      "discriminator": [
+        181,
+        157,
+        89,
+        67,
+        143,
+        182,
+        52,
+        72
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "relations": [
+            "pool"
+          ]
+        },
+        {
+          "name": "pool",
+          "writable": true,
+          "relations": [
+            "position",
+            "protocol_position"
+          ]
+        },
+        {
+          "name": "position",
+          "writable": true
+        },
+        {
+          "name": "protocol_position",
+          "writable": true
+        },
+        {
+          "name": "owner",
+          "signer": true
+        },
+        {
+          "name": "authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pool"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault0",
+          "writable": true
+        },
+        {
+          "name": "vault1",
+          "writable": true
+        },
+        {
+          "name": "token0_mint"
+        },
+        {
+          "name": "token1_mint"
+        },
+        {
+          "name": "user0",
+          "writable": true
+        },
+        {
+          "name": "user1",
+          "writable": true
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "oracle",
+          "writable": true,
+          "optional": true
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "AddLiquidityArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "close_position",
+      "discriminator": [
+        123,
+        134,
+        81,
+        0,
+        49,
+        68,
+        98,
+        98
+      ],
+      "accounts": [
+        {
+          "name": "pool",
+          "relations": [
+            "position"
+          ]
+        },
+        {
+          "name": "position",
+          "writable": true
+        },
+        {
+          "name": "owner",
+          "signer": true
+        },
+        {
+          "name": "rent_recipient",
+          "writable": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "collect_fees",
+      "discriminator": [
+        164,
+        152,
+        207,
+        99,
+        30,
+        186,
+        19,
+        182
+      ],
+      "accounts": [
+        {
+          "name": "pool",
+          "writable": true,
+          "relations": [
+            "position"
+          ]
+        },
+        {
+          "name": "position",
+          "writable": true
+        },
+        {
+          "name": "owner",
+          "signer": true
+        },
+        {
+          "name": "authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pool"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault0",
+          "writable": true
+        },
+        {
+          "name": "vault1",
+          "writable": true
+        },
+        {
+          "name": "token0_mint"
+        },
+        {
+          "name": "token1_mint"
+        },
+        {
+          "name": "user0",
+          "writable": true
+        },
+        {
+          "name": "user1",
+          "writable": true
+        },
+        {
+          "name": "token_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "CollectFeesArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "collect_protocol_fees",
+      "discriminator": [
+        22,
+        67,
+        23,
+        98,
+        150,
+        178,
+        70,
+        220
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "relations": [
+            "pool"
+          ]
+        },
+        {
+          "name": "pool",
+          "writable": true,
+          "relations": [
+            "protocol_position"
+          ]
+        },
+        {
+          "name": "protocol_position",
+          "writable": true
+        },
+        {
+          "name": "admin",
+          "signer": true
+        },
+        {
+          "name": "authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pool"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault0",
+          "writable": true
+        },
+        {
+          "name": "vault1",
+          "writable": true
+        },
+        {
+          "name": "token0_mint"
+        },
+        {
+          "name": "token1_mint"
+        },
+        {
+          "name": "recipient0",
+          "writable": true
+        },
+        {
+          "name": "recipient1",
+          "writable": true
+        },
+        {
+          "name": "token_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "CollectProtocolFeesArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "create_position",
+      "discriminator": [
+        48,
+        215,
+        197,
+        153,
+        96,
+        203,
+        180,
+        133
+      ],
+      "accounts": [
+        {
+          "name": "pool"
+        },
+        {
+          "name": "position",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  115,
+                  105,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pool"
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              },
+              {
+                "kind": "arg",
+                "path": "position_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner",
+          "signer": true
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "CreatePositionArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "initialize_config",
+      "discriminator": [
+        208,
+        127,
+        21,
+        1,
+        194,
+        190,
+        196,
+        70
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "InitializeConfigArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "initialize_oracle",
+      "discriminator": [
+        144,
+        223,
+        131,
+        120,
+        196,
+        253,
+        181,
+        99
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "relations": [
+            "pool"
+          ]
+        },
+        {
+          "name": "pool"
+        },
+        {
+          "name": "oracle",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  97,
+                  99,
+                  108,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pool"
+              }
+            ]
+          }
+        },
+        {
+          "name": "admin",
+          "signer": true
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "InitializeOracleArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "initialize_pool",
+      "discriminator": [
+        95,
+        180,
+        10,
+        172,
+        84,
+        174,
+        232,
+        40
+      ],
+      "accounts": [
+        {
+          "name": "config"
+        },
+        {
+          "name": "pool",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "token0_mint"
+              },
+              {
+                "kind": "account",
+                "path": "token1_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "protocol_position",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  116,
+                  111,
+                  99,
+                  111,
+                  108,
+                  95,
+                  112,
+                  111,
+                  115,
+                  105,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pool"
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pool"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault0",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "vault1",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token0_mint"
+        },
+        {
+          "name": "token1_mint"
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "InitializePoolArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "oracle_consult",
+      "discriminator": [
+        239,
+        237,
+        255,
+        177,
+        142,
+        72,
+        96,
+        175
+      ],
+      "accounts": [
+        {
+          "name": "pool"
+        },
+        {
+          "name": "oracle",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  97,
+                  99,
+                  108,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pool"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "OracleConsultArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "oracle_update",
+      "discriminator": [
+        85,
+        209,
+        248,
+        142,
+        186,
+        249,
+        120,
+        239
+      ],
+      "accounts": [
+        {
+          "name": "pool"
+        },
+        {
+          "name": "oracle",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  97,
+                  99,
+                  108,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pool"
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "pause",
+      "discriminator": [
+        211,
+        22,
+        221,
+        251,
+        74,
+        121,
+        193,
+        47
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "writable": true
+        },
+        {
+          "name": "admin",
+          "signer": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "preview_swap_exact_in",
+      "discriminator": [
+        50,
+        130,
+        31,
+        69,
+        147,
+        58,
+        222,
+        178
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "relations": [
+            "pool"
+          ]
+        },
+        {
+          "name": "pool"
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "PreviewSwapExactInArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "quote_to_numeraire",
+      "discriminator": [
+        4,
+        142,
+        249,
+        240,
+        129,
+        15,
+        143,
+        57
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "relations": [
+            "start_pool"
+          ]
+        },
+        {
+          "name": "start_pool"
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "QuoteToNumeraireArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "remove_liquidity",
+      "discriminator": [
+        80,
+        85,
+        209,
+        72,
+        24,
+        206,
+        177,
+        108
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "relations": [
+            "pool"
+          ]
+        },
+        {
+          "name": "pool",
+          "writable": true,
+          "relations": [
+            "position",
+            "protocol_position"
+          ]
+        },
+        {
+          "name": "position",
+          "writable": true
+        },
+        {
+          "name": "protocol_position",
+          "writable": true
+        },
+        {
+          "name": "owner",
+          "signer": true
+        },
+        {
+          "name": "authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pool"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault0",
+          "writable": true
+        },
+        {
+          "name": "vault1",
+          "writable": true
+        },
+        {
+          "name": "token0_mint"
+        },
+        {
+          "name": "token1_mint"
+        },
+        {
+          "name": "user0",
+          "writable": true
+        },
+        {
+          "name": "user1",
+          "writable": true
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "oracle",
+          "writable": true,
+          "optional": true
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "RemoveLiquidityArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "set_fees",
+      "discriminator": [
+        137,
+        178,
+        49,
+        58,
+        0,
+        245,
+        242,
+        190
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "relations": [
+            "pool"
+          ]
+        },
+        {
+          "name": "pool",
+          "writable": true
+        },
+        {
+          "name": "admin",
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "SetFeesArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "set_route",
+      "discriminator": [
+        244,
+        231,
+        3,
+        84,
+        233,
+        61,
+        146,
+        149
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "relations": [
+            "pool"
+          ]
+        },
+        {
+          "name": "pool",
+          "writable": true
+        },
+        {
+          "name": "next_pool",
+          "optional": true
+        },
+        {
+          "name": "admin",
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "SetRouteArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "set_sentinel",
+      "discriminator": [
+        94,
+        200,
+        82,
+        129,
+        53,
+        149,
+        232,
+        113
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "relations": [
+            "pool"
+          ]
+        },
+        {
+          "name": "pool",
+          "writable": true
+        },
+        {
+          "name": "admin",
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "SetSentinelArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "skim",
+      "discriminator": [
+        238,
+        120,
+        221,
+        138,
+        82,
+        60,
+        100,
+        218
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "relations": [
+            "pool"
+          ]
+        },
+        {
+          "name": "pool"
+        },
+        {
+          "name": "admin",
+          "signer": true
+        },
+        {
+          "name": "authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pool"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault0",
+          "writable": true
+        },
+        {
+          "name": "vault1",
+          "writable": true
+        },
+        {
+          "name": "token0_mint"
+        },
+        {
+          "name": "token1_mint"
+        },
+        {
+          "name": "admin_ata0",
+          "writable": true
+        },
+        {
+          "name": "admin_ata1",
+          "writable": true
+        },
+        {
+          "name": "token_program"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "swap_exact_in",
+      "discriminator": [
+        104,
+        104,
+        131,
+        86,
+        161,
+        189,
+        180,
+        216
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "relations": [
+            "pool"
+          ]
+        },
+        {
+          "name": "pool",
+          "writable": true
+        },
+        {
+          "name": "authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pool"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault_in",
+          "writable": true
+        },
+        {
+          "name": "vault_out",
+          "writable": true
+        },
+        {
+          "name": "token0_mint"
+        },
+        {
+          "name": "token1_mint"
+        },
+        {
+          "name": "user_in",
+          "writable": true
+        },
+        {
+          "name": "user_out",
+          "writable": true
+        },
+        {
+          "name": "trader",
+          "signer": true
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "oracle",
+          "writable": true,
+          "optional": true
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "SwapExactInArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "transfer_admin",
+      "discriminator": [
+        42,
+        242,
+        66,
+        106,
+        228,
+        10,
+        111,
+        156
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "writable": true
+        },
+        {
+          "name": "admin",
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "TransferAdminArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "unpause",
+      "discriminator": [
+        169,
+        144,
+        4,
+        38,
+        10,
+        141,
+        188,
+        255
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "writable": true
+        },
+        {
+          "name": "admin",
+          "signer": true
+        }
+      ],
+      "args": []
+    }
+  ],
+  "accounts": [
+    {
+      "name": "AmmConfig",
+      "discriminator": [
+        218,
+        244,
+        33,
+        104,
+        203,
+        203,
+        43,
+        111
+      ]
+    },
+    {
+      "name": "OracleState",
+      "discriminator": [
+        97,
+        156,
+        157,
+        189,
+        194,
+        73,
+        8,
+        15
+      ]
+    },
+    {
+      "name": "Pool",
+      "discriminator": [
+        241,
+        154,
+        109,
+        4,
+        17,
+        177,
+        109,
+        188
+      ]
+    },
+    {
+      "name": "Position",
+      "discriminator": [
+        170,
+        188,
+        143,
+        228,
+        122,
+        64,
+        247,
+        208
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "AddLiquidity",
+      "discriminator": [
+        31,
+        94,
+        125,
+        90,
+        227,
+        52,
+        61,
+        186
+      ]
+    },
+    {
+      "name": "AdminTransferred",
+      "discriminator": [
+        255,
+        147,
+        182,
+        5,
+        199,
+        217,
+        38,
+        179
+      ]
+    },
+    {
+      "name": "CollectFees",
+      "discriminator": [
+        68,
+        188,
+        11,
+        82,
+        41,
+        135,
+        51,
+        12
+      ]
+    },
+    {
+      "name": "CollectProtocolFees",
+      "discriminator": [
+        78,
+        140,
+        208,
+        58,
+        10,
+        19,
+        107,
+        115
+      ]
+    },
+    {
+      "name": "FeesUpdated",
+      "discriminator": [
+        65,
+        34,
+        234,
+        59,
+        248,
+        242,
+        101,
+        118
+      ]
+    },
+    {
+      "name": "OracleInitialized",
+      "discriminator": [
+        42,
+        87,
+        109,
+        208,
+        1,
+        105,
+        101,
+        142
+      ]
+    },
+    {
+      "name": "OracleUpdated",
+      "discriminator": [
+        138,
+        9,
+        51,
+        219,
+        228,
+        198,
+        11,
+        147
+      ]
+    },
+    {
+      "name": "Paused",
+      "discriminator": [
+        172,
+        248,
+        5,
+        253,
+        49,
+        255,
+        255,
+        232
+      ]
+    },
+    {
+      "name": "PoolInitialized",
+      "discriminator": [
+        100,
+        118,
+        173,
+        87,
+        12,
+        198,
+        254,
+        229
+      ]
+    },
+    {
+      "name": "PositionClosed",
+      "discriminator": [
+        157,
+        163,
+        227,
+        228,
+        13,
+        97,
+        138,
+        121
+      ]
+    },
+    {
+      "name": "PositionCreated",
+      "discriminator": [
+        63,
+        226,
+        54,
+        63,
+        141,
+        22,
+        31,
+        221
+      ]
+    },
+    {
+      "name": "RemoveLiquidity",
+      "discriminator": [
+        116,
+        244,
+        97,
+        232,
+        103,
+        31,
+        152,
+        58
+      ]
+    },
+    {
+      "name": "RouteUpdated",
+      "discriminator": [
+        55,
+        186,
+        57,
+        196,
+        250,
+        7,
+        86,
+        182
+      ]
+    },
+    {
+      "name": "SentinelError",
+      "discriminator": [
+        14,
+        219,
+        83,
+        109,
+        146,
+        148,
+        187,
+        192
+      ]
+    },
+    {
+      "name": "SentinelInvoked",
+      "discriminator": [
+        168,
+        1,
+        130,
+        78,
+        61,
+        92,
+        239,
+        172
+      ]
+    },
+    {
+      "name": "SentinelUpdated",
+      "discriminator": [
+        47,
+        118,
+        194,
+        209,
+        176,
+        50,
+        176,
+        137
+      ]
+    },
+    {
+      "name": "Skimmed",
+      "discriminator": [
+        25,
+        39,
+        18,
+        44,
+        46,
+        131,
+        59,
+        76
+      ]
+    },
+    {
+      "name": "Swap",
+      "discriminator": [
+        81,
+        108,
+        227,
+        190,
+        205,
+        208,
+        10,
+        196
+      ]
+    },
+    {
+      "name": "Unpaused",
+      "discriminator": [
+        156,
+        150,
+        47,
+        174,
+        120,
+        216,
+        93,
+        117
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "Unauthorized",
+      "msg": "Unauthorized"
+    },
+    {
+      "code": 6001,
+      "name": "PoolLocked",
+      "msg": "Pool locked"
+    },
+    {
+      "code": 6002,
+      "name": "InvalidFee",
+      "msg": "Invalid fee"
+    },
+    {
+      "code": 6003,
+      "name": "InvalidFeeSplit",
+      "msg": "Invalid fee split"
+    },
+    {
+      "code": 6004,
+      "name": "InvalidDirection",
+      "msg": "Invalid direction"
+    },
+    {
+      "code": 6005,
+      "name": "InsufficientLiquidity",
+      "msg": "Insufficient liquidity"
+    },
+    {
+      "code": 6006,
+      "name": "SlippageExceeded",
+      "msg": "Slippage exceeded"
+    },
+    {
+      "code": 6007,
+      "name": "MathOverflow",
+      "msg": "Math overflow"
+    },
+    {
+      "code": 6008,
+      "name": "InvalidMintOrder",
+      "msg": "Invalid mint order"
+    },
+    {
+      "code": 6009,
+      "name": "SameMintPair",
+      "msg": "Cannot create pool with same token for both sides"
+    },
+    {
+      "code": 6010,
+      "name": "InvalidVault",
+      "msg": "Invalid vault"
+    },
+    {
+      "code": 6011,
+      "name": "InvalidPosition",
+      "msg": "Invalid position"
+    },
+    {
+      "code": 6012,
+      "name": "PositionNotEmpty",
+      "msg": "Position not empty"
+    },
+    {
+      "code": 6013,
+      "name": "InvalidRoute",
+      "msg": "Invalid route"
+    },
+    {
+      "code": 6014,
+      "name": "NotSupportedInV0_1",
+      "msg": "Not supported in v0.1"
+    },
+    {
+      "code": 6015,
+      "name": "OracleNotInitialized",
+      "msg": "Oracle not initialized"
+    },
+    {
+      "code": 6016,
+      "name": "ZeroSharesOut",
+      "msg": "Zero shares out"
+    },
+    {
+      "code": 6017,
+      "name": "SentinelRejected",
+      "msg": "Sentinel rejected"
+    },
+    {
+      "code": 6018,
+      "name": "SentinelCpiFailed",
+      "msg": "Sentinel CPI failed"
+    },
+    {
+      "code": 6019,
+      "name": "SentinelProgramNotProvided",
+      "msg": "Sentinel program account not provided"
+    },
+    {
+      "code": 6020,
+      "name": "SentinelProgramNotExecutable",
+      "msg": "Sentinel program account is not executable"
+    },
+    {
+      "code": 6021,
+      "name": "SentinelReturnDataMissing",
+      "msg": "Sentinel return data missing or wrong program id"
+    },
+    {
+      "code": 6022,
+      "name": "SentinelReturnDataInvalid",
+      "msg": "Sentinel return data invalid length or could not deserialize"
+    },
+    {
+      "code": 6023,
+      "name": "SentinelNotAllowlisted",
+      "msg": "Sentinel not allowlisted"
+    },
+    {
+      "code": 6024,
+      "name": "TotalSharesZero",
+      "msg": "Total shares zero"
+    },
+    {
+      "code": 6025,
+      "name": "AmountZero",
+      "msg": "Amount zero"
+    },
+    {
+      "code": 6026,
+      "name": "Paused",
+      "msg": "Pool is paused"
+    },
+    {
+      "code": 6027,
+      "name": "InvariantViolation",
+      "msg": "Invariant violation"
+    },
+    {
+      "code": 6028,
+      "name": "InvalidMint",
+      "msg": "Invalid mint"
+    },
+    {
+      "code": 6029,
+      "name": "InvalidInput",
+      "msg": "Invalid input"
+    },
+    {
+      "code": 6030,
+      "name": "Reentrancy",
+      "msg": "Reentrancy"
+    }
+  ],
+  "types": [
+    {
+      "name": "AddLiquidity",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "pool",
+            "type": "pubkey"
+          },
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount0",
+            "type": "u64"
+          },
+          {
+            "name": "amount1",
+            "type": "u64"
+          },
+          {
+            "name": "shares_out",
+            "type": "u128"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AddLiquidityArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "amount0_max",
+            "type": "u64"
+          },
+          {
+            "name": "amount1_max",
+            "type": "u64"
+          },
+          {
+            "name": "min_shares_out",
+            "type": "u128"
+          },
+          {
+            "name": "update_oracle",
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AdminTransferred",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "old_admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "new_admin",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AmmConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "paused",
+            "type": "bool"
+          },
+          {
+            "name": "numeraire_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "sentinel_allowlist_len",
+            "type": "u8"
+          },
+          {
+            "name": "sentinel_allowlist",
+            "type": {
+              "array": [
+                "pubkey",
+                32
+              ]
+            }
+          },
+          {
+            "name": "max_swap_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "max_fee_split_bps",
+            "type": "u16"
+          },
+          {
+            "name": "max_route_hops",
+            "type": "u8"
+          },
+          {
+            "name": "protocol_fee_enabled",
+            "type": "bool"
+          },
+          {
+            "name": "protocol_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "version",
+            "type": "u8"
+          },
+          {
+            "name": "_reserved",
+            "type": {
+              "array": [
+                "u8",
+                7
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "CollectFees",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "pool",
+            "type": "pubkey"
+          },
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount0",
+            "type": "u64"
+          },
+          {
+            "name": "amount1",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CollectFeesArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "max0",
+            "type": "u64"
+          },
+          {
+            "name": "max1",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CollectProtocolFees",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "pool",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount0",
+            "type": "u64"
+          },
+          {
+            "name": "amount1",
+            "type": "u64"
+          },
+          {
+            "name": "recipient0",
+            "type": "pubkey"
+          },
+          {
+            "name": "recipient1",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CollectProtocolFeesArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "max0",
+            "type": "u64"
+          },
+          {
+            "name": "max1",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CreatePositionArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "position_id",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "FeesUpdated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "pool",
+            "type": "pubkey"
+          },
+          {
+            "name": "prev_swap_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "prev_fee_split_bps",
+            "type": "u16"
+          },
+          {
+            "name": "swap_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "fee_split_bps",
+            "type": "u16"
+          },
+          {
+            "name": "source",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "InitializeConfigArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "numeraire_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "max_swap_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "max_fee_split_bps",
+            "type": "u16"
+          },
+          {
+            "name": "max_route_hops",
+            "type": "u8"
+          },
+          {
+            "name": "protocol_fee_enabled",
+            "type": "bool"
+          },
+          {
+            "name": "protocol_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "sentinel_allowlist",
+            "type": {
+              "vec": "pubkey"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "InitializeOracleArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "max_price_change_ratio_q64",
+            "type": "u128"
+          },
+          {
+            "name": "observation_interval_sec",
+            "type": "u32"
+          },
+          {
+            "name": "num_observations",
+            "type": "u16"
+          }
+        ]
+      }
+    },
+    {
+      "name": "InitializePoolArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint_a",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint_b",
+            "type": "pubkey"
+          },
+          {
+            "name": "initial_swap_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "initial_fee_split_bps",
+            "type": "u16"
+          },
+          {
+            "name": "liquidity_measure_side",
+            "type": "u8"
+          },
+          {
+            "name": "numeraire_mint_override",
+            "type": {
+              "option": "pubkey"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Observation",
+      "serialization": "bytemuckunsafe",
+      "repr": {
+        "kind": "c",
+        "packed": true
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "timestamp",
+            "type": "u32"
+          },
+          {
+            "name": "price0_cumulative",
+            "type": {
+              "array": [
+                "u64",
+                4
+              ]
+            }
+          },
+          {
+            "name": "price1_cumulative",
+            "type": {
+              "array": [
+                "u64",
+                4
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "OracleConsultArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "window_seconds",
+            "type": "u32"
+          }
+        ]
+      }
+    },
+    {
+      "name": "OracleInitialized",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "pool",
+            "type": "pubkey"
+          },
+          {
+            "name": "max_price_change_ratio_q64",
+            "type": "u128"
+          },
+          {
+            "name": "observation_interval_sec",
+            "type": "u32"
+          },
+          {
+            "name": "admin",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "OracleState",
+      "serialization": "bytemuckunsafe",
+      "repr": {
+        "kind": "c",
+        "packed": true
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "pool",
+            "type": "pubkey"
+          },
+          {
+            "name": "initialized",
+            "type": "bool"
+          },
+          {
+            "name": "max_price_change_ratio_q64",
+            "type": "u128"
+          },
+          {
+            "name": "last_slot",
+            "type": "u64"
+          },
+          {
+            "name": "trunc_price0_q64",
+            "type": "u128"
+          },
+          {
+            "name": "trunc_price1_q64",
+            "type": "u128"
+          },
+          {
+            "name": "deviation0_q64",
+            "type": "u128"
+          },
+          {
+            "name": "deviation1_q64",
+            "type": "u128"
+          },
+          {
+            "name": "price0_cumulative",
+            "type": {
+              "array": [
+                "u64",
+                4
+              ]
+            }
+          },
+          {
+            "name": "price1_cumulative",
+            "type": {
+              "array": [
+                "u64",
+                4
+              ]
+            }
+          },
+          {
+            "name": "last_timestamp",
+            "type": "u32"
+          },
+          {
+            "name": "last_observation_timestamp",
+            "type": "u32"
+          },
+          {
+            "name": "observation_interval_sec",
+            "type": "u32"
+          },
+          {
+            "name": "observation_index",
+            "type": "u16"
+          },
+          {
+            "name": "observations",
+            "type": {
+              "array": [
+                {
+                  "defined": {
+                    "name": "Observation"
+                  }
+                },
+                64
+              ]
+            }
+          },
+          {
+            "name": "version",
+            "type": "u8"
+          },
+          {
+            "name": "_reserved",
+            "type": {
+              "array": [
+                "u8",
+                7
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "OracleUpdated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "pool",
+            "type": "pubkey"
+          },
+          {
+            "name": "slot",
+            "type": "u64"
+          },
+          {
+            "name": "trunc_price0_q64",
+            "type": "u128"
+          },
+          {
+            "name": "trunc_price1_q64",
+            "type": "u128"
+          },
+          {
+            "name": "deviation0_q64",
+            "type": "u128"
+          },
+          {
+            "name": "deviation1_q64",
+            "type": "u128"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Paused",
+      "type": {
+        "kind": "struct",
+        "fields": []
+      }
+    },
+    {
+      "name": "Pool",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "config",
+            "type": "pubkey"
+          },
+          {
+            "name": "token0_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "token1_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "vault0",
+            "type": "pubkey"
+          },
+          {
+            "name": "vault1",
+            "type": "pubkey"
+          },
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "reserve0",
+            "type": "u64"
+          },
+          {
+            "name": "reserve1",
+            "type": "u64"
+          },
+          {
+            "name": "total_shares",
+            "type": "u128"
+          },
+          {
+            "name": "swap_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "fee_split_bps",
+            "type": "u16"
+          },
+          {
+            "name": "fee_growth_global0_q64",
+            "type": "u128"
+          },
+          {
+            "name": "fee_growth_global1_q64",
+            "type": "u128"
+          },
+          {
+            "name": "fees_unclaimed0",
+            "type": "u64"
+          },
+          {
+            "name": "fees_unclaimed1",
+            "type": "u64"
+          },
+          {
+            "name": "sentinel_program",
+            "type": "pubkey"
+          },
+          {
+            "name": "sentinel_flags",
+            "type": "u32"
+          },
+          {
+            "name": "numeraire_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "liquidity_measure_side",
+            "type": "u8"
+          },
+          {
+            "name": "route_next_pool",
+            "type": "pubkey"
+          },
+          {
+            "name": "route_bridge_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "k_last",
+            "type": "u128"
+          },
+          {
+            "name": "protocol_position",
+            "type": "pubkey"
+          },
+          {
+            "name": "locked",
+            "type": "u8"
+          },
+          {
+            "name": "version",
+            "type": "u8"
+          },
+          {
+            "name": "_reserved",
+            "type": {
+              "array": [
+                "u8",
+                7
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "PoolInitialized",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "pool",
+            "type": "pubkey"
+          },
+          {
+            "name": "token0_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "token1_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "vault0",
+            "type": "pubkey"
+          },
+          {
+            "name": "vault1",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Position",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "pool",
+            "type": "pubkey"
+          },
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "position_id",
+            "type": "u64"
+          },
+          {
+            "name": "shares",
+            "type": "u128"
+          },
+          {
+            "name": "fee_growth_last0_q64",
+            "type": "u128"
+          },
+          {
+            "name": "fee_growth_last1_q64",
+            "type": "u128"
+          },
+          {
+            "name": "fee_owed0",
+            "type": "u64"
+          },
+          {
+            "name": "fee_owed1",
+            "type": "u64"
+          },
+          {
+            "name": "version",
+            "type": "u8"
+          },
+          {
+            "name": "_reserved",
+            "type": {
+              "array": [
+                "u8",
+                7
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "PositionClosed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "pool",
+            "type": "pubkey"
+          },
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "position",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PositionCreated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "pool",
+            "type": "pubkey"
+          },
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "position",
+            "type": "pubkey"
+          },
+          {
+            "name": "position_id",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PreviewSwapExactInArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "amount_in",
+            "type": "u64"
+          },
+          {
+            "name": "direction",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "QuoteToNumeraireArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "amount",
+            "type": "u128"
+          },
+          {
+            "name": "side",
+            "type": "u8"
+          },
+          {
+            "name": "max_hops",
+            "type": "u8"
+          },
+          {
+            "name": "use_twap",
+            "type": "bool"
+          },
+          {
+            "name": "window_seconds",
+            "type": "u32"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RemoveLiquidity",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "pool",
+            "type": "pubkey"
+          },
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount0",
+            "type": "u64"
+          },
+          {
+            "name": "amount1",
+            "type": "u64"
+          },
+          {
+            "name": "shares_in",
+            "type": "u128"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RemoveLiquidityArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "shares_in",
+            "type": "u128"
+          },
+          {
+            "name": "min_amount0_out",
+            "type": "u64"
+          },
+          {
+            "name": "min_amount1_out",
+            "type": "u64"
+          },
+          {
+            "name": "update_oracle",
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RouteUpdated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "pool",
+            "type": "pubkey"
+          },
+          {
+            "name": "route_next_pool",
+            "type": "pubkey"
+          },
+          {
+            "name": "route_bridge_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "admin",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SentinelError",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "pool",
+            "type": "pubkey"
+          },
+          {
+            "name": "action",
+            "type": "u8"
+          },
+          {
+            "name": "error_code",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SentinelInvoked",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "pool",
+            "type": "pubkey"
+          },
+          {
+            "name": "action",
+            "type": "u8"
+          },
+          {
+            "name": "allow",
+            "type": "u8"
+          },
+          {
+            "name": "new_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "new_split_bps",
+            "type": "u16"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SentinelUpdated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "pool",
+            "type": "pubkey"
+          },
+          {
+            "name": "sentinel_program",
+            "type": "pubkey"
+          },
+          {
+            "name": "sentinel_flags",
+            "type": "u32"
+          },
+          {
+            "name": "admin",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SetFeesArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "swap_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "fee_split_bps",
+            "type": "u16"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SetRouteArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "route_next_pool",
+            "type": "pubkey"
+          },
+          {
+            "name": "route_bridge_mint",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SetSentinelArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "sentinel_program",
+            "type": "pubkey"
+          },
+          {
+            "name": "sentinel_flags",
+            "type": "u32"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Skimmed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "pool",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount0",
+            "type": "u64"
+          },
+          {
+            "name": "amount1",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Swap",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "pool",
+            "type": "pubkey"
+          },
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "direction",
+            "type": "u8"
+          },
+          {
+            "name": "amount_in",
+            "type": "u64"
+          },
+          {
+            "name": "amount_out",
+            "type": "u64"
+          },
+          {
+            "name": "fee_total",
+            "type": "u64"
+          },
+          {
+            "name": "fee_dist",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SwapExactInArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "amount_in",
+            "type": "u64"
+          },
+          {
+            "name": "min_amount_out",
+            "type": "u64"
+          },
+          {
+            "name": "direction",
+            "type": "u8"
+          },
+          {
+            "name": "update_oracle",
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TransferAdminArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "new_admin",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Unpaused",
+      "type": {
+        "kind": "struct",
+        "fields": []
+      }
+    }
+  ]
+}

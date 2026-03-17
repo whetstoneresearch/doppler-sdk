@@ -15,7 +15,7 @@
  */
 import './env';
 
-import { DopplerSDK, getAddresses } from '../src';
+import { DopplerSDK, getAddresses } from '../src/evm';
 import {
   parseEther,
   createPublicClient,

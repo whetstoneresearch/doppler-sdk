@@ -14,7 +14,7 @@
  */
 import './env'
 
-import { DopplerSDK } from '../src'
+import { DopplerSDK } from '../src/evm'
 import { parseEther, createPublicClient, createWalletClient, http } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { baseSepolia } from 'viem/chains'

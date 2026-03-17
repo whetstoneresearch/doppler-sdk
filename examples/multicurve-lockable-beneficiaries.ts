@@ -12,7 +12,7 @@
  */
 import './env'
 
-import { DopplerSDK, WAD, getAddresses } from '../src'
+import { DopplerSDK, WAD, getAddresses } from '../src/evm'
 import { createPublicClient, createWalletClient, http } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { baseSepolia } from 'viem/chains'

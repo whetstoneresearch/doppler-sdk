@@ -1,0 +1,271 @@
+{
+  "address": "HkET1QY3BZdcKkbeHgKHMSFn3R8sewrJWnqAi54WwSEz",
+  "metadata": {
+    "name": "trusted_oracle",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Simple v0.1 stand-in oracle that accepts arbitrary winner inputs from a trusted authority"
+  },
+  "instructions": [
+    {
+      "name": "finalize",
+      "docs": [
+        "Finalize the oracle by setting the winning mint",
+        "",
+        "Only the oracle_authority can call this instruction.",
+        "Once finalized, the oracle cannot be changed."
+      ],
+      "discriminator": [
+        171,
+        61,
+        218,
+        56,
+        127,
+        115,
+        12,
+        217
+      ],
+      "accounts": [
+        {
+          "name": "oracle_authority",
+          "docs": [
+            "The oracle authority - must sign to finalize"
+          ],
+          "signer": true
+        },
+        {
+          "name": "oracle_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  97,
+                  99,
+                  108,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "oracle_authority"
+              },
+              {
+                "kind": "account",
+                "path": "oracle_state.nonce",
+                "account": "OracleState"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "winning_mint",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "initialize_oracle",
+      "docs": [
+        "Initialize a new oracle with a trusted authority",
+        "",
+        "The oracle_authority will be the only account that can finalize",
+        "this oracle and set the winning mint."
+      ],
+      "discriminator": [
+        144,
+        223,
+        131,
+        120,
+        196,
+        253,
+        181,
+        99
+      ],
+      "accounts": [
+        {
+          "name": "oracle_authority",
+          "docs": [
+            "The authority that will be able to finalize this oracle"
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "oracle_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  97,
+                  99,
+                  108,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "oracle_authority"
+              },
+              {
+                "kind": "arg",
+                "path": "args.nonce"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "InitializeOracleArgs"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "OracleState",
+      "discriminator": [
+        97,
+        156,
+        157,
+        189,
+        194,
+        73,
+        8,
+        15
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "Unauthorized",
+      "msg": "Unauthorized: only oracle authority can perform this action"
+    },
+    {
+      "code": 6001,
+      "name": "AlreadyFinalized",
+      "msg": "Oracle already finalized"
+    },
+    {
+      "code": 6002,
+      "name": "NotFinalized",
+      "msg": "Oracle not finalized"
+    },
+    {
+      "code": 6003,
+      "name": "InvalidWinningMint",
+      "msg": "Invalid winning mint"
+    }
+  ],
+  "types": [
+    {
+      "name": "InitializeOracleArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "nonce",
+            "docs": [
+              "Nonce for PDA derivation (allows multiple oracles per authority)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "quote_mint",
+            "docs": [
+              "Optional quote mint for validation (use Pubkey::default() if not needed)"
+            ],
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "OracleState",
+      "docs": [
+        "OracleState PDA - stores oracle configuration and finalization state",
+        "",
+        "Seeds: [b\"oracle\", oracle_authority.as_ref(), &nonce.to_le_bytes()]"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "oracle_authority",
+            "docs": [
+              "The authority that can finalize this oracle"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "quote_mint",
+            "docs": [
+              "Optional quote mint for validation (Pubkey::default() if not used)"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "is_finalized",
+            "docs": [
+              "Whether the oracle has been finalized with a winner"
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "winning_mint",
+            "docs": [
+              "The winning mint (only valid if is_finalized == true)"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "nonce",
+            "docs": [
+              "Nonce used in PDA derivation"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "PDA bump seed"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "_reserved",
+            "docs": [
+              "Reserved for future use"
+            ],
+            "type": {
+              "array": [
+                "u8",
+                31
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

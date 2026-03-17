@@ -25,7 +25,7 @@
  */
 import './env';
 
-import { DopplerSDK, WAD, getAddresses } from '../src';
+import { DopplerSDK, WAD, getAddresses } from '../src/evm';
 import {
   createPublicClient,
   createWalletClient,
