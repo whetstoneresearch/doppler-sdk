@@ -52,7 +52,7 @@ import {
 } from '../instructions';
 
 export const CPMM_MIGRATOR_PROGRAM_ADDRESS =
-  'CpmmMig1111111111111111111111111111111111111' as Address<'CpmmMig1111111111111111111111111111111111111'>;
+  '7WMUTNC41eMCo6eGH5Sy2xbgE3AycvLbFPo95AU9CSUd' as Address<'7WMUTNC41eMCo6eGH5Sy2xbgE3AycvLbFPo95AU9CSUd'>;
 
 export enum CpmmMigratorAccount {
   CpmmMigratorState,
@@ -129,7 +129,7 @@ export function identifyCpmmMigratorInstruction(
 }
 
 export type ParsedCpmmMigratorInstruction<
-  TProgram extends string = 'CpmmMig1111111111111111111111111111111111111',
+  TProgram extends string = '7WMUTNC41eMCo6eGH5Sy2xbgE3AycvLbFPo95AU9CSUd',
 > =
   | ({
       instructionType: CpmmMigratorInstruction.Migrate;

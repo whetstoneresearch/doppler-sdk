@@ -72,7 +72,7 @@ import {
 } from '../instructions';
 
 export const PREDICTION_MIGRATOR_PROGRAM_ADDRESS =
-  '41zP8ovFZvvxAncujgjYfHz5xvR8zZgwGGVfwCJG3WkK' as Address<'41zP8ovFZvvxAncujgjYfHz5xvR8zZgwGGVfwCJG3WkK'>;
+  'HYHdyy7QZg8Ucky9Z97xNtSCvrZxVNkeoney8xEPXjiZ' as Address<'HYHdyy7QZg8Ucky9Z97xNtSCvrZxVNkeoney8xEPXjiZ'>;
 
 export enum PredictionMigratorAccount {
   ClaimReceipt,
@@ -221,7 +221,7 @@ export function identifyPredictionMigratorInstruction(
 }
 
 export type ParsedPredictionMigratorInstruction<
-  TProgram extends string = '41zP8ovFZvvxAncujgjYfHz5xvR8zZgwGGVfwCJG3WkK',
+  TProgram extends string = 'HYHdyy7QZg8Ucky9Z97xNtSCvrZxVNkeoney8xEPXjiZ',
 > =
   | ({
       instructionType: PredictionMigratorInstruction.Claim;

@@ -84,7 +84,7 @@ import {
 } from '../instructions';
 
 export const INITIALIZER_PROGRAM_ADDRESS =
-  '4H9w6qMqqSh6DVW7BzYxPHFvLaQP7rbRiQnPYGPajQxq' as Address<'4H9w6qMqqSh6DVW7BzYxPHFvLaQP7rbRiQnPYGPajQxq'>;
+  '4h3Dqyo5qmteJoMxXt3tdtfXELDB6pdRTPU9mWruiKp1' as Address<'4h3Dqyo5qmteJoMxXt3tdtfXELDB6pdRTPU9mWruiKp1'>;
 
 export enum InitializerAccount {
   InitConfig,
@@ -257,7 +257,7 @@ export function identifyInitializerInstruction(
 }
 
 export type ParsedInitializerInstruction<
-  TProgram extends string = '4H9w6qMqqSh6DVW7BzYxPHFvLaQP7rbRiQnPYGPajQxq',
+  TProgram extends string = '4h3Dqyo5qmteJoMxXt3tdtfXELDB6pdRTPU9mWruiKp1',
 > =
   | ({
       instructionType: InitializerInstruction.AbortLaunch;

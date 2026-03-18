@@ -134,7 +134,7 @@ import {
 } from '../instructions';
 
 export const CPMM_PROGRAM_ADDRESS =
-  '3HSrGs4jj92CGt7mkfeeoMofrRGVPUcDX8djAnp4FoD6' as Address<'3HSrGs4jj92CGt7mkfeeoMofrRGVPUcDX8djAnp4FoD6'>;
+  '9PSxVPoPfnbZ8Q1uQhgS6ZxvBjFboZtebNsu34umxkgQ' as Address<'9PSxVPoPfnbZ8Q1uQhgS6ZxvBjFboZtebNsu34umxkgQ'>;
 
 export enum CpmmAccount {
   AmmConfig,
@@ -463,7 +463,7 @@ export function identifyCpmmInstruction(
 }
 
 export type ParsedCpmmInstruction<
-  TProgram extends string = '3HSrGs4jj92CGt7mkfeeoMofrRGVPUcDX8djAnp4FoD6',
+  TProgram extends string = '9PSxVPoPfnbZ8Q1uQhgS6ZxvBjFboZtebNsu34umxkgQ',
 > =
   | ({
       instructionType: CpmmInstruction.AddLiquidity;

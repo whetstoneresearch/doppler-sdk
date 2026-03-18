@@ -2,7 +2,7 @@ import { address, type Address } from '@solana/kit';
 
 // Source of truth: programs/cpmm_migrator/src/lib.rs
 export const CPMM_MIGRATOR_PROGRAM_ID: Address = address(
-  'CpmmMig1111111111111111111111111111111111111',
+  '7WMUTNC41eMCo6eGH5Sy2xbgE3AycvLbFPo95AU9CSUd',
 );
 
 export const SEED_STATE = 'state';

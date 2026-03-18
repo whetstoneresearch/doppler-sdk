@@ -4,14 +4,14 @@ import { address, type Address } from '@solana/kit';
  * Program ID for the CPMM AMM (deployed to devnet)
  */
 export const PROGRAM_ID: Address = address(
-  '3HSrGs4jj92CGt7mkfeeoMofrRGVPUcDX8djAnp4FoD6',
+  '9PSxVPoPfnbZ8Q1uQhgS6ZxvBjFboZtebNsu34umxkgQ',
 );
 
 /**
  * Program ID for the Sentinel program (deployed to devnet)
  */
 export const SENTINEL_PROGRAM_ID: Address = address(
-  'EYgA9DZYuYLRWjgTz98fVgSZwk55NYUEL589oSKcNHMs',
+  '2vJ1c62knEwZbxp3XdHB4RSmCfz55pA6tRkCho63gW7u',
 );
 
 /**

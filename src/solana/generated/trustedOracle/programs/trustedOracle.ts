@@ -48,7 +48,7 @@ import {
 } from '../instructions';
 
 export const TRUSTED_ORACLE_PROGRAM_ADDRESS =
-  'HkET1QY3BZdcKkbeHgKHMSFn3R8sewrJWnqAi54WwSEz' as Address<'HkET1QY3BZdcKkbeHgKHMSFn3R8sewrJWnqAi54WwSEz'>;
+  'HhUzN7VvonNUevATyugZUepzxpeEZMXQbV92X2xvsp5m' as Address<'HhUzN7VvonNUevATyugZUepzxpeEZMXQbV92X2xvsp5m'>;
 
 export enum TrustedOracleAccount {
   OracleState,
@@ -113,7 +113,7 @@ export function identifyTrustedOracleInstruction(
 }
 
 export type ParsedTrustedOracleInstruction<
-  TProgram extends string = 'HkET1QY3BZdcKkbeHgKHMSFn3R8sewrJWnqAi54WwSEz',
+  TProgram extends string = 'HhUzN7VvonNUevATyugZUepzxpeEZMXQbV92X2xvsp5m',
 > =
   | ({
       instructionType: TrustedOracleInstruction.Finalize;

@@ -6,7 +6,7 @@ import { address, type Address } from '@solana/kit';
  * Source of truth: programs/initializer/src/lib.rs
  */
 export const INITIALIZER_PROGRAM_ID: Address = address(
-  '4H9w6qMqqSh6DVW7BzYxPHFvLaQP7rbRiQnPYGPajQxq',
+  '4h3Dqyo5qmteJoMxXt3tdtfXELDB6pdRTPU9mWruiKp1',
 );
 
 export const BPF_LOADER_UPGRADEABLE_PROGRAM_ID: Address = address(

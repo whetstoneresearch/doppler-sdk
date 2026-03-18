@@ -1,5 +1,5 @@
 {
-  "address": "CpmmMig1111111111111111111111111111111111111",
+  "address": "7WMUTNC41eMCo6eGH5Sy2xbgE3AycvLbFPo95AU9CSUd",
   "metadata": {
     "name": "cpmm_migrator",
     "version": "0.1.0",
@@ -135,7 +135,7 @@
         },
         {
           "name": "cpmm_program",
-          "address": "3HSrGs4jj92CGt7mkfeeoMofrRGVPUcDX8djAnp4FoD6"
+          "address": "9PSxVPoPfnbZ8Q1uQhgS6ZxvBjFboZtebNsu34umxkgQ"
         },
         {
           "name": "admin_base_ata",
