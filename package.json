@@ -1,7 +1,7 @@
 {
   "name": "@whetstone-research/doppler-sdk",
   "author": "Whetstone Research",
-  "version": "0.0.24",
+  "version": "1.0.0",
   "license": "MIT",
   "type": "module",
   "repository": {
@@ -22,7 +22,7 @@
       "types": "./dist/solana/react/index.d.ts"
     }
   },
-"files": [
+  "files": [
     "dist"
   ],
   "scripts": {
@@ -42,7 +42,7 @@
     "format": "oxfmt --write src/",
     "format:check": "oxfmt --check src/",
     "prepublishOnly": "npm run build",
-"generate:addresses": "node ./scripts/generate-addresses.mjs --source ../doppler/Deployments.json --out src/evm/deployments.generated.ts",
+    "generate:addresses": "node ./scripts/generate-addresses.mjs --source ../doppler/Deployments.json --out src/evm/deployments.generated.ts",
     "generate-snapshot": "tsx ./scripts/snapshot-addresses.ts",
     "generate:codecs": "tsx scripts/codegen.ts"
   },
