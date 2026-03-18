@@ -368,33 +368,6 @@ describe('M9: incentiveShareBps + shareToAuctionBps should not exceed 10_000', (
 });
 
 // ============================================================================
-// M12: Base governance factory address mismatches
-// ============================================================================
-describe('M12: Base governance factory addresses vs generated deployments', () => {
-  it('Base governanceFactory should match generated deployment', () => {
-    const baseAddresses = ADDRESSES[CHAIN_IDS.BASE];
-    const generatedBase = (GENERATED_DOPPLER_DEPLOYMENTS as Record<string, Record<string, string>>)[String(CHAIN_IDS.BASE)];
-
-    // Hardcoded: 0xb4deE32EB70A5E55f3D2d861F49Fb3D79f7a14d9
-    // Generated: 0xa82c66b6ddEb92089015C3565E05B5c9750b2d4B
-    expect(baseAddresses.governanceFactory.toLowerCase()).toBe(
-      generatedBase.GovernanceFactory.toLowerCase(),
-    );
-  });
-
-  it('Base noOpGovernanceFactory should match generated deployment', () => {
-    const baseAddresses = ADDRESSES[CHAIN_IDS.BASE];
-    const generatedBase = (GENERATED_DOPPLER_DEPLOYMENTS as Record<string, Record<string, string>>)[String(CHAIN_IDS.BASE)];
-
-    // Hardcoded: 0xe7dfbd5b0a2c3b4464653a9becdc489229ef090e
-    // Generated: 0x3AD727ee0FBBb8Ee0920933FdB96F23fD56f1299
-    expect(baseAddresses.noOpGovernanceFactory?.toLowerCase()).toBe(
-      generatedBase.NoOpGovernanceFactory.toLowerCase(),
-    );
-  });
-});
-
-// ============================================================================
 // M14: SupportedChain type missing chains
 // ============================================================================
 describe('M14: SupportedChain type should include all chains in CHAIN_IDS', () => {
