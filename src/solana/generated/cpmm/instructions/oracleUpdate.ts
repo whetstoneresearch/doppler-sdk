@@ -44,7 +44,7 @@ export const ORACLE_UPDATE_DISCRIMINATOR = new Uint8Array([
 
 export function getOracleUpdateDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    ORACLE_UPDATE_DISCRIMINATOR
+    ORACLE_UPDATE_DISCRIMINATOR,
   );
 }
 
@@ -74,7 +74,7 @@ export type OracleUpdateInstructionDataArgs = {};
 export function getOracleUpdateInstructionDataEncoder(): FixedSizeEncoder<OracleUpdateInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
-    (value) => ({ ...value, discriminator: ORACLE_UPDATE_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: ORACLE_UPDATE_DISCRIMINATOR }),
   );
 }
 
@@ -90,7 +90,7 @@ export function getOracleUpdateInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getOracleUpdateInstructionDataEncoder(),
-    getOracleUpdateInstructionDataDecoder()
+    getOracleUpdateInstructionDataDecoder(),
   );
 }
 
@@ -108,7 +108,7 @@ export async function getOracleUpdateInstructionAsync<
   TProgramAddress extends Address = typeof CPMM_PROGRAM_ADDRESS,
 >(
   input: OracleUpdateAsyncInput<TAccountPool, TAccountOracle>,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): Promise<
   OracleUpdateInstruction<TProgramAddress, TAccountPool, TAccountOracle>
 > {
@@ -132,7 +132,7 @@ export async function getOracleUpdateInstructionAsync<
       seeds: [
         getBytesEncoder().encode(new Uint8Array([111, 114, 97, 99, 108, 101])),
         getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount('pool', accounts.pool.value)
+          getAddressFromResolvedInstructionAccount('pool', accounts.pool.value),
         ),
       ],
     });
@@ -163,7 +163,7 @@ export function getOracleUpdateInstruction<
   TProgramAddress extends Address = typeof CPMM_PROGRAM_ADDRESS,
 >(
   input: OracleUpdateInput<TAccountPool, TAccountOracle>,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): OracleUpdateInstruction<TProgramAddress, TAccountPool, TAccountOracle> {
   // Program address.
   const programAddress = config?.programAddress ?? CPMM_PROGRAM_ADDRESS;
@@ -207,7 +207,7 @@ export function parseOracleUpdateInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
+    InstructionWithData<ReadonlyUint8Array>,
 ): ParsedOracleUpdateInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 2) {
     throw new SolanaError(
@@ -215,7 +215,7 @@ export function parseOracleUpdateInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 2,
-      }
+      },
     );
   }
   let accountIndex = 0;

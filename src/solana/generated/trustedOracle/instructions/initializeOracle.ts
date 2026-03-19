@@ -48,7 +48,7 @@ export const INITIALIZE_ORACLE_DISCRIMINATOR = new Uint8Array([
 
 export function getInitializeOracleDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    INITIALIZE_ORACLE_DISCRIMINATOR
+    INITIALIZE_ORACLE_DISCRIMINATOR,
   );
 }
 
@@ -99,7 +99,7 @@ export function getInitializeOracleInstructionDataEncoder(): FixedSizeEncoder<In
       ['nonce', getU64Encoder()],
       ['quoteMint', getAddressEncoder()],
     ]),
-    (value) => ({ ...value, discriminator: INITIALIZE_ORACLE_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: INITIALIZE_ORACLE_DISCRIMINATOR }),
   );
 }
 
@@ -117,7 +117,7 @@ export function getInitializeOracleInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getInitializeOracleInstructionDataEncoder(),
-    getInitializeOracleInstructionDataDecoder()
+    getInitializeOracleInstructionDataDecoder(),
   );
 }
 
@@ -145,7 +145,7 @@ export function getInitializeOracleInstruction<
     TAccountOracleState,
     TAccountSystemProgram
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): InitializeOracleInstruction<
   TProgramAddress,
   TAccountOracleAuthority,
@@ -184,7 +184,7 @@ export function getInitializeOracleInstruction<
       getAccountMeta('systemProgram', accounts.systemProgram),
     ],
     data: getInitializeOracleInstructionDataEncoder().encode(
-      args as InitializeOracleInstructionDataArgs
+      args as InitializeOracleInstructionDataArgs,
     ),
     programAddress,
   } as InitializeOracleInstruction<
@@ -215,7 +215,7 @@ export function parseInitializeOracleInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
+    InstructionWithData<ReadonlyUint8Array>,
 ): ParsedInitializeOracleInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 3) {
     throw new SolanaError(
@@ -223,7 +223,7 @@ export function parseInitializeOracleInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 3,
-      }
+      },
     );
   }
   let accountIndex = 0;

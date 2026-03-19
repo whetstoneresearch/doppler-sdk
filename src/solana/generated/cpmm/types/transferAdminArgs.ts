@@ -36,6 +36,6 @@ export function getTransferAdminArgsCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getTransferAdminArgsEncoder(),
-    getTransferAdminArgsDecoder()
+    getTransferAdminArgsDecoder(),
   );
 }

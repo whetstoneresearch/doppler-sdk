@@ -44,7 +44,7 @@ export const PREVIEW_PAYOUT_IF_WINNER_DISCRIMINATOR = new Uint8Array([
 
 export function getPreviewPayoutIfWinnerDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    PREVIEW_PAYOUT_IF_WINNER_DISCRIMINATOR
+    PREVIEW_PAYOUT_IF_WINNER_DISCRIMINATOR,
   );
 }
 
@@ -88,7 +88,7 @@ export function getPreviewPayoutIfWinnerInstructionDataEncoder(): FixedSizeEncod
     (value) => ({
       ...value,
       discriminator: PREVIEW_PAYOUT_IF_WINNER_DISCRIMINATOR,
-    })
+    }),
   );
 }
 
@@ -106,7 +106,7 @@ export function getPreviewPayoutIfWinnerInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getPreviewPayoutIfWinnerInstructionDataEncoder(),
-    getPreviewPayoutIfWinnerInstructionDataDecoder()
+    getPreviewPayoutIfWinnerInstructionDataDecoder(),
   );
 }
 
@@ -128,7 +128,7 @@ export function getPreviewPayoutIfWinnerInstruction<
   TProgramAddress extends Address = typeof PREDICTION_MIGRATOR_PROGRAM_ADDRESS,
 >(
   input: PreviewPayoutIfWinnerInput<TAccountMarket, TAccountCandidateMint>,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): PreviewPayoutIfWinnerInstruction<
   TProgramAddress,
   TAccountMarket,
@@ -158,7 +158,7 @@ export function getPreviewPayoutIfWinnerInstruction<
       getAccountMeta('candidateMint', accounts.candidateMint),
     ],
     data: getPreviewPayoutIfWinnerInstructionDataEncoder().encode(
-      args as PreviewPayoutIfWinnerInstructionDataArgs
+      args as PreviewPayoutIfWinnerInstructionDataArgs,
     ),
     programAddress,
   } as PreviewPayoutIfWinnerInstruction<
@@ -188,7 +188,7 @@ export function parsePreviewPayoutIfWinnerInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
+    InstructionWithData<ReadonlyUint8Array>,
 ): ParsedPreviewPayoutIfWinnerInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 2) {
     throw new SolanaError(
@@ -196,7 +196,7 @@ export function parsePreviewPayoutIfWinnerInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 2,
-      }
+      },
     );
   }
   let accountIndex = 0;
@@ -209,7 +209,7 @@ export function parsePreviewPayoutIfWinnerInstruction<
     programAddress: instruction.programAddress,
     accounts: { market: getNextAccount(), candidateMint: getNextAccount() },
     data: getPreviewPayoutIfWinnerInstructionDataDecoder().decode(
-      instruction.data
+      instruction.data,
     ),
   };
 }

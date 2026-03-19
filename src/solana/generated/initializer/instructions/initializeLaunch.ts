@@ -61,7 +61,7 @@ export const INITIALIZE_LAUNCH_DISCRIMINATOR = new Uint8Array([
 
 export function getInitializeLaunchDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    INITIALIZE_LAUNCH_DISCRIMINATOR
+    INITIALIZE_LAUNCH_DISCRIMINATOR,
   );
 }
 
@@ -262,7 +262,7 @@ export function getInitializeLaunchInstructionDataEncoder(): Encoder<InitializeL
       ],
       ['metadataUri', addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
     ]),
-    (value) => ({ ...value, discriminator: INITIALIZE_LAUNCH_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: INITIALIZE_LAUNCH_DISCRIMINATOR }),
   );
 }
 
@@ -311,7 +311,7 @@ export function getInitializeLaunchInstructionDataCodec(): Codec<
 > {
   return combineCodec(
     getInitializeLaunchInstructionDataEncoder(),
-    getInitializeLaunchInstructionDataDecoder()
+    getInitializeLaunchInstructionDataDecoder(),
   );
 }
 
@@ -412,7 +412,7 @@ export async function getInitializeLaunchInstructionAsync<
     TAccountMetadataAccount,
     TAccountMetadataProgram
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): Promise<
   InitializeLaunchInstruction<
     TProgramAddress,
@@ -477,7 +477,7 @@ export async function getInitializeLaunchInstructionAsync<
       programAddress,
       seeds: [
         getBytesEncoder().encode(
-          new Uint8Array([99, 111, 110, 102, 105, 103, 95, 118, 51])
+          new Uint8Array([99, 111, 110, 102, 105, 103, 95, 118, 51]),
         ),
       ],
     });
@@ -490,13 +490,13 @@ export async function getInitializeLaunchInstructionAsync<
           new Uint8Array([
             108, 97, 117, 110, 99, 104, 95, 97, 117, 116, 104, 111, 114, 105,
             116, 121, 95, 118, 51,
-          ])
+          ]),
         ),
         getAddressEncoder().encode(
           getAddressFromResolvedInstructionAccount(
             'launch',
-            accounts.launch.value
-          )
+            accounts.launch.value,
+          ),
         ),
       ],
     });
@@ -534,7 +534,7 @@ export async function getInitializeLaunchInstructionAsync<
       getAccountMeta('metadataProgram', accounts.metadataProgram),
     ],
     data: getInitializeLaunchInstructionDataEncoder().encode(
-      args as InitializeLaunchInstructionDataArgs
+      args as InitializeLaunchInstructionDataArgs,
     ),
     programAddress,
   } as InitializeLaunchInstruction<
@@ -654,7 +654,7 @@ export function getInitializeLaunchInstruction<
     TAccountMetadataAccount,
     TAccountMetadataProgram
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): InitializeLaunchInstruction<
   TProgramAddress,
   TAccountConfig,
@@ -745,7 +745,7 @@ export function getInitializeLaunchInstruction<
       getAccountMeta('metadataProgram', accounts.metadataProgram),
     ],
     data: getInitializeLaunchInstructionDataEncoder().encode(
-      args as InitializeLaunchInstructionDataArgs
+      args as InitializeLaunchInstructionDataArgs,
     ),
     programAddress,
   } as InitializeLaunchInstruction<
@@ -803,7 +803,7 @@ export function parseInitializeLaunchInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
+    InstructionWithData<ReadonlyUint8Array>,
 ): ParsedInitializeLaunchInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 15) {
     throw new SolanaError(
@@ -811,7 +811,7 @@ export function parseInitializeLaunchInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 15,
-      }
+      },
     );
   }
   let accountIndex = 0;

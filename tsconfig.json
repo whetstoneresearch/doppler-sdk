@@ -15,10 +15,6 @@
     "strict": true,
     "skipLibCheck": true,
     "rootDir": "src",
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["src/*"]
-    },
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true
   }

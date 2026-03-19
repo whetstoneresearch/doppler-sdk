@@ -144,16 +144,16 @@ export enum CpmmAccount {
 }
 
 export function identifyCpmmAccount(
-  account: { data: ReadonlyUint8Array } | ReadonlyUint8Array
+  account: { data: ReadonlyUint8Array } | ReadonlyUint8Array,
 ): CpmmAccount {
   const data = 'data' in account ? account.data : account;
   if (
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([218, 244, 33, 104, 203, 203, 43, 111])
+        new Uint8Array([218, 244, 33, 104, 203, 203, 43, 111]),
       ),
-      0
+      0,
     )
   ) {
     return CpmmAccount.AmmConfig;
@@ -162,9 +162,9 @@ export function identifyCpmmAccount(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([97, 156, 157, 189, 194, 73, 8, 15])
+        new Uint8Array([97, 156, 157, 189, 194, 73, 8, 15]),
       ),
-      0
+      0,
     )
   ) {
     return CpmmAccount.OracleState;
@@ -173,9 +173,9 @@ export function identifyCpmmAccount(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([241, 154, 109, 4, 17, 177, 109, 188])
+        new Uint8Array([241, 154, 109, 4, 17, 177, 109, 188]),
       ),
-      0
+      0,
     )
   ) {
     return CpmmAccount.Pool;
@@ -184,16 +184,16 @@ export function identifyCpmmAccount(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([170, 188, 143, 228, 122, 64, 247, 208])
+        new Uint8Array([170, 188, 143, 228, 122, 64, 247, 208]),
       ),
-      0
+      0,
     )
   ) {
     return CpmmAccount.Position;
   }
   throw new SolanaError(
     SOLANA_ERROR__PROGRAM_CLIENTS__FAILED_TO_IDENTIFY_ACCOUNT,
-    { accountData: data, programName: 'cpmm' }
+    { accountData: data, programName: 'cpmm' },
   );
 }
 
@@ -222,16 +222,16 @@ export enum CpmmInstruction {
 }
 
 export function identifyCpmmInstruction(
-  instruction: { data: ReadonlyUint8Array } | ReadonlyUint8Array
+  instruction: { data: ReadonlyUint8Array } | ReadonlyUint8Array,
 ): CpmmInstruction {
   const data = 'data' in instruction ? instruction.data : instruction;
   if (
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([181, 157, 89, 67, 143, 182, 52, 72])
+        new Uint8Array([181, 157, 89, 67, 143, 182, 52, 72]),
       ),
-      0
+      0,
     )
   ) {
     return CpmmInstruction.AddLiquidity;
@@ -240,9 +240,9 @@ export function identifyCpmmInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([123, 134, 81, 0, 49, 68, 98, 98])
+        new Uint8Array([123, 134, 81, 0, 49, 68, 98, 98]),
       ),
-      0
+      0,
     )
   ) {
     return CpmmInstruction.ClosePosition;
@@ -251,9 +251,9 @@ export function identifyCpmmInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([164, 152, 207, 99, 30, 186, 19, 182])
+        new Uint8Array([164, 152, 207, 99, 30, 186, 19, 182]),
       ),
-      0
+      0,
     )
   ) {
     return CpmmInstruction.CollectFees;
@@ -262,9 +262,9 @@ export function identifyCpmmInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([22, 67, 23, 98, 150, 178, 70, 220])
+        new Uint8Array([22, 67, 23, 98, 150, 178, 70, 220]),
       ),
-      0
+      0,
     )
   ) {
     return CpmmInstruction.CollectProtocolFees;
@@ -273,9 +273,9 @@ export function identifyCpmmInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([48, 215, 197, 153, 96, 203, 180, 133])
+        new Uint8Array([48, 215, 197, 153, 96, 203, 180, 133]),
       ),
-      0
+      0,
     )
   ) {
     return CpmmInstruction.CreatePosition;
@@ -284,9 +284,9 @@ export function identifyCpmmInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([208, 127, 21, 1, 194, 190, 196, 70])
+        new Uint8Array([208, 127, 21, 1, 194, 190, 196, 70]),
       ),
-      0
+      0,
     )
   ) {
     return CpmmInstruction.InitializeConfig;
@@ -295,9 +295,9 @@ export function identifyCpmmInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([144, 223, 131, 120, 196, 253, 181, 99])
+        new Uint8Array([144, 223, 131, 120, 196, 253, 181, 99]),
       ),
-      0
+      0,
     )
   ) {
     return CpmmInstruction.InitializeOracle;
@@ -306,9 +306,9 @@ export function identifyCpmmInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([95, 180, 10, 172, 84, 174, 232, 40])
+        new Uint8Array([95, 180, 10, 172, 84, 174, 232, 40]),
       ),
-      0
+      0,
     )
   ) {
     return CpmmInstruction.InitializePool;
@@ -317,9 +317,9 @@ export function identifyCpmmInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([239, 237, 255, 177, 142, 72, 96, 175])
+        new Uint8Array([239, 237, 255, 177, 142, 72, 96, 175]),
       ),
-      0
+      0,
     )
   ) {
     return CpmmInstruction.OracleConsult;
@@ -328,9 +328,9 @@ export function identifyCpmmInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([85, 209, 248, 142, 186, 249, 120, 239])
+        new Uint8Array([85, 209, 248, 142, 186, 249, 120, 239]),
       ),
-      0
+      0,
     )
   ) {
     return CpmmInstruction.OracleUpdate;
@@ -339,9 +339,9 @@ export function identifyCpmmInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([211, 22, 221, 251, 74, 121, 193, 47])
+        new Uint8Array([211, 22, 221, 251, 74, 121, 193, 47]),
       ),
-      0
+      0,
     )
   ) {
     return CpmmInstruction.Pause;
@@ -350,9 +350,9 @@ export function identifyCpmmInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([50, 130, 31, 69, 147, 58, 222, 178])
+        new Uint8Array([50, 130, 31, 69, 147, 58, 222, 178]),
       ),
-      0
+      0,
     )
   ) {
     return CpmmInstruction.PreviewSwapExactIn;
@@ -361,9 +361,9 @@ export function identifyCpmmInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([4, 142, 249, 240, 129, 15, 143, 57])
+        new Uint8Array([4, 142, 249, 240, 129, 15, 143, 57]),
       ),
-      0
+      0,
     )
   ) {
     return CpmmInstruction.QuoteToNumeraire;
@@ -372,9 +372,9 @@ export function identifyCpmmInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([80, 85, 209, 72, 24, 206, 177, 108])
+        new Uint8Array([80, 85, 209, 72, 24, 206, 177, 108]),
       ),
-      0
+      0,
     )
   ) {
     return CpmmInstruction.RemoveLiquidity;
@@ -383,9 +383,9 @@ export function identifyCpmmInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([137, 178, 49, 58, 0, 245, 242, 190])
+        new Uint8Array([137, 178, 49, 58, 0, 245, 242, 190]),
       ),
-      0
+      0,
     )
   ) {
     return CpmmInstruction.SetFees;
@@ -394,9 +394,9 @@ export function identifyCpmmInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([244, 231, 3, 84, 233, 61, 146, 149])
+        new Uint8Array([244, 231, 3, 84, 233, 61, 146, 149]),
       ),
-      0
+      0,
     )
   ) {
     return CpmmInstruction.SetRoute;
@@ -405,9 +405,9 @@ export function identifyCpmmInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([94, 200, 82, 129, 53, 149, 232, 113])
+        new Uint8Array([94, 200, 82, 129, 53, 149, 232, 113]),
       ),
-      0
+      0,
     )
   ) {
     return CpmmInstruction.SetSentinel;
@@ -416,9 +416,9 @@ export function identifyCpmmInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([238, 120, 221, 138, 82, 60, 100, 218])
+        new Uint8Array([238, 120, 221, 138, 82, 60, 100, 218]),
       ),
-      0
+      0,
     )
   ) {
     return CpmmInstruction.Skim;
@@ -427,9 +427,9 @@ export function identifyCpmmInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([104, 104, 131, 86, 161, 189, 180, 216])
+        new Uint8Array([104, 104, 131, 86, 161, 189, 180, 216]),
       ),
-      0
+      0,
     )
   ) {
     return CpmmInstruction.SwapExactIn;
@@ -438,9 +438,9 @@ export function identifyCpmmInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([42, 242, 66, 106, 228, 10, 111, 156])
+        new Uint8Array([42, 242, 66, 106, 228, 10, 111, 156]),
       ),
-      0
+      0,
     )
   ) {
     return CpmmInstruction.TransferAdmin;
@@ -449,16 +449,16 @@ export function identifyCpmmInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([169, 144, 4, 38, 10, 141, 188, 255])
+        new Uint8Array([169, 144, 4, 38, 10, 141, 188, 255]),
       ),
-      0
+      0,
     )
   ) {
     return CpmmInstruction.Unpause;
   }
   throw new SolanaError(
     SOLANA_ERROR__PROGRAM_CLIENTS__FAILED_TO_IDENTIFY_INSTRUCTION,
-    { instructionData: data, programName: 'cpmm' }
+    { instructionData: data, programName: 'cpmm' },
   );
 }
 
@@ -530,7 +530,7 @@ export type ParsedCpmmInstruction<
     } & ParsedUnpauseInstruction<TProgram>);
 
 export function parseCpmmInstruction<TProgram extends string>(
-  instruction: Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array>
+  instruction: Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array>,
 ): ParsedCpmmInstruction<TProgram> {
   const instructionType = identifyCpmmInstruction(instruction);
   switch (instructionType) {
@@ -684,7 +684,7 @@ export function parseCpmmInstruction<TProgram extends string>(
     default:
       throw new SolanaError(
         SOLANA_ERROR__PROGRAM_CLIENTS__UNRECOGNIZED_INSTRUCTION_TYPE,
-        { instructionType: instructionType as string, programName: 'cpmm' }
+        { instructionType: instructionType as string, programName: 'cpmm' },
       );
   }
 }
@@ -706,82 +706,82 @@ export type CpmmPluginAccounts = {
 
 export type CpmmPluginInstructions = {
   addLiquidity: (
-    input: AddLiquidityAsyncInput
+    input: AddLiquidityAsyncInput,
   ) => ReturnType<typeof getAddLiquidityInstructionAsync> &
     SelfPlanAndSendFunctions;
   closePosition: (
-    input: ClosePositionInput
+    input: ClosePositionInput,
   ) => ReturnType<typeof getClosePositionInstruction> &
     SelfPlanAndSendFunctions;
   collectFees: (
-    input: CollectFeesAsyncInput
+    input: CollectFeesAsyncInput,
   ) => ReturnType<typeof getCollectFeesInstructionAsync> &
     SelfPlanAndSendFunctions;
   collectProtocolFees: (
-    input: CollectProtocolFeesAsyncInput
+    input: CollectProtocolFeesAsyncInput,
   ) => ReturnType<typeof getCollectProtocolFeesInstructionAsync> &
     SelfPlanAndSendFunctions;
   createPosition: (
-    input: MakeOptional<CreatePositionAsyncInput, 'payer'>
+    input: MakeOptional<CreatePositionAsyncInput, 'payer'>,
   ) => ReturnType<typeof getCreatePositionInstructionAsync> &
     SelfPlanAndSendFunctions;
   initializeConfig: (
-    input: MakeOptional<InitializeConfigAsyncInput, 'payer'>
+    input: MakeOptional<InitializeConfigAsyncInput, 'payer'>,
   ) => ReturnType<typeof getInitializeConfigInstructionAsync> &
     SelfPlanAndSendFunctions;
   initializeOracle: (
-    input: MakeOptional<InitializeOracleAsyncInput, 'payer'>
+    input: MakeOptional<InitializeOracleAsyncInput, 'payer'>,
   ) => ReturnType<typeof getInitializeOracleInstructionAsync> &
     SelfPlanAndSendFunctions;
   initializePool: (
-    input: MakeOptional<InitializePoolAsyncInput, 'payer'>
+    input: MakeOptional<InitializePoolAsyncInput, 'payer'>,
   ) => ReturnType<typeof getInitializePoolInstructionAsync> &
     SelfPlanAndSendFunctions;
   oracleConsult: (
-    input: OracleConsultAsyncInput
+    input: OracleConsultAsyncInput,
   ) => ReturnType<typeof getOracleConsultInstructionAsync> &
     SelfPlanAndSendFunctions;
   oracleUpdate: (
-    input: OracleUpdateAsyncInput
+    input: OracleUpdateAsyncInput,
   ) => ReturnType<typeof getOracleUpdateInstructionAsync> &
     SelfPlanAndSendFunctions;
   pause: (
-    input: PauseInput
+    input: PauseInput,
   ) => ReturnType<typeof getPauseInstruction> & SelfPlanAndSendFunctions;
   previewSwapExactIn: (
-    input: PreviewSwapExactInInput
+    input: PreviewSwapExactInInput,
   ) => ReturnType<typeof getPreviewSwapExactInInstruction> &
     SelfPlanAndSendFunctions;
   quoteToNumeraire: (
-    input: QuoteToNumeraireInput
+    input: QuoteToNumeraireInput,
   ) => ReturnType<typeof getQuoteToNumeraireInstruction> &
     SelfPlanAndSendFunctions;
   removeLiquidity: (
-    input: RemoveLiquidityAsyncInput
+    input: RemoveLiquidityAsyncInput,
   ) => ReturnType<typeof getRemoveLiquidityInstructionAsync> &
     SelfPlanAndSendFunctions;
   setFees: (
-    input: SetFeesInput
+    input: SetFeesInput,
   ) => ReturnType<typeof getSetFeesInstruction> & SelfPlanAndSendFunctions;
   setRoute: (
-    input: SetRouteInput
+    input: SetRouteInput,
   ) => ReturnType<typeof getSetRouteInstruction> & SelfPlanAndSendFunctions;
   setSentinel: (
-    input: SetSentinelInput
+    input: SetSentinelInput,
   ) => ReturnType<typeof getSetSentinelInstruction> & SelfPlanAndSendFunctions;
   skim: (
-    input: SkimAsyncInput
+    input: SkimAsyncInput,
   ) => ReturnType<typeof getSkimInstructionAsync> & SelfPlanAndSendFunctions;
   swapExactIn: (
-    input: SwapExactInAsyncInput
+    input: SwapExactInAsyncInput,
   ) => ReturnType<typeof getSwapExactInInstructionAsync> &
     SelfPlanAndSendFunctions;
   transferAdmin: (
-    input: TransferAdminInput
+    input: TransferAdminInput,
   ) => ReturnType<typeof getTransferAdminInstruction> &
     SelfPlanAndSendFunctions;
   unpause: (
-    input: UnpauseInput
+    input: UnpauseInput,
   ) => ReturnType<typeof getUnpauseInstruction> & SelfPlanAndSendFunctions;
 };
 
@@ -807,22 +807,22 @@ export function cpmmProgram() {
           addLiquidity: (input) =>
             addSelfPlanAndSendFunctions(
               client,
-              getAddLiquidityInstructionAsync(input)
+              getAddLiquidityInstructionAsync(input),
             ),
           closePosition: (input) =>
             addSelfPlanAndSendFunctions(
               client,
-              getClosePositionInstruction(input)
+              getClosePositionInstruction(input),
             ),
           collectFees: (input) =>
             addSelfPlanAndSendFunctions(
               client,
-              getCollectFeesInstructionAsync(input)
+              getCollectFeesInstructionAsync(input),
             ),
           collectProtocolFees: (input) =>
             addSelfPlanAndSendFunctions(
               client,
-              getCollectProtocolFeesInstructionAsync(input)
+              getCollectProtocolFeesInstructionAsync(input),
             ),
           createPosition: (input) =>
             addSelfPlanAndSendFunctions(
@@ -830,7 +830,7 @@ export function cpmmProgram() {
               getCreatePositionInstructionAsync({
                 ...input,
                 payer: input.payer ?? client.payer,
-              })
+              }),
             ),
           initializeConfig: (input) =>
             addSelfPlanAndSendFunctions(
@@ -838,7 +838,7 @@ export function cpmmProgram() {
               getInitializeConfigInstructionAsync({
                 ...input,
                 payer: input.payer ?? client.payer,
-              })
+              }),
             ),
           initializeOracle: (input) =>
             addSelfPlanAndSendFunctions(
@@ -846,7 +846,7 @@ export function cpmmProgram() {
               getInitializeOracleInstructionAsync({
                 ...input,
                 payer: input.payer ?? client.payer,
-              })
+              }),
             ),
           initializePool: (input) =>
             addSelfPlanAndSendFunctions(
@@ -854,34 +854,34 @@ export function cpmmProgram() {
               getInitializePoolInstructionAsync({
                 ...input,
                 payer: input.payer ?? client.payer,
-              })
+              }),
             ),
           oracleConsult: (input) =>
             addSelfPlanAndSendFunctions(
               client,
-              getOracleConsultInstructionAsync(input)
+              getOracleConsultInstructionAsync(input),
             ),
           oracleUpdate: (input) =>
             addSelfPlanAndSendFunctions(
               client,
-              getOracleUpdateInstructionAsync(input)
+              getOracleUpdateInstructionAsync(input),
             ),
           pause: (input) =>
             addSelfPlanAndSendFunctions(client, getPauseInstruction(input)),
           previewSwapExactIn: (input) =>
             addSelfPlanAndSendFunctions(
               client,
-              getPreviewSwapExactInInstruction(input)
+              getPreviewSwapExactInInstruction(input),
             ),
           quoteToNumeraire: (input) =>
             addSelfPlanAndSendFunctions(
               client,
-              getQuoteToNumeraireInstruction(input)
+              getQuoteToNumeraireInstruction(input),
             ),
           removeLiquidity: (input) =>
             addSelfPlanAndSendFunctions(
               client,
-              getRemoveLiquidityInstructionAsync(input)
+              getRemoveLiquidityInstructionAsync(input),
             ),
           setFees: (input) =>
             addSelfPlanAndSendFunctions(client, getSetFeesInstruction(input)),
@@ -890,19 +890,19 @@ export function cpmmProgram() {
           setSentinel: (input) =>
             addSelfPlanAndSendFunctions(
               client,
-              getSetSentinelInstruction(input)
+              getSetSentinelInstruction(input),
             ),
           skim: (input) =>
             addSelfPlanAndSendFunctions(client, getSkimInstructionAsync(input)),
           swapExactIn: (input) =>
             addSelfPlanAndSendFunctions(
               client,
-              getSwapExactInInstructionAsync(input)
+              getSwapExactInInstructionAsync(input),
             ),
           transferAdmin: (input) =>
             addSelfPlanAndSendFunctions(
               client,
-              getTransferAdminInstruction(input)
+              getTransferAdminInstruction(input),
             ),
           unpause: (input) =>
             addSelfPlanAndSendFunctions(client, getUnpauseInstruction(input)),

@@ -118,12 +118,11 @@ export class OpeningAuctionPositionManager {
     liquidityDelta: bigint;
     salt?: Hash;
   }): OpeningAuctionModifyLiquidityParams {
-    const { tickLower, tickUpper } = OpeningAuctionPositionManager.validateSingleTick(
-      {
+    const { tickLower, tickUpper } =
+      OpeningAuctionPositionManager.validateSingleTick({
         key: args.key,
         tickLower: args.tickLower,
-      },
-    );
+      });
 
     return {
       tickLower,
@@ -487,10 +486,10 @@ export class OpeningAuctionPositionManager {
     const accountAddress =
       typeof args.account === 'string'
         ? args.account
-        : args.account?.address ??
+        : (args.account?.address ??
           (typeof this.walletClient?.account === 'string'
             ? this.walletClient.account
-            : this.walletClient?.account?.address);
+            : this.walletClient?.account?.address));
     const owner = args.owner ?? accountAddress;
     if (!owner) {
       throw new Error(
@@ -498,12 +497,11 @@ export class OpeningAuctionPositionManager {
       );
     }
 
-    const { tickLower, tickUpper } = OpeningAuctionPositionManager.validateSingleTick(
-      {
+    const { tickLower, tickUpper } =
+      OpeningAuctionPositionManager.validateSingleTick({
         key: args.key,
         tickLower: args.tickLower,
-      },
-    );
+      });
     const salt = args.salt ?? zeroHash;
 
     const positionId = await opening.getPositionId({
@@ -549,7 +547,9 @@ export class OpeningAuctionPositionManager {
 
     const walletAccount = this.walletClient.account;
     const walletAddress =
-      typeof walletAccount === 'string' ? walletAccount : walletAccount?.address;
+      typeof walletAccount === 'string'
+        ? walletAccount
+        : walletAccount?.address;
     if (!walletAddress) {
       throw new Error('Wallet client must have an account configured');
     }
@@ -560,12 +560,11 @@ export class OpeningAuctionPositionManager {
       args.openingAuctionHookAddress,
     );
     const owner = args.owner ?? walletAddress;
-    const { tickLower, tickUpper } = OpeningAuctionPositionManager.validateSingleTick(
-      {
+    const { tickLower, tickUpper } =
+      OpeningAuctionPositionManager.validateSingleTick({
         key: args.key,
         tickLower: args.tickLower,
-      },
-    );
+      });
     const salt = args.salt ?? zeroHash;
 
     const positionId = await opening.getPositionId({

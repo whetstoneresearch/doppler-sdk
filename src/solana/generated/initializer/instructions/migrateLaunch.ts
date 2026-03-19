@@ -45,7 +45,7 @@ export const MIGRATE_LAUNCH_DISCRIMINATOR = new Uint8Array([
 
 export function getMigrateLaunchDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    MIGRATE_LAUNCH_DISCRIMINATOR
+    MIGRATE_LAUNCH_DISCRIMINATOR,
   );
 }
 
@@ -121,7 +121,7 @@ export type MigrateLaunchInstructionDataArgs = {};
 export function getMigrateLaunchInstructionDataEncoder(): FixedSizeEncoder<MigrateLaunchInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
-    (value) => ({ ...value, discriminator: MIGRATE_LAUNCH_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: MIGRATE_LAUNCH_DISCRIMINATOR }),
   );
 }
 
@@ -137,7 +137,7 @@ export function getMigrateLaunchInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getMigrateLaunchInstructionDataEncoder(),
-    getMigrateLaunchInstructionDataDecoder()
+    getMigrateLaunchInstructionDataDecoder(),
   );
 }
 
@@ -198,7 +198,7 @@ export async function getMigrateLaunchInstructionAsync<
     TAccountSystemProgram,
     TAccountRent
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): Promise<
   MigrateLaunchInstruction<
     TProgramAddress,
@@ -251,7 +251,7 @@ export async function getMigrateLaunchInstructionAsync<
       programAddress,
       seeds: [
         getBytesEncoder().encode(
-          new Uint8Array([99, 111, 110, 102, 105, 103, 95, 118, 51])
+          new Uint8Array([99, 111, 110, 102, 105, 103, 95, 118, 51]),
         ),
       ],
     });
@@ -361,7 +361,7 @@ export function getMigrateLaunchInstruction<
     TAccountSystemProgram,
     TAccountRent
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): MigrateLaunchInstruction<
   TProgramAddress,
   TAccountConfig,
@@ -483,7 +483,7 @@ export function parseMigrateLaunchInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
+    InstructionWithData<ReadonlyUint8Array>,
 ): ParsedMigrateLaunchInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 12) {
     throw new SolanaError(
@@ -491,7 +491,7 @@ export function parseMigrateLaunchInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 12,
-      }
+      },
     );
   }
   let accountIndex = 0;

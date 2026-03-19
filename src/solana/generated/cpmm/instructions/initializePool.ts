@@ -56,7 +56,7 @@ export const INITIALIZE_POOL_DISCRIMINATOR = new Uint8Array([
 
 export function getInitializePoolDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    INITIALIZE_POOL_DISCRIMINATOR
+    INITIALIZE_POOL_DISCRIMINATOR,
   );
 }
 
@@ -155,7 +155,7 @@ export function getInitializePoolInstructionDataEncoder(): Encoder<InitializePoo
       ['liquidityMeasureSide', getU8Encoder()],
       ['numeraireMintOverride', getOptionEncoder(getAddressEncoder())],
     ]),
-    (value) => ({ ...value, discriminator: INITIALIZE_POOL_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: INITIALIZE_POOL_DISCRIMINATOR }),
   );
 }
 
@@ -177,7 +177,7 @@ export function getInitializePoolInstructionDataCodec(): Codec<
 > {
   return combineCodec(
     getInitializePoolInstructionDataEncoder(),
-    getInitializePoolInstructionDataDecoder()
+    getInitializePoolInstructionDataDecoder(),
   );
 }
 
@@ -244,7 +244,7 @@ export async function getInitializePoolInstructionAsync<
     TAccountSystemProgram,
     TAccountRent
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): Promise<
   InitializePoolInstruction<
     TProgramAddress,
@@ -300,14 +300,14 @@ export async function getInitializePoolInstructionAsync<
         getAddressEncoder().encode(
           getAddressFromResolvedInstructionAccount(
             'token0Mint',
-            accounts.token0Mint.value
-          )
+            accounts.token0Mint.value,
+          ),
         ),
         getAddressEncoder().encode(
           getAddressFromResolvedInstructionAccount(
             'token1Mint',
-            accounts.token1Mint.value
-          )
+            accounts.token1Mint.value,
+          ),
         ),
       ],
     });
@@ -320,10 +320,10 @@ export async function getInitializePoolInstructionAsync<
           new Uint8Array([
             112, 114, 111, 116, 111, 99, 111, 108, 95, 112, 111, 115, 105, 116,
             105, 111, 110,
-          ])
+          ]),
         ),
         getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount('pool', accounts.pool.value)
+          getAddressFromResolvedInstructionAccount('pool', accounts.pool.value),
         ),
       ],
     });
@@ -333,10 +333,10 @@ export async function getInitializePoolInstructionAsync<
       programAddress,
       seeds: [
         getBytesEncoder().encode(
-          new Uint8Array([97, 117, 116, 104, 111, 114, 105, 116, 121])
+          new Uint8Array([97, 117, 116, 104, 111, 114, 105, 116, 121]),
         ),
         getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount('pool', accounts.pool.value)
+          getAddressFromResolvedInstructionAccount('pool', accounts.pool.value),
         ),
       ],
     });
@@ -371,7 +371,7 @@ export async function getInitializePoolInstructionAsync<
       getAccountMeta('rent', accounts.rent),
     ],
     data: getInitializePoolInstructionDataEncoder().encode(
-      args as InitializePoolInstructionDataArgs
+      args as InitializePoolInstructionDataArgs,
     ),
     programAddress,
   } as InitializePoolInstruction<
@@ -454,7 +454,7 @@ export function getInitializePoolInstruction<
     TAccountSystemProgram,
     TAccountRent
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): InitializePoolInstruction<
   TProgramAddress,
   TAccountConfig,
@@ -530,7 +530,7 @@ export function getInitializePoolInstruction<
       getAccountMeta('rent', accounts.rent),
     ],
     data: getInitializePoolInstructionDataEncoder().encode(
-      args as InitializePoolInstructionDataArgs
+      args as InitializePoolInstructionDataArgs,
     ),
     programAddress,
   } as InitializePoolInstruction<
@@ -578,7 +578,7 @@ export function parseInitializePoolInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
+    InstructionWithData<ReadonlyUint8Array>,
 ): ParsedInitializePoolInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 12) {
     throw new SolanaError(
@@ -586,7 +586,7 @@ export function parseInitializePoolInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 12,
-      }
+      },
     );
   }
   let accountIndex = 0;

@@ -53,7 +53,7 @@ export const ADD_LIQUIDITY_DISCRIMINATOR = new Uint8Array([
 
 export function getAddLiquidityDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    ADD_LIQUIDITY_DISCRIMINATOR
+    ADD_LIQUIDITY_DISCRIMINATOR,
   );
 }
 
@@ -150,7 +150,7 @@ export function getAddLiquidityInstructionDataEncoder(): FixedSizeEncoder<AddLiq
       ['minSharesOut', getU128Encoder()],
       ['updateOracle', getBooleanEncoder()],
     ]),
-    (value) => ({ ...value, discriminator: ADD_LIQUIDITY_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: ADD_LIQUIDITY_DISCRIMINATOR }),
   );
 }
 
@@ -170,7 +170,7 @@ export function getAddLiquidityInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getAddLiquidityInstructionDataEncoder(),
-    getAddLiquidityInstructionDataDecoder()
+    getAddLiquidityInstructionDataDecoder(),
   );
 }
 
@@ -243,7 +243,7 @@ export async function getAddLiquidityInstructionAsync<
     TAccountTokenProgram,
     TAccountOracle
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): Promise<
   AddLiquidityInstruction<
     TProgramAddress,
@@ -300,10 +300,10 @@ export async function getAddLiquidityInstructionAsync<
       programAddress,
       seeds: [
         getBytesEncoder().encode(
-          new Uint8Array([97, 117, 116, 104, 111, 114, 105, 116, 121])
+          new Uint8Array([97, 117, 116, 104, 111, 114, 105, 116, 121]),
         ),
         getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount('pool', accounts.pool.value)
+          getAddressFromResolvedInstructionAccount('pool', accounts.pool.value),
         ),
       ],
     });
@@ -332,7 +332,7 @@ export async function getAddLiquidityInstructionAsync<
       getAccountMeta('oracle', accounts.oracle),
     ],
     data: getAddLiquidityInstructionDataEncoder().encode(
-      args as AddLiquidityInstructionDataArgs
+      args as AddLiquidityInstructionDataArgs,
     ),
     programAddress,
   } as AddLiquidityInstruction<
@@ -423,7 +423,7 @@ export function getAddLiquidityInstruction<
     TAccountTokenProgram,
     TAccountOracle
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): AddLiquidityInstruction<
   TProgramAddress,
   TAccountConfig,
@@ -497,7 +497,7 @@ export function getAddLiquidityInstruction<
       getAccountMeta('oracle', accounts.oracle),
     ],
     data: getAddLiquidityInstructionDataEncoder().encode(
-      args as AddLiquidityInstructionDataArgs
+      args as AddLiquidityInstructionDataArgs,
     ),
     programAddress,
   } as AddLiquidityInstruction<
@@ -549,7 +549,7 @@ export function parseAddLiquidityInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
+    InstructionWithData<ReadonlyUint8Array>,
 ): ParsedAddLiquidityInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 14) {
     throw new SolanaError(
@@ -557,7 +557,7 @@ export function parseAddLiquidityInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 14,
-      }
+      },
     );
   }
   let accountIndex = 0;

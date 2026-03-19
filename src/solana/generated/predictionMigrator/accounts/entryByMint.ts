@@ -43,7 +43,7 @@ export const ENTRY_BY_MINT_DISCRIMINATOR = new Uint8Array([
 
 export function getEntryByMintDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    ENTRY_BY_MINT_DISCRIMINATOR
+    ENTRY_BY_MINT_DISCRIMINATOR,
   );
 }
 
@@ -85,7 +85,7 @@ export function getEntryByMintEncoder(): FixedSizeEncoder<EntryByMintArgs> {
       ['bump', getU8Encoder()],
       ['reserved', fixEncoderSize(getBytesEncoder(), 7)],
     ]),
-    (value) => ({ ...value, discriminator: ENTRY_BY_MINT_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: ENTRY_BY_MINT_DISCRIMINATOR }),
   );
 }
 
@@ -110,24 +110,24 @@ export function getEntryByMintCodec(): FixedSizeCodec<
 }
 
 export function decodeEntryByMint<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress>
+  encodedAccount: EncodedAccount<TAddress>,
 ): Account<EntryByMint, TAddress>;
 export function decodeEntryByMint<TAddress extends string = string>(
-  encodedAccount: MaybeEncodedAccount<TAddress>
+  encodedAccount: MaybeEncodedAccount<TAddress>,
 ): MaybeAccount<EntryByMint, TAddress>;
 export function decodeEntryByMint<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>
+  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>,
 ): Account<EntryByMint, TAddress> | MaybeAccount<EntryByMint, TAddress> {
   return decodeAccount(
     encodedAccount as MaybeEncodedAccount<TAddress>,
-    getEntryByMintDecoder()
+    getEntryByMintDecoder(),
   );
 }
 
 export async function fetchEntryByMint<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
-  config?: FetchAccountConfig
+  config?: FetchAccountConfig,
 ): Promise<Account<EntryByMint, TAddress>> {
   const maybeAccount = await fetchMaybeEntryByMint(rpc, address, config);
   assertAccountExists(maybeAccount);
@@ -137,7 +137,7 @@ export async function fetchEntryByMint<TAddress extends string = string>(
 export async function fetchMaybeEntryByMint<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
-  config?: FetchAccountConfig
+  config?: FetchAccountConfig,
 ): Promise<MaybeAccount<EntryByMint, TAddress>> {
   const maybeAccount = await fetchEncodedAccount(rpc, address, config);
   return decodeEntryByMint(maybeAccount);
@@ -146,7 +146,7 @@ export async function fetchMaybeEntryByMint<TAddress extends string = string>(
 export async function fetchAllEntryByMint(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
-  config?: FetchAccountsConfig
+  config?: FetchAccountsConfig,
 ): Promise<Account<EntryByMint>[]> {
   const maybeAccounts = await fetchAllMaybeEntryByMint(rpc, addresses, config);
   assertAccountsExist(maybeAccounts);
@@ -156,7 +156,7 @@ export async function fetchAllEntryByMint(
 export async function fetchAllMaybeEntryByMint(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
-  config?: FetchAccountsConfig
+  config?: FetchAccountsConfig,
 ): Promise<MaybeAccount<EntryByMint>[]> {
   const maybeAccounts = await fetchEncodedAccounts(rpc, addresses, config);
   return maybeAccounts.map((maybeAccount) => decodeEntryByMint(maybeAccount));

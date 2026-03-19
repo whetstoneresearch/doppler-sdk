@@ -55,23 +55,23 @@ export enum TrustedOracleAccount {
 }
 
 export function identifyTrustedOracleAccount(
-  account: { data: ReadonlyUint8Array } | ReadonlyUint8Array
+  account: { data: ReadonlyUint8Array } | ReadonlyUint8Array,
 ): TrustedOracleAccount {
   const data = 'data' in account ? account.data : account;
   if (
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([97, 156, 157, 189, 194, 73, 8, 15])
+        new Uint8Array([97, 156, 157, 189, 194, 73, 8, 15]),
       ),
-      0
+      0,
     )
   ) {
     return TrustedOracleAccount.OracleState;
   }
   throw new SolanaError(
     SOLANA_ERROR__PROGRAM_CLIENTS__FAILED_TO_IDENTIFY_ACCOUNT,
-    { accountData: data, programName: 'trustedOracle' }
+    { accountData: data, programName: 'trustedOracle' },
   );
 }
 
@@ -81,16 +81,16 @@ export enum TrustedOracleInstruction {
 }
 
 export function identifyTrustedOracleInstruction(
-  instruction: { data: ReadonlyUint8Array } | ReadonlyUint8Array
+  instruction: { data: ReadonlyUint8Array } | ReadonlyUint8Array,
 ): TrustedOracleInstruction {
   const data = 'data' in instruction ? instruction.data : instruction;
   if (
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([171, 61, 218, 56, 127, 115, 12, 217])
+        new Uint8Array([171, 61, 218, 56, 127, 115, 12, 217]),
       ),
-      0
+      0,
     )
   ) {
     return TrustedOracleInstruction.Finalize;
@@ -99,16 +99,16 @@ export function identifyTrustedOracleInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([144, 223, 131, 120, 196, 253, 181, 99])
+        new Uint8Array([144, 223, 131, 120, 196, 253, 181, 99]),
       ),
-      0
+      0,
     )
   ) {
     return TrustedOracleInstruction.InitializeOracle;
   }
   throw new SolanaError(
     SOLANA_ERROR__PROGRAM_CLIENTS__FAILED_TO_IDENTIFY_INSTRUCTION,
-    { instructionData: data, programName: 'trustedOracle' }
+    { instructionData: data, programName: 'trustedOracle' },
   );
 }
 
@@ -123,7 +123,7 @@ export type ParsedTrustedOracleInstruction<
     } & ParsedInitializeOracleInstruction<TProgram>);
 
 export function parseTrustedOracleInstruction<TProgram extends string>(
-  instruction: Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array>
+  instruction: Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array>,
 ): ParsedTrustedOracleInstruction<TProgram> {
   const instructionType = identifyTrustedOracleInstruction(instruction);
   switch (instructionType) {
@@ -147,7 +147,7 @@ export function parseTrustedOracleInstruction<TProgram extends string>(
         {
           instructionType: instructionType as string,
           programName: 'trustedOracle',
-        }
+        },
       );
   }
 }
@@ -164,10 +164,10 @@ export type TrustedOraclePluginAccounts = {
 
 export type TrustedOraclePluginInstructions = {
   finalize: (
-    input: FinalizeInput
+    input: FinalizeInput,
   ) => ReturnType<typeof getFinalizeInstruction> & SelfPlanAndSendFunctions;
   initializeOracle: (
-    input: InitializeOracleInput
+    input: InitializeOracleInput,
   ) => ReturnType<typeof getInitializeOracleInstruction> &
     SelfPlanAndSendFunctions;
 };
@@ -192,7 +192,7 @@ export function trustedOracleProgram() {
           initializeOracle: (input) =>
             addSelfPlanAndSendFunctions(
               client,
-              getInitializeOracleInstruction(input)
+              getInitializeOracleInstruction(input),
             ),
         },
       },

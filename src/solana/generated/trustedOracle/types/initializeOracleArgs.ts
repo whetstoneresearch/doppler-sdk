@@ -54,6 +54,6 @@ export function getInitializeOracleArgsCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getInitializeOracleArgsEncoder(),
-    getInitializeOracleArgsDecoder()
+    getInitializeOracleArgsDecoder(),
   );
 }

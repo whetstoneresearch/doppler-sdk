@@ -44,7 +44,7 @@ export const PREVIEW_SWAP_EXACT_IN_DISCRIMINATOR = new Uint8Array([
 
 export function getPreviewSwapExactInDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    PREVIEW_SWAP_EXACT_IN_DISCRIMINATOR
+    PREVIEW_SWAP_EXACT_IN_DISCRIMINATOR,
   );
 }
 
@@ -96,7 +96,7 @@ export function getPreviewSwapExactInInstructionDataEncoder(): FixedSizeEncoder<
     (value) => ({
       ...value,
       discriminator: PREVIEW_SWAP_EXACT_IN_DISCRIMINATOR,
-    })
+    }),
   );
 }
 
@@ -114,7 +114,7 @@ export function getPreviewSwapExactInInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getPreviewSwapExactInInstructionDataEncoder(),
-    getPreviewSwapExactInInstructionDataDecoder()
+    getPreviewSwapExactInInstructionDataDecoder(),
   );
 }
 
@@ -146,7 +146,7 @@ export function getPreviewSwapExactInInstruction<
     TAccountQuoteVault,
     TAccountSentinelProgram
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): PreviewSwapExactInInstruction<
   TProgramAddress,
   TAccountLaunch,
@@ -184,7 +184,7 @@ export function getPreviewSwapExactInInstruction<
       getAccountMeta('sentinelProgram', accounts.sentinelProgram),
     ],
     data: getPreviewSwapExactInInstructionDataEncoder().encode(
-      args as PreviewSwapExactInInstructionDataArgs
+      args as PreviewSwapExactInInstructionDataArgs,
     ),
     programAddress,
   } as PreviewSwapExactInInstruction<
@@ -217,7 +217,7 @@ export function parsePreviewSwapExactInInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
+    InstructionWithData<ReadonlyUint8Array>,
 ): ParsedPreviewSwapExactInInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 4) {
     throw new SolanaError(
@@ -225,7 +225,7 @@ export function parsePreviewSwapExactInInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 4,
-      }
+      },
     );
   }
   let accountIndex = 0;
@@ -249,7 +249,7 @@ export function parsePreviewSwapExactInInstruction<
       sentinelProgram: getNextOptionalAccount(),
     },
     data: getPreviewSwapExactInInstructionDataDecoder().decode(
-      instruction.data
+      instruction.data,
     ),
   };
 }

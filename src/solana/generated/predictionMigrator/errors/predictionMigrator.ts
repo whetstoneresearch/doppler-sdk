@@ -106,7 +106,7 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 export function getPredictionMigratorErrorMessage(
-  code: PredictionMigratorError
+  code: PredictionMigratorError,
 ): string {
   if (process.env.NODE_ENV !== 'production') {
     return (
@@ -124,13 +124,13 @@ export function isPredictionMigratorError<
   transactionMessage: {
     instructions: Record<number, { programAddress: Address }>;
   },
-  code?: TProgramErrorCode
+  code?: TProgramErrorCode,
 ): error is SolanaError<typeof SOLANA_ERROR__INSTRUCTION_ERROR__CUSTOM> &
   Readonly<{ context: Readonly<{ code: TProgramErrorCode }> }> {
   return isProgramError<TProgramErrorCode>(
     error,
     transactionMessage,
     PREDICTION_MIGRATOR_PROGRAM_ADDRESS,
-    code
+    code,
   );
 }

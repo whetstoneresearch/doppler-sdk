@@ -1,6 +1,11 @@
 import type { Address } from '@solana/kit';
-import type { Instruction, AccountMeta } from '@solana/kit';
+import type { Instruction, AccountMeta, AccountLookupMeta } from '@solana/kit';
 import type { TransactionSigner, AccountSignerMeta } from '@solana/kit';
+import {
+  AccountRole,
+  getProgramDerivedAddress,
+  getAddressEncoder,
+} from '@solana/kit';
 import {
   ACCOUNT_ROLE_READONLY,
   ACCOUNT_ROLE_SIGNER,
@@ -8,12 +13,15 @@ import {
   ACCOUNT_ROLE_WRITABLE_SIGNER,
   SYSTEM_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
+  TOKEN_METADATA_PROGRAM_ID,
 } from '../../core/constants.js';
 import {
   CURVE_KIND_XYK,
   CURVE_PARAMS_FORMAT_XYK_V0,
   INITIALIZER_PROGRAM_ID,
 } from '../constants.js';
+import { CPMM_MIGRATOR_PROGRAM_ID } from '../../migrators/cpmmMigrator/constants.js';
+import { PREDICTION_MIGRATOR_PROGRAM_ADDRESS } from '../../generated/predictionMigrator/programs/predictionMigrator.js';
 import type { InitializeLaunchArgsArgs } from '../../generated/initializer/index.js';
 import { getInitializeLaunchInstructionDataEncoder } from '../../generated/initializer/index.js';
 
@@ -44,6 +52,42 @@ function createAccountMeta(
   return { address: value, role };
 }
 
+/**
+ * Derive the Metaplex token metadata PDA for a given mint.
+ * Seeds: ["metadata", TOKEN_METADATA_PROGRAM_ID, mint]
+ *
+ * Pass the result as `metadataAccount` in InitializeLaunchAccounts
+ * whenever `metadataName` is non-empty.
+ */
+export async function getTokenMetadataAddress(mint: Address): Promise<Address> {
+  const encoder = getAddressEncoder();
+  const [metadataAddress] = await getProgramDerivedAddress({
+    programAddress: TOKEN_METADATA_PROGRAM_ID,
+    seeds: [
+      new TextEncoder().encode('metadata'),
+      encoder.encode(TOKEN_METADATA_PROGRAM_ID),
+      encoder.encode(mint),
+    ],
+  });
+  return metadataAddress;
+}
+
+/**
+ * Known index of each static account in the Doppler devnet ALT
+ * (7r5rdLkGMzTq5Q2kBhkePw4ZTeZEooHgTXktYoamNmVq).
+ */
+const ALT_INDEX: Record<string, number> = {
+  [TOKEN_PROGRAM_ID]: 0,
+  [SYSTEM_PROGRAM_ID]: 1,
+  SysvarRent111111111111111111111111111111111: 2,
+  [INITIALIZER_PROGRAM_ID]: 3,
+  [TOKEN_METADATA_PROGRAM_ID]: 4,
+  [CPMM_MIGRATOR_PROGRAM_ID]: 5,
+  So11111111111111111111111111111111111111112: 6,
+  // index 7 = config PDA — resolved at call time from accounts.config
+  [PREDICTION_MIGRATOR_PROGRAM_ADDRESS]: 8,
+};
+
 export interface InitializeLaunchAccounts {
   config: Address;
   launch: Address;
@@ -53,11 +97,24 @@ export interface InitializeLaunchAccounts {
   baseVault: AddressOrSigner;
   quoteVault: AddressOrSigner;
   payer: AddressOrSigner;
-  authority?: AddressOrSigner; // optional creator/admin signer
-  migratorProgram?: Address; // optional module hook program
+  authority?: AddressOrSigner;
+  migratorProgram?: Address;
   tokenProgram?: Address;
   systemProgram?: Address;
   rent: Address;
+  /** Required when args.metadataName is non-empty. Derive with getTokenMetadataAddress(baseMint). */
+  metadataAccount?: Address;
+  /**
+   * Optional Address Lookup Table to reference for static accounts.
+   * When provided, constant non-signer accounts (tokenProgram, systemProgram,
+   * rent, migratorProgram, quoteMint when WSOL, metadataProgram, config) are
+   * encoded as ALT lookup metas instead of 32-byte static keys, reducing
+   * transaction size by ~200+ bytes and enabling V4 metadata within the
+   * 1232-byte Solana transaction limit.
+   *
+   * Use DOPPLER_DEVNET_ALT for devnet.
+   */
+  addressLookupTable?: Address;
 }
 
 function validateInitializeLaunchCurveParams(
@@ -97,38 +154,71 @@ export function createInitializeLaunchInstruction(
     tokenProgram = TOKEN_PROGRAM_ID,
     systemProgram = SYSTEM_PROGRAM_ID,
     rent,
+    metadataAccount,
+    addressLookupTable: alt,
   } = accounts;
 
-  const keys: (AccountMeta | AccountSignerMeta)[] = [
-    { address: config, role: ACCOUNT_ROLE_READONLY },
+  const withMetadata = Boolean(
+    args.metadataName && args.metadataName.length > 0,
+  );
+
+  if (withMetadata && !metadataAccount) {
+    throw new Error(
+      'metadataName is set but metadataAccount was not provided. ' +
+        'Derive it with await initializer.getTokenMetadataAddress(baseMintAddress).',
+    );
+  }
+
+  // Build an ALT index map that also includes the config PDA at index 7.
+  const altIndexMap: Record<string, number> = alt
+    ? { ...ALT_INDEX, [config]: 7 }
+    : {};
+
+  function staticOrLookup(
+    addr: Address,
+    role: AccountRole.READONLY | AccountRole.WRITABLE,
+  ): AccountMeta | AccountLookupMeta {
+    if (alt && altIndexMap[addr] !== undefined) {
+      return {
+        address: addr,
+        role,
+        lookupTableAddress: alt,
+        addressIndex: altIndexMap[addr]!,
+      };
+    }
+    return { address: addr, role };
+  }
+
+  const keys: (AccountMeta | AccountSignerMeta | AccountLookupMeta)[] = [
+    staticOrLookup(config, AccountRole.READONLY),
     { address: launch, role: ACCOUNT_ROLE_WRITABLE },
     { address: launchAuthority, role: ACCOUNT_ROLE_READONLY },
     createAccountMeta(baseMint, ACCOUNT_ROLE_WRITABLE_SIGNER),
-    { address: quoteMint, role: ACCOUNT_ROLE_READONLY },
+    staticOrLookup(quoteMint, AccountRole.READONLY),
     createAccountMeta(baseVault, ACCOUNT_ROLE_WRITABLE_SIGNER),
     createAccountMeta(quoteVault, ACCOUNT_ROLE_WRITABLE_SIGNER),
     createAccountMeta(payer, ACCOUNT_ROLE_WRITABLE_SIGNER),
   ];
 
-  // Optional accounts (Anchor will treat them as None if constraints don't match).
   if (authority) {
     keys.push(createAccountMeta(authority, ACCOUNT_ROLE_SIGNER));
   }
   if (migratorProgram) {
-    keys.push({ address: migratorProgram, role: ACCOUNT_ROLE_READONLY });
+    keys.push(staticOrLookup(migratorProgram, AccountRole.READONLY));
   }
 
-  keys.push({ address: tokenProgram, role: ACCOUNT_ROLE_READONLY });
-  keys.push({ address: systemProgram, role: ACCOUNT_ROLE_READONLY });
-  keys.push({ address: rent, role: ACCOUNT_ROLE_READONLY });
+  keys.push(staticOrLookup(tokenProgram, AccountRole.READONLY));
+  keys.push(staticOrLookup(systemProgram, AccountRole.READONLY));
+  keys.push(staticOrLookup(rent, AccountRole.READONLY));
+
+  if (withMetadata) {
+    keys.push({ address: metadataAccount!, role: ACCOUNT_ROLE_WRITABLE });
+    keys.push(staticOrLookup(TOKEN_METADATA_PROGRAM_ID, AccountRole.READONLY));
+  }
 
   const data = new Uint8Array(
     getInitializeLaunchInstructionDataEncoder().encode(args),
   );
 
-  return {
-    programAddress: programId,
-    accounts: keys,
-    data,
-  };
+  return { programAddress: programId, accounts: keys, data };
 }

@@ -41,6 +41,6 @@ export function getUpdateTradingFlagsArgsCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getUpdateTradingFlagsArgsEncoder(),
-    getUpdateTradingFlagsArgsDecoder()
+    getUpdateTradingFlagsArgsDecoder(),
   );
 }

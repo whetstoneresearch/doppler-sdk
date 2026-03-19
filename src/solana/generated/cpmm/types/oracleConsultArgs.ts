@@ -35,6 +35,6 @@ export function getOracleConsultArgsCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getOracleConsultArgsEncoder(),
-    getOracleConsultArgsDecoder()
+    getOracleConsultArgsDecoder(),
   );
 }

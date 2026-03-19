@@ -2,6 +2,7 @@ import { BPS_DENOM, Q64_ONE } from './constants.js';
 import type {
   Pool,
   SwapQuote,
+  SwapQuoteExactOut,
   AddLiquidityQuote,
   RemoveLiquidityQuote,
   SwapDirection,
@@ -190,7 +191,7 @@ export function getSwapQuoteExactOut(
   pool: Pool,
   amountOut: bigint,
   direction: SwapDirection,
-): { amountIn: bigint; feeTotal: bigint } {
+): SwapQuoteExactOut {
   // Get reserves based on direction
   const [reserveIn, reserveOut] =
     direction === 0
@@ -386,7 +387,7 @@ export function getK(pool: Pool): bigint {
  * @param pool Pool data
  * @param side 0 = denominate in token0, 1 = denominate in token1
  */
-export function getTvl(pool: Pool, side: 0 | 1 = 0): bigint {
+export function getTvl(pool: Pool, side: SwapDirection = 0): bigint {
   if (side === 0) {
     // TVL in token0: reserve0 + (reserve1 * price1)
     // where price1 = reserve0/reserve1 (price of 1 in terms of 0)

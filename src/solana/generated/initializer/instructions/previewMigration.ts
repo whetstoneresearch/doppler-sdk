@@ -40,7 +40,7 @@ export const PREVIEW_MIGRATION_DISCRIMINATOR = new Uint8Array([
 
 export function getPreviewMigrationDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    PREVIEW_MIGRATION_DISCRIMINATOR
+    PREVIEW_MIGRATION_DISCRIMINATOR,
   );
 }
 
@@ -80,7 +80,7 @@ export type PreviewMigrationInstructionDataArgs = {};
 export function getPreviewMigrationInstructionDataEncoder(): FixedSizeEncoder<PreviewMigrationInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
-    (value) => ({ ...value, discriminator: PREVIEW_MIGRATION_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: PREVIEW_MIGRATION_DISCRIMINATOR }),
   );
 }
 
@@ -96,7 +96,7 @@ export function getPreviewMigrationInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getPreviewMigrationInstructionDataEncoder(),
-    getPreviewMigrationInstructionDataDecoder()
+    getPreviewMigrationInstructionDataDecoder(),
   );
 }
 
@@ -125,7 +125,7 @@ export function getPreviewMigrationInstruction<
     TAccountBaseVault,
     TAccountQuoteVault
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): PreviewMigrationInstruction<
   TProgramAddress,
   TAccountLaunch,
@@ -187,7 +187,7 @@ export function parsePreviewMigrationInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
+    InstructionWithData<ReadonlyUint8Array>,
 ): ParsedPreviewMigrationInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 4) {
     throw new SolanaError(
@@ -195,7 +195,7 @@ export function parsePreviewMigrationInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 4,
-      }
+      },
     );
   }
   let accountIndex = 0;

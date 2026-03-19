@@ -47,7 +47,7 @@ export const CLAIM_RECEIPT_DISCRIMINATOR = new Uint8Array([
 
 export function getClaimReceiptDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    CLAIM_RECEIPT_DISCRIMINATOR
+    CLAIM_RECEIPT_DISCRIMINATOR,
   );
 }
 
@@ -94,7 +94,7 @@ export function getClaimReceiptEncoder(): FixedSizeEncoder<ClaimReceiptArgs> {
       ['bump', getU8Encoder()],
       ['reserved', fixEncoderSize(getBytesEncoder(), 7)],
     ]),
-    (value) => ({ ...value, discriminator: CLAIM_RECEIPT_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: CLAIM_RECEIPT_DISCRIMINATOR }),
   );
 }
 
@@ -120,24 +120,24 @@ export function getClaimReceiptCodec(): FixedSizeCodec<
 }
 
 export function decodeClaimReceipt<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress>
+  encodedAccount: EncodedAccount<TAddress>,
 ): Account<ClaimReceipt, TAddress>;
 export function decodeClaimReceipt<TAddress extends string = string>(
-  encodedAccount: MaybeEncodedAccount<TAddress>
+  encodedAccount: MaybeEncodedAccount<TAddress>,
 ): MaybeAccount<ClaimReceipt, TAddress>;
 export function decodeClaimReceipt<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>
+  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>,
 ): Account<ClaimReceipt, TAddress> | MaybeAccount<ClaimReceipt, TAddress> {
   return decodeAccount(
     encodedAccount as MaybeEncodedAccount<TAddress>,
-    getClaimReceiptDecoder()
+    getClaimReceiptDecoder(),
   );
 }
 
 export async function fetchClaimReceipt<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
-  config?: FetchAccountConfig
+  config?: FetchAccountConfig,
 ): Promise<Account<ClaimReceipt, TAddress>> {
   const maybeAccount = await fetchMaybeClaimReceipt(rpc, address, config);
   assertAccountExists(maybeAccount);
@@ -147,7 +147,7 @@ export async function fetchClaimReceipt<TAddress extends string = string>(
 export async function fetchMaybeClaimReceipt<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
-  config?: FetchAccountConfig
+  config?: FetchAccountConfig,
 ): Promise<MaybeAccount<ClaimReceipt, TAddress>> {
   const maybeAccount = await fetchEncodedAccount(rpc, address, config);
   return decodeClaimReceipt(maybeAccount);
@@ -156,7 +156,7 @@ export async function fetchMaybeClaimReceipt<TAddress extends string = string>(
 export async function fetchAllClaimReceipt(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
-  config?: FetchAccountsConfig
+  config?: FetchAccountsConfig,
 ): Promise<Account<ClaimReceipt>[]> {
   const maybeAccounts = await fetchAllMaybeClaimReceipt(rpc, addresses, config);
   assertAccountsExist(maybeAccounts);
@@ -166,7 +166,7 @@ export async function fetchAllClaimReceipt(
 export async function fetchAllMaybeClaimReceipt(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
-  config?: FetchAccountsConfig
+  config?: FetchAccountsConfig,
 ): Promise<MaybeAccount<ClaimReceipt>[]> {
   const maybeAccounts = await fetchEncodedAccounts(rpc, addresses, config);
   return maybeAccounts.map((maybeAccount) => decodeClaimReceipt(maybeAccount));

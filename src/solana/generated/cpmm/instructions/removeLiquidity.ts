@@ -53,7 +53,7 @@ export const REMOVE_LIQUIDITY_DISCRIMINATOR = new Uint8Array([
 
 export function getRemoveLiquidityDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    REMOVE_LIQUIDITY_DISCRIMINATOR
+    REMOVE_LIQUIDITY_DISCRIMINATOR,
   );
 }
 
@@ -150,7 +150,7 @@ export function getRemoveLiquidityInstructionDataEncoder(): FixedSizeEncoder<Rem
       ['minAmount1Out', getU64Encoder()],
       ['updateOracle', getBooleanEncoder()],
     ]),
-    (value) => ({ ...value, discriminator: REMOVE_LIQUIDITY_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: REMOVE_LIQUIDITY_DISCRIMINATOR }),
   );
 }
 
@@ -170,7 +170,7 @@ export function getRemoveLiquidityInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getRemoveLiquidityInstructionDataEncoder(),
-    getRemoveLiquidityInstructionDataDecoder()
+    getRemoveLiquidityInstructionDataDecoder(),
   );
 }
 
@@ -243,7 +243,7 @@ export async function getRemoveLiquidityInstructionAsync<
     TAccountTokenProgram,
     TAccountOracle
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): Promise<
   RemoveLiquidityInstruction<
     TProgramAddress,
@@ -300,10 +300,10 @@ export async function getRemoveLiquidityInstructionAsync<
       programAddress,
       seeds: [
         getBytesEncoder().encode(
-          new Uint8Array([97, 117, 116, 104, 111, 114, 105, 116, 121])
+          new Uint8Array([97, 117, 116, 104, 111, 114, 105, 116, 121]),
         ),
         getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount('pool', accounts.pool.value)
+          getAddressFromResolvedInstructionAccount('pool', accounts.pool.value),
         ),
       ],
     });
@@ -332,7 +332,7 @@ export async function getRemoveLiquidityInstructionAsync<
       getAccountMeta('oracle', accounts.oracle),
     ],
     data: getRemoveLiquidityInstructionDataEncoder().encode(
-      args as RemoveLiquidityInstructionDataArgs
+      args as RemoveLiquidityInstructionDataArgs,
     ),
     programAddress,
   } as RemoveLiquidityInstruction<
@@ -423,7 +423,7 @@ export function getRemoveLiquidityInstruction<
     TAccountTokenProgram,
     TAccountOracle
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): RemoveLiquidityInstruction<
   TProgramAddress,
   TAccountConfig,
@@ -497,7 +497,7 @@ export function getRemoveLiquidityInstruction<
       getAccountMeta('oracle', accounts.oracle),
     ],
     data: getRemoveLiquidityInstructionDataEncoder().encode(
-      args as RemoveLiquidityInstructionDataArgs
+      args as RemoveLiquidityInstructionDataArgs,
     ),
     programAddress,
   } as RemoveLiquidityInstruction<
@@ -549,7 +549,7 @@ export function parseRemoveLiquidityInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
+    InstructionWithData<ReadonlyUint8Array>,
 ): ParsedRemoveLiquidityInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 14) {
     throw new SolanaError(
@@ -557,7 +557,7 @@ export function parseRemoveLiquidityInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 14,
-      }
+      },
     );
   }
   let accountIndex = 0;

@@ -175,7 +175,7 @@ export function getMigrateInstructionDataEncoder(): FixedSizeEncoder<MigrateInst
       ['baseForDistribution', getU64Encoder()],
       ['baseForLiquidity', getU64Encoder()],
     ]),
-    (value) => ({ ...value, discriminator: MIGRATE_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: MIGRATE_DISCRIMINATOR }),
   );
 }
 
@@ -193,7 +193,7 @@ export function getMigrateInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getMigrateInstructionDataEncoder(),
-    getMigrateInstructionDataDecoder()
+    getMigrateInstructionDataDecoder(),
   );
 }
 
@@ -303,7 +303,7 @@ export async function getMigrateInstructionAsync<
     TAccountCpmmProgram,
     TAccountAdminBaseAta
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): Promise<
   MigrateInstruction<
     TProgramAddress,
@@ -399,8 +399,8 @@ export async function getMigrateInstructionAsync<
         getAddressEncoder().encode(
           getAddressFromResolvedInstructionAccount(
             'launch',
-            accounts.launch.value
-          )
+            accounts.launch.value,
+          ),
         ),
       ],
     });
@@ -436,7 +436,7 @@ export async function getMigrateInstructionAsync<
       getAccountMeta('adminBaseAta', accounts.adminBaseAta),
     ],
     data: getMigrateInstructionDataEncoder().encode(
-      args as MigrateInstructionDataArgs
+      args as MigrateInstructionDataArgs,
     ),
     programAddress,
   } as MigrateInstruction<
@@ -571,7 +571,7 @@ export function getMigrateInstruction<
     TAccountCpmmProgram,
     TAccountAdminBaseAta
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): MigrateInstruction<
   TProgramAddress,
   TAccountInitializerConfig,
@@ -688,7 +688,7 @@ export function getMigrateInstruction<
       getAccountMeta('adminBaseAta', accounts.adminBaseAta),
     ],
     data: getMigrateInstructionDataEncoder().encode(
-      args as MigrateInstructionDataArgs
+      args as MigrateInstructionDataArgs,
     ),
     programAddress,
   } as MigrateInstruction<
@@ -765,7 +765,7 @@ export function parseMigrateInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
+    InstructionWithData<ReadonlyUint8Array>,
 ): ParsedMigrateInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 21) {
     throw new SolanaError(
@@ -773,7 +773,7 @@ export function parseMigrateInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 21,
-      }
+      },
     );
   }
   let accountIndex = 0;

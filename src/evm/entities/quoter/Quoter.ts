@@ -88,7 +88,7 @@ export class Quoter {
             initializedTicksCrossed: 0,
             gasEstimate: 0n,
           };
-        } catch (_) {
+        } catch {
           // fall through
         }
       }
@@ -157,7 +157,7 @@ export class Quoter {
             initializedTicksCrossed: 0,
             gasEstimate: 0n,
           };
-        } catch (_) {
+        } catch {
           // fall through
         }
       }

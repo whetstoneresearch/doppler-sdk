@@ -44,7 +44,7 @@ export const CLOSE_POSITION_DISCRIMINATOR = new Uint8Array([
 
 export function getClosePositionDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    CLOSE_POSITION_DISCRIMINATOR
+    CLOSE_POSITION_DISCRIMINATOR,
   );
 }
 
@@ -85,7 +85,7 @@ export type ClosePositionInstructionDataArgs = {};
 export function getClosePositionInstructionDataEncoder(): FixedSizeEncoder<ClosePositionInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
-    (value) => ({ ...value, discriminator: CLOSE_POSITION_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: CLOSE_POSITION_DISCRIMINATOR }),
   );
 }
 
@@ -101,7 +101,7 @@ export function getClosePositionInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getClosePositionInstructionDataEncoder(),
-    getClosePositionInstructionDataDecoder()
+    getClosePositionInstructionDataDecoder(),
   );
 }
 
@@ -130,7 +130,7 @@ export function getClosePositionInstruction<
     TAccountOwner,
     TAccountRentRecipient
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): ClosePositionInstruction<
   TProgramAddress,
   TAccountPool,
@@ -192,7 +192,7 @@ export function parseClosePositionInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
+    InstructionWithData<ReadonlyUint8Array>,
 ): ParsedClosePositionInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 4) {
     throw new SolanaError(
@@ -200,7 +200,7 @@ export function parseClosePositionInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 4,
-      }
+      },
     );
   }
   let accountIndex = 0;

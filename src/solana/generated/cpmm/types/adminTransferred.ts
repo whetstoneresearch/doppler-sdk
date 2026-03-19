@@ -42,6 +42,6 @@ export function getAdminTransferredCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getAdminTransferredEncoder(),
-    getAdminTransferredDecoder()
+    getAdminTransferredDecoder(),
   );
 }

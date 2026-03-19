@@ -62,6 +62,6 @@ export function getCollectProtocolFeesCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getCollectProtocolFeesEncoder(),
-    getCollectProtocolFeesDecoder()
+    getCollectProtocolFeesDecoder(),
   );
 }

@@ -47,7 +47,7 @@ export const ORACLE_STATE_DISCRIMINATOR = new Uint8Array([
 
 export function getOracleStateDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    ORACLE_STATE_DISCRIMINATOR
+    ORACLE_STATE_DISCRIMINATOR,
   );
 }
 
@@ -99,7 +99,7 @@ export function getOracleStateEncoder(): FixedSizeEncoder<OracleStateArgs> {
       ['bump', getU8Encoder()],
       ['reserved', fixEncoderSize(getBytesEncoder(), 31)],
     ]),
-    (value) => ({ ...value, discriminator: ORACLE_STATE_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: ORACLE_STATE_DISCRIMINATOR }),
   );
 }
 
@@ -126,24 +126,24 @@ export function getOracleStateCodec(): FixedSizeCodec<
 }
 
 export function decodeOracleState<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress>
+  encodedAccount: EncodedAccount<TAddress>,
 ): Account<OracleState, TAddress>;
 export function decodeOracleState<TAddress extends string = string>(
-  encodedAccount: MaybeEncodedAccount<TAddress>
+  encodedAccount: MaybeEncodedAccount<TAddress>,
 ): MaybeAccount<OracleState, TAddress>;
 export function decodeOracleState<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>
+  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>,
 ): Account<OracleState, TAddress> | MaybeAccount<OracleState, TAddress> {
   return decodeAccount(
     encodedAccount as MaybeEncodedAccount<TAddress>,
-    getOracleStateDecoder()
+    getOracleStateDecoder(),
   );
 }
 
 export async function fetchOracleState<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
-  config?: FetchAccountConfig
+  config?: FetchAccountConfig,
 ): Promise<Account<OracleState, TAddress>> {
   const maybeAccount = await fetchMaybeOracleState(rpc, address, config);
   assertAccountExists(maybeAccount);
@@ -153,7 +153,7 @@ export async function fetchOracleState<TAddress extends string = string>(
 export async function fetchMaybeOracleState<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
-  config?: FetchAccountConfig
+  config?: FetchAccountConfig,
 ): Promise<MaybeAccount<OracleState, TAddress>> {
   const maybeAccount = await fetchEncodedAccount(rpc, address, config);
   return decodeOracleState(maybeAccount);
@@ -162,7 +162,7 @@ export async function fetchMaybeOracleState<TAddress extends string = string>(
 export async function fetchAllOracleState(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
-  config?: FetchAccountsConfig
+  config?: FetchAccountsConfig,
 ): Promise<Account<OracleState>[]> {
   const maybeAccounts = await fetchAllMaybeOracleState(rpc, addresses, config);
   assertAccountsExist(maybeAccounts);
@@ -172,7 +172,7 @@ export async function fetchAllOracleState(
 export async function fetchAllMaybeOracleState(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
-  config?: FetchAccountsConfig
+  config?: FetchAccountsConfig,
 ): Promise<MaybeAccount<OracleState>[]> {
   const maybeAccounts = await fetchEncodedAccounts(rpc, addresses, config);
   return maybeAccounts.map((maybeAccount) => decodeOracleState(maybeAccount));

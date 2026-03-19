@@ -168,10 +168,7 @@ export type { ModuleAddressOverrides } from './types';
 // Export enums
 export { LockablePoolStatus } from './types';
 export { RehypeFeeRoutingMode } from './types';
-export {
-  OpeningAuctionStatus,
-  OpeningAuctionPhase,
-} from './types';
+export { OpeningAuctionStatus, OpeningAuctionPhase } from './types';
 
 // Export addresses and utilities
 export {

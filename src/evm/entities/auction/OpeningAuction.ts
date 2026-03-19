@@ -271,9 +271,7 @@ const openingAuctionEntityAbi = [
   {
     type: 'event',
     name: 'BidWithdrawn',
-    inputs: [
-      { name: 'positionId', type: 'uint256', indexed: true },
-    ],
+    inputs: [{ name: 'positionId', type: 'uint256', indexed: true }],
     anonymous: false,
   },
   {
@@ -673,7 +671,9 @@ export class OpeningAuction {
       functionName: 'nextPositionId',
     });
     if (result === 0n) {
-      throw new Error('nextPositionId returned 0, which indicates malformed contract state');
+      throw new Error(
+        'nextPositionId returned 0, which indicates malformed contract state',
+      );
     }
     return result;
   }
@@ -837,7 +837,7 @@ export class OpeningAuction {
     }
 
     // Fallback: client-side reconstruction.
-    const [position, phase, isToken0] = await Promise.all([
+    const [position, phase, _isToken0] = await Promise.all([
       this.getPosition(positionId),
       this.getPhase(),
       this.getIsToken0(),
@@ -927,9 +927,13 @@ export class OpeningAuction {
       throw new Error('Wallet client required for write operations');
     }
 
-    const { request } = await this.simulateSettleAuction(this.walletClient.account);
+    const { request } = await this.simulateSettleAuction(
+      this.walletClient.account,
+    );
     return await this.walletClient.writeContract(
-      options?.gas ? { ...(request as any), gas: options.gas } : (request as any),
+      options?.gas
+        ? { ...(request as any), gas: options.gas }
+        : (request as any),
     );
   }
 
@@ -983,7 +987,9 @@ export class OpeningAuction {
       this.walletClient.account,
     );
     return await this.walletClient.writeContract(
-      options?.gas ? { ...(request as any), gas: options.gas } : (request as any),
+      options?.gas
+        ? { ...(request as any), gas: options.gas }
+        : (request as any),
     );
   }
 
@@ -1001,7 +1007,9 @@ export class OpeningAuction {
     return await this.claimIncentives(positionId);
   }
 
-  watchAuctionSettled(options: OpeningAuctionWatchSettlementOptions): () => void {
+  watchAuctionSettled(
+    options: OpeningAuctionWatchSettlementOptions,
+  ): () => void {
     return this.rpc.watchContractEvent({
       address: this.hookAddress,
       abi: openingAuctionEntityAbi,

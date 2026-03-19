@@ -25,21 +25,21 @@ const textEncoder = new TextEncoder();
  * Sort two mints into canonical order (token0 < token1 by bytes)
  * This is required for Pool PDA derivation and instruction ordering.
  *
- * @param mintA - First mint address
- * @param mintB - Second mint address
+ * @param mint0 - First mint address
+ * @param mint1 - Second mint address
  * @returns Tuple of [token0, token1] in canonical order
  * @throws Error if mints are equal
  */
-export function sortMints(mintA: Address, mintB: Address): [Address, Address] {
-  const bytesA = addressCodec.encode(mintA);
-  const bytesB = addressCodec.encode(mintB);
+export function sortMints(mint0: Address, mint1: Address): [Address, Address] {
+  const bytesA = addressCodec.encode(mint0);
+  const bytesB = addressCodec.encode(mint1);
 
   for (let i = 0; i < 32; i++) {
     if (bytesA[i] < bytesB[i]) {
-      return [mintA, mintB];
+      return [mint0, mint1];
     }
     if (bytesA[i] > bytesB[i]) {
-      return [mintB, mintA];
+      return [mint1, mint0];
     }
   }
 
@@ -84,11 +84,11 @@ export async function getConfigAddress(
  * Note: Mints will be automatically sorted if not in canonical order.
  */
 export async function getPoolAddress(
-  mintA: Address,
-  mintB: Address,
+  mint0: Address,
+  mint1: Address,
   programId: Address = PROGRAM_ID,
 ): Promise<ProgramDerivedAddress> {
-  const [token0, token1] = sortMints(mintA, mintB);
+  const [token0, token1] = sortMints(mint0, mint1);
   return getProgramDerivedAddress({
     programAddress: programId,
     seeds: [
@@ -177,8 +177,8 @@ export async function getProtocolPositionAddress(
  * Derive all PDAs needed for pool initialization
  */
 export async function getPoolInitAddresses(
-  mintA: Address,
-  mintB: Address,
+  mint0: Address,
+  mint1: Address,
   programId: Address = PROGRAM_ID,
 ): Promise<{
   token0: Address;
@@ -188,7 +188,7 @@ export async function getPoolInitAddresses(
   config: ProgramDerivedAddress;
   protocolPosition: ProgramDerivedAddress;
 }> {
-  const [token0, token1] = sortMints(mintA, mintB);
+  const [token0, token1] = sortMints(mint0, mint1);
   const [config, pool] = await Promise.all([
     getConfigAddress(programId),
     getPoolAddress(token0, token1, programId),

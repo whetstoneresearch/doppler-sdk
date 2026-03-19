@@ -44,6 +44,6 @@ export function getSentinelAllowlistUpdatedCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getSentinelAllowlistUpdatedEncoder(),
-    getSentinelAllowlistUpdatedDecoder()
+    getSentinelAllowlistUpdatedDecoder(),
   );
 }

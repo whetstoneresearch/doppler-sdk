@@ -1,7 +1,7 @@
 import { address, type Address } from '@solana/kit';
 
 /**
- * Program ID for the Initializer program (devnet in this repo).
+ * Program ID for the Initializer program.
  *
  * Source of truth: programs/initializer/src/lib.rs
  */
@@ -20,6 +20,34 @@ export const BPF_LOADER_UPGRADEABLE_PROGRAM_ID: Address = address(
 export const SEED_CONFIG = 'config_v3';
 export const SEED_LAUNCH = 'launch_v3';
 export const SEED_LAUNCH_AUTHORITY = 'launch_authority_v3';
+
+// ============================================================================
+// Remaining Accounts Hash
+// ============================================================================
+
+/**
+ * Commitment hash for an empty remaining-accounts list — SHA256 of [0,0,0,0].
+ * Pass this for sentinelRemainingAccountsHash and migratorRemainingAccountsHash
+ * when no extra accounts are needed.
+ */
+export const EMPTY_REMAINING_ACCOUNTS_HASH = new Uint8Array([
+  223, 63, 97, 152, 4, 169, 47, 219, 64, 87, 25, 45, 196, 61, 215, 72, 234, 119,
+  138, 220, 82, 188, 73, 140, 232, 5, 36, 192, 20, 184, 17, 25,
+]);
+
+// ============================================================================
+// Address Lookup Tables
+// ============================================================================
+
+/**
+ * Devnet ALT containing static accounts shared by every initializeLaunch tx.
+ * Indices: 0=TOKEN_PROGRAM, 1=SYSTEM_PROGRAM, 2=SYSVAR_RENT,
+ *          3=INITIALIZER_PROGRAM, 4=TOKEN_METADATA_PROGRAM,
+ *          5=CPMM_MIGRATOR_PROGRAM, 6=WSOL_MINT, 7=config PDA
+ */
+export const DOPPLER_DEVNET_ALT: Address = address(
+  '7r5rdLkGMzTq5Q2kBhkePw4ZTeZEooHgTXktYoamNmVq',
+);
 
 // ============================================================================
 // Limits

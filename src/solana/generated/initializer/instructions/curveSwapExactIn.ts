@@ -49,7 +49,7 @@ export const CURVE_SWAP_EXACT_IN_DISCRIMINATOR = new Uint8Array([
 
 export function getCurveSwapExactInDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    CURVE_SWAP_EXACT_IN_DISCRIMINATOR
+    CURVE_SWAP_EXACT_IN_DISCRIMINATOR,
   );
 }
 
@@ -134,7 +134,7 @@ export function getCurveSwapExactInInstructionDataEncoder(): FixedSizeEncoder<Cu
       ['minAmountOut', getU64Encoder()],
       ['direction', getU8Encoder()],
     ]),
-    (value) => ({ ...value, discriminator: CURVE_SWAP_EXACT_IN_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: CURVE_SWAP_EXACT_IN_DISCRIMINATOR }),
   );
 }
 
@@ -153,7 +153,7 @@ export function getCurveSwapExactInInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getCurveSwapExactInInstructionDataEncoder(),
-    getCurveSwapExactInInstructionDataDecoder()
+    getCurveSwapExactInInstructionDataDecoder(),
   );
 }
 
@@ -218,7 +218,7 @@ export async function getCurveSwapExactInInstructionAsync<
     TAccountSentinelProgram,
     TAccountTokenProgram
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): Promise<
   CurveSwapExactInInstruction<
     TProgramAddress,
@@ -277,7 +277,7 @@ export async function getCurveSwapExactInInstructionAsync<
       programAddress,
       seeds: [
         getBytesEncoder().encode(
-          new Uint8Array([99, 111, 110, 102, 105, 103, 95, 118, 51])
+          new Uint8Array([99, 111, 110, 102, 105, 103, 95, 118, 51]),
         ),
       ],
     });
@@ -304,7 +304,7 @@ export async function getCurveSwapExactInInstructionAsync<
       getAccountMeta('tokenProgram', accounts.tokenProgram),
     ],
     data: getCurveSwapExactInInstructionDataEncoder().encode(
-      args as CurveSwapExactInInstructionDataArgs
+      args as CurveSwapExactInInstructionDataArgs,
     ),
     programAddress,
   } as CurveSwapExactInInstruction<
@@ -385,7 +385,7 @@ export function getCurveSwapExactInInstruction<
     TAccountSentinelProgram,
     TAccountTokenProgram
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): CurveSwapExactInInstruction<
   TProgramAddress,
   TAccountConfig,
@@ -459,7 +459,7 @@ export function getCurveSwapExactInInstruction<
       getAccountMeta('tokenProgram', accounts.tokenProgram),
     ],
     data: getCurveSwapExactInInstructionDataEncoder().encode(
-      args as CurveSwapExactInInstructionDataArgs
+      args as CurveSwapExactInInstructionDataArgs,
     ),
     programAddress,
   } as CurveSwapExactInInstruction<
@@ -508,7 +508,7 @@ export function parseCurveSwapExactInInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
+    InstructionWithData<ReadonlyUint8Array>,
 ): ParsedCurveSwapExactInInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 12) {
     throw new SolanaError(
@@ -516,7 +516,7 @@ export function parseCurveSwapExactInInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 12,
-      }
+      },
     );
   }
   let accountIndex = 0;

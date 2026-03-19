@@ -1,5 +1,3 @@
-import type { PublicClient } from 'viem';
-
 /**
  * Extract the gas estimate from a simulated contract request.
  * Falls back to `estimateContractGas` when the simulation doesn't include a gas value.

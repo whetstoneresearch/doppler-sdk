@@ -72,7 +72,7 @@ export type PauseInstructionDataArgs = {};
 export function getPauseInstructionDataEncoder(): FixedSizeEncoder<PauseInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
-    (value) => ({ ...value, discriminator: PAUSE_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: PAUSE_DISCRIMINATOR }),
   );
 }
 
@@ -88,7 +88,7 @@ export function getPauseInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getPauseInstructionDataEncoder(),
-    getPauseInstructionDataDecoder()
+    getPauseInstructionDataDecoder(),
   );
 }
 
@@ -106,7 +106,7 @@ export function getPauseInstruction<
   TProgramAddress extends Address = typeof CPMM_PROGRAM_ADDRESS,
 >(
   input: PauseInput<TAccountConfig, TAccountAdmin>,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): PauseInstruction<TProgramAddress, TAccountConfig, TAccountAdmin> {
   // Program address.
   const programAddress = config?.programAddress ?? CPMM_PROGRAM_ADDRESS;
@@ -150,7 +150,7 @@ export function parsePauseInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
+    InstructionWithData<ReadonlyUint8Array>,
 ): ParsedPauseInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 2) {
     throw new SolanaError(
@@ -158,7 +158,7 @@ export function parsePauseInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 2,
-      }
+      },
     );
   }
   let accountIndex = 0;

@@ -35,6 +35,6 @@ export function getCreatePositionArgsCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getCreatePositionArgsEncoder(),
-    getCreatePositionArgsDecoder()
+    getCreatePositionArgsDecoder(),
   );
 }

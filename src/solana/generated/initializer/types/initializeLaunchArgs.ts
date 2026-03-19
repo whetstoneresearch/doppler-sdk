@@ -193,6 +193,6 @@ export function getInitializeLaunchArgsCodec(): Codec<
 > {
   return combineCodec(
     getInitializeLaunchArgsEncoder(),
-    getInitializeLaunchArgsDecoder()
+    getInitializeLaunchArgsDecoder(),
   );
 }

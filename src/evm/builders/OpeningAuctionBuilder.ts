@@ -255,9 +255,7 @@ export class OpeningAuctionBuilder<
       this.startTimeOffset = startTimeOffset;
       this.startingTime = undefined;
     } else if (hasStartingTime) {
-      const startingTimeSeconds = this.normalizeTimestamp(
-        params.startingTime!,
-      );
+      const startingTimeSeconds = this.normalizeTimestamp(params.startingTime!);
       this.startingTime = startingTimeSeconds;
       this.startTimeOffset = undefined;
     } else {
@@ -432,11 +430,21 @@ export class OpeningAuctionBuilder<
     if (this.openingAuction.minLiquidity <= 0n) {
       throw new Error('openingAuction.minLiquidity must be positive');
     }
-    if (this.openingAuction.minAcceptableTickToken0 < INT24_MIN || this.openingAuction.minAcceptableTickToken0 > INT24_MAX) {
-      throw new Error(`openingAuction.minAcceptableTickToken0 must be within int24 range (${INT24_MIN} to ${INT24_MAX})`);
+    if (
+      this.openingAuction.minAcceptableTickToken0 < INT24_MIN ||
+      this.openingAuction.minAcceptableTickToken0 > INT24_MAX
+    ) {
+      throw new Error(
+        `openingAuction.minAcceptableTickToken0 must be within int24 range (${INT24_MIN} to ${INT24_MAX})`,
+      );
     }
-    if (this.openingAuction.minAcceptableTickToken1 < INT24_MIN || this.openingAuction.minAcceptableTickToken1 > INT24_MAX) {
-      throw new Error(`openingAuction.minAcceptableTickToken1 must be within int24 range (${INT24_MIN} to ${INT24_MAX})`);
+    if (
+      this.openingAuction.minAcceptableTickToken1 < INT24_MIN ||
+      this.openingAuction.minAcceptableTickToken1 > INT24_MAX
+    ) {
+      throw new Error(
+        `openingAuction.minAcceptableTickToken1 must be within int24 range (${INT24_MIN} to ${INT24_MAX})`,
+      );
     }
 
     const duration = this.doppler.duration ?? DEFAULT_AUCTION_DURATION;
@@ -459,7 +467,9 @@ export class OpeningAuctionBuilder<
       );
     }
     if (!Number.isInteger(fee) || fee < 0 || fee > V4_MAX_FEE) {
-      throw new Error(`doppler.fee must be an integer between 0 and ${V4_MAX_FEE}`);
+      throw new Error(
+        `doppler.fee must be an integer between 0 and ${V4_MAX_FEE}`,
+      );
     }
 
     if (this.doppler.minProceeds < 0n) {
@@ -493,7 +503,9 @@ export class OpeningAuctionBuilder<
     if (gamma !== undefined) {
       this.validatePositiveInteger(gamma, 'doppler.gamma');
       if (gamma % tickSpacing !== 0) {
-        throw new Error('doppler.gamma must be divisible by doppler.tickSpacing');
+        throw new Error(
+          'doppler.gamma must be divisible by doppler.tickSpacing',
+        );
       }
     } else {
       gamma = computeOptimalGamma(
@@ -506,7 +518,8 @@ export class OpeningAuctionBuilder<
     }
 
     const auctionTokens =
-      (this.sale.numTokensToSell * BigInt(this.openingAuction.shareToAuctionBps)) /
+      (this.sale.numTokensToSell *
+        BigInt(this.openingAuction.shareToAuctionBps)) /
       BigInt(BASIS_POINTS);
     if (auctionTokens <= 0n) {
       throw new Error(

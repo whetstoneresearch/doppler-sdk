@@ -5,6 +5,7 @@ import {
   ACCOUNT_ROLE_READONLY,
   ACCOUNT_ROLE_SIGNER,
   ACCOUNT_ROLE_WRITABLE,
+  SYSTEM_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
 } from '../../core/constants.js';
 import { INITIALIZER_PROGRAM_ID } from '../constants.js';
@@ -47,6 +48,7 @@ export interface CurveSwapExactInAccounts {
   baseMint: Address;
   quoteMint: Address;
   user: AddressOrSigner;
+  /** Pass the actual sentinel program address, or omit to use System Program as a no-op placeholder. */
   sentinelProgram?: Address;
   tokenProgram?: Address;
 }
@@ -67,7 +69,7 @@ export function createCurveSwapExactInInstruction(
     baseMint,
     quoteMint,
     user,
-    sentinelProgram,
+    sentinelProgram = SYSTEM_PROGRAM_ID,
     tokenProgram = TOKEN_PROGRAM_ID,
   } = accounts;
 
@@ -82,13 +84,12 @@ export function createCurveSwapExactInInstruction(
     { address: baseMint, role: ACCOUNT_ROLE_READONLY },
     { address: quoteMint, role: ACCOUNT_ROLE_READONLY },
     createAccountMeta(user, ACCOUNT_ROLE_SIGNER),
+    // sentinel_program is Optional in the on-chain struct but still occupies a fixed
+    // slot (token_program follows it).  Always emit it — use SYSTEM_PROGRAM_ID as the
+    // no-op placeholder when no real sentinel is configured.
+    { address: sentinelProgram, role: ACCOUNT_ROLE_READONLY },
+    { address: tokenProgram, role: ACCOUNT_ROLE_READONLY },
   ];
-
-  if (sentinelProgram) {
-    keys.push({ address: sentinelProgram, role: ACCOUNT_ROLE_READONLY });
-  }
-
-  keys.push({ address: tokenProgram, role: ACCOUNT_ROLE_READONLY });
 
   const data = new Uint8Array(
     getCurveSwapExactInInstructionDataEncoder().encode(args),

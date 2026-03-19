@@ -130,7 +130,7 @@ export function getMarketEncoder(): FixedSizeEncoder<MarketArgs> {
       ['marketAuthorityBump', getU8Encoder()],
       ['reserved', fixEncoderSize(getBytesEncoder(), 29)],
     ]),
-    (value) => ({ ...value, discriminator: MARKET_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: MARKET_DISCRIMINATOR }),
   );
 }
 
@@ -159,24 +159,24 @@ export function getMarketCodec(): FixedSizeCodec<MarketArgs, Market> {
 }
 
 export function decodeMarket<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress>
+  encodedAccount: EncodedAccount<TAddress>,
 ): Account<Market, TAddress>;
 export function decodeMarket<TAddress extends string = string>(
-  encodedAccount: MaybeEncodedAccount<TAddress>
+  encodedAccount: MaybeEncodedAccount<TAddress>,
 ): MaybeAccount<Market, TAddress>;
 export function decodeMarket<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>
+  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>,
 ): Account<Market, TAddress> | MaybeAccount<Market, TAddress> {
   return decodeAccount(
     encodedAccount as MaybeEncodedAccount<TAddress>,
-    getMarketDecoder()
+    getMarketDecoder(),
   );
 }
 
 export async function fetchMarket<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
-  config?: FetchAccountConfig
+  config?: FetchAccountConfig,
 ): Promise<Account<Market, TAddress>> {
   const maybeAccount = await fetchMaybeMarket(rpc, address, config);
   assertAccountExists(maybeAccount);
@@ -186,7 +186,7 @@ export async function fetchMarket<TAddress extends string = string>(
 export async function fetchMaybeMarket<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
-  config?: FetchAccountConfig
+  config?: FetchAccountConfig,
 ): Promise<MaybeAccount<Market, TAddress>> {
   const maybeAccount = await fetchEncodedAccount(rpc, address, config);
   return decodeMarket(maybeAccount);
@@ -195,7 +195,7 @@ export async function fetchMaybeMarket<TAddress extends string = string>(
 export async function fetchAllMarket(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
-  config?: FetchAccountsConfig
+  config?: FetchAccountsConfig,
 ): Promise<Account<Market>[]> {
   const maybeAccounts = await fetchAllMaybeMarket(rpc, addresses, config);
   assertAccountsExist(maybeAccounts);
@@ -205,7 +205,7 @@ export async function fetchAllMarket(
 export async function fetchAllMaybeMarket(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
-  config?: FetchAccountsConfig
+  config?: FetchAccountsConfig,
 ): Promise<MaybeAccount<Market>[]> {
   const maybeAccounts = await fetchEncodedAccounts(rpc, addresses, config);
   return maybeAccounts.map((maybeAccount) => decodeMarket(maybeAccount));

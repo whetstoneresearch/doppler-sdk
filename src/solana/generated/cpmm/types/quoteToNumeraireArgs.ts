@@ -65,6 +65,6 @@ export function getQuoteToNumeraireArgsCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getQuoteToNumeraireArgsEncoder(),
-    getQuoteToNumeraireArgsDecoder()
+    getQuoteToNumeraireArgsDecoder(),
   );
 }
