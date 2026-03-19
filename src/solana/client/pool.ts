@@ -143,7 +143,7 @@ export async function fetchAllPools(
         address: account.pubkey,
         account: pool,
       });
-    } catch (_e) {
+    } catch {
       // Skip accounts that fail to decode (shouldn't happen with proper filter)
       console.warn(`Failed to decode pool account: ${account.pubkey}`);
     }
@@ -158,14 +158,14 @@ export async function fetchAllPools(
  * Derives the pool PDA from the mints (automatically sorted) and fetches it.
  *
  * @param rpc - Solana RPC client
- * @param mintA - First token mint
- * @param mintB - Second token mint
+ * @param mint0 - First token mint
+ * @param mint1 - Second token mint
  * @param config - Optional configuration
  * @returns Pool data with address, or null if not found
  *
  * @example
  * ```ts
- * const result = await getPoolByMints(rpc, usdcMint, solMint);
+ * const result = await getPoolByMints(rpc, usdcMint, wsolMint);
  * if (result) {
  *   console.log(`Found pool at ${result.address}`);
  *   console.log(`Swap fee: ${result.account.swapFeeBps} bps`);
@@ -174,14 +174,14 @@ export async function fetchAllPools(
  */
 export async function getPoolByMints(
   rpc: Rpc<GetAccountInfoApi>,
-  mintA: Address,
-  mintB: Address,
+  mint0: Address,
+  mint1: Address,
   config?: FetchPoolsConfig,
 ): Promise<PoolWithAddress | null> {
   const programId = config?.programId ?? PROGRAM_ID;
 
   // Derive pool address (mints are sorted internally)
-  const [poolAddress] = await getPoolAddress(mintA, mintB, programId);
+  const [poolAddress] = await getPoolAddress(mint0, mint1, programId);
 
   const pool = await fetchPool(rpc, poolAddress, config);
 
@@ -237,40 +237,40 @@ export async function fetchPoolsBatch(
  * Check if a pool exists for a token pair
  *
  * @param rpc - Solana RPC client
- * @param mintA - First token mint
- * @param mintB - Second token mint
+ * @param mint0 - First token mint
+ * @param mint1 - Second token mint
  * @param config - Optional configuration
  * @returns true if pool exists, false otherwise
  */
 export async function poolExists(
   rpc: Rpc<GetAccountInfoApi>,
-  mintA: Address,
-  mintB: Address,
+  mint0: Address,
+  mint1: Address,
   config?: FetchPoolsConfig,
 ): Promise<boolean> {
-  const result = await getPoolByMints(rpc, mintA, mintB, config);
+  const result = await getPoolByMints(rpc, mint0, mint1, config);
   return result !== null;
 }
 
 /**
  * Get the pool address for a token pair without fetching
  *
- * @param mintA - First token mint
- * @param mintB - Second token mint
+ * @param mint0 - First token mint
+ * @param mint1 - Second token mint
  * @param programId - Program ID (defaults to CPMM program)
  * @returns Pool address and sorted mints
  */
 export async function getPoolAddressFromMints(
-  mintA: Address,
-  mintB: Address,
+  mint0: Address,
+  mint1: Address,
   programId: Address = PROGRAM_ID,
 ): Promise<{
   poolAddress: Address;
   token0: Address;
   token1: Address;
 }> {
-  const [token0, token1] = sortMints(mintA, mintB);
-  const [poolAddress] = await getPoolAddress(mintA, mintB, programId);
+  const [token0, token1] = sortMints(mint0, mint1);
+  const [poolAddress] = await getPoolAddress(mint0, mint1, programId);
 
   return {
     poolAddress,

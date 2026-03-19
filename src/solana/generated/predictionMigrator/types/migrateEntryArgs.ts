@@ -42,6 +42,6 @@ export function getMigrateEntryArgsCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getMigrateEntryArgsEncoder(),
-    getMigrateEntryArgsDecoder()
+    getMigrateEntryArgsDecoder(),
   );
 }

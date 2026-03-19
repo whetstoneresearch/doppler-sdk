@@ -44,7 +44,7 @@ export const PREVIEW_SWAP_EXACT_IN_DISCRIMINATOR = new Uint8Array([
 
 export function getPreviewSwapExactInDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    PREVIEW_SWAP_EXACT_IN_DISCRIMINATOR
+    PREVIEW_SWAP_EXACT_IN_DISCRIMINATOR,
   );
 }
 
@@ -88,7 +88,7 @@ export function getPreviewSwapExactInInstructionDataEncoder(): FixedSizeEncoder<
     (value) => ({
       ...value,
       discriminator: PREVIEW_SWAP_EXACT_IN_DISCRIMINATOR,
-    })
+    }),
   );
 }
 
@@ -106,7 +106,7 @@ export function getPreviewSwapExactInInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getPreviewSwapExactInInstructionDataEncoder(),
-    getPreviewSwapExactInInstructionDataDecoder()
+    getPreviewSwapExactInInstructionDataDecoder(),
   );
 }
 
@@ -126,7 +126,7 @@ export function getPreviewSwapExactInInstruction<
   TProgramAddress extends Address = typeof CPMM_PROGRAM_ADDRESS,
 >(
   input: PreviewSwapExactInInput<TAccountConfig, TAccountPool>,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): PreviewSwapExactInInstruction<
   TProgramAddress,
   TAccountConfig,
@@ -155,7 +155,7 @@ export function getPreviewSwapExactInInstruction<
       getAccountMeta('pool', accounts.pool),
     ],
     data: getPreviewSwapExactInInstructionDataEncoder().encode(
-      args as PreviewSwapExactInInstructionDataArgs
+      args as PreviewSwapExactInInstructionDataArgs,
     ),
     programAddress,
   } as PreviewSwapExactInInstruction<
@@ -183,7 +183,7 @@ export function parsePreviewSwapExactInInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
+    InstructionWithData<ReadonlyUint8Array>,
 ): ParsedPreviewSwapExactInInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 2) {
     throw new SolanaError(
@@ -191,7 +191,7 @@ export function parsePreviewSwapExactInInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 2,
-      }
+      },
     );
   }
   let accountIndex = 0;
@@ -204,7 +204,7 @@ export function parsePreviewSwapExactInInstruction<
     programAddress: instruction.programAddress,
     accounts: { config: getNextAccount(), pool: getNextAccount() },
     data: getPreviewSwapExactInInstructionDataDecoder().decode(
-      instruction.data
+      instruction.data,
     ),
   };
 }

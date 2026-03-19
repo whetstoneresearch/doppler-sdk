@@ -50,6 +50,6 @@ export function getPreviewPayoutIfWinnerArgsCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getPreviewPayoutIfWinnerArgsEncoder(),
-    getPreviewPayoutIfWinnerArgsDecoder()
+    getPreviewPayoutIfWinnerArgsDecoder(),
   );
 }

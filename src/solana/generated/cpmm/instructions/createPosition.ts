@@ -51,7 +51,7 @@ export const CREATE_POSITION_DISCRIMINATOR = new Uint8Array([
 
 export function getCreatePositionDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    CREATE_POSITION_DISCRIMINATOR
+    CREATE_POSITION_DISCRIMINATOR,
   );
 }
 
@@ -102,7 +102,7 @@ export function getCreatePositionInstructionDataEncoder(): FixedSizeEncoder<Crea
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       ['positionId', getU64Encoder()],
     ]),
-    (value) => ({ ...value, discriminator: CREATE_POSITION_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: CREATE_POSITION_DISCRIMINATOR }),
   );
 }
 
@@ -119,7 +119,7 @@ export function getCreatePositionInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getCreatePositionInstructionDataEncoder(),
-    getCreatePositionInstructionDataDecoder()
+    getCreatePositionInstructionDataDecoder(),
   );
 }
 
@@ -153,7 +153,7 @@ export async function getCreatePositionInstructionAsync<
     TAccountPayer,
     TAccountSystemProgram
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): Promise<
   CreatePositionInstruction<
     TProgramAddress,
@@ -189,19 +189,19 @@ export async function getCreatePositionInstructionAsync<
       programAddress,
       seeds: [
         getBytesEncoder().encode(
-          new Uint8Array([112, 111, 115, 105, 116, 105, 111, 110])
+          new Uint8Array([112, 111, 115, 105, 116, 105, 111, 110]),
         ),
         getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount('pool', accounts.pool.value)
+          getAddressFromResolvedInstructionAccount('pool', accounts.pool.value),
         ),
         getAddressEncoder().encode(
           getAddressFromResolvedInstructionAccount(
             'owner',
-            accounts.owner.value
-          )
+            accounts.owner.value,
+          ),
         ),
         getU64Encoder().encode(
-          getNonNullResolvedInstructionInput('positionId', args.positionId)
+          getNonNullResolvedInstructionInput('positionId', args.positionId),
         ),
       ],
     });
@@ -221,7 +221,7 @@ export async function getCreatePositionInstructionAsync<
       getAccountMeta('systemProgram', accounts.systemProgram),
     ],
     data: getCreatePositionInstructionDataEncoder().encode(
-      args as CreatePositionInstructionDataArgs
+      args as CreatePositionInstructionDataArgs,
     ),
     programAddress,
   } as CreatePositionInstruction<
@@ -264,7 +264,7 @@ export function getCreatePositionInstruction<
     TAccountPayer,
     TAccountSystemProgram
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): CreatePositionInstruction<
   TProgramAddress,
   TAccountPool,
@@ -308,7 +308,7 @@ export function getCreatePositionInstruction<
       getAccountMeta('systemProgram', accounts.systemProgram),
     ],
     data: getCreatePositionInstructionDataEncoder().encode(
-      args as CreatePositionInstructionDataArgs
+      args as CreatePositionInstructionDataArgs,
     ),
     programAddress,
   } as CreatePositionInstruction<
@@ -342,7 +342,7 @@ export function parseCreatePositionInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
+    InstructionWithData<ReadonlyUint8Array>,
 ): ParsedCreatePositionInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 5) {
     throw new SolanaError(
@@ -350,7 +350,7 @@ export function parseCreatePositionInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 5,
-      }
+      },
     );
   }
   let accountIndex = 0;

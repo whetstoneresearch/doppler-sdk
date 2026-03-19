@@ -42,6 +42,6 @@ export function getRegisterEntryArgsCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getRegisterEntryArgsEncoder(),
-    getRegisterEntryArgsDecoder()
+    getRegisterEntryArgsDecoder(),
   );
 }

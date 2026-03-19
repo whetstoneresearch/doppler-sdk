@@ -72,6 +72,6 @@ export function getInitializePoolArgsCodec(): Codec<
 > {
   return combineCodec(
     getInitializePoolArgsEncoder(),
-    getInitializePoolArgsDecoder()
+    getInitializePoolArgsDecoder(),
   );
 }

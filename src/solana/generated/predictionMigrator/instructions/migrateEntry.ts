@@ -48,7 +48,7 @@ export const MIGRATE_ENTRY_DISCRIMINATOR = new Uint8Array([
 
 export function getMigrateEntryDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    MIGRATE_ENTRY_DISCRIMINATOR
+    MIGRATE_ENTRY_DISCRIMINATOR,
   );
 }
 
@@ -149,7 +149,7 @@ export function getMigrateEntryInstructionDataEncoder(): FixedSizeEncoder<Migrat
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       ['entryId', fixEncoderSize(getBytesEncoder(), 32)],
     ]),
-    (value) => ({ ...value, discriminator: MIGRATE_ENTRY_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: MIGRATE_ENTRY_DISCRIMINATOR }),
   );
 }
 
@@ -166,7 +166,7 @@ export function getMigrateEntryInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getMigrateEntryInstructionDataEncoder(),
-    getMigrateEntryInstructionDataDecoder()
+    getMigrateEntryInstructionDataDecoder(),
   );
 }
 
@@ -262,7 +262,7 @@ export async function getMigrateEntryInstructionAsync<
     TAccountEntry,
     TAccountEntryByMint
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): Promise<
   MigrateEntryInstruction<
     TProgramAddress,
@@ -347,8 +347,8 @@ export async function getMigrateEntryInstructionAsync<
         getAddressEncoder().encode(
           getAddressFromResolvedInstructionAccount(
             'oracle',
-            accounts.oracle.value
-          )
+            accounts.oracle.value,
+          ),
         ),
       ],
     });
@@ -361,13 +361,13 @@ export async function getMigrateEntryInstructionAsync<
           new Uint8Array([
             109, 97, 114, 107, 101, 116, 95, 97, 117, 116, 104, 111, 114, 105,
             116, 121,
-          ])
+          ]),
         ),
         getAddressEncoder().encode(
           getAddressFromResolvedInstructionAccount(
             'market',
-            accounts.market.value
-          )
+            accounts.market.value,
+          ),
         ),
       ],
     });
@@ -379,19 +379,19 @@ export async function getMigrateEntryInstructionAsync<
         getBytesEncoder().encode(
           new Uint8Array([
             101, 110, 116, 114, 121, 95, 98, 121, 95, 109, 105, 110, 116,
-          ])
+          ]),
         ),
         getAddressEncoder().encode(
           getAddressFromResolvedInstructionAccount(
             'oracle',
-            accounts.oracle.value
-          )
+            accounts.oracle.value,
+          ),
         ),
         getAddressEncoder().encode(
           getAddressFromResolvedInstructionAccount(
             'baseMint',
-            accounts.baseMint.value
-          )
+            accounts.baseMint.value,
+          ),
         ),
       ],
     });
@@ -419,7 +419,7 @@ export async function getMigrateEntryInstructionAsync<
       getAccountMeta('entryByMint', accounts.entryByMint),
     ],
     data: getMigrateEntryInstructionDataEncoder().encode(
-      args as MigrateEntryInstructionDataArgs
+      args as MigrateEntryInstructionDataArgs,
     ),
     programAddress,
   } as MigrateEntryInstruction<
@@ -536,7 +536,7 @@ export function getMigrateEntryInstruction<
     TAccountEntry,
     TAccountEntryByMint
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): MigrateEntryInstruction<
   TProgramAddress,
   TAccountInitializerConfig,
@@ -634,7 +634,7 @@ export function getMigrateEntryInstruction<
       getAccountMeta('entryByMint', accounts.entryByMint),
     ],
     data: getMigrateEntryInstructionDataEncoder().encode(
-      args as MigrateEntryInstructionDataArgs
+      args as MigrateEntryInstructionDataArgs,
     ),
     programAddress,
   } as MigrateEntryInstruction<
@@ -706,7 +706,7 @@ export function parseMigrateEntryInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
+    InstructionWithData<ReadonlyUint8Array>,
 ): ParsedMigrateEntryInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 17) {
     throw new SolanaError(
@@ -714,7 +714,7 @@ export function parseMigrateEntryInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 17,
-      }
+      },
     );
   }
   let accountIndex = 0;

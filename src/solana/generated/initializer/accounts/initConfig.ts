@@ -84,7 +84,7 @@ export function getInitConfigEncoder(): FixedSizeEncoder<InitConfigArgs> {
       ['version', getU8Encoder()],
       ['reserved', fixEncoderSize(getBytesEncoder(), 31)],
     ]),
-    (value) => ({ ...value, discriminator: INIT_CONFIG_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: INIT_CONFIG_DISCRIMINATOR }),
   );
 }
 
@@ -112,24 +112,24 @@ export function getInitConfigCodec(): FixedSizeCodec<
 }
 
 export function decodeInitConfig<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress>
+  encodedAccount: EncodedAccount<TAddress>,
 ): Account<InitConfig, TAddress>;
 export function decodeInitConfig<TAddress extends string = string>(
-  encodedAccount: MaybeEncodedAccount<TAddress>
+  encodedAccount: MaybeEncodedAccount<TAddress>,
 ): MaybeAccount<InitConfig, TAddress>;
 export function decodeInitConfig<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>
+  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>,
 ): Account<InitConfig, TAddress> | MaybeAccount<InitConfig, TAddress> {
   return decodeAccount(
     encodedAccount as MaybeEncodedAccount<TAddress>,
-    getInitConfigDecoder()
+    getInitConfigDecoder(),
   );
 }
 
 export async function fetchInitConfig<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
-  config?: FetchAccountConfig
+  config?: FetchAccountConfig,
 ): Promise<Account<InitConfig, TAddress>> {
   const maybeAccount = await fetchMaybeInitConfig(rpc, address, config);
   assertAccountExists(maybeAccount);
@@ -139,7 +139,7 @@ export async function fetchInitConfig<TAddress extends string = string>(
 export async function fetchMaybeInitConfig<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
-  config?: FetchAccountConfig
+  config?: FetchAccountConfig,
 ): Promise<MaybeAccount<InitConfig, TAddress>> {
   const maybeAccount = await fetchEncodedAccount(rpc, address, config);
   return decodeInitConfig(maybeAccount);
@@ -148,7 +148,7 @@ export async function fetchMaybeInitConfig<TAddress extends string = string>(
 export async function fetchAllInitConfig(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
-  config?: FetchAccountsConfig
+  config?: FetchAccountsConfig,
 ): Promise<Account<InitConfig>[]> {
   const maybeAccounts = await fetchAllMaybeInitConfig(rpc, addresses, config);
   assertAccountsExist(maybeAccounts);
@@ -158,7 +158,7 @@ export async function fetchAllInitConfig(
 export async function fetchAllMaybeInitConfig(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
-  config?: FetchAccountsConfig
+  config?: FetchAccountsConfig,
 ): Promise<MaybeAccount<InitConfig>[]> {
   const maybeAccounts = await fetchEncodedAccounts(rpc, addresses, config);
   return maybeAccounts.map((maybeAccount) => decodeInitConfig(maybeAccount));

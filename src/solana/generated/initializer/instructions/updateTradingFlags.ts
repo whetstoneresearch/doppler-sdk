@@ -47,7 +47,7 @@ export const UPDATE_TRADING_FLAGS_DISCRIMINATOR = new Uint8Array([
 
 export function getUpdateTradingFlagsDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    UPDATE_TRADING_FLAGS_DISCRIMINATOR
+    UPDATE_TRADING_FLAGS_DISCRIMINATOR,
   );
 }
 
@@ -93,7 +93,10 @@ export function getUpdateTradingFlagsInstructionDataEncoder(): FixedSizeEncoder<
       ['allowBuy', getU8Encoder()],
       ['allowSell', getU8Encoder()],
     ]),
-    (value) => ({ ...value, discriminator: UPDATE_TRADING_FLAGS_DISCRIMINATOR })
+    (value) => ({
+      ...value,
+      discriminator: UPDATE_TRADING_FLAGS_DISCRIMINATOR,
+    }),
   );
 }
 
@@ -111,7 +114,7 @@ export function getUpdateTradingFlagsInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getUpdateTradingFlagsInstructionDataEncoder(),
-    getUpdateTradingFlagsInstructionDataDecoder()
+    getUpdateTradingFlagsInstructionDataDecoder(),
   );
 }
 
@@ -139,7 +142,7 @@ export async function getUpdateTradingFlagsInstructionAsync<
     TAccountLaunch,
     TAccountAuthority
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): Promise<
   UpdateTradingFlagsInstruction<
     TProgramAddress,
@@ -171,7 +174,7 @@ export async function getUpdateTradingFlagsInstructionAsync<
       programAddress,
       seeds: [
         getBytesEncoder().encode(
-          new Uint8Array([99, 111, 110, 102, 105, 103, 95, 118, 51])
+          new Uint8Array([99, 111, 110, 102, 105, 103, 95, 118, 51]),
         ),
       ],
     });
@@ -185,7 +188,7 @@ export async function getUpdateTradingFlagsInstructionAsync<
       getAccountMeta('authority', accounts.authority),
     ],
     data: getUpdateTradingFlagsInstructionDataEncoder().encode(
-      args as UpdateTradingFlagsInstructionDataArgs
+      args as UpdateTradingFlagsInstructionDataArgs,
     ),
     programAddress,
   } as UpdateTradingFlagsInstruction<
@@ -220,7 +223,7 @@ export function getUpdateTradingFlagsInstruction<
     TAccountLaunch,
     TAccountAuthority
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): UpdateTradingFlagsInstruction<
   TProgramAddress,
   TAccountConfig,
@@ -252,7 +255,7 @@ export function getUpdateTradingFlagsInstruction<
       getAccountMeta('authority', accounts.authority),
     ],
     data: getUpdateTradingFlagsInstructionDataEncoder().encode(
-      args as UpdateTradingFlagsInstructionDataArgs
+      args as UpdateTradingFlagsInstructionDataArgs,
     ),
     programAddress,
   } as UpdateTradingFlagsInstruction<
@@ -283,7 +286,7 @@ export function parseUpdateTradingFlagsInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
+    InstructionWithData<ReadonlyUint8Array>,
 ): ParsedUpdateTradingFlagsInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 3) {
     throw new SolanaError(
@@ -291,7 +294,7 @@ export function parseUpdateTradingFlagsInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 3,
-      }
+      },
     );
   }
   let accountIndex = 0;
@@ -308,7 +311,7 @@ export function parseUpdateTradingFlagsInstruction<
       authority: getNextAccount(),
     },
     data: getUpdateTradingFlagsInstructionDataDecoder().decode(
-      instruction.data
+      instruction.data,
     ),
   };
 }

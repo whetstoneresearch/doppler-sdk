@@ -48,7 +48,7 @@ export const SET_SENTINEL_ALLOWLIST_DISCRIMINATOR = new Uint8Array([
 
 export function getSetSentinelAllowlistDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    SET_SENTINEL_ALLOWLIST_DISCRIMINATOR
+    SET_SENTINEL_ALLOWLIST_DISCRIMINATOR,
   );
 }
 
@@ -90,7 +90,7 @@ export function getSetSentinelAllowlistInstructionDataEncoder(): Encoder<SetSent
     (value) => ({
       ...value,
       discriminator: SET_SENTINEL_ALLOWLIST_DISCRIMINATOR,
-    })
+    }),
   );
 }
 
@@ -107,7 +107,7 @@ export function getSetSentinelAllowlistInstructionDataCodec(): Codec<
 > {
   return combineCodec(
     getSetSentinelAllowlistInstructionDataEncoder(),
-    getSetSentinelAllowlistInstructionDataDecoder()
+    getSetSentinelAllowlistInstructionDataDecoder(),
   );
 }
 
@@ -126,7 +126,7 @@ export async function getSetSentinelAllowlistInstructionAsync<
   TProgramAddress extends Address = typeof INITIALIZER_PROGRAM_ADDRESS,
 >(
   input: SetSentinelAllowlistAsyncInput<TAccountAdmin, TAccountConfig>,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): Promise<
   SetSentinelAllowlistInstruction<
     TProgramAddress,
@@ -156,7 +156,7 @@ export async function getSetSentinelAllowlistInstructionAsync<
       programAddress,
       seeds: [
         getBytesEncoder().encode(
-          new Uint8Array([99, 111, 110, 102, 105, 103, 95, 118, 51])
+          new Uint8Array([99, 111, 110, 102, 105, 103, 95, 118, 51]),
         ),
       ],
     });
@@ -169,7 +169,7 @@ export async function getSetSentinelAllowlistInstructionAsync<
       getAccountMeta('config', accounts.config),
     ],
     data: getSetSentinelAllowlistInstructionDataEncoder().encode(
-      args as SetSentinelAllowlistInstructionDataArgs
+      args as SetSentinelAllowlistInstructionDataArgs,
     ),
     programAddress,
   } as SetSentinelAllowlistInstruction<
@@ -194,7 +194,7 @@ export function getSetSentinelAllowlistInstruction<
   TProgramAddress extends Address = typeof INITIALIZER_PROGRAM_ADDRESS,
 >(
   input: SetSentinelAllowlistInput<TAccountAdmin, TAccountConfig>,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): SetSentinelAllowlistInstruction<
   TProgramAddress,
   TAccountAdmin,
@@ -223,7 +223,7 @@ export function getSetSentinelAllowlistInstruction<
       getAccountMeta('config', accounts.config),
     ],
     data: getSetSentinelAllowlistInstructionDataEncoder().encode(
-      args as SetSentinelAllowlistInstructionDataArgs
+      args as SetSentinelAllowlistInstructionDataArgs,
     ),
     programAddress,
   } as SetSentinelAllowlistInstruction<
@@ -251,7 +251,7 @@ export function parseSetSentinelAllowlistInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
+    InstructionWithData<ReadonlyUint8Array>,
 ): ParsedSetSentinelAllowlistInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 2) {
     throw new SolanaError(
@@ -259,7 +259,7 @@ export function parseSetSentinelAllowlistInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 2,
-      }
+      },
     );
   }
   let accountIndex = 0;
@@ -272,7 +272,7 @@ export function parseSetSentinelAllowlistInstruction<
     programAddress: instruction.programAddress,
     accounts: { admin: getNextAccount(), config: getNextAccount() },
     data: getSetSentinelAllowlistInstructionDataDecoder().decode(
-      instruction.data
+      instruction.data,
     ),
   };
 }

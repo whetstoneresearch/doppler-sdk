@@ -304,6 +304,13 @@ export interface SwapQuote {
   executionPrice: number;
 }
 
+export interface SwapQuoteExactOut {
+  /** Required input amount */
+  amountIn: bigint;
+  /** Total fee charged (in input token) */
+  feeTotal: bigint;
+}
+
 export interface AddLiquidityQuote {
   /** Shares the user will receive */
   sharesOut: bigint;

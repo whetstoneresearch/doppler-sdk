@@ -45,7 +45,7 @@ export const TRANSFER_ADMIN_DISCRIMINATOR = new Uint8Array([
 
 export function getTransferAdminDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    TRANSFER_ADMIN_DISCRIMINATOR
+    TRANSFER_ADMIN_DISCRIMINATOR,
   );
 }
 
@@ -82,7 +82,7 @@ export function getTransferAdminInstructionDataEncoder(): FixedSizeEncoder<Trans
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       ['newAdmin', getAddressEncoder()],
     ]),
-    (value) => ({ ...value, discriminator: TRANSFER_ADMIN_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: TRANSFER_ADMIN_DISCRIMINATOR }),
   );
 }
 
@@ -99,7 +99,7 @@ export function getTransferAdminInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getTransferAdminInstructionDataEncoder(),
-    getTransferAdminInstructionDataDecoder()
+    getTransferAdminInstructionDataDecoder(),
   );
 }
 
@@ -118,7 +118,7 @@ export function getTransferAdminInstruction<
   TProgramAddress extends Address = typeof CPMM_PROGRAM_ADDRESS,
 >(
   input: TransferAdminInput<TAccountConfig, TAccountAdmin>,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): TransferAdminInstruction<TProgramAddress, TAccountConfig, TAccountAdmin> {
   // Program address.
   const programAddress = config?.programAddress ?? CPMM_PROGRAM_ADDRESS;
@@ -143,7 +143,7 @@ export function getTransferAdminInstruction<
       getAccountMeta('admin', accounts.admin),
     ],
     data: getTransferAdminInstructionDataEncoder().encode(
-      args as TransferAdminInstructionDataArgs
+      args as TransferAdminInstructionDataArgs,
     ),
     programAddress,
   } as TransferAdminInstruction<
@@ -171,7 +171,7 @@ export function parseTransferAdminInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
+    InstructionWithData<ReadonlyUint8Array>,
 ): ParsedTransferAdminInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 2) {
     throw new SolanaError(
@@ -179,7 +179,7 @@ export function parseTransferAdminInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 2,
-      }
+      },
     );
   }
   let accountIndex = 0;

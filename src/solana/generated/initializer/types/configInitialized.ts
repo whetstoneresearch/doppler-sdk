@@ -50,6 +50,6 @@ export function getConfigInitializedCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getConfigInitializedEncoder(),
-    getConfigInitializedDecoder()
+    getConfigInitializedDecoder(),
   );
 }

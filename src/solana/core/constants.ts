@@ -1,10 +1,10 @@
 import { address, type Address } from '@solana/kit';
 
 /**
- * Program ID for the CPMM AMM (deployed to devnet)
+ * Program ID for the CPMM AMM
  */
 export const PROGRAM_ID: Address = address(
-  '3HSrGs4jj92CGt7mkfeeoMofrRGVPUcDX8djAnp4FoD6',
+  '9PSxVPoPfnbZ8Q1uQhgS6ZxvBjFboZtebNsu34umxkgQ',
 );
 
 /**
@@ -33,6 +33,13 @@ export const TOKEN_METADATA_PROGRAM_ID: Address = address(
  */
 export const SYSTEM_PROGRAM_ID: Address = address(
   '11111111111111111111111111111111',
+);
+
+/**
+ * SPL Associated Token Account Program ID
+ */
+export const ASSOCIATED_TOKEN_PROGRAM_ID: Address = address(
+  'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL',
 );
 
 // ============================================================================

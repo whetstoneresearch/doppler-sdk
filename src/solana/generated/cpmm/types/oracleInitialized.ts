@@ -60,6 +60,6 @@ export function getOracleInitializedCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getOracleInitializedEncoder(),
-    getOracleInitializedDecoder()
+    getOracleInitializedDecoder(),
   );
 }

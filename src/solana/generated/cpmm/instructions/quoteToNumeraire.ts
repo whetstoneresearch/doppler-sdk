@@ -48,7 +48,7 @@ export const QUOTE_TO_NUMERAIRE_DISCRIMINATOR = new Uint8Array([
 
 export function getQuoteToNumeraireDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    QUOTE_TO_NUMERAIRE_DISCRIMINATOR
+    QUOTE_TO_NUMERAIRE_DISCRIMINATOR,
   );
 }
 
@@ -98,7 +98,7 @@ export function getQuoteToNumeraireInstructionDataEncoder(): FixedSizeEncoder<Qu
       ['useTwap', getBooleanEncoder()],
       ['windowSeconds', getU32Encoder()],
     ]),
-    (value) => ({ ...value, discriminator: QUOTE_TO_NUMERAIRE_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: QUOTE_TO_NUMERAIRE_DISCRIMINATOR }),
   );
 }
 
@@ -119,7 +119,7 @@ export function getQuoteToNumeraireInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getQuoteToNumeraireInstructionDataEncoder(),
-    getQuoteToNumeraireInstructionDataDecoder()
+    getQuoteToNumeraireInstructionDataDecoder(),
   );
 }
 
@@ -142,7 +142,7 @@ export function getQuoteToNumeraireInstruction<
   TProgramAddress extends Address = typeof CPMM_PROGRAM_ADDRESS,
 >(
   input: QuoteToNumeraireInput<TAccountConfig, TAccountStartPool>,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): QuoteToNumeraireInstruction<
   TProgramAddress,
   TAccountConfig,
@@ -171,7 +171,7 @@ export function getQuoteToNumeraireInstruction<
       getAccountMeta('startPool', accounts.startPool),
     ],
     data: getQuoteToNumeraireInstructionDataEncoder().encode(
-      args as QuoteToNumeraireInstructionDataArgs
+      args as QuoteToNumeraireInstructionDataArgs,
     ),
     programAddress,
   } as QuoteToNumeraireInstruction<
@@ -199,7 +199,7 @@ export function parseQuoteToNumeraireInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
+    InstructionWithData<ReadonlyUint8Array>,
 ): ParsedQuoteToNumeraireInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 2) {
     throw new SolanaError(
@@ -207,7 +207,7 @@ export function parseQuoteToNumeraireInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 2,
-      }
+      },
     );
   }
   let accountIndex = 0;

@@ -58,6 +58,6 @@ export function getLaunchRegisteredCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getLaunchRegisteredEncoder(),
-    getLaunchRegisteredDecoder()
+    getLaunchRegisteredDecoder(),
   );
 }

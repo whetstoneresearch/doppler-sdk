@@ -45,7 +45,7 @@ export const ORACLE_CONSULT_DISCRIMINATOR = new Uint8Array([
 
 export function getOracleConsultDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    ORACLE_CONSULT_DISCRIMINATOR
+    ORACLE_CONSULT_DISCRIMINATOR,
   );
 }
 
@@ -81,7 +81,7 @@ export function getOracleConsultInstructionDataEncoder(): FixedSizeEncoder<Oracl
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       ['windowSeconds', getU32Encoder()],
     ]),
-    (value) => ({ ...value, discriminator: ORACLE_CONSULT_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: ORACLE_CONSULT_DISCRIMINATOR }),
   );
 }
 
@@ -98,7 +98,7 @@ export function getOracleConsultInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getOracleConsultInstructionDataEncoder(),
-    getOracleConsultInstructionDataDecoder()
+    getOracleConsultInstructionDataDecoder(),
   );
 }
 
@@ -117,7 +117,7 @@ export async function getOracleConsultInstructionAsync<
   TProgramAddress extends Address = typeof CPMM_PROGRAM_ADDRESS,
 >(
   input: OracleConsultAsyncInput<TAccountPool, TAccountOracle>,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): Promise<
   OracleConsultInstruction<TProgramAddress, TAccountPool, TAccountOracle>
 > {
@@ -144,7 +144,7 @@ export async function getOracleConsultInstructionAsync<
       seeds: [
         getBytesEncoder().encode(new Uint8Array([111, 114, 97, 99, 108, 101])),
         getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount('pool', accounts.pool.value)
+          getAddressFromResolvedInstructionAccount('pool', accounts.pool.value),
         ),
       ],
     });
@@ -157,7 +157,7 @@ export async function getOracleConsultInstructionAsync<
       getAccountMeta('oracle', accounts.oracle),
     ],
     data: getOracleConsultInstructionDataEncoder().encode(
-      args as OracleConsultInstructionDataArgs
+      args as OracleConsultInstructionDataArgs,
     ),
     programAddress,
   } as OracleConsultInstruction<TProgramAddress, TAccountPool, TAccountOracle>);
@@ -178,7 +178,7 @@ export function getOracleConsultInstruction<
   TProgramAddress extends Address = typeof CPMM_PROGRAM_ADDRESS,
 >(
   input: OracleConsultInput<TAccountPool, TAccountOracle>,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): OracleConsultInstruction<TProgramAddress, TAccountPool, TAccountOracle> {
   // Program address.
   const programAddress = config?.programAddress ?? CPMM_PROGRAM_ADDRESS;
@@ -203,7 +203,7 @@ export function getOracleConsultInstruction<
       getAccountMeta('oracle', accounts.oracle),
     ],
     data: getOracleConsultInstructionDataEncoder().encode(
-      args as OracleConsultInstructionDataArgs
+      args as OracleConsultInstructionDataArgs,
     ),
     programAddress,
   } as OracleConsultInstruction<TProgramAddress, TAccountPool, TAccountOracle>);
@@ -227,7 +227,7 @@ export function parseOracleConsultInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
+    InstructionWithData<ReadonlyUint8Array>,
 ): ParsedOracleConsultInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 2) {
     throw new SolanaError(
@@ -235,7 +235,7 @@ export function parseOracleConsultInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 2,
-      }
+      },
     );
   }
   let accountIndex = 0;

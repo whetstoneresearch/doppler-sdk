@@ -59,6 +59,6 @@ export function getAddLiquidityArgsCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getAddLiquidityArgsEncoder(),
-    getAddLiquidityArgsDecoder()
+    getAddLiquidityArgsDecoder(),
   );
 }

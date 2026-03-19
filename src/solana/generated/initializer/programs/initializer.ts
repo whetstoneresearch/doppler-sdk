@@ -84,7 +84,7 @@ import {
 } from '../instructions';
 
 export const INITIALIZER_PROGRAM_ADDRESS =
-  '4H9w6qMqqSh6DVW7BzYxPHFvLaQP7rbRiQnPYGPajQxq' as Address<'4H9w6qMqqSh6DVW7BzYxPHFvLaQP7rbRiQnPYGPajQxq'>;
+  '4h3Dqyo5qmteJoMxXt3tdtfXELDB6pdRTPU9mWruiKp1' as Address<'4h3Dqyo5qmteJoMxXt3tdtfXELDB6pdRTPU9mWruiKp1'>;
 
 export enum InitializerAccount {
   InitConfig,
@@ -92,16 +92,16 @@ export enum InitializerAccount {
 }
 
 export function identifyInitializerAccount(
-  account: { data: ReadonlyUint8Array } | ReadonlyUint8Array
+  account: { data: ReadonlyUint8Array } | ReadonlyUint8Array,
 ): InitializerAccount {
   const data = 'data' in account ? account.data : account;
   if (
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([97, 166, 35, 7, 20, 2, 164, 126])
+        new Uint8Array([97, 166, 35, 7, 20, 2, 164, 126]),
       ),
-      0
+      0,
     )
   ) {
     return InitializerAccount.InitConfig;
@@ -110,16 +110,16 @@ export function identifyInitializerAccount(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([144, 51, 51, 163, 206, 85, 213, 38])
+        new Uint8Array([144, 51, 51, 163, 206, 85, 213, 38]),
       ),
-      0
+      0,
     )
   ) {
     return InitializerAccount.Launch;
   }
   throw new SolanaError(
     SOLANA_ERROR__PROGRAM_CLIENTS__FAILED_TO_IDENTIFY_ACCOUNT,
-    { accountData: data, programName: 'initializer' }
+    { accountData: data, programName: 'initializer' },
   );
 }
 
@@ -137,16 +137,16 @@ export enum InitializerInstruction {
 }
 
 export function identifyInitializerInstruction(
-  instruction: { data: ReadonlyUint8Array } | ReadonlyUint8Array
+  instruction: { data: ReadonlyUint8Array } | ReadonlyUint8Array,
 ): InitializerInstruction {
   const data = 'data' in instruction ? instruction.data : instruction;
   if (
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([44, 112, 192, 235, 227, 61, 179, 7])
+        new Uint8Array([44, 112, 192, 235, 227, 61, 179, 7]),
       ),
-      0
+      0,
     )
   ) {
     return InitializerInstruction.AbortLaunch;
@@ -155,9 +155,9 @@ export function identifyInitializerInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([196, 247, 195, 126, 227, 27, 166, 93])
+        new Uint8Array([196, 247, 195, 126, 227, 27, 166, 93]),
       ),
-      0
+      0,
     )
   ) {
     return InitializerInstruction.CurveSwapExactIn;
@@ -166,9 +166,9 @@ export function identifyInitializerInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([208, 127, 21, 1, 194, 190, 196, 70])
+        new Uint8Array([208, 127, 21, 1, 194, 190, 196, 70]),
       ),
-      0
+      0,
     )
   ) {
     return InitializerInstruction.InitializeConfig;
@@ -177,9 +177,9 @@ export function identifyInitializerInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([90, 201, 220, 142, 112, 253, 100, 13])
+        new Uint8Array([90, 201, 220, 142, 112, 253, 100, 13]),
       ),
-      0
+      0,
     )
   ) {
     return InitializerInstruction.InitializeLaunch;
@@ -188,9 +188,9 @@ export function identifyInitializerInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([19, 199, 119, 103, 13, 30, 12, 205])
+        new Uint8Array([19, 199, 119, 103, 13, 30, 12, 205]),
       ),
-      0
+      0,
     )
   ) {
     return InitializerInstruction.MigrateLaunch;
@@ -199,9 +199,9 @@ export function identifyInitializerInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([216, 180, 209, 112, 62, 16, 15, 63])
+        new Uint8Array([216, 180, 209, 112, 62, 16, 15, 63]),
       ),
-      0
+      0,
     )
   ) {
     return InitializerInstruction.PreviewMigration;
@@ -210,9 +210,9 @@ export function identifyInitializerInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([50, 130, 31, 69, 147, 58, 222, 178])
+        new Uint8Array([50, 130, 31, 69, 147, 58, 222, 178]),
       ),
-      0
+      0,
     )
   ) {
     return InitializerInstruction.PreviewSwapExactIn;
@@ -221,9 +221,9 @@ export function identifyInitializerInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([209, 90, 181, 104, 99, 108, 233, 168])
+        new Uint8Array([209, 90, 181, 104, 99, 108, 233, 168]),
       ),
-      0
+      0,
     )
   ) {
     return InitializerInstruction.SetMigratorAllowlist;
@@ -232,9 +232,9 @@ export function identifyInitializerInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([233, 72, 180, 246, 171, 117, 21, 50])
+        new Uint8Array([233, 72, 180, 246, 171, 117, 21, 50]),
       ),
-      0
+      0,
     )
   ) {
     return InitializerInstruction.SetSentinelAllowlist;
@@ -243,21 +243,21 @@ export function identifyInitializerInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([40, 204, 40, 16, 219, 190, 133, 78])
+        new Uint8Array([40, 204, 40, 16, 219, 190, 133, 78]),
       ),
-      0
+      0,
     )
   ) {
     return InitializerInstruction.UpdateTradingFlags;
   }
   throw new SolanaError(
     SOLANA_ERROR__PROGRAM_CLIENTS__FAILED_TO_IDENTIFY_INSTRUCTION,
-    { instructionData: data, programName: 'initializer' }
+    { instructionData: data, programName: 'initializer' },
   );
 }
 
 export type ParsedInitializerInstruction<
-  TProgram extends string = '4H9w6qMqqSh6DVW7BzYxPHFvLaQP7rbRiQnPYGPajQxq',
+  TProgram extends string = '4h3Dqyo5qmteJoMxXt3tdtfXELDB6pdRTPU9mWruiKp1',
 > =
   | ({
       instructionType: InitializerInstruction.AbortLaunch;
@@ -291,7 +291,7 @@ export type ParsedInitializerInstruction<
     } & ParsedUpdateTradingFlagsInstruction<TProgram>);
 
 export function parseInitializerInstruction<TProgram extends string>(
-  instruction: Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array>
+  instruction: Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array>,
 ): ParsedInitializerInstruction<TProgram> {
   const instructionType = identifyInitializerInstruction(instruction);
   switch (instructionType) {
@@ -371,7 +371,7 @@ export function parseInitializerInstruction<TProgram extends string>(
         {
           instructionType: instructionType as string,
           programName: 'initializer',
-        }
+        },
       );
   }
 }
@@ -390,43 +390,43 @@ export type InitializerPluginAccounts = {
 
 export type InitializerPluginInstructions = {
   abortLaunch: (
-    input: AbortLaunchAsyncInput
+    input: AbortLaunchAsyncInput,
   ) => ReturnType<typeof getAbortLaunchInstructionAsync> &
     SelfPlanAndSendFunctions;
   curveSwapExactIn: (
-    input: CurveSwapExactInAsyncInput
+    input: CurveSwapExactInAsyncInput,
   ) => ReturnType<typeof getCurveSwapExactInInstructionAsync> &
     SelfPlanAndSendFunctions;
   initializeConfig: (
-    input: InitializeConfigAsyncInput
+    input: InitializeConfigAsyncInput,
   ) => ReturnType<typeof getInitializeConfigInstructionAsync> &
     SelfPlanAndSendFunctions;
   initializeLaunch: (
-    input: MakeOptional<InitializeLaunchAsyncInput, 'payer'>
+    input: MakeOptional<InitializeLaunchAsyncInput, 'payer'>,
   ) => ReturnType<typeof getInitializeLaunchInstructionAsync> &
     SelfPlanAndSendFunctions;
   migrateLaunch: (
-    input: MakeOptional<MigrateLaunchAsyncInput, 'payer'>
+    input: MakeOptional<MigrateLaunchAsyncInput, 'payer'>,
   ) => ReturnType<typeof getMigrateLaunchInstructionAsync> &
     SelfPlanAndSendFunctions;
   previewMigration: (
-    input: PreviewMigrationInput
+    input: PreviewMigrationInput,
   ) => ReturnType<typeof getPreviewMigrationInstruction> &
     SelfPlanAndSendFunctions;
   previewSwapExactIn: (
-    input: PreviewSwapExactInInput
+    input: PreviewSwapExactInInput,
   ) => ReturnType<typeof getPreviewSwapExactInInstruction> &
     SelfPlanAndSendFunctions;
   setMigratorAllowlist: (
-    input: SetMigratorAllowlistAsyncInput
+    input: SetMigratorAllowlistAsyncInput,
   ) => ReturnType<typeof getSetMigratorAllowlistInstructionAsync> &
     SelfPlanAndSendFunctions;
   setSentinelAllowlist: (
-    input: SetSentinelAllowlistAsyncInput
+    input: SetSentinelAllowlistAsyncInput,
   ) => ReturnType<typeof getSetSentinelAllowlistInstructionAsync> &
     SelfPlanAndSendFunctions;
   updateTradingFlags: (
-    input: UpdateTradingFlagsAsyncInput
+    input: UpdateTradingFlagsAsyncInput,
   ) => ReturnType<typeof getUpdateTradingFlagsInstructionAsync> &
     SelfPlanAndSendFunctions;
 };
@@ -451,17 +451,17 @@ export function initializerProgram() {
           abortLaunch: (input) =>
             addSelfPlanAndSendFunctions(
               client,
-              getAbortLaunchInstructionAsync(input)
+              getAbortLaunchInstructionAsync(input),
             ),
           curveSwapExactIn: (input) =>
             addSelfPlanAndSendFunctions(
               client,
-              getCurveSwapExactInInstructionAsync(input)
+              getCurveSwapExactInInstructionAsync(input),
             ),
           initializeConfig: (input) =>
             addSelfPlanAndSendFunctions(
               client,
-              getInitializeConfigInstructionAsync(input)
+              getInitializeConfigInstructionAsync(input),
             ),
           initializeLaunch: (input) =>
             addSelfPlanAndSendFunctions(
@@ -469,7 +469,7 @@ export function initializerProgram() {
               getInitializeLaunchInstructionAsync({
                 ...input,
                 payer: input.payer ?? client.payer,
-              })
+              }),
             ),
           migrateLaunch: (input) =>
             addSelfPlanAndSendFunctions(
@@ -477,32 +477,32 @@ export function initializerProgram() {
               getMigrateLaunchInstructionAsync({
                 ...input,
                 payer: input.payer ?? client.payer,
-              })
+              }),
             ),
           previewMigration: (input) =>
             addSelfPlanAndSendFunctions(
               client,
-              getPreviewMigrationInstruction(input)
+              getPreviewMigrationInstruction(input),
             ),
           previewSwapExactIn: (input) =>
             addSelfPlanAndSendFunctions(
               client,
-              getPreviewSwapExactInInstruction(input)
+              getPreviewSwapExactInInstruction(input),
             ),
           setMigratorAllowlist: (input) =>
             addSelfPlanAndSendFunctions(
               client,
-              getSetMigratorAllowlistInstructionAsync(input)
+              getSetMigratorAllowlistInstructionAsync(input),
             ),
           setSentinelAllowlist: (input) =>
             addSelfPlanAndSendFunctions(
               client,
-              getSetSentinelAllowlistInstructionAsync(input)
+              getSetSentinelAllowlistInstructionAsync(input),
             ),
           updateTradingFlags: (input) =>
             addSelfPlanAndSendFunctions(
               client,
-              getUpdateTradingFlagsInstructionAsync(input)
+              getUpdateTradingFlagsInstructionAsync(input),
             ),
         },
       },

@@ -49,7 +49,7 @@ export const COLLECT_PROTOCOL_FEES_DISCRIMINATOR = new Uint8Array([
 
 export function getCollectProtocolFeesDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    COLLECT_PROTOCOL_FEES_DISCRIMINATOR
+    COLLECT_PROTOCOL_FEES_DISCRIMINATOR,
   );
 }
 
@@ -135,7 +135,7 @@ export function getCollectProtocolFeesInstructionDataEncoder(): FixedSizeEncoder
     (value) => ({
       ...value,
       discriminator: COLLECT_PROTOCOL_FEES_DISCRIMINATOR,
-    })
+    }),
   );
 }
 
@@ -153,7 +153,7 @@ export function getCollectProtocolFeesInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getCollectProtocolFeesInstructionDataEncoder(),
-    getCollectProtocolFeesInstructionDataDecoder()
+    getCollectProtocolFeesInstructionDataDecoder(),
   );
 }
 
@@ -216,7 +216,7 @@ export async function getCollectProtocolFeesInstructionAsync<
     TAccountRecipient1,
     TAccountTokenProgram
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): Promise<
   CollectProtocolFeesInstruction<
     TProgramAddress,
@@ -269,10 +269,10 @@ export async function getCollectProtocolFeesInstructionAsync<
       programAddress,
       seeds: [
         getBytesEncoder().encode(
-          new Uint8Array([97, 117, 116, 104, 111, 114, 105, 116, 121])
+          new Uint8Array([97, 117, 116, 104, 111, 114, 105, 116, 121]),
         ),
         getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount('pool', accounts.pool.value)
+          getAddressFromResolvedInstructionAccount('pool', accounts.pool.value),
         ),
       ],
     });
@@ -299,7 +299,7 @@ export async function getCollectProtocolFeesInstructionAsync<
       getAccountMeta('tokenProgram', accounts.tokenProgram),
     ],
     data: getCollectProtocolFeesInstructionDataEncoder().encode(
-      args as CollectProtocolFeesInstructionDataArgs
+      args as CollectProtocolFeesInstructionDataArgs,
     ),
     programAddress,
   } as CollectProtocolFeesInstruction<
@@ -378,7 +378,7 @@ export function getCollectProtocolFeesInstruction<
     TAccountRecipient1,
     TAccountTokenProgram
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): CollectProtocolFeesInstruction<
   TProgramAddress,
   TAccountConfig,
@@ -446,7 +446,7 @@ export function getCollectProtocolFeesInstruction<
       getAccountMeta('tokenProgram', accounts.tokenProgram),
     ],
     data: getCollectProtocolFeesInstructionDataEncoder().encode(
-      args as CollectProtocolFeesInstructionDataArgs
+      args as CollectProtocolFeesInstructionDataArgs,
     ),
     programAddress,
   } as CollectProtocolFeesInstruction<
@@ -494,7 +494,7 @@ export function parseCollectProtocolFeesInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
+    InstructionWithData<ReadonlyUint8Array>,
 ): ParsedCollectProtocolFeesInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 12) {
     throw new SolanaError(
@@ -502,7 +502,7 @@ export function parseCollectProtocolFeesInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 12,
-      }
+      },
     );
   }
   let accountIndex = 0;
@@ -528,7 +528,7 @@ export function parseCollectProtocolFeesInstruction<
       tokenProgram: getNextAccount(),
     },
     data: getCollectProtocolFeesInstructionDataDecoder().decode(
-      instruction.data
+      instruction.data,
     ),
   };
 }

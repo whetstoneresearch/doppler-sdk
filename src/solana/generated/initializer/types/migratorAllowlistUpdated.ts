@@ -44,6 +44,6 @@ export function getMigratorAllowlistUpdatedCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getMigratorAllowlistUpdatedEncoder(),
-    getMigratorAllowlistUpdatedDecoder()
+    getMigratorAllowlistUpdatedDecoder(),
   );
 }

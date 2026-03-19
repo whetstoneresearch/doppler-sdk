@@ -46,6 +46,6 @@ export function getPreviewSwapExactInArgsCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getPreviewSwapExactInArgsEncoder(),
-    getPreviewSwapExactInArgsDecoder()
+    getPreviewSwapExactInArgsDecoder(),
   );
 }

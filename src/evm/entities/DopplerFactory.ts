@@ -608,7 +608,7 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       const timestampBytes = new Uint8Array(8);
       const bigTimestamp = BigInt(timestamp);
       for (let i = 0; i < 8; i++) {
-        timestampBytes[i] = Number((bigTimestamp >> BigInt(i * 8)) & 0xFFn);
+        timestampBytes[i] = Number((bigTimestamp >> BigInt(i * 8)) & 0xffn);
       }
 
       // Fill array with timestamp and account-based entropy
@@ -1194,10 +1194,8 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     this.validateOpeningAuctionParams(params);
     const addresses = getAddresses(this.chainId);
 
-    const openingAuctionInitializer = this.resolveOpeningAuctionInitializerAddress(
-      params.modules,
-      addresses,
-    );
+    const openingAuctionInitializer =
+      this.resolveOpeningAuctionInitializerAddress(params.modules, addresses);
 
     const [poolManagerForAuction, auctionDeployer] = await Promise.all([
       (this.publicClient as PublicClient).readContract({
@@ -1609,13 +1607,19 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     if (simResult && Array.isArray(simResult) && simResult.length >= 2) {
       const simulatedToken = simResult[0] as Address;
       const simulatedHook = simResult[1] as Address;
-      if (simulatedToken.toLowerCase() !== actualAddresses.tokenAddress.toLowerCase()) {
+      if (
+        simulatedToken.toLowerCase() !==
+        actualAddresses.tokenAddress.toLowerCase()
+      ) {
         console.warn(
           `[DopplerSDK] Simulation predicted token ${simulatedToken} but actual is ${actualAddresses.tokenAddress}. ` +
             `This may indicate state divergence between simulation and execution.`,
         );
       }
-      if (simulatedHook.toLowerCase() !== actualAddresses.poolOrHookAddress.toLowerCase()) {
+      if (
+        simulatedHook.toLowerCase() !==
+        actualAddresses.poolOrHookAddress.toLowerCase()
+      ) {
         console.warn(
           `[DopplerSDK] Simulation predicted opening hook ${simulatedHook} but actual is ${actualAddresses.poolOrHookAddress}. ` +
             `This may indicate state divergence between simulation and execution.`,
@@ -1690,15 +1694,15 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
             });
 
       try {
-        const { request } = await (this.publicClient as PublicClient).simulateContract(
-          {
-            address: initializerAddress,
-            abi: openingAuctionInitializerAbi,
-            functionName: 'completeAuction',
-            args: [args.asset, completion.dopplerSalt],
-            account: this.walletClient?.account,
-          },
-        );
+        const { request } = await (
+          this.publicClient as PublicClient
+        ).simulateContract({
+          address: initializerAddress,
+          abi: openingAuctionInitializerAbi,
+          functionName: 'completeAuction',
+          args: [args.asset, completion.dopplerSalt],
+          account: this.walletClient?.account,
+        });
 
         const gasEstimate =
           request &&
@@ -1778,14 +1782,14 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     });
 
     if (autoSettle && Number(phase) !== OPENING_AUCTION_PHASE_SETTLED) {
-      const { request } = await (this.publicClient as PublicClient).simulateContract(
-        {
-          address: state.openingAuctionHook,
-          abi: openingAuctionAbi,
-          functionName: 'settleAuction',
-          account: this.walletClient.account,
-        },
-      );
+      const { request } = await (
+        this.publicClient as PublicClient
+      ).simulateContract({
+        address: state.openingAuctionHook,
+        abi: openingAuctionAbi,
+        functionName: 'settleAuction',
+        account: this.walletClient.account,
+      });
       const settleTx = await this.walletClient.writeContract(request);
       await (this.publicClient as PublicClient).waitForTransactionReceipt({
         hash: settleTx,
@@ -1800,7 +1804,9 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     let startSalt: bigint | undefined;
     let lastError: unknown;
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-      const stateRawAttempt = await (this.publicClient as PublicClient).readContract({
+      const stateRawAttempt = await (
+        this.publicClient as PublicClient
+      ).readContract({
         address: initializerAddress,
         abi: openingAuctionInitializerAbi,
         functionName: 'getState',
@@ -1829,7 +1835,9 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
 
       let request: unknown;
       try {
-        ({ request } = await (this.publicClient as PublicClient).simulateContract({
+        ({ request } = await (
+          this.publicClient as PublicClient
+        ).simulateContract({
           address: initializerAddress,
           abi: openingAuctionInitializerAbi,
           functionName: 'completeAuction',
@@ -1847,7 +1855,9 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       }
 
       const txHash = await this.walletClient.writeContract(request as any);
-      const receipt = await (this.publicClient as PublicClient).waitForTransactionReceipt({
+      const receipt = await (
+        this.publicClient as PublicClient
+      ).waitForTransactionReceipt({
         hash: txHash,
         confirmations: 2,
       });
@@ -1864,14 +1874,14 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
         continue;
       }
 
-      const dopplerHookAddress = await (this.publicClient as PublicClient).readContract(
-        {
-          address: initializerAddress,
-          abi: openingAuctionInitializerAbi,
-          functionName: 'getDopplerHook',
-          args: [args.asset],
-        },
-      );
+      const dopplerHookAddress = await (
+        this.publicClient as PublicClient
+      ).readContract({
+        address: initializerAddress,
+        abi: openingAuctionInitializerAbi,
+        functionName: 'getDopplerHook',
+        args: [args.asset],
+      });
 
       const finalHookAddress =
         dopplerHookAddress === ZERO_ADDRESS
@@ -1910,15 +1920,15 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       ? args.initializerAddress
       : this.resolveOpeningAuctionInitializerAddress();
 
-    const { request } = await (this.publicClient as PublicClient).simulateContract(
-      {
-        address: initializerAddress,
-        abi: openingAuctionInitializerAbi,
-        functionName: 'recoverOpeningAuctionIncentives',
-        args: [args.asset],
-        account: args.account ?? this.walletClient?.account,
-      },
-    );
+    const { request } = await (
+      this.publicClient as PublicClient
+    ).simulateContract({
+      address: initializerAddress,
+      abi: openingAuctionInitializerAbi,
+      functionName: 'recoverOpeningAuctionIncentives',
+      args: [args.asset],
+      account: args.account ?? this.walletClient?.account,
+    });
     return { request };
   }
 
@@ -1945,15 +1955,15 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       ? args.initializerAddress
       : this.resolveOpeningAuctionInitializerAddress();
 
-    const { request } = await (this.publicClient as PublicClient).simulateContract(
-      {
-        address: initializerAddress,
-        abi: openingAuctionInitializerAbi,
-        functionName: 'sweepOpeningAuctionIncentives',
-        args: [args.asset],
-        account: args.account ?? this.walletClient?.account,
-      },
-    );
+    const { request } = await (
+      this.publicClient as PublicClient
+    ).simulateContract({
+      address: initializerAddress,
+      abi: openingAuctionInitializerAbi,
+      functionName: 'sweepOpeningAuctionIncentives',
+      args: [args.asset],
+      account: args.account ?? this.walletClient?.account,
+    });
     return { request };
   }
 
@@ -2041,9 +2051,7 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       status: Number(value.status),
       openingAuctionHook: value.openingAuctionHook as Address,
       dopplerHook: value.dopplerHook as Address,
-      openingAuctionPoolKey: this.normalizePoolKey(
-        value.openingAuctionPoolKey,
-      ),
+      openingAuctionPoolKey: this.normalizePoolKey(value.openingAuctionPoolKey),
       dopplerInitData: value.dopplerInitData as `0x${string}`,
       isToken0: Boolean(value.isToken0),
     };
@@ -2170,35 +2178,43 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     blockTimestamp?: number;
     startSalt?: bigint;
   }): Promise<{ dopplerSalt: Hash; dopplerHookAddress: Address }> {
-    const [phaseRaw, clearingTickRaw, incentiveTokensTotal, totalIncentivesClaimed] =
-      await Promise.all([
-        (this.publicClient as PublicClient).readContract({
-          address: args.state.openingAuctionHook,
-          abi: openingAuctionAbi,
-          functionName: 'phase',
-        }),
-        (this.publicClient as PublicClient).readContract({
-          address: args.state.openingAuctionHook,
-          abi: openingAuctionAbi,
-          functionName: 'clearingTick',
-        }),
-        (this.publicClient as PublicClient).readContract({
-          address: args.state.openingAuctionHook,
-          abi: openingAuctionAbi,
-          functionName: 'incentiveTokensTotal',
-        }),
-        (this.publicClient as PublicClient).readContract({
-          address: args.state.openingAuctionHook,
-          abi: openingAuctionAbi,
-          functionName: 'totalIncentivesClaimed',
-        }),
-      ]);
+    const [
+      phaseRaw,
+      clearingTickRaw,
+      incentiveTokensTotal,
+      totalIncentivesClaimed,
+    ] = await Promise.all([
+      (this.publicClient as PublicClient).readContract({
+        address: args.state.openingAuctionHook,
+        abi: openingAuctionAbi,
+        functionName: 'phase',
+      }),
+      (this.publicClient as PublicClient).readContract({
+        address: args.state.openingAuctionHook,
+        abi: openingAuctionAbi,
+        functionName: 'clearingTick',
+      }),
+      (this.publicClient as PublicClient).readContract({
+        address: args.state.openingAuctionHook,
+        abi: openingAuctionAbi,
+        functionName: 'incentiveTokensTotal',
+      }),
+      (this.publicClient as PublicClient).readContract({
+        address: args.state.openingAuctionHook,
+        abi: openingAuctionAbi,
+        functionName: 'totalIncentivesClaimed',
+      }),
+    ]);
 
     if (Number(phaseRaw) !== OPENING_AUCTION_PHASE_SETTLED) {
-      throw new Error('Opening auction must be settled before completion mining');
+      throw new Error(
+        'Opening auction must be settled before completion mining',
+      );
     }
 
-    const rawAssetBalance = await (this.publicClient as PublicClient).readContract({
+    const rawAssetBalance = await (
+      this.publicClient as PublicClient
+    ).readContract({
       address: args.asset,
       abi: erc20BalanceOfAbi,
       functionName: 'balanceOf',
@@ -2220,8 +2236,14 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       Number(clearingTickRaw),
       dopplerData.tickSpacing,
     );
-    const minAligned = this.alignTickTowardZero(MIN_TICK, dopplerData.tickSpacing);
-    const maxAligned = this.alignTickTowardZero(MAX_TICK, dopplerData.tickSpacing);
+    const minAligned = this.alignTickTowardZero(
+      MIN_TICK,
+      dopplerData.tickSpacing,
+    );
+    const maxAligned = this.alignTickTowardZero(
+      MAX_TICK,
+      dopplerData.tickSpacing,
+    );
     if (alignedClearingTick < minAligned) alignedClearingTick = minAligned;
     if (alignedClearingTick > maxAligned) alignedClearingTick = maxAligned;
 
@@ -2354,7 +2376,10 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     const initHash = keccak256(
       encodePacked(['bytes', 'bytes'], [DopplerBytecode as Hex, initHashData]),
     );
-    const hookBuffer = this.prepareCreate2Buffer(args.dopplerDeployer, initHash);
+    const hookBuffer = this.prepareCreate2Buffer(
+      args.dopplerDeployer,
+      initHash,
+    );
 
     for (let salt = args.startSalt ?? 0n; salt < ONE_MILLION; salt++) {
       this.updateSaltInBuffer(hookBuffer, salt);
@@ -2526,7 +2551,10 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
         ],
       );
       tokenInitHash = keccak256(
-        encodePacked(['bytes', 'bytes'], [DopplerDN404Bytecode as Hex, initData]),
+        encodePacked(
+          ['bytes', 'bytes'],
+          [DopplerDN404Bytecode as Hex, initData],
+        ),
       );
     } else {
       const t = params.tokenFactoryData as {
@@ -2585,7 +2613,10 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       params.auctionDeployer,
       hookInitHash,
     );
-    const tokenBuffer = this.prepareCreate2Buffer(params.tokenFactory, tokenInitHash);
+    const tokenBuffer = this.prepareCreate2Buffer(
+      params.tokenFactory,
+      tokenInitHash,
+    );
 
     for (let salt = 0n; salt < ONE_MILLION; salt++) {
       this.updateSaltInBuffer(hookBuffer, salt);
@@ -3866,7 +3897,8 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       const fallbackCurve = {
         tickLower: adjustedLower,
         tickUpper: fallbackTickUpper,
-        numPositions: sanitizedCurves[sanitizedCurves.length - 1]?.numPositions ?? 1,
+        numPositions:
+          sanitizedCurves[sanitizedCurves.length - 1]?.numPositions ?? 1,
         shares: missingShare,
       };
       return [...sanitizedCurves, fallbackCurve];
@@ -4230,8 +4262,14 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     if (params.openingAuction.incentiveShareBps > 10_000) {
       throw new Error('openingAuction.incentiveShareBps cannot exceed 10_000');
     }
-    if (params.openingAuction.incentiveShareBps + params.openingAuction.shareToAuctionBps > 10_000) {
-      throw new Error('openingAuction.incentiveShareBps + shareToAuctionBps cannot exceed 10_000');
+    if (
+      params.openingAuction.incentiveShareBps +
+        params.openingAuction.shareToAuctionBps >
+      10_000
+    ) {
+      throw new Error(
+        'openingAuction.incentiveShareBps + shareToAuctionBps cannot exceed 10_000',
+      );
     }
     if (params.openingAuction.auctionDuration <= 0) {
       throw new Error('openingAuction.auctionDuration must be positive');
@@ -4244,10 +4282,14 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     }
 
     if (params.doppler.duration <= 0 || params.doppler.epochLength <= 0) {
-      throw new Error('doppler.duration and doppler.epochLength must be positive');
+      throw new Error(
+        'doppler.duration and doppler.epochLength must be positive',
+      );
     }
     if (params.doppler.duration % params.doppler.epochLength !== 0) {
-      throw new Error('doppler.epochLength must divide doppler.duration evenly');
+      throw new Error(
+        'doppler.epochLength must divide doppler.duration evenly',
+      );
     }
     if (params.doppler.tickSpacing <= 0) {
       throw new Error('doppler.tickSpacing must be positive');
@@ -4263,17 +4305,37 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       );
     }
 
-    if (params.openingAuction.minAcceptableTickToken0 < INT24_MIN || params.openingAuction.minAcceptableTickToken0 > INT24_MAX) {
-      throw new Error(`openingAuction.minAcceptableTickToken0 must be within int24 range (${INT24_MIN} to ${INT24_MAX})`);
+    if (
+      params.openingAuction.minAcceptableTickToken0 < INT24_MIN ||
+      params.openingAuction.minAcceptableTickToken0 > INT24_MAX
+    ) {
+      throw new Error(
+        `openingAuction.minAcceptableTickToken0 must be within int24 range (${INT24_MIN} to ${INT24_MAX})`,
+      );
     }
-    if (params.openingAuction.minAcceptableTickToken1 < INT24_MIN || params.openingAuction.minAcceptableTickToken1 > INT24_MAX) {
-      throw new Error(`openingAuction.minAcceptableTickToken1 must be within int24 range (${INT24_MIN} to ${INT24_MAX})`);
+    if (
+      params.openingAuction.minAcceptableTickToken1 < INT24_MIN ||
+      params.openingAuction.minAcceptableTickToken1 > INT24_MAX
+    ) {
+      throw new Error(
+        `openingAuction.minAcceptableTickToken1 must be within int24 range (${INT24_MIN} to ${INT24_MAX})`,
+      );
     }
-    if (params.doppler.startTick < INT24_MIN || params.doppler.startTick > INT24_MAX) {
-      throw new Error(`doppler.startTick must be within int24 range (${INT24_MIN} to ${INT24_MAX})`);
+    if (
+      params.doppler.startTick < INT24_MIN ||
+      params.doppler.startTick > INT24_MAX
+    ) {
+      throw new Error(
+        `doppler.startTick must be within int24 range (${INT24_MIN} to ${INT24_MAX})`,
+      );
     }
-    if (params.doppler.endTick < INT24_MIN || params.doppler.endTick > INT24_MAX) {
-      throw new Error(`doppler.endTick must be within int24 range (${INT24_MIN} to ${INT24_MAX})`);
+    if (
+      params.doppler.endTick < INT24_MIN ||
+      params.doppler.endTick > INT24_MAX
+    ) {
+      throw new Error(
+        `doppler.endTick must be within int24 range (${INT24_MIN} to ${INT24_MAX})`,
+      );
     }
 
     const isToken0 = isToken0Expected(params.sale.numeraire);
@@ -4296,7 +4358,9 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     }
 
     if (params.migration.type === 'dopplerHook') {
-      throw new Error('dopplerHook migration type is not supported for opening auctions');
+      throw new Error(
+        'dopplerHook migration type is not supported for opening auctions',
+      );
     }
   }
 

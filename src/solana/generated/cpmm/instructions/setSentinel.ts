@@ -48,7 +48,7 @@ export const SET_SENTINEL_DISCRIMINATOR = new Uint8Array([
 
 export function getSetSentinelDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    SET_SENTINEL_DISCRIMINATOR
+    SET_SENTINEL_DISCRIMINATOR,
   );
 }
 
@@ -94,7 +94,7 @@ export function getSetSentinelInstructionDataEncoder(): FixedSizeEncoder<SetSent
       ['sentinelProgram', getAddressEncoder()],
       ['sentinelFlags', getU32Encoder()],
     ]),
-    (value) => ({ ...value, discriminator: SET_SENTINEL_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: SET_SENTINEL_DISCRIMINATOR }),
   );
 }
 
@@ -112,7 +112,7 @@ export function getSetSentinelInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getSetSentinelInstructionDataEncoder(),
-    getSetSentinelInstructionDataDecoder()
+    getSetSentinelInstructionDataDecoder(),
   );
 }
 
@@ -135,7 +135,7 @@ export function getSetSentinelInstruction<
   TProgramAddress extends Address = typeof CPMM_PROGRAM_ADDRESS,
 >(
   input: SetSentinelInput<TAccountConfig, TAccountPool, TAccountAdmin>,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): SetSentinelInstruction<
   TProgramAddress,
   TAccountConfig,
@@ -167,7 +167,7 @@ export function getSetSentinelInstruction<
       getAccountMeta('admin', accounts.admin),
     ],
     data: getSetSentinelInstructionDataEncoder().encode(
-      args as SetSentinelInstructionDataArgs
+      args as SetSentinelInstructionDataArgs,
     ),
     programAddress,
   } as SetSentinelInstruction<
@@ -197,7 +197,7 @@ export function parseSetSentinelInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
+    InstructionWithData<ReadonlyUint8Array>,
 ): ParsedSetSentinelInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 3) {
     throw new SolanaError(
@@ -205,7 +205,7 @@ export function parseSetSentinelInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 3,
-      }
+      },
     );
   }
   let accountIndex = 0;

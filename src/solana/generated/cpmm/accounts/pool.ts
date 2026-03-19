@@ -147,7 +147,7 @@ export function getPoolEncoder(): FixedSizeEncoder<PoolArgs> {
       ['version', getU8Encoder()],
       ['reserved', fixEncoderSize(getBytesEncoder(), 7)],
     ]),
-    (value) => ({ ...value, discriminator: POOL_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: POOL_DISCRIMINATOR }),
   );
 }
 
@@ -191,24 +191,24 @@ export function getPoolCodec(): FixedSizeCodec<PoolArgs, Pool> {
 }
 
 export function decodePool<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress>
+  encodedAccount: EncodedAccount<TAddress>,
 ): Account<Pool, TAddress>;
 export function decodePool<TAddress extends string = string>(
-  encodedAccount: MaybeEncodedAccount<TAddress>
+  encodedAccount: MaybeEncodedAccount<TAddress>,
 ): MaybeAccount<Pool, TAddress>;
 export function decodePool<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>
+  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>,
 ): Account<Pool, TAddress> | MaybeAccount<Pool, TAddress> {
   return decodeAccount(
     encodedAccount as MaybeEncodedAccount<TAddress>,
-    getPoolDecoder()
+    getPoolDecoder(),
   );
 }
 
 export async function fetchPool<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
-  config?: FetchAccountConfig
+  config?: FetchAccountConfig,
 ): Promise<Account<Pool, TAddress>> {
   const maybeAccount = await fetchMaybePool(rpc, address, config);
   assertAccountExists(maybeAccount);
@@ -218,7 +218,7 @@ export async function fetchPool<TAddress extends string = string>(
 export async function fetchMaybePool<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
-  config?: FetchAccountConfig
+  config?: FetchAccountConfig,
 ): Promise<MaybeAccount<Pool, TAddress>> {
   const maybeAccount = await fetchEncodedAccount(rpc, address, config);
   return decodePool(maybeAccount);
@@ -227,7 +227,7 @@ export async function fetchMaybePool<TAddress extends string = string>(
 export async function fetchAllPool(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
-  config?: FetchAccountsConfig
+  config?: FetchAccountsConfig,
 ): Promise<Account<Pool>[]> {
   const maybeAccounts = await fetchAllMaybePool(rpc, addresses, config);
   assertAccountsExist(maybeAccounts);
@@ -237,7 +237,7 @@ export async function fetchAllPool(
 export async function fetchAllMaybePool(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
-  config?: FetchAccountsConfig
+  config?: FetchAccountsConfig,
 ): Promise<MaybeAccount<Pool>[]> {
   const maybeAccounts = await fetchEncodedAccounts(rpc, addresses, config);
   return maybeAccounts.map((maybeAccount) => decodePool(maybeAccount));

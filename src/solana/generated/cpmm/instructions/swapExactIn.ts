@@ -53,7 +53,7 @@ export const SWAP_EXACT_IN_DISCRIMINATOR = new Uint8Array([
 
 export function getSwapExactInDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    SWAP_EXACT_IN_DISCRIMINATOR
+    SWAP_EXACT_IN_DISCRIMINATOR,
   );
 }
 
@@ -142,7 +142,7 @@ export function getSwapExactInInstructionDataEncoder(): FixedSizeEncoder<SwapExa
       ['direction', getU8Encoder()],
       ['updateOracle', getBooleanEncoder()],
     ]),
-    (value) => ({ ...value, discriminator: SWAP_EXACT_IN_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: SWAP_EXACT_IN_DISCRIMINATOR }),
   );
 }
 
@@ -162,7 +162,7 @@ export function getSwapExactInInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getSwapExactInInstructionDataEncoder(),
-    getSwapExactInInstructionDataDecoder()
+    getSwapExactInInstructionDataDecoder(),
   );
 }
 
@@ -227,7 +227,7 @@ export async function getSwapExactInInstructionAsync<
     TAccountTokenProgram,
     TAccountOracle
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): Promise<
   SwapExactInInstruction<
     TProgramAddress,
@@ -277,10 +277,10 @@ export async function getSwapExactInInstructionAsync<
       programAddress,
       seeds: [
         getBytesEncoder().encode(
-          new Uint8Array([97, 117, 116, 104, 111, 114, 105, 116, 121])
+          new Uint8Array([97, 117, 116, 104, 111, 114, 105, 116, 121]),
         ),
         getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount('pool', accounts.pool.value)
+          getAddressFromResolvedInstructionAccount('pool', accounts.pool.value),
         ),
       ],
     });
@@ -307,7 +307,7 @@ export async function getSwapExactInInstructionAsync<
       getAccountMeta('oracle', accounts.oracle),
     ],
     data: getSwapExactInInstructionDataEncoder().encode(
-      args as SwapExactInInstructionDataArgs
+      args as SwapExactInInstructionDataArgs,
     ),
     programAddress,
   } as SwapExactInInstruction<
@@ -388,7 +388,7 @@ export function getSwapExactInInstruction<
     TAccountTokenProgram,
     TAccountOracle
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): SwapExactInInstruction<
   TProgramAddress,
   TAccountConfig,
@@ -453,7 +453,7 @@ export function getSwapExactInInstruction<
       getAccountMeta('oracle', accounts.oracle),
     ],
     data: getSwapExactInInstructionDataEncoder().encode(
-      args as SwapExactInInstructionDataArgs
+      args as SwapExactInInstructionDataArgs,
     ),
     programAddress,
   } as SwapExactInInstruction<
@@ -501,7 +501,7 @@ export function parseSwapExactInInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
+    InstructionWithData<ReadonlyUint8Array>,
 ): ParsedSwapExactInInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 12) {
     throw new SolanaError(
@@ -509,7 +509,7 @@ export function parseSwapExactInInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 12,
-      }
+      },
     );
   }
   let accountIndex = 0;

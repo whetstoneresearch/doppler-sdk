@@ -56,6 +56,6 @@ export function getAccumulatorUpdatedCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getAccumulatorUpdatedEncoder(),
-    getAccumulatorUpdatedDecoder()
+    getAccumulatorUpdatedDecoder(),
   );
 }

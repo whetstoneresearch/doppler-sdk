@@ -80,7 +80,7 @@ export function getFinalizeInstructionDataEncoder(): FixedSizeEncoder<FinalizeIn
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       ['winningMint', getAddressEncoder()],
     ]),
-    (value) => ({ ...value, discriminator: FINALIZE_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: FINALIZE_DISCRIMINATOR }),
   );
 }
 
@@ -97,7 +97,7 @@ export function getFinalizeInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getFinalizeInstructionDataEncoder(),
-    getFinalizeInstructionDataDecoder()
+    getFinalizeInstructionDataDecoder(),
   );
 }
 
@@ -117,7 +117,7 @@ export function getFinalizeInstruction<
   TProgramAddress extends Address = typeof TRUSTED_ORACLE_PROGRAM_ADDRESS,
 >(
   input: FinalizeInput<TAccountOracleAuthority, TAccountOracleState>,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): FinalizeInstruction<
   TProgramAddress,
   TAccountOracleAuthority,
@@ -150,7 +150,7 @@ export function getFinalizeInstruction<
       getAccountMeta('oracleState', accounts.oracleState),
     ],
     data: getFinalizeInstructionDataEncoder().encode(
-      args as FinalizeInstructionDataArgs
+      args as FinalizeInstructionDataArgs,
     ),
     programAddress,
   } as FinalizeInstruction<
@@ -179,7 +179,7 @@ export function parseFinalizeInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
+    InstructionWithData<ReadonlyUint8Array>,
 ): ParsedFinalizeInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 2) {
     throw new SolanaError(
@@ -187,7 +187,7 @@ export function parseFinalizeInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 2,
-      }
+      },
     );
   }
   let accountIndex = 0;

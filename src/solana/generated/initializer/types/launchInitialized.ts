@@ -85,6 +85,6 @@ export function getLaunchInitializedCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getLaunchInitializedEncoder(),
-    getLaunchInitializedDecoder()
+    getLaunchInitializedDecoder(),
   );
 }

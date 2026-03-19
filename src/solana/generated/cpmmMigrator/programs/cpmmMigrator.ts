@@ -52,7 +52,7 @@ import {
 } from '../instructions';
 
 export const CPMM_MIGRATOR_PROGRAM_ADDRESS =
-  'CpmmMig1111111111111111111111111111111111111' as Address<'CpmmMig1111111111111111111111111111111111111'>;
+  '7WMUTNC41eMCo6eGH5Sy2xbgE3AycvLbFPo95AU9CSUd' as Address<'7WMUTNC41eMCo6eGH5Sy2xbgE3AycvLbFPo95AU9CSUd'>;
 
 export enum CpmmMigratorAccount {
   CpmmMigratorState,
@@ -60,16 +60,16 @@ export enum CpmmMigratorAccount {
 }
 
 export function identifyCpmmMigratorAccount(
-  account: { data: ReadonlyUint8Array } | ReadonlyUint8Array
+  account: { data: ReadonlyUint8Array } | ReadonlyUint8Array,
 ): CpmmMigratorAccount {
   const data = 'data' in account ? account.data : account;
   if (
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([169, 86, 255, 187, 37, 248, 11, 176])
+        new Uint8Array([169, 86, 255, 187, 37, 248, 11, 176]),
       ),
-      0
+      0,
     )
   ) {
     return CpmmMigratorAccount.CpmmMigratorState;
@@ -78,16 +78,16 @@ export function identifyCpmmMigratorAccount(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([144, 51, 51, 163, 206, 85, 213, 38])
+        new Uint8Array([144, 51, 51, 163, 206, 85, 213, 38]),
       ),
-      0
+      0,
     )
   ) {
     return CpmmMigratorAccount.Launch;
   }
   throw new SolanaError(
     SOLANA_ERROR__PROGRAM_CLIENTS__FAILED_TO_IDENTIFY_ACCOUNT,
-    { accountData: data, programName: 'cpmmMigrator' }
+    { accountData: data, programName: 'cpmmMigrator' },
   );
 }
 
@@ -97,16 +97,16 @@ export enum CpmmMigratorInstruction {
 }
 
 export function identifyCpmmMigratorInstruction(
-  instruction: { data: ReadonlyUint8Array } | ReadonlyUint8Array
+  instruction: { data: ReadonlyUint8Array } | ReadonlyUint8Array,
 ): CpmmMigratorInstruction {
   const data = 'data' in instruction ? instruction.data : instruction;
   if (
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([155, 234, 231, 146, 236, 158, 162, 30])
+        new Uint8Array([155, 234, 231, 146, 236, 158, 162, 30]),
       ),
-      0
+      0,
     )
   ) {
     return CpmmMigratorInstruction.Migrate;
@@ -115,21 +115,21 @@ export function identifyCpmmMigratorInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([114, 114, 67, 23, 41, 70, 0, 225])
+        new Uint8Array([114, 114, 67, 23, 41, 70, 0, 225]),
       ),
-      0
+      0,
     )
   ) {
     return CpmmMigratorInstruction.RegisterLaunch;
   }
   throw new SolanaError(
     SOLANA_ERROR__PROGRAM_CLIENTS__FAILED_TO_IDENTIFY_INSTRUCTION,
-    { instructionData: data, programName: 'cpmmMigrator' }
+    { instructionData: data, programName: 'cpmmMigrator' },
   );
 }
 
 export type ParsedCpmmMigratorInstruction<
-  TProgram extends string = 'CpmmMig1111111111111111111111111111111111111',
+  TProgram extends string = '7WMUTNC41eMCo6eGH5Sy2xbgE3AycvLbFPo95AU9CSUd',
 > =
   | ({
       instructionType: CpmmMigratorInstruction.Migrate;
@@ -139,7 +139,7 @@ export type ParsedCpmmMigratorInstruction<
     } & ParsedRegisterLaunchInstruction<TProgram>);
 
 export function parseCpmmMigratorInstruction<TProgram extends string>(
-  instruction: Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array>
+  instruction: Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array>,
 ): ParsedCpmmMigratorInstruction<TProgram> {
   const instructionType = identifyCpmmMigratorInstruction(instruction);
   switch (instructionType) {
@@ -163,7 +163,7 @@ export function parseCpmmMigratorInstruction<TProgram extends string>(
         {
           instructionType: instructionType as string,
           programName: 'cpmmMigrator',
-        }
+        },
       );
   }
 }
@@ -182,10 +182,10 @@ export type CpmmMigratorPluginAccounts = {
 
 export type CpmmMigratorPluginInstructions = {
   migrate: (
-    input: MakeOptional<MigrateAsyncInput, 'payer'>
+    input: MakeOptional<MigrateAsyncInput, 'payer'>,
   ) => ReturnType<typeof getMigrateInstructionAsync> & SelfPlanAndSendFunctions;
   registerLaunch: (
-    input: MakeOptional<RegisterLaunchAsyncInput, 'payer'>
+    input: MakeOptional<RegisterLaunchAsyncInput, 'payer'>,
   ) => ReturnType<typeof getRegisterLaunchInstructionAsync> &
     SelfPlanAndSendFunctions;
 };
@@ -205,7 +205,7 @@ export function cpmmMigratorProgram() {
         accounts: {
           cpmmMigratorState: addSelfFetchFunctions(
             client,
-            getCpmmMigratorStateCodec()
+            getCpmmMigratorStateCodec(),
           ),
           launch: addSelfFetchFunctions(client, getLaunchCodec()),
         },
@@ -216,7 +216,7 @@ export function cpmmMigratorProgram() {
               getMigrateInstructionAsync({
                 ...input,
                 payer: input.payer ?? client.payer,
-              })
+              }),
             ),
           registerLaunch: (input) =>
             addSelfPlanAndSendFunctions(
@@ -224,7 +224,7 @@ export function cpmmMigratorProgram() {
               getRegisterLaunchInstructionAsync({
                 ...input,
                 payer: input.payer ?? client.payer,
-              })
+              }),
             ),
         },
       },

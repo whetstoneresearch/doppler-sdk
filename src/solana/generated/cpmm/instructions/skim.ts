@@ -113,7 +113,7 @@ export type SkimInstructionDataArgs = {};
 export function getSkimInstructionDataEncoder(): FixedSizeEncoder<SkimInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
-    (value) => ({ ...value, discriminator: SKIM_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: SKIM_DISCRIMINATOR }),
   );
 }
 
@@ -129,7 +129,7 @@ export function getSkimInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getSkimInstructionDataEncoder(),
-    getSkimInstructionDataDecoder()
+    getSkimInstructionDataDecoder(),
   );
 }
 
@@ -186,7 +186,7 @@ export async function getSkimInstructionAsync<
     TAccountAdminAta1,
     TAccountTokenProgram
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): Promise<
   SkimInstruction<
     TProgramAddress,
@@ -231,10 +231,10 @@ export async function getSkimInstructionAsync<
       programAddress,
       seeds: [
         getBytesEncoder().encode(
-          new Uint8Array([97, 117, 116, 104, 111, 114, 105, 116, 121])
+          new Uint8Array([97, 117, 116, 104, 111, 114, 105, 116, 121]),
         ),
         getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount('pool', accounts.pool.value)
+          getAddressFromResolvedInstructionAccount('pool', accounts.pool.value),
         ),
       ],
     });
@@ -330,7 +330,7 @@ export function getSkimInstruction<
     TAccountAdminAta1,
     TAccountTokenProgram
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): SkimInstruction<
   TProgramAddress,
   TAccountConfig,
@@ -433,7 +433,7 @@ export function parseSkimInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
+    InstructionWithData<ReadonlyUint8Array>,
 ): ParsedSkimInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 11) {
     throw new SolanaError(
@@ -441,7 +441,7 @@ export function parseSkimInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 11,
-      }
+      },
     );
   }
   let accountIndex = 0;

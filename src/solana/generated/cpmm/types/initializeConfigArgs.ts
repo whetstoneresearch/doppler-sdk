@@ -71,6 +71,6 @@ export function getInitializeConfigArgsCodec(): Codec<
 > {
   return combineCodec(
     getInitializeConfigArgsEncoder(),
-    getInitializeConfigArgsDecoder()
+    getInitializeConfigArgsDecoder(),
   );
 }

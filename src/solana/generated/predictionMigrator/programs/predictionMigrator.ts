@@ -72,7 +72,7 @@ import {
 } from '../instructions';
 
 export const PREDICTION_MIGRATOR_PROGRAM_ADDRESS =
-  '41zP8ovFZvvxAncujgjYfHz5xvR8zZgwGGVfwCJG3WkK' as Address<'41zP8ovFZvvxAncujgjYfHz5xvR8zZgwGGVfwCJG3WkK'>;
+  'HYHdyy7QZg8Ucky9Z97xNtSCvrZxVNkeoney8xEPXjiZ' as Address<'HYHdyy7QZg8Ucky9Z97xNtSCvrZxVNkeoney8xEPXjiZ'>;
 
 export enum PredictionMigratorAccount {
   ClaimReceipt,
@@ -84,16 +84,16 @@ export enum PredictionMigratorAccount {
 }
 
 export function identifyPredictionMigratorAccount(
-  account: { data: ReadonlyUint8Array } | ReadonlyUint8Array
+  account: { data: ReadonlyUint8Array } | ReadonlyUint8Array,
 ): PredictionMigratorAccount {
   const data = 'data' in account ? account.data : account;
   if (
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([223, 233, 11, 229, 124, 165, 207, 28])
+        new Uint8Array([223, 233, 11, 229, 124, 165, 207, 28]),
       ),
-      0
+      0,
     )
   ) {
     return PredictionMigratorAccount.ClaimReceipt;
@@ -102,9 +102,9 @@ export function identifyPredictionMigratorAccount(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([63, 18, 152, 113, 215, 246, 221, 250])
+        new Uint8Array([63, 18, 152, 113, 215, 246, 221, 250]),
       ),
-      0
+      0,
     )
   ) {
     return PredictionMigratorAccount.Entry;
@@ -113,9 +113,9 @@ export function identifyPredictionMigratorAccount(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([188, 191, 157, 194, 68, 82, 181, 126])
+        new Uint8Array([188, 191, 157, 194, 68, 82, 181, 126]),
       ),
-      0
+      0,
     )
   ) {
     return PredictionMigratorAccount.EntryByMint;
@@ -124,9 +124,9 @@ export function identifyPredictionMigratorAccount(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([144, 51, 51, 163, 206, 85, 213, 38])
+        new Uint8Array([144, 51, 51, 163, 206, 85, 213, 38]),
       ),
-      0
+      0,
     )
   ) {
     return PredictionMigratorAccount.Launch;
@@ -135,9 +135,9 @@ export function identifyPredictionMigratorAccount(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([219, 190, 213, 55, 0, 227, 198, 154])
+        new Uint8Array([219, 190, 213, 55, 0, 227, 198, 154]),
       ),
-      0
+      0,
     )
   ) {
     return PredictionMigratorAccount.Market;
@@ -146,16 +146,16 @@ export function identifyPredictionMigratorAccount(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([97, 156, 157, 189, 194, 73, 8, 15])
+        new Uint8Array([97, 156, 157, 189, 194, 73, 8, 15]),
       ),
-      0
+      0,
     )
   ) {
     return PredictionMigratorAccount.OracleState;
   }
   throw new SolanaError(
     SOLANA_ERROR__PROGRAM_CLIENTS__FAILED_TO_IDENTIFY_ACCOUNT,
-    { accountData: data, programName: 'predictionMigrator' }
+    { accountData: data, programName: 'predictionMigrator' },
   );
 }
 
@@ -167,16 +167,16 @@ export enum PredictionMigratorInstruction {
 }
 
 export function identifyPredictionMigratorInstruction(
-  instruction: { data: ReadonlyUint8Array } | ReadonlyUint8Array
+  instruction: { data: ReadonlyUint8Array } | ReadonlyUint8Array,
 ): PredictionMigratorInstruction {
   const data = 'data' in instruction ? instruction.data : instruction;
   if (
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([62, 198, 214, 193, 213, 159, 108, 210])
+        new Uint8Array([62, 198, 214, 193, 213, 159, 108, 210]),
       ),
-      0
+      0,
     )
   ) {
     return PredictionMigratorInstruction.Claim;
@@ -185,9 +185,9 @@ export function identifyPredictionMigratorInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([239, 154, 55, 173, 110, 36, 188, 214])
+        new Uint8Array([239, 154, 55, 173, 110, 36, 188, 214]),
       ),
-      0
+      0,
     )
   ) {
     return PredictionMigratorInstruction.MigrateEntry;
@@ -196,9 +196,9 @@ export function identifyPredictionMigratorInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([228, 144, 72, 185, 234, 186, 183, 143])
+        new Uint8Array([228, 144, 72, 185, 234, 186, 183, 143]),
       ),
-      0
+      0,
     )
   ) {
     return PredictionMigratorInstruction.PreviewPayoutIfWinner;
@@ -207,21 +207,21 @@ export function identifyPredictionMigratorInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([198, 25, 1, 183, 73, 219, 215, 14])
+        new Uint8Array([198, 25, 1, 183, 73, 219, 215, 14]),
       ),
-      0
+      0,
     )
   ) {
     return PredictionMigratorInstruction.RegisterEntry;
   }
   throw new SolanaError(
     SOLANA_ERROR__PROGRAM_CLIENTS__FAILED_TO_IDENTIFY_INSTRUCTION,
-    { instructionData: data, programName: 'predictionMigrator' }
+    { instructionData: data, programName: 'predictionMigrator' },
   );
 }
 
 export type ParsedPredictionMigratorInstruction<
-  TProgram extends string = '41zP8ovFZvvxAncujgjYfHz5xvR8zZgwGGVfwCJG3WkK',
+  TProgram extends string = 'HYHdyy7QZg8Ucky9Z97xNtSCvrZxVNkeoney8xEPXjiZ',
 > =
   | ({
       instructionType: PredictionMigratorInstruction.Claim;
@@ -237,7 +237,7 @@ export type ParsedPredictionMigratorInstruction<
     } & ParsedRegisterEntryInstruction<TProgram>);
 
 export function parsePredictionMigratorInstruction<TProgram extends string>(
-  instruction: Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array>
+  instruction: Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array>,
 ): ParsedPredictionMigratorInstruction<TProgram> {
   const instructionType = identifyPredictionMigratorInstruction(instruction);
   switch (instructionType) {
@@ -275,7 +275,7 @@ export function parsePredictionMigratorInstruction<TProgram extends string>(
         {
           instructionType: instructionType as string,
           programName: 'predictionMigrator',
-        }
+        },
       );
   }
 }
@@ -302,18 +302,18 @@ export type PredictionMigratorPluginAccounts = {
 
 export type PredictionMigratorPluginInstructions = {
   claim: (
-    input: MakeOptional<ClaimAsyncInput, 'payer'>
+    input: MakeOptional<ClaimAsyncInput, 'payer'>,
   ) => ReturnType<typeof getClaimInstructionAsync> & SelfPlanAndSendFunctions;
   migrateEntry: (
-    input: MakeOptional<MigrateEntryAsyncInput, 'payer'>
+    input: MakeOptional<MigrateEntryAsyncInput, 'payer'>,
   ) => ReturnType<typeof getMigrateEntryInstructionAsync> &
     SelfPlanAndSendFunctions;
   previewPayoutIfWinner: (
-    input: PreviewPayoutIfWinnerInput
+    input: PreviewPayoutIfWinnerInput,
   ) => ReturnType<typeof getPreviewPayoutIfWinnerInstruction> &
     SelfPlanAndSendFunctions;
   registerEntry: (
-    input: MakeOptional<RegisterEntryAsyncInput, 'payer'>
+    input: MakeOptional<RegisterEntryAsyncInput, 'payer'>,
   ) => ReturnType<typeof getRegisterEntryInstructionAsync> &
     SelfPlanAndSendFunctions;
 };
@@ -345,7 +345,7 @@ export function predictionMigratorProgram() {
               getClaimInstructionAsync({
                 ...input,
                 payer: input.payer ?? client.payer,
-              })
+              }),
             ),
           migrateEntry: (input) =>
             addSelfPlanAndSendFunctions(
@@ -353,12 +353,12 @@ export function predictionMigratorProgram() {
               getMigrateEntryInstructionAsync({
                 ...input,
                 payer: input.payer ?? client.payer,
-              })
+              }),
             ),
           previewPayoutIfWinner: (input) =>
             addSelfPlanAndSendFunctions(
               client,
-              getPreviewPayoutIfWinnerInstruction(input)
+              getPreviewPayoutIfWinnerInstruction(input),
             ),
           registerEntry: (input) =>
             addSelfPlanAndSendFunctions(
@@ -366,7 +366,7 @@ export function predictionMigratorProgram() {
               getRegisterEntryInstructionAsync({
                 ...input,
                 payer: input.payer ?? client.payer,
-              })
+              }),
             ),
         },
       },

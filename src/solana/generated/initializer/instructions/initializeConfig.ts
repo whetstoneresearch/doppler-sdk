@@ -49,7 +49,7 @@ export const INITIALIZE_CONFIG_DISCRIMINATOR = new Uint8Array([
 
 export function getInitializeConfigDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    INITIALIZE_CONFIG_DISCRIMINATOR
+    INITIALIZE_CONFIG_DISCRIMINATOR,
   );
 }
 
@@ -100,7 +100,7 @@ export function getInitializeConfigInstructionDataEncoder(): Encoder<InitializeC
       ['migratorAllowlist', getArrayEncoder(getAddressEncoder())],
       ['sentinelAllowlist', getArrayEncoder(getAddressEncoder())],
     ]),
-    (value) => ({ ...value, discriminator: INITIALIZE_CONFIG_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: INITIALIZE_CONFIG_DISCRIMINATOR }),
   );
 }
 
@@ -118,7 +118,7 @@ export function getInitializeConfigInstructionDataCodec(): Codec<
 > {
   return combineCodec(
     getInitializeConfigInstructionDataEncoder(),
-    getInitializeConfigInstructionDataDecoder()
+    getInitializeConfigInstructionDataDecoder(),
   );
 }
 
@@ -149,7 +149,7 @@ export async function getInitializeConfigInstructionAsync<
     TAccountProgramData,
     TAccountSystemProgram
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): Promise<
   InitializeConfigInstruction<
     TProgramAddress,
@@ -183,7 +183,7 @@ export async function getInitializeConfigInstructionAsync<
       programAddress,
       seeds: [
         getBytesEncoder().encode(
-          new Uint8Array([99, 111, 110, 102, 105, 103, 95, 118, 51])
+          new Uint8Array([99, 111, 110, 102, 105, 103, 95, 118, 51]),
         ),
       ],
     });
@@ -202,7 +202,7 @@ export async function getInitializeConfigInstructionAsync<
       getAccountMeta('systemProgram', accounts.systemProgram),
     ],
     data: getInitializeConfigInstructionDataEncoder().encode(
-      args as InitializeConfigInstructionDataArgs
+      args as InitializeConfigInstructionDataArgs,
     ),
     programAddress,
   } as InitializeConfigInstruction<
@@ -241,7 +241,7 @@ export function getInitializeConfigInstruction<
     TAccountProgramData,
     TAccountSystemProgram
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): InitializeConfigInstruction<
   TProgramAddress,
   TAccountAdmin,
@@ -282,7 +282,7 @@ export function getInitializeConfigInstruction<
       getAccountMeta('systemProgram', accounts.systemProgram),
     ],
     data: getInitializeConfigInstructionDataEncoder().encode(
-      args as InitializeConfigInstructionDataArgs
+      args as InitializeConfigInstructionDataArgs,
     ),
     programAddress,
   } as InitializeConfigInstruction<
@@ -314,7 +314,7 @@ export function parseInitializeConfigInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
+    InstructionWithData<ReadonlyUint8Array>,
 ): ParsedInitializeConfigInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 4) {
     throw new SolanaError(
@@ -322,7 +322,7 @@ export function parseInitializeConfigInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 4,
-      }
+      },
     );
   }
   let accountIndex = 0;

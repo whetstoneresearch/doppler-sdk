@@ -86,6 +86,6 @@ export function getRegisterLaunchArgsCodec(): Codec<
 > {
   return combineCodec(
     getRegisterLaunchArgsEncoder(),
-    getRegisterLaunchArgsDecoder()
+    getRegisterLaunchArgsDecoder(),
   );
 }

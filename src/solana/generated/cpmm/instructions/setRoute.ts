@@ -94,7 +94,7 @@ export function getSetRouteInstructionDataEncoder(): FixedSizeEncoder<SetRouteIn
       ['routeNextPool', getAddressEncoder()],
       ['routeBridgeMint', getAddressEncoder()],
     ]),
-    (value) => ({ ...value, discriminator: SET_ROUTE_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: SET_ROUTE_DISCRIMINATOR }),
   );
 }
 
@@ -112,7 +112,7 @@ export function getSetRouteInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getSetRouteInstructionDataEncoder(),
-    getSetRouteInstructionDataDecoder()
+    getSetRouteInstructionDataDecoder(),
   );
 }
 
@@ -143,7 +143,7 @@ export function getSetRouteInstruction<
     TAccountNextPool,
     TAccountAdmin
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): SetRouteInstruction<
   TProgramAddress,
   TAccountConfig,
@@ -178,7 +178,7 @@ export function getSetRouteInstruction<
       getAccountMeta('admin', accounts.admin),
     ],
     data: getSetRouteInstructionDataEncoder().encode(
-      args as SetRouteInstructionDataArgs
+      args as SetRouteInstructionDataArgs,
     ),
     programAddress,
   } as SetRouteInstruction<
@@ -210,7 +210,7 @@ export function parseSetRouteInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
+    InstructionWithData<ReadonlyUint8Array>,
 ): ParsedSetRouteInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 4) {
     throw new SolanaError(
@@ -218,7 +218,7 @@ export function parseSetRouteInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 4,
-      }
+      },
     );
   }
   let accountIndex = 0;

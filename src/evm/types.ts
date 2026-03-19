@@ -779,7 +779,6 @@ export interface HookInfo {
   maximumProceeds: bigint;
 }
 
-
 export interface OpeningAuctionState {
   numeraire: Address;
   auctionStartTime: bigint;

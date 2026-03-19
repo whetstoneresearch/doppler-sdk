@@ -48,7 +48,7 @@ export const REGISTER_ENTRY_DISCRIMINATOR = new Uint8Array([
 
 export function getRegisterEntryDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    REGISTER_ENTRY_DISCRIMINATOR
+    REGISTER_ENTRY_DISCRIMINATOR,
   );
 }
 
@@ -149,7 +149,7 @@ export function getRegisterEntryInstructionDataEncoder(): FixedSizeEncoder<Regis
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       ['entryId', fixEncoderSize(getBytesEncoder(), 32)],
     ]),
-    (value) => ({ ...value, discriminator: REGISTER_ENTRY_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: REGISTER_ENTRY_DISCRIMINATOR }),
   );
 }
 
@@ -166,7 +166,7 @@ export function getRegisterEntryInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getRegisterEntryInstructionDataEncoder(),
-    getRegisterEntryInstructionDataDecoder()
+    getRegisterEntryInstructionDataDecoder(),
   );
 }
 
@@ -257,7 +257,7 @@ export async function getRegisterEntryInstructionAsync<
     TAccountEntry,
     TAccountEntryByMint
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): Promise<
   RegisterEntryInstruction<
     TProgramAddress,
@@ -342,8 +342,8 @@ export async function getRegisterEntryInstructionAsync<
         getAddressEncoder().encode(
           getAddressFromResolvedInstructionAccount(
             'oracle',
-            accounts.oracle.value
-          )
+            accounts.oracle.value,
+          ),
         ),
       ],
     });
@@ -353,13 +353,13 @@ export async function getRegisterEntryInstructionAsync<
       programAddress,
       seeds: [
         getBytesEncoder().encode(
-          new Uint8Array([112, 111, 116, 95, 118, 97, 117, 108, 116])
+          new Uint8Array([112, 111, 116, 95, 118, 97, 117, 108, 116]),
         ),
         getAddressEncoder().encode(
           getAddressFromResolvedInstructionAccount(
             'market',
-            accounts.market.value
-          )
+            accounts.market.value,
+          ),
         ),
       ],
     });
@@ -372,13 +372,13 @@ export async function getRegisterEntryInstructionAsync<
           new Uint8Array([
             109, 97, 114, 107, 101, 116, 95, 97, 117, 116, 104, 111, 114, 105,
             116, 121,
-          ])
+          ]),
         ),
         getAddressEncoder().encode(
           getAddressFromResolvedInstructionAccount(
             'market',
-            accounts.market.value
-          )
+            accounts.market.value,
+          ),
         ),
       ],
     });
@@ -390,19 +390,19 @@ export async function getRegisterEntryInstructionAsync<
         getBytesEncoder().encode(
           new Uint8Array([
             101, 110, 116, 114, 121, 95, 98, 121, 95, 109, 105, 110, 116,
-          ])
+          ]),
         ),
         getAddressEncoder().encode(
           getAddressFromResolvedInstructionAccount(
             'oracle',
-            accounts.oracle.value
-          )
+            accounts.oracle.value,
+          ),
         ),
         getAddressEncoder().encode(
           getAddressFromResolvedInstructionAccount(
             'baseMint',
-            accounts.baseMint.value
-          )
+            accounts.baseMint.value,
+          ),
         ),
       ],
     });
@@ -430,7 +430,7 @@ export async function getRegisterEntryInstructionAsync<
       getAccountMeta('entryByMint', accounts.entryByMint),
     ],
     data: getRegisterEntryInstructionDataEncoder().encode(
-      args as RegisterEntryInstructionDataArgs
+      args as RegisterEntryInstructionDataArgs,
     ),
     programAddress,
   } as RegisterEntryInstruction<
@@ -542,7 +542,7 @@ export function getRegisterEntryInstruction<
     TAccountEntry,
     TAccountEntryByMint
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): RegisterEntryInstruction<
   TProgramAddress,
   TAccountInitializerConfig,
@@ -640,7 +640,7 @@ export function getRegisterEntryInstruction<
       getAccountMeta('entryByMint', accounts.entryByMint),
     ],
     data: getRegisterEntryInstructionDataEncoder().encode(
-      args as RegisterEntryInstructionDataArgs
+      args as RegisterEntryInstructionDataArgs,
     ),
     programAddress,
   } as RegisterEntryInstruction<
@@ -707,7 +707,7 @@ export function parseRegisterEntryInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
+    InstructionWithData<ReadonlyUint8Array>,
 ): ParsedRegisterEntryInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 17) {
     throw new SolanaError(
@@ -715,7 +715,7 @@ export function parseRegisterEntryInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 17,
-      }
+      },
     );
   }
   let accountIndex = 0;

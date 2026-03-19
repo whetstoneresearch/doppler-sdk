@@ -128,7 +128,7 @@ export function getClaimInstructionDataEncoder(): FixedSizeEncoder<ClaimInstruct
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       ['burnAmount', getU64Encoder()],
     ]),
-    (value) => ({ ...value, discriminator: CLAIM_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: CLAIM_DISCRIMINATOR }),
   );
 }
 
@@ -145,7 +145,7 @@ export function getClaimInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getClaimInstructionDataEncoder(),
-    getClaimInstructionDataDecoder()
+    getClaimInstructionDataDecoder(),
   );
 }
 
@@ -216,7 +216,7 @@ export async function getClaimInstructionAsync<
     TAccountTokenProgram,
     TAccountSystemProgram
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): Promise<
   ClaimInstruction<
     TProgramAddress,
@@ -276,13 +276,13 @@ export async function getClaimInstructionAsync<
           new Uint8Array([
             109, 97, 114, 107, 101, 116, 95, 97, 117, 116, 104, 111, 114, 105,
             116, 121,
-          ])
+          ]),
         ),
         getAddressEncoder().encode(
           getAddressFromResolvedInstructionAccount(
             'market',
-            accounts.market.value
-          )
+            accounts.market.value,
+          ),
         ),
       ],
     });
@@ -292,19 +292,19 @@ export async function getClaimInstructionAsync<
       programAddress,
       seeds: [
         getBytesEncoder().encode(
-          new Uint8Array([114, 101, 99, 101, 105, 112, 116])
+          new Uint8Array([114, 101, 99, 101, 105, 112, 116]),
         ),
         getAddressEncoder().encode(
           getAddressFromResolvedInstructionAccount(
             'market',
-            accounts.market.value
-          )
+            accounts.market.value,
+          ),
         ),
         getAddressEncoder().encode(
           getAddressFromResolvedInstructionAccount(
             'claimer',
-            accounts.claimer.value
-          )
+            accounts.claimer.value,
+          ),
         ),
       ],
     });
@@ -335,7 +335,7 @@ export async function getClaimInstructionAsync<
       getAccountMeta('systemProgram', accounts.systemProgram),
     ],
     data: getClaimInstructionDataEncoder().encode(
-      args as ClaimInstructionDataArgs
+      args as ClaimInstructionDataArgs,
     ),
     programAddress,
   } as ClaimInstruction<
@@ -422,7 +422,7 @@ export function getClaimInstruction<
     TAccountTokenProgram,
     TAccountSystemProgram
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): ClaimInstruction<
   TProgramAddress,
   TAccountMarket,
@@ -498,7 +498,7 @@ export function getClaimInstruction<
       getAccountMeta('systemProgram', accounts.systemProgram),
     ],
     data: getClaimInstructionDataEncoder().encode(
-      args as ClaimInstructionDataArgs
+      args as ClaimInstructionDataArgs,
     ),
     programAddress,
   } as ClaimInstruction<
@@ -555,7 +555,7 @@ export function parseClaimInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
+    InstructionWithData<ReadonlyUint8Array>,
 ): ParsedClaimInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 12) {
     throw new SolanaError(
@@ -563,7 +563,7 @@ export function parseClaimInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 12,
-      }
+      },
     );
   }
   let accountIndex = 0;

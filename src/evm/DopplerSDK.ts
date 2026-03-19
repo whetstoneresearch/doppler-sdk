@@ -119,7 +119,11 @@ export class DopplerSDK<C extends SupportedChainId = SupportedChainId> {
    * @param hookAddress The address of the opening auction hook
    */
   async getOpeningAuction(hookAddress: Address): Promise<OpeningAuction> {
-    return new OpeningAuction(this.publicClient, this.walletClient, hookAddress);
+    return new OpeningAuction(
+      this.publicClient,
+      this.walletClient,
+      hookAddress,
+    );
   }
 
   /**
@@ -132,7 +136,8 @@ export class DopplerSDK<C extends SupportedChainId = SupportedChainId> {
     const chainAddresses = getAddresses(this.chainId);
     const resolvedInitializer =
       initializerAddress ??
-      (chainAddresses.openingAuctionInitializer ?? ZERO_ADDRESS);
+      chainAddresses.openingAuctionInitializer ??
+      ZERO_ADDRESS;
 
     if (resolvedInitializer === ZERO_ADDRESS) {
       throw new Error(
@@ -158,7 +163,8 @@ export class DopplerSDK<C extends SupportedChainId = SupportedChainId> {
     const chainAddresses = getAddresses(this.chainId);
     const resolvedPositionManager =
       positionManagerAddress ??
-      (chainAddresses.openingAuctionPositionManager ?? ZERO_ADDRESS);
+      chainAddresses.openingAuctionPositionManager ??
+      ZERO_ADDRESS;
 
     if (resolvedPositionManager === ZERO_ADDRESS) {
       throw new Error(

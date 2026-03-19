@@ -62,8 +62,7 @@ export interface OpeningAuctionBidLookupArgs {
   account?: Address | Account;
 }
 
-export interface OpeningAuctionBidSimulationResult
-  extends OpeningAuctionModifyLiquiditySimulationResult {
+export interface OpeningAuctionBidSimulationResult extends OpeningAuctionModifyLiquiditySimulationResult {
   tickLower: number;
   tickUpper: number;
   salt: Hash;
@@ -105,8 +104,7 @@ export interface OpeningAuctionBidStatus {
   isAboveEstimatedClearing: boolean;
 }
 
-export interface OpeningAuctionWatchBidStatusOptions
-  extends OpeningAuctionBidLookupArgs {
+export interface OpeningAuctionWatchBidStatusOptions extends OpeningAuctionBidLookupArgs {
   emitOnBegin?: boolean;
   poll?: boolean;
   pollingInterval?: number;
@@ -225,7 +223,9 @@ export interface OpeningAuctionWatchEstimatedClearingTickOptions {
   pollingInterval?: number;
   strict?: boolean;
   onError?: (error: Error) => void;
-  onEstimatedClearingTickUpdated: (event: OpeningAuctionEstimatedClearingTickUpdatedEvent) => void;
+  onEstimatedClearingTickUpdated: (
+    event: OpeningAuctionEstimatedClearingTickUpdatedEvent,
+  ) => void;
 }
 
 // --- Phase 2b types ---
@@ -315,8 +315,7 @@ export interface OpeningAuctionQuoteFromTokenAmountArgs {
   account?: Address | Account;
 }
 
-export interface OpeningAuctionQuoteFromTokenAmountResult
-  extends OpeningAuctionBidQuote {
+export interface OpeningAuctionQuoteFromTokenAmountResult extends OpeningAuctionBidQuote {
   tokenAmount: bigint;
   tokenIndex: 0 | 1;
 }
@@ -337,9 +336,7 @@ const bidManagerEventAbi = [
   {
     type: 'event',
     name: 'BidWithdrawn',
-    inputs: [
-      { name: 'positionId', type: 'uint256', indexed: true },
-    ],
+    inputs: [{ name: 'positionId', type: 'uint256', indexed: true }],
     anonymous: false,
   },
   {
@@ -830,7 +827,9 @@ export class OpeningAuctionBidManager {
     };
   }
 
-  async getBidStatus(args: OpeningAuctionBidLookupArgs): Promise<OpeningAuctionBidStatus> {
+  async getBidStatus(
+    args: OpeningAuctionBidLookupArgs,
+  ): Promise<OpeningAuctionBidStatus> {
     const owner = this.resolveOwner(args.owner, args.account);
     const { tickLower, tickUpper, salt } = this.resolveBidCoordinates(args);
 
@@ -1179,7 +1178,10 @@ export class OpeningAuctionBidManager {
 
     const owner = this.resolveOwner(args.owner, args.account);
     const { tickLower: fromTickLower, tickUpper: fromTickUpper } =
-      this.resolveBidCoordinates({ tickLower: args.fromTickLower, salt: args.salt });
+      this.resolveBidCoordinates({
+        tickLower: args.fromTickLower,
+        salt: args.salt,
+      });
     const salt = args.salt ?? zeroHash;
 
     const positionId = await this.openingAuction.getPositionId({
@@ -1190,7 +1192,9 @@ export class OpeningAuctionBidManager {
     });
 
     if (positionId === 0n) {
-      throw new Error('Source position not found for the given (owner,ticks,salt)');
+      throw new Error(
+        'Source position not found for the given (owner,ticks,salt)',
+      );
     }
 
     const position = await this.openingAuction.getPosition(positionId);
@@ -1251,7 +1255,10 @@ export class OpeningAuctionBidManager {
 
     const owner = this.resolveOwner(args.owner, this.walletClient.account);
     const { tickLower: fromTickLower, tickUpper: fromTickUpper } =
-      this.resolveBidCoordinates({ tickLower: args.fromTickLower, salt: args.salt });
+      this.resolveBidCoordinates({
+        tickLower: args.fromTickLower,
+        salt: args.salt,
+      });
     const salt = args.salt ?? zeroHash;
 
     const positionId = await this.openingAuction.getPositionId({
@@ -1262,7 +1269,9 @@ export class OpeningAuctionBidManager {
     });
 
     if (positionId === 0n) {
-      throw new Error('Source position not found for the given (owner,ticks,salt)');
+      throw new Error(
+        'Source position not found for the given (owner,ticks,salt)',
+      );
     }
 
     const position = await this.openingAuction.getPosition(positionId);
@@ -1283,7 +1292,12 @@ export class OpeningAuctionBidManager {
 
     // Execute withdraw
     const withdrawTxHash = await this.withdrawBid(
-      { tickLower: args.fromTickLower, liquidity, salt: args.salt, owner: args.owner },
+      {
+        tickLower: args.fromTickLower,
+        liquidity,
+        salt: args.salt,
+        owner: args.owner,
+      },
       options?.gasWithdraw ? { gas: options.gasWithdraw } : undefined,
     );
 
@@ -1291,12 +1305,16 @@ export class OpeningAuctionBidManager {
     let placeTxHash: Hash;
     try {
       placeTxHash = await this.placeBid(
-        { tickLower: args.toTickLower, liquidity, salt: args.salt, owner: args.owner },
+        {
+          tickLower: args.toTickLower,
+          liquidity,
+          salt: args.salt,
+          owner: args.owner,
+        },
         options?.gasPlace ? { gas: options.gasPlace } : undefined,
       );
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : String(err);
+      const message = err instanceof Error ? err.message : String(err);
       throw new Error(
         `moveBid: withdraw succeeded (tx: ${withdrawTxHash}) but place at tick ${args.toTickLower} failed: ${message}. ` +
           `Retry with placeBid({ tickLower: ${args.toTickLower}, liquidity: ${liquidity}, salt: "${salt}" }) to recover.`,
@@ -1336,7 +1354,8 @@ export class OpeningAuctionBidManager {
     // Returns null when liquidity data is unavailable so callers can distinguish "unknown" from "zero".
     let estimatedIncentiveShareBps: number | null = null;
     try {
-      const existingLiquidity = await this.openingAuction.getLiquidityAtTick(tickLower);
+      const existingLiquidity =
+        await this.openingAuction.getLiquidityAtTick(tickLower);
       const totalLiquidity = existingLiquidity + args.liquidity;
       if (totalLiquidity > 0n) {
         estimatedIncentiveShareBps = Number(
@@ -1373,20 +1392,32 @@ export class OpeningAuctionBidManager {
     const owner = this.resolveOwner(args?.owner, args?.account);
     const bids = await this.getOwnerBids({ owner });
 
-    const claimablePositions: Array<{ positionId: bigint; claimableIncentives: bigint }> = [];
+    const claimablePositions: Array<{
+      positionId: bigint;
+      claimableIncentives: bigint;
+    }> = [];
     const skippedPositions: Array<{ positionId: bigint; reason: string }> = [];
 
     for (const bid of bids) {
       if (bid.hasClaimedIncentives) {
-        skippedPositions.push({ positionId: bid.positionId, reason: 'already claimed' });
+        skippedPositions.push({
+          positionId: bid.positionId,
+          reason: 'already claimed',
+        });
         continue;
       }
       if (bid.claimableIncentives === 0n) {
-        skippedPositions.push({ positionId: bid.positionId, reason: 'zero claimable' });
+        skippedPositions.push({
+          positionId: bid.positionId,
+          reason: 'zero claimable',
+        });
         continue;
       }
       if (!bid.isInRange) {
-        skippedPositions.push({ positionId: bid.positionId, reason: 'not in range' });
+        skippedPositions.push({
+          positionId: bid.positionId,
+          reason: 'not in range',
+        });
         continue;
       }
       claimablePositions.push({
@@ -1428,11 +1459,14 @@ export class OpeningAuctionBidManager {
           this.walletClient.account,
         );
 
-        const transactionHash = await this.walletClient.writeContract(request as any);
+        const transactionHash = await this.walletClient.writeContract(
+          request as any,
+        );
         results.push({ positionId, transactionHash });
         totalClaimed++;
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
         results.push({ positionId, error: errorMessage });
         totalFailed++;
 
@@ -1552,7 +1586,9 @@ export class OpeningAuctionBidManager {
     } as any);
   }
 
-  watchBidWithdrawn(options: OpeningAuctionWatchBidWithdrawnOptions): () => void {
+  watchBidWithdrawn(
+    options: OpeningAuctionWatchBidWithdrawnOptions,
+  ): () => void {
     const args: any = {};
     if (options.positionId !== undefined) {
       args.positionId = options.positionId;
@@ -1585,7 +1621,9 @@ export class OpeningAuctionBidManager {
     } as any);
   }
 
-  watchIncentivesClaimed(options: OpeningAuctionWatchIncentivesClaimedOptions): () => void {
+  watchIncentivesClaimed(
+    options: OpeningAuctionWatchIncentivesClaimedOptions,
+  ): () => void {
     const args: any = {};
     if (options.owner) {
       args.owner = options.owner;
@@ -1673,7 +1711,9 @@ export class OpeningAuctionBidManager {
           };
 
           options.onEstimatedClearingTickUpdated({
-            newEstimatedClearingTick: Number(logArgs.newEstimatedClearingTick ?? 0),
+            newEstimatedClearingTick: Number(
+              logArgs.newEstimatedClearingTick ?? 0,
+            ),
             transactionHash: (log.transactionHash ?? zeroHash) as Hash,
             blockNumber: (log.blockNumber ?? 0n) as bigint,
             logIndex: Number(log.logIndex ?? 0),
@@ -1736,10 +1776,11 @@ export class OpeningAuctionBidManager {
     this._snapshotCache = null;
   }
 
-  private resolveBidCoordinates(args: {
+  private resolveBidCoordinates(args: { tickLower: number; salt?: Hash }): {
     tickLower: number;
-    salt?: Hash;
-  }): { tickLower: number; tickUpper: number; salt: Hash } {
+    tickUpper: number;
+    salt: Hash;
+  } {
     const { tickLower, tickUpper } =
       OpeningAuctionPositionManager.validateSingleTick({
         key: this.openingAuctionPoolKey,
@@ -1821,7 +1862,8 @@ export class OpeningAuctionBidManager {
       previous.hasClaimedIncentives !== next.hasClaimedIncentives ||
       previous.phase !== next.phase ||
       previous.estimatedClearingTick !== next.estimatedClearingTick ||
-      previous.wouldBeFilledAtEstimatedClearing !== next.wouldBeFilledAtEstimatedClearing ||
+      previous.wouldBeFilledAtEstimatedClearing !==
+        next.wouldBeFilledAtEstimatedClearing ||
       previous.isAboveEstimatedClearing !== next.isAboveEstimatedClearing
     );
   }

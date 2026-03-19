@@ -45,7 +45,7 @@ export const ABORT_LAUNCH_DISCRIMINATOR = new Uint8Array([
 
 export function getAbortLaunchDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    ABORT_LAUNCH_DISCRIMINATOR
+    ABORT_LAUNCH_DISCRIMINATOR,
   );
 }
 
@@ -105,7 +105,7 @@ export type AbortLaunchInstructionDataArgs = {};
 export function getAbortLaunchInstructionDataEncoder(): FixedSizeEncoder<AbortLaunchInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
-    (value) => ({ ...value, discriminator: ABORT_LAUNCH_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: ABORT_LAUNCH_DISCRIMINATOR }),
   );
 }
 
@@ -121,7 +121,7 @@ export function getAbortLaunchInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getAbortLaunchInstructionDataEncoder(),
-    getAbortLaunchInstructionDataDecoder()
+    getAbortLaunchInstructionDataDecoder(),
   );
 }
 
@@ -175,7 +175,7 @@ export async function getAbortLaunchInstructionAsync<
     TAccountBaseMint,
     TAccountTokenProgram
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): Promise<
   AbortLaunchInstruction<
     TProgramAddress,
@@ -222,7 +222,7 @@ export async function getAbortLaunchInstructionAsync<
       programAddress,
       seeds: [
         getBytesEncoder().encode(
-          new Uint8Array([99, 111, 110, 102, 105, 103, 95, 118, 51])
+          new Uint8Array([99, 111, 110, 102, 105, 103, 95, 118, 51]),
         ),
       ],
     });
@@ -311,7 +311,7 @@ export function getAbortLaunchInstruction<
     TAccountBaseMint,
     TAccountTokenProgram
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): AbortLaunchInstruction<
   TProgramAddress,
   TAccountConfig,
@@ -415,7 +415,7 @@ export function parseAbortLaunchInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
+    InstructionWithData<ReadonlyUint8Array>,
 ): ParsedAbortLaunchInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 9) {
     throw new SolanaError(
@@ -423,7 +423,7 @@ export function parseAbortLaunchInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 9,
-      }
+      },
     );
   }
   let accountIndex = 0;

@@ -175,7 +175,7 @@ export function getLaunchEncoder(): FixedSizeEncoder<LaunchArgs> {
       ['quoteDeposited', getU64Encoder()],
       ['reserved', fixEncoderSize(getBytesEncoder(), 64)],
     ]),
-    (value) => ({ ...value, discriminator: LAUNCH_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: LAUNCH_DISCRIMINATOR }),
   );
 }
 
@@ -227,24 +227,24 @@ export function getLaunchCodec(): FixedSizeCodec<LaunchArgs, Launch> {
 }
 
 export function decodeLaunch<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress>
+  encodedAccount: EncodedAccount<TAddress>,
 ): Account<Launch, TAddress>;
 export function decodeLaunch<TAddress extends string = string>(
-  encodedAccount: MaybeEncodedAccount<TAddress>
+  encodedAccount: MaybeEncodedAccount<TAddress>,
 ): MaybeAccount<Launch, TAddress>;
 export function decodeLaunch<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>
+  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>,
 ): Account<Launch, TAddress> | MaybeAccount<Launch, TAddress> {
   return decodeAccount(
     encodedAccount as MaybeEncodedAccount<TAddress>,
-    getLaunchDecoder()
+    getLaunchDecoder(),
   );
 }
 
 export async function fetchLaunch<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
-  config?: FetchAccountConfig
+  config?: FetchAccountConfig,
 ): Promise<Account<Launch, TAddress>> {
   const maybeAccount = await fetchMaybeLaunch(rpc, address, config);
   assertAccountExists(maybeAccount);
@@ -254,7 +254,7 @@ export async function fetchLaunch<TAddress extends string = string>(
 export async function fetchMaybeLaunch<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
-  config?: FetchAccountConfig
+  config?: FetchAccountConfig,
 ): Promise<MaybeAccount<Launch, TAddress>> {
   const maybeAccount = await fetchEncodedAccount(rpc, address, config);
   return decodeLaunch(maybeAccount);
@@ -263,7 +263,7 @@ export async function fetchMaybeLaunch<TAddress extends string = string>(
 export async function fetchAllLaunch(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
-  config?: FetchAccountsConfig
+  config?: FetchAccountsConfig,
 ): Promise<Account<Launch>[]> {
   const maybeAccounts = await fetchAllMaybeLaunch(rpc, addresses, config);
   assertAccountsExist(maybeAccounts);
@@ -273,7 +273,7 @@ export async function fetchAllLaunch(
 export async function fetchAllMaybeLaunch(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
-  config?: FetchAccountsConfig
+  config?: FetchAccountsConfig,
 ): Promise<MaybeAccount<Launch>[]> {
   const maybeAccounts = await fetchEncodedAccounts(rpc, addresses, config);
   return maybeAccounts.map((maybeAccount) => decodeLaunch(maybeAccount));

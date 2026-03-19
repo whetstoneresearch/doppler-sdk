@@ -67,7 +67,7 @@ export const REGISTER_LAUNCH_DISCRIMINATOR = new Uint8Array([
 
 export function getRegisterLaunchDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    REGISTER_LAUNCH_DISCRIMINATOR
+    REGISTER_LAUNCH_DISCRIMINATOR,
   );
 }
 
@@ -165,7 +165,7 @@ export function getRegisterLaunchInstructionDataEncoder(): Encoder<RegisterLaunc
       ['minRaiseQuote', getU64Encoder()],
       ['minMigrationPriceQ64Opt', getOptionEncoder(getU128Encoder())],
     ]),
-    (value) => ({ ...value, discriminator: REGISTER_LAUNCH_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: REGISTER_LAUNCH_DISCRIMINATOR }),
   );
 }
 
@@ -187,7 +187,7 @@ export function getRegisterLaunchInstructionDataCodec(): Codec<
 > {
   return combineCodec(
     getRegisterLaunchInstructionDataEncoder(),
-    getRegisterLaunchInstructionDataDecoder()
+    getRegisterLaunchInstructionDataDecoder(),
   );
 }
 
@@ -260,7 +260,7 @@ export async function getRegisterLaunchInstructionAsync<
     TAccountRent,
     TAccountState
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): Promise<
   RegisterLaunchInstruction<
     TProgramAddress,
@@ -332,8 +332,8 @@ export async function getRegisterLaunchInstructionAsync<
         getAddressEncoder().encode(
           getAddressFromResolvedInstructionAccount(
             'launch',
-            accounts.launch.value
-          )
+            accounts.launch.value,
+          ),
         ),
       ],
     });
@@ -356,7 +356,7 @@ export async function getRegisterLaunchInstructionAsync<
       getAccountMeta('state', accounts.state),
     ],
     data: getRegisterLaunchInstructionDataEncoder().encode(
-      args as RegisterLaunchInstructionDataArgs
+      args as RegisterLaunchInstructionDataArgs,
     ),
     programAddress,
   } as RegisterLaunchInstruction<
@@ -445,7 +445,7 @@ export function getRegisterLaunchInstruction<
     TAccountRent,
     TAccountState
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): RegisterLaunchInstruction<
   TProgramAddress,
   TAccountInitializerConfig,
@@ -525,7 +525,7 @@ export function getRegisterLaunchInstruction<
       getAccountMeta('state', accounts.state),
     ],
     data: getRegisterLaunchInstructionDataEncoder().encode(
-      args as RegisterLaunchInstructionDataArgs
+      args as RegisterLaunchInstructionDataArgs,
     ),
     programAddress,
   } as RegisterLaunchInstruction<
@@ -579,7 +579,7 @@ export function parseRegisterLaunchInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
+    InstructionWithData<ReadonlyUint8Array>,
 ): ParsedRegisterLaunchInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 12) {
     throw new SolanaError(
@@ -587,7 +587,7 @@ export function parseRegisterLaunchInstruction<
       {
         actualAccountMetas: instruction.accounts.length,
         expectedAccountMetas: 12,
-      }
+      },
     );
   }
   let accountIndex = 0;
