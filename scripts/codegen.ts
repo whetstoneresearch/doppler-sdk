@@ -103,7 +103,7 @@ const CONFLICTING_EVENTS: Array<{ file: string; type: string; fns: string[] }> =
 ];
 let cpmm_types_index = fs.readFileSync(cpmm_types_index_path, 'utf-8');
 for (const { file, type, fns } of CONFLICTING_EVENTS) {
-  const explicit_exports = [type, ...fns].join(', ');
+  const explicit_exports = [`type ${type}`, ...fns].join(', ');
   cpmm_types_index = cpmm_types_index.replace(
     new RegExp(`export \\* from '\\.\/${file}';`),
     `export { ${explicit_exports} } from './${file}';`,

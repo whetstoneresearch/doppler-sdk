@@ -98,7 +98,6 @@ function normalizeHexFragment(
   return normalized;
 }
 
-
 /**
  * Helper to convert hex string to Uint8Array
  */
