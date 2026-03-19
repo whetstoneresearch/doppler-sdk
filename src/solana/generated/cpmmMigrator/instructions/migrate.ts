@@ -77,7 +77,7 @@ export type MigrateInstruction<
   TAccountProtocolPosition extends string | AccountMeta<string> = string,
   TAccountLaunchLpPosition extends string | AccountMeta<string> = string,
   TAccountCpmmProgram extends string | AccountMeta<string> =
-    '3HSrGs4jj92CGt7mkfeeoMofrRGVPUcDX8djAnp4FoD6',
+    '9PSxVPoPfnbZ8Q1uQhgS6ZxvBjFboZtebNsu34umxkgQ',
   TAccountAdminBaseAta extends string | AccountMeta<string> = string,
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
@@ -407,7 +407,7 @@ export async function getMigrateInstructionAsync<
   }
   if (!accounts.cpmmProgram.value) {
     accounts.cpmmProgram.value =
-      '3HSrGs4jj92CGt7mkfeeoMofrRGVPUcDX8djAnp4FoD6' as Address<'3HSrGs4jj92CGt7mkfeeoMofrRGVPUcDX8djAnp4FoD6'>;
+      '9PSxVPoPfnbZ8Q1uQhgS6ZxvBjFboZtebNsu34umxkgQ' as Address<'9PSxVPoPfnbZ8Q1uQhgS6ZxvBjFboZtebNsu34umxkgQ'>;
   }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
@@ -659,7 +659,7 @@ export function getMigrateInstruction<
   }
   if (!accounts.cpmmProgram.value) {
     accounts.cpmmProgram.value =
-      '3HSrGs4jj92CGt7mkfeeoMofrRGVPUcDX8djAnp4FoD6' as Address<'3HSrGs4jj92CGt7mkfeeoMofrRGVPUcDX8djAnp4FoD6'>;
+      '9PSxVPoPfnbZ8Q1uQhgS6ZxvBjFboZtebNsu34umxkgQ' as Address<'9PSxVPoPfnbZ8Q1uQhgS6ZxvBjFboZtebNsu34umxkgQ'>;
   }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');

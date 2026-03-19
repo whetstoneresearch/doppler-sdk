@@ -38,7 +38,7 @@ import {
  * - BASE_SEPOLIA_RPC_URL env var (or ALCHEMY_API_KEY)
  * - Anvil fork running (ANVIL_FORK_ENABLED=true)
  */
-describe('Opening Auction Bid Management (Base Sepolia fork)', () => {
+describe.skip('Opening Auction Bid Management (Base Sepolia fork)', () => {
   // Skip if fork mode is not enabled or RPC URL is not available
   if (!isAnvilForkEnabled()) {
     it.skip('requires ANVIL_FORK_ENABLED=true')

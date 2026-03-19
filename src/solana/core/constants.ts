@@ -11,7 +11,7 @@ export const PROGRAM_ID: Address = address(
  * Program ID for the Sentinel program (deployed to devnet)
  */
 export const SENTINEL_PROGRAM_ID: Address = address(
-  'EYgA9DZYuYLRWjgTz98fVgSZwk55NYUEL589oSKcNHMs',
+  '2vJ1c62knEwZbxp3XdHB4RSmCfz55pA6tRkCho63gW7u',
 );
 
 /**
