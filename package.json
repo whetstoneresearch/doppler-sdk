@@ -39,6 +39,7 @@
     "lint": "oxlint src/ examples/",
     "lint:fix": "oxlint src/ examples/ --fix",
     "typecheck": "tsc --noEmit",
+    "typecheck:test": "tsc --noEmit --project tsconfig.test.json",
     "format": "oxfmt --write src/ examples/",
     "format:check": "oxfmt --check src/ examples/",
     "prepublishOnly": "npm run build",

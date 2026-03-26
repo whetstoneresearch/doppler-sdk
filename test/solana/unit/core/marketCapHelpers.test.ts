@@ -5,7 +5,7 @@ import {
   marketCapToCurveParams,
   marketCapToSingleCurveParams,
   curveParamsToMarketCap,
-} from '../../../../src/solana/core/marketCapHelpers.js';
+} from '@/solana/core/marketCapHelpers.js';
 
 // 1B tokens, 6 decimals
 const SUPPLY = 1_000_000_000n * 10n ** 6n;

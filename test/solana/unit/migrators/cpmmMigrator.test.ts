@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { address } from '@solana/kit';
-import { cpmmMigrator } from '../../../../src/solana/index.js';
+import { cpmmMigrator } from '@/solana/index.js';
 
 const { CPMM_MIGRATOR_INSTRUCTION_DISCRIMINATORS } = cpmmMigrator;
 

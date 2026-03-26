@@ -23,6 +23,7 @@ import {
   signTransactionMessageWithSigners,
   sendAndConfirmTransactionFactory,
   getSignatureFromTransaction,
+  address,
   AccountRole,
   type Address,
 } from '@solana/kit';
