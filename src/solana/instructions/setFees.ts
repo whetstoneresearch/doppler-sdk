@@ -1,11 +1,8 @@
-import type { Address } from '@solana/kit';
-import type { Instruction, AccountMeta } from '@solana/kit';
+import type { Address, Instruction, AccountMeta } from '@solana/kit';
+import { AccountRole } from '@solana/kit';
 import {
-  PROGRAM_ID,
+  CPMM_PROGRAM_ID,
   INSTRUCTION_DISCRIMINATORS,
-  ACCOUNT_ROLE_READONLY,
-  ACCOUNT_ROLE_WRITABLE,
-  ACCOUNT_ROLE_SIGNER,
 } from '../core/constants.js';
 import type { SetFeesArgs } from '../core/types.js';
 import { setFeesArgsCodec, encodeInstructionData } from '../core/codecs.js';
@@ -51,15 +48,15 @@ export interface SetFeesAccounts {
 export function createSetFeesInstruction(
   accounts: SetFeesAccounts,
   args: SetFeesArgs,
-  programId: Address = PROGRAM_ID,
+  programId: Address = CPMM_PROGRAM_ID,
 ): Instruction {
   const { config, pool, admin } = accounts;
 
   // Build account metas in order expected by the program
   const keys: AccountMeta[] = [
-    { address: config, role: ACCOUNT_ROLE_READONLY },
-    { address: pool, role: ACCOUNT_ROLE_WRITABLE },
-    { address: admin, role: ACCOUNT_ROLE_SIGNER },
+    { address: config, role: AccountRole.READONLY },
+    { address: pool, role: AccountRole.WRITABLE },
+    { address: admin, role: AccountRole.READONLY_SIGNER },
   ];
 
   const data = encodeInstructionData(

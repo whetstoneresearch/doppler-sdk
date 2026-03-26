@@ -6,7 +6,7 @@
  * - Configuring dynamic price movement with epochs
  * - Setting up V4 migration with fee streaming
  */
-import './env'
+import './env';
 
 // UNCOMMENT IF RUNNING LOCALLY
 // import { DopplerSDK, DynamicAuctionBuilder } from '@whetstone-research/doppler-sdk';
@@ -52,7 +52,8 @@ async function main() {
   });
 
   // 3. Define dynamic auction parameters via builder
-  const params = sdk.buildDynamicAuction()
+  const params = sdk
+    .buildDynamicAuction()
     .tokenConfig({
       name: 'TEST DYNAMIC',
       symbol: 'TEST',
@@ -94,8 +95,18 @@ async function main() {
   console.log('Creating dynamic auction...');
   console.log('Token:', params.token.name, `(${params.token.symbol})`);
   console.log('Selling:', formatEther(params.sale.numTokensToSell), 'tokens');
-  console.log('Duration:', params.auction.duration / DAY_SECONDS, 'days', `(${params.auction.duration} seconds)`);
-  console.log('Epochs:', params.auction.duration / params.auction.epochLength, 'total', `(${params.auction.epochLength}s each)`);
+  console.log(
+    'Duration:',
+    params.auction.duration / DAY_SECONDS,
+    'days',
+    `(${params.auction.duration} seconds)`,
+  );
+  console.log(
+    'Epochs:',
+    params.auction.duration / params.auction.epochLength,
+    'total',
+    `(${params.auction.epochLength}s each)`,
+  );
   console.log('Price will gradually increase from ~0.0001 to ~0.001 ETH');
 
   try {

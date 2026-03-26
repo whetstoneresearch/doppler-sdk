@@ -32,7 +32,7 @@ const executeMainnet = process.env.EXECUTE_MAINNET === 'true';
 if (!privateKey) throw new Error('PRIVATE_KEY is not set');
 if (!confirmMainnet) {
   throw new Error(
-    'Set CONFIRM_BASE_MAINNET=true to run this script on Base mainnet'
+    'Set CONFIRM_BASE_MAINNET=true to run this script on Base mainnet',
   );
 }
 
@@ -52,7 +52,7 @@ async function main() {
   const chainId = await publicClient.getChainId();
   if (chainId !== base.id) {
     throw new Error(
-      `Connected to chain ${chainId}, expected Base mainnet (${base.id})`
+      `Connected to chain ${chainId}, expected Base mainnet (${base.id})`,
     );
   }
 
@@ -62,7 +62,7 @@ async function main() {
   const decayInitializer = addresses.v4DecayMulticurveInitializer;
   if (!decayInitializer) {
     throw new Error(
-      'Base mainnet decay initializer is not configured in SDK deployments'
+      'Base mainnet decay initializer is not configured in SDK deployments',
     );
   }
   if (!addresses.v2Migrator) {
@@ -122,7 +122,7 @@ async function main() {
   console.log('RPC:', rpcUrl);
   console.log(
     'Execute mainnet:',
-    executeMainnet ? 'yes' : 'no (simulation only)'
+    executeMainnet ? 'yes' : 'no (simulation only)',
   );
   console.log('Token:', `${params.token.name} (${params.token.symbol})`);
   console.log('Initial supply:', formatEther(params.sale.initialSupply));
@@ -131,7 +131,7 @@ async function main() {
   console.log('Decay initializer:', decayInitializer);
   console.log(
     'Decay schedule:',
-    `${params.initializer?.type === 'decay' ? `${params.initializer.startFee} -> ${params.pool.fee} over ${params.initializer.durationSeconds}s` : 'n/a'}`
+    `${params.initializer?.type === 'decay' ? `${params.initializer.startFee} -> ${params.pool.fee} over ${params.initializer.durationSeconds}s` : 'n/a'}`,
   );
   console.log();
 

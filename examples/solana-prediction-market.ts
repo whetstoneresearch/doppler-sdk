@@ -2,7 +2,7 @@
  * Example: Create a Prediction Market on Solana
  *
  * ┌─────────────────────────────────────────────────────────────────────────┐
- * │  trustedOracle  ─── holds the final resolution (who won?)              │ 
+ * │  trustedOracle  ─── holds the final resolution (who won?)              │
  * │       │                                                                 │
  * │  predictionMigrator ─── manages the market + entry/pot accounting      │
  * │       │                                                                 │
@@ -17,10 +17,10 @@
  *   5. Oracle authority calls finalize(winningMint) to resolve the market.
  *   6. Winning token holders call claim() to receive their SOL share.
  */
-import './env.js'
+import './env.js';
 
 import {
-  address,
+  AccountRole,
   createKeyPairSignerFromBytes,
   createSolanaRpc,
   createSolanaRpcSubscriptions,
@@ -37,37 +37,33 @@ import {
   sendAndConfirmTransactionFactory,
   getSignatureFromTransaction,
   type Address,
-} from '@solana/kit'
+} from '@solana/kit';
+
+import { TOKEN_PROGRAM_ADDRESS } from '@solana-program/token';
+import { SYSTEM_PROGRAM_ADDRESS } from '@solana-program/system';
+import { SYSVAR_RENT_ADDRESS } from '@solana/sysvars';
 
 import {
   initializer,
-  SYSTEM_PROGRAM_ID,
-  TOKEN_PROGRAM_ID,
-  ACCOUNT_ROLE_READONLY,
-  ACCOUNT_ROLE_WRITABLE,
-} from '../src/solana/index.js'
-
-import {
   predictionMigrator,
   trustedOracle,
-} from '../src/solana/generated/index.js'
+} from '../src/solana/index.js';
 
 // ============================================================================
 // Environment
 // ============================================================================
 
-const keypairJson = process.env.SOLANA_KEYPAIR
-const rpcUrl = process.env.SOLANA_RPC_URL ?? 'https://api.devnet.solana.com'
-const wsUrl = process.env.SOLANA_WS_URL ?? 'wss://api.devnet.solana.com'
+const keypairJson = process.env.SOLANA_KEYPAIR;
+const rpcUrl = process.env.SOLANA_RPC_URL ?? 'https://api.devnet.solana.com';
+const wsUrl = process.env.SOLANA_WS_URL ?? 'wss://api.devnet.solana.com';
 
 if (!keypairJson) {
-  throw new Error('SOLANA_KEYPAIR must be set (JSON array of 64 bytes)')
+  throw new Error('SOLANA_KEYPAIR must be set (JSON array of 64 bytes)');
 }
 
-const SYSVAR_RENT: Address = address('SysvarRent111111111111111111111111111111111')
-
 // WSOL mint — the quote token (SOL wrapped as SPL token so it can live in vaults).
-const WSOL_MINT: Address = address('So11111111111111111111111111111111111111112')
+const WSOL_MINT: Address =
+  'So11111111111111111111111111111111111111112' as Address;
 
 // ============================================================================
 // Helpers
@@ -81,8 +77,8 @@ async function getOracleStateAddress(
   oracleAuthority: Address,
   nonce: bigint,
 ): Promise<Address> {
-  const nonceBytes = new Uint8Array(8)
-  new DataView(nonceBytes.buffer).setBigUint64(0, nonce, true)
+  const nonceBytes = new Uint8Array(8);
+  new DataView(nonceBytes.buffer).setBigUint64(0, nonce, true);
 
   const [oracleStateAddress] = await getProgramDerivedAddress({
     programAddress: trustedOracle.TRUSTED_ORACLE_PROGRAM_ADDRESS,
@@ -91,10 +87,9 @@ async function getOracleStateAddress(
       getAddressEncoder().encode(oracleAuthority),
       nonceBytes,
     ],
-  })
-  return oracleStateAddress
+  });
+  return oracleStateAddress;
 }
-
 
 // ============================================================================
 // Main
@@ -102,52 +97,56 @@ async function getOracleStateAddress(
 
 async function main() {
   const payer = await createKeyPairSignerFromBytes(
-    new Uint8Array(JSON.parse(keypairJson as string))
-  )
+    new Uint8Array(JSON.parse(keypairJson as string)),
+  );
 
-  const rpc = createSolanaRpc(rpcUrl)
-  const rpcSubscriptions = createSolanaRpcSubscriptions(wsUrl)
-  const sendAndConfirm = sendAndConfirmTransactionFactory({ rpc, rpcSubscriptions })
+  const rpc = createSolanaRpc(rpcUrl);
+  const rpcSubscriptions = createSolanaRpcSubscriptions(wsUrl);
+  const sendAndConfirm = sendAndConfirmTransactionFactory({
+    rpc,
+    rpcSubscriptions,
+  });
 
   // ── Token supply parameters ─────────────────────────────────────────────
   //
   // Each outcome token ("YES" and "NO") has its own independent mint and
   // bonding curve.  The supply/curve parameters here are the same for both
   // to keep the example simple, but they could differ per outcome.
-  const BASE_DECIMALS = 6
-  const BASE_TOTAL_SUPPLY = 1_000_000_000n * 10n ** BigInt(BASE_DECIMALS) // 1 B
-  const BASE_FOR_DISTRIBUTION = 0n // no creator distribution for prediction tokens
-  const BASE_FOR_LIQUIDITY = 0n
-  const BASE_FOR_CURVE = BASE_TOTAL_SUPPLY - BASE_FOR_DISTRIBUTION - BASE_FOR_LIQUIDITY
+  const BASE_DECIMALS = 6;
+  const BASE_TOTAL_SUPPLY = 1_000_000_000n * 10n ** BigInt(BASE_DECIMALS); // 1 B
+  const BASE_FOR_DISTRIBUTION = 0n; // no creator distribution for prediction tokens
+  const BASE_FOR_LIQUIDITY = 0n;
+  const BASE_FOR_CURVE =
+    BASE_TOTAL_SUPPLY - BASE_FOR_DISTRIBUTION - BASE_FOR_LIQUIDITY;
 
   // Opening XYK price at ~50% implied probability (0.5 SOL per token at SOL=$150).
   // Adjust curveVirtualQuote to shift the opening probability.
-  const CURVE_VIRTUAL_BASE = BASE_FOR_CURVE
-  const CURVE_VIRTUAL_QUOTE = 500_000_000n // 0.5 SOL
+  const CURVE_VIRTUAL_BASE = BASE_FOR_CURVE;
+  const CURVE_VIRTUAL_QUOTE = 500_000_000n; // 0.5 SOL
 
   // Graduation threshold: launch migrates once this many lamports are raised.
-  const MIN_RAISE_QUOTE = 10_000_000_000n // 10 SOL per entry
+  const MIN_RAISE_QUOTE = 10_000_000_000n; // 10 SOL per entry
 
-  const outcomes = [
-    { label: 'YES' },
-    { label: 'NO' },
-  ]
+  const outcomes = [{ label: 'YES' }, { label: 'NO' }];
 
   // ── Step 1: Create the trusted oracle ───────────────────────────────────
   //
   // The oracle is the on-chain record that will eventually be resolved with
   // the winning outcome mint.  Any wallet can be the oracleAuthority — in
   // production, use a multisig or a program-controlled authority.
-  const oracleNonce = BigInt(Date.now())
-  const oracleStateAddress = await getOracleStateAddress(payer.address, oracleNonce)
+  const oracleNonce = BigInt(Date.now());
+  const oracleStateAddress = await getOracleStateAddress(
+    payer.address,
+    oracleNonce,
+  );
 
   // namespace must equal oracleStateAddress (validated by register_entry:
   // require_keys_eq!(launch.namespace, oracle.key()))
-  const namespace = oracleStateAddress
-  const [config] = await initializer.getConfigAddress()
+  const namespace = oracleStateAddress;
+  const [config] = await initializer.getConfigAddress();
 
-  console.log('Creating trusted oracle...')
-  console.log('  Oracle state:', oracleStateAddress)
+  console.log('Creating trusted oracle...');
+  console.log('  Oracle state:', oracleStateAddress);
 
   try {
     const initOracleIx = trustedOracle.getInitializeOracleInstruction({
@@ -155,57 +154,70 @@ async function main() {
       oracleState: oracleStateAddress,
       nonce: oracleNonce,
       quoteMint: WSOL_MINT,
-    })
+    });
 
     {
-      const { value: latestBlockhash } = await rpc.getLatestBlockhash().send()
+      const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
       const txMessage = pipe(
         createTransactionMessage({ version: 0 }),
-        msg => setTransactionMessageFeePayer(payer.address, msg),
-        msg => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, msg),
-        msg => appendTransactionMessageInstructions([initOracleIx], msg),
-      )
-      const signedTx = await signTransactionMessageWithSigners(txMessage)
-      await sendAndConfirm(signedTx, { commitment: 'confirmed' })
-      console.log('  Oracle created:', getSignatureFromTransaction(signedTx))
+        (msg) => setTransactionMessageFeePayer(payer.address, msg),
+        (msg) =>
+          setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, msg),
+        (msg) => appendTransactionMessageInstructions([initOracleIx], msg),
+      );
+      const signedTx = await signTransactionMessageWithSigners(txMessage);
+      await sendAndConfirm(signedTx, { commitment: 'confirmed' });
+      console.log('  Oracle created:', getSignatureFromTransaction(signedTx));
     }
 
     // ── Step 2: Create per-outcome launches ───────────────────────────────
     for (const outcome of outcomes) {
-      console.log('')
-      console.log(`Creating ${outcome.label} outcome launch...`)
+      console.log('');
+      console.log(`Creating ${outcome.label} outcome launch...`);
 
       // entryId: 32 bytes, padded UTF-8 label (or use a hash in production)
-      const entryId = new Uint8Array(32)
-      entryId.set(new TextEncoder().encode(outcome.label).slice(0, 32))
+      const entryId = new Uint8Array(32);
+      entryId.set(new TextEncoder().encode(outcome.label).slice(0, 32));
 
       // launchId must equal entryId (validated by register_entry:
       // require!(launch.launch_id == args.entry_id))
-      const launchId = entryId
-      const [launch] = await initializer.getLaunchAddress(namespace, launchId)
-      const [launchAuthority] = await initializer.getLaunchAuthorityAddress(launch)
+      const launchId = entryId;
+      const [launch] = await initializer.getLaunchAddress(namespace, launchId);
+      const [launchAuthority] =
+        await initializer.getLaunchAuthorityAddress(launch);
 
-      const baseMint = await generateKeyPairSigner()
-      const baseVault = await generateKeyPairSigner()
-      const quoteVault = await generateKeyPairSigner()
-      const metadataAccount = await initializer.getTokenMetadataAddress(baseMint.address)
+      const baseMint = await generateKeyPairSigner();
+      const baseVault = await generateKeyPairSigner();
+      const quoteVault = await generateKeyPairSigner();
+      const metadataAccount = await initializer.getTokenMetadataAddress(
+        baseMint.address,
+      );
 
       // ── Derive remaining accounts for register_entry CPI ────────────────
       // Seeds sourced from programs/prediction_migrator/src/constants.rs
-      const predProg = predictionMigrator.PREDICTION_MIGRATOR_PROGRAM_ADDRESS
+      const predProg = predictionMigrator.PREDICTION_MIGRATOR_PROGRAM_ADDRESS;
 
       const [market] = await getProgramDerivedAddress({
         programAddress: predProg,
-        seeds: [new TextEncoder().encode('market'), getAddressEncoder().encode(oracleStateAddress)],
-      })
+        seeds: [
+          new TextEncoder().encode('market'),
+          getAddressEncoder().encode(oracleStateAddress),
+        ],
+      });
       const [marketAuthority] = await getProgramDerivedAddress({
         programAddress: predProg,
-        seeds: [new TextEncoder().encode('market_authority'), getAddressEncoder().encode(market)],
-      })
+        seeds: [
+          new TextEncoder().encode('market_authority'),
+          getAddressEncoder().encode(market),
+        ],
+      });
       const [potVault] = await getProgramDerivedAddress({
         programAddress: predProg,
-        seeds: [new TextEncoder().encode('pot_vault'), getAddressEncoder().encode(market)],
-      })
+        seeds: [
+          new TextEncoder().encode('pot_vault'),
+          getAddressEncoder().encode(market),
+        ],
+      });
       const [entryAddress] = await getProgramDerivedAddress({
         programAddress: predProg,
         seeds: [
@@ -213,7 +225,7 @@ async function main() {
           getAddressEncoder().encode(oracleStateAddress),
           getBytesEncoder().encode(entryId),
         ],
-      })
+      });
       const [entryByMint] = await getProgramDerivedAddress({
         programAddress: predProg,
         seeds: [
@@ -221,22 +233,22 @@ async function main() {
           getAddressEncoder().encode(oracleStateAddress),
           getAddressEncoder().encode(baseMint.address),
         ],
-      })
+      });
 
-      console.log('  Launch:           ', launch)
-      console.log('  Launch authority: ', launchAuthority)
-      console.log('  Base mint:        ', baseMint.address)
-      console.log('  Entry PDA:        ', entryAddress)
+      console.log('  Launch:           ', launch);
+      console.log('  Launch authority: ', launchAuthority);
+      console.log('  Base mint:        ', baseMint.address);
+      console.log('  Entry PDA:        ', entryAddress);
 
       // ── Encode migrator calldatas ────────────────────────────────────────
       // Init calldata → registerEntry; migrate calldata → migrateEntry.
       const migratorInitCalldata = predictionMigrator
         .getRegisterEntryInstructionDataEncoder()
-        .encode({ entryId })
+        .encode({ entryId });
 
       const migratorMigrateCalldata = predictionMigrator
         .getMigrateEntryInstructionDataEncoder()
-        .encode({ entryId })
+        .encode({ entryId });
 
       // ── Build the initializeLaunch instruction ───────────────────────────
       // The ALT covers tokenProgram, systemProgram, rent, config, WSOL_MINT, and
@@ -253,10 +265,11 @@ async function main() {
           quoteVault,
           payer,
           authority: payer,
-          migratorProgram: predictionMigrator.PREDICTION_MIGRATOR_PROGRAM_ADDRESS,
-          tokenProgram: TOKEN_PROGRAM_ID,
-          systemProgram: SYSTEM_PROGRAM_ID,
-          rent: SYSVAR_RENT,
+          migratorProgram:
+            predictionMigrator.PREDICTION_MIGRATOR_PROGRAM_ADDRESS,
+          tokenProgram: TOKEN_PROGRAM_ADDRESS,
+          systemProgram: SYSTEM_PROGRAM_ADDRESS,
+          rent: SYSVAR_RENT_ADDRESS,
           metadataAccount,
           addressLookupTable: initializer.DOPPLER_DEVNET_ALT,
         },
@@ -274,19 +287,29 @@ async function main() {
           curveParams: new Uint8Array([initializer.CURVE_PARAMS_FORMAT_XYK_V0]),
           allowBuy: 1,
           allowSell: 1,
-          sentinelProgram: SYSTEM_PROGRAM_ID, // no sentinel hook
+          sentinelProgram: SYSTEM_PROGRAM_ADDRESS, // no sentinel hook
           sentinelFlags: 0,
           sentinelCalldata: new Uint8Array(),
-          migratorProgram: predictionMigrator.PREDICTION_MIGRATOR_PROGRAM_ADDRESS,
+          migratorProgram:
+            predictionMigrator.PREDICTION_MIGRATOR_PROGRAM_ADDRESS,
           migratorInitCalldata,
           migratorMigrateCalldata,
-          sentinelRemainingAccountsHash: initializer.EMPTY_REMAINING_ACCOUNTS_HASH,
-          migratorRemainingAccountsHash: initializer.EMPTY_REMAINING_ACCOUNTS_HASH,
+          sentinelRemainingAccountsHash:
+            initializer.EMPTY_REMAINING_ACCOUNTS_HASH,
+          migratorRemainingAccountsHash:
+            initializer.computeRemainingAccountsHash([
+              oracleStateAddress,
+              market,
+              potVault,
+              marketAuthority,
+              entryAddress,
+              entryByMint,
+            ]),
           metadataName: outcome.label,
           metadataSymbol: outcome.label,
           metadataUri: `https://example.com/prediction/${outcome.label.toLowerCase()}.json`,
         },
-      )
+      );
 
       // Append register_entry remaining accounts:
       // [oracle, market, pot_vault, market_authority, entry, entry_by_mint]
@@ -294,41 +317,55 @@ async function main() {
         ...ixBase,
         accounts: [
           ...(ixBase.accounts ?? []),
-          { address: oracleStateAddress, role: ACCOUNT_ROLE_READONLY },
-          { address: market,             role: ACCOUNT_ROLE_WRITABLE },
-          { address: potVault,           role: ACCOUNT_ROLE_WRITABLE },
-          { address: marketAuthority,    role: ACCOUNT_ROLE_READONLY },
-          { address: entryAddress,       role: ACCOUNT_ROLE_WRITABLE },
-          { address: entryByMint,        role: ACCOUNT_ROLE_WRITABLE },
+          { address: oracleStateAddress, role: AccountRole.READONLY },
+          { address: market, role: AccountRole.WRITABLE },
+          { address: potVault, role: AccountRole.WRITABLE },
+          { address: marketAuthority, role: AccountRole.READONLY },
+          { address: entryAddress, role: AccountRole.WRITABLE },
+          { address: entryByMint, role: AccountRole.WRITABLE },
         ],
-      }
+      };
 
-      const { value: latestBlockhash } = await rpc.getLatestBlockhash().send()
+      const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
       const txMessage = pipe(
         createTransactionMessage({ version: 0 }),
-        msg => setTransactionMessageFeePayer(payer.address, msg),
-        msg => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, msg),
-        msg => appendTransactionMessageInstructions([ix], msg),
-      )
-      const signedTx = await signTransactionMessageWithSigners(txMessage)
-      await sendAndConfirm(signedTx, { commitment: 'confirmed' })
+        (msg) => setTransactionMessageFeePayer(payer.address, msg),
+        (msg) =>
+          setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, msg),
+        (msg) => appendTransactionMessageInstructions([ix], msg),
+      );
+      const signedTx = await signTransactionMessageWithSigners(txMessage);
+      await sendAndConfirm(signedTx, { commitment: 'confirmed' });
 
-      console.log(`  ${outcome.label} launch created!`)
-      console.log('  Transaction:', getSignatureFromTransaction(signedTx))
+      console.log(`  ${outcome.label} launch created!`);
+      console.log('  Transaction:', getSignatureFromTransaction(signedTx));
 
       // Verify launch state
-      const launchAccount = await initializer.fetchLaunch(rpc, launch)
+      const launchAccount = await initializer.fetchLaunch(rpc, launch);
       if (launchAccount) {
         const phaseLabel =
-          launchAccount.phase === initializer.PHASE_TRADING  ? 'TRADING'  :
-          launchAccount.phase === initializer.PHASE_MIGRATED ? 'MIGRATED' :
-          launchAccount.phase === initializer.PHASE_ABORTED  ? 'ABORTED'  :
-          String(launchAccount.phase)
+          launchAccount.phase === initializer.PHASE_TRADING
+            ? 'TRADING'
+            : launchAccount.phase === initializer.PHASE_MIGRATED
+              ? 'MIGRATED'
+              : launchAccount.phase === initializer.PHASE_ABORTED
+                ? 'ABORTED'
+                : String(launchAccount.phase);
 
-        console.log('  Phase:              ', phaseLabel)
-        console.log('  Curve virtual base: ', launchAccount.curveVirtualBase.toString())
-        console.log('  Curve virtual quote:', launchAccount.curveVirtualQuote.toString())
-        console.log('  Migrates after:     ', MIN_RAISE_QUOTE.toString(), 'lamports')
+        console.log('  Phase:              ', phaseLabel);
+        console.log(
+          '  Curve virtual base: ',
+          launchAccount.curveVirtualBase.toString(),
+        );
+        console.log(
+          '  Curve virtual quote:',
+          launchAccount.curveVirtualQuote.toString(),
+        );
+        console.log(
+          '  Migrates after:     ',
+          MIN_RAISE_QUOTE.toString(),
+          'lamports',
+        );
       }
     }
 
@@ -353,15 +390,19 @@ async function main() {
     //     burnAmount: claimerYesBalance,
     //   })
 
-    console.log('')
-    console.log('Prediction market setup complete.')
-    console.log('  Oracle:', oracleStateAddress)
-    console.log('  Both YES and NO outcome launches are live in TRADING phase.')
-    console.log('  Call trustedOracle.getFinalizeInstruction() to resolve after migration.')
+    console.log('');
+    console.log('Prediction market setup complete.');
+    console.log('  Oracle:', oracleStateAddress);
+    console.log(
+      '  Both YES and NO outcome launches are live in TRADING phase.',
+    );
+    console.log(
+      '  Call trustedOracle.getFinalizeInstruction() to resolve after migration.',
+    );
   } catch (error) {
-    console.error('Error creating prediction market:', error)
-    process.exit(1)
+    console.error('Error creating prediction market:', error);
+    process.exit(1);
   }
 }
 
-main()
+main();

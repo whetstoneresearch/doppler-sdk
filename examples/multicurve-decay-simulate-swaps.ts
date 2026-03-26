@@ -50,7 +50,7 @@ const SIMULATION_SLIPPAGE_BPS = 50n; // 0.50%
 
 // Same constants used in pure-markets-interface swap helpers.
 const CONTRACT_BALANCE = BigInt(
-  '0x8000000000000000000000000000000000000000000000000000000000000000'
+  '0x8000000000000000000000000000000000000000000000000000000000000000',
 );
 const OPEN_DELTA = 0n;
 
@@ -80,7 +80,7 @@ function feeToPercentString(fee: number): string {
 
 function computeExpectedFeeAtTimestamp(
   schedule: MulticurveDecayFeeSchedule,
-  timestamp: number
+  timestamp: number,
 ): number {
   if (timestamp <= schedule.startingTime) return schedule.startFee;
   if (schedule.startFee <= schedule.endFee) return schedule.endFee;
@@ -96,7 +96,7 @@ function computeExpectedFeeAtTimestamp(
 async function waitUntilTimestamp(
   targetTimestamp: number,
   publicClient: { getBlock: () => Promise<{ timestamp: bigint }> },
-  label: string
+  label: string,
 ) {
   while (true) {
     const block = await publicClient.getBlock();
@@ -118,7 +118,7 @@ async function quoteExactInputV4WithFallback(
     zeroForOne: boolean;
     exactAmount: bigint;
     hookData?: Hex;
-  }
+  },
 ): Promise<{ amountOut: bigint; gasEstimate: bigint; source: QuoteSource }> {
   try {
     const quote = await sdk.quoter.quoteExactInputV4Quoter({
@@ -203,7 +203,7 @@ async function main() {
 
   if (!addresses.v4DecayMulticurveInitializer) {
     throw new Error(
-      'Decay multicurve initializer is not configured for Base Sepolia'
+      'Decay multicurve initializer is not configured for Base Sepolia',
     );
   }
 
@@ -274,7 +274,7 @@ async function main() {
 
   if (!schedule) {
     throw new Error(
-      'Expected decay fee schedule, but this pool is not configured for dynamic fees'
+      'Expected decay fee schedule, but this pool is not configured for dynamic fees',
     );
   }
 
@@ -284,7 +284,7 @@ async function main() {
   const expectedTokenOut = zeroForOne ? poolKey.currency1 : poolKey.currency0;
   if (expectedTokenOut.toLowerCase() !== created.tokenAddress.toLowerCase()) {
     throw new Error(
-      'Unexpected pool token ordering for WETH -> token buy path'
+      'Unexpected pool token ordering for WETH -> token buy path',
     );
   }
 
@@ -293,16 +293,16 @@ async function main() {
   console.log('  Actual start:', schedule.startingTime);
   console.log(
     '  Start fee:',
-    `${schedule.startFee} (${feeToPercentString(schedule.startFee)})`
+    `${schedule.startFee} (${feeToPercentString(schedule.startFee)})`,
   );
   console.log(
     '  End fee:',
-    `${schedule.endFee} (${feeToPercentString(schedule.endFee)})`
+    `${schedule.endFee} (${feeToPercentString(schedule.endFee)})`,
   );
   console.log('  Duration:', `${schedule.durationSeconds}s`);
   console.log(
     '  Current lastFee:',
-    `${schedule.lastFee} (${feeToPercentString(schedule.lastFee)})`
+    `${schedule.lastFee} (${feeToPercentString(schedule.lastFee)})`,
   );
   console.log();
 
@@ -333,7 +333,7 @@ async function main() {
     },
   ].filter(
     (point, index, arr) =>
-      index === 0 || point.timestamp !== arr[index - 1].timestamp
+      index === 0 || point.timestamp !== arr[index - 1].timestamp,
   );
 
   const samples: Array<{
@@ -346,7 +346,7 @@ async function main() {
   console.log('Simulating buys across fee-decay checkpoints...');
   console.log(
     '  Input amount per simulation:',
-    `${formatEther(SAMPLE_AMOUNT_IN)} ETH`
+    `${formatEther(SAMPLE_AMOUNT_IN)} ETH`,
   );
   console.log();
 
@@ -354,11 +354,11 @@ async function main() {
     const currentTimestamp = await waitUntilTimestamp(
       checkpoint.timestamp,
       publicClient,
-      checkpoint.label
+      checkpoint.label,
     );
     const expectedFee = computeExpectedFeeAtTimestamp(
       schedule,
-      currentTimestamp
+      currentTimestamp,
     );
 
     const quote = await quoteExactInputV4WithFallback(sdk, {
@@ -402,12 +402,12 @@ async function main() {
     console.log(`  [${checkpoint.label}]`);
     console.log(`    blockTime: ${currentTimestamp}`);
     console.log(
-      `    expectedFee: ${expectedFee} (${feeToPercentString(expectedFee)})`
+      `    expectedFee: ${expectedFee} (${feeToPercentString(expectedFee)})`,
     );
     console.log(`    quotedOut: ${formatEther(quote.amountOut)} tokens`);
     console.log(`    quoteSource: ${quote.source}`);
     console.log(
-      `    storedLastFee: ${scheduleSnapshot?.lastFee ?? 0} (${feeToPercentString(scheduleSnapshot?.lastFee ?? 0)})`
+      `    storedLastFee: ${scheduleSnapshot?.lastFee ?? 0} (${feeToPercentString(scheduleSnapshot?.lastFee ?? 0)})`,
     );
     console.log();
   }
@@ -415,18 +415,18 @@ async function main() {
   for (let i = 1; i < samples.length; i++) {
     if (samples[i].expectedFee > samples[i - 1].expectedFee) {
       throw new Error(
-        `Expected fee increased between ${samples[i - 1].label} and ${samples[i].label}`
+        `Expected fee increased between ${samples[i - 1].label} and ${samples[i].label}`,
       );
     }
   }
 
   const startIndex = samples.findIndex(
-    (sample) => sample.timestamp >= schedule.startingTime
+    (sample) => sample.timestamp >= schedule.startingTime,
   );
   for (let i = Math.max(startIndex + 1, 1); i < samples.length; i++) {
     if (samples[i].amountOut < samples[i - 1].amountOut) {
       throw new Error(
-        `Quoted output decreased between ${samples[i - 1].label} and ${samples[i].label}`
+        `Quoted output decreased between ${samples[i - 1].label} and ${samples[i].label}`,
       );
     }
   }
@@ -436,20 +436,20 @@ async function main() {
   const terminalNow = await waitUntilTimestamp(
     terminalVerificationTimestamp,
     publicClient,
-    'terminal verification'
+    'terminal verification',
   );
   const terminalExpectedFee = computeExpectedFeeAtTimestamp(
     schedule,
-    terminalNow
+    terminalNow,
   );
   if (terminalExpectedFee !== schedule.endFee) {
     throw new Error(
-      `Expected terminal fee ${schedule.endFee} after decay, got ${terminalExpectedFee}`
+      `Expected terminal fee ${schedule.endFee} after decay, got ${terminalExpectedFee}`,
     );
   }
 
   console.log(
-    'Running terminal-fee equality check with two simulated swaps...'
+    'Running terminal-fee equality check with two simulated swaps...',
   );
 
   const terminalQuoteOne = await quoteExactInputV4WithFallback(sdk, {
@@ -510,7 +510,7 @@ async function main() {
 
   if (terminalQuoteOne.amountOut !== terminalQuoteTwo.amountOut) {
     throw new Error(
-      `Terminal fee verification failed: simulated swaps diverged (${terminalQuoteOne.amountOut} != ${terminalQuoteTwo.amountOut})`
+      `Terminal fee verification failed: simulated swaps diverged (${terminalQuoteOne.amountOut} != ${terminalQuoteTwo.amountOut})`,
     );
   }
 
@@ -518,11 +518,11 @@ async function main() {
   console.log('  - Expected fee is non-increasing across checkpoints');
   console.log('  - Quoted output is non-decreasing as fee decays');
   console.log(
-    `  - Terminal fee reached (${schedule.endFee}, ${feeToPercentString(schedule.endFee)}) and two simulated swaps matched exactly`
+    `  - Terminal fee reached (${schedule.endFee}, ${feeToPercentString(schedule.endFee)}) and two simulated swaps matched exactly`,
   );
   console.log();
   console.log(
-    'Note: stored `lastFee` only updates on real swaps, not simulations.'
+    'Note: stored `lastFee` only updates on real swaps, not simulations.',
   );
 }
 

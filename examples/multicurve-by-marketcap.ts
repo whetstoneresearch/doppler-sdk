@@ -12,54 +12,54 @@
  *
  * Key requirement: saleConfig() must be called before withCurves()
  */
-import './env'
+import './env';
 
-import { DopplerSDK } from '../src/evm'
-import { parseEther, createPublicClient, createWalletClient, http } from 'viem'
-import { privateKeyToAccount } from 'viem/accounts'
-import { baseSepolia } from 'viem/chains'
+import { DopplerSDK } from '../src/evm';
+import { parseEther, createPublicClient, createWalletClient, http } from 'viem';
+import { privateKeyToAccount } from 'viem/accounts';
+import { baseSepolia } from 'viem/chains';
 
-const privateKey = process.env.PRIVATE_KEY as `0x${string}`
-const rpcUrl = process.env.RPC_URL ?? baseSepolia.rpcUrls.default.http[0]
+const privateKey = process.env.PRIVATE_KEY as `0x${string}`;
+const rpcUrl = process.env.RPC_URL ?? baseSepolia.rpcUrls.default.http[0];
 
-if (!privateKey) throw new Error('PRIVATE_KEY must be set')
+if (!privateKey) throw new Error('PRIVATE_KEY must be set');
 
 /**
  * Fetch current ETH price in USD from CoinGecko
  */
 async function getEthPriceUsd(): Promise<number> {
   const response = await fetch(
-    'https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd'
-  )
-  const data = await response.json()
-  return data.ethereum.usd
+    'https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd',
+  );
+  const data = await response.json();
+  return data.ethereum.usd;
 }
 
 async function main() {
-  const account = privateKeyToAccount(privateKey)
+  const account = privateKeyToAccount(privateKey);
 
   const publicClient = createPublicClient({
     chain: baseSepolia,
     transport: http(rpcUrl),
-  })
+  });
 
   const walletClient = createWalletClient({
     chain: baseSepolia,
     transport: http(rpcUrl),
     account,
-  })
+  });
 
   const sdk = new DopplerSDK({
     publicClient,
     walletClient,
     chainId: baseSepolia.id,
-  })
+  });
 
   // Fetch current ETH price from CoinGecko
-  console.log('Fetching current ETH price from CoinGecko...')
-  const ethPriceUsd = await getEthPriceUsd()
-  console.log(`Current ETH price: $${ethPriceUsd.toLocaleString()}`)
-  console.log('')
+  console.log('Fetching current ETH price from CoinGecko...');
+  const ethPriceUsd = await getEthPriceUsd();
+  console.log(`Current ETH price: $${ethPriceUsd.toLocaleString()}`);
+  console.log('');
 
   // Build multicurve using market cap ranges
   // No tick math required - just specify market caps in USD
@@ -103,7 +103,7 @@ async function main() {
           marketCap: { start: 6_000_000, end: 'max' }, // $6M - max
           numPositions: 1,
           shares: parseEther('0.1'), // 10% of tokens
-        }
+        },
       ],
       // Optional overrides:
       // fee: FEE_TIERS.LOW,      // 500 (0.05%) - default
@@ -121,50 +121,70 @@ async function main() {
     .withGovernance({ type: 'default' })
     .withMigration({ type: 'uniswapV2' }) // V2 migration for simplicity
     .withUserAddress(account.address)
-    .build()
+    .build();
 
-  console.log('Build params:')
-  console.log(JSON.stringify(params, (_, v) => typeof v === 'bigint' ? v.toString() : v, 2))
-  console.log('')
+  console.log('Build params:');
+  console.log(
+    JSON.stringify(
+      params,
+      (_, v) => (typeof v === 'bigint' ? v.toString() : v),
+      2,
+    ),
+  );
+  console.log('');
 
-  console.log('Creating multicurve pool with market cap targets...')
-  console.log('Token:', params.token.name, `(${params.token.symbol})`)
-  console.log(`Launch market cap: $500,000 (at ETH = $${ethPriceUsd.toLocaleString()})`)
-  console.log('Curves:', params.pool.curves.length, 'configured')
+  console.log('Creating multicurve pool with market cap targets...');
+  console.log('Token:', params.token.name, `(${params.token.symbol})`);
+  console.log(
+    `Launch market cap: $500,000 (at ETH = $${ethPriceUsd.toLocaleString()})`,
+  );
+  console.log('Curves:', params.pool.curves.length, 'configured');
 
   // Log curve details
   params.pool.curves.forEach((curve, i) => {
-    console.log(`  Curve ${i + 1}: ticks ${curve.tickLower} -> ${curve.tickUpper}, ${curve.numPositions} positions`)
-  })
+    console.log(
+      `  Curve ${i + 1}: ticks ${curve.tickLower} -> ${curve.tickUpper}, ${curve.numPositions} positions`,
+    );
+  });
 
   try {
     // Simulate to preview addresses and get executable
-    const simulation = await sdk.factory.simulateCreateMulticurve(params)
-    console.log('\nPredicted addresses:')
-    console.log('Token:', simulation.tokenAddress)
-    console.log('Pool ID:', simulation.poolId)
-    console.log('Gas estimate:', simulation.gasEstimate)
+    const simulation = await sdk.factory.simulateCreateMulticurve(params);
+    console.log('\nPredicted addresses:');
+    console.log('Token:', simulation.tokenAddress);
+    console.log('Pool ID:', simulation.poolId);
+    console.log('Gas estimate:', simulation.gasEstimate);
 
     // Execute with guaranteed same addresses (uses same salt from simulation)
-    const result = await simulation.execute()
+    const result = await simulation.execute();
 
-    console.log('\nMulticurve pool created successfully!')
-    console.log('Token address:', result.tokenAddress, result.tokenAddress === simulation.tokenAddress ? '(matches)' : '(MISMATCH)')
-    console.log('Pool ID:', result.poolId, result.poolId === simulation.poolId ? '(matches)' : '(MISMATCH)')
-    console.log('Transaction:', result.transactionHash)
+    console.log('\nMulticurve pool created successfully!');
+    console.log(
+      'Token address:',
+      result.tokenAddress,
+      result.tokenAddress === simulation.tokenAddress
+        ? '(matches)'
+        : '(MISMATCH)',
+    );
+    console.log(
+      'Pool ID:',
+      result.poolId,
+      result.poolId === simulation.poolId ? '(matches)' : '(MISMATCH)',
+    );
+    console.log('Transaction:', result.transactionHash);
 
     // Get the pool instance for monitoring (use token address as the lookup key)
-    const poolInstance = await sdk.getMulticurvePool(result.tokenAddress)
-    const state = await poolInstance.getState()
+    const poolInstance = await sdk.getMulticurvePool(result.tokenAddress);
+    const state = await poolInstance.getState();
 
-    console.log('\nPool Info:')
-    console.log('Fee:', state.poolKey.fee)
-    console.log('Tick spacing:', state.poolKey.tickSpacing)
-    console.log('Status:', state.status)
+    console.log('\nPool Info:');
+    console.log('Fee:', state.poolKey.fee);
+    console.log('Tick spacing:', state.poolKey.tickSpacing);
+    console.log('Status:', state.status);
   } catch (error) {
-    console.error('\nError creating multicurve:', error)
-    process.exit(1)
+    console.error('\nError creating multicurve:', error);
+    process.exit(1);
   }
 }
 
-main()
+main();

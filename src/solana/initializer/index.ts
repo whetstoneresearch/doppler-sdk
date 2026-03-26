@@ -89,6 +89,9 @@ export {
   type PreviewMigrationResult,
 } from './instructions/index.js';
 
+// Hash helpers
+export { computeRemainingAccountsHash } from './hash.js';
+
 // Client helpers
 export {
   fetchLaunch,

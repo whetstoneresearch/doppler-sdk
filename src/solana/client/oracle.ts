@@ -6,7 +6,7 @@ import type { Address } from '@solana/kit';
 import type { Rpc, GetAccountInfoApi } from '@solana/kit';
 import type { OracleState, TwapResult, Pool } from '../core/types.js';
 import { decodeOracleState } from '../core/codecs.js';
-import { PROGRAM_ID } from '../core/constants.js';
+import { CPMM_PROGRAM_ID } from '../core/constants.js';
 import { getOracleAddress } from '../core/pda.js';
 import { q64ToNumber } from '../core/math.js';
 
@@ -99,7 +99,7 @@ export async function getOracleForPool(
   pool: Address,
   config?: FetchOracleConfig,
 ): Promise<OracleWithAddress | null> {
-  const programId = config?.programId ?? PROGRAM_ID;
+  const programId = config?.programId ?? CPMM_PROGRAM_ID;
   const [oracleAddress] = await getOracleAddress(pool, programId);
 
   const oracle = await fetchOracle(rpc, oracleAddress, config);
@@ -123,7 +123,7 @@ export async function getOracleForPool(
  */
 export async function getOracleAddressFromPool(
   pool: Address,
-  programId: Address = PROGRAM_ID,
+  programId: Address = CPMM_PROGRAM_ID,
 ): Promise<Address> {
   const [address] = await getOracleAddress(pool, programId);
   return address;
@@ -386,7 +386,7 @@ export async function fetchOraclesBatch(
   pools: Address[],
   config?: FetchOracleConfig,
 ): Promise<Map<Address, OracleWithAddress>> {
-  const programId = config?.programId ?? PROGRAM_ID;
+  const programId = config?.programId ?? CPMM_PROGRAM_ID;
   const oracles = new Map<Address, OracleWithAddress>();
 
   // Derive all oracle addresses

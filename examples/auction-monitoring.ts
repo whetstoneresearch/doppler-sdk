@@ -6,18 +6,13 @@
  * - Checking graduation status
  * - Tracking key metrics and progress
  */
-import './env'
+import './env';
 
 // UNCOMMENT IF RUNNING LOCALLY
 // import { DopplerSDK } from '@whetstone-research/doppler-sdk';
 
 import { DopplerSDK } from '../src/evm';
-import {
-  http,
-  formatEther,
-  type Address,
-  createPublicClient,
-} from 'viem';
+import { http, formatEther, type Address, createPublicClient } from 'viem';
 import { baseSepolia } from 'viem/chains';
 
 // Example addresses - replace with your actual auction addresses
@@ -49,7 +44,7 @@ async function monitorStaticAuction(sdk: DopplerSDK, poolAddress: Address) {
     const hasGraduated = await auction.hasGraduated();
     console.log(
       '\nGraduation status:',
-      hasGraduated ? '✅ Graduated' : '⏳ Active'
+      hasGraduated ? '✅ Graduated' : '⏳ Active',
     );
 
     // Get token address for further info
@@ -79,25 +74,25 @@ async function monitorDynamicAuction(sdk: DopplerSDK, hookAddress: Address) {
     console.log(
       '- Total proceeds:',
       formatEther(hookInfo.totalProceeds),
-      'ETH'
+      'ETH',
     );
     console.log('- Tokens sold:', formatEther(hookInfo.totalTokensSold));
     console.log(
       '- Min proceeds:',
       formatEther(hookInfo.minimumProceeds),
-      'ETH'
+      'ETH',
     );
     console.log(
       '- Max proceeds:',
       formatEther(hookInfo.maximumProceeds),
-      'ETH'
+      'ETH',
     );
 
     console.log('\nAuction Status:');
     console.log('- Early exit:', hookInfo.earlyExit ? '✅ Yes' : '❌ No');
     console.log(
       '- Insufficient proceeds:',
-      hookInfo.insufficientProceeds ? '⚠️ Yes' : '✅ No'
+      hookInfo.insufficientProceeds ? '⚠️ Yes' : '✅ No',
     );
 
     // Calculate time remaining
@@ -125,7 +120,7 @@ async function monitorDynamicAuction(sdk: DopplerSDK, hookAddress: Address) {
     const hasGraduated = await auction.hasGraduated();
     console.log(
       'Graduation status:',
-      hasGraduated ? '✅ Graduated' : '⏳ Active'
+      hasGraduated ? '✅ Graduated' : '⏳ Active',
     );
   } catch (error) {
     console.error('Error monitoring dynamic auction:', error);
@@ -164,4 +159,4 @@ async function main() {
   console.log('\n✨ Monitoring complete!');
 }
 
-main()
+main();

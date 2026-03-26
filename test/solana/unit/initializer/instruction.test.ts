@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { address } from '@solana/addresses';
 import { generateKeyPairSigner } from '@solana/signers';
-import { initializer, cpmmMigrator, SYSTEM_PROGRAM_ID, TOKEN_PROGRAM_ID } from '../../../../src/solana/index.js';
+import { SYSTEM_PROGRAM_ADDRESS } from '@solana-program/system';
+import { TOKEN_PROGRAM_ADDRESS } from '@solana-program/token';
+import { initializer, cpmmMigrator } from '@/solana/index.js';
 
 const SYSVAR_RENT_PUBKEY = address('SysvarRent111111111111111111111111111111111');
 
@@ -16,7 +18,7 @@ describe('initializer instructions', () => {
         admin,
         config,
         programData,
-        systemProgram: SYSTEM_PROGRAM_ID,
+        systemProgram: SYSTEM_PROGRAM_ADDRESS,
       },
       {
         migratorAllowlist: [],
@@ -29,7 +31,7 @@ describe('initializer instructions', () => {
     expect(ix.accounts![0].address).toBe(admin.address);
     expect(ix.accounts![1].address).toBe(config);
     expect(ix.accounts![2].address).toBe(programData);
-    expect(ix.accounts![3].address).toBe(SYSTEM_PROGRAM_ID);
+    expect(ix.accounts![3].address).toBe(SYSTEM_PROGRAM_ADDRESS);
     expect((ix.accounts![0] as { signer?: unknown }).signer).toBeDefined();
   });
 
@@ -74,8 +76,8 @@ describe('initializer instructions', () => {
         payer: admin,
         authority: admin,
         migratorProgram,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        systemProgram: SYSTEM_PROGRAM_ID,
+        tokenProgram: TOKEN_PROGRAM_ADDRESS,
+        systemProgram: SYSTEM_PROGRAM_ADDRESS,
         rent: SYSVAR_RENT_PUBKEY,
       },
       {
@@ -92,7 +94,7 @@ describe('initializer instructions', () => {
         curveParams: new Uint8Array([0]),
         allowBuy: 1,
         allowSell: 1,
-        sentinelProgram: SYSTEM_PROGRAM_ID,
+        sentinelProgram: SYSTEM_PROGRAM_ADDRESS,
         sentinelFlags: 0,
         sentinelCalldata: new Uint8Array(),
         migratorProgram,
@@ -121,8 +123,8 @@ describe('initializer instructions', () => {
     expect(ix.accounts![7].address).toBe(admin.address);
     expect(ix.accounts![8].address).toBe(admin.address);
     expect(ix.accounts![9].address).toBe(migratorProgram);
-    expect(ix.accounts![10].address).toBe(TOKEN_PROGRAM_ID);
-    expect(ix.accounts![11].address).toBe(SYSTEM_PROGRAM_ID);
+    expect(ix.accounts![10].address).toBe(TOKEN_PROGRAM_ADDRESS);
+    expect(ix.accounts![11].address).toBe(SYSTEM_PROGRAM_ADDRESS);
     expect(ix.accounts![12].address).toBe(SYSVAR_RENT_PUBKEY);
 
     // Ensure signer metas were attached for the signer accounts.
@@ -159,8 +161,8 @@ describe('initializer instructions', () => {
           quoteVault,
           payer: admin,
           authority: admin,
-          tokenProgram: TOKEN_PROGRAM_ID,
-          systemProgram: SYSTEM_PROGRAM_ID,
+          tokenProgram: TOKEN_PROGRAM_ADDRESS,
+          systemProgram: SYSTEM_PROGRAM_ADDRESS,
           rent: SYSVAR_RENT_PUBKEY,
         },
         {
@@ -177,7 +179,7 @@ describe('initializer instructions', () => {
           curveParams: new Uint8Array([initializer.CURVE_PARAMS_FORMAT_XYK_V0]),
           allowBuy: 1,
           allowSell: 1,
-          sentinelProgram: SYSTEM_PROGRAM_ID,
+          sentinelProgram: SYSTEM_PROGRAM_ADDRESS,
           sentinelFlags: 0,
           sentinelCalldata: new Uint8Array(),
           migratorProgram: address('11111111111111111111111111111111'),

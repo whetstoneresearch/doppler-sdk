@@ -7,10 +7,10 @@
  * 3) Execute swap via Universal Router
  * 4) Optionally transfer purchased tokens
  */
-import './env'
+import './env';
 
-import { CHAIN_IDS, DopplerSDK, getAddresses } from '../src/evm'
-import { CommandBuilder, V4ActionBuilder, V4ActionType } from 'doppler-router'
+import { CHAIN_IDS, DopplerSDK, getAddresses } from '../src/evm';
+import { CommandBuilder, V4ActionBuilder, V4ActionType } from 'doppler-router';
 import {
   createPublicClient,
   createWalletClient,
@@ -20,39 +20,42 @@ import {
   parseEther,
   parseUnits,
   zeroAddress,
-} from 'viem'
-import type { Address } from 'viem'
-import { privateKeyToAccount } from 'viem/accounts'
-import { sepolia } from 'viem/chains'
+} from 'viem';
+import type { Address } from 'viem';
+import { privateKeyToAccount } from 'viem/accounts';
+import { sepolia } from 'viem/chains';
 
-const privateKey = process.env.PRIVATE_KEY as `0x${string}`
-const tokenAddressRaw = process.env.TOKEN_ADDRESS
-const transferToRaw = process.env.TRANSFER_TO
+const privateKey = process.env.PRIVATE_KEY as `0x${string}`;
+const tokenAddressRaw = process.env.TOKEN_ADDRESS;
+const transferToRaw = process.env.TRANSFER_TO;
 
-const alchemyApiKey = process.env.ALCHEMY_API_KEY?.trim()
+const alchemyApiKey = process.env.ALCHEMY_API_KEY?.trim();
 const alchemySepoliaRpc = alchemyApiKey
   ? `https://eth-sepolia.g.alchemy.com/v2/${alchemyApiKey}`
-  : undefined
+  : undefined;
 
 const rpcUrl =
   process.env.ETH_SEPOLIA_RPC_URL ??
   process.env.RPC_URL ??
   alchemySepoliaRpc ??
-  sepolia.rpcUrls.default.http[0]
+  sepolia.rpcUrls.default.http[0];
 
-const swapAmountEth = process.env.SWAP_AMOUNT_IN_ETH ?? '0.001'
-const slippageBpsRaw = process.env.SWAP_SLIPPAGE_BPS ?? '500'
-const transferAmountRaw = process.env.TRANSFER_AMOUNT_TOKENS ?? '1'
-const shouldExecuteSwap = process.env.EXECUTE_SWAP !== 'false'
-const shouldExecuteTransfer = process.env.EXECUTE_TRANSFER !== 'false'
+const swapAmountEth = process.env.SWAP_AMOUNT_IN_ETH ?? '0.001';
+const slippageBpsRaw = process.env.SWAP_SLIPPAGE_BPS ?? '500';
+const transferAmountRaw = process.env.TRANSFER_AMOUNT_TOKENS ?? '1';
+const shouldExecuteSwap = process.env.EXECUTE_SWAP !== 'false';
+const shouldExecuteTransfer = process.env.EXECUTE_TRANSFER !== 'false';
 
-if (!privateKey) throw new Error('PRIVATE_KEY is not set')
+if (!privateKey) throw new Error('PRIVATE_KEY is not set');
 if (!tokenAddressRaw || !isAddress(tokenAddressRaw)) {
-  throw new Error('TOKEN_ADDRESS must be set to a valid address')
+  throw new Error('TOKEN_ADDRESS must be set to a valid address');
 }
 
-const tokenAddress = tokenAddressRaw as Address
-const transferTo = transferToRaw && isAddress(transferToRaw) ? (transferToRaw as Address) : undefined
+const tokenAddress = tokenAddressRaw as Address;
+const transferTo =
+  transferToRaw && isAddress(transferToRaw)
+    ? (transferToRaw as Address)
+    : undefined;
 
 const universalRouterAbi = [
   {
@@ -65,7 +68,7 @@ const universalRouterAbi = [
     outputs: [],
     stateMutability: 'payable',
   },
-] as const
+] as const;
 
 const v4QuoterAbi = [
   {
@@ -101,7 +104,7 @@ const v4QuoterAbi = [
     ],
     stateMutability: 'view',
   },
-] as const
+] as const;
 
 const erc20ReadWriteAbi = [
   {
@@ -135,18 +138,18 @@ const erc20ReadWriteAbi = [
     outputs: [{ name: '', type: 'bool', internalType: 'bool' }],
     stateMutability: 'nonpayable',
   },
-] as const
+] as const;
 
 function errorContainsSelector(error: unknown, selector: string): boolean {
-  const lowerSelector = selector.toLowerCase()
+  const lowerSelector = selector.toLowerCase();
   const errorLike = error as
     | {
-        shortMessage?: string
-        message?: string
-        raw?: string
-        cause?: { raw?: string; shortMessage?: string; message?: string }
+        shortMessage?: string;
+        message?: string;
+        raw?: string;
+        cause?: { raw?: string; shortMessage?: string; message?: string };
       }
-    | undefined
+    | undefined;
 
   const haystack = [
     String(errorLike?.message ?? ''),
@@ -158,52 +161,63 @@ function errorContainsSelector(error: unknown, selector: string): boolean {
     String(error),
   ]
     .join('\n')
-    .toLowerCase()
+    .toLowerCase();
 
-  return haystack.includes(lowerSelector)
+  return haystack.includes(lowerSelector);
 }
 
 async function main() {
-  const account = privateKeyToAccount(privateKey)
-  const publicClient = createPublicClient({ chain: sepolia, transport: http(rpcUrl) })
-  const walletClient = createWalletClient({ chain: sepolia, transport: http(rpcUrl), account })
+  const account = privateKeyToAccount(privateKey);
+  const publicClient = createPublicClient({
+    chain: sepolia,
+    transport: http(rpcUrl),
+  });
+  const walletClient = createWalletClient({
+    chain: sepolia,
+    transport: http(rpcUrl),
+    account,
+  });
 
-  const connectedChainId = await publicClient.getChainId()
+  const connectedChainId = await publicClient.getChainId();
   if (connectedChainId !== sepolia.id) {
     throw new Error(
       `Connected to chain ${connectedChainId}, expected Ethereum Sepolia (${sepolia.id})`,
-    )
+    );
   }
 
-  const chainId = CHAIN_IDS.ETH_SEPOLIA
-  const addresses = getAddresses(chainId)
+  const chainId = CHAIN_IDS.ETH_SEPOLIA;
+  const addresses = getAddresses(chainId);
 
-  const routerOverride = process.env.ETH_SEPOLIA_UNIVERSAL_ROUTER
+  const routerOverride = process.env.ETH_SEPOLIA_UNIVERSAL_ROUTER;
   if (routerOverride && !isAddress(routerOverride)) {
-    throw new Error('ETH_SEPOLIA_UNIVERSAL_ROUTER must be a valid address')
+    throw new Error('ETH_SEPOLIA_UNIVERSAL_ROUTER must be a valid address');
   }
 
-  const quoterOverride = process.env.ETH_SEPOLIA_V4_QUOTER
+  const quoterOverride = process.env.ETH_SEPOLIA_V4_QUOTER;
   if (quoterOverride && !isAddress(quoterOverride)) {
-    throw new Error('ETH_SEPOLIA_V4_QUOTER must be a valid address')
+    throw new Error('ETH_SEPOLIA_V4_QUOTER must be a valid address');
   }
 
-  const universalRouterAddress = (routerOverride as Address | undefined) ?? addresses.universalRouter
-  const quoterAddress = (quoterOverride as Address | undefined) ?? addresses.uniswapV4Quoter
+  const universalRouterAddress =
+    (routerOverride as Address | undefined) ?? addresses.universalRouter;
+  const quoterAddress =
+    (quoterOverride as Address | undefined) ?? addresses.uniswapV4Quoter;
 
   if (universalRouterAddress === zeroAddress) {
     throw new Error(
       'Universal Router not configured for ETH Sepolia. Set ETH_SEPOLIA_UNIVERSAL_ROUTER in env.',
-    )
+    );
   }
 
   if (quoterAddress === zeroAddress) {
-    throw new Error('V4 quoter not configured for ETH Sepolia. Set ETH_SEPOLIA_V4_QUOTER in env.')
+    throw new Error(
+      'V4 quoter not configured for ETH Sepolia. Set ETH_SEPOLIA_V4_QUOTER in env.',
+    );
   }
 
-  const sdk = new DopplerSDK({ publicClient, walletClient, chainId })
-  const multicurvePool = await sdk.getMulticurvePool(tokenAddress)
-  const poolState = await multicurvePool.getState()
+  const sdk = new DopplerSDK({ publicClient, walletClient, chainId });
+  const multicurvePool = await sdk.getMulticurvePool(tokenAddress);
+  const poolState = await multicurvePool.getState();
 
   const [symbol, decimals] = await Promise.all([
     publicClient.readContract({
@@ -216,7 +230,7 @@ async function main() {
       abi: erc20ReadWriteAbi,
       functionName: 'decimals',
     }),
-  ])
+  ]);
 
   const poolKey = {
     currency0: poolState.poolKey.currency0,
@@ -224,40 +238,42 @@ async function main() {
     fee: poolState.poolKey.fee,
     tickSpacing: poolState.poolKey.tickSpacing,
     hooks: poolState.poolKey.hooks,
-  }
+  };
 
-  const amountIn = parseEther(swapAmountEth)
-  const slippageBps = BigInt(slippageBpsRaw)
+  const amountIn = parseEther(swapAmountEth);
+  const slippageBps = BigInt(slippageBpsRaw);
   if (slippageBps < 0n || slippageBps >= 10_000n) {
-    throw new Error('SWAP_SLIPPAGE_BPS must be between 0 and 9999')
+    throw new Error('SWAP_SLIPPAGE_BPS must be between 0 and 9999');
   }
 
-  const currency0 = poolKey.currency0.toLowerCase()
-  const currency1 = poolKey.currency1.toLowerCase()
-  const weth = addresses.weth.toLowerCase()
-  const token = tokenAddress.toLowerCase()
+  const currency0 = poolKey.currency0.toLowerCase();
+  const currency1 = poolKey.currency1.toLowerCase();
+  const weth = addresses.weth.toLowerCase();
+  const token = tokenAddress.toLowerCase();
 
   if (currency0 !== weth && currency1 !== weth) {
-    throw new Error(`Pool does not contain configured WETH (${addresses.weth})`)
+    throw new Error(
+      `Pool does not contain configured WETH (${addresses.weth})`,
+    );
   }
 
   if (currency0 !== token && currency1 !== token) {
-    throw new Error(`Pool does not contain configured token (${tokenAddress})`)
+    throw new Error(`Pool does not contain configured token (${tokenAddress})`);
   }
 
   // Quote a buy by default: WETH -> Token.
-  const zeroForOne = currency0 === weth
+  const zeroForOne = currency0 === weth;
 
-  console.log('ETH Sepolia swap + transfer')
-  console.log('RPC:', rpcUrl)
-  console.log('Account:', account.address)
-  console.log('Token:', tokenAddress)
-  console.log('Router:', universalRouterAddress)
-  console.log('Quoter:', quoterAddress)
-  console.log('Swap direction:', 'WETH -> Token')
-  console.log('Swap input:', swapAmountEth, 'ETH')
+  console.log('ETH Sepolia swap + transfer');
+  console.log('RPC:', rpcUrl);
+  console.log('Account:', account.address);
+  console.log('Token:', tokenAddress);
+  console.log('Router:', universalRouterAddress);
+  console.log('Quoter:', quoterAddress);
+  console.log('Swap direction:', 'WETH -> Token');
+  console.log('Swap input:', swapAmountEth, 'ETH');
 
-  let quoteResult: readonly [bigint, bigint]
+  let quoteResult: readonly [bigint, bigint];
   try {
     const { result } = await publicClient.simulateContract({
       address: quoterAddress,
@@ -271,8 +287,8 @@ async function main() {
           hookData: '0x',
         },
       ],
-    })
-    quoteResult = result
+    });
+    quoteResult = result;
   } catch (error) {
     // 0x6190b2b0 = UnexpectedRevertBytes(bytes)
     // 0x90bfb865 = WrappedError(address,bytes4,bytes,bytes)
@@ -284,48 +300,56 @@ async function main() {
         errorContainsSelector(error, '57653d29') ||
         errorContainsSelector(error, 'CannotSwapBeforeStartingTime'))
     ) {
-      const block = await publicClient.getBlock()
-      const now = Number(block.timestamp)
-      const nowIso = new Date(now * 1000).toISOString()
+      const block = await publicClient.getBlock();
+      const now = Number(block.timestamp);
+      const nowIso = new Date(now * 1000).toISOString();
       throw new Error(
         `Quote blocked by hook (CannotSwapBeforeStartingTime). ` +
           `This scheduled pool is not live yet. hook=${poolKey.hooks}, chainTime=${now} (${nowIso})`,
-      )
+      );
     }
 
-    throw error
+    throw error;
   }
 
-  const amountOut = quoteResult[0]
-  const gasEstimate = quoteResult[1]
-  const minAmountOut = (amountOut * (10_000n - slippageBps)) / 10_000n
+  const amountOut = quoteResult[0];
+  const gasEstimate = quoteResult[1];
+  const minAmountOut = (amountOut * (10_000n - slippageBps)) / 10_000n;
 
-  console.log('Quote amountOut:', formatUnits(amountOut, decimals), symbol)
-  console.log('Quote gas estimate:', gasEstimate.toString())
+  console.log('Quote amountOut:', formatUnits(amountOut, decimals), symbol);
+  console.log('Quote gas estimate:', gasEstimate.toString());
 
-  const inputCurrency = zeroForOne ? poolKey.currency0 : poolKey.currency1
-  const outputCurrency = zeroForOne ? poolKey.currency1 : poolKey.currency0
+  const inputCurrency = zeroForOne ? poolKey.currency0 : poolKey.currency1;
+  const outputCurrency = zeroForOne ? poolKey.currency1 : poolKey.currency0;
 
-  const actionBuilder = new V4ActionBuilder()
-  actionBuilder.addSwapExactInSingle(poolKey, zeroForOne, amountIn, minAmountOut, '0x')
+  const actionBuilder = new V4ActionBuilder();
+  actionBuilder.addSwapExactInSingle(
+    poolKey,
+    zeroForOne,
+    amountIn,
+    minAmountOut,
+    '0x',
+  );
   actionBuilder.addAction(V4ActionType.SETTLE, [
     inputCurrency,
     amountIn,
     false,
-  ])
-  actionBuilder.addAction(V4ActionType.TAKE_ALL, [outputCurrency, 0n])
+  ]);
+  actionBuilder.addAction(V4ActionType.TAKE_ALL, [outputCurrency, 0n]);
 
-  const [actions, actionParams] = actionBuilder.build()
+  const [actions, actionParams] = actionBuilder.build();
 
-  const commandBuilder = new CommandBuilder()
-  const ADDRESS_THIS = '0x0000000000000000000000000000000000000002' as const
-  commandBuilder.addWrapEth(ADDRESS_THIS, amountIn)
-  commandBuilder.addV4Swap(actions, actionParams)
-  const [commands, inputs] = commandBuilder.build()
+  const commandBuilder = new CommandBuilder();
+  const ADDRESS_THIS = '0x0000000000000000000000000000000000000002' as const;
+  commandBuilder.addWrapEth(ADDRESS_THIS, amountIn);
+  commandBuilder.addV4Swap(actions, actionParams);
+  const [commands, inputs] = commandBuilder.build();
 
   if (!shouldExecuteSwap) {
-    console.log('Swap execution disabled via EXECUTE_SWAP=false (quote-only mode).')
-    return
+    console.log(
+      'Swap execution disabled via EXECUTE_SWAP=false (quote-only mode).',
+    );
+    return;
   }
 
   const swapHash = await walletClient.writeContract({
@@ -334,41 +358,47 @@ async function main() {
     functionName: 'execute',
     args: [commands, inputs],
     value: amountIn,
-  })
+  });
 
-  console.log('Swap tx submitted:', swapHash)
-  const swapReceipt = await publicClient.waitForTransactionReceipt({ hash: swapHash })
-  console.log('Swap status:', swapReceipt.status)
-  console.log('Swap gas used:', swapReceipt.gasUsed.toString())
+  console.log('Swap tx submitted:', swapHash);
+  const swapReceipt = await publicClient.waitForTransactionReceipt({
+    hash: swapHash,
+  });
+  console.log('Swap status:', swapReceipt.status);
+  console.log('Swap gas used:', swapReceipt.gasUsed.toString());
 
   const balanceAfterSwap = await publicClient.readContract({
     address: tokenAddress,
     abi: erc20ReadWriteAbi,
     functionName: 'balanceOf',
     args: [account.address],
-  })
+  });
 
-  console.log('Token balance after swap:', formatUnits(balanceAfterSwap, decimals), symbol)
+  console.log(
+    'Token balance after swap:',
+    formatUnits(balanceAfterSwap, decimals),
+    symbol,
+  );
 
   if (!transferTo) {
-    console.log('TRANSFER_TO not set, skipping transfer step.')
-    return
+    console.log('TRANSFER_TO not set, skipping transfer step.');
+    return;
   }
 
   if (!shouldExecuteTransfer) {
-    console.log('Transfer execution disabled via EXECUTE_TRANSFER=false.')
-    return
+    console.log('Transfer execution disabled via EXECUTE_TRANSFER=false.');
+    return;
   }
 
-  const transferAmount = parseUnits(transferAmountRaw, decimals)
+  const transferAmount = parseUnits(transferAmountRaw, decimals);
   if (transferAmount <= 0n) {
-    throw new Error('TRANSFER_AMOUNT_TOKENS must be greater than 0')
+    throw new Error('TRANSFER_AMOUNT_TOKENS must be greater than 0');
   }
 
   if (transferAmount > balanceAfterSwap) {
     throw new Error(
       `Transfer amount ${transferAmount.toString()} exceeds balance ${balanceAfterSwap.toString()}`,
-    )
+    );
   }
 
   const { request: transferRequest } = await publicClient.simulateContract({
@@ -377,17 +407,19 @@ async function main() {
     functionName: 'transfer',
     args: [transferTo, transferAmount],
     account,
-  })
+  });
 
-  const transferHash = await walletClient.writeContract(transferRequest)
-  console.log('Transfer tx submitted:', transferHash)
+  const transferHash = await walletClient.writeContract(transferRequest);
+  console.log('Transfer tx submitted:', transferHash);
 
-  const transferReceipt = await publicClient.waitForTransactionReceipt({ hash: transferHash })
-  console.log('Transfer status:', transferReceipt.status)
-  console.log('Transferred:', transferAmountRaw, symbol, 'to', transferTo)
+  const transferReceipt = await publicClient.waitForTransactionReceipt({
+    hash: transferHash,
+  });
+  console.log('Transfer status:', transferReceipt.status);
+  console.log('Transferred:', transferAmountRaw, symbol, 'to', transferTo);
 }
 
 main().catch((err) => {
-  console.error('Error:', err)
-  process.exit(1)
-})
+  console.error('Error:', err);
+  process.exit(1);
+});

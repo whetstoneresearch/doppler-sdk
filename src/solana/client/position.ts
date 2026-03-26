@@ -8,7 +8,7 @@ import type { GetProgramAccountsRpc } from '../core/rpc.js';
 import type { Base58EncodedBytes, Base64EncodedBytes } from '@solana/kit';
 import type { Position, Pool } from '../core/types.js';
 import { decodePosition } from '../core/codecs.js';
-import { PROGRAM_ID, ACCOUNT_DISCRIMINATORS } from '../core/constants.js';
+import { CPMM_PROGRAM_ID, ACCOUNT_DISCRIMINATORS } from '../core/constants.js';
 import { getPositionAddress } from '../core/pda.js';
 import { getPendingFees, ratioToNumber } from '../core/math.js';
 
@@ -132,7 +132,7 @@ export async function fetchUserPositions(
   pool?: Address,
   config?: FetchPositionsConfig,
 ): Promise<PositionWithAddress[]> {
-  const programId = config?.programId ?? PROGRAM_ID;
+  const programId = config?.programId ?? CPMM_PROGRAM_ID;
 
   // Build filters
   const filters = [
@@ -211,7 +211,7 @@ export async function fetchPoolPositions(
   pool: Address,
   config?: FetchPositionsConfig,
 ): Promise<PositionWithAddress[]> {
-  const programId = config?.programId ?? PROGRAM_ID;
+  const programId = config?.programId ?? CPMM_PROGRAM_ID;
 
   const filters = [
     // Discriminator filter
@@ -338,7 +338,7 @@ export async function fetchPositionByParams(
   positionId: bigint,
   config?: FetchPositionsConfig,
 ): Promise<PositionWithAddress | null> {
-  const programId = config?.programId ?? PROGRAM_ID;
+  const programId = config?.programId ?? CPMM_PROGRAM_ID;
   const [address] = await getPositionAddress(
     pool,
     owner,
@@ -371,7 +371,7 @@ export async function getPositionAddressFromParams(
   pool: Address,
   owner: Address,
   positionId: bigint,
-  programId: Address = PROGRAM_ID,
+  programId: Address = CPMM_PROGRAM_ID,
 ): Promise<Address> {
   const [address] = await getPositionAddress(
     pool,

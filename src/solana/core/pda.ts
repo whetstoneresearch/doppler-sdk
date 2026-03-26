@@ -5,7 +5,7 @@ import {
   getProgramDerivedAddress,
 } from '@solana/kit';
 import {
-  PROGRAM_ID,
+  CPMM_PROGRAM_ID,
   SEED_CONFIG,
   SEED_POOL,
   SEED_AUTHORITY,
@@ -69,7 +69,7 @@ export function areMintsOrdered(mint0: Address, mint1: Address): boolean {
  * Seeds: ['config']
  */
 export async function getConfigAddress(
-  programId: Address = PROGRAM_ID,
+  programId: Address = CPMM_PROGRAM_ID,
 ): Promise<ProgramDerivedAddress> {
   return getProgramDerivedAddress({
     programAddress: programId,
@@ -86,7 +86,7 @@ export async function getConfigAddress(
 export async function getPoolAddress(
   mint0: Address,
   mint1: Address,
-  programId: Address = PROGRAM_ID,
+  programId: Address = CPMM_PROGRAM_ID,
 ): Promise<ProgramDerivedAddress> {
   const [token0, token1] = sortMints(mint0, mint1);
   return getProgramDerivedAddress({
@@ -105,7 +105,7 @@ export async function getPoolAddress(
  */
 export async function getPoolAuthorityAddress(
   pool: Address,
-  programId: Address = PROGRAM_ID,
+  programId: Address = CPMM_PROGRAM_ID,
 ): Promise<ProgramDerivedAddress> {
   return getProgramDerivedAddress({
     programAddress: programId,
@@ -121,7 +121,7 @@ export async function getPositionAddress(
   pool: Address,
   owner: Address,
   positionId: bigint,
-  programId: Address = PROGRAM_ID,
+  programId: Address = CPMM_PROGRAM_ID,
 ): Promise<ProgramDerivedAddress> {
   const positionIdBytes = new Uint8Array(8);
   const view = new DataView(positionIdBytes.buffer);
@@ -144,7 +144,7 @@ export async function getPositionAddress(
  */
 export async function getOracleAddress(
   pool: Address,
-  programId: Address = PROGRAM_ID,
+  programId: Address = CPMM_PROGRAM_ID,
 ): Promise<ProgramDerivedAddress> {
   return getProgramDerivedAddress({
     programAddress: programId,
@@ -158,7 +158,7 @@ export async function getOracleAddress(
  */
 export async function getProtocolPositionAddress(
   pool: Address,
-  programId: Address = PROGRAM_ID,
+  programId: Address = CPMM_PROGRAM_ID,
 ): Promise<ProgramDerivedAddress> {
   return getProgramDerivedAddress({
     programAddress: programId,
@@ -179,7 +179,7 @@ export async function getProtocolPositionAddress(
 export async function getPoolInitAddresses(
   mint0: Address,
   mint1: Address,
-  programId: Address = PROGRAM_ID,
+  programId: Address = CPMM_PROGRAM_ID,
 ): Promise<{
   token0: Address;
   token1: Address;
@@ -213,7 +213,7 @@ export async function getPoolInitAddresses(
  */
 export async function getSwapAddresses(
   pool: Address,
-  programId: Address = PROGRAM_ID,
+  programId: Address = CPMM_PROGRAM_ID,
 ): Promise<{
   config: ProgramDerivedAddress;
   authority: ProgramDerivedAddress;
@@ -235,7 +235,7 @@ export async function getLiquidityAddresses(
   pool: Address,
   owner: Address,
   positionId: bigint,
-  programId: Address = PROGRAM_ID,
+  programId: Address = CPMM_PROGRAM_ID,
 ): Promise<{
   config: ProgramDerivedAddress;
   authority: ProgramDerivedAddress;

@@ -1,18 +1,19 @@
-import type { Address } from '@solana/kit';
-import type { Instruction, AccountMeta, AccountLookupMeta } from '@solana/kit';
-import type { TransactionSigner, AccountSignerMeta } from '@solana/kit';
+import type {
+  Address,
+  Instruction,
+  AccountMeta,
+  AccountLookupMeta,
+  TransactionSigner,
+  AccountSignerMeta,
+} from '@solana/kit';
 import {
   AccountRole,
   getProgramDerivedAddress,
   getAddressEncoder,
 } from '@solana/kit';
 import {
-  ACCOUNT_ROLE_READONLY,
-  ACCOUNT_ROLE_SIGNER,
-  ACCOUNT_ROLE_WRITABLE,
-  ACCOUNT_ROLE_WRITABLE_SIGNER,
-  SYSTEM_PROGRAM_ID,
-  TOKEN_PROGRAM_ID,
+  SYSTEM_PROGRAM_ADDRESS,
+  TOKEN_PROGRAM_ADDRESS,
   TOKEN_METADATA_PROGRAM_ID,
 } from '../../core/constants.js';
 import {
@@ -41,10 +42,10 @@ function isTransactionSigner(
 function createAccountMeta(
   value: AddressOrSigner,
   role:
-    | typeof ACCOUNT_ROLE_READONLY
-    | typeof ACCOUNT_ROLE_WRITABLE
-    | typeof ACCOUNT_ROLE_SIGNER
-    | typeof ACCOUNT_ROLE_WRITABLE_SIGNER,
+    | typeof AccountRole.READONLY
+    | typeof AccountRole.WRITABLE
+    | typeof AccountRole.READONLY_SIGNER
+    | typeof AccountRole.WRITABLE_SIGNER,
 ): AccountMeta | AccountSignerMeta {
   if (isTransactionSigner(value)) {
     return { address: value.address, role, signer: value };
@@ -77,8 +78,8 @@ export async function getTokenMetadataAddress(mint: Address): Promise<Address> {
  * (7r5rdLkGMzTq5Q2kBhkePw4ZTeZEooHgTXktYoamNmVq).
  */
 const ALT_INDEX: Record<string, number> = {
-  [TOKEN_PROGRAM_ID]: 0,
-  [SYSTEM_PROGRAM_ID]: 1,
+  [TOKEN_PROGRAM_ADDRESS]: 0,
+  [SYSTEM_PROGRAM_ADDRESS]: 1,
   SysvarRent111111111111111111111111111111111: 2,
   [INITIALIZER_PROGRAM_ID]: 3,
   [TOKEN_METADATA_PROGRAM_ID]: 4,
@@ -151,8 +152,8 @@ export function createInitializeLaunchInstruction(
     payer,
     authority,
     migratorProgram,
-    tokenProgram = TOKEN_PROGRAM_ID,
-    systemProgram = SYSTEM_PROGRAM_ID,
+    tokenProgram = TOKEN_PROGRAM_ADDRESS,
+    systemProgram = SYSTEM_PROGRAM_ADDRESS,
     rent,
     metadataAccount,
     addressLookupTable: alt,
@@ -191,17 +192,17 @@ export function createInitializeLaunchInstruction(
 
   const keys: (AccountMeta | AccountSignerMeta | AccountLookupMeta)[] = [
     staticOrLookup(config, AccountRole.READONLY),
-    { address: launch, role: ACCOUNT_ROLE_WRITABLE },
-    { address: launchAuthority, role: ACCOUNT_ROLE_READONLY },
-    createAccountMeta(baseMint, ACCOUNT_ROLE_WRITABLE_SIGNER),
+    { address: launch, role: AccountRole.WRITABLE },
+    { address: launchAuthority, role: AccountRole.READONLY },
+    createAccountMeta(baseMint, AccountRole.WRITABLE_SIGNER),
     staticOrLookup(quoteMint, AccountRole.READONLY),
-    createAccountMeta(baseVault, ACCOUNT_ROLE_WRITABLE_SIGNER),
-    createAccountMeta(quoteVault, ACCOUNT_ROLE_WRITABLE_SIGNER),
-    createAccountMeta(payer, ACCOUNT_ROLE_WRITABLE_SIGNER),
+    createAccountMeta(baseVault, AccountRole.WRITABLE_SIGNER),
+    createAccountMeta(quoteVault, AccountRole.WRITABLE_SIGNER),
+    createAccountMeta(payer, AccountRole.WRITABLE_SIGNER),
   ];
 
   if (authority) {
-    keys.push(createAccountMeta(authority, ACCOUNT_ROLE_SIGNER));
+    keys.push(createAccountMeta(authority, AccountRole.READONLY_SIGNER));
   }
   if (migratorProgram) {
     keys.push(staticOrLookup(migratorProgram, AccountRole.READONLY));
@@ -212,7 +213,7 @@ export function createInitializeLaunchInstruction(
   keys.push(staticOrLookup(rent, AccountRole.READONLY));
 
   if (withMetadata) {
-    keys.push({ address: metadataAccount!, role: ACCOUNT_ROLE_WRITABLE });
+    keys.push({ address: metadataAccount!, role: AccountRole.WRITABLE });
     keys.push(staticOrLookup(TOKEN_METADATA_PROGRAM_ID, AccountRole.READONLY));
   }
 

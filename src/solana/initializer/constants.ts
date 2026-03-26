@@ -26,13 +26,13 @@ export const SEED_LAUNCH_AUTHORITY = 'launch_authority_v3';
 // ============================================================================
 
 /**
- * Commitment hash for an empty remaining-accounts list — SHA256 of [0,0,0,0].
+ * Commitment hash for an empty remaining-accounts list — keccak256 of [0,0,0,0].
  * Pass this for sentinelRemainingAccountsHash and migratorRemainingAccountsHash
- * when no extra accounts are needed.
+ * when no extra accounts are needed at that hook's invocation time.
  */
 export const EMPTY_REMAINING_ACCOUNTS_HASH = new Uint8Array([
-  223, 63, 97, 152, 4, 169, 47, 219, 64, 87, 25, 45, 196, 61, 215, 72, 234, 119,
-  138, 220, 82, 188, 73, 140, 232, 5, 36, 192, 20, 184, 17, 25,
+  232, 231, 118, 38, 88, 111, 115, 185, 85, 54, 76, 123, 75, 191, 11, 183, 247,
+  104, 94, 189, 64, 232, 82, 177, 100, 99, 58, 74, 203, 211, 36, 76,
 ]);
 
 // ============================================================================

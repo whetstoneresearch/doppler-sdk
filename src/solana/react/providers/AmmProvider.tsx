@@ -7,7 +7,7 @@ import { createContext, useContext, useMemo, type ReactNode } from 'react';
 import type { Address } from '@solana/kit';
 import type { Rpc, SolanaRpcApi } from '@solana/kit';
 import { createSolanaRpc } from '@solana/kit';
-import { PROGRAM_ID } from '../../core/constants.js';
+import { CPMM_PROGRAM_ID } from '../../core/constants.js';
 
 // ============================================================================
 // Types
@@ -136,7 +136,7 @@ export function createAmmContextValue(
   return {
     rpc,
     endpoint,
-    programId: programId ?? PROGRAM_ID,
+    programId: programId ?? CPMM_PROGRAM_ID,
     commitment,
     refreshInterval,
     defaultSlippageBps,

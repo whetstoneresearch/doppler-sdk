@@ -1,12 +1,14 @@
-import type { Address } from '@solana/kit';
-import type { Instruction, AccountMeta } from '@solana/kit';
-import type { TransactionSigner, AccountSignerMeta } from '@solana/kit';
+import type {
+  Address,
+  Instruction,
+  AccountMeta,
+  TransactionSigner,
+  AccountSignerMeta,
+} from '@solana/kit';
+import { AccountRole } from '@solana/kit';
 import {
-  ACCOUNT_ROLE_READONLY,
-  ACCOUNT_ROLE_SIGNER,
-  ACCOUNT_ROLE_WRITABLE,
-  SYSTEM_PROGRAM_ID,
-  TOKEN_PROGRAM_ID,
+  SYSTEM_PROGRAM_ADDRESS,
+  TOKEN_PROGRAM_ADDRESS,
 } from '../../core/constants.js';
 import { INITIALIZER_PROGRAM_ID } from '../constants.js';
 import { getCurveSwapExactInInstructionDataEncoder } from '../../generated/initializer/index.js';
@@ -27,9 +29,9 @@ function isTransactionSigner(
 function createAccountMeta(
   value: AddressOrSigner,
   role:
-    | typeof ACCOUNT_ROLE_READONLY
-    | typeof ACCOUNT_ROLE_WRITABLE
-    | typeof ACCOUNT_ROLE_SIGNER,
+    | typeof AccountRole.READONLY
+    | typeof AccountRole.WRITABLE
+    | typeof AccountRole.READONLY_SIGNER,
 ): AccountMeta | AccountSignerMeta {
   if (isTransactionSigner(value)) {
     return { address: value.address, role, signer: value };
@@ -69,26 +71,26 @@ export function createCurveSwapExactInInstruction(
     baseMint,
     quoteMint,
     user,
-    sentinelProgram = SYSTEM_PROGRAM_ID,
-    tokenProgram = TOKEN_PROGRAM_ID,
+    sentinelProgram = SYSTEM_PROGRAM_ADDRESS,
+    tokenProgram = TOKEN_PROGRAM_ADDRESS,
   } = accounts;
 
   const keys: (AccountMeta | AccountSignerMeta)[] = [
-    { address: config, role: ACCOUNT_ROLE_READONLY },
-    { address: launch, role: ACCOUNT_ROLE_WRITABLE },
-    { address: launchAuthority, role: ACCOUNT_ROLE_READONLY },
-    { address: baseVault, role: ACCOUNT_ROLE_WRITABLE },
-    { address: quoteVault, role: ACCOUNT_ROLE_WRITABLE },
-    { address: userBaseAccount, role: ACCOUNT_ROLE_WRITABLE },
-    { address: userQuoteAccount, role: ACCOUNT_ROLE_WRITABLE },
-    { address: baseMint, role: ACCOUNT_ROLE_READONLY },
-    { address: quoteMint, role: ACCOUNT_ROLE_READONLY },
-    createAccountMeta(user, ACCOUNT_ROLE_SIGNER),
+    { address: config, role: AccountRole.READONLY },
+    { address: launch, role: AccountRole.WRITABLE },
+    { address: launchAuthority, role: AccountRole.READONLY },
+    { address: baseVault, role: AccountRole.WRITABLE },
+    { address: quoteVault, role: AccountRole.WRITABLE },
+    { address: userBaseAccount, role: AccountRole.WRITABLE },
+    { address: userQuoteAccount, role: AccountRole.WRITABLE },
+    { address: baseMint, role: AccountRole.READONLY },
+    { address: quoteMint, role: AccountRole.READONLY },
+    createAccountMeta(user, AccountRole.READONLY_SIGNER),
     // sentinel_program is Optional in the on-chain struct but still occupies a fixed
-    // slot (token_program follows it).  Always emit it — use SYSTEM_PROGRAM_ID as the
+    // slot (token_program follows it).  Always emit it — use SYSTEM_PROGRAM_ADDRESS as the
     // no-op placeholder when no real sentinel is configured.
-    { address: sentinelProgram, role: ACCOUNT_ROLE_READONLY },
-    { address: tokenProgram, role: ACCOUNT_ROLE_READONLY },
+    { address: sentinelProgram, role: AccountRole.READONLY },
+    { address: tokenProgram, role: AccountRole.READONLY },
   ];
 
   const data = new Uint8Array(

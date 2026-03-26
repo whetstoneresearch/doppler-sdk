@@ -8,12 +8,12 @@ import {
   INITIALIZER_PROGRAM_ID,
   SEED_LAUNCH,
   SEED_LAUNCH_AUTHORITY,
-} from '../../../../src/solana/initializer/constants.js';
+} from '@/solana/initializer/constants.js';
 import {
   getLaunchAddress,
   getLaunchAuthorityAddress,
   launchIdFromU64,
-} from '../../../../src/solana/initializer/pda.js';
+} from '@/solana/initializer/pda.js';
 
 const addressCodec = getAddressCodec();
 const textEncoder = new TextEncoder();

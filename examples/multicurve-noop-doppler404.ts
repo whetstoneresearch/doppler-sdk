@@ -90,7 +90,12 @@ async function main() {
   console.log('📋 Multicurve (NoOp) Doppler404 Configuration:');
   console.log('  Chain:', baseSepolia.name, `(${baseSepolia.id})`);
   console.log('  Deployer:', account.address);
-  console.log('  Token:', params.token.name, `(${params.token.symbol})`, params.token.type);
+  console.log(
+    '  Token:',
+    params.token.name,
+    `(${params.token.symbol})`,
+    params.token.type,
+  );
   console.log('  Numeraire:', params.sale.numeraire);
   console.log('  Curves:', params.pool.curves.length);
   console.log('  Beneficiaries:', params.pool.beneficiaries?.length);
@@ -102,7 +107,8 @@ async function main() {
   console.log('✅ Simulation OK');
   console.log('  Predicted token address:', sim.tokenAddress);
   console.log('  Predicted poolId:', sim.poolId);
-  if (sim.gasEstimate) console.log('  Gas estimate:', sim.gasEstimate.toString());
+  if (sim.gasEstimate)
+    console.log('  Gas estimate:', sim.gasEstimate.toString());
 
   if (!shouldExecute) {
     console.log('\nSkipping execution. To broadcast, set EXECUTE=1');

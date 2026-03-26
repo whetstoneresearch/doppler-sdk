@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { address } from '@solana/addresses';
-import { consultTwap } from '../../../../src/solana/client/oracle.js';
-import { MAX_ORACLE_OBSERVATIONS, Q64_ONE } from '../../../../src/solana/core/constants.js';
-import type { OracleState, Observation } from '../../../../src/solana/core/types.js';
+import { consultTwap } from '@/solana/client/oracle.js';
+import { MAX_ORACLE_OBSERVATIONS, Q64_ONE } from '@/solana/core/constants.js';
+import type { OracleState, Observation } from '@/solana/core/types.js';
 
 function makeOracle(overrides: Partial<OracleState> = {}): OracleState {
   const emptyObs: Observation = {

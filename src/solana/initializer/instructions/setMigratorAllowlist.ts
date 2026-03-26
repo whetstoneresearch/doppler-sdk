@@ -1,10 +1,12 @@
-import type { Address } from '@solana/kit';
-import type { Instruction, AccountMeta } from '@solana/kit';
-import type { TransactionSigner, AccountSignerMeta } from '@solana/kit';
-import {
-  ACCOUNT_ROLE_WRITABLE,
-  ACCOUNT_ROLE_WRITABLE_SIGNER,
-} from '../../core/constants.js';
+import type {
+  Address,
+  Instruction,
+  AccountMeta,
+  TransactionSigner,
+  AccountSignerMeta,
+} from '@solana/kit';
+import { AccountRole } from '@solana/kit';
+import {} from '../../core/constants.js';
 import { INITIALIZER_PROGRAM_ID } from '../constants.js';
 import { getSetMigratorAllowlistInstructionDataEncoder } from '../../generated/initializer/index.js';
 
@@ -23,7 +25,7 @@ function isTransactionSigner(
 
 function createSignerAccountMeta(
   value: AddressOrSigner,
-  role: typeof ACCOUNT_ROLE_WRITABLE_SIGNER,
+  role: typeof AccountRole.WRITABLE_SIGNER,
 ): AccountMeta | AccountSignerMeta {
   if (isTransactionSigner(value)) {
     return { address: value.address, role, signer: value };
@@ -44,8 +46,8 @@ export function createSetMigratorAllowlistInstruction(
   const { admin, config } = accounts;
 
   const keys: (AccountMeta | AccountSignerMeta)[] = [
-    createSignerAccountMeta(admin, ACCOUNT_ROLE_WRITABLE_SIGNER),
-    { address: config, role: ACCOUNT_ROLE_WRITABLE },
+    createSignerAccountMeta(admin, AccountRole.WRITABLE_SIGNER),
+    { address: config, role: AccountRole.WRITABLE },
   ];
 
   const data = new Uint8Array(

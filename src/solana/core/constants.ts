@@ -1,24 +1,23 @@
 import { address, type Address } from '@solana/kit';
+export {
+  TOKEN_PROGRAM_ADDRESS,
+  ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
+} from '@solana-program/token';
+export { SYSTEM_PROGRAM_ADDRESS } from '@solana-program/system';
+export { SYSVAR_RENT_ADDRESS } from '@solana/sysvars';
 
 /**
- * Program ID for the CPMM AMM
+ * CPMM AMM program ID (devnet)
  */
-export const PROGRAM_ID: Address = address(
+export const CPMM_PROGRAM_ID: Address = address(
   '9PSxVPoPfnbZ8Q1uQhgS6ZxvBjFboZtebNsu34umxkgQ',
 );
 
 /**
- * Program ID for the Sentinel program (deployed to devnet)
+ * CPMM sentinel program ID (devnet)
  */
-export const SENTINEL_PROGRAM_ID: Address = address(
+export const CPMM_SENTINEL_PROGRAM_ID: Address = address(
   '2vJ1c62knEwZbxp3XdHB4RSmCfz55pA6tRkCho63gW7u',
-);
-
-/**
- * SPL Token Program ID
- */
-export const TOKEN_PROGRAM_ID: Address = address(
-  'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
 );
 
 /**
@@ -26,20 +25,6 @@ export const TOKEN_PROGRAM_ID: Address = address(
  */
 export const TOKEN_METADATA_PROGRAM_ID: Address = address(
   'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s',
-);
-
-/**
- * System Program ID
- */
-export const SYSTEM_PROGRAM_ID: Address = address(
-  '11111111111111111111111111111111',
-);
-
-/**
- * SPL Associated Token Account Program ID
- */
-export const ASSOCIATED_TOKEN_PROGRAM_ID: Address = address(
-  'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL',
 );
 
 // ============================================================================
@@ -111,22 +96,6 @@ export const SF_AFTER_REMOVE_LIQ = 1 << 5;
 
 /** Sentinel return value indicating "no change" to fee parameter */
 export const SENTINEL_NO_CHANGE = 0xffff;
-
-// ============================================================================
-// Account Meta Roles (for AccountMeta)
-// ============================================================================
-
-/** Account is read-only (not writable, not signer) */
-export const ACCOUNT_ROLE_READONLY = 0;
-
-/** Account is writable (not signer) */
-export const ACCOUNT_ROLE_WRITABLE = 1;
-
-/** Account is a signer (not writable) */
-export const ACCOUNT_ROLE_SIGNER = 2;
-
-/** Account is both writable and a signer */
-export const ACCOUNT_ROLE_WRITABLE_SIGNER = 3;
 
 // ============================================================================
 // Instruction Discriminators (Anchor 8-byte hashes)
