@@ -1,12 +1,9 @@
-import type { Address } from '@solana/kit';
-import type { Instruction, AccountMeta } from '@solana/kit';
+import type { Address, Instruction, AccountMeta } from '@solana/kit';
+import { AccountRole } from '@solana/kit';
 import {
-  PROGRAM_ID,
-  TOKEN_PROGRAM_ID,
+  CPMM_PROGRAM_ID,
+  TOKEN_PROGRAM_ADDRESS,
   INSTRUCTION_DISCRIMINATORS,
-  ACCOUNT_ROLE_READONLY,
-  ACCOUNT_ROLE_WRITABLE,
-  ACCOUNT_ROLE_SIGNER,
 } from '../core/constants.js';
 import type { SwapExactInArgs, SwapDirection } from '../core/types.js';
 import { encodeInstructionData, swapExactInArgsCodec } from '../core/codecs.js';
@@ -80,7 +77,7 @@ export interface SwapExactInAccounts {
 export function createSwapExactInInstruction(
   accounts: SwapExactInAccounts,
   args: SwapExactInArgs,
-  programId: Address = PROGRAM_ID,
+  programId: Address = CPMM_PROGRAM_ID,
 ): Instruction {
   const {
     config,
@@ -93,32 +90,32 @@ export function createSwapExactInInstruction(
     userIn,
     userOut,
     user,
-    tokenProgram = TOKEN_PROGRAM_ID,
+    tokenProgram = TOKEN_PROGRAM_ADDRESS,
     oracle,
     remainingAccounts = [],
   } = accounts;
 
   // Build account metas in order expected by the program
   const keys: AccountMeta[] = [
-    { address: config, role: ACCOUNT_ROLE_READONLY },
-    { address: pool, role: ACCOUNT_ROLE_WRITABLE },
-    { address: authority, role: ACCOUNT_ROLE_READONLY },
-    { address: vaultIn, role: ACCOUNT_ROLE_WRITABLE },
-    { address: vaultOut, role: ACCOUNT_ROLE_WRITABLE },
-    { address: token0Mint, role: ACCOUNT_ROLE_READONLY },
-    { address: token1Mint, role: ACCOUNT_ROLE_READONLY },
-    { address: userIn, role: ACCOUNT_ROLE_WRITABLE },
-    { address: userOut, role: ACCOUNT_ROLE_WRITABLE },
-    { address: user, role: ACCOUNT_ROLE_SIGNER },
-    { address: tokenProgram, role: ACCOUNT_ROLE_READONLY },
+    { address: config, role: AccountRole.READONLY },
+    { address: pool, role: AccountRole.WRITABLE },
+    { address: authority, role: AccountRole.READONLY },
+    { address: vaultIn, role: AccountRole.WRITABLE },
+    { address: vaultOut, role: AccountRole.WRITABLE },
+    { address: token0Mint, role: AccountRole.READONLY },
+    { address: token1Mint, role: AccountRole.READONLY },
+    { address: userIn, role: AccountRole.WRITABLE },
+    { address: userOut, role: AccountRole.WRITABLE },
+    { address: user, role: AccountRole.READONLY_SIGNER },
+    { address: tokenProgram, role: AccountRole.READONLY },
   ];
 
   // Add oracle if provided (always writable due to Anchor #[account(mut)] constraint)
   if (oracle) {
-    keys.push({ address: oracle, role: ACCOUNT_ROLE_WRITABLE });
+    keys.push({ address: oracle, role: AccountRole.WRITABLE });
   }
   for (const account of remainingAccounts) {
-    keys.push({ address: account, role: ACCOUNT_ROLE_READONLY });
+    keys.push({ address: account, role: AccountRole.READONLY });
   }
 
   const data = encodeInstructionData(
@@ -173,7 +170,7 @@ export function createSwapInstruction(params: {
     oracle,
     remainingAccounts,
     updateOracle = false,
-    programId = PROGRAM_ID,
+    programId = CPMM_PROGRAM_ID,
   } = params;
 
   // Determine vaults and user accounts based on direction

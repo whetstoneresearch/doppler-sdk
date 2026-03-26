@@ -8,7 +8,7 @@ import type { Base64EncodedBytes } from '@solana/kit';
 import type { GetProgramAccountsRpc } from '../core/rpc.js';
 import type { Pool } from '../core/types.js';
 import { decodePool } from '../core/codecs.js';
-import { PROGRAM_ID, ACCOUNT_DISCRIMINATORS } from '../core/constants.js';
+import { CPMM_PROGRAM_ID, ACCOUNT_DISCRIMINATORS } from '../core/constants.js';
 import { getPoolAddress, sortMints } from '../core/pda.js';
 
 // Browser-compatible base64 encoding/decoding utilities
@@ -109,7 +109,7 @@ export async function fetchAllPools(
   rpc: GetProgramAccountsRpc,
   config?: FetchPoolsConfig,
 ): Promise<PoolWithAddress[]> {
-  const programId = config?.programId ?? PROGRAM_ID;
+  const programId = config?.programId ?? CPMM_PROGRAM_ID;
 
   // Filter by Pool discriminator (first 8 bytes)
   const discriminatorFilter = {
@@ -178,7 +178,7 @@ export async function getPoolByMints(
   mint1: Address,
   config?: FetchPoolsConfig,
 ): Promise<PoolWithAddress | null> {
-  const programId = config?.programId ?? PROGRAM_ID;
+  const programId = config?.programId ?? CPMM_PROGRAM_ID;
 
   // Derive pool address (mints are sorted internally)
   const [poolAddress] = await getPoolAddress(mint0, mint1, programId);
@@ -263,7 +263,7 @@ export async function poolExists(
 export async function getPoolAddressFromMints(
   mint0: Address,
   mint1: Address,
-  programId: Address = PROGRAM_ID,
+  programId: Address = CPMM_PROGRAM_ID,
 ): Promise<{
   poolAddress: Address;
   token0: Address;

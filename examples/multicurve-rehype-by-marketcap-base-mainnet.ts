@@ -195,7 +195,7 @@ async function main() {
   const addresses = getAddresses(base.id);
 
   const rehypeDopplerHookAddress = addresses.rehypeDopplerHookInitializer;
-  console.log("rehype initializer", addresses.rehypeDopplerHookInitializer)
+  console.log('rehype initializer', addresses.rehypeDopplerHookInitializer);
   if (!rehypeDopplerHookAddress) {
     throw new Error(
       'Base mainnet RehypeDopplerHookInitializer is not configured in SDK deployments',
@@ -250,7 +250,7 @@ async function main() {
     Number(latestBlock.timestamp) + REHYPE_START_DELAY_SECONDS;
 
   // Build multicurve using market cap ranges + RehypeDopplerHook
-  console.log(addresses.dopplerHookInitializer)
+  console.log(addresses.dopplerHookInitializer);
   const params = sdk
     .buildMulticurveAuction()
     .tokenConfig({
@@ -313,12 +313,15 @@ async function main() {
     .withNoOpMigrator(addresses.noOpMigrator)
     .build();
 
-  console.log(rehypeDopplerHookAddress)
-  console.log("initializer", addresses.dopplerHookInitializer)
+  console.log(rehypeDopplerHookAddress);
+  console.log('initializer', addresses.dopplerHookInitializer);
 
   console.log('\nMulticurve Configuration:');
   console.log('  Network: Base mainnet');
-  console.log('  Execute mainnet:', executeMainnet ? 'yes' : 'no (simulation only)');
+  console.log(
+    '  Execute mainnet:',
+    executeMainnet ? 'yes' : 'no (simulation only)',
+  );
   console.log('  Token:', params.token.name, '(' + params.token.symbol + ')');
   console.log('  Curves:', params.pool.curves.length);
   console.log(

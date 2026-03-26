@@ -1,7 +1,5 @@
-import type { Address } from '@solana/kit';
-import type { Instruction } from '@solana/kit';
-import { getStructCodec, getU64Codec } from '@solana/kit';
-import { ACCOUNT_ROLE_READONLY } from '../../core/constants.js';
+import type { Address, Instruction } from '@solana/kit';
+import { getStructCodec, getU64Codec, AccountRole } from '@solana/kit';
 import { INITIALIZER_PROGRAM_ID } from '../constants.js';
 import { getPreviewSwapExactInInstructionDataEncoder } from '../../generated/initializer/index.js';
 
@@ -30,13 +28,13 @@ export function createPreviewSwapExactInInstruction(
   const { launch, baseVault, quoteVault, sentinelProgram } = accounts;
 
   const keys = [
-    { address: launch, role: ACCOUNT_ROLE_READONLY },
-    { address: baseVault, role: ACCOUNT_ROLE_READONLY },
-    { address: quoteVault, role: ACCOUNT_ROLE_READONLY },
+    { address: launch, role: AccountRole.READONLY },
+    { address: baseVault, role: AccountRole.READONLY },
+    { address: quoteVault, role: AccountRole.READONLY },
   ] as const;
 
   const accountsList = sentinelProgram
-    ? [...keys, { address: sentinelProgram, role: ACCOUNT_ROLE_READONLY }]
+    ? [...keys, { address: sentinelProgram, role: AccountRole.READONLY }]
     : keys;
 
   const data = new Uint8Array(

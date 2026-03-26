@@ -10,34 +10,45 @@
  * Use case: When you want fee revenue to flow to specific addresses without
  * migrating liquidity after the auction completes.
  */
-import './env'
+import './env';
 
-import { DopplerSDK, WAD, getAddresses } from '../src/evm'
-import { createPublicClient, createWalletClient, http } from 'viem'
-import { privateKeyToAccount } from 'viem/accounts'
-import { baseSepolia } from 'viem/chains'
+import { DopplerSDK, WAD, getAddresses } from '../src/evm';
+import { createPublicClient, createWalletClient, http } from 'viem';
+import { privateKeyToAccount } from 'viem/accounts';
+import { baseSepolia } from 'viem/chains';
 
-const privateKey = process.env.PRIVATE_KEY as `0x${string}`
-const rpcUrl = process.env.RPC_URL ?? baseSepolia.rpcUrls.default.http[0]
+const privateKey = process.env.PRIVATE_KEY as `0x${string}`;
+const rpcUrl = process.env.RPC_URL ?? baseSepolia.rpcUrls.default.http[0];
 
-if (!privateKey) throw new Error('PRIVATE_KEY is not set')
+if (!privateKey) throw new Error('PRIVATE_KEY is not set');
 
 async function main() {
-  const account = privateKeyToAccount(privateKey)
+  const account = privateKeyToAccount(privateKey);
 
-  const publicClient = createPublicClient({ chain: baseSepolia, transport: http(rpcUrl) })
- const walletClient = createWalletClient({ chain: baseSepolia, transport: http(rpcUrl), account })
+  const publicClient = createPublicClient({
+    chain: baseSepolia,
+    transport: http(rpcUrl),
+  });
+  const walletClient = createWalletClient({
+    chain: baseSepolia,
+    transport: http(rpcUrl),
+    account,
+  });
 
-  const sdk = new DopplerSDK({ publicClient, walletClient, chainId: baseSepolia.id })
-  const addresses = getAddresses(baseSepolia.id)
+  const sdk = new DopplerSDK({
+    publicClient,
+    walletClient,
+    chainId: baseSepolia.id,
+  });
+  const addresses = getAddresses(baseSepolia.id);
 
   // Define beneficiaries with shares that sum to WAD (1e18 = 100%)
   // IMPORTANT: Protocol owner must be included with at least 5% shares (WAD/20)
-  const airlockBeneficiary = await sdk.getAirlockBeneficiary(WAD / 10n) // 10% to Airlock owner (>= 5% required)
+  const airlockBeneficiary = await sdk.getAirlockBeneficiary(WAD / 10n); // 10% to Airlock owner (>= 5% required)
   const beneficiaries = [
     airlockBeneficiary,
     { beneficiary: account.address, shares: WAD - airlockBeneficiary.shares }, // remaining shares to deployer
-  ]
+  ];
 
   // Build multicurve with beneficiaries
   const params = sdk
@@ -46,27 +57,24 @@ async function main() {
       type: 'standard',
       name: 'Lockable Beneficiaries Token',
       symbol: 'LBT',
-      tokenURI: 'ipfs://token-metadata.json'
+      tokenURI: 'ipfs://token-metadata.json',
     })
     .saleConfig({
       initialSupply: 1_000_000n * WAD,
       numTokensToSell: 900_000n * WAD,
-      numeraire: addresses.weth // WETH on Base
+      numeraire: addresses.weth, // WETH on Base
     })
     .poolConfig({
       fee: 0,
       tickSpacing: 8,
-      curves: [
-        // Create 10 curves with equal shares
-        ...Array.from({ length: 10 }, (_, i) => ({
-          tickLower: 8 + i * 16_000,
-          tickUpper: 240_000,
-          numPositions: 10,
-          shares: WAD / 10n, // 10% per curve
-        }))
-      ],
+      curves: Array.from({ length: 10 }, (_, i) => ({
+        tickLower: 8 + i * 16_000,
+        tickUpper: 240_000,
+        numPositions: 10,
+        shares: WAD / 10n, // 10% per curve
+      })),
       // Specify beneficiaries for fee collection
-      beneficiaries
+      beneficiaries,
     })
     .withGovernance({ type: 'default' })
     // IMPORTANT: Use 'noOp' migration type when using beneficiaries
@@ -75,27 +83,31 @@ async function main() {
     .withUserAddress(account.address)
     // Optional: Override the NoOpMigrator address if using a custom deployment
     // .withNoOpMigrator(addresses.noOpMigrator!)
-    .build()
+    .build();
 
-  console.log('📋 Multicurve Configuration:')
-  console.log('  Token:', params.token.name, `(${params.token.symbol})`)
-  console.log('  Curves:', params.pool.curves.length)
-  console.log('  Beneficiaries:', params.pool.beneficiaries?.length)
-  console.log('  Migration:', params.migration.type)
+  console.log('📋 Multicurve Configuration:');
+  console.log('  Token:', params.token.name, `(${params.token.symbol})`);
+  console.log('  Curves:', params.pool.curves.length);
+  console.log('  Beneficiaries:', params.pool.beneficiaries?.length);
+  console.log('  Migration:', params.migration.type);
 
   // Create the multicurve pool + token
   // Note: createMulticurve internally simulates first, ensuring consistent addresses
-  console.log('\n🚀 Creating multicurve auction with lockable beneficiaries...')
-  const result = await sdk.factory.createMulticurve(params)
-  console.log('✅ Multicurve created successfully!')
-  console.log('  Token address:', result.tokenAddress)
-  console.log('  Pool ID:', result.poolId)
-  console.log('  Transaction:', result.transactionHash)
-  console.log('\n💡 Fee revenue will be distributed to the specified beneficiaries')
-  console.log('   after liquidity is locked (no migration will occur).')
+  console.log(
+    '\n🚀 Creating multicurve auction with lockable beneficiaries...',
+  );
+  const result = await sdk.factory.createMulticurve(params);
+  console.log('✅ Multicurve created successfully!');
+  console.log('  Token address:', result.tokenAddress);
+  console.log('  Pool ID:', result.poolId);
+  console.log('  Transaction:', result.transactionHash);
+  console.log(
+    '\n💡 Fee revenue will be distributed to the specified beneficiaries',
+  );
+  console.log('   after liquidity is locked (no migration will occur).');
 }
 
 main().catch((err) => {
-  console.error('❌ Error:', err)
-  process.exit(1)
-})
+  console.error('❌ Error:', err);
+  process.exit(1);
+});

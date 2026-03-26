@@ -1,7 +1,5 @@
-import type { Address } from '@solana/kit';
-import type { Instruction } from '@solana/kit';
-import { getStructCodec, getU64Codec } from '@solana/kit';
-import { ACCOUNT_ROLE_READONLY } from '../../core/constants.js';
+import type { Address, Instruction } from '@solana/kit';
+import { getStructCodec, getU64Codec, AccountRole } from '@solana/kit';
 import {
   INITIALIZER_INSTRUCTION_DISCRIMINATORS,
   INITIALIZER_PROGRAM_ID,
@@ -34,10 +32,10 @@ export function createPreviewMigrationInstruction(
   const { launch, baseMint, baseVault, quoteVault } = accounts;
 
   const keys = [
-    { address: launch, role: ACCOUNT_ROLE_READONLY },
-    { address: baseMint, role: ACCOUNT_ROLE_READONLY },
-    { address: baseVault, role: ACCOUNT_ROLE_READONLY },
-    { address: quoteVault, role: ACCOUNT_ROLE_READONLY },
+    { address: launch, role: AccountRole.READONLY },
+    { address: baseMint, role: AccountRole.READONLY },
+    { address: baseVault, role: AccountRole.READONLY },
+    { address: quoteVault, role: AccountRole.READONLY },
   ];
 
   const data = encodeInstructionData(

@@ -6,7 +6,7 @@ import type { Address } from '@solana/kit';
 import type { Rpc, GetAccountInfoApi } from '@solana/kit';
 import type { AmmConfig } from '../core/types.js';
 import { decodeAmmConfig } from '../core/codecs.js';
-import { PROGRAM_ID } from '../core/constants.js';
+import { CPMM_PROGRAM_ID } from '../core/constants.js';
 import { getConfigAddress } from '../core/pda.js';
 
 // Browser-compatible base64 decoding
@@ -29,7 +29,7 @@ function base64ToBytes(base64: string): Uint8Array {
  */
 export async function fetchConfig(
   rpc: Rpc<GetAccountInfoApi>,
-  programId: Address = PROGRAM_ID,
+  programId: Address = CPMM_PROGRAM_ID,
   commitment?: 'processed' | 'confirmed' | 'finalized',
 ): Promise<AmmConfig | null> {
   const [configAddress] = await getConfigAddress(programId);
@@ -52,7 +52,7 @@ export async function fetchConfig(
  */
 export async function fetchConfigWithAddress(
   rpc: Rpc<GetAccountInfoApi>,
-  programId: Address = PROGRAM_ID,
+  programId: Address = CPMM_PROGRAM_ID,
   commitment?: 'processed' | 'confirmed' | 'finalized',
 ): Promise<{ address: Address; account: AmmConfig } | null> {
   const [configAddress] = await getConfigAddress(programId);

@@ -1,14 +1,16 @@
-import type { Address } from '@solana/kit';
-import type { Instruction, AccountMeta } from '@solana/kit';
-import type { TransactionSigner, AccountSignerMeta } from '@solana/kit';
+import type {
+  Address,
+  Instruction,
+  AccountMeta,
+  TransactionSigner,
+  AccountSignerMeta,
+} from '@solana/kit';
+import { AccountRole } from '@solana/kit';
 import {
-  PROGRAM_ID,
-  SYSTEM_PROGRAM_ID,
-  TOKEN_PROGRAM_ID,
+  CPMM_PROGRAM_ID,
+  SYSTEM_PROGRAM_ADDRESS,
+  TOKEN_PROGRAM_ADDRESS,
   INSTRUCTION_DISCRIMINATORS,
-  ACCOUNT_ROLE_READONLY,
-  ACCOUNT_ROLE_WRITABLE,
-  ACCOUNT_ROLE_WRITABLE_SIGNER,
 } from '../core/constants.js';
 import type { InitializePoolArgs } from '../core/types.js';
 import {
@@ -34,7 +36,7 @@ function isTransactionSigner(
 /** Create an account meta, embedding signer if provided */
 function createSignerAccountMeta(
   value: AddressOrSigner,
-  role: typeof ACCOUNT_ROLE_WRITABLE_SIGNER,
+  role: typeof AccountRole.WRITABLE_SIGNER,
 ): AccountMeta | AccountSignerMeta {
   if (isTransactionSigner(value)) {
     return {
@@ -117,7 +119,7 @@ export interface InitializePoolAccounts {
 export function createInitializePoolInstruction(
   accounts: InitializePoolAccounts,
   args: InitializePoolArgs,
-  programId: Address = PROGRAM_ID,
+  programId: Address = CPMM_PROGRAM_ID,
 ): Instruction {
   const {
     config,
@@ -129,26 +131,26 @@ export function createInitializePoolInstruction(
     token0Mint,
     token1Mint,
     payer,
-    tokenProgram = TOKEN_PROGRAM_ID,
-    systemProgram = SYSTEM_PROGRAM_ID,
+    tokenProgram = TOKEN_PROGRAM_ADDRESS,
+    systemProgram = SYSTEM_PROGRAM_ADDRESS,
     rent,
   } = accounts;
 
   // Build account metas in order expected by the program
   // For signer accounts (vault0, vault1, payer), embed the signer if provided
   const keys: (AccountMeta | AccountSignerMeta)[] = [
-    { address: config, role: ACCOUNT_ROLE_READONLY },
-    { address: pool, role: ACCOUNT_ROLE_WRITABLE },
-    { address: protocolPosition, role: ACCOUNT_ROLE_WRITABLE },
-    { address: authority, role: ACCOUNT_ROLE_READONLY },
-    createSignerAccountMeta(vault0, ACCOUNT_ROLE_WRITABLE_SIGNER),
-    createSignerAccountMeta(vault1, ACCOUNT_ROLE_WRITABLE_SIGNER),
-    { address: token0Mint, role: ACCOUNT_ROLE_READONLY },
-    { address: token1Mint, role: ACCOUNT_ROLE_READONLY },
-    createSignerAccountMeta(payer, ACCOUNT_ROLE_WRITABLE_SIGNER),
-    { address: tokenProgram, role: ACCOUNT_ROLE_READONLY },
-    { address: systemProgram, role: ACCOUNT_ROLE_READONLY },
-    { address: rent, role: ACCOUNT_ROLE_READONLY },
+    { address: config, role: AccountRole.READONLY },
+    { address: pool, role: AccountRole.WRITABLE },
+    { address: protocolPosition, role: AccountRole.WRITABLE },
+    { address: authority, role: AccountRole.READONLY },
+    createSignerAccountMeta(vault0, AccountRole.WRITABLE_SIGNER),
+    createSignerAccountMeta(vault1, AccountRole.WRITABLE_SIGNER),
+    { address: token0Mint, role: AccountRole.READONLY },
+    { address: token1Mint, role: AccountRole.READONLY },
+    createSignerAccountMeta(payer, AccountRole.WRITABLE_SIGNER),
+    { address: tokenProgram, role: AccountRole.READONLY },
+    { address: systemProgram, role: AccountRole.READONLY },
+    { address: rent, role: AccountRole.READONLY },
   ];
 
   const data = encodeInstructionData(

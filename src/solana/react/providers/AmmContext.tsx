@@ -7,7 +7,7 @@
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
 import type { Address } from '@solana/kit';
 import type { Rpc, SolanaRpcApi } from '@solana/kit';
-import { PROGRAM_ID } from '../../core/constants.js';
+import { CPMM_PROGRAM_ID } from '../../core/constants.js';
 
 /**
  * Configuration for the AMM provider
@@ -62,7 +62,7 @@ export interface AmmProviderProps extends AmmConfig {
  */
 export function AmmProvider({
   rpc,
-  programId = PROGRAM_ID,
+  programId = CPMM_PROGRAM_ID,
   commitment = 'confirmed',
   refreshInterval = 30000,
   defaultSlippageBps = 50,

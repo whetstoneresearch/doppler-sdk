@@ -1,12 +1,9 @@
-import type { Address } from '@solana/kit';
-import type { Instruction, AccountMeta } from '@solana/kit';
+import type { Address, Instruction, AccountMeta } from '@solana/kit';
+import { AccountRole } from '@solana/kit';
 import {
-  PROGRAM_ID,
-  TOKEN_PROGRAM_ID,
+  CPMM_PROGRAM_ID,
+  TOKEN_PROGRAM_ADDRESS,
   INSTRUCTION_DISCRIMINATORS,
-  ACCOUNT_ROLE_READONLY,
-  ACCOUNT_ROLE_WRITABLE,
-  ACCOUNT_ROLE_SIGNER,
 } from '../core/constants.js';
 import type { CollectFeesArgs } from '../core/types.js';
 import { collectFeesArgsCodec, encodeInstructionData } from '../core/codecs.js';
@@ -77,7 +74,7 @@ export interface CollectFeesAccounts {
 export function createCollectFeesInstruction(
   accounts: CollectFeesAccounts,
   args: CollectFeesArgs,
-  programId: Address = PROGRAM_ID,
+  programId: Address = CPMM_PROGRAM_ID,
 ): Instruction {
   const {
     pool,
@@ -90,24 +87,24 @@ export function createCollectFeesInstruction(
     token1Mint,
     user0,
     user1,
-    tokenProgram = TOKEN_PROGRAM_ID,
+    tokenProgram = TOKEN_PROGRAM_ADDRESS,
   } = accounts;
 
   // Build account metas in order expected by the program
   // Order: pool, position, owner, authority, vault0, vault1,
   //        token0_mint, token1_mint, user0, user1, token_program
   const keys: AccountMeta[] = [
-    { address: pool, role: ACCOUNT_ROLE_WRITABLE },
-    { address: position, role: ACCOUNT_ROLE_WRITABLE },
-    { address: owner, role: ACCOUNT_ROLE_SIGNER },
-    { address: authority, role: ACCOUNT_ROLE_READONLY },
-    { address: vault0, role: ACCOUNT_ROLE_WRITABLE },
-    { address: vault1, role: ACCOUNT_ROLE_WRITABLE },
-    { address: token0Mint, role: ACCOUNT_ROLE_READONLY },
-    { address: token1Mint, role: ACCOUNT_ROLE_READONLY },
-    { address: user0, role: ACCOUNT_ROLE_WRITABLE },
-    { address: user1, role: ACCOUNT_ROLE_WRITABLE },
-    { address: tokenProgram, role: ACCOUNT_ROLE_READONLY },
+    { address: pool, role: AccountRole.WRITABLE },
+    { address: position, role: AccountRole.WRITABLE },
+    { address: owner, role: AccountRole.READONLY_SIGNER },
+    { address: authority, role: AccountRole.READONLY },
+    { address: vault0, role: AccountRole.WRITABLE },
+    { address: vault1, role: AccountRole.WRITABLE },
+    { address: token0Mint, role: AccountRole.READONLY },
+    { address: token1Mint, role: AccountRole.READONLY },
+    { address: user0, role: AccountRole.WRITABLE },
+    { address: user1, role: AccountRole.WRITABLE },
+    { address: tokenProgram, role: AccountRole.READONLY },
   ];
 
   const data = encodeInstructionData(

@@ -1,22 +1,26 @@
-import { getAddressCodec, type Address } from '@solana/kit';
-import type { Instruction, AccountMeta } from '@solana/kit';
+import type {
+  Address,
+  Instruction,
+  AccountMeta,
+  ReadonlyUint8Array,
+  Codec,
+} from '@solana/kit';
 import {
-  PROGRAM_ID,
+  getAddressCodec,
+  getStructCodec,
+  getU128Codec,
+  getU8Codec,
+  AccountRole,
+} from '@solana/kit';
+import {
+  CPMM_PROGRAM_ID,
   INSTRUCTION_DISCRIMINATORS,
-  ACCOUNT_ROLE_READONLY,
 } from '../core/constants.js';
 import type { QuoteToNumeraireArgs } from '../core/types.js';
 import {
   quoteToNumeraireArgsCodec,
   encodeInstructionData,
 } from '../core/codecs.js';
-import {
-  getStructCodec,
-  getU128Codec,
-  getU8Codec,
-  type Codec,
-} from '@solana/kit';
-import type { ReadonlyUint8Array } from '@solana/kit';
 
 /**
  * Accounts required for quote_to_numeraire instruction
@@ -97,19 +101,19 @@ export function decodeQuoteToNumeraireResult(
 export function createQuoteToNumeraireInstruction(
   accounts: QuoteToNumeraireAccounts,
   args: QuoteToNumeraireArgs,
-  programId: Address = PROGRAM_ID,
+  programId: Address = CPMM_PROGRAM_ID,
 ): Instruction {
   const { config, startPool, remainingAccounts = [] } = accounts;
 
   // Build account metas in order expected by the program
   const keys: AccountMeta[] = [
-    { address: config, role: ACCOUNT_ROLE_READONLY },
-    { address: startPool, role: ACCOUNT_ROLE_READONLY },
+    { address: config, role: AccountRole.READONLY },
+    { address: startPool, role: AccountRole.READONLY },
   ];
 
   // Add remaining accounts (pools and oracles for multi-hop routing)
   for (const account of remainingAccounts) {
-    keys.push({ address: account, role: ACCOUNT_ROLE_READONLY });
+    keys.push({ address: account, role: AccountRole.READONLY });
   }
 
   const data = encodeInstructionData(

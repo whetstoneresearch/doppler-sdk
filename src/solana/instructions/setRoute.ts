@@ -1,11 +1,8 @@
-import type { Address } from '@solana/kit';
-import type { Instruction, AccountMeta } from '@solana/kit';
+import type { Address, Instruction, AccountMeta } from '@solana/kit';
+import { AccountRole } from '@solana/kit';
 import {
-  PROGRAM_ID,
+  CPMM_PROGRAM_ID,
   INSTRUCTION_DISCRIMINATORS,
-  ACCOUNT_ROLE_READONLY,
-  ACCOUNT_ROLE_WRITABLE,
-  ACCOUNT_ROLE_SIGNER,
 } from '../core/constants.js';
 import type { SetRouteArgs } from '../core/types.js';
 import { setRouteArgsCodec, encodeInstructionData } from '../core/codecs.js';
@@ -71,22 +68,22 @@ export interface SetRouteAccounts {
 export function createSetRouteInstruction(
   accounts: SetRouteAccounts,
   args: SetRouteArgs,
-  programId: Address = PROGRAM_ID,
+  programId: Address = CPMM_PROGRAM_ID,
 ): Instruction {
   const { config, pool, nextPool, admin } = accounts;
 
   // Build account metas in order expected by the program
   const keys: AccountMeta[] = [
-    { address: config, role: ACCOUNT_ROLE_READONLY },
-    { address: pool, role: ACCOUNT_ROLE_WRITABLE },
+    { address: config, role: AccountRole.READONLY },
+    { address: pool, role: AccountRole.WRITABLE },
   ];
 
   // Add next_pool if provided (optional account)
   if (nextPool) {
-    keys.push({ address: nextPool, role: ACCOUNT_ROLE_READONLY });
+    keys.push({ address: nextPool, role: AccountRole.READONLY });
   }
 
-  keys.push({ address: admin, role: ACCOUNT_ROLE_SIGNER });
+  keys.push({ address: admin, role: AccountRole.READONLY_SIGNER });
 
   const data = encodeInstructionData(
     INSTRUCTION_DISCRIMINATORS.setRoute,

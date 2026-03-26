@@ -1,12 +1,9 @@
-import type { Address } from '@solana/kit';
-import type { Instruction, AccountMeta } from '@solana/kit';
+import type { Address, Instruction, AccountMeta } from '@solana/kit';
+import { AccountRole } from '@solana/kit';
 import {
-  PROGRAM_ID,
-  TOKEN_PROGRAM_ID,
+  CPMM_PROGRAM_ID,
+  TOKEN_PROGRAM_ADDRESS,
   INSTRUCTION_DISCRIMINATORS,
-  ACCOUNT_ROLE_READONLY,
-  ACCOUNT_ROLE_WRITABLE,
-  ACCOUNT_ROLE_SIGNER,
 } from '../core/constants.js';
 
 /**
@@ -69,7 +66,7 @@ export interface SkimAccounts {
  */
 export function createSkimInstruction(
   accounts: SkimAccounts,
-  programId: Address = PROGRAM_ID,
+  programId: Address = CPMM_PROGRAM_ID,
 ): Instruction {
   const {
     config,
@@ -82,22 +79,22 @@ export function createSkimInstruction(
     token1Mint,
     adminAta0,
     adminAta1,
-    tokenProgram = TOKEN_PROGRAM_ID,
+    tokenProgram = TOKEN_PROGRAM_ADDRESS,
   } = accounts;
 
   // Build account metas in order expected by the program
   const keys: AccountMeta[] = [
-    { address: config, role: ACCOUNT_ROLE_READONLY },
-    { address: pool, role: ACCOUNT_ROLE_READONLY },
-    { address: admin, role: ACCOUNT_ROLE_SIGNER },
-    { address: authority, role: ACCOUNT_ROLE_READONLY },
-    { address: vault0, role: ACCOUNT_ROLE_WRITABLE },
-    { address: vault1, role: ACCOUNT_ROLE_WRITABLE },
-    { address: token0Mint, role: ACCOUNT_ROLE_READONLY },
-    { address: token1Mint, role: ACCOUNT_ROLE_READONLY },
-    { address: adminAta0, role: ACCOUNT_ROLE_WRITABLE },
-    { address: adminAta1, role: ACCOUNT_ROLE_WRITABLE },
-    { address: tokenProgram, role: ACCOUNT_ROLE_READONLY },
+    { address: config, role: AccountRole.READONLY },
+    { address: pool, role: AccountRole.READONLY },
+    { address: admin, role: AccountRole.READONLY_SIGNER },
+    { address: authority, role: AccountRole.READONLY },
+    { address: vault0, role: AccountRole.WRITABLE },
+    { address: vault1, role: AccountRole.WRITABLE },
+    { address: token0Mint, role: AccountRole.READONLY },
+    { address: token1Mint, role: AccountRole.READONLY },
+    { address: adminAta0, role: AccountRole.WRITABLE },
+    { address: adminAta1, role: AccountRole.WRITABLE },
+    { address: tokenProgram, role: AccountRole.READONLY },
   ];
 
   // No args for skim instruction, just the discriminator

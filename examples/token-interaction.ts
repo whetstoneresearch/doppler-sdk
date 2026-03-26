@@ -6,7 +6,7 @@
  * - Checking balances and vesting data
  * - Approving spending and releasing vested tokens
  */
-import './env'
+import './env';
 
 // UNCOMMENT IF RUNNING LOCALLY
 // import { Derc20, Eth } from '@whetstone-research/doppler-sdk';
@@ -96,11 +96,11 @@ async function main() {
       console.log(
         '- Vesting duration:',
         Number(vestingDuration) / 86400,
-        'days'
+        'days',
       );
       console.log(
         '- Vesting start:',
-        new Date(Number(vestingStart) * 1000).toLocaleString()
+        new Date(Number(vestingStart) * 1000).toLocaleString(),
       );
       console.log('- Total vested amount:', formatEther(vestedTotal), symbol);
       console.log('- Vesting active:', isVestingActive);
@@ -111,12 +111,12 @@ async function main() {
       console.log(
         '- Total vested:',
         formatEther(vestingData.totalAmount),
-        symbol
+        symbol,
       );
       console.log(
         '- Already released:',
         formatEther(vestingData.releasedAmount),
-        symbol
+        symbol,
       );
 
       // Calculate available to release
@@ -146,7 +146,7 @@ async function main() {
     const approvalAmount = parseEther('100');
     if (currentAllowance < approvalAmount) {
       console.log(
-        `\n📝 Approving ${formatEther(approvalAmount)} ${symbol} for spender...`
+        `\n📝 Approving ${formatEther(approvalAmount)} ${symbol} for spender...`,
       );
       try {
         const txHash = await token.approve(spender, approvalAmount);
@@ -172,7 +172,7 @@ async function main() {
       '- Yearly mint rate:',
       formatEther(yearlyMintRate),
       symbol,
-      'per year'
+      'per year',
     );
   } catch (error) {
     console.error('\n❌ Error:', error);

@@ -1,12 +1,9 @@
-import type { Address } from '@solana/kit';
-import type { Instruction, AccountMeta } from '@solana/kit';
+import type { Address, Instruction, AccountMeta } from '@solana/kit';
+import { AccountRole } from '@solana/kit';
 import {
-  PROGRAM_ID,
-  SYSTEM_PROGRAM_ID,
+  CPMM_PROGRAM_ID,
+  SYSTEM_PROGRAM_ADDRESS,
   INSTRUCTION_DISCRIMINATORS,
-  ACCOUNT_ROLE_READONLY,
-  ACCOUNT_ROLE_WRITABLE,
-  ACCOUNT_ROLE_WRITABLE_SIGNER,
 } from '../core/constants.js';
 import type { InitializeConfigArgs } from '../core/types.js';
 import {
@@ -61,15 +58,15 @@ export interface InitializeConfigAccounts {
 export function createInitializeConfigInstruction(
   accounts: InitializeConfigAccounts,
   args: InitializeConfigArgs,
-  programId: Address = PROGRAM_ID,
+  programId: Address = CPMM_PROGRAM_ID,
 ): Instruction {
-  const { config, payer, systemProgram = SYSTEM_PROGRAM_ID } = accounts;
+  const { config, payer, systemProgram = SYSTEM_PROGRAM_ADDRESS } = accounts;
 
   // Build account metas in order expected by the program
   const keys: AccountMeta[] = [
-    { address: config, role: ACCOUNT_ROLE_WRITABLE },
-    { address: payer, role: ACCOUNT_ROLE_WRITABLE_SIGNER },
-    { address: systemProgram, role: ACCOUNT_ROLE_READONLY },
+    { address: config, role: AccountRole.WRITABLE },
+    { address: payer, role: AccountRole.WRITABLE_SIGNER },
+    { address: systemProgram, role: AccountRole.READONLY },
   ];
 
   const data = encodeInstructionData(

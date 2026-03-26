@@ -1,6 +1,12 @@
-import './env'
+import './env';
 
-import { createPublicClient, createWalletClient, http, parseEther, formatEther } from 'viem';
+import {
+  createPublicClient,
+  createWalletClient,
+  http,
+  parseEther,
+  formatEther,
+} from 'viem';
 import { DopplerSDK, DAY_SECONDS } from '../src/evm';
 import { baseSepolia } from 'viem/chains';
 import { privateKeyToAccount } from 'viem/accounts';
@@ -16,10 +22,10 @@ if (!rpcUrl) throw new Error('RPC_URL must be set');
  */
 async function getEthPriceUsd(): Promise<number> {
   const response = await fetch(
-    'https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd'
-  )
-  const data = await response.json()
-  return data.ethereum.usd
+    'https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd',
+  );
+  const data = await response.json();
+  return data.ethereum.usd;
 }
 
 export const main = async () => {
@@ -33,15 +39,20 @@ export const main = async () => {
     transport: http(rpcUrl),
     account,
   });
-  const sdk = new DopplerSDK({ publicClient, walletClient, chainId: baseSepolia.id });
+  const sdk = new DopplerSDK({
+    publicClient,
+    walletClient,
+    chainId: baseSepolia.id,
+  });
 
   // Fetch current ETH price from CoinGecko
-  console.log('Fetching current ETH price from CoinGecko...')
+  console.log('Fetching current ETH price from CoinGecko...');
   const ethPriceUsd = await getEthPriceUsd();
-  console.log(`Current ETH price: $${ethPriceUsd.toLocaleString()}`)
-  console.log('')
+  console.log(`Current ETH price: $${ethPriceUsd.toLocaleString()}`);
+  console.log('');
 
-  const params = sdk.buildDynamicAuction()
+  const params = sdk
+    .buildDynamicAuction()
     .tokenConfig({
       name: 'TEST',
       symbol: 'TEST',
@@ -58,7 +69,7 @@ export const main = async () => {
       numerairePrice: ethPriceUsd,
       minProceeds: parseEther('0.005'), // Min 100 ETH to graduate
       maxProceeds: parseEther('0.01'), // Cap at 5000 ETH
-      numPdSlugs: 15,                 // Price discovery slugs
+      numPdSlugs: 15, // Price discovery slugs
     })
     .withMigration({
       type: 'uniswapV4',
@@ -76,54 +87,77 @@ export const main = async () => {
     .withUserAddress(account.address)
     .build();
 
-  console.log('Build params:')
-  console.log(JSON.stringify(params, (_, v) => typeof v === 'bigint' ? v.toString() : v, 2))
-  console.log('')
+  console.log('Build params:');
+  console.log(
+    JSON.stringify(
+      params,
+      (_, v) => (typeof v === 'bigint' ? v.toString() : v),
+      2,
+    ),
+  );
+  console.log('');
 
-  console.log('Creating dynamic auction with low proceeds targets...')
-  console.log('Token:', params.token.name, `(${params.token.symbol})`)
-  console.log(`Market cap range: $5,000,000 start → $500,000 floor (at ETH = $${ethPriceUsd.toLocaleString()})`)
-  console.log('Selling:', formatEther(params.sale.numTokensToSell), 'tokens')
-  console.log('Computed ticks:', params.auction.startTick, '→', params.auction.endTick)
-  console.log('Duration:', params.auction.duration / DAY_SECONDS, 'days')
-  console.log('Epochs:', params.auction.duration / params.auction.epochLength, 'total')
-  console.log('Proceeds range:', formatEther(params.auction.minProceeds), '→', formatEther(params.auction.maxProceeds), 'ETH')
+  console.log('Creating dynamic auction with low proceeds targets...');
+  console.log('Token:', params.token.name, `(${params.token.symbol})`);
+  console.log(
+    `Market cap range: $5,000,000 start → $500,000 floor (at ETH = $${ethPriceUsd.toLocaleString()})`,
+  );
+  console.log('Selling:', formatEther(params.sale.numTokensToSell), 'tokens');
+  console.log(
+    'Computed ticks:',
+    params.auction.startTick,
+    '→',
+    params.auction.endTick,
+  );
+  console.log('Duration:', params.auction.duration / DAY_SECONDS, 'days');
+  console.log(
+    'Epochs:',
+    params.auction.duration / params.auction.epochLength,
+    'total',
+  );
+  console.log(
+    'Proceeds range:',
+    formatEther(params.auction.minProceeds),
+    '→',
+    formatEther(params.auction.maxProceeds),
+    'ETH',
+  );
 
   try {
-    const result = await sdk.factory.createDynamicAuction(params)
+    const result = await sdk.factory.createDynamicAuction(params);
 
-    console.log('\n✅ Dynamic auction created successfully!')
-    console.log('Hook address:', result.hookAddress)
-    console.log('Token address:', result.tokenAddress)
-    console.log('Pool ID:', result.poolId)
-    console.log('Transaction:', result.transactionHash)
+    console.log('\n✅ Dynamic auction created successfully!');
+    console.log('Hook address:', result.hookAddress);
+    console.log('Token address:', result.tokenAddress);
+    console.log('Pool ID:', result.poolId);
+    console.log('Transaction:', result.transactionHash);
 
     // Monitor the auction
-    const auction = await sdk.getDynamicAuction(result.hookAddress)
+    const auction = await sdk.getDynamicAuction(result.hookAddress);
 
     // Wait for the transaction to be confirmed before reading contract state
-    await auction.waitForDeployment(result.transactionHash as `0x${string}`)
+    await auction.waitForDeployment(result.transactionHash as `0x${string}`);
 
-    const hookInfo = await auction.getHookInfo()
-    console.log('\nAuction Status:')
-    console.log('Current epoch:', hookInfo.currentEpoch)
-    console.log('Total proceeds:', formatEther(hookInfo.totalProceeds), 'ETH')
-    console.log('Tokens sold:', formatEther(hookInfo.totalTokensSold))
+    const hookInfo = await auction.getHookInfo();
+    console.log('\nAuction Status:');
+    console.log('Current epoch:', hookInfo.currentEpoch);
+    console.log('Total proceeds:', formatEther(hookInfo.totalProceeds), 'ETH');
+    console.log('Tokens sold:', formatEther(hookInfo.totalTokensSold));
 
-    const hasEndedEarly = await auction.hasEndedEarly()
+    const hasEndedEarly = await auction.hasEndedEarly();
     if (hasEndedEarly) {
-      console.log('\n🎯 Auction ended early - reached max proceeds!')
+      console.log('\n🎯 Auction ended early - reached max proceeds!');
     } else {
-      console.log('\nAuction is active. Will end when:')
-      console.log('- All epochs complete')
-      console.log('- OR max proceeds reached (5 ETH)')
+      console.log('\nAuction is active. Will end when:');
+      console.log('- All epochs complete');
+      console.log('- OR max proceeds reached (5 ETH)');
     }
 
-    const hasGraduated = await auction.hasGraduated()
-    console.log('\nHas graduated:', hasGraduated)
+    const hasGraduated = await auction.hasGraduated();
+    console.log('\nHas graduated:', hasGraduated);
   } catch (error) {
-    console.error('\n❌ Error creating auction:', error)
-    process.exit(1)
+    console.error('\n❌ Error creating auction:', error);
+    process.exit(1);
   }
 };
 

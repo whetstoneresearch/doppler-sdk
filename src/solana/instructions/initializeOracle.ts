@@ -1,13 +1,9 @@
-import type { Address } from '@solana/kit';
-import type { Instruction, AccountMeta } from '@solana/kit';
+import type { Address, Instruction, AccountMeta } from '@solana/kit';
+import { AccountRole } from '@solana/kit';
 import {
-  PROGRAM_ID,
-  SYSTEM_PROGRAM_ID,
+  CPMM_PROGRAM_ID,
+  SYSTEM_PROGRAM_ADDRESS,
   INSTRUCTION_DISCRIMINATORS,
-  ACCOUNT_ROLE_READONLY,
-  ACCOUNT_ROLE_WRITABLE,
-  ACCOUNT_ROLE_SIGNER,
-  ACCOUNT_ROLE_WRITABLE_SIGNER,
 } from '../core/constants.js';
 import type { InitializeOracleArgs } from '../core/types.js';
 import {
@@ -65,7 +61,7 @@ export interface InitializeOracleAccounts {
 export function createInitializeOracleInstruction(
   accounts: InitializeOracleAccounts,
   args: InitializeOracleArgs,
-  programId: Address = PROGRAM_ID,
+  programId: Address = CPMM_PROGRAM_ID,
 ): Instruction {
   const {
     config,
@@ -73,17 +69,17 @@ export function createInitializeOracleInstruction(
     oracle,
     admin,
     payer,
-    systemProgram = SYSTEM_PROGRAM_ID,
+    systemProgram = SYSTEM_PROGRAM_ADDRESS,
   } = accounts;
 
   // Build account metas in order expected by the program
   const keys: AccountMeta[] = [
-    { address: config, role: ACCOUNT_ROLE_READONLY },
-    { address: pool, role: ACCOUNT_ROLE_READONLY },
-    { address: oracle, role: ACCOUNT_ROLE_WRITABLE },
-    { address: admin, role: ACCOUNT_ROLE_SIGNER },
-    { address: payer, role: ACCOUNT_ROLE_WRITABLE_SIGNER },
-    { address: systemProgram, role: ACCOUNT_ROLE_READONLY },
+    { address: config, role: AccountRole.READONLY },
+    { address: pool, role: AccountRole.READONLY },
+    { address: oracle, role: AccountRole.WRITABLE },
+    { address: admin, role: AccountRole.READONLY_SIGNER },
+    { address: payer, role: AccountRole.WRITABLE_SIGNER },
+    { address: systemProgram, role: AccountRole.READONLY },
   ];
 
   const data = encodeInstructionData(

@@ -1,4 +1,4 @@
-import './env'
+import './env';
 
 import { DopplerSDK, getAirlockOwner } from '../src/evm';
 import { parseEther, createPublicClient, createWalletClient, http } from 'viem';
@@ -76,7 +76,7 @@ async function createStaticAuctionExample() {
       },
     })
     .withUserAddress(account.address)
-    .withGovernance({ type: "default" })
+    .withGovernance({ type: 'default' })
     .build();
 
   // Create the static auction

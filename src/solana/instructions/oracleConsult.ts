@@ -1,17 +1,24 @@
-import type { Address } from '@solana/kit';
-import type { Instruction, AccountMeta } from '@solana/kit';
+import type {
+  Address,
+  Instruction,
+  AccountMeta,
+  ReadonlyUint8Array,
+} from '@solana/kit';
 import {
-  PROGRAM_ID,
+  getStructCodec,
+  getU128Codec,
+  type Codec,
+  AccountRole,
+} from '@solana/kit';
+import {
+  CPMM_PROGRAM_ID,
   INSTRUCTION_DISCRIMINATORS,
-  ACCOUNT_ROLE_READONLY,
 } from '../core/constants.js';
 import type { OracleConsultArgs } from '../core/types.js';
 import {
   oracleConsultArgsCodec,
   encodeInstructionData,
 } from '../core/codecs.js';
-import { getStructCodec, getU128Codec, type Codec } from '@solana/kit';
-import type { ReadonlyUint8Array } from '@solana/kit';
 
 /**
  * Accounts required for oracle_consult instruction
@@ -77,14 +84,14 @@ export function decodeOracleConsultResult(
 export function createOracleConsultInstruction(
   accounts: OracleConsultAccounts,
   args: OracleConsultArgs,
-  programId: Address = PROGRAM_ID,
+  programId: Address = CPMM_PROGRAM_ID,
 ): Instruction {
   const { pool, oracle } = accounts;
 
   // Build account metas in order expected by the program
   const keys: AccountMeta[] = [
-    { address: pool, role: ACCOUNT_ROLE_READONLY },
-    { address: oracle, role: ACCOUNT_ROLE_READONLY },
+    { address: pool, role: AccountRole.READONLY },
+    { address: oracle, role: AccountRole.READONLY },
   ];
 
   const data = encodeInstructionData(

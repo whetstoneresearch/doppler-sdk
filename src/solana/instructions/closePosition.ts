@@ -1,11 +1,8 @@
-import type { Address } from '@solana/kit';
-import type { Instruction, AccountMeta } from '@solana/kit';
+import type { Address, Instruction, AccountMeta } from '@solana/kit';
+import { AccountRole } from '@solana/kit';
 import {
-  PROGRAM_ID,
+  CPMM_PROGRAM_ID,
   INSTRUCTION_DISCRIMINATORS,
-  ACCOUNT_ROLE_READONLY,
-  ACCOUNT_ROLE_WRITABLE,
-  ACCOUNT_ROLE_SIGNER,
 } from '../core/constants.js';
 
 /**
@@ -44,17 +41,17 @@ export interface ClosePositionAccounts {
  */
 export function createClosePositionInstruction(
   accounts: ClosePositionAccounts,
-  programId: Address = PROGRAM_ID,
+  programId: Address = CPMM_PROGRAM_ID,
 ): Instruction {
   const { pool, position, owner, rentRecipient } = accounts;
 
   // Build account metas in order expected by the program
   // Order: pool, position, owner, rent_recipient
   const keys: AccountMeta[] = [
-    { address: pool, role: ACCOUNT_ROLE_READONLY },
-    { address: position, role: ACCOUNT_ROLE_WRITABLE },
-    { address: owner, role: ACCOUNT_ROLE_SIGNER },
-    { address: rentRecipient, role: ACCOUNT_ROLE_WRITABLE },
+    { address: pool, role: AccountRole.READONLY },
+    { address: position, role: AccountRole.WRITABLE },
+    { address: owner, role: AccountRole.READONLY_SIGNER },
+    { address: rentRecipient, role: AccountRole.WRITABLE },
   ];
 
   // closePosition has no args, just the discriminator
