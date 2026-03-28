@@ -17,6 +17,7 @@ export {
   createInitializeLaunchInstruction,
   getTokenMetadataAddress,
   type InitializeLaunchAccounts,
+  type InitializeLaunchParams,
 } from './initializeLaunch.js';
 
 export {

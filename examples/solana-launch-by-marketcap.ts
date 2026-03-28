@@ -13,24 +13,20 @@ import {
   createSolanaRpc,
   createSolanaRpcSubscriptions,
   generateKeyPairSigner,
-  getProgramDerivedAddress,
-  getAddressEncoder,
   pipe,
   createTransactionMessage,
-  setTransactionMessageFeePayer,
+  setTransactionMessageFeePayerSigner,
   setTransactionMessageLifetimeUsingBlockhash,
   appendTransactionMessageInstructions,
   signTransactionMessageWithSigners,
   sendAndConfirmTransactionFactory,
   getSignatureFromTransaction,
-  address,
-  AccountRole,
   type Address,
 } from '@solana/kit';
 
 import {
   TOKEN_PROGRAM_ADDRESS,
-  ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
+  findAssociatedTokenPda,
 } from '@solana-program/token';
 import { SYSTEM_PROGRAM_ADDRESS } from '@solana-program/system';
 import { SYSVAR_RENT_ADDRESS } from '@solana/sysvars';
@@ -55,28 +51,6 @@ if (!keypairJson) {
 const WSOL_MINT: Address =
   'So11111111111111111111111111111111111111112' as Address;
 
-// CPMM AmmConfig address that the graduated pool will use (devnet)
-const CPMM_CONFIG: Address = address(
-  'HERFT6LYhVjCBW4M8BGYgs3KHMMj9Z2TMNu479Jjjm8o',
-);
-
-// ============================================================================
-// Helpers
-// ============================================================================
-
-async function getAtaAddress(wallet: Address, mint: Address): Promise<Address> {
-  const enc = getAddressEncoder();
-  const [ata] = await getProgramDerivedAddress({
-    programAddress: ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
-    seeds: [
-      enc.encode(wallet),
-      enc.encode(TOKEN_PROGRAM_ADDRESS),
-      enc.encode(mint),
-    ],
-  });
-  return ata;
-}
-
 // ============================================================================
 // Price feed
 // ============================================================================
@@ -100,19 +74,19 @@ async function main() {
 
   const rpc = createSolanaRpc(rpcUrl);
   const rpcSubscriptions = createSolanaRpcSubscriptions(wsUrl);
-  const sendAndConfirm = sendAndConfirmTransactionFactory({
-    rpc,
-    rpcSubscriptions,
-  });
 
   // ── Token supply parameters ────────────────────────────────────────────────
-  // 1B total supply: 900M for the bonding curve, 100M for creator at graduation.
+  // 1B total supply: 75% bonding curve, 20% recipients at graduation, 5% seeds CPMM pool.
   const BASE_DECIMALS = 6;
   const BASE_TOTAL_SUPPLY = 1_000_000_000n * 10n ** BigInt(BASE_DECIMALS);
-  const BASE_FOR_DISTRIBUTION = 100_000_000n * 10n ** BigInt(BASE_DECIMALS);
-  const BASE_FOR_LIQUIDITY = 0n;
+  const BASE_FOR_DISTRIBUTION = 200_000_000n * 10n ** BigInt(BASE_DECIMALS); // 20% to recipients
+  const BASE_FOR_LIQUIDITY = 50_000_000n * 10n ** BigInt(BASE_DECIMALS); //  5% seeds CPMM pool
   const BASE_FOR_CURVE =
-    BASE_TOTAL_SUPPLY - BASE_FOR_DISTRIBUTION - BASE_FOR_LIQUIDITY;
+    BASE_TOTAL_SUPPLY - BASE_FOR_DISTRIBUTION - BASE_FOR_LIQUIDITY; // 75%
+
+  // Distribution split between creator (70%) and team (30%)
+  const CREATOR_SHARE = (BASE_FOR_DISTRIBUTION * 70n) / 100n;
+  const TEAM_SHARE = BASE_FOR_DISTRIBUTION - CREATOR_SHARE;
 
   const QUOTE_DECIMALS = 9; // SOL
 
@@ -133,8 +107,8 @@ async function main() {
   }
 
   // ── Convert market cap range → XYK curve virtual reserves ─────────────────
-  // startParams sets the opening spot price; graduation is triggered by minRaiseQuote.
-  const { start: startParams } = cpmm.marketCapToCurveParams({
+  // start sets the opening spot price; graduation is triggered by minRaiseQuote.
+  const { start } = cpmm.marketCapToCurveParams({
     startMarketCapUSD: 100_000,
     endMarketCapUSD: 10_000_000,
     baseTotalSupply: BASE_TOTAL_SUPPLY,
@@ -145,8 +119,8 @@ async function main() {
   });
 
   console.log('Computed curve virtual reserves (opening price):');
-  console.log('  curveVirtualBase: ', startParams.curveVirtualBase.toString());
-  console.log('  curveVirtualQuote:', startParams.curveVirtualQuote.toString());
+  console.log('  curveVirtualBase: ', start.curveVirtualBase.toString());
+  console.log('  curveVirtualQuote:', start.curveVirtualQuote.toString());
   console.log(
     `  Market cap range: $100,000 → $10,000,000 (at SOL = $${solPriceUsd.toLocaleString()})`,
   );
@@ -165,7 +139,8 @@ async function main() {
   const namespace = payer.address;
   const launchId = initializer.launchIdFromU64(BigInt(Date.now()));
 
-  const [config] = await initializer.getConfigAddress();
+  const [initializerConfig] = await initializer.getConfigAddress();
+  const [cpmmConfig] = await cpmm.getConfigAddress();
   const [launch] = await initializer.getLaunchAddress(namespace, launchId);
   const [launchAuthority] = await initializer.getLaunchAuthorityAddress(launch);
   const [cpmmMigratorState] =
@@ -175,9 +150,10 @@ async function main() {
   // Pool vault keypairs must be generated here so their addresses can be
   // committed in migratorRemainingAccountsHash. Save these keypairs — they
   // must be passed as signers in the migrate_launch transaction.
-  const [token0] = cpmm.sortMints(baseMint.address, WSOL_MINT);
-  const poolVault0 = await generateKeyPairSigner(); // vault for canonical token0
-  const poolVault1 = await generateKeyPairSigner(); // vault for canonical token1
+  // The CPMM program initializes vault0 for token0 and vault1 for token1
+  // during pool initialization; the keypairs themselves are arbitrary.
+  const poolVault0 = await generateKeyPairSigner();
+  const poolVault1 = await generateKeyPairSigner();
 
   const [pool] = await cpmm.getPoolAddress(baseMint.address, WSOL_MINT);
   const [poolAuthority] = await cpmm.getPoolAuthorityAddress(pool);
@@ -189,14 +165,15 @@ async function main() {
   );
 
   // admin_base_ata receives unsold curve tokens at migration.
-  // In this example the single recipient is also payer, so all three map to
-  // the same ATA — that is fine, the hash just commits the addresses in order.
-  const payerBaseAta = await getAtaAddress(payer.address, baseMint.address);
-
-  void token0; // used implicitly via poolVault0/1 ordering above
+  // Both recipients use payer on devnet; swap for real wallets in production.
+  const [payerBaseAta] = await findAssociatedTokenPda({
+    owner: payer.address,
+    mint: baseMint.address,
+    tokenProgram: TOKEN_PROGRAM_ADDRESS,
+  });
 
   console.log('Derived addresses:');
-  console.log('  Config:          ', config);
+  console.log('  Initializer config:', initializerConfig);
   console.log('  Launch:          ', launch);
   console.log('  Launch authority:', launchAuthority);
   console.log('  Base mint:       ', baseMint.address);
@@ -209,10 +186,13 @@ async function main() {
   const minRaiseQuote = BigInt(MIN_RAISE_SOL) * 1_000_000_000n;
 
   const migratorInitCalldata = cpmmMigrator.encodeRegisterLaunchCalldata({
-    cpmmConfig: CPMM_CONFIG,
-    initialSwapFeeBps: 30, // 0.3% fee on the graduated CPMM pool
-    initialFeeSplitBps: 5000, // 50% of fees distributed to LP holders
-    recipients: [{ wallet: payer.address, amount: BASE_FOR_DISTRIBUTION }],
+    cpmmConfig: cpmmConfig,
+    initialSwapFeeBps: 100, // 1% swap fee on the graduated CPMM pool
+    initialFeeSplitBps: 8000, // 80% of CPMM fees distributed to LP holders
+    recipients: [
+      { wallet: payer.address, amount: CREATOR_SHARE },
+      { wallet: payer.address, amount: TEAM_SHARE }, // use payer as team wallet on devnet
+    ],
     minRaiseQuote,
     minMigrationPriceQ64Opt: null, // no minimum graduation price floor
   });
@@ -231,9 +211,9 @@ async function main() {
   // The cpmmMigratorState account is forwarded as a remaining account so the
   // register_launch CPI can write the launch's graduation parameters.
   console.log('Building launch instruction...');
-  const ixBase = initializer.createInitializeLaunchInstruction(
+  const ix = await initializer.createInitializeLaunchInstruction(
     {
-      config,
+      config: initializerConfig,
       launch,
       launchAuthority,
       baseMint,
@@ -257,27 +237,26 @@ async function main() {
       baseForDistribution: BASE_FOR_DISTRIBUTION,
       baseForLiquidity: BASE_FOR_LIQUIDITY,
       // Opening price: virtualQuote / (baseForCurve + virtualBase)
-      curveVirtualBase: startParams.curveVirtualBase,
-      curveVirtualQuote: startParams.curveVirtualQuote,
-      curveFeeBps: 100, // 1% swap fee during the bonding curve phase
+      curveVirtualBase: start.curveVirtualBase,
+      curveVirtualQuote: start.curveVirtualQuote,
+      curveFeeBps: 200, // 2% swap fee during the bonding curve phase
       curveKind: initializer.CURVE_KIND_XYK,
       curveParams: new Uint8Array([initializer.CURVE_PARAMS_FORMAT_XYK_V0]),
-      allowBuy: 1,
-      allowSell: 1,
-      sentinelProgram: SYSTEM_PROGRAM_ADDRESS, // no sentinel hook
-      sentinelFlags: 0,
+      allowBuy: true,
+      allowSell: true,
+      sentinelProgram: initializer.CPMM_SENTINEL_PROGRAM_ID,
+      sentinelFlags: initializer.SF_BEFORE_SWAP | initializer.SF_AFTER_SWAP,
       sentinelCalldata: new Uint8Array(),
-      migratorProgram: cpmmMigrator.CPMM_MIGRATOR_PROGRAM_ID,
       migratorInitCalldata,
       migratorMigrateCalldata,
       sentinelRemainingAccountsHash: initializer.EMPTY_REMAINING_ACCOUNTS_HASH,
       // Commits the accounts that must be passed as remaining accounts to
       // migrate_launch in this order: state, cpmm_config, pool, pool_authority,
       // pool_vault0, pool_vault1, protocol_position, launch_lp_position,
-      // cpmm_program, admin_base_ata, recipient_ata_0
+      // cpmm_program, admin_base_ata, creator_ata, team_ata
       migratorRemainingAccountsHash: initializer.computeRemainingAccountsHash([
         cpmmMigratorState,
-        CPMM_CONFIG,
+        cpmmConfig,
         pool,
         poolAuthority,
         poolVault0.address,
@@ -285,8 +264,9 @@ async function main() {
         protocolPosition,
         launchLpPosition,
         cpmm.CPMM_PROGRAM_ID,
-        payerBaseAta, // admin_base_ata
-        payerBaseAta, // recipient ATA (BASE_FOR_DISTRIBUTION → payer)
+        payerBaseAta, // admin_base_ata (unsold curve tokens)
+        payerBaseAta, // creator recipient ATA (CREATOR_SHARE → payer)
+        payerBaseAta, // team recipient ATA (TEAM_SHARE → payer)
       ]),
       metadataName: 'TEST',
       metadataSymbol: 'TEST',
@@ -294,54 +274,47 @@ async function main() {
     },
   );
 
-  // Append cpmmMigratorState as remaining account for the register_launch CPI.
-  const ix = {
-    ...ixBase,
-    accounts: [
-      ...(ixBase.accounts ?? []),
-      { address: cpmmMigratorState, role: AccountRole.WRITABLE },
-    ],
-  };
-
   // ── Build, sign, and send ──────────────────────────────────────────────────
   console.log('Creating XYK token launch...');
   try {
     const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
 
-    const txMessage = pipe(
+    const transactionMessage = pipe(
       createTransactionMessage({ version: 0 }),
-      (msg) => setTransactionMessageFeePayer(payer.address, msg),
-      (msg) =>
-        setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, msg),
-      (msg) => appendTransactionMessageInstructions([ix], msg),
+      (tx) => setTransactionMessageFeePayerSigner(payer, tx),
+      (tx) => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
+      (tx) => appendTransactionMessageInstructions([ix], tx),
     );
 
-    const signedTx = await signTransactionMessageWithSigners(txMessage);
-    const signature = getSignatureFromTransaction(signedTx);
+    const signedTransaction =
+      await signTransactionMessageWithSigners(transactionMessage);
 
-    await sendAndConfirm(signedTx, { commitment: 'confirmed' });
+    const sendAndConfirmTransaction = sendAndConfirmTransactionFactory({
+      rpc,
+      rpcSubscriptions,
+    });
+    await sendAndConfirmTransaction(signedTransaction, {
+      commitment: 'confirmed',
+    });
 
     console.log('');
     console.log('Token launch created successfully!');
     console.log('  Launch address:', launch);
     console.log('  Base mint:     ', baseMint.address);
-    console.log('  Transaction:   ', signature);
+    console.log(
+      '  Transaction:   ',
+      getSignatureFromTransaction(signedTransaction),
+    );
 
     // ── Fetch and verify launch state ──────────────────────────────────────
     const launchAccount = await initializer.fetchLaunch(rpc, launch);
     if (launchAccount) {
-      const phaseLabel =
-        launchAccount.phase === initializer.PHASE_TRADING
-          ? 'TRADING'
-          : launchAccount.phase === initializer.PHASE_MIGRATED
-            ? 'MIGRATED'
-            : launchAccount.phase === initializer.PHASE_ABORTED
-              ? 'ABORTED'
-              : String(launchAccount.phase);
-
       console.log('');
       console.log('Launch account verified:');
-      console.log('  Phase:              ', phaseLabel);
+      console.log(
+        '  Phase:              ',
+        initializer.phaseLabel(launchAccount.phase),
+      );
       console.log('  Base mint:          ', launchAccount.baseMint);
       console.log(
         '  Base total supply:  ',

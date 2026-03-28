@@ -64,7 +64,7 @@ describe('initializer instructions', () => {
       baseForLiquidity: 300_000n,
     });
 
-    const ix = initializer.createInitializeLaunchInstruction(
+    const ix = await initializer.createInitializeLaunchInstruction(
       {
         config,
         launch,
@@ -92,12 +92,11 @@ describe('initializer instructions', () => {
         curveFeeBps: 100,
         curveKind: 0,
         curveParams: new Uint8Array([0]),
-        allowBuy: 1,
-        allowSell: 1,
+        allowBuy: true,
+        allowSell: true,
         sentinelProgram: SYSTEM_PROGRAM_ADDRESS,
         sentinelFlags: 0,
         sentinelCalldata: new Uint8Array(),
-        migratorProgram,
         migratorInitCalldata,
         migratorMigrateCalldata,
         sentinelRemainingAccountsHash: new Uint8Array(32),
@@ -109,10 +108,12 @@ describe('initializer instructions', () => {
     );
 
     expect(ix.programAddress).toBe(initializer.INITIALIZER_PROGRAM_ID);
-    expect(ix.accounts).toHaveLength(13);
+    // 13 static accounts + 1 auto-appended cpmmMigratorState remaining account
+    expect(ix.accounts).toHaveLength(14);
 
     // Account ordering: config, launch, launchAuthority, baseMint, quoteMint, baseVault, quoteVault, payer,
-    // then optional authority, optional migratorProgram, then token/system/rent.
+    // then optional authority, optional migratorProgram, then token/system/rent,
+    // then auto-appended cpmmMigratorState.
     expect(ix.accounts![0].address).toBe(config);
     expect(ix.accounts![1].address).toBe(launch);
     expect(ix.accounts![2].address).toBe(launchAuthority);
@@ -126,6 +127,8 @@ describe('initializer instructions', () => {
     expect(ix.accounts![10].address).toBe(TOKEN_PROGRAM_ADDRESS);
     expect(ix.accounts![11].address).toBe(SYSTEM_PROGRAM_ADDRESS);
     expect(ix.accounts![12].address).toBe(SYSVAR_RENT_PUBKEY);
+    const [expectedCpmmMigratorState] = await cpmmMigrator.getCpmmMigratorStateAddress(launch);
+    expect(ix.accounts![13].address).toBe(expectedCpmmMigratorState);
 
     // Ensure signer metas were attached for the signer accounts.
     for (const idx of [3, 5, 6, 7]) {
@@ -149,7 +152,7 @@ describe('initializer instructions', () => {
     const [launch] = await initializer.getLaunchAddress(namespace, launchId);
     const [launchAuthority] = await initializer.getLaunchAuthorityAddress(launch);
 
-    expect(() =>
+    await expect(
       initializer.createInitializeLaunchInstruction(
         {
           config,
@@ -177,12 +180,11 @@ describe('initializer instructions', () => {
           curveFeeBps: 100,
           curveKind: 1,
           curveParams: new Uint8Array([initializer.CURVE_PARAMS_FORMAT_XYK_V0]),
-          allowBuy: 1,
-          allowSell: 1,
+          allowBuy: true,
+          allowSell: true,
           sentinelProgram: SYSTEM_PROGRAM_ADDRESS,
           sentinelFlags: 0,
           sentinelCalldata: new Uint8Array(),
-          migratorProgram: address('11111111111111111111111111111111'),
           migratorInitCalldata: new Uint8Array(),
           migratorMigrateCalldata: new Uint8Array(),
           sentinelRemainingAccountsHash: new Uint8Array(32),
@@ -192,6 +194,6 @@ describe('initializer instructions', () => {
           metadataUri: '',
         },
       ),
-    ).toThrow(/unsupported curve kind/);
+    ).rejects.toThrow(/unsupported curve kind/);
   });
 });

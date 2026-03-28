@@ -1,5 +1,6 @@
 import { getAddressEncoder, type Address } from '@solana/kit';
 import { keccak_256 } from '@noble/hashes/sha3.js';
+import { PHASE_TRADING, PHASE_MIGRATED, PHASE_ABORTED } from './constants.js';
 
 /**
  * Compute the remaining-accounts commitment hash used by the Initializer program.
@@ -24,4 +25,21 @@ export function computeRemainingAccountsHash(addresses: Address[]): Uint8Array {
     buf.set(addressEncoder.encode(addresses[i]), 4 + i * 32);
   }
   return keccak_256(buf);
+}
+
+/**
+ * Returns a human-readable label for a launch phase value.
+ * Falls back to the numeric string for any unrecognised phase.
+ */
+export function phaseLabel(phase: number): string {
+  switch (phase) {
+    case PHASE_TRADING:
+      return 'TRADING';
+    case PHASE_MIGRATED:
+      return 'MIGRATED';
+    case PHASE_ABORTED:
+      return 'ABORTED';
+    default:
+      return String(phase);
+  }
 }

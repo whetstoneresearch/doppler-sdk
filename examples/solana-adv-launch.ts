@@ -23,23 +23,19 @@ import {
   createSolanaRpc,
   createSolanaRpcSubscriptions,
   generateKeyPairSigner,
-  getProgramDerivedAddress,
-  getAddressEncoder,
   pipe,
   createTransactionMessage,
-  setTransactionMessageFeePayer,
+  setTransactionMessageFeePayerSigner,
   setTransactionMessageLifetimeUsingBlockhash,
   appendTransactionMessageInstructions,
   signTransactionMessageWithSigners,
   sendAndConfirmTransactionFactory,
   getSignatureFromTransaction,
-  address,
-  AccountRole,
   type Address,
 } from '@solana/kit';
 import {
   TOKEN_PROGRAM_ADDRESS,
-  ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
+  findAssociatedTokenPda,
 } from '@solana-program/token';
 import { SYSTEM_PROGRAM_ADDRESS } from '@solana-program/system';
 import { SYSVAR_RENT_ADDRESS } from '@solana/sysvars';
@@ -62,30 +58,16 @@ if (!keypairJson) {
 const WSOL_MINT: Address =
   'So11111111111111111111111111111111111111112' as Address;
 
-// CPMM AmmConfig for the graduated pool (devnet)
-const CPMM_CONFIG: Address = address(
-  'HERFT6LYhVjCBW4M8BGYgs3KHMMj9Z2TMNu479Jjjm8o',
-);
-
-// Team/treasury wallet that receives a share of base tokens at graduation.
-// Replace with a real multisig/treasury address in production.
-// Must not be the default pubkey (11111...); using payer here for devnet testing.
-
 // ============================================================================
-// Helpers
+// Price feed
 // ============================================================================
 
-async function getAtaAddress(wallet: Address, mint: Address): Promise<Address> {
-  const enc = getAddressEncoder();
-  const [ata] = await getProgramDerivedAddress({
-    programAddress: ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
-    seeds: [
-      enc.encode(wallet),
-      enc.encode(TOKEN_PROGRAM_ADDRESS),
-      enc.encode(mint),
-    ],
-  });
-  return ata;
+async function getSolPriceUsd(): Promise<number> {
+  const response = await fetch(
+    'https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd',
+  );
+  const data = await response.json();
+  return data.solana.usd;
 }
 
 // ============================================================================
@@ -99,10 +81,6 @@ async function main() {
 
   const rpc = createSolanaRpc(rpcUrl);
   const rpcSubscriptions = createSolanaRpcSubscriptions(wsUrl);
-  const sendAndConfirm = sendAndConfirmTransactionFactory({
-    rpc,
-    rpcSubscriptions,
-  });
 
   // ── Token supply and allocation ─────────────────────────────────────────
   const BASE_DECIMALS = 6;
@@ -134,14 +112,9 @@ async function main() {
   const minMigrationPriceQ64Opt = null;
 
   // ── Live SOL price → curve virtual reserves ─────────────────────────────
-  const solPriceUsd = await (async () => {
-    const r = await fetch(
-      'https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd',
-    );
-    return ((await r.json()) as { solana: { usd: number } }).solana.usd;
-  })();
+  const solPriceUsd = await getSolPriceUsd();
 
-  const { start: startParams } = cpmm.marketCapToCurveParams({
+  const { start } = cpmm.marketCapToCurveParams({
     startMarketCapUSD: 100_000,
     endMarketCapUSD: 10_000_000,
     baseTotalSupply: BASE_TOTAL_SUPPLY,
@@ -150,27 +123,6 @@ async function main() {
     quoteDecimals: QUOTE_DECIMALS,
     numerairePriceUSD: solPriceUsd,
   });
-
-  console.log('Token allocation:');
-  console.log('  Bonding curve:  ', BASE_FOR_CURVE.toString(), 'atoms (75%)');
-  console.log(
-    '  Distribution:   ',
-    BASE_FOR_DISTRIBUTION.toString(),
-    'atoms (20%)',
-  );
-  console.log('    Creator:      ', CREATOR_SHARE.toString());
-  console.log('    Team:         ', TEAM_SHARE.toString());
-  console.log(
-    '  CPMM liquidity: ',
-    BASE_FOR_LIQUIDITY.toString(),
-    'atoms (5%)',
-  );
-  console.log('');
-  console.log('Fee configuration:');
-  console.log('  Curve fee:      ', CURVE_FEE_BPS, 'bps');
-  console.log('  CPMM swap fee:  ', CPMM_SWAP_FEE_BPS, 'bps');
-  console.log('  CPMM LP split:  ', CPMM_FEE_SPLIT_BPS, 'bps');
-  console.log('');
 
   // ── Generate keypairs and derive PDAs ───────────────────────────────────
   const baseMint = await generateKeyPairSigner();
@@ -183,7 +135,8 @@ async function main() {
   const namespace = payer.address;
   const launchId = initializer.launchIdFromU64(BigInt(Date.now()));
 
-  const [config] = await initializer.getConfigAddress();
+  const [initializerConfig] = await initializer.getConfigAddress();
+  const [cpmmConfig] = await cpmm.getConfigAddress();
   const [launch] = await initializer.getLaunchAddress(namespace, launchId);
   const [launchAuthority] = await initializer.getLaunchAuthorityAddress(launch);
   const [cpmmMigratorState] =
@@ -193,9 +146,10 @@ async function main() {
   // Pool vault keypairs must be generated here so their addresses can be
   // committed in migratorRemainingAccountsHash. Save these keypairs — they
   // must be passed as signers in the migrate_launch transaction.
-  void cpmm.sortMints(baseMint.address, WSOL_MINT); // establish canonical token0/1
-  const poolVault0 = await generateKeyPairSigner(); // vault for canonical token0
-  const poolVault1 = await generateKeyPairSigner(); // vault for canonical token1
+  // The CPMM program initializes vault0 for token0 and vault1 for token1
+  // during pool initialization; the keypairs themselves are arbitrary.
+  const poolVault0 = await generateKeyPairSigner();
+  const poolVault1 = await generateKeyPairSigner();
 
   const [pool] = await cpmm.getPoolAddress(baseMint.address, WSOL_MINT);
   const [poolAuthority] = await cpmm.getPoolAuthorityAddress(pool);
@@ -207,10 +161,14 @@ async function main() {
   );
 
   // Both recipients use payer on devnet; swap for real wallets in production.
-  const payerBaseAta = await getAtaAddress(payer.address, baseMint.address);
+  const [payerBaseAta] = await findAssociatedTokenPda({
+    owner: payer.address,
+    mint: baseMint.address,
+    tokenProgram: TOKEN_PROGRAM_ADDRESS,
+  });
 
   console.log('Derived addresses:');
-  console.log('  Config:          ', config);
+  console.log('  Initializer config:', initializerConfig);
   console.log('  Launch:          ', launch);
   console.log('  Launch authority:', launchAuthority);
   console.log('  Base mint:       ', baseMint.address);
@@ -220,7 +178,7 @@ async function main() {
   // migratorInitCalldata registers graduation params; migratorMigrateCalldata
   // is forwarded at migration. minRaiseQuote is the graduation threshold.
   const migratorInitCalldata = cpmmMigrator.encodeRegisterLaunchCalldata({
-    cpmmConfig: CPMM_CONFIG,
+    cpmmConfig: cpmmConfig,
     initialSwapFeeBps: CPMM_SWAP_FEE_BPS,
     initialFeeSplitBps: CPMM_FEE_SPLIT_BPS,
     recipients: [
@@ -239,9 +197,9 @@ async function main() {
   // ── Build, sign, and send ────────────────────────────────────────────────
   console.log('Creating advanced XYK token launch...');
   try {
-    const ixBase = initializer.createInitializeLaunchInstruction(
+    const ix = await initializer.createInitializeLaunchInstruction(
       {
-        config,
+        config: initializerConfig,
         launch,
         launchAuthority,
         baseMint,
@@ -264,17 +222,16 @@ async function main() {
         baseTotalSupply: BASE_TOTAL_SUPPLY,
         baseForDistribution: BASE_FOR_DISTRIBUTION,
         baseForLiquidity: BASE_FOR_LIQUIDITY,
-        curveVirtualBase: startParams.curveVirtualBase,
-        curveVirtualQuote: startParams.curveVirtualQuote,
+        curveVirtualBase: start.curveVirtualBase,
+        curveVirtualQuote: start.curveVirtualQuote,
         curveFeeBps: CURVE_FEE_BPS,
         curveKind: initializer.CURVE_KIND_XYK,
         curveParams: new Uint8Array([initializer.CURVE_PARAMS_FORMAT_XYK_V0]),
-        allowBuy: 1,
-        allowSell: 1,
-        sentinelProgram: SYSTEM_PROGRAM_ADDRESS,
-        sentinelFlags: 0,
+        allowBuy: true,
+        allowSell: true,
+        sentinelProgram: initializer.CPMM_SENTINEL_PROGRAM_ID,
+        sentinelFlags: initializer.SF_BEFORE_SWAP | initializer.SF_AFTER_SWAP,
         sentinelCalldata: new Uint8Array(),
-        migratorProgram: cpmmMigrator.CPMM_MIGRATOR_PROGRAM_ID,
         migratorInitCalldata,
         migratorMigrateCalldata,
         sentinelRemainingAccountsHash:
@@ -286,7 +243,7 @@ async function main() {
         migratorRemainingAccountsHash: initializer.computeRemainingAccountsHash(
           [
             cpmmMigratorState,
-            CPMM_CONFIG,
+            cpmmConfig,
             pool,
             poolAuthority,
             poolVault0.address,
@@ -305,35 +262,34 @@ async function main() {
       },
     );
 
-    // Append cpmmMigratorState as remaining account for the register_launch CPI.
-    const ix = {
-      ...ixBase,
-      accounts: [
-        ...(ixBase.accounts ?? []),
-        { address: cpmmMigratorState, role: AccountRole.WRITABLE },
-      ],
-    };
-
     const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
 
-    const txMessage = pipe(
+    const transactionMessage = pipe(
       createTransactionMessage({ version: 0 }),
-      (msg) => setTransactionMessageFeePayer(payer.address, msg),
-      (msg) =>
-        setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, msg),
-      (msg) => appendTransactionMessageInstructions([ix], msg),
+      (tx) => setTransactionMessageFeePayerSigner(payer, tx),
+      (tx) => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
+      (tx) => appendTransactionMessageInstructions([ix], tx),
     );
 
-    const signedTx = await signTransactionMessageWithSigners(txMessage);
-    const signature = getSignatureFromTransaction(signedTx);
+    const signedTransaction =
+      await signTransactionMessageWithSigners(transactionMessage);
 
-    await sendAndConfirm(signedTx, { commitment: 'confirmed' });
+    const sendAndConfirmTransaction = sendAndConfirmTransactionFactory({
+      rpc,
+      rpcSubscriptions,
+    });
+    await sendAndConfirmTransaction(signedTransaction, {
+      commitment: 'confirmed',
+    });
 
     console.log('');
     console.log('Launch created!');
     console.log('  Launch address:', launch);
     console.log('  Base mint:     ', baseMint.address);
-    console.log('  Transaction:   ', signature);
+    console.log(
+      '  Transaction:   ',
+      getSignatureFromTransaction(signedTransaction),
+    );
 
     // ── Verify launch state ──────────────────────────────────────────────
     const launchAccount = await initializer.fetchLaunch(rpc, launch);
@@ -342,9 +298,7 @@ async function main() {
       console.log('Launch account verified:');
       console.log(
         '  Phase:              ',
-        launchAccount.phase === initializer.PHASE_TRADING
-          ? 'TRADING'
-          : String(launchAccount.phase),
+        initializer.phaseLabel(launchAccount.phase),
       );
       console.log('  Curve fee:          ', launchAccount.curveFeeBps, 'bps');
       console.log(

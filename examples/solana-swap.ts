@@ -12,11 +12,9 @@ import {
   createKeyPairSignerFromBytes,
   createSolanaRpc,
   createSolanaRpcSubscriptions,
-  getAddressEncoder,
-  getProgramDerivedAddress,
   pipe,
   createTransactionMessage,
-  setTransactionMessageFeePayer,
+  setTransactionMessageFeePayerSigner,
   setTransactionMessageLifetimeUsingBlockhash,
   appendTransactionMessageInstructions,
   signTransactionMessageWithSigners,
@@ -27,7 +25,7 @@ import {
 
 import {
   TOKEN_PROGRAM_ADDRESS,
-  ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
+  findAssociatedTokenPda,
 } from '@solana-program/token';
 
 import { cpmm } from '../src/solana/index.js';
@@ -54,23 +52,6 @@ const MINT_0: Address = address(process.env.MINT_0);
 const MINT_1: Address = address(process.env.MINT_1);
 
 // ============================================================================
-// Helpers
-// ============================================================================
-
-/** Derive the ATA address for a wallet + mint. Seeds: [wallet, tokenProgram, mint]. */
-async function getAtaAddress(wallet: Address, mint: Address): Promise<Address> {
-  const [ata] = await getProgramDerivedAddress({
-    programAddress: ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
-    seeds: [
-      getAddressEncoder().encode(wallet),
-      getAddressEncoder().encode(TOKEN_PROGRAM_ADDRESS),
-      getAddressEncoder().encode(mint),
-    ],
-  });
-  return ata;
-}
-
-// ============================================================================
 // Main
 // ============================================================================
 
@@ -81,10 +62,6 @@ async function main() {
 
   const rpc = createSolanaRpc(rpcUrl);
   const rpcSubscriptions = createSolanaRpcSubscriptions(wsUrl);
-  const sendAndConfirm = sendAndConfirmTransactionFactory({
-    rpc,
-    rpcSubscriptions,
-  });
 
   // ── Fetch pool state ─────────────────────────────────────────────────────
   console.log('Fetching pool state...');
@@ -128,8 +105,16 @@ async function main() {
 
   // ── Derive PDAs and user token accounts ─────────────────────────────────
   const [config] = await cpmm.getConfigAddress();
-  const userIn = await getAtaAddress(payer.address, pool.token0Mint);
-  const userOut = await getAtaAddress(payer.address, pool.token1Mint);
+  const [userIn] = await findAssociatedTokenPda({
+    owner: payer.address,
+    mint: pool.token0Mint,
+    tokenProgram: TOKEN_PROGRAM_ADDRESS,
+  });
+  const [userOut] = await findAssociatedTokenPda({
+    owner: payer.address,
+    mint: pool.token1Mint,
+    tokenProgram: TOKEN_PROGRAM_ADDRESS,
+  });
 
   console.log('  Config:   ', config);
   console.log('  User ATA (in): ', userIn);
@@ -158,22 +143,30 @@ async function main() {
 
     const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
 
-    const txMessage = pipe(
+    const transactionMessage = pipe(
       createTransactionMessage({ version: 0 }),
-      (msg) => setTransactionMessageFeePayer(payer.address, msg),
-      (msg) =>
-        setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, msg),
-      (msg) => appendTransactionMessageInstructions([ix], msg),
+      (tx) => setTransactionMessageFeePayerSigner(payer, tx),
+      (tx) => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
+      (tx) => appendTransactionMessageInstructions([ix], tx),
     );
 
-    const signedTx = await signTransactionMessageWithSigners(txMessage);
-    const signature = getSignatureFromTransaction(signedTx);
+    const signedTransaction =
+      await signTransactionMessageWithSigners(transactionMessage);
 
-    await sendAndConfirm(signedTx, { commitment: 'confirmed' });
+    const sendAndConfirmTransaction = sendAndConfirmTransactionFactory({
+      rpc,
+      rpcSubscriptions,
+    });
+    await sendAndConfirmTransaction(signedTransaction, {
+      commitment: 'confirmed',
+    });
 
     console.log('');
     console.log('Swap confirmed!');
-    console.log('  Transaction:', signature);
+    console.log(
+      '  Transaction:',
+      getSignatureFromTransaction(signedTransaction),
+    );
     console.log('  Sent:       ', AMOUNT_IN.toString(), 'token0 atoms');
     console.log('  Received:   ~', quote.amountOut.toString(), 'token1 atoms');
   } catch (error) {
