@@ -104,7 +104,7 @@ async function main() {
   // ── Fee configuration ───────────────────────────────────────────────────
   const CURVE_FEE_BPS = 200; // 2% swap fee during the bonding curve phase — stays in the quote vault, compounding into the curve
   const CPMM_SWAP_FEE_BPS = 100; // 1% swap fee on the graduated CPMM pool
-  const CPMM_SWAP_FEE_SPLIT_BPS = 8000; // 80% of CPMM swap fees claimable by LP holders; remaining 20% compounds into the pool
+  const CPMM_SWAP_FEE_SPLIT_BPS = 5000; // 50% of CPMM swap fees claimable by LP holders; remaining 50% compounds into the pool
 
   // ── Graduation threshold and price floor ────────────────────────────────
   const MIN_SOL_RAISE = 0.1; // devnet testing threshold
@@ -228,7 +228,7 @@ async function main() {
         allowBuy: true,
         allowSell: true,
         sentinelProgram: initializer.CPMM_SENTINEL_PROGRAM_ID,
-        sentinelFlags: initializer.SF_BEFORE_SWAP | initializer.SF_AFTER_SWAP,
+        sentinelFlags: initializer.SF_BEFORE_SWAP,
         sentinelCalldata: new Uint8Array(),
         migratorInitCalldata,
         migratorMigrateCalldata,
@@ -409,6 +409,7 @@ async function main() {
         baseMint: baseMint.address,
         quoteMint: WSOL_MINT,
         user: payer,
+        sentinelProgram: initializer.CPMM_SENTINEL_PROGRAM_ID,
       },
       {
         amountIn: BUY_AMOUNT_IN,

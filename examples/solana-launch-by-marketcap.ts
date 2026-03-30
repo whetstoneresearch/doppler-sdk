@@ -240,7 +240,7 @@ async function main() {
         allowBuy: true,
         allowSell: true,
         sentinelProgram: initializer.CPMM_SENTINEL_PROGRAM_ID,
-        sentinelFlags: initializer.SF_BEFORE_SWAP | initializer.SF_AFTER_SWAP,
+        sentinelFlags: initializer.SF_BEFORE_SWAP,
         sentinelCalldata: new Uint8Array(),
         migratorInitCalldata,
         migratorMigrateCalldata,
