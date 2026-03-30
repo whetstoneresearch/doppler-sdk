@@ -1,13 +1,10 @@
 /**
  * Example: Create a Prediction Market on Solana
  *
- * ┌─────────────────────────────────────────────────────────────────────────┐
- * │  trustedOracle  ─── holds the final resolution (who won?)              │
- * │       │                                                                 │
- * │  predictionMigrator ─── manages the market + entry/pot accounting      │
- * │       │                                                                 │
- * │  initializer (×2) ─── one XYK launch per outcome (YES / NO tokens)    │
- * └─────────────────────────────────────────────────────────────────────────┘
+ * Components:
+ *   trustedOracle      - holds the final resolution (who won?)
+ *   predictionMigrator - manages the market + entry/pot accounting
+ *   initializer (x2)   - one XYK launch per outcome (YES / NO tokens)
  *
  * Lifecycle:
  *   1. Create a trusted oracle (authority + quote mint).
@@ -19,15 +16,13 @@
  */
 import './env.js';
 
+import { TOKEN_PROGRAM_ADDRESS } from '@solana-program/token';
+import { SYSTEM_PROGRAM_ADDRESS } from '@solana-program/system';
 import {
-  AccountRole,
   createKeyPairSignerFromBytes,
   createSolanaRpc,
   createSolanaRpcSubscriptions,
   generateKeyPairSigner,
-  getProgramDerivedAddress,
-  getAddressEncoder,
-  getBytesEncoder,
   pipe,
   createTransactionMessage,
   setTransactionMessageFeePayerSigner,
@@ -38,9 +33,6 @@ import {
   getSignatureFromTransaction,
   type Address,
 } from '@solana/kit';
-
-import { TOKEN_PROGRAM_ADDRESS } from '@solana-program/token';
-import { SYSTEM_PROGRAM_ADDRESS } from '@solana-program/system';
 import { SYSVAR_RENT_ADDRESS } from '@solana/sysvars';
 
 import {
@@ -64,32 +56,6 @@ if (!keypairJson) {
 // WSOL mint — the quote token (SOL wrapped as SPL token so it can live in vaults).
 const WSOL_MINT: Address =
   'So11111111111111111111111111111111111111112' as Address;
-
-// ============================================================================
-// Helpers
-// ============================================================================
-
-/**
- * Derive the trustedOracle oracle state PDA.
- * Seeds: ["oracle_state", oracleAuthority, nonce_le_u64]
- */
-async function getOracleStateAddress(
-  oracleAuthority: Address,
-  nonce: bigint,
-): Promise<Address> {
-  const nonceBytes = new Uint8Array(8);
-  new DataView(nonceBytes.buffer).setBigUint64(0, nonce, true);
-
-  const [oracleStateAddress] = await getProgramDerivedAddress({
-    programAddress: trustedOracle.TRUSTED_ORACLE_PROGRAM_ADDRESS,
-    seeds: [
-      getBytesEncoder().encode(new TextEncoder().encode('oracle')),
-      getAddressEncoder().encode(oracleAuthority),
-      nonceBytes,
-    ],
-  });
-  return oracleStateAddress;
-}
 
 // ============================================================================
 // Main
@@ -131,7 +97,7 @@ async function main() {
   // the winning outcome mint.  Any wallet can be the oracleAuthority — in
   // production, use a multisig or a program-controlled authority.
   const oracleNonce = BigInt(Date.now());
-  const oracleStateAddress = await getOracleStateAddress(
+  const [oracleStateAddress] = await trustedOracle.getOracleStateAddress(
     payer.address,
     oracleNonce,
   );
@@ -205,52 +171,32 @@ async function main() {
           baseMint.address,
         );
 
-        // ── Derive remaining accounts for register_entry CPI ────────────────
-        // Seeds sourced from programs/prediction_migrator/src/constants.rs
-        const predProg = predictionMigrator.PREDICTION_MIGRATOR_PROGRAM_ADDRESS;
-
-        const [market] = await getProgramDerivedAddress({
-          programAddress: predProg,
-          seeds: [
-            new TextEncoder().encode('market'),
-            getAddressEncoder().encode(oracleStateAddress),
-          ],
-        });
-        const [marketAuthority] = await getProgramDerivedAddress({
-          programAddress: predProg,
-          seeds: [
-            new TextEncoder().encode('market_authority'),
-            getAddressEncoder().encode(market),
-          ],
-        });
-        const [potVault] = await getProgramDerivedAddress({
-          programAddress: predProg,
-          seeds: [
-            new TextEncoder().encode('pot_vault'),
-            getAddressEncoder().encode(market),
-          ],
-        });
-        const [entryAddress] = await getProgramDerivedAddress({
-          programAddress: predProg,
-          seeds: [
-            new TextEncoder().encode('entry'),
-            getAddressEncoder().encode(oracleStateAddress),
-            getBytesEncoder().encode(entryId),
-          ],
-        });
-        const [entryByMint] = await getProgramDerivedAddress({
-          programAddress: predProg,
-          seeds: [
-            new TextEncoder().encode('entry_by_mint'),
-            getAddressEncoder().encode(oracleStateAddress),
-            getAddressEncoder().encode(baseMint.address),
-          ],
-        });
-
         console.log('  Launch:           ', launch);
         console.log('  Launch authority: ', launchAuthority);
         console.log('  Base mint:        ', baseMint.address);
-        console.log('  Entry PDA:        ', entryAddress);
+
+        // ── Derive prediction market PDAs for remaining-accounts hash ────────
+        // These are the accounts the migrator will receive during migration.
+        // The instruction builder auto-appends them; we derive them here only
+        // to compute migratorRemainingAccountsHash.
+        const [market] =
+          await predictionMigrator.getPredictionMarketAddress(
+            oracleStateAddress,
+          );
+        const [potVault] =
+          await predictionMigrator.getPredictionPotVaultAddress(market);
+        const [marketAuthority] =
+          await predictionMigrator.getPredictionMarketAuthorityAddress(market);
+        const [entryAddress] =
+          await predictionMigrator.getPredictionEntryAddress(
+            oracleStateAddress,
+            entryId,
+          );
+        const [entryByMint] =
+          await predictionMigrator.getPredictionEntryByMintAddress(
+            oracleStateAddress,
+            baseMint.address,
+          );
 
         // ── Encode migrator calldatas ────────────────────────────────────────
         // Init calldata → registerEntry; migrate calldata → migrateEntry.
@@ -266,7 +212,9 @@ async function main() {
         // The ALT covers tokenProgram, systemProgram, rent, config, WSOL_MINT, and
         // the prediction migrator program (index 8), keeping the transaction within
         // the 1232-byte limit despite the 6 register_entry remaining accounts.
-        const ixBase = await initializer.createInitializeLaunchInstruction(
+        // The instruction builder automatically appends the 6 register_entry
+        // remaining accounts for the prediction migrator.
+        const ix = await initializer.createInitializeLaunchInstruction(
           {
             config,
             launch,
@@ -323,21 +271,6 @@ async function main() {
             metadataUri: `https://example.com/prediction/${outcome.label.toLowerCase()}.json`,
           },
         );
-
-        // Append register_entry remaining accounts:
-        // [oracle, market, pot_vault, market_authority, entry, entry_by_mint]
-        const ix = {
-          ...ixBase,
-          accounts: [
-            ...(ixBase.accounts ?? []),
-            { address: oracleStateAddress, role: AccountRole.READONLY },
-            { address: market, role: AccountRole.WRITABLE },
-            { address: potVault, role: AccountRole.WRITABLE },
-            { address: marketAuthority, role: AccountRole.READONLY },
-            { address: entryAddress, role: AccountRole.WRITABLE },
-            { address: entryByMint, role: AccountRole.WRITABLE },
-          ],
-        };
 
         const { value: latestBlockhash } = await rpc
           .getLatestBlockhash()

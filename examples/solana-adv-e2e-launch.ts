@@ -15,6 +15,16 @@
 import './env.js';
 
 import {
+  TOKEN_PROGRAM_ADDRESS,
+  findAssociatedTokenPda,
+  getCreateAssociatedTokenIdempotentInstruction,
+  getSyncNativeInstruction,
+} from '@solana-program/token';
+import {
+  SYSTEM_PROGRAM_ADDRESS,
+  getTransferSolInstruction,
+} from '@solana-program/system';
+import {
   createKeyPairSignerFromBytes,
   createSolanaRpc,
   createSolanaRpcSubscriptions,
@@ -31,16 +41,6 @@ import {
   AccountRole,
   type Address,
 } from '@solana/kit';
-import {
-  TOKEN_PROGRAM_ADDRESS,
-  findAssociatedTokenPda,
-  getCreateAssociatedTokenIdempotentInstruction,
-  getSyncNativeInstruction,
-} from '@solana-program/token';
-import {
-  SYSTEM_PROGRAM_ADDRESS,
-  getTransferSolInstruction,
-} from '@solana-program/system';
 import { SYSVAR_RENT_ADDRESS } from '@solana/sysvars';
 
 import { cpmm, initializer, cpmmMigrator } from '../src/solana/index.js';
@@ -57,6 +57,7 @@ if (!keypairJson) {
   throw new Error('SOLANA_KEYPAIR must be set (JSON array of 64 bytes)');
 }
 
+// WSOL mint — pools use the wrapped SPL mint since native SOL can't live in token vaults.
 const WSOL_MINT: Address =
   'So11111111111111111111111111111111111111112' as Address;
 
@@ -97,24 +98,30 @@ async function main() {
   const TEAM_SHARE = BASE_FOR_DISTRIBUTION - CREATOR_SHARE;
 
   const QUOTE_DECIMALS = 9; // WSOL
+  const START_MARKET_CAP_USD = 100_000;
+  const END_MARKET_CAP_USD = 10_000_000;
+
+  // ── Fee configuration ───────────────────────────────────────────────────
+  const CURVE_FEE_BPS = 200; // 2% swap fee during the bonding curve phase — stays in the quote vault, compounding into the curve
+  const CPMM_SWAP_FEE_BPS = 100; // 1% swap fee on the graduated CPMM pool
+  const CPMM_SWAP_FEE_SPLIT_BPS = 8000; // 80% of CPMM swap fees claimable by LP holders; remaining 20% compounds into the pool
+
+  // ── Graduation threshold and price floor ────────────────────────────────
+  const MIN_SOL_RAISE = 0.1; // devnet testing threshold
+  const minRaiseQuote = BigInt(MIN_SOL_RAISE * 1_000_000_000);
 
   // ── Market cap → virtual reserves ────────────────────────────────────────
-  console.log('Fetching current SOL price from CoinGecko...');
   const solPriceUsd = await getSolPriceUsd();
-  console.log(`SOL price: $${solPriceUsd.toLocaleString()}`);
-  console.log('');
 
   const { start } = cpmm.marketCapToCurveParams({
-    startMarketCapUSD: 100_000,
-    endMarketCapUSD: 10_000_000,
+    startMarketCapUSD: START_MARKET_CAP_USD,
+    endMarketCapUSD: END_MARKET_CAP_USD,
     baseTotalSupply: BASE_TOTAL_SUPPLY,
     baseForCurve: BASE_FOR_CURVE,
     baseDecimals: BASE_DECIMALS,
     quoteDecimals: QUOTE_DECIMALS,
     numerairePriceUSD: solPriceUsd,
   });
-
-  const minRaiseQuote = 100_000_000n; // 0.1 SOL graduation threshold for devnet testing
 
   // ── Step 1: Create launch ─────────────────────────────────────────────────
   console.log('Step 1: Creating XYK token launch...');
@@ -129,12 +136,20 @@ async function main() {
   const namespace = payer.address;
   const launchId = initializer.launchIdFromU64(BigInt(Date.now()));
 
-  const [initializerConfig] = await initializer.getConfigAddress();
-  const [cpmmConfig] = await cpmm.getConfigAddress();
   const [launch] = await initializer.getLaunchAddress(namespace, launchId);
   const [launchAuthority] = await initializer.getLaunchAuthorityAddress(launch);
+  const [initializerConfig] = await initializer.getConfigAddress();
+  const [cpmmConfig] = await cpmm.getConfigAddress();
   const [cpmmMigratorState] =
     await cpmmMigrator.getCpmmMigratorStateAddress(launch);
+
+  console.log('Derived addresses:');
+  console.log('  Launch:          ', launch);
+  console.log('  Launch authority:', launchAuthority);
+  console.log('  Initializer config:', initializerConfig);
+  console.log('  CPMM config:     ', cpmmConfig);
+  console.log('  CPMM migrator state:', cpmmMigratorState);
+  console.log('');
 
   // ── CPMM migration remaining accounts ────────────────────────────────────
   // Pool vault keypairs must be generated here so their addresses can be
@@ -162,8 +177,8 @@ async function main() {
 
   const migratorInitCalldata = cpmmMigrator.encodeRegisterLaunchCalldata({
     cpmmConfig: cpmmConfig,
-    initialSwapFeeBps: 100, // 1% swap fee on the graduated CPMM pool
-    initialFeeSplitBps: 8000, // 80% of CPMM fees distributed to LP holders
+    initialSwapFeeBps: CPMM_SWAP_FEE_BPS,
+    initialFeeSplitBps: CPMM_SWAP_FEE_SPLIT_BPS,
     recipients: [
       { wallet: payer.address, amount: CREATOR_SHARE },
       { wallet: payer.address, amount: TEAM_SHARE }, // use payer as team wallet on devnet
@@ -177,6 +192,8 @@ async function main() {
     baseForLiquidity: BASE_FOR_LIQUIDITY,
   });
 
+  // ── Build, sign, and send ────────────────────────────────────────────────
+  console.log('Building launch instruction...');
   try {
     const ix = await initializer.createInitializeLaunchInstruction(
       {
@@ -205,7 +222,7 @@ async function main() {
         baseForLiquidity: BASE_FOR_LIQUIDITY,
         curveVirtualBase: start.curveVirtualBase,
         curveVirtualQuote: start.curveVirtualQuote,
-        curveFeeBps: 200, // 2% swap fee during the bonding curve phase
+        curveFeeBps: CURVE_FEE_BPS,
         curveKind: initializer.CURVE_KIND_XYK,
         curveParams: new Uint8Array([initializer.CURVE_PARAMS_FORMAT_XYK_V0]),
         allowBuy: true,
@@ -243,33 +260,34 @@ async function main() {
       },
     );
 
+    const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
+
+    const transactionMessage = pipe(
+      createTransactionMessage({ version: 0 }),
+      (tx) => setTransactionMessageFeePayerSigner(payer, tx),
+      (tx) => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
+      (tx) => appendTransactionMessageInstructions([ix], tx),
+    );
+
+    const signedTransaction =
+      await signTransactionMessageWithSigners(transactionMessage);
+
     const sendAndConfirmTransaction = sendAndConfirmTransactionFactory({
       rpc,
       rpcSubscriptions,
     });
+    await sendAndConfirmTransaction(signedTransaction, {
+      commitment: 'confirmed',
+    });
 
-    {
-      const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
-      const transactionMessage = pipe(
-        createTransactionMessage({ version: 0 }),
-        (tx) => setTransactionMessageFeePayerSigner(payer, tx),
-        (tx) =>
-          setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
-        (tx) => appendTransactionMessageInstructions([ix], tx),
-      );
-      const signedTransaction =
-        await signTransactionMessageWithSigners(transactionMessage);
-      await sendAndConfirmTransaction(signedTransaction, {
-        commitment: 'confirmed',
-      });
-      console.log('  Launch:', launch);
-      console.log('  Base mint:', baseMint.address);
-      console.log(
-        '  Transaction:',
-        getSignatureFromTransaction(signedTransaction),
-      );
-    }
     console.log('');
+    console.log('Token launch created successfully!');
+    console.log('  Launch address:', launch);
+    console.log('  Base mint:     ', baseMint.address);
+    console.log(
+      '  Transaction:   ',
+      getSignatureFromTransaction(signedTransaction),
+    );
 
     // ── Step 2: Enumerate launches by this wallet (indexer-style) ───────────
     console.log('Step 2: Listing launches owned by this wallet...');
@@ -298,14 +316,17 @@ async function main() {
 
     // simulateTransaction is the idiomatic way to run a read-only instruction.
     const { value: previewBlockhash } = await rpc.getLatestBlockhash().send();
+
     const previewMessage = pipe(
       createTransactionMessage({ version: 0 }),
       (tx) => setTransactionMessageFeePayerSigner(payer, tx),
       (tx) => setTransactionMessageLifetimeUsingBlockhash(previewBlockhash, tx),
       (tx) => appendTransactionMessageInstructions([previewIx], tx),
     );
+
     const signedPreview =
       await signTransactionMessageWithSigners(previewMessage);
+
     const { value: simulateResult } = await rpc
       .simulateTransaction(getBase64EncodedWireTransaction(signedPreview), {
         encoding: 'base64',
@@ -355,6 +376,7 @@ async function main() {
     });
 
     const RENT_WSOL_ATA = 2_039_280n; // minimum lamports for a token account
+
     const createBaseAtaIx = getCreateAssociatedTokenIdempotentInstruction({
       payer,
       ata: userBaseAta,
@@ -372,6 +394,7 @@ async function main() {
       destination: userQuoteAta,
       amount: BUY_AMOUNT_IN + RENT_WSOL_ATA,
     });
+
     const syncNativeIx = getSyncNativeInstruction({ account: userQuoteAta });
 
     const swapIx = initializer.createCurveSwapExactInInstruction(
@@ -396,6 +419,7 @@ async function main() {
 
     {
       const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
+
       const transactionMessage = pipe(
         createTransactionMessage({ version: 0 }),
         (tx) => setTransactionMessageFeePayerSigner(payer, tx),
@@ -413,11 +437,14 @@ async function main() {
             tx,
           ),
       );
+
       const signedTransaction =
         await signTransactionMessageWithSigners(transactionMessage);
+
       await sendAndConfirmTransaction(signedTransaction, {
         commitment: 'confirmed',
       });
+
       console.log(
         '  Curve buy confirmed:',
         getSignatureFromTransaction(signedTransaction),
@@ -476,6 +503,7 @@ async function main() {
 
     {
       const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
+
       const transactionMessage = pipe(
         createTransactionMessage({ version: 0 }),
         (tx) => setTransactionMessageFeePayerSigner(payer, tx),
@@ -483,11 +511,14 @@ async function main() {
           setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
         (tx) => appendTransactionMessageInstructions([migrateLaunchIx], tx),
       );
+
       const signedTransaction =
         await signTransactionMessageWithSigners(transactionMessage);
+
       await sendAndConfirmTransaction(signedTransaction, {
         commitment: 'confirmed',
       });
+
       console.log(
         '  Migration confirmed:',
         getSignatureFromTransaction(signedTransaction),

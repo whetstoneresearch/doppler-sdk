@@ -1,0 +1,74 @@
+import {
+  type Address,
+  type ProgramDerivedAddress,
+  type ReadonlyUint8Array,
+  getAddressCodec,
+  getProgramDerivedAddress,
+} from '@solana/kit';
+import { PREDICTION_MIGRATOR_PROGRAM_ADDRESS } from '../../generated/predictionMigrator/programs/predictionMigrator.js';
+
+const addressCodec = getAddressCodec();
+const textEncoder = new TextEncoder();
+
+export async function getPredictionMarketAddress(
+  oracleState: Address,
+  programId: Address = PREDICTION_MIGRATOR_PROGRAM_ADDRESS,
+): Promise<ProgramDerivedAddress> {
+  return getProgramDerivedAddress({
+    programAddress: programId,
+    seeds: [textEncoder.encode('market'), addressCodec.encode(oracleState)],
+  });
+}
+
+export async function getPredictionMarketAuthorityAddress(
+  market: Address,
+  programId: Address = PREDICTION_MIGRATOR_PROGRAM_ADDRESS,
+): Promise<ProgramDerivedAddress> {
+  return getProgramDerivedAddress({
+    programAddress: programId,
+    seeds: [
+      textEncoder.encode('market_authority'),
+      addressCodec.encode(market),
+    ],
+  });
+}
+
+export async function getPredictionPotVaultAddress(
+  market: Address,
+  programId: Address = PREDICTION_MIGRATOR_PROGRAM_ADDRESS,
+): Promise<ProgramDerivedAddress> {
+  return getProgramDerivedAddress({
+    programAddress: programId,
+    seeds: [textEncoder.encode('pot_vault'), addressCodec.encode(market)],
+  });
+}
+
+export async function getPredictionEntryAddress(
+  oracleState: Address,
+  entryId: ReadonlyUint8Array | Uint8Array,
+  programId: Address = PREDICTION_MIGRATOR_PROGRAM_ADDRESS,
+): Promise<ProgramDerivedAddress> {
+  return getProgramDerivedAddress({
+    programAddress: programId,
+    seeds: [
+      textEncoder.encode('entry'),
+      addressCodec.encode(oracleState),
+      entryId,
+    ],
+  });
+}
+
+export async function getPredictionEntryByMintAddress(
+  oracleState: Address,
+  mint: Address,
+  programId: Address = PREDICTION_MIGRATOR_PROGRAM_ADDRESS,
+): Promise<ProgramDerivedAddress> {
+  return getProgramDerivedAddress({
+    programAddress: programId,
+    seeds: [
+      textEncoder.encode('entry_by_mint'),
+      addressCodec.encode(oracleState),
+      addressCodec.encode(mint),
+    ],
+  });
+}

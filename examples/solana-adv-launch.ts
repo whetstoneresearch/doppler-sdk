@@ -19,6 +19,11 @@
 import './env.js';
 
 import {
+  TOKEN_PROGRAM_ADDRESS,
+  findAssociatedTokenPda,
+} from '@solana-program/token';
+import { SYSTEM_PROGRAM_ADDRESS } from '@solana-program/system';
+import {
   createKeyPairSignerFromBytes,
   createSolanaRpc,
   createSolanaRpcSubscriptions,
@@ -33,11 +38,6 @@ import {
   getSignatureFromTransaction,
   type Address,
 } from '@solana/kit';
-import {
-  TOKEN_PROGRAM_ADDRESS,
-  findAssociatedTokenPda,
-} from '@solana-program/token';
-import { SYSTEM_PROGRAM_ADDRESS } from '@solana-program/system';
 import { SYSVAR_RENT_ADDRESS } from '@solana/sysvars';
 
 import { cpmm, initializer, cpmmMigrator } from '../src/solana/index.js';
@@ -91,19 +91,21 @@ async function main() {
     BASE_TOTAL_SUPPLY - BASE_FOR_DISTRIBUTION - BASE_FOR_LIQUIDITY; // 75%
 
   const QUOTE_DECIMALS = 9; // WSOL
+  const START_MARKET_CAP_USD = 100_000;
+  const END_MARKET_CAP_USD = 10_000_000;
 
   // Distribution split between creator (70%) and team (30%)
   const CREATOR_SHARE = (BASE_FOR_DISTRIBUTION * 70n) / 100n;
   const TEAM_SHARE = BASE_FOR_DISTRIBUTION - CREATOR_SHARE;
 
   // ── Fee configuration ───────────────────────────────────────────────────
-  const CURVE_FEE_BPS = 200; // 2% swap fee on the bonding curve
+  const CURVE_FEE_BPS = 200; // 2% swap fee on the bonding curve — stays in the quote vault, compounding into the curve
   const CPMM_SWAP_FEE_BPS = 100; // 1% swap fee on the graduated CPMM pool
-  const CPMM_FEE_SPLIT_BPS = 8000; // 80% of CPMM fees distributed to LP holders
+  const CPMM_SWAP_FEE_SPLIT_BPS = 8000; // 80% of CPMM swap fees claimable by LP holders; remaining 20% compounds into the pool
 
   // ── Graduation threshold and price floor ────────────────────────────────
-  const MIN_RAISE_SOL = 50;
-  const minRaiseQuote = BigInt(MIN_RAISE_SOL) * 1_000_000_000n;
+  const MIN_SOL_RAISE = 50;
+  const minRaiseQuote = BigInt(MIN_SOL_RAISE) * 1_000_000_000n;
 
   // Optional: refuse graduation if spot price (reserve1/reserve0 in raw units)
   // at migration time is below this Q64.64 value.
@@ -115,8 +117,8 @@ async function main() {
   const solPriceUsd = await getSolPriceUsd();
 
   const { start } = cpmm.marketCapToCurveParams({
-    startMarketCapUSD: 100_000,
-    endMarketCapUSD: 10_000_000,
+    startMarketCapUSD: START_MARKET_CAP_USD,
+    endMarketCapUSD: END_MARKET_CAP_USD,
     baseTotalSupply: BASE_TOTAL_SUPPLY,
     baseForCurve: BASE_FOR_CURVE,
     baseDecimals: BASE_DECIMALS,
@@ -135,12 +137,20 @@ async function main() {
   const namespace = payer.address;
   const launchId = initializer.launchIdFromU64(BigInt(Date.now()));
 
-  const [initializerConfig] = await initializer.getConfigAddress();
-  const [cpmmConfig] = await cpmm.getConfigAddress();
   const [launch] = await initializer.getLaunchAddress(namespace, launchId);
   const [launchAuthority] = await initializer.getLaunchAuthorityAddress(launch);
+  const [initializerConfig] = await initializer.getConfigAddress();
+  const [cpmmConfig] = await cpmm.getConfigAddress();
   const [cpmmMigratorState] =
     await cpmmMigrator.getCpmmMigratorStateAddress(launch);
+
+  console.log('Derived addresses:');
+  console.log('  Launch:          ', launch);
+  console.log('  Launch authority:', launchAuthority);
+  console.log('  Initializer config:', initializerConfig);
+  console.log('  CPMM config:     ', cpmmConfig);
+  console.log('  CPMM migrator state:', cpmmMigratorState);
+  console.log('');
 
   // ── CPMM migration remaining accounts ────────────────────────────────────
   // Pool vault keypairs must be generated here so their addresses can be
@@ -167,20 +177,13 @@ async function main() {
     tokenProgram: TOKEN_PROGRAM_ADDRESS,
   });
 
-  console.log('Derived addresses:');
-  console.log('  Initializer config:', initializerConfig);
-  console.log('  Launch:          ', launch);
-  console.log('  Launch authority:', launchAuthority);
-  console.log('  Base mint:       ', baseMint.address);
-  console.log('');
-
   // ── Encode migrator calldatas ────────────────────────────────────────────
   // migratorInitCalldata registers graduation params; migratorMigrateCalldata
   // is forwarded at migration. minRaiseQuote is the graduation threshold.
   const migratorInitCalldata = cpmmMigrator.encodeRegisterLaunchCalldata({
     cpmmConfig: cpmmConfig,
     initialSwapFeeBps: CPMM_SWAP_FEE_BPS,
-    initialFeeSplitBps: CPMM_FEE_SPLIT_BPS,
+    initialFeeSplitBps: CPMM_SWAP_FEE_SPLIT_BPS,
     recipients: [
       { wallet: payer.address, amount: CREATOR_SHARE },
       { wallet: payer.address, amount: TEAM_SHARE }, // use payer as team wallet for devnet
@@ -283,7 +286,7 @@ async function main() {
     });
 
     console.log('');
-    console.log('Launch created!');
+    console.log('Token launch created successfully!');
     console.log('  Launch address:', launch);
     console.log('  Base mint:     ', baseMint.address);
     console.log(
@@ -296,11 +299,22 @@ async function main() {
     if (launchAccount) {
       console.log('');
       console.log('Launch account verified:');
+      // Status
       console.log(
         '  Phase:              ',
         initializer.phaseLabel(launchAccount.phase),
       );
-      console.log('  Curve fee:          ', launchAccount.curveFeeBps, 'bps');
+      console.log(
+        '  Quote deposited:    ',
+        launchAccount.quoteDeposited.toString(),
+        'lamports',
+      );
+      console.log('  Graduates at:       ', MIN_SOL_RAISE, 'SOL raised');
+      // Token allocation
+      console.log(
+        '  Base total supply:  ',
+        launchAccount.baseTotalSupply.toString(),
+      );
       console.log(
         '  Base for curve:     ',
         launchAccount.baseForCurve.toString(),
@@ -313,7 +327,17 @@ async function main() {
         '  Base for distrib:   ',
         launchAccount.baseForDistribution.toString(),
       );
-      console.log('  Graduates at:       ', MIN_RAISE_SOL, 'SOL raised');
+      // Curve pricing
+      console.log(
+        '  Curve virtual base: ',
+        launchAccount.curveVirtualBase.toString(),
+      );
+      console.log(
+        '  Curve virtual quote:',
+        launchAccount.curveVirtualQuote.toString(),
+      );
+      // Fees
+      console.log('  Curve fee:          ', launchAccount.curveFeeBps, 'bps');
     }
   } catch (error) {
     console.error('Error creating launch:', error);

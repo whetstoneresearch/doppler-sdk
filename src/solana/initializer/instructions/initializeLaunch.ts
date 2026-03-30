@@ -24,6 +24,13 @@ import {
 import { CPMM_MIGRATOR_PROGRAM_ID } from '../../migrators/cpmmMigrator/constants.js';
 import { getCpmmMigratorStateAddress } from '../../migrators/cpmmMigrator/pda.js';
 import { PREDICTION_MIGRATOR_PROGRAM_ADDRESS } from '../../generated/predictionMigrator/programs/predictionMigrator.js';
+import {
+  getPredictionMarketAddress,
+  getPredictionMarketAuthorityAddress,
+  getPredictionPotVaultAddress,
+  getPredictionEntryAddress,
+  getPredictionEntryByMintAddress,
+} from '../../migrators/predictionMigrator/pda.js';
 import type { InitializeLaunchArgsArgs } from '../../generated/initializer/index.js';
 import { getInitializeLaunchInstructionDataEncoder } from '../../generated/initializer/index.js';
 
@@ -249,6 +256,34 @@ export async function createInitializeLaunchInstruction(
   if (migratorProgram === CPMM_MIGRATOR_PROGRAM_ID) {
     const [cpmmMigratorState] = await getCpmmMigratorStateAddress(launch);
     keys.push({ address: cpmmMigratorState, role: AccountRole.WRITABLE });
+  }
+
+  // When using the prediction migrator, automatically derive and append the 6
+  // remaining accounts required by register_entry:
+  //   [oracle_state, market, pot_vault, market_authority, entry, entry_by_mint]
+  // namespace === oracle_state and launchId === entryId per program validation.
+  if (migratorProgram === PREDICTION_MIGRATOR_PROGRAM_ADDRESS) {
+    const oracleState = args.namespace as Address;
+    const entryId = args.launchId;
+    const baseMintAddress = isTransactionSigner(baseMint)
+      ? baseMint.address
+      : baseMint;
+
+    const [market] = await getPredictionMarketAddress(oracleState);
+    const [potVault] = await getPredictionPotVaultAddress(market);
+    const [marketAuthority] = await getPredictionMarketAuthorityAddress(market);
+    const [entry] = await getPredictionEntryAddress(oracleState, entryId);
+    const [entryByMint] = await getPredictionEntryByMintAddress(
+      oracleState,
+      baseMintAddress,
+    );
+
+    keys.push({ address: oracleState, role: AccountRole.READONLY });
+    keys.push({ address: market, role: AccountRole.WRITABLE });
+    keys.push({ address: potVault, role: AccountRole.WRITABLE });
+    keys.push({ address: marketAuthority, role: AccountRole.READONLY });
+    keys.push({ address: entry, role: AccountRole.WRITABLE });
+    keys.push({ address: entryByMint, role: AccountRole.WRITABLE });
   }
 
   return { programAddress: programId, accounts: keys, data };
