@@ -9,30 +9,25 @@
 import './env.js';
 
 import {
+  TOKEN_PROGRAM_ADDRESS,
+  findAssociatedTokenPda,
+} from '@solana-program/token';
+import { SYSTEM_PROGRAM_ADDRESS } from '@solana-program/system';
+import {
   createKeyPairSignerFromBytes,
   createSolanaRpc,
   createSolanaRpcSubscriptions,
   generateKeyPairSigner,
-  getProgramDerivedAddress,
-  getAddressEncoder,
   pipe,
   createTransactionMessage,
-  setTransactionMessageFeePayer,
+  setTransactionMessageFeePayerSigner,
   setTransactionMessageLifetimeUsingBlockhash,
   appendTransactionMessageInstructions,
   signTransactionMessageWithSigners,
   sendAndConfirmTransactionFactory,
   getSignatureFromTransaction,
-  address,
-  AccountRole,
   type Address,
 } from '@solana/kit';
-
-import {
-  TOKEN_PROGRAM_ADDRESS,
-  ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
-} from '@solana-program/token';
-import { SYSTEM_PROGRAM_ADDRESS } from '@solana-program/system';
 import { SYSVAR_RENT_ADDRESS } from '@solana/sysvars';
 
 import { cpmm, initializer, cpmmMigrator } from '../src/solana/index.js';
@@ -54,28 +49,6 @@ if (!keypairJson) {
 // WSOL mint — pools use the wrapped SPL mint since native SOL can't live in token vaults.
 const WSOL_MINT: Address =
   'So11111111111111111111111111111111111111112' as Address;
-
-// CPMM AmmConfig address that the graduated pool will use (devnet)
-const CPMM_CONFIG: Address = address(
-  'HERFT6LYhVjCBW4M8BGYgs3KHMMj9Z2TMNu479Jjjm8o',
-);
-
-// ============================================================================
-// Helpers
-// ============================================================================
-
-async function getAtaAddress(wallet: Address, mint: Address): Promise<Address> {
-  const enc = getAddressEncoder();
-  const [ata] = await getProgramDerivedAddress({
-    programAddress: ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
-    seeds: [
-      enc.encode(wallet),
-      enc.encode(TOKEN_PROGRAM_ADDRESS),
-      enc.encode(mint),
-    ],
-  });
-  return ata;
-}
 
 // ============================================================================
 // Price feed
@@ -100,21 +73,21 @@ async function main() {
 
   const rpc = createSolanaRpc(rpcUrl);
   const rpcSubscriptions = createSolanaRpcSubscriptions(wsUrl);
-  const sendAndConfirm = sendAndConfirmTransactionFactory({
-    rpc,
-    rpcSubscriptions,
-  });
 
   // ── Token supply parameters ────────────────────────────────────────────────
-  // 1B total supply: 900M for the bonding curve, 100M for creator at graduation.
+  // This example puts the entire supply on the bonding curve (no creator
+  // distribution or CPMM liquidity allocation). See solana-adv-launch.ts for
+  // an example with custom token allocations and fee configuration.
   const BASE_DECIMALS = 6;
   const BASE_TOTAL_SUPPLY = 1_000_000_000n * 10n ** BigInt(BASE_DECIMALS);
-  const BASE_FOR_DISTRIBUTION = 100_000_000n * 10n ** BigInt(BASE_DECIMALS);
-  const BASE_FOR_LIQUIDITY = 0n;
-  const BASE_FOR_CURVE =
-    BASE_TOTAL_SUPPLY - BASE_FOR_DISTRIBUTION - BASE_FOR_LIQUIDITY;
 
-  const QUOTE_DECIMALS = 9; // SOL
+  const QUOTE_DECIMALS = 9; // WSOL
+  const START_MARKET_CAP_USD = 100_000;
+  const END_MARKET_CAP_USD = 10_000_000;
+
+  // ── Graduation threshold and price floor ────────────────────────────────
+  const MIN_SOL_RAISE = 50;
+  const minRaiseQuote = BigInt(MIN_SOL_RAISE) * 1_000_000_000n;
 
   // ── Fetch live SOL price ────────────────────────────────────────────────────
   console.log('Fetching current SOL price from CoinGecko...');
@@ -123,8 +96,9 @@ async function main() {
   console.log('');
 
   // ── Validate market cap parameters ────────────────────────────────────────
+  // Optional but recommended — warns if startMarketCapUSD is too low for the supply.
   const { valid, warnings } = cpmm.validateMarketCapParameters(
-    100_000,
+    START_MARKET_CAP_USD,
     BASE_TOTAL_SUPPLY,
     BASE_DECIMALS,
   );
@@ -133,22 +107,22 @@ async function main() {
   }
 
   // ── Convert market cap range → XYK curve virtual reserves ─────────────────
-  // startParams sets the opening spot price; graduation is triggered by minRaiseQuote.
-  const { start: startParams } = cpmm.marketCapToCurveParams({
-    startMarketCapUSD: 100_000,
-    endMarketCapUSD: 10_000_000,
+  // start sets the opening spot price; graduation is triggered by minRaiseQuote.
+  const { start } = cpmm.marketCapToCurveParams({
+    startMarketCapUSD: START_MARKET_CAP_USD,
+    endMarketCapUSD: END_MARKET_CAP_USD,
     baseTotalSupply: BASE_TOTAL_SUPPLY,
-    baseForCurve: BASE_FOR_CURVE,
+    baseForCurve: BASE_TOTAL_SUPPLY,
     baseDecimals: BASE_DECIMALS,
     quoteDecimals: QUOTE_DECIMALS,
     numerairePriceUSD: solPriceUsd,
   });
 
   console.log('Computed curve virtual reserves (opening price):');
-  console.log('  curveVirtualBase: ', startParams.curveVirtualBase.toString());
-  console.log('  curveVirtualQuote:', startParams.curveVirtualQuote.toString());
+  console.log('  curveVirtualBase: ', start.curveVirtualBase.toString());
+  console.log('  curveVirtualQuote:', start.curveVirtualQuote.toString());
   console.log(
-    `  Market cap range: $100,000 → $10,000,000 (at SOL = $${solPriceUsd.toLocaleString()})`,
+    `  Market cap range: $${START_MARKET_CAP_USD.toLocaleString()} → $${END_MARKET_CAP_USD.toLocaleString()} (at SOL = $${solPriceUsd.toLocaleString()})`,
   );
   console.log('');
 
@@ -165,19 +139,29 @@ async function main() {
   const namespace = payer.address;
   const launchId = initializer.launchIdFromU64(BigInt(Date.now()));
 
-  const [config] = await initializer.getConfigAddress();
   const [launch] = await initializer.getLaunchAddress(namespace, launchId);
   const [launchAuthority] = await initializer.getLaunchAuthorityAddress(launch);
+  const [initializerConfig] = await initializer.getConfigAddress();
+  const [cpmmConfig] = await cpmm.getConfigAddress();
   const [cpmmMigratorState] =
     await cpmmMigrator.getCpmmMigratorStateAddress(launch);
+
+  console.log('Derived addresses:');
+  console.log('  Launch:          ', launch);
+  console.log('  Launch authority:', launchAuthority);
+  console.log('  Initializer config:', initializerConfig);
+  console.log('  CPMM config:     ', cpmmConfig);
+  console.log('  CPMM migrator state:', cpmmMigratorState);
+  console.log('');
 
   // ── CPMM migration remaining accounts ────────────────────────────────────
   // Pool vault keypairs must be generated here so their addresses can be
   // committed in migratorRemainingAccountsHash. Save these keypairs — they
   // must be passed as signers in the migrate_launch transaction.
-  const [token0] = cpmm.sortMints(baseMint.address, WSOL_MINT);
-  const poolVault0 = await generateKeyPairSigner(); // vault for canonical token0
-  const poolVault1 = await generateKeyPairSigner(); // vault for canonical token1
+  // The CPMM program initializes vault0 for token0 and vault1 for token1
+  // during pool initialization; the keypairs themselves are arbitrary.
+  const poolVault0 = await generateKeyPairSigner();
+  const poolVault1 = await generateKeyPairSigner();
 
   const [pool] = await cpmm.getPoolAddress(baseMint.address, WSOL_MINT);
   const [poolAuthority] = await cpmm.getPoolAuthorityAddress(pool);
@@ -188,41 +172,31 @@ async function main() {
     0n,
   );
 
-  // admin_base_ata receives unsold curve tokens at migration.
-  // In this example the single recipient is also payer, so all three map to
-  // the same ATA — that is fine, the hash just commits the addresses in order.
-  const payerBaseAta = await getAtaAddress(payer.address, baseMint.address);
-
-  void token0; // used implicitly via poolVault0/1 ordering above
-
-  console.log('Derived addresses:');
-  console.log('  Config:          ', config);
-  console.log('  Launch:          ', launch);
-  console.log('  Launch authority:', launchAuthority);
-  console.log('  Base mint:       ', baseMint.address);
-  console.log('');
+  // admin_base_ata receives any unsold curve tokens at migration.
+  const [payerBaseAta] = await findAssociatedTokenPda({
+    owner: payer.address,
+    mint: baseMint.address,
+    tokenProgram: TOKEN_PROGRAM_ADDRESS,
+  });
 
   // ── Encode CPMM migrator calldata ──────────────────────────────────────────
   // migratorInitCalldata registers graduation params; migratorMigrateCalldata
   // is forwarded at migration. minRaiseQuote is the graduation threshold.
-  const MIN_RAISE_SOL = 50;
-  const minRaiseQuote = BigInt(MIN_RAISE_SOL) * 1_000_000_000n;
-
   const migratorInitCalldata = cpmmMigrator.encodeRegisterLaunchCalldata({
-    cpmmConfig: CPMM_CONFIG,
-    initialSwapFeeBps: 30, // 0.3% fee on the graduated CPMM pool
-    initialFeeSplitBps: 5000, // 50% of fees distributed to LP holders
-    recipients: [{ wallet: payer.address, amount: BASE_FOR_DISTRIBUTION }],
+    cpmmConfig: cpmmConfig,
+    initialSwapFeeBps: 100, // 1% swap fee on the graduated CPMM pool
+    initialFeeSplitBps: 8000, // 80% of CPMM swap fees claimable by LP holders; remaining 20% compounds into the pool
+    recipients: [],
     minRaiseQuote,
     minMigrationPriceQ64Opt: null, // no minimum graduation price floor
   });
 
   const migratorMigrateCalldata = cpmmMigrator.encodeMigrateCalldata({
-    baseForDistribution: BASE_FOR_DISTRIBUTION,
-    baseForLiquidity: BASE_FOR_LIQUIDITY,
+    baseForDistribution: 0n,
+    baseForLiquidity: 0n,
   });
 
-  // ── Build the initializeLaunch instruction ─────────────────────────────────
+  // ── Build, sign, and send ────────────────────────────────────────────────
   // addressLookupTable compresses the 7 constant accounts (tokenProgram,
   // systemProgram, rent, migratorProgram, quoteMint, metadataProgram, config)
   // to 1-byte ALT indices, keeping the transaction within the 1232-byte limit
@@ -231,117 +205,109 @@ async function main() {
   // The cpmmMigratorState account is forwarded as a remaining account so the
   // register_launch CPI can write the launch's graduation parameters.
   console.log('Building launch instruction...');
-  const ixBase = initializer.createInitializeLaunchInstruction(
-    {
-      config,
-      launch,
-      launchAuthority,
-      baseMint,
-      quoteMint: WSOL_MINT,
-      baseVault,
-      quoteVault,
-      payer,
-      authority: payer,
-      migratorProgram: cpmmMigrator.CPMM_MIGRATOR_PROGRAM_ID,
-      tokenProgram: TOKEN_PROGRAM_ADDRESS,
-      systemProgram: SYSTEM_PROGRAM_ADDRESS,
-      rent: SYSVAR_RENT_ADDRESS,
-      metadataAccount,
-      addressLookupTable: initializer.DOPPLER_DEVNET_ALT,
-    },
-    {
-      namespace,
-      launchId,
-      baseDecimals: BASE_DECIMALS,
-      baseTotalSupply: BASE_TOTAL_SUPPLY,
-      baseForDistribution: BASE_FOR_DISTRIBUTION,
-      baseForLiquidity: BASE_FOR_LIQUIDITY,
-      // Opening price: virtualQuote / (baseForCurve + virtualBase)
-      curveVirtualBase: startParams.curveVirtualBase,
-      curveVirtualQuote: startParams.curveVirtualQuote,
-      curveFeeBps: 100, // 1% swap fee during the bonding curve phase
-      curveKind: initializer.CURVE_KIND_XYK,
-      curveParams: new Uint8Array([initializer.CURVE_PARAMS_FORMAT_XYK_V0]),
-      allowBuy: 1,
-      allowSell: 1,
-      sentinelProgram: SYSTEM_PROGRAM_ADDRESS, // no sentinel hook
-      sentinelFlags: 0,
-      sentinelCalldata: new Uint8Array(),
-      migratorProgram: cpmmMigrator.CPMM_MIGRATOR_PROGRAM_ID,
-      migratorInitCalldata,
-      migratorMigrateCalldata,
-      sentinelRemainingAccountsHash: initializer.EMPTY_REMAINING_ACCOUNTS_HASH,
-      // Commits the accounts that must be passed as remaining accounts to
-      // migrate_launch in this order: state, cpmm_config, pool, pool_authority,
-      // pool_vault0, pool_vault1, protocol_position, launch_lp_position,
-      // cpmm_program, admin_base_ata, recipient_ata_0
-      migratorRemainingAccountsHash: initializer.computeRemainingAccountsHash([
-        cpmmMigratorState,
-        CPMM_CONFIG,
-        pool,
-        poolAuthority,
-        poolVault0.address,
-        poolVault1.address,
-        protocolPosition,
-        launchLpPosition,
-        cpmm.CPMM_PROGRAM_ID,
-        payerBaseAta, // admin_base_ata
-        payerBaseAta, // recipient ATA (BASE_FOR_DISTRIBUTION → payer)
-      ]),
-      metadataName: 'TEST',
-      metadataSymbol: 'TEST',
-      metadataUri: 'https://example.com/sample.json',
-    },
-  );
-
-  // Append cpmmMigratorState as remaining account for the register_launch CPI.
-  const ix = {
-    ...ixBase,
-    accounts: [
-      ...(ixBase.accounts ?? []),
-      { address: cpmmMigratorState, role: AccountRole.WRITABLE },
-    ],
-  };
-
-  // ── Build, sign, and send ──────────────────────────────────────────────────
-  console.log('Creating XYK token launch...');
   try {
-    const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
-
-    const txMessage = pipe(
-      createTransactionMessage({ version: 0 }),
-      (msg) => setTransactionMessageFeePayer(payer.address, msg),
-      (msg) =>
-        setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, msg),
-      (msg) => appendTransactionMessageInstructions([ix], msg),
+    const ix = await initializer.createInitializeLaunchInstruction(
+      {
+        config: initializerConfig,
+        launch,
+        launchAuthority,
+        baseMint,
+        quoteMint: WSOL_MINT,
+        baseVault,
+        quoteVault,
+        payer,
+        authority: payer,
+        migratorProgram: cpmmMigrator.CPMM_MIGRATOR_PROGRAM_ID,
+        tokenProgram: TOKEN_PROGRAM_ADDRESS,
+        systemProgram: SYSTEM_PROGRAM_ADDRESS,
+        rent: SYSVAR_RENT_ADDRESS,
+        metadataAccount,
+        addressLookupTable: initializer.DOPPLER_DEVNET_ALT,
+      },
+      {
+        namespace,
+        launchId,
+        baseDecimals: BASE_DECIMALS,
+        baseTotalSupply: BASE_TOTAL_SUPPLY,
+        baseForDistribution: 0n,
+        baseForLiquidity: 0n,
+        // Opening price: virtualQuote / (baseForCurve + virtualBase)
+        curveVirtualBase: start.curveVirtualBase,
+        curveVirtualQuote: start.curveVirtualQuote,
+        curveFeeBps: 200, // 2% swap fee during the bonding curve phase — stays in the quote vault, compounding into the curve
+        curveKind: initializer.CURVE_KIND_XYK,
+        curveParams: new Uint8Array([initializer.CURVE_PARAMS_FORMAT_XYK_V0]),
+        allowBuy: true,
+        allowSell: true,
+        sentinelProgram: initializer.CPMM_SENTINEL_PROGRAM_ID,
+        sentinelFlags: initializer.SF_BEFORE_SWAP,
+        sentinelCalldata: new Uint8Array(),
+        migratorInitCalldata,
+        migratorMigrateCalldata,
+        sentinelRemainingAccountsHash:
+          initializer.EMPTY_REMAINING_ACCOUNTS_HASH,
+        // Commits the accounts that must be passed as remaining accounts to
+        // migrate_launch in this order: state, cpmm_config, pool, pool_authority,
+        // pool_vault0, pool_vault1, protocol_position, launch_lp_position,
+        // cpmm_program, admin_base_ata
+        migratorRemainingAccountsHash: initializer.computeRemainingAccountsHash(
+          [
+            cpmmMigratorState,
+            cpmmConfig,
+            pool,
+            poolAuthority,
+            poolVault0.address,
+            poolVault1.address,
+            protocolPosition,
+            launchLpPosition,
+            cpmm.CPMM_PROGRAM_ID,
+            payerBaseAta, // admin_base_ata (receives any unsold curve tokens)
+          ],
+        ),
+        metadataName: 'TEST',
+        metadataSymbol: 'TEST',
+        metadataUri: 'https://example.com/sample.json',
+      },
     );
 
-    const signedTx = await signTransactionMessageWithSigners(txMessage);
-    const signature = getSignatureFromTransaction(signedTx);
+    const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
 
-    await sendAndConfirm(signedTx, { commitment: 'confirmed' });
+    const transactionMessage = pipe(
+      createTransactionMessage({ version: 0 }),
+      (tx) => setTransactionMessageFeePayerSigner(payer, tx),
+      (tx) => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
+      (tx) => appendTransactionMessageInstructions([ix], tx),
+    );
+
+    const signedTransaction =
+      await signTransactionMessageWithSigners(transactionMessage);
+
+    const sendAndConfirmTransaction = sendAndConfirmTransactionFactory({
+      rpc,
+      rpcSubscriptions,
+    });
+    await sendAndConfirmTransaction(signedTransaction, {
+      commitment: 'confirmed',
+    });
 
     console.log('');
     console.log('Token launch created successfully!');
     console.log('  Launch address:', launch);
     console.log('  Base mint:     ', baseMint.address);
-    console.log('  Transaction:   ', signature);
+    console.log(
+      '  Transaction:   ',
+      getSignatureFromTransaction(signedTransaction),
+    );
 
-    // ── Fetch and verify launch state ──────────────────────────────────────
+    // ── Verify launch state ──────────────────────────────────────
     const launchAccount = await initializer.fetchLaunch(rpc, launch);
     if (launchAccount) {
-      const phaseLabel =
-        launchAccount.phase === initializer.PHASE_TRADING
-          ? 'TRADING'
-          : launchAccount.phase === initializer.PHASE_MIGRATED
-            ? 'MIGRATED'
-            : launchAccount.phase === initializer.PHASE_ABORTED
-              ? 'ABORTED'
-              : String(launchAccount.phase);
-
       console.log('');
       console.log('Launch account verified:');
-      console.log('  Phase:              ', phaseLabel);
+      console.log(
+        '  Phase:              ',
+        initializer.phaseLabel(launchAccount.phase),
+      );
       console.log('  Base mint:          ', launchAccount.baseMint);
       console.log(
         '  Base total supply:  ',
@@ -360,7 +326,7 @@ async function main() {
         launchAccount.quoteDeposited.toString(),
         'lamports',
       );
-      console.log(`  Graduation at:       ${MIN_RAISE_SOL} SOL raised`);
+      console.log(`  Graduation at:       ${MIN_SOL_RAISE} SOL raised`);
 
       if (launchAccount.phase === initializer.PHASE_MIGRATED) {
         console.log('');
@@ -369,7 +335,7 @@ async function main() {
         console.log('');
         console.log(
           'Launch is active. Will graduate once',
-          MIN_RAISE_SOL,
+          MIN_SOL_RAISE,
           'SOL is raised.',
         );
       }

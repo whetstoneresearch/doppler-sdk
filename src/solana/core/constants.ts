@@ -14,13 +14,6 @@ export const CPMM_PROGRAM_ID: Address = address(
 );
 
 /**
- * CPMM sentinel program ID (devnet)
- */
-export const CPMM_SENTINEL_PROGRAM_ID: Address = address(
-  '2vJ1c62knEwZbxp3XdHB4RSmCfz55pA6tRkCho63gW7u',
-);
-
-/**
  * Metaplex Token Metadata Program ID
  */
 export const TOKEN_METADATA_PROGRAM_ID: Address = address(

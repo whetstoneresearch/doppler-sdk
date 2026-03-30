@@ -2,6 +2,8 @@
 export {
   INITIALIZER_PROGRAM_ID,
   BPF_LOADER_UPGRADEABLE_PROGRAM_ID,
+  CPMM_SENTINEL_PROGRAM_ID,
+  PREDICTION_SENTINEL_PROGRAM_ID,
   SEED_CONFIG,
   SEED_LAUNCH,
   SEED_LAUNCH_AUTHORITY,
@@ -89,8 +91,8 @@ export {
   type PreviewMigrationResult,
 } from './instructions/index.js';
 
-// Hash helpers
-export { computeRemainingAccountsHash } from './hash.js';
+// Helpers
+export { computeRemainingAccountsHash, phaseLabel } from './helpers.js';
 
 // Client helpers
 export {

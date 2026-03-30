@@ -13,6 +13,26 @@ export const BPF_LOADER_UPGRADEABLE_PROGRAM_ID: Address = address(
   'BPFLoaderUpgradeab1e11111111111111111111111',
 );
 
+/**
+ * Sentinel program for CPMM-migrated launches.
+ * Invoked during bonding curve swaps and previews as a pre/post-swap hook.
+ *
+ * Source of truth: programs/cpmm_sentinel/src/lib.rs
+ */
+export const CPMM_SENTINEL_PROGRAM_ID: Address = address(
+  '2vJ1c62knEwZbxp3XdHB4RSmCfz55pA6tRkCho63gW7u',
+);
+
+/**
+ * Sentinel program for prediction market launches.
+ * Invoked during bonding curve swaps and previews as a pre/post-swap hook.
+ *
+ * Source of truth: programs/prediction_sentinel/src/lib.rs
+ */
+export const PREDICTION_SENTINEL_PROGRAM_ID: Address = address(
+  '7QcQDANJVC17Jgc6KjjeagSkm2zAphgHVPK5agJzyihB',
+);
+
 // ============================================================================
 // PDA Seeds (must match programs/initializer/src/constants.rs)
 // ============================================================================
