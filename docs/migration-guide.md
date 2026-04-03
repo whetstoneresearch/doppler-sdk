@@ -1,6 +1,6 @@
 # Migration Guide
 
-This guide helps you migrate from `doppler-v3-sdk` or `doppler-v4-sdk` to the unified `@whetstone-research/doppler-sdk` using the builder pattern.
+This guide helps you migrate from `doppler-v3-sdk` or `doppler-v4-sdk` to the EVM entrypoint of `@whetstone-research/doppler-sdk` using the builder pattern.
 
 ## Overview of Changes
 
@@ -14,7 +14,7 @@ The new SDK consolidates both V3 and V4 functionality into a single package with
 
 ## Installation
 
-Remove the old packages and install the new unified SDK:
+Remove the old packages and install the new SDK package:
 
 ```bash
 # Remove old packages
@@ -50,7 +50,7 @@ const factory = new ReadWriteFactory(signer, chainId);
 
 ### After (Unified SDK)
 ```typescript
-import { DopplerSDK } from '@whetstone-research/doppler-sdk';
+import { DopplerSDK } from '@whetstone-research/doppler-sdk/evm';
 import { createPublicClient, createWalletClient, http } from 'viem';
 import { base } from 'viem/chains';
 import { privateKeyToAccount } from 'viem/accounts';
@@ -115,7 +115,7 @@ const { poolAddress, tokenAddress } = await factory.create({
 
 #### After (Builder pattern)
 ```typescript
-import { StaticAuctionBuilder } from '@whetstone-research/doppler-sdk'
+import { StaticAuctionBuilder } from '@whetstone-research/doppler-sdk/evm'
 
 const params = new StaticAuctionBuilder()
   .tokenConfig({ name: 'My Token', symbol: 'MTK', tokenURI: 'https://example.com/token' })
@@ -181,7 +181,7 @@ const { hookAddress, tokenAddress } = await factory.create({
 
 #### After (Builder pattern)
 ```typescript
-import { DynamicAuctionBuilder, DAY_SECONDS } from '@whetstone-research/doppler-sdk'
+import { DynamicAuctionBuilder, DAY_SECONDS } from '@whetstone-research/doppler-sdk/evm'
 
 const params = new DynamicAuctionBuilder()
   .tokenConfig({ name: 'My Token', symbol: 'MTK', tokenURI: 'https://example.com/token' })
@@ -241,7 +241,7 @@ const balance = await token.balanceOf(address);
 
 ### After (Unified SDK)
 ```typescript
-import { Derc20 } from '@whetstone-research/doppler-sdk';
+import { Derc20 } from '@whetstone-research/doppler-sdk/evm';
 
 const token = new Derc20(publicClient, walletClient, tokenAddress);
 const balance = await token.getBalanceOf(address);

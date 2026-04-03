@@ -320,7 +320,7 @@ const { tokenAddress, poolId } = await sdk.factory.createMulticurve(params)
 
 Preset helper usage:
 ```ts
-import { MulticurveBuilder, FEE_TIERS } from '@whetstone-research/doppler-sdk'
+import { MulticurveBuilder, FEE_TIERS } from '@whetstone-research/doppler-sdk/evm'
 import { parseEther } from 'viem'
 
 const presetParams = new MulticurveBuilder(chainId)
@@ -448,7 +448,7 @@ Phase 2 bid management (position manager):
 - Place/withdraw bids as Uniswap V4 liquidity positions. Use simulation to learn the required token deltas:
 
 ```ts
-import { OpeningAuctionPositionManager } from '@whetstone-research/doppler-sdk'
+import { OpeningAuctionPositionManager } from '@whetstone-research/doppler-sdk/evm'
 import { zeroHash } from 'viem'
 
 const lifecycle = await sdk.getOpeningAuctionLifecycle(initializerAddress)

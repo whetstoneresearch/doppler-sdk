@@ -118,7 +118,7 @@ const txHash = await factory.create(createParams);
 ### Unified SDK (Recommended: Builder Pattern)
 ```typescript
 import { parseEther } from 'viem'
-import { DynamicAuctionBuilder } from '@whetstone-research/doppler-sdk'
+import { DynamicAuctionBuilder } from '@whetstone-research/doppler-sdk/evm'
 
 // Build params with a fluent, type-safe builder
 const params = new DynamicAuctionBuilder()
@@ -440,7 +440,7 @@ const txHash = await factory.create(createParams);
 
 ### After (Unified SDK)
 ```typescript
-import { DopplerSDK, DynamicAuctionBuilder } from '@whetstone-research/doppler-sdk'
+import { DopplerSDK, DynamicAuctionBuilder } from '@whetstone-research/doppler-sdk/evm'
 import { parseEther } from 'viem'
 
 // Setup (simpler)

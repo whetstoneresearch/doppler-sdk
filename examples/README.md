@@ -148,6 +148,9 @@ npm install doppler-router
 npm install graphql-request
 ```
 
+Use the EVM entrypoint when importing examples from the published package:
+`@whetstone-research/doppler-sdk/evm`.
+
 2. Set environment variables (use your preferred method):
 
 ```bash
@@ -166,7 +169,7 @@ npx tsx examples/static-auction-v2.ts
 ### SDK Initialization
 
 ```typescript
-import { DopplerSDK } from 'doppler-sdk';
+import { DopplerSDK } from '@whetstone-research/doppler-sdk/evm';
 import { createPublicClient, createWalletClient, http } from 'viem';
 import { baseSepolia } from 'viem/chains';
 

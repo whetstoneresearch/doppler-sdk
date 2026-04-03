@@ -10,16 +10,19 @@
   },
   "exports": {
     "./evm": {
+      "types": "./dist/evm/index.d.ts",
       "import": "./dist/evm/index.js",
-      "types": "./dist/evm/index.d.ts"
+      "require": "./dist/evm/index.cjs"
     },
     "./solana": {
+      "types": "./dist/solana/index.d.ts",
       "import": "./dist/solana/index.js",
-      "types": "./dist/solana/index.d.ts"
+      "require": "./dist/solana/index.cjs"
     },
     "./solana/react": {
+      "types": "./dist/solana/react/index.d.ts",
       "import": "./dist/solana/react/index.js",
-      "types": "./dist/solana/react/index.d.ts"
+      "require": "./dist/solana/react/index.cjs"
     }
   },
   "files": [

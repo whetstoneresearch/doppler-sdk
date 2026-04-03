@@ -3,7 +3,7 @@
 This gist shows how to use the new builder methods to override module addresses and how to call the encode helpers to obtain `CreateParams` objects for both static (V3) and dynamic (V4) auctions. These `CreateParams` match what the old v3/v4 SDKs returned from their respective `encode*` functions.
 
 ```ts
-import { DopplerSDK, StaticAuctionBuilder, DynamicAuctionBuilder, MulticurveBuilder } from '@whetstone-research/doppler-sdk'
+import { DopplerSDK, StaticAuctionBuilder, DynamicAuctionBuilder, MulticurveBuilder } from '@whetstone-research/doppler-sdk/evm'
 import { createPublicClient, http, parseEther } from 'viem'
 import { base } from 'viem/chains'
 

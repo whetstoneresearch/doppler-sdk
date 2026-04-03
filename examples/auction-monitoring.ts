@@ -9,7 +9,7 @@
 import './env';
 
 // UNCOMMENT IF RUNNING LOCALLY
-// import { DopplerSDK } from '@whetstone-research/doppler-sdk';
+// import { DopplerSDK } from '@whetstone-research/doppler-sdk/evm';
 
 import { DopplerSDK } from '../src/evm';
 import { http, formatEther, type Address, createPublicClient } from 'viem';
