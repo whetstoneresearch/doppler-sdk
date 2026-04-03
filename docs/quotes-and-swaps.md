@@ -1,6 +1,6 @@
-# Quotes and Swaps (Unified SDK)
+# Quotes and Swaps (EVM SDK)
 
-This guide shows how to get price quotes and execute swaps using the unified `@whetstone-research/doppler-sdk` across Uniswap V2, V3, and V4 (including Doppler dynamic auctions).
+This guide shows how to get price quotes and execute swaps using the EVM entrypoint of `@whetstone-research/doppler-sdk` across Uniswap V2, V3, and V4 (including Doppler dynamic auctions).
 
 - Quoting uses the SDK `Quoter` for V2/V3/V4.
 - Executing swaps uses the Uniswap Universal Router. For convenience, we show examples with the `doppler-router` helpers used in the miniapp.
@@ -8,7 +8,7 @@ This guide shows how to get price quotes and execute swaps using the unified `@w
 ## Setup
 
 ```ts
-import { DopplerSDK, Quoter, getAddresses, DYNAMIC_FEE_FLAG } from '@whetstone-research/doppler-sdk'
+import { DopplerSDK, Quoter, getAddresses, DYNAMIC_FEE_FLAG } from '@whetstone-research/doppler-sdk/evm'
 import { createPublicClient, createWalletClient, http, parseUnits } from 'viem'
 import { base } from 'viem/chains'
 

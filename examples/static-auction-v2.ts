@@ -9,7 +9,7 @@
 import './env';
 
 // UNCOMMENT IF RUNNING LOCALLY
-// import { DopplerSDK, StaticAuctionBuilder } from '@whetstone-research/doppler-sdk';
+// import { DopplerSDK, StaticAuctionBuilder } from '@whetstone-research/doppler-sdk/evm';
 
 import { DopplerSDK } from '../src/evm';
 import {

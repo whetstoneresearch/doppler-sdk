@@ -6,7 +6,7 @@ export default defineConfig({
     'solana/index': 'src/solana/index.ts',
     'solana/react/index': 'src/solana/react/index.ts',
   },
-  format: ['esm'],
+  format: ['esm', 'cjs'],
   dts: true,
   splitting: true,
   clean: true,

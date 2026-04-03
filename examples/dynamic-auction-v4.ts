@@ -9,7 +9,7 @@
 import './env';
 
 // UNCOMMENT IF RUNNING LOCALLY
-// import { DopplerSDK, DynamicAuctionBuilder } from '@whetstone-research/doppler-sdk';
+// import { DopplerSDK, DynamicAuctionBuilder } from '@whetstone-research/doppler-sdk/evm';
 
 import { DAY_SECONDS, DopplerSDK } from '../src/evm';
 

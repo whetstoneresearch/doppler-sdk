@@ -9,7 +9,7 @@
 import './env';
 
 // UNCOMMENT IF RUNNING LOCALLY
-// import { Derc20, Eth } from '@whetstone-research/doppler-sdk';
+// import { Derc20, Eth } from '@whetstone-research/doppler-sdk/evm';
 
 import { Derc20, Eth } from '../src/evm';
 import {

@@ -26,10 +26,14 @@ yarn add @whetstone-research/doppler-sdk viem
 pnpm add @whetstone-research/doppler-sdk viem
 ```
 
+Import EVM APIs from `@whetstone-research/doppler-sdk/evm`. Solana APIs live under
+`@whetstone-research/doppler-sdk/solana` and React bindings under
+`@whetstone-research/doppler-sdk/solana/react`.
+
 ## Quick Start
 
 ```typescript
-import { DopplerSDK } from '@whetstone-research/doppler-sdk';
+import { DopplerSDK } from '@whetstone-research/doppler-sdk/evm';
 import { createPublicClient, createWalletClient, http } from 'viem';
 import { base } from 'viem/chains';
 
@@ -60,7 +64,7 @@ const sdk = new DopplerSDK({
 Static auctions use Uniswap V3 pools with concentrated liquidity in a fixed price range. They're ideal for simple, predictable price discovery.
 
 ```typescript
-import { StaticAuctionBuilder } from '@whetstone-research/doppler-sdk';
+import { StaticAuctionBuilder } from '@whetstone-research/doppler-sdk/evm';
 
 const params = new StaticAuctionBuilder()
   .tokenConfig({
@@ -105,7 +109,7 @@ import {
   StaticAuctionBuilder,
   WAD,
   getAirlockOwner,
-} from '@whetstone-research/doppler-sdk';
+} from '@whetstone-research/doppler-sdk/evm';
 import { parseEther } from 'viem';
 
 // Get the protocol owner (required beneficiary with min 5%)
@@ -164,7 +168,7 @@ Dynamic auctions use Uniswap V4 hooks to implement gradual Dutch auctions where 
 import {
   DynamicAuctionBuilder,
   DAY_SECONDS,
-} from '@whetstone-research/doppler-sdk';
+} from '@whetstone-research/doppler-sdk/evm';
 
 const params = new DynamicAuctionBuilder()
   .tokenConfig({
@@ -299,7 +303,7 @@ Multicurve auctions use a Uniswap V4-style initializer that seeds liquidity acro
 **Standard Multicurve with Migration:**
 
 ```typescript
-import { MulticurveBuilder } from '@whetstone-research/doppler-sdk';
+import { MulticurveBuilder } from '@whetstone-research/doppler-sdk/evm';
 import { parseEther } from 'viem';
 import { base } from 'viem/chains';
 
@@ -346,7 +350,7 @@ console.log('Token address:', result.tokenAddress);
 **Market Cap Presets (Low / Medium / High):**
 
 ```typescript
-import { MulticurveBuilder, FEE_TIERS } from '@whetstone-research/doppler-sdk';
+import { MulticurveBuilder, FEE_TIERS } from '@whetstone-research/doppler-sdk/evm';
 import { parseEther } from 'viem';
 import { base } from 'viem/chains';
 
@@ -387,7 +391,7 @@ Pass `presets` to pick a subset (e.g. `['medium', 'high']`) or provide `override
 **Scheduled Multicurve Launch:**
 
 ```typescript
-import { MulticurveBuilder } from '@whetstone-research/doppler-sdk';
+import { MulticurveBuilder } from '@whetstone-research/doppler-sdk/evm';
 import { parseEther } from 'viem';
 import { base } from 'viem/chains';
 
@@ -438,7 +442,7 @@ Ensure the target chain has the scheduled multicurve initializer whitelisted. If
 **Decay Multicurve Launch (Dynamic Fee):**
 
 ```typescript
-import { MulticurveBuilder } from '@whetstone-research/doppler-sdk';
+import { MulticurveBuilder } from '@whetstone-research/doppler-sdk/evm';
 import { parseEther } from 'viem';
 import { baseSepolia } from 'viem/chains';
 
@@ -495,7 +499,7 @@ For decay pools, `pool.fee` is always the terminal fee (`endFee`) of the schedul
 When you want fee revenue to flow to specific addresses without migrating liquidity after the auction, use lockable beneficiaries with NoOp migration:
 
 ```typescript
-import { WAD } from '@whetstone-research/doppler-sdk';
+import { WAD } from '@whetstone-research/doppler-sdk/evm';
 
 // Define beneficiaries with shares that sum to WAD (1e18 = 100%)
 // IMPORTANT: Protocol owner must be included with at least 5% shares
@@ -575,7 +579,7 @@ Prefer using the builders to construct `CreateStaticAuctionParams` and `CreateDy
 import {
   StaticAuctionBuilder,
   DynamicAuctionBuilder,
-} from '@whetstone-research/doppler-sdk';
+} from '@whetstone-research/doppler-sdk/evm';
 import { parseEther } from 'viem';
 
 // Dynamic auction via builder
@@ -807,7 +811,7 @@ await token.release();
 Alternatively, you can instantiate directly if needed:
 
 ```typescript
-import { Derc20 } from '@whetstone-research/doppler-sdk';
+import { Derc20 } from '@whetstone-research/doppler-sdk/evm';
 const tokenDirect = new Derc20(publicClient, walletClient, tokenAddress);
 ```
 
@@ -818,7 +822,7 @@ DERC20 extends OpenZeppelin's ERC20Votes. Voting power is tracked via checkpoint
 Basics:
 
 ```ts
-import { Derc20 } from '@whetstone-research/doppler-sdk';
+import { Derc20 } from '@whetstone-research/doppler-sdk/evm';
 
 const token = sdk.getDerc20(tokenAddress);
 
@@ -924,7 +928,7 @@ Notes
 The SDK also provides an ETH wrapper with ERC20-like interface:
 
 ```typescript
-import { Eth } from '@whetstone-research/doppler-sdk';
+import { Eth } from '@whetstone-research/doppler-sdk/evm';
 
 const eth = new Eth(publicClient, walletClient);
 const balance = await eth.getBalanceOf(address);
@@ -1138,7 +1142,7 @@ import {
   DopplerSDK,
   createAirlockBeneficiary,
   getAirlockOwner,
-} from '@whetstone-research/doppler-sdk';
+} from '@whetstone-research/doppler-sdk/evm';
 import { parseEther } from 'viem';
 
 const sdk = new DopplerSDK({ publicClient, chainId });
@@ -1177,7 +1181,7 @@ import {
   isSupportedChainId,
   type SupportedChainId,
   type ChainAddresses,
-} from '@whetstone-research/doppler-sdk';
+} from '@whetstone-research/doppler-sdk/evm';
 
 // Validate and narrow a chain ID
 function ensureSupported(id: number): SupportedChainId {
@@ -1228,7 +1232,7 @@ import {
   StaticAuctionBuilder,
   mineTokenAddress,
   getAddresses,
-} from '@whetstone-research/doppler-sdk';
+} from '@whetstone-research/doppler-sdk/evm';
 import { parseEther } from 'viem';
 import { base } from 'viem/chains';
 
@@ -1296,7 +1300,7 @@ import {
   getAddresses,
   DopplerBytecode,
   DAY_SECONDS,
-} from '@whetstone-research/doppler-sdk';
+} from '@whetstone-research/doppler-sdk/evm';
 import { parseEther, keccak256, encodePacked, encodeAbiParameters } from 'viem';
 import { base } from 'viem/chains';
 
@@ -1391,7 +1395,7 @@ import {
   MulticurveBuilder,
   mineTokenAddress,
   getAddresses,
-} from '@whetstone-research/doppler-sdk';
+} from '@whetstone-research/doppler-sdk/evm';
 import { parseEther } from 'viem';
 import { base } from 'viem/chains';
 
@@ -1521,7 +1525,7 @@ import type {
   PoolInfo,
   HookInfo,
   VestingConfig,
-} from '@whetstone-research/doppler-sdk';
+} from '@whetstone-research/doppler-sdk/evm';
 ```
 
 ## Development
