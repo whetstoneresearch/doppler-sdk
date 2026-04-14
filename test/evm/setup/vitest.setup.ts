@@ -12,7 +12,7 @@ import { expect } from 'vitest'
 import { isAddress, isHash } from 'viem'
 
 // Load .env files from project root (check multiple common names)
-const projectRoot = resolve(__dirname, '../..')
+const projectRoot = resolve(__dirname, '../../..')
 const envFiles = ['.env.local', '.env', '.env.development']
 for (const file of envFiles) {
   const envPath = resolve(projectRoot, file)

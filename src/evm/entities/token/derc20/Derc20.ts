@@ -8,14 +8,14 @@ import { SupportedPublicClient } from '../../../types';
  * and minting-related state information.
  */
 export class Derc20 {
-  private publicClient: SupportedPublicClient;
-  private walletClient?: WalletClient;
-  private address: Address;
-  private get rpc(): PublicClient {
+  protected publicClient: SupportedPublicClient;
+  protected walletClient?: WalletClient;
+  protected address: Address;
+  protected get rpc(): PublicClient {
     return this.publicClient as PublicClient;
   }
 
-  private static splitSignature(signature: `0x${string}`): {
+  protected static splitSignature(signature: `0x${string}`): {
     v: number;
     r: `0x${string}`;
     s: `0x${string}`;

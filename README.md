@@ -98,6 +98,8 @@ console.log('Pool address:', result.poolAddress);
 console.log('Token address:', result.tokenAddress);
 ```
 
+If you set `cliffDuration > 0`, the SDK now automatically uses the DERC20 V2 factory and exposes schedule-aware token reads via `sdk.getDerc20V2(tokenAddress)`.
+
 > **Tick spacing reminder:** When you provide ticks manually via `poolByTicks`, make sure both `startTick` and `endTick` are exact multiples of the fee tier's tick spacing (100→1, 500→10, 3000→60, 10000→200). The SDK now validates this locally and will fail fast if the ticks are misaligned.
 
 ### Static Auction with Lockable Beneficiaries (V3)

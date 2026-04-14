@@ -16,7 +16,7 @@ import {
 
 const DEFAULT_MAX_ITERATIONS = 1_000_000;
 
-export type TokenVariant = 'standard' | 'doppler404';
+export type TokenVariant = 'standard' | 'standard-v2' | 'doppler404';
 
 // TokenFactory80 has the same deterministic CREATE2 address across all chains where it is deployed.
 const TOKEN_FACTORY_80_ADDRESS =
@@ -48,6 +48,7 @@ export interface TokenAddressMiningParams {
   tokenData: Hex;
   tokenVariant?: TokenVariant;
   customBytecode?: Hex;
+  v2Implementation?: Address;
   maxIterations?: number;
   startSalt?: bigint;
   hook?: TokenAddressHookConfig;
@@ -70,12 +71,32 @@ const STANDARD_TOKEN_DATA_ABI = [
   { type: 'string' },
 ] as const;
 
+const STANDARD_TOKEN_V2_DATA_ABI = [
+  { type: 'string' },
+  { type: 'string' },
+  { type: 'uint256' },
+  {
+    type: 'tuple[]',
+    components: [
+      { type: 'uint64', name: 'cliff' },
+      { type: 'uint64', name: 'duration' },
+    ],
+  },
+  { type: 'address[]' },
+  { type: 'uint256[]' },
+  { type: 'uint256[]' },
+  { type: 'string' },
+] as const;
+
 const DOPPLER404_TOKEN_DATA_ABI = [
   { type: 'string' },
   { type: 'string' },
   { type: 'string' },
   { type: 'uint256' },
 ] as const;
+
+const DEFAULT_DERC20_V2_IMPLEMENTATION =
+  '0x4BBfed1c27CDE12eF6638251D81ab4e3be7556b7' as const;
 
 function normalizeHexFragment(
   value: string,
@@ -167,6 +188,14 @@ function computeCreate2AddressFast(buffer: Uint8Array): string {
   return '0x' + hash.slice(-40).toLowerCase();
 }
 
+function computeSoladyCloneInitCodeHash(implementation: Address): Hash {
+  return keccak256(
+    `0x602c3d8160093d39f33d3d3d3d363d3d37363d73${implementation.slice(
+      2,
+    )}5af43d3d93803e602a57fd5bf3`,
+  ) as Hash;
+}
+
 function buildTokenInitHash(params: {
   variant: TokenVariant;
   tokenFactory: Address;
@@ -175,6 +204,7 @@ function buildTokenInitHash(params: {
   recipient: Address;
   owner: Address;
   customBytecode?: Hex;
+  v2Implementation?: Address;
 }): Hash {
   const {
     variant,
@@ -184,6 +214,7 @@ function buildTokenInitHash(params: {
     recipient,
     owner,
     customBytecode,
+    v2Implementation,
   } = params;
 
   if (variant === 'doppler404') {
@@ -210,6 +241,13 @@ function buildTokenInitHash(params: {
         [customBytecode ?? (DopplerDN404Bytecode as Hex), initHashData],
       ),
     ) as Hash;
+  }
+
+  if (variant === 'standard-v2') {
+    decodeAbiParameters(STANDARD_TOKEN_V2_DATA_ABI, tokenData);
+    return computeSoladyCloneInitCodeHash(
+      v2Implementation ?? DEFAULT_DERC20_V2_IMPLEMENTATION,
+    );
   }
 
   const [
@@ -320,6 +358,7 @@ export function mineTokenAddress(
     recipient,
     owner,
     customBytecode,
+    v2Implementation: params.v2Implementation,
   });
 
   const hookConfig = hook

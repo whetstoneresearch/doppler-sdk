@@ -24,6 +24,8 @@ export interface ChainAddresses {
   // Core contracts
   airlock: Address;
   tokenFactory: Address;
+  derc20V2Factory?: Address;
+  derc20V2Implementation?: Address;
 
   // Static auction contracts (V3)
   v3Initializer: Address;
@@ -110,6 +112,14 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       .Airlock as Address,
     tokenFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MAINNET]
       .CloneERC20Factory as Address,
+    derc20V2Factory: getGeneratedAddress(
+      CHAIN_IDS.MAINNET,
+      'CloneDERC20VotesV2Factory',
+    ),
+    derc20V2Implementation: getGeneratedAddress(
+      CHAIN_IDS.MAINNET,
+      'CloneDERC20VotesV2',
+    ),
     v3Initializer: ZERO_ADDRESS,
     v3Quoter: ZERO_ADDRESS,
     v4Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MAINNET]
@@ -156,6 +166,14 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       .Airlock as Address,
     tokenFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ETH_SEPOLIA]
       .CloneERC20Factory as Address,
+    derc20V2Factory: getGeneratedAddress(
+      CHAIN_IDS.ETH_SEPOLIA,
+      'CloneDERC20VotesV2Factory',
+    ),
+    derc20V2Implementation: getGeneratedAddress(
+      CHAIN_IDS.ETH_SEPOLIA,
+      'CloneDERC20VotesV2',
+    ),
     v3Initializer: ZERO_ADDRESS,
     v3Quoter: ZERO_ADDRESS,
     v4Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ETH_SEPOLIA]
@@ -200,6 +218,14 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     airlock: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE].Airlock as Address,
     tokenFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
       .TokenFactory80 as Address,
+    derc20V2Factory: getGeneratedAddress(
+      CHAIN_IDS.BASE,
+      'CloneDERC20VotesV2Factory',
+    ),
+    derc20V2Implementation: getGeneratedAddress(
+      CHAIN_IDS.BASE,
+      'CloneDERC20VotesV2',
+    ),
     v3Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
       .UniswapV3Initializer as Address,
     v3Quoter: '0x3d4e44Eb1374240CE5F1B871ab261CD16335B76a' as Address,
@@ -256,6 +282,14 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       .Airlock as Address,
     tokenFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
       .TokenFactory80 as Address,
+    derc20V2Factory: getGeneratedAddress(
+      CHAIN_IDS.BASE_SEPOLIA,
+      'CloneDERC20VotesV2Factory',
+    ),
+    derc20V2Implementation: getGeneratedAddress(
+      CHAIN_IDS.BASE_SEPOLIA,
+      'CloneDERC20VotesV2',
+    ),
     doppler404Factory: '0xdd8cea2890f1b3498436f19ec8da8fecc2cb7af7' as Address,
     v3Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
       .UniswapV3Initializer as Address,
@@ -322,6 +356,14 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     airlock: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.INK].Airlock as Address,
     tokenFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.INK]
       .TokenFactory as Address,
+    derc20V2Factory: getGeneratedAddress(
+      CHAIN_IDS.INK,
+      'CloneDERC20VotesV2Factory',
+    ),
+    derc20V2Implementation: getGeneratedAddress(
+      CHAIN_IDS.INK,
+      'CloneDERC20VotesV2',
+    ),
     v3Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.INK]
       .UniswapV3Initializer as Address,
     v3Quoter: '0x96b572D2d880cf2Fa2563651BD23ADE6f5516652' as Address,
@@ -349,6 +391,14 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       .Airlock as Address,
     tokenFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.UNICHAIN]
       .TokenFactory as Address,
+    derc20V2Factory: getGeneratedAddress(
+      CHAIN_IDS.UNICHAIN,
+      'CloneDERC20VotesV2Factory',
+    ),
+    derc20V2Implementation: getGeneratedAddress(
+      CHAIN_IDS.UNICHAIN,
+      'CloneDERC20VotesV2',
+    ),
     v3Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.UNICHAIN]
       .UniswapV3Initializer as Address,
     v3Quoter: '0x385A5cf5F83e99f7BB2852b6A19C3538b9FA7658' as Address,
@@ -379,6 +429,14 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     airlock: '0x651ab94B4777e2e4cdf96082d90C65bd947b73A4' as Address,
     tokenFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.UNICHAIN_SEPOLIA]
       .TokenFactory as Address,
+    derc20V2Factory: getGeneratedAddress(
+      CHAIN_IDS.UNICHAIN_SEPOLIA,
+      'CloneDERC20VotesV2Factory',
+    ),
+    derc20V2Implementation: getGeneratedAddress(
+      CHAIN_IDS.UNICHAIN_SEPOLIA,
+      'CloneDERC20VotesV2',
+    ),
     v3Initializer: '0x7Fb9a622186B4660A5988C223ebb9d3690dD5007' as Address,
     v3Quoter: '0x6Dd37329A1A225a6Fca658265D460423DCafBF89' as Address,
     v4Initializer: '0x992375478626E67F4e639d3298EbCAaE51C3dF0b' as Address,
@@ -408,6 +466,14 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       .Airlock as Address,
     tokenFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_TESTNET]
       .TokenFactory80 as Address,
+    derc20V2Factory: getGeneratedAddress(
+      CHAIN_IDS.MONAD_TESTNET,
+      'CloneDERC20VotesV2Factory',
+    ),
+    derc20V2Implementation: getGeneratedAddress(
+      CHAIN_IDS.MONAD_TESTNET,
+      'CloneDERC20VotesV2',
+    ),
     v3Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_TESTNET]
       .UniswapV3Initializer as Address,
     v3Quoter: ZERO_ADDRESS,
@@ -443,6 +509,14 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       .Airlock as Address,
     tokenFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_MAINNET]
       .TokenFactory80 as Address,
+    derc20V2Factory: getGeneratedAddress(
+      CHAIN_IDS.MONAD_MAINNET,
+      'CloneDERC20VotesV2Factory',
+    ),
+    derc20V2Implementation: getGeneratedAddress(
+      CHAIN_IDS.MONAD_MAINNET,
+      'CloneDERC20VotesV2',
+    ),
     v3Initializer: ZERO_ADDRESS,
     v3Quoter: '0x66266174564170519409d8853898f065c719536b' as Address,
     v4Initializer: ZERO_ADDRESS,

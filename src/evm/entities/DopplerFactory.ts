@@ -24,6 +24,8 @@ import type {
   TokenConfig,
   Doppler404TokenConfig,
   StandardTokenConfig,
+  SaleConfig,
+  VestingConfig,
   SupportedChainId,
   CreateParams,
   MulticurveBundleExactInResult,
@@ -133,6 +135,47 @@ type NormalizedRehypeHookConfig = {
   farTick?: number;
 };
 
+type StandardTokenFactoryMode = 'legacy' | 'v2';
+
+type LegacyStandardTokenFactoryData = {
+  kind: 'legacy';
+  name: string;
+  symbol: string;
+  initialSupply: bigint;
+  airlock: Address;
+  yearlyMintRate: bigint;
+  vestingDuration: bigint;
+  recipients: Address[];
+  amounts: bigint[];
+  tokenURI: string;
+};
+
+type V2VestingSchedule = {
+  cliff: bigint;
+  duration: bigint;
+};
+
+type V2StandardTokenFactoryData = {
+  kind: 'v2';
+  name: string;
+  symbol: string;
+  initialSupply: bigint;
+  airlock: Address;
+  yearlyMintRate: bigint;
+  schedules: V2VestingSchedule[];
+  beneficiaries: Address[];
+  scheduleIds: bigint[];
+  amounts: bigint[];
+  tokenURI: string;
+  implementation: Address;
+};
+
+type StandardTokenFactoryData =
+  | LegacyStandardTokenFactoryData
+  | V2StandardTokenFactoryData;
+
+const DERC20_V2_MIN_VESTING_DURATION = 24 * 60 * 60;
+
 export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
   private publicClient: SupportedPublicClient;
   private walletClient?: WalletClient;
@@ -149,6 +192,261 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     this.publicClient = publicClient;
     this.walletClient = walletClient;
     this.chainId = chainId;
+  }
+
+  private usesDerc20V2Vesting(vesting?: VestingConfig): boolean {
+    return (vesting?.cliffDuration ?? 0) > 0;
+  }
+
+  private resolveVestingAllocations(args: {
+    sale: SaleConfig;
+    vesting?: VestingConfig;
+    userAddress: Address;
+  }): { recipients: Address[]; amounts: bigint[] } {
+    if (!args.vesting) {
+      return { recipients: [], amounts: [] };
+    }
+
+    if (args.vesting.recipients && args.vesting.amounts) {
+      return {
+        recipients: args.vesting.recipients,
+        amounts: args.vesting.amounts,
+      };
+    }
+
+    return {
+      recipients: [args.userAddress],
+      amounts: [args.sale.initialSupply - args.sale.numTokensToSell],
+    };
+  }
+
+  private resolveStandardTokenFactoryMode(args: {
+    vesting?: VestingConfig;
+    tokenFactory: Address;
+    addresses: ReturnType<typeof getAddresses>;
+  }): StandardTokenFactoryMode {
+    if (this.usesDerc20V2Vesting(args.vesting)) {
+      return 'v2';
+    }
+
+    const v2Factory = args.addresses.derc20V2Factory;
+    if (
+      v2Factory &&
+      args.tokenFactory.toLowerCase() === v2Factory.toLowerCase()
+    ) {
+      return 'v2';
+    }
+
+    return 'legacy';
+  }
+
+  private assertStandardTokenFactoryCompatibility(args: {
+    token: TokenConfig;
+    vesting?: VestingConfig;
+    tokenFactory: Address;
+    addresses: ReturnType<typeof getAddresses>;
+  }): void {
+    if (
+      this.isDoppler404Token(args.token) ||
+      !this.usesDerc20V2Vesting(args.vesting)
+    ) {
+      return;
+    }
+
+    const v2Factory = args.addresses.derc20V2Factory;
+    if (!v2Factory || v2Factory === ZERO_ADDRESS) {
+      throw new Error(
+        'Cliff vesting requires the DERC20 V2 factory, but no V2 factory is configured for this chain.',
+      );
+    }
+
+    if (args.tokenFactory.toLowerCase() !== v2Factory.toLowerCase()) {
+      throw new Error(
+        'Cliff vesting requires the DERC20 V2 factory. Remove the tokenFactory override or point it at the chain DERC20 V2 factory.',
+      );
+    }
+  }
+
+  private buildStandardTokenFactoryData(args: {
+    token: StandardTokenConfig;
+    sale: SaleConfig;
+    vesting?: VestingConfig;
+    userAddress: Address;
+    airlock: Address;
+    tokenFactory: Address;
+    addresses: ReturnType<typeof getAddresses>;
+  }): StandardTokenFactoryData {
+    const { recipients, amounts } = this.resolveVestingAllocations(args);
+    const yearlyMintRate =
+      args.token.yearlyMintRate ?? DEFAULT_V4_YEARLY_MINT_RATE;
+    const mode = this.resolveStandardTokenFactoryMode({
+      vesting: args.vesting,
+      tokenFactory: args.tokenFactory,
+      addresses: args.addresses,
+    });
+
+    if (mode === 'v2') {
+      const implementation = args.addresses.derc20V2Implementation;
+      if (!implementation || implementation === ZERO_ADDRESS) {
+        throw new Error(
+          'DERC20 V2 implementation address not configured for this chain.',
+        );
+      }
+
+      const schedules =
+        args.vesting === undefined
+          ? []
+          : [
+              {
+                cliff: BigInt(args.vesting.cliffDuration ?? 0),
+                duration: BigInt(args.vesting.duration ?? 0),
+              },
+            ];
+
+      return {
+        kind: 'v2',
+        name: args.token.name,
+        symbol: args.token.symbol,
+        initialSupply: args.sale.initialSupply,
+        airlock: args.airlock,
+        yearlyMintRate,
+        schedules,
+        beneficiaries: recipients,
+        scheduleIds: recipients.map(() => 0n),
+        amounts,
+        tokenURI: args.token.tokenURI,
+        implementation,
+      };
+    }
+
+    return {
+      kind: 'legacy',
+      name: args.token.name,
+      symbol: args.token.symbol,
+      initialSupply: args.sale.initialSupply,
+      airlock: args.airlock,
+      yearlyMintRate,
+      vestingDuration: BigInt(args.vesting?.duration ?? 0),
+      recipients,
+      amounts,
+      tokenURI: args.token.tokenURI,
+    };
+  }
+
+  private encodeStandardTokenFactoryData(
+    tokenFactoryData: StandardTokenFactoryData,
+  ): Hex {
+    if (tokenFactoryData.kind === 'v2') {
+      return encodeAbiParameters(
+        [
+          { type: 'string' },
+          { type: 'string' },
+          { type: 'uint256' },
+          {
+            type: 'tuple[]',
+            components: [
+              { type: 'uint64', name: 'cliff' },
+              { type: 'uint64', name: 'duration' },
+            ],
+          },
+          { type: 'address[]' },
+          { type: 'uint256[]' },
+          { type: 'uint256[]' },
+          { type: 'string' },
+        ],
+        [
+          tokenFactoryData.name,
+          tokenFactoryData.symbol,
+          tokenFactoryData.yearlyMintRate,
+          tokenFactoryData.schedules.map((schedule) => ({
+            cliff: schedule.cliff,
+            duration: schedule.duration,
+          })),
+          tokenFactoryData.beneficiaries,
+          tokenFactoryData.scheduleIds,
+          tokenFactoryData.amounts,
+          tokenFactoryData.tokenURI,
+        ],
+      );
+    }
+
+    return encodeAbiParameters(
+      [
+        { type: 'string' },
+        { type: 'string' },
+        { type: 'uint256' },
+        { type: 'uint256' },
+        { type: 'address[]' },
+        { type: 'uint256[]' },
+        { type: 'string' },
+      ],
+      [
+        tokenFactoryData.name,
+        tokenFactoryData.symbol,
+        tokenFactoryData.yearlyMintRate,
+        tokenFactoryData.vestingDuration,
+        tokenFactoryData.recipients,
+        tokenFactoryData.amounts,
+        tokenFactoryData.tokenURI,
+      ],
+    );
+  }
+
+  private computeSoladyCloneInitCodeHash(implementation: Address): Hash {
+    return keccak256(
+      `0x602c3d8160093d39f33d3d3d3d363d3d37363d73${implementation.slice(
+        2,
+      )}5af43d3d93803e602a57fd5bf3`,
+    );
+  }
+
+  private computeStandardTokenInitHash(
+    tokenFactoryData: StandardTokenFactoryData,
+    tokenFactory: Address,
+  ): Hash {
+    if (tokenFactoryData.kind === 'v2') {
+      return this.computeSoladyCloneInitCodeHash(tokenFactoryData.implementation);
+    }
+
+    const initData = encodeAbiParameters(
+      [
+        { type: 'string' },
+        { type: 'string' },
+        { type: 'uint256' },
+        { type: 'address' },
+        { type: 'address' },
+        { type: 'uint256' },
+        { type: 'uint256' },
+        { type: 'address[]' },
+        { type: 'uint256[]' },
+        { type: 'string' },
+      ],
+      [
+        tokenFactoryData.name,
+        tokenFactoryData.symbol,
+        tokenFactoryData.initialSupply,
+        tokenFactoryData.airlock,
+        tokenFactoryData.airlock,
+        tokenFactoryData.yearlyMintRate,
+        tokenFactoryData.vestingDuration,
+        tokenFactoryData.recipients,
+        tokenFactoryData.amounts,
+        tokenFactoryData.tokenURI,
+      ],
+    );
+
+    const isTokenFactory80 =
+      tokenFactory.toLowerCase() === TOKEN_FACTORY_80_ADDRESS;
+
+    return keccak256(
+      encodePacked(
+        ['bytes', 'bytes'],
+        [
+          isTokenFactory80 ? (DERC2080Bytecode as Hex) : (DERC20Bytecode as Hex),
+          initData,
+        ],
+      ),
+    );
   }
 
   /**
@@ -259,11 +557,30 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       overrides: params.modules,
     });
 
+    const resolvedTokenFactory: Address | undefined =
+      params.modules?.tokenFactory ??
+      (this.isDoppler404Token(params.token)
+        ? (addresses.doppler404Factory as Address | undefined)
+        : this.usesDerc20V2Vesting(params.vesting)
+          ? addresses.derc20V2Factory
+          : addresses.tokenFactory);
+
+    if (!resolvedTokenFactory || resolvedTokenFactory === ZERO_ADDRESS) {
+      throw new Error(
+        'Token factory address not configured. Provide an explicit address via builder.withTokenFactory(...) or ensure chain config includes a valid factory.',
+      );
+    }
+    this.assertStandardTokenFactoryCompatibility({
+      token: params.token,
+      vesting: params.vesting,
+      tokenFactory: resolvedTokenFactory,
+      addresses,
+    });
+
     // 3. Encode token parameters (standard vs Doppler404)
     let tokenFactoryData: Hex;
     if (this.isDoppler404Token(params.token)) {
       const token404 = params.token;
-      // Doppler404 expects: name, symbol, baseURI, unit
       const baseURI = token404.baseURI;
       const unit = token404.unit !== undefined ? BigInt(token404.unit) : 1000n;
       tokenFactoryData = encodeAbiParameters(
@@ -276,49 +593,17 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
         [params.token.name, params.token.symbol, baseURI, unit],
       );
     } else {
-      const tokenStd = params.token as StandardTokenConfig;
-      const vestingDuration = params.vesting?.duration ?? BigInt(0);
-      const yearlyMintRate =
-        tokenStd.yearlyMintRate ?? DEFAULT_V4_YEARLY_MINT_RATE;
-
-      // Handle vesting recipients and amounts
-      let vestingRecipients: Address[] = [];
-      let vestingAmounts: bigint[] = [];
-
-      if (params.vesting) {
-        if (params.vesting.recipients && params.vesting.amounts) {
-          // Use provided recipients and amounts
-          vestingRecipients = params.vesting.recipients;
-          vestingAmounts = params.vesting.amounts;
-        } else {
-          // Default: vest all non-sold tokens to userAddress
-          vestingRecipients = [params.userAddress];
-          vestingAmounts = [
-            params.sale.initialSupply - params.sale.numTokensToSell,
-          ];
-        }
-      }
-
-      tokenFactoryData = encodeAbiParameters(
-        [
-          { type: 'string' },
-          { type: 'string' },
-          { type: 'uint256' },
-          { type: 'uint256' },
-          { type: 'address[]' },
-          { type: 'uint256[]' },
-          { type: 'string' },
-        ],
-        [
-          tokenStd.name,
-          tokenStd.symbol,
-          yearlyMintRate,
-          BigInt(vestingDuration),
-          vestingRecipients,
-          vestingAmounts,
-          tokenStd.tokenURI,
-        ],
-      );
+      const standardTokenFactoryData = this.buildStandardTokenFactoryData({
+        token: params.token as StandardTokenConfig,
+        sale: params.sale,
+        vesting: params.vesting,
+        userAddress: params.userAddress,
+        airlock: params.modules?.airlock ?? addresses.airlock,
+        tokenFactory: resolvedTokenFactory,
+        addresses,
+      });
+      tokenFactoryData =
+        this.encodeStandardTokenFactoryData(standardTokenFactoryData);
     }
 
     // 4. Encode governance factory data
@@ -391,19 +676,6 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     })();
 
     // 5. Generate a unique salt
-    // Resolve token factory with override priority
-    const resolvedTokenFactory: Address | undefined =
-      params.modules?.tokenFactory ??
-      (this.isDoppler404Token(params.token)
-        ? (addresses.doppler404Factory as Address | undefined)
-        : addresses.tokenFactory);
-
-    if (!resolvedTokenFactory || resolvedTokenFactory === ZERO_ADDRESS) {
-      throw new Error(
-        'Token factory address not configured. Provide an explicit address via builder.withTokenFactory(...) or ensure chain config includes a valid factory.',
-      );
-    }
-
     // Build the base CreateParams for the V3-style ABI; salt will be mined below
     const baseCreateParams = {
       initialSupply: params.sale.initialSupply,
@@ -817,7 +1089,26 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       }
     }
 
-    const vestingDuration = params.vesting?.duration ?? BigInt(0);
+    const resolvedTokenFactoryDyn: Address | undefined =
+      params.modules?.tokenFactory ??
+      (this.isDoppler404Token(params.token)
+        ? (addresses.doppler404Factory as Address | undefined)
+        : this.usesDerc20V2Vesting(params.vesting)
+          ? addresses.derc20V2Factory
+          : addresses.tokenFactory);
+
+    if (!resolvedTokenFactoryDyn || resolvedTokenFactoryDyn === ZERO_ADDRESS) {
+      throw new Error(
+        'Token factory address not configured. Provide an explicit address via builder.withTokenFactory(...) or ensure chain config includes a valid factory.',
+      );
+    }
+    this.assertStandardTokenFactoryCompatibility({
+      token: params.token,
+      vesting: params.vesting,
+      tokenFactory: resolvedTokenFactoryDyn,
+      addresses,
+    });
+
     const tokenFactoryData = this.isDoppler404Token(params.token)
       ? (() => {
           const t = params.token as Doppler404TokenConfig;
@@ -828,53 +1119,17 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
             unit: t.unit !== undefined ? BigInt(t.unit) : 1000n,
           };
         })()
-      : (() => {
-          const t = params.token as StandardTokenConfig;
-
-          // Handle vesting recipients and amounts
-          let vestingRecipients: Address[] = [];
-          let vestingAmounts: bigint[] = [];
-
-          if (params.vesting) {
-            if (params.vesting.recipients && params.vesting.amounts) {
-              // Use provided recipients and amounts
-              vestingRecipients = params.vesting.recipients;
-              vestingAmounts = params.vesting.amounts;
-            } else {
-              // Default: vest all non-sold tokens to userAddress
-              vestingRecipients = [params.userAddress];
-              vestingAmounts = [
-                params.sale.initialSupply - params.sale.numTokensToSell,
-              ];
-            }
-          }
-
-          return {
-            name: t.name,
-            symbol: t.symbol,
-            initialSupply: params.sale.initialSupply,
-            airlock: addresses.airlock,
-            yearlyMintRate: t.yearlyMintRate ?? DEFAULT_V4_YEARLY_MINT_RATE,
-            vestingDuration: BigInt(vestingDuration),
-            recipients: vestingRecipients,
-            amounts: vestingAmounts,
-            tokenURI: t.tokenURI,
-          };
-        })();
+      : this.buildStandardTokenFactoryData({
+          token: params.token as StandardTokenConfig,
+          sale: params.sale,
+          vesting: params.vesting,
+          userAddress: params.userAddress,
+          airlock: params.modules?.airlock ?? addresses.airlock,
+          tokenFactory: resolvedTokenFactoryDyn,
+          addresses,
+        });
 
     // 5. Mine hook address with appropriate flags
-    // Resolve token factory with override priority (works for both standard and doppler404 variants)
-    const resolvedTokenFactoryDyn: Address | undefined =
-      params.modules?.tokenFactory ??
-      (this.isDoppler404Token(params.token)
-        ? (addresses.doppler404Factory as Address | undefined)
-        : addresses.tokenFactory);
-
-    if (!resolvedTokenFactoryDyn || resolvedTokenFactoryDyn === ZERO_ADDRESS) {
-      throw new Error(
-        'Token factory address not configured. Provide an explicit address via builder.withTokenFactory(...) or ensure chain config includes a valid factory.',
-      );
-    }
 
     const [
       salt,
@@ -1325,7 +1580,26 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       }
     }
 
-    const vestingDuration = params.vesting?.duration ?? BigInt(0);
+    const resolvedTokenFactory: Address | undefined =
+      params.modules?.tokenFactory ??
+      (this.isDoppler404Token(params.token)
+        ? (addresses.doppler404Factory as Address | undefined)
+        : this.usesDerc20V2Vesting(params.vesting)
+          ? addresses.derc20V2Factory
+          : addresses.tokenFactory);
+
+    if (!resolvedTokenFactory || resolvedTokenFactory === ZERO_ADDRESS) {
+      throw new Error(
+        'Token factory address not configured. Provide an explicit address via builder.withTokenFactory(...) or ensure chain config includes a valid factory.',
+      );
+    }
+    this.assertStandardTokenFactoryCompatibility({
+      token: params.token,
+      vesting: params.vesting,
+      tokenFactory: resolvedTokenFactory,
+      addresses,
+    });
+
     const tokenFactoryData = this.isDoppler404Token(params.token)
       ? (() => {
           const t = params.token as Doppler404TokenConfig;
@@ -1336,47 +1610,15 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
             unit: t.unit !== undefined ? BigInt(t.unit) : 1000n,
           };
         })()
-      : (() => {
-          const t = params.token as StandardTokenConfig;
-          let vestingRecipients: Address[] = [];
-          let vestingAmounts: bigint[] = [];
-
-          if (params.vesting) {
-            if (params.vesting.recipients && params.vesting.amounts) {
-              vestingRecipients = params.vesting.recipients;
-              vestingAmounts = params.vesting.amounts;
-            } else {
-              vestingRecipients = [params.userAddress];
-              vestingAmounts = [
-                params.sale.initialSupply - params.sale.numTokensToSell,
-              ];
-            }
-          }
-
-          return {
-            name: t.name,
-            symbol: t.symbol,
-            initialSupply: params.sale.initialSupply,
-            airlock: params.modules?.airlock ?? addresses.airlock,
-            yearlyMintRate: t.yearlyMintRate ?? DEFAULT_V4_YEARLY_MINT_RATE,
-            vestingDuration: BigInt(vestingDuration),
-            recipients: vestingRecipients,
-            amounts: vestingAmounts,
-            tokenURI: t.tokenURI,
-          };
-        })();
-
-    const resolvedTokenFactory: Address | undefined =
-      params.modules?.tokenFactory ??
-      (this.isDoppler404Token(params.token)
-        ? (addresses.doppler404Factory as Address | undefined)
-        : addresses.tokenFactory);
-
-    if (!resolvedTokenFactory || resolvedTokenFactory === ZERO_ADDRESS) {
-      throw new Error(
-        'Token factory address not configured. Provide an explicit address via builder.withTokenFactory(...) or ensure chain config includes a valid factory.',
-      );
-    }
+      : this.buildStandardTokenFactoryData({
+          token: params.token as StandardTokenConfig,
+          sale: params.sale,
+          vesting: params.vesting,
+          userAddress: params.userAddress,
+          airlock: params.modules?.airlock ?? addresses.airlock,
+          tokenFactory: resolvedTokenFactory,
+          addresses,
+        });
 
     const auctionTokens =
       (params.sale.numTokensToSell *
@@ -2413,17 +2655,7 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
           baseURI: string;
           unit?: bigint;
         }
-      | {
-          name: string;
-          symbol: string;
-          initialSupply: bigint;
-          airlock: Address;
-          yearlyMintRate: bigint;
-          vestingDuration: bigint;
-          recipients: Address[];
-          amounts: bigint[];
-          tokenURI: string;
-        };
+      | StandardTokenFactoryData;
     airlock: Address;
     initialSupply: bigint;
     tokenVariant: 'standard' | 'doppler404';
@@ -2491,39 +2723,9 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
               [t.name, t.symbol, t.baseURI, t.unit ?? 1000n],
             );
           })()
-        : (() => {
-            const t = params.tokenFactoryData as {
-              name: string;
-              symbol: string;
-              initialSupply: bigint;
-              airlock: Address;
-              yearlyMintRate: bigint;
-              vestingDuration: bigint;
-              recipients: Address[];
-              amounts: bigint[];
-              tokenURI: string;
-            };
-            return encodeAbiParameters(
-              [
-                { type: 'string' },
-                { type: 'string' },
-                { type: 'uint256' },
-                { type: 'uint256' },
-                { type: 'address[]' },
-                { type: 'uint256[]' },
-                { type: 'string' },
-              ],
-              [
-                t.name,
-                t.symbol,
-                t.yearlyMintRate,
-                t.vestingDuration,
-                t.recipients,
-                t.amounts,
-                t.tokenURI,
-              ],
-            );
-          })();
+        : this.encodeStandardTokenFactoryData(
+            params.tokenFactoryData as StandardTokenFactoryData,
+          );
 
     let tokenInitHash: Hash;
     if (params.tokenVariant === 'doppler404') {
@@ -2557,53 +2759,9 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
         ),
       );
     } else {
-      const t = params.tokenFactoryData as {
-        name: string;
-        symbol: string;
-        yearlyMintRate: bigint;
-        vestingDuration: bigint;
-        recipients: Address[];
-        amounts: bigint[];
-        tokenURI: string;
-      };
-      const initData = encodeAbiParameters(
-        [
-          { type: 'string' },
-          { type: 'string' },
-          { type: 'uint256' },
-          { type: 'address' },
-          { type: 'address' },
-          { type: 'uint256' },
-          { type: 'uint256' },
-          { type: 'address[]' },
-          { type: 'uint256[]' },
-          { type: 'string' },
-        ],
-        [
-          t.name,
-          t.symbol,
-          params.initialSupply,
-          params.airlock,
-          params.airlock,
-          t.yearlyMintRate,
-          t.vestingDuration,
-          t.recipients,
-          t.amounts,
-          t.tokenURI,
-        ],
-      );
-      const isTokenFactory80 =
-        params.tokenFactory.toLowerCase() === TOKEN_FACTORY_80_ADDRESS;
-      tokenInitHash = keccak256(
-        encodePacked(
-          ['bytes', 'bytes'],
-          [
-            isTokenFactory80
-              ? (DERC2080Bytecode as Hex)
-              : (DERC20Bytecode as Hex),
-            initData,
-          ],
-        ),
+      tokenInitHash = this.computeStandardTokenInitHash(
+        params.tokenFactoryData as StandardTokenFactoryData,
+        params.tokenFactory,
       );
     }
 
@@ -3460,6 +3618,25 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       );
     }
 
+    const resolvedTokenFactory: Address | undefined =
+      params.modules?.tokenFactory ??
+      (this.isDoppler404Token(params.token)
+        ? (addresses.doppler404Factory as Address | undefined)
+        : this.usesDerc20V2Vesting(params.vesting)
+          ? addresses.derc20V2Factory
+          : addresses.tokenFactory);
+    if (!resolvedTokenFactory || resolvedTokenFactory === ZERO_ADDRESS) {
+      throw new Error(
+        'Token factory address not configured. Provide an explicit address or ensure chain config includes a valid factory.',
+      );
+    }
+    this.assertStandardTokenFactoryCompatibility({
+      token: params.token,
+      vesting: params.vesting,
+      tokenFactory: resolvedTokenFactory,
+      addresses,
+    });
+
     // Token factory data (standard vs 404)
     let tokenFactoryData: Hex;
     if (this.isDoppler404Token(params.token)) {
@@ -3475,49 +3652,17 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
         [token404.name, token404.symbol, token404.baseURI, unit],
       );
     } else {
-      const tokenStd = params.token as StandardTokenConfig;
-      const vestingDuration = params.vesting?.duration ?? BigInt(0);
-      const yearlyMintRate =
-        tokenStd.yearlyMintRate ?? DEFAULT_V4_YEARLY_MINT_RATE;
-
-      // Handle vesting recipients and amounts
-      let vestingRecipients: Address[] = [];
-      let vestingAmounts: bigint[] = [];
-
-      if (params.vesting) {
-        if (params.vesting.recipients && params.vesting.amounts) {
-          // Use provided recipients and amounts
-          vestingRecipients = params.vesting.recipients;
-          vestingAmounts = params.vesting.amounts;
-        } else {
-          // Default: vest all non-sold tokens to userAddress
-          vestingRecipients = [params.userAddress];
-          vestingAmounts = [
-            params.sale.initialSupply - params.sale.numTokensToSell,
-          ];
-        }
-      }
-
-      tokenFactoryData = encodeAbiParameters(
-        [
-          { type: 'string' },
-          { type: 'string' },
-          { type: 'uint256' },
-          { type: 'uint256' },
-          { type: 'address[]' },
-          { type: 'uint256[]' },
-          { type: 'string' },
-        ],
-        [
-          tokenStd.name,
-          tokenStd.symbol,
-          yearlyMintRate,
-          BigInt(vestingDuration),
-          vestingRecipients,
-          vestingAmounts,
-          tokenStd.tokenURI,
-        ],
-      );
+      const standardTokenFactoryData = this.buildStandardTokenFactoryData({
+        token: params.token as StandardTokenConfig,
+        sale: params.sale,
+        vesting: params.vesting,
+        userAddress: params.userAddress,
+        airlock: params.modules?.airlock ?? addresses.airlock,
+        tokenFactory: resolvedTokenFactory,
+        addresses,
+      });
+      tokenFactoryData =
+        this.encodeStandardTokenFactoryData(standardTokenFactoryData);
     }
 
     // Governance factory data
@@ -3555,16 +3700,6 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
 
     // Resolve module addresses
     const salt = this.generateRandomSalt(params.userAddress);
-    const resolvedTokenFactory: Address | undefined =
-      params.modules?.tokenFactory ??
-      (this.isDoppler404Token(params.token)
-        ? (addresses.doppler404Factory as Address | undefined)
-        : addresses.tokenFactory);
-    if (!resolvedTokenFactory || resolvedTokenFactory === ZERO_ADDRESS) {
-      throw new Error(
-        'Token factory address not configured. Provide an explicit address or ensure chain config includes a valid factory.',
-      );
-    }
 
     const resolvedInitializer: Address | undefined = (() => {
       if (useDopplerHookInitializer) {
@@ -3925,6 +4060,64 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     return rounded;
   }
 
+  private validateVestingConfig(
+    sale: SaleConfig,
+    vesting?: VestingConfig,
+  ): void {
+    if (!vesting) {
+      return;
+    }
+
+    const cliffDuration = vesting.cliffDuration ?? 0;
+    const duration = vesting.duration ?? 0;
+
+    if (cliffDuration < 0) {
+      throw new Error('Vesting cliff duration cannot be negative');
+    }
+    if (duration < 0) {
+      throw new Error('Vesting duration cannot be negative');
+    }
+    if (cliffDuration > duration) {
+      throw new Error(
+        'Vesting cliff duration cannot exceed vesting duration',
+      );
+    }
+    if (
+      cliffDuration > 0 &&
+      duration > 0 &&
+      duration < DERC20_V2_MIN_VESTING_DURATION
+    ) {
+      throw new Error(
+        `Vesting duration must be 0 or at least ${DERC20_V2_MIN_VESTING_DURATION} seconds when using cliffs`,
+      );
+    }
+
+    if (vesting.recipients && vesting.amounts) {
+      if (vesting.recipients.length !== vesting.amounts.length) {
+        throw new Error(
+          'Vesting recipients and amounts arrays must have the same length',
+        );
+      }
+      if (vesting.recipients.length === 0) {
+        throw new Error('Vesting recipients array cannot be empty');
+      }
+
+      const totalVested = vesting.amounts.reduce((sum, amt) => sum + amt, 0n);
+      const availableForVesting = sale.initialSupply - sale.numTokensToSell;
+      if (totalVested > availableForVesting) {
+        throw new Error(
+          `Total vesting amount (${totalVested}) exceeds available tokens (${availableForVesting})`,
+        );
+      }
+      return;
+    }
+
+    const vestedAmount = sale.initialSupply - sale.numTokensToSell;
+    if (vestedAmount <= 0n) {
+      throw new Error('No tokens available for vesting');
+    }
+  }
+
   private validateStaticAuctionParams(params: CreateStaticAuctionParams): void {
     // Validate token parameters
     if (!params.token.name || params.token.name.trim().length === 0) {
@@ -3973,41 +4166,9 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       throw new Error('Cannot sell more tokens than initial supply');
     }
 
-    // Validate vesting if provided
-    if (params.vesting) {
-      // Validate recipients and amounts arrays match
-      if (params.vesting.recipients && params.vesting.amounts) {
-        if (
-          params.vesting.recipients.length !== params.vesting.amounts.length
-        ) {
-          throw new Error(
-            'Vesting recipients and amounts arrays must have the same length',
-          );
-        }
-        if (params.vesting.recipients.length === 0) {
-          throw new Error('Vesting recipients array cannot be empty');
-        }
-        // Validate total vested amount doesn't exceed available tokens
-        const totalVested = params.vesting.amounts.reduce(
-          (sum, amt) => sum + amt,
-          BigInt(0),
-        );
-        const availableForVesting =
-          params.sale.initialSupply - params.sale.numTokensToSell;
-        if (totalVested > availableForVesting) {
-          throw new Error(
-            `Total vesting amount (${totalVested}) exceeds available tokens (${availableForVesting})`,
-          );
-        }
-      } else {
-        // Default case: validate there are tokens available for vesting
-        const vestedAmount =
-          params.sale.initialSupply - params.sale.numTokensToSell;
-        if (vestedAmount <= BigInt(0)) {
-          throw new Error('No tokens available for vesting');
-        }
-      }
-    }
+    this.validateVestingConfig(params.sale, params.vesting);
+
+    this.validateVestingConfig(params.sale, params.vesting);
 
     // Validate migration config
     if (params.migration.type === 'dopplerHook') {
@@ -4094,6 +4255,8 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     if (params.sale.numTokensToSell > params.sale.initialSupply) {
       throw new Error('Cannot sell more tokens than initial supply');
     }
+
+    this.validateVestingConfig(params.sale, params.vesting);
 
     // Validate auction parameters
     if (params.auction.duration <= 0) {
@@ -4390,34 +4553,7 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     // Validate initializer mode / compatibility and mode-specific constraints.
     this.resolveMulticurveInitializerMode(params);
 
-    // Validate vesting if provided
-    if (params.vesting) {
-      // Validate recipients and amounts arrays match
-      if (params.vesting.recipients && params.vesting.amounts) {
-        if (
-          params.vesting.recipients.length !== params.vesting.amounts.length
-        ) {
-          throw new Error(
-            'Vesting recipients and amounts arrays must have the same length',
-          );
-        }
-        if (params.vesting.recipients.length === 0) {
-          throw new Error('Vesting recipients array cannot be empty');
-        }
-        // Validate total vested amount doesn't exceed available tokens
-        const totalVested = params.vesting.amounts.reduce(
-          (sum, amt) => sum + amt,
-          BigInt(0),
-        );
-        const availableForVesting =
-          params.sale.initialSupply - params.sale.numTokensToSell;
-        if (totalVested > availableForVesting) {
-          throw new Error(
-            `Total vesting amount (${totalVested}) exceeds available tokens (${availableForVesting})`,
-          );
-        }
-      }
-    }
+    this.validateVestingConfig(params.sale, params.vesting);
 
     // Validate pool beneficiaries if provided
     if (params.pool.beneficiaries && params.pool.beneficiaries.length > 0) {
@@ -4844,17 +4980,7 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
           baseURI: string;
           unit?: bigint;
         }
-      | {
-          name: string;
-          symbol: string;
-          initialSupply: bigint;
-          airlock: Address;
-          yearlyMintRate: bigint;
-          vestingDuration: bigint;
-          recipients: Address[];
-          amounts: bigint[];
-          tokenURI: string;
-        };
+      | StandardTokenFactoryData;
     poolInitializer: Address;
     poolInitializerData: {
       minimumProceeds: bigint;
@@ -4982,47 +5108,9 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
               [t.name, t.symbol, t.baseURI, t.unit ?? 1000n],
             );
           })()
-        : (() => {
-            const {
-              name,
-              symbol,
-              yearlyMintRate,
-              vestingDuration,
-              recipients,
-              amounts,
-              tokenURI,
-            } = params.tokenFactoryData as {
-              name: string;
-              symbol: string;
-              initialSupply: bigint;
-              airlock: Address;
-              yearlyMintRate: bigint;
-              vestingDuration: bigint;
-              recipients: Address[];
-              amounts: bigint[];
-              tokenURI: string;
-            };
-            return encodeAbiParameters(
-              [
-                { type: 'string' },
-                { type: 'string' },
-                { type: 'uint256' },
-                { type: 'uint256' },
-                { type: 'address[]' },
-                { type: 'uint256[]' },
-                { type: 'string' },
-              ],
-              [
-                name,
-                symbol,
-                yearlyMintRate,
-                vestingDuration,
-                recipients,
-                amounts,
-                tokenURI,
-              ],
-            );
-          })();
+        : this.encodeStandardTokenFactoryData(
+            params.tokenFactoryData as StandardTokenFactoryData,
+          );
 
     // Compute token init hash; use DN404 bytecode if tokenVariant is doppler404
     let tokenInitHash: Hash | undefined;
@@ -5053,62 +5141,50 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
         ),
       );
     } else {
-      const {
-        name,
-        symbol,
-        yearlyMintRate,
-        vestingDuration,
-        recipients,
-        amounts,
-        tokenURI,
-      } = params.tokenFactoryData as {
-        name: string;
-        symbol: string;
-        initialSupply: bigint;
-        airlock: Address;
-        yearlyMintRate: bigint;
-        vestingDuration: bigint;
-        recipients: Address[];
-        amounts: bigint[];
-        tokenURI: string;
-      };
-      const { airlock, initialSupply } = params;
-      const initHashData = encodeAbiParameters(
-        [
-          { type: 'string' },
-          { type: 'string' },
-          { type: 'uint256' },
-          { type: 'address' },
-          { type: 'address' },
-          { type: 'uint256' },
-          { type: 'uint256' },
-          { type: 'address[]' },
-          { type: 'uint256[]' },
-          { type: 'string' },
-        ],
-        [
-          name,
-          symbol,
-          initialSupply,
-          airlock,
-          airlock,
-          yearlyMintRate,
-          vestingDuration,
-          recipients,
-          amounts,
-          tokenURI,
-        ],
-      );
-      // Use DERC2080Bytecode for TokenFactory80, DERC20Bytecode otherwise
-      const isTokenFactory80 =
-        params.tokenFactory.toLowerCase() === TOKEN_FACTORY_80_ADDRESS;
-      const bytecode = isTokenFactory80
-        ? (DERC2080Bytecode as Hex)
-        : ((params.customDerc20Bytecode as Hex) ?? (DERC20Bytecode as Hex));
+      const standardTokenFactoryData =
+        params.tokenFactoryData as StandardTokenFactoryData;
+      if (standardTokenFactoryData.kind === 'v2') {
+        tokenInitHash = this.computeStandardTokenInitHash(
+          standardTokenFactoryData,
+          params.tokenFactory,
+        );
+      } else {
+        const initHashData = encodeAbiParameters(
+          [
+            { type: 'string' },
+            { type: 'string' },
+            { type: 'uint256' },
+            { type: 'address' },
+            { type: 'address' },
+            { type: 'uint256' },
+            { type: 'uint256' },
+            { type: 'address[]' },
+            { type: 'uint256[]' },
+            { type: 'string' },
+          ],
+          [
+            standardTokenFactoryData.name,
+            standardTokenFactoryData.symbol,
+            standardTokenFactoryData.initialSupply,
+            standardTokenFactoryData.airlock,
+            standardTokenFactoryData.airlock,
+            standardTokenFactoryData.yearlyMintRate,
+            standardTokenFactoryData.vestingDuration,
+            standardTokenFactoryData.recipients,
+            standardTokenFactoryData.amounts,
+            standardTokenFactoryData.tokenURI,
+          ],
+        );
+        const isTokenFactory80 =
+          params.tokenFactory.toLowerCase() === TOKEN_FACTORY_80_ADDRESS;
+        const bytecode = isTokenFactory80
+          ? (DERC2080Bytecode as Hex)
+          : ((params.customDerc20Bytecode as Hex) ?? (DERC20Bytecode as Hex));
 
-      tokenInitHash = keccak256(
-        encodePacked(['bytes', 'bytes'], [bytecode, initHashData]),
-      );
+        tokenInitHash = keccak256(
+          encodePacked(['bytes', 'bytes'], [bytecode, initHashData]),
+        );
+      }
     }
 
     // Use the exact flags from V4 SDK

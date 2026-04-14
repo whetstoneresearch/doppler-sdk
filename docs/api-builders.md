@@ -52,6 +52,8 @@ Methods (chainable):
     - @deprecated: Use `withMarketCapRange()` instead for more intuitive configuration
 - withVesting({ duration?, cliffDuration?, recipients?, amounts? } | undefined)
   - Omit to disable vesting. Default duration if provided but undefined is `DEFAULT_V3_VESTING_DURATION`.
+  - `cliffDuration > 0` automatically routes standard tokens through the DERC20 V2 factory (`CloneDERC20VotesV2Factory`).
+  - Cliff vesting requires `duration >= 1 day` and `cliffDuration <= duration`.
   - `recipients`: Optional array of addresses to receive vested tokens. Defaults to `[userAddress]` if not provided.
   - `amounts`: Optional array of token amounts corresponding to each recipient. Must match `recipients` length if provided. Defaults to all unsold tokens to `userAddress` if not provided.
 - withGovernance(GovernanceConfig | { useDefaults: true } | { noOp: true } | undefined)
@@ -76,6 +78,7 @@ Validation highlights:
 - `initialSupply > 0`, `numTokensToSell > 0`, and `numTokensToSell <= initialSupply`
 - If vesting set, there must be tokens reserved (`initialSupply - numTokensToSell > 0`)
 - For V4 migration config (if chosen), beneficiary percentages must sum to 10000
+- Use `sdk.getDerc20V2(tokenAddress)` for schedule-aware reads and release flows on cliffed / multi-schedule tokens
 
 Examples:
 ```ts
