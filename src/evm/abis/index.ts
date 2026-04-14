@@ -771,9 +771,7 @@ export const derc20V2Abi = [
   {
     type: 'function',
     name: 'releaseFor',
-    inputs: [
-      { name: 'beneficiary', type: 'address', internalType: 'address' },
-    ],
+    inputs: [{ name: 'beneficiary', type: 'address', internalType: 'address' }],
     outputs: [],
     stateMutability: 'nonpayable',
   },

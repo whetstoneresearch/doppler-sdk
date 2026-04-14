@@ -405,7 +405,9 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     tokenFactory: Address,
   ): Hash {
     if (tokenFactoryData.kind === 'v2') {
-      return this.computeSoladyCloneInitCodeHash(tokenFactoryData.implementation);
+      return this.computeSoladyCloneInitCodeHash(
+        tokenFactoryData.implementation,
+      );
     }
 
     const initData = encodeAbiParameters(
@@ -442,7 +444,9 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       encodePacked(
         ['bytes', 'bytes'],
         [
-          isTokenFactory80 ? (DERC2080Bytecode as Hex) : (DERC20Bytecode as Hex),
+          isTokenFactory80
+            ? (DERC2080Bytecode as Hex)
+            : (DERC20Bytecode as Hex),
           initData,
         ],
       ),
@@ -602,8 +606,9 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
         tokenFactory: resolvedTokenFactory,
         addresses,
       });
-      tokenFactoryData =
-        this.encodeStandardTokenFactoryData(standardTokenFactoryData);
+      tokenFactoryData = this.encodeStandardTokenFactoryData(
+        standardTokenFactoryData,
+      );
     }
 
     // 4. Encode governance factory data
@@ -3661,8 +3666,9 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
         tokenFactory: resolvedTokenFactory,
         addresses,
       });
-      tokenFactoryData =
-        this.encodeStandardTokenFactoryData(standardTokenFactoryData);
+      tokenFactoryData = this.encodeStandardTokenFactoryData(
+        standardTokenFactoryData,
+      );
     }
 
     // Governance factory data
@@ -4078,9 +4084,7 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       throw new Error('Vesting duration cannot be negative');
     }
     if (cliffDuration > duration) {
-      throw new Error(
-        'Vesting cliff duration cannot exceed vesting duration',
-      );
+      throw new Error('Vesting cliff duration cannot exceed vesting duration');
     }
     if (
       cliffDuration > 0 &&
