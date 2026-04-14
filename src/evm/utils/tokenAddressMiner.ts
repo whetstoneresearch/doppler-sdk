@@ -95,9 +95,6 @@ const DOPPLER404_TOKEN_DATA_ABI = [
   { type: 'uint256' },
 ] as const;
 
-const DEFAULT_DERC20_V2_IMPLEMENTATION =
-  '0x4BBfed1c27CDE12eF6638251D81ab4e3be7556b7' as const;
-
 function normalizeHexFragment(
   value: string,
   label: 'prefix' | 'suffix',
@@ -245,9 +242,13 @@ function buildTokenInitHash(params: {
 
   if (variant === 'standard-v2') {
     decodeAbiParameters(STANDARD_TOKEN_V2_DATA_ABI, tokenData);
-    return computeSoladyCloneInitCodeHash(
-      v2Implementation ?? DEFAULT_DERC20_V2_IMPLEMENTATION,
-    );
+    if (!v2Implementation) {
+      throw new Error(
+        'TokenAddressMiner: v2Implementation is required for standard-v2 tokens',
+      );
+    }
+
+    return computeSoladyCloneInitCodeHash(v2Implementation);
   }
 
   const [

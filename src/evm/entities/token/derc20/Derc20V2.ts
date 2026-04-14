@@ -109,22 +109,27 @@ export class Derc20V2 extends Derc20 {
       throw new Error('Wallet client required for write operations');
     }
 
-    const { request } =
-      scheduleId === undefined
-        ? await this.rpc.simulateContract({
-            address: this.address,
-            abi: derc20V2Abi,
-            functionName: 'releaseFor',
-            args: [beneficiary],
-            account: this.walletClient.account,
-          })
-        : await this.rpc.simulateContract({
-            address: this.address,
-            abi: derc20V2Abi,
-            functionName: 'releaseFor',
-            args: [beneficiary, scheduleId],
-            account: this.walletClient.account,
-          });
+    if (scheduleId === undefined) {
+      const { request } = await this.rpc.simulateContract({
+        address: this.address,
+        abi: derc20V2Abi,
+        functionName: 'releaseFor',
+        args: [beneficiary],
+        account: this.walletClient.account,
+      });
+
+      return await this.walletClient.writeContract(
+        options?.gas ? { ...request, gas: options.gas } : request,
+      );
+    }
+
+    const { request } = await this.rpc.simulateContract({
+      address: this.address,
+      abi: derc20V2Abi,
+      functionName: 'releaseFor',
+      args: [beneficiary, scheduleId],
+      account: this.walletClient.account,
+    });
 
     return await this.walletClient.writeContract(
       options?.gas ? { ...request, gas: options.gas } : request,

@@ -253,6 +253,36 @@ describe('mineTokenAddress', () => {
     expect(manualAddress).toBe(result.tokenAddress)
   })
 
+  it('throws when standard-v2 mining is attempted without a v2 implementation address', () => {
+    const tokenData = encodeAbiParameters(
+      STANDARD_TOKEN_V2_ABI,
+      [
+        'Vanity Token V2',
+        'VNY2',
+        1000n,
+        [{ cliff: 90n, duration: 180n }],
+        [RECIPIENT],
+        [0n],
+        [100n],
+        'ipfs://token-v2',
+      ]
+    )
+
+    expect(() =>
+      mineTokenAddress({
+        prefix: '0',
+        tokenFactory: TOKEN_FACTORY,
+        initialSupply: 1_000_000n,
+        recipient: RECIPIENT,
+        owner: OWNER,
+        tokenData,
+        tokenVariant: 'standard-v2',
+      })
+    ).toThrow(
+      'TokenAddressMiner: v2Implementation is required for standard-v2 tokens'
+    )
+  })
+
   it('mines a matching prefix and suffix together', () => {
     const initialSupply = 1_000_000n
     const tokenData = encodeAbiParameters(
