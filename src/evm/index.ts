@@ -22,7 +22,7 @@ export {
 export { Quoter } from './entities/quoter';
 
 // Export token entities
-export { Derc20, Eth } from './entities/token';
+export { Derc20, Derc20V2, Eth } from './entities/token';
 
 // Export builders and common interface
 export {

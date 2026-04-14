@@ -8,6 +8,12 @@ export const mockAddresses: ChainAddresses = {
   tokenFactory: getAddress(
     '0x2000000000000000000000000000000000000002',
   ) as Address,
+  derc20V2Factory: getAddress(
+    '0x2000000000000000000000000000000000000003',
+  ) as Address,
+  derc20V2Implementation: getAddress(
+    '0x2000000000000000000000000000000000000004',
+  ) as Address,
   v3Initializer: getAddress(
     '0x3000000000000000000000000000000000000003',
   ) as Address,

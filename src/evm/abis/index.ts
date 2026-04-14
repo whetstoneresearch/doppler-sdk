@@ -732,6 +732,88 @@ export const derc20Abi = [
   },
 ] as const;
 
+export const derc20V2Abi = [
+  ...derc20Abi,
+  {
+    type: 'function',
+    name: 'computeAvailableVestedAmount',
+    inputs: [
+      { name: 'beneficiary', type: 'address', internalType: 'address' },
+      { name: 'scheduleId', type: 'uint256', internalType: 'uint256' },
+    ],
+    outputs: [{ name: '', type: 'uint256', internalType: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'getScheduleIdsOf',
+    inputs: [{ name: 'beneficiary', type: 'address', internalType: 'address' }],
+    outputs: [{ name: '', type: 'uint256[]', internalType: 'uint256[]' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'release',
+    inputs: [{ name: 'scheduleId', type: 'uint256', internalType: 'uint256' }],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'releaseFor',
+    inputs: [
+      { name: 'beneficiary', type: 'address', internalType: 'address' },
+      { name: 'scheduleId', type: 'uint256', internalType: 'uint256' },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'releaseFor',
+    inputs: [{ name: 'beneficiary', type: 'address', internalType: 'address' }],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'totalAllocatedOf',
+    inputs: [{ name: 'beneficiary', type: 'address', internalType: 'address' }],
+    outputs: [{ name: '', type: 'uint256', internalType: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'vestingOf',
+    inputs: [
+      { name: 'beneficiary', type: 'address', internalType: 'address' },
+      { name: 'scheduleId', type: 'uint256', internalType: 'uint256' },
+    ],
+    outputs: [
+      { name: 'totalAmount', type: 'uint256', internalType: 'uint256' },
+      { name: 'releasedAmount', type: 'uint256', internalType: 'uint256' },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'vestingScheduleCount',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256', internalType: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'vestingSchedules',
+    inputs: [{ name: '', type: 'uint256', internalType: 'uint256' }],
+    outputs: [
+      { name: 'cliff', type: 'uint64', internalType: 'uint64' },
+      { name: 'duration', type: 'uint64', internalType: 'uint64' },
+    ],
+    stateMutability: 'view',
+  },
+] as const;
+
 export const uniswapV4InitializerAbi = [
   {
     type: 'function',

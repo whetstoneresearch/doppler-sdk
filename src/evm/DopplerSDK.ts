@@ -21,7 +21,7 @@ import {
   OpeningAuctionPositionManager,
 } from './entities/auction';
 import { Quoter } from './entities/quoter';
-import { Derc20 } from './entities/token';
+import { Derc20, Derc20V2 } from './entities/token';
 import {
   StaticAuctionBuilder,
   DynamicAuctionBuilder,
@@ -220,6 +220,14 @@ export class DopplerSDK<C extends SupportedChainId = SupportedChainId> {
    */
   getDerc20(tokenAddress: Address): Derc20 {
     return new Derc20(this.publicClient, this.walletClient, tokenAddress);
+  }
+
+  /**
+   * Get a DERC20 V2 token instance for interacting with cliffed / multi-schedule vesting tokens
+   * @param tokenAddress The address of the DERC20 V2 token
+   */
+  getDerc20V2(tokenAddress: Address): Derc20V2 {
+    return new Derc20V2(this.publicClient, this.walletClient, tokenAddress);
   }
 
   /**

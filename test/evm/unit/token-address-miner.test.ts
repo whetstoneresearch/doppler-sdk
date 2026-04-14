@@ -27,6 +27,23 @@ const STANDARD_TOKEN_ABI = [
   { type: 'string' },
 ] as const
 
+const STANDARD_TOKEN_V2_ABI = [
+  { type: 'string' },
+  { type: 'string' },
+  { type: 'uint256' },
+  {
+    type: 'tuple[]',
+    components: [
+      { type: 'uint64', name: 'cliff' },
+      { type: 'uint64', name: 'duration' },
+    ],
+  },
+  { type: 'address[]' },
+  { type: 'uint256[]' },
+  { type: 'uint256[]' },
+  { type: 'string' },
+] as const
+
 const DOPPLER404_TOKEN_ABI = [
   { type: 'string' },
   { type: 'string' },
@@ -34,12 +51,22 @@ const DOPPLER404_TOKEN_ABI = [
   { type: 'uint256' },
 ] as const
 
+const V2_IMPLEMENTATION = '0x4BBfed1c27CDE12eF6638251D81ab4e3be7556b7' as Address
+
 function computeCreate2Address(salt: Hash, initCodeHash: Hash, deployer: Address): Address {
   const encoded = encodePacked(
     ['bytes1', 'address', 'bytes32', 'bytes32'],
     ['0xff', deployer, salt, initCodeHash]
   )
   return getAddress(`0x${keccak256(encoded).slice(-40)}`)
+}
+
+function computeSoladyCloneInitCodeHash(implementation: Address): Hash {
+  return keccak256(
+    `0x602c3d8160093d39f33d3d3d3d363d3d37363d73${implementation.slice(
+      2
+    )}5af43d3d93803e602a57fd5bf3`
+  ) as Hash
 }
 
 describe('mineTokenAddress', () => {
@@ -190,6 +217,70 @@ describe('mineTokenAddress', () => {
 
     expect(result.tokenAddress.slice(2).toLowerCase().endsWith('0')).toBe(true)
     expect(result.iterations).toBeGreaterThan(0)
+  })
+
+  it('mines standard-v2 token addresses using the clone init code hash', () => {
+    const initialSupply = 1_000_000n
+    const tokenData = encodeAbiParameters(
+      STANDARD_TOKEN_V2_ABI,
+      [
+        'Vanity Token V2',
+        'VNY2',
+        1000n,
+        [{ cliff: 90n, duration: 180n }],
+        [RECIPIENT],
+        [0n],
+        [100n],
+        'ipfs://token-v2',
+      ]
+    )
+
+    const result = mineTokenAddress({
+      prefix: '0',
+      tokenFactory: TOKEN_FACTORY,
+      initialSupply,
+      recipient: RECIPIENT,
+      owner: OWNER,
+      tokenData,
+      tokenVariant: 'standard-v2',
+      v2Implementation: V2_IMPLEMENTATION,
+    })
+
+    expect(result.tokenAddress.slice(2).toLowerCase().startsWith('0')).toBe(true)
+
+    const initHash = computeSoladyCloneInitCodeHash(V2_IMPLEMENTATION)
+    const manualAddress = computeCreate2Address(result.salt, initHash, TOKEN_FACTORY)
+    expect(manualAddress).toBe(result.tokenAddress)
+  })
+
+  it('throws when standard-v2 mining is attempted without a v2 implementation address', () => {
+    const tokenData = encodeAbiParameters(
+      STANDARD_TOKEN_V2_ABI,
+      [
+        'Vanity Token V2',
+        'VNY2',
+        1000n,
+        [{ cliff: 90n, duration: 180n }],
+        [RECIPIENT],
+        [0n],
+        [100n],
+        'ipfs://token-v2',
+      ]
+    )
+
+    expect(() =>
+      mineTokenAddress({
+        prefix: '0',
+        tokenFactory: TOKEN_FACTORY,
+        initialSupply: 1_000_000n,
+        recipient: RECIPIENT,
+        owner: OWNER,
+        tokenData,
+        tokenVariant: 'standard-v2',
+      })
+    ).toThrow(
+      'TokenAddressMiner: v2Implementation is required for standard-v2 tokens'
+    )
   })
 
   it('mines a matching prefix and suffix together', () => {
