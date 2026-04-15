@@ -77,6 +77,11 @@ export interface BaseAuctionBuilder<C extends SupportedChainId> {
     cliffDuration?: number;
     recipients?: Address[];
     amounts?: bigint[];
+    schedules?: {
+      duration?: bigint;
+      cliffDuration?: number;
+    }[];
+    scheduleIds?: Array<number | bigint>;
   }): this;
 
   /**

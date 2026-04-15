@@ -221,4 +221,78 @@ describe('MulticurveBuilder - Vesting with multiple beneficiaries', () => {
     expect(params.vesting?.recipients).toEqual(recipients);
     expect(params.vesting?.amounts).toEqual(amounts);
   });
+
+  it('preserves custom schedules and schedule ids for V2 vesting', () => {
+    const recipients = [
+      '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' as `0x${string}`,
+      '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' as `0x${string}`,
+      '0xcccccccccccccccccccccccccccccccccccccccc' as `0x${string}`,
+    ];
+    const amounts = [
+      parseEther('100000'),
+      parseEther('50000'),
+      parseEther('150000'),
+    ];
+
+    const builder = new MulticurveBuilder(chainId);
+    const params = builder
+      .tokenConfig({
+        type: 'standard',
+        name: 'Test Token',
+        symbol: 'TEST',
+        tokenURI: 'ipfs://test',
+      })
+      .saleConfig({
+        initialSupply: parseEther('1000000'),
+        numTokensToSell: parseEther('700000'),
+        numeraire:
+          '0x4200000000000000000000000000000000000006' as `0x${string}`,
+      })
+      .poolConfig({
+        fee: 0,
+        tickSpacing: 8,
+        curves: [
+          {
+            tickLower: 0,
+            tickUpper: 240_000,
+            numPositions: 10,
+            shares: parseEther('1'),
+          },
+        ],
+      })
+      .withVesting({
+        recipients,
+        amounts,
+        schedules: [
+          {
+            duration: BigInt(365 * 24 * 60 * 60),
+            cliffDuration: 30 * 24 * 60 * 60,
+          },
+          {
+            duration: BigInt(2 * 365 * 24 * 60 * 60),
+            cliffDuration: 180 * 24 * 60 * 60,
+          },
+        ],
+        scheduleIds: [0, 1, 1],
+      })
+      .withGovernance({ type: 'default' })
+      .withMigration({ type: 'uniswapV2' })
+      .withUserAddress(
+        '0x1234567890123456789012345678901234567890' as `0x${string}`,
+      )
+      .build();
+
+    expect(params.vesting).toBeDefined();
+    expect(params.vesting?.schedules).toEqual([
+      {
+        duration: 365 * 24 * 60 * 60,
+        cliffDuration: 30 * 24 * 60 * 60,
+      },
+      {
+        duration: 2 * 365 * 24 * 60 * 60,
+        cliffDuration: 180 * 24 * 60 * 60,
+      },
+    ]);
+    expect(params.vesting?.scheduleIds).toEqual([0, 1, 1]);
+  });
 });

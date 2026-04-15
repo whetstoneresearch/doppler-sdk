@@ -303,16 +303,32 @@ export class StaticAuctionBuilder<
     cliffDuration?: number;
     recipients?: Address[];
     amounts?: bigint[];
+    schedules?: {
+      duration?: bigint;
+      cliffDuration?: number;
+    }[];
+    scheduleIds?: Array<number | bigint>;
   }): this {
     if (!params) {
       this.vesting = undefined;
       return this;
     }
+    const hasCustomSchedules =
+      (params.schedules?.length ?? 0) > 0 ||
+      (params.scheduleIds?.length ?? 0) > 0;
     this.vesting = {
-      duration: Number(params.duration ?? DEFAULT_V3_VESTING_DURATION),
+      duration: Number(
+        params.duration ??
+          (hasCustomSchedules ? 0n : DEFAULT_V3_VESTING_DURATION),
+      ),
       cliffDuration: params.cliffDuration ?? 0,
       recipients: params.recipients,
       amounts: params.amounts,
+      schedules: params.schedules?.map((schedule) => ({
+        duration: Number(schedule.duration ?? 0n),
+        cliffDuration: schedule.cliffDuration ?? 0,
+      })),
+      scheduleIds: params.scheduleIds?.map((scheduleId) => Number(scheduleId)),
     };
     return this;
   }

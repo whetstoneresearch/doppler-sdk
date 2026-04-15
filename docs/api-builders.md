@@ -50,12 +50,14 @@ Methods (chainable):
   - poolByPriceRange({ priceRange, fee?, numPositions?, maxShareToBeSold? })
     - Computes ticks from `priceRange` using inferred `tickSpacing` from `fee`
     - @deprecated: Use `withMarketCapRange()` instead for more intuitive configuration
-- withVesting({ duration?, cliffDuration?, recipients?, amounts? } | undefined)
+- withVesting({ duration?, cliffDuration?, recipients?, amounts?, schedules?, scheduleIds? } | undefined)
   - Omit to disable vesting. Default duration if provided but undefined is `DEFAULT_V3_VESTING_DURATION`.
-  - `cliffDuration > 0` automatically routes standard tokens through the DERC20 V2 factory (`CloneDERC20VotesV2Factory`).
+  - `cliffDuration > 0` or `schedules` automatically routes standard tokens through the DERC20 V2 factory (`CloneDERC20VotesV2Factory`).
   - Cliff vesting requires `duration >= 1 day` and `cliffDuration <= duration`.
   - `recipients`: Optional array of addresses to receive vested tokens. Defaults to `[userAddress]` if not provided.
   - `amounts`: Optional array of token amounts corresponding to each recipient. Must match `recipients` length if provided. Defaults to all unsold tokens to `userAddress` if not provided.
+  - `schedules`: Optional array of `{ duration, cliffDuration }` schedule definitions for DERC20 V2 vesting.
+  - `scheduleIds`: Optional array mapping each recipient to an entry in `schedules`. If omitted, the SDK assigns a single shared schedule to all recipients when `schedules.length === 1`, or one schedule per recipient in order when `schedules.length === recipients.length`.
 - withGovernance(GovernanceConfig | { useDefaults: true } | { noOp: true } | undefined)
 - withMigration(MigrationConfig)
 - withUserAddress(address)
@@ -125,6 +127,28 @@ const paramsMultiVest = new StaticAuctionBuilder()
   .withMigration({ type: 'uniswapV2' })
   .withUserAddress(user)
   .build()
+
+// Example 4: Per-beneficiary vesting schedules (DERC20 V2)
+const paramsPerSchedule = new StaticAuctionBuilder()
+  .tokenConfig({ name: 'My Token', symbol: 'MTK', tokenURI: 'https://example.com/mtk.json' })
+  .saleConfig({ initialSupply: parseEther('1_000_000_000'), numTokensToSell: parseEther('900_000_000'), numeraire: weth })
+  .withMarketCapRange({
+    marketCap: { start: 50_000, end: 5_000_000 },
+    numerairePrice: 3000,
+  })
+  .withVesting({
+    recipients: ['0xTeam...', '0xAdvisor...', '0xTreasury...'],
+    amounts: [parseEther('30_000_000'), parseEther('20_000_000'), parseEther('50_000_000')],
+    schedules: [
+      { duration: BigInt(180*24*60*60), cliffDuration: 30 * 24 * 60 * 60 },
+      { duration: BigInt(365*24*60*60), cliffDuration: 90 * 24 * 60 * 60 },
+    ],
+    scheduleIds: [0, 1, 1],
+  })
+  .withGovernance()
+  .withMigration({ type: 'uniswapV2' })
+  .withUserAddress(user)
+  .build()
 ```
 
 ---
@@ -157,7 +181,7 @@ Methods (chainable):
   - auctionByPriceRange({ priceRange, minProceeds, maxProceeds, duration?, epochLength?, gamma?, tickSpacing?, numPdSlugs? })
     - Uses `pool.tickSpacing` unless `tickSpacing` is provided here
     - @deprecated: Use `withMarketCapRange()` instead for more intuitive configuration
-- withVesting({ duration?, cliffDuration?, recipients?, amounts? } | undefined)
+- withVesting({ duration?, cliffDuration?, recipients?, amounts?, schedules?, scheduleIds? } | undefined)
   - Omit to disable vesting. Default duration if provided but undefined is `0` for dynamic auctions.
   - `recipients`: Optional array of addresses to receive vested tokens. Defaults to `[userAddress]` if not provided.
   - `amounts`: Optional array of token amounts corresponding to each recipient. Must match `recipients` length if provided. Defaults to all unsold tokens to `userAddress` if not provided.
@@ -251,7 +275,7 @@ Methods (chainable):
     - Defaults: `fee = FEE_TIERS.LOW (500)`, `tickSpacing` inferred, and all three presets selected
     - `overrides` (per preset) let you tweak ticks, numPositions, or shares while preserving tier ordering
     - Automatically appends a filler curve when the selected presets sum to < 100%, keeping total shares at exactly 1e18
-- withVesting({ duration?, cliffDuration?, recipients?, amounts? } | undefined)
+- withVesting({ duration?, cliffDuration?, recipients?, amounts?, schedules?, scheduleIds? } | undefined)
   - `recipients`: Optional array of addresses to receive vested tokens. Defaults to `[userAddress]` if not provided.
   - `amounts`: Optional array of token amounts corresponding to each recipient. Must match `recipients` length if provided. Defaults to all unsold tokens to `userAddress` if not provided.
 - withGovernance(GovernanceConfig)
@@ -364,7 +388,7 @@ Methods (chainable):
 - dopplerConfig({ minProceeds, maxProceeds, startTick, endTick, duration?, epochLength?, gamma?, numPdSlugs?, fee?, tickSpacing? })
   - Defaults: `duration = 7 days`, `epochLength = 12 hours`, `numPdSlugs = 5`, `fee = 10000`, `tickSpacing = 30`
   - `gamma` is computed automatically when omitted
-- withVesting({ duration?, cliffDuration?, recipients?, amounts? } | undefined)
+- withVesting({ duration?, cliffDuration?, recipients?, amounts?, schedules?, scheduleIds? } | undefined)
 - withGovernance(GovernanceOption)
   - Optional in builder; defaults to no-op on no-op-enabled chains, default governance otherwise
 - withMigration(MigrationConfig)

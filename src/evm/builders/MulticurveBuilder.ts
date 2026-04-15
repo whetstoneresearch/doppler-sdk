@@ -642,6 +642,11 @@ export class MulticurveBuilder<
     cliffDuration?: number;
     recipients?: Address[];
     amounts?: bigint[];
+    schedules?: {
+      duration?: bigint;
+      cliffDuration?: number;
+    }[];
+    scheduleIds?: Array<number | bigint>;
   }): this {
     if (!params) {
       this.vesting = undefined;
@@ -652,6 +657,11 @@ export class MulticurveBuilder<
       cliffDuration: params.cliffDuration ?? 0,
       recipients: params.recipients,
       amounts: params.amounts,
+      schedules: params.schedules?.map((schedule) => ({
+        duration: Number(schedule.duration ?? 0n),
+        cliffDuration: schedule.cliffDuration ?? 0,
+      })),
+      scheduleIds: params.scheduleIds?.map((scheduleId) => Number(scheduleId)),
     };
     return this;
   }
