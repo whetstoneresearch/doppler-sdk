@@ -16,6 +16,9 @@ import {
 } from '../../utils';
 
 describe('Dynamic auction with RehypeDopplerHookMigrator (Base Sepolia fork)', () => {
+  const canonicalRehypeDopplerHookMigrator =
+    '0xea95DfdF69B90c65C827070852F7039D6aF6Dd7b' as Address;
+
   if (!isAnvilForkEnabled()) {
     it.skip('requires ANVIL_FORK_ENABLED=true');
     return;
@@ -67,7 +70,7 @@ describe('Dynamic auction with RehypeDopplerHookMigrator (Base Sepolia fork)', (
           address: addresses.airlock,
           abi: airlockAbi,
           functionName: 'getModuleState',
-          args: [addresses.rehypeDopplerHookMigrator!],
+          args: [canonicalRehypeDopplerHookMigrator],
         }),
         publicClient.readContract({
           address: addresses.airlock,
@@ -105,6 +108,10 @@ describe('Dynamic auction with RehypeDopplerHookMigrator (Base Sepolia fork)', (
     }
 
     const airlockBeneficiary = await sdk.getAirlockBeneficiary();
+
+    expect(addresses.rehypeDopplerHookMigrator).toBe(
+      canonicalRehypeDopplerHookMigrator,
+    );
 
     const params = sdk
       .buildDynamicAuction()
@@ -202,7 +209,7 @@ describe('Dynamic auction with RehypeDopplerHookMigrator (Base Sepolia fork)', (
       bigint,
     ];
 
-    expect(decodedMigration[5]).toBe(addresses.rehypeDopplerHookMigrator);
+    expect(decodedMigration[5]).toBe(canonicalRehypeDopplerHookMigrator);
     expect(decodedMigration[7]).toBe(account.address);
     expect(decodedMigration[8]).toBe(parseEther('0.1'));
 

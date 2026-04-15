@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { execFileSync } from 'node:child_process'
 import { readFile, writeFile, mkdir } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -71,7 +72,6 @@ async function readJsonFromFile(path) {
 
 async function main() {
   const __filename = fileURLToPath(import.meta.url)
-  const __dirname = dirname(__filename)
 
   const argv = process.argv.slice(2)
   const { source, out } = parseArgs(argv)
@@ -105,6 +105,9 @@ async function main() {
 
     await mkdir(dirname(outputPath), { recursive: true })
     await writeFile(outputPath, fileContents, 'utf8')
+    execFileSync('pnpm', ['exec', 'oxfmt', '--write', outputPath], {
+      stdio: 'inherit',
+    })
 
     console.log(`Wrote ${outputPath}`)
   } catch (err) {
@@ -115,5 +118,4 @@ async function main() {
 }
 
 main()
-
 
