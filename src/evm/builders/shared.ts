@@ -122,6 +122,45 @@ export interface BaseAuctionBuilder<C extends SupportedChainId> {
   withNoOpMigrator(address: Address): this;
 }
 
+const MAX_SAFE_INTEGER_BIGINT = BigInt(Number.MAX_SAFE_INTEGER);
+
+export function normalizeBuilderVestingScheduleDuration(
+  value: bigint | undefined,
+  fieldPath: string,
+): number {
+  const duration = value ?? 0n;
+  if (duration < 0n) {
+    throw new RangeError(`${fieldPath} cannot be negative`);
+  }
+  if (duration > MAX_SAFE_INTEGER_BIGINT) {
+    throw new RangeError(`${fieldPath} must be a safe integer`);
+  }
+  return Number(duration);
+}
+
+export function normalizeBuilderScheduleId(
+  scheduleId: number | bigint,
+  fieldPath: string,
+): number {
+  if (typeof scheduleId === 'bigint') {
+    if (scheduleId < 0n) {
+      throw new RangeError(`${fieldPath} cannot be negative`);
+    }
+    if (scheduleId > MAX_SAFE_INTEGER_BIGINT) {
+      throw new RangeError(`${fieldPath} must be a safe integer`);
+    }
+    return Number(scheduleId);
+  }
+
+  if (!Number.isSafeInteger(scheduleId)) {
+    throw new RangeError(`${fieldPath} must be a safe integer`);
+  }
+  if (scheduleId < 0) {
+    throw new RangeError(`${fieldPath} cannot be negative`);
+  }
+  return scheduleId;
+}
+
 export function computeTicks(
   priceRange: PriceRange,
   tickSpacing: number,

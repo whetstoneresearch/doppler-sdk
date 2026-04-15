@@ -34,6 +34,8 @@ import {
   type BaseAuctionBuilder,
   type MarketCapPresetOverrides,
   buildCurvesFromPresets,
+  normalizeBuilderScheduleId,
+  normalizeBuilderVestingScheduleDuration,
 } from './shared';
 
 export class MulticurveBuilder<
@@ -658,10 +660,15 @@ export class MulticurveBuilder<
       recipients: params.recipients,
       amounts: params.amounts,
       schedules: params.schedules?.map((schedule) => ({
-        duration: Number(schedule.duration ?? 0n),
+        duration: normalizeBuilderVestingScheduleDuration(
+          schedule.duration,
+          'Vesting schedule duration',
+        ),
         cliffDuration: schedule.cliffDuration ?? 0,
       })),
-      scheduleIds: params.scheduleIds?.map((scheduleId) => Number(scheduleId)),
+      scheduleIds: params.scheduleIds?.map((scheduleId, index) =>
+        normalizeBuilderScheduleId(scheduleId, `Vesting scheduleIds[${index}]`),
+      ),
     };
     return this;
   }

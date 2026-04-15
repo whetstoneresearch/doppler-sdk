@@ -28,7 +28,12 @@ import {
   type ModuleAddressOverrides,
 } from '../types';
 import { type SupportedChainId } from '../addresses';
-import { computeTicks, type BaseAuctionBuilder } from './shared';
+import {
+  computeTicks,
+  normalizeBuilderScheduleId,
+  normalizeBuilderVestingScheduleDuration,
+  type BaseAuctionBuilder,
+} from './shared';
 
 export class StaticAuctionBuilder<
   C extends SupportedChainId,
@@ -325,10 +330,15 @@ export class StaticAuctionBuilder<
       recipients: params.recipients,
       amounts: params.amounts,
       schedules: params.schedules?.map((schedule) => ({
-        duration: Number(schedule.duration ?? 0n),
+        duration: normalizeBuilderVestingScheduleDuration(
+          schedule.duration,
+          'Vesting schedule duration',
+        ),
         cliffDuration: schedule.cliffDuration ?? 0,
       })),
-      scheduleIds: params.scheduleIds?.map((scheduleId) => Number(scheduleId)),
+      scheduleIds: params.scheduleIds?.map((scheduleId, index) =>
+        normalizeBuilderScheduleId(scheduleId, `Vesting scheduleIds[${index}]`),
+      ),
     };
     return this;
   }

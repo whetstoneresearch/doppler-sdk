@@ -553,6 +553,145 @@ describe('DopplerFactory V2 cliff vesting', () => {
     );
   });
 
+  it('rejects unsafe schedule ids for direct factory callers', () => {
+    const params = MulticurveBuilder.forChain(1)
+      .tokenConfig({
+        name: 'Unsafe Schedule Id',
+        symbol: 'USID',
+        tokenURI: 'ipfs://unsafe-schedule-id',
+      })
+      .saleConfig({
+        initialSupply: parseEther('1000000'),
+        numTokensToSell: parseEther('900000'),
+        numeraire: mockAddresses.weth,
+      })
+      .poolConfig({
+        fee: 0,
+        tickSpacing: 8,
+        curves: [
+          {
+            tickLower: 0,
+            tickUpper: 80000,
+            numPositions: 8,
+            shares: WAD,
+          },
+        ],
+      })
+      .withVesting({
+        recipients: [userAddress],
+        amounts: [parseEther('100000')],
+        schedules: [
+          {
+            duration: 180n * BigInt(DAY_SECONDS),
+            cliffDuration: 30 * DAY_SECONDS,
+          },
+        ],
+      })
+      .withGovernance({ type: 'noOp' })
+      .withMigration({ type: 'uniswapV2' })
+      .withUserAddress(userAddress)
+      .build();
+
+    (params.vesting as any).scheduleIds = [Number.MAX_SAFE_INTEGER + 1];
+
+    expect(() => factory.encodeCreateMulticurveParams(params)).toThrow(
+      'Vesting scheduleIds[0] must be a safe integer',
+    );
+  });
+
+  it('rejects non-integer custom schedule values for direct factory callers', () => {
+    const params = MulticurveBuilder.forChain(1)
+      .tokenConfig({
+        name: 'Fractional Schedule',
+        symbol: 'FRACT',
+        tokenURI: 'ipfs://fractional-schedule',
+      })
+      .saleConfig({
+        initialSupply: parseEther('1000000'),
+        numTokensToSell: parseEther('900000'),
+        numeraire: mockAddresses.weth,
+      })
+      .poolConfig({
+        fee: 0,
+        tickSpacing: 8,
+        curves: [
+          {
+            tickLower: 0,
+            tickUpper: 80000,
+            numPositions: 8,
+            shares: WAD,
+          },
+        ],
+      })
+      .withVesting({
+        recipients: [userAddress],
+        amounts: [parseEther('100000')],
+        schedules: [
+          {
+            duration: 180n * BigInt(DAY_SECONDS),
+            cliffDuration: 30 * DAY_SECONDS,
+          },
+        ],
+      })
+      .withGovernance({ type: 'noOp' })
+      .withMigration({ type: 'uniswapV2' })
+      .withUserAddress(userAddress)
+      .build();
+
+    (params.vesting!.schedules as any)[0].duration = Number.NaN;
+
+    expect(() => factory.encodeCreateMulticurveParams(params)).toThrow(
+      'Vesting schedules[0].duration must be a finite integer',
+    );
+  });
+
+  it('rejects non-safe custom schedule values for direct factory callers', () => {
+    const params = MulticurveBuilder.forChain(1)
+      .tokenConfig({
+        name: 'Unsafe Schedule',
+        symbol: 'UNSAFE',
+        tokenURI: 'ipfs://unsafe-schedule',
+      })
+      .saleConfig({
+        initialSupply: parseEther('1000000'),
+        numTokensToSell: parseEther('900000'),
+        numeraire: mockAddresses.weth,
+      })
+      .poolConfig({
+        fee: 0,
+        tickSpacing: 8,
+        curves: [
+          {
+            tickLower: 0,
+            tickUpper: 80000,
+            numPositions: 8,
+            shares: WAD,
+          },
+        ],
+      })
+      .withVesting({
+        recipients: [userAddress],
+        amounts: [parseEther('100000')],
+        schedules: [
+          {
+            duration: 180n * BigInt(DAY_SECONDS),
+            cliffDuration: 30 * DAY_SECONDS,
+          },
+        ],
+      })
+      .withGovernance({ type: 'noOp' })
+      .withMigration({ type: 'uniswapV2' })
+      .withUserAddress(userAddress)
+      .build();
+
+    (params.vesting!.schedules as any)[0].duration =
+      Number.MAX_SAFE_INTEGER + 1;
+
+    expect(() => factory.encodeCreateMulticurveParams(params)).toThrow(
+      'Vesting schedules[0].duration must be a safe integer',
+    );
+  });
+
   it('rejects legacy tokenFactory overrides when cliffs are requested', async () => {
     const params = StaticAuctionBuilder.forChain(1)
       .tokenConfig({

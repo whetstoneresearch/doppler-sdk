@@ -175,6 +175,7 @@ type StandardTokenFactoryData =
   | V2StandardTokenFactoryData;
 
 const DERC20_V2_MIN_VESTING_DURATION = 24 * 60 * 60;
+const MAX_UINT64 = (1n << 64n) - 1n;
 
 export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
   private publicClient: SupportedPublicClient;
@@ -237,10 +238,36 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     if (!Number.isFinite(scheduleId) || !Number.isInteger(scheduleId)) {
       throw new Error(`${label} must be an integer`);
     }
+    if (!Number.isSafeInteger(scheduleId)) {
+      throw new Error(`${label} must be a safe integer`);
+    }
     if (scheduleId < 0) {
       throw new Error(`${label} cannot be negative`);
     }
     return BigInt(scheduleId);
+  }
+
+  private validateUint64LikeNumber(
+    value: number,
+    fieldPath: string,
+    options: { allowZero?: boolean } = {},
+  ): void {
+    const { allowZero = true } = options;
+    if (!Number.isFinite(value) || !Number.isInteger(value)) {
+      throw new Error(`${fieldPath} must be a finite integer`);
+    }
+    if (!Number.isSafeInteger(value)) {
+      throw new Error(`${fieldPath} must be a safe integer`);
+    }
+    if (value < 0) {
+      throw new Error(`${fieldPath} cannot be negative`);
+    }
+    if (!allowZero && value === 0) {
+      throw new Error(`${fieldPath} must be greater than zero`);
+    }
+    if (BigInt(value) > MAX_UINT64) {
+      throw new Error(`${fieldPath} must fit in uint64`);
+    }
   }
 
   private resolveV2VestingSchedules(args: {
@@ -4206,12 +4233,10 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
         }
 
         for (const [index, scheduleId] of vesting.scheduleIds.entries()) {
-          if (!Number.isFinite(scheduleId) || !Number.isInteger(scheduleId)) {
-            throw new Error(`Vesting scheduleIds[${index}] must be an integer`);
-          }
-          if (scheduleId < 0) {
-            throw new Error(`Vesting scheduleIds[${index}] cannot be negative`);
-          }
+          this.validateUint64LikeNumber(
+            scheduleId,
+            `Vesting scheduleIds[${index}]`,
+          );
           if (scheduleId >= schedules.length) {
             throw new Error(
               `Vesting scheduleIds[${index}] references missing schedule ${scheduleId}`,
@@ -4231,16 +4256,14 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
         const scheduleCliff = schedule.cliffDuration ?? 0;
         const scheduleDuration = schedule.duration ?? 0;
 
-        if (scheduleCliff < 0) {
-          throw new Error(
-            `Vesting schedules[${index}].cliffDuration cannot be negative`,
-          );
-        }
-        if (scheduleDuration < 0) {
-          throw new Error(
-            `Vesting schedules[${index}].duration cannot be negative`,
-          );
-        }
+        this.validateUint64LikeNumber(
+          scheduleCliff,
+          `Vesting schedules[${index}].cliffDuration`,
+        );
+        this.validateUint64LikeNumber(
+          scheduleDuration,
+          `Vesting schedules[${index}].duration`,
+        );
         if (scheduleCliff > scheduleDuration) {
           throw new Error(
             `Vesting schedules[${index}].cliffDuration cannot exceed duration`,

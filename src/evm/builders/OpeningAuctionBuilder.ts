@@ -23,7 +23,11 @@ import {
   type VestingConfig,
 } from '../types';
 import { type SupportedChainId } from '../addresses';
-import { type BaseAuctionBuilder } from './shared';
+import {
+  normalizeBuilderScheduleId,
+  normalizeBuilderVestingScheduleDuration,
+  type BaseAuctionBuilder,
+} from './shared';
 
 export interface OpeningAuctionConfig {
   auctionDuration: number;
@@ -200,10 +204,15 @@ export class OpeningAuctionBuilder<
       recipients: params.recipients,
       amounts: params.amounts,
       schedules: params.schedules?.map((schedule) => ({
-        duration: Number(schedule.duration ?? 0n),
+        duration: normalizeBuilderVestingScheduleDuration(
+          schedule.duration,
+          'Vesting schedule duration',
+        ),
         cliffDuration: schedule.cliffDuration ?? 0,
       })),
-      scheduleIds: params.scheduleIds?.map((scheduleId) => Number(scheduleId)),
+      scheduleIds: params.scheduleIds?.map((scheduleId, index) =>
+        normalizeBuilderScheduleId(scheduleId, `Vesting scheduleIds[${index}]`),
+      ),
     };
     return this;
   }
