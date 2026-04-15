@@ -28,7 +28,12 @@ import {
   type ModuleAddressOverrides,
 } from '../types';
 import { type SupportedChainId } from '../addresses';
-import { computeTicks, type BaseAuctionBuilder } from './shared';
+import {
+  computeTicks,
+  normalizeBuilderScheduleId,
+  normalizeBuilderVestingScheduleDuration,
+  type BaseAuctionBuilder,
+} from './shared';
 
 export class StaticAuctionBuilder<
   C extends SupportedChainId,
@@ -303,16 +308,37 @@ export class StaticAuctionBuilder<
     cliffDuration?: number;
     recipients?: Address[];
     amounts?: bigint[];
+    schedules?: {
+      duration?: bigint;
+      cliffDuration?: number;
+    }[];
+    scheduleIds?: Array<number | bigint>;
   }): this {
     if (!params) {
       this.vesting = undefined;
       return this;
     }
+    const hasCustomSchedules =
+      (params.schedules?.length ?? 0) > 0 ||
+      (params.scheduleIds?.length ?? 0) > 0;
     this.vesting = {
-      duration: Number(params.duration ?? DEFAULT_V3_VESTING_DURATION),
+      duration: Number(
+        params.duration ??
+          (hasCustomSchedules ? 0n : DEFAULT_V3_VESTING_DURATION),
+      ),
       cliffDuration: params.cliffDuration ?? 0,
       recipients: params.recipients,
       amounts: params.amounts,
+      schedules: params.schedules?.map((schedule) => ({
+        duration: normalizeBuilderVestingScheduleDuration(
+          schedule.duration,
+          'Vesting schedule duration',
+        ),
+        cliffDuration: schedule.cliffDuration ?? 0,
+      })),
+      scheduleIds: params.scheduleIds?.map((scheduleId, index) =>
+        normalizeBuilderScheduleId(scheduleId, `Vesting scheduleIds[${index}]`),
+      ),
     };
     return this;
   }

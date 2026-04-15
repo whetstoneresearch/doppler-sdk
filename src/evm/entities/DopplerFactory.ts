@@ -175,6 +175,7 @@ type StandardTokenFactoryData =
   | V2StandardTokenFactoryData;
 
 const DERC20_V2_MIN_VESTING_DURATION = 24 * 60 * 60;
+const MAX_UINT64 = (1n << 64n) - 1n;
 
 export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
   private publicClient: SupportedPublicClient;
@@ -194,8 +195,21 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     this.chainId = chainId;
   }
 
+  private hasCustomV2Schedules(vesting?: VestingConfig): boolean {
+    return (
+      (vesting?.schedules?.length ?? 0) > 0 ||
+      (vesting?.scheduleIds?.length ?? 0) > 0
+    );
+  }
+
   private usesDerc20V2Vesting(vesting?: VestingConfig): boolean {
-    return (vesting?.cliffDuration ?? 0) > 0;
+    if (!vesting) {
+      return false;
+    }
+
+    return (
+      this.hasCustomV2Schedules(vesting) || (vesting.cliffDuration ?? 0) > 0
+    );
   }
 
   private resolveVestingAllocations(args: {
@@ -218,6 +232,103 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       recipients: [args.userAddress],
       amounts: [args.sale.initialSupply - args.sale.numTokensToSell],
     };
+  }
+
+  private normalizeV2ScheduleId(scheduleId: number, label: string): bigint {
+    if (!Number.isFinite(scheduleId) || !Number.isInteger(scheduleId)) {
+      throw new Error(`${label} must be an integer`);
+    }
+    if (!Number.isSafeInteger(scheduleId)) {
+      throw new Error(`${label} must be a safe integer`);
+    }
+    if (scheduleId < 0) {
+      throw new Error(`${label} cannot be negative`);
+    }
+    return BigInt(scheduleId);
+  }
+
+  private validateUint64LikeNumber(
+    value: number,
+    fieldPath: string,
+    options: { allowZero?: boolean } = {},
+  ): void {
+    const { allowZero = true } = options;
+    if (!Number.isFinite(value) || !Number.isInteger(value)) {
+      throw new Error(`${fieldPath} must be a finite integer`);
+    }
+    if (!Number.isSafeInteger(value)) {
+      throw new Error(`${fieldPath} must be a safe integer`);
+    }
+    if (value < 0) {
+      throw new Error(`${fieldPath} cannot be negative`);
+    }
+    if (!allowZero && value === 0) {
+      throw new Error(`${fieldPath} must be greater than zero`);
+    }
+    if (BigInt(value) > MAX_UINT64) {
+      throw new Error(`${fieldPath} must fit in uint64`);
+    }
+  }
+
+  private resolveV2VestingSchedules(args: {
+    vesting?: VestingConfig;
+    recipientCount: number;
+  }): {
+    schedules: V2VestingSchedule[];
+    scheduleIds: bigint[];
+  } {
+    if (!args.vesting) {
+      return { schedules: [], scheduleIds: [] };
+    }
+
+    if (!this.hasCustomV2Schedules(args.vesting)) {
+      return {
+        schedules: [
+          {
+            cliff: BigInt(args.vesting.cliffDuration ?? 0),
+            duration: BigInt(args.vesting.duration ?? 0),
+          },
+        ],
+        scheduleIds: Array.from({ length: args.recipientCount }, () => 0n),
+      };
+    }
+
+    const schedules =
+      args.vesting.schedules?.map((schedule) => ({
+        cliff: BigInt(schedule.cliffDuration ?? 0),
+        duration: BigInt(schedule.duration ?? 0),
+      })) ?? [];
+
+    const explicitScheduleIds = args.vesting.scheduleIds;
+    if (explicitScheduleIds && explicitScheduleIds.length > 0) {
+      return {
+        schedules,
+        scheduleIds: explicitScheduleIds.map((scheduleId, index) =>
+          this.normalizeV2ScheduleId(
+            scheduleId,
+            `Vesting scheduleIds[${index}]`,
+          ),
+        ),
+      };
+    }
+
+    if (schedules.length === 1) {
+      return {
+        schedules,
+        scheduleIds: Array.from({ length: args.recipientCount }, () => 0n),
+      };
+    }
+
+    if (schedules.length === args.recipientCount) {
+      return {
+        schedules,
+        scheduleIds: schedules.map((_, index) => BigInt(index)),
+      };
+    }
+
+    throw new Error(
+      'Vesting schedules must either contain exactly one shared schedule or one schedule per recipient when scheduleIds are omitted',
+    );
   }
 
   private resolveStandardTokenFactoryMode(args: {
@@ -293,15 +404,10 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
         );
       }
 
-      const schedules =
-        args.vesting === undefined
-          ? []
-          : [
-              {
-                cliff: BigInt(args.vesting.cliffDuration ?? 0),
-                duration: BigInt(args.vesting.duration ?? 0),
-              },
-            ];
+      const { schedules, scheduleIds } = this.resolveV2VestingSchedules({
+        vesting: args.vesting,
+        recipientCount: recipients.length,
+      });
 
       return {
         kind: 'v2',
@@ -312,7 +418,7 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
         yearlyMintRate,
         schedules,
         beneficiaries: recipients,
-        scheduleIds: recipients.map(() => 0n),
+        scheduleIds,
         amounts,
         tokenURI: args.token.tokenURI,
         implementation,
@@ -4076,23 +4182,11 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
 
     const cliffDuration = vesting.cliffDuration ?? 0;
     const duration = vesting.duration ?? 0;
+    const hasCustomSchedules = this.hasCustomV2Schedules(vesting);
 
-    if (cliffDuration < 0) {
-      throw new Error('Vesting cliff duration cannot be negative');
-    }
-    if (duration < 0) {
-      throw new Error('Vesting duration cannot be negative');
-    }
-    if (cliffDuration > duration) {
-      throw new Error('Vesting cliff duration cannot exceed vesting duration');
-    }
-    if (
-      cliffDuration > 0 &&
-      duration > 0 &&
-      duration < DERC20_V2_MIN_VESTING_DURATION
-    ) {
+    if (hasCustomSchedules && (cliffDuration > 0 || duration > 0)) {
       throw new Error(
-        `Vesting duration must be 0 or at least ${DERC20_V2_MIN_VESTING_DURATION} seconds when using cliffs`,
+        'Use vesting.schedules instead of top-level duration/cliffDuration when configuring multiple vesting schedules',
       );
     }
 
@@ -4113,12 +4207,99 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
           `Total vesting amount (${totalVested}) exceeds available tokens (${availableForVesting})`,
         );
       }
+    } else {
+      const vestedAmount = sale.initialSupply - sale.numTokensToSell;
+      if (vestedAmount <= 0n) {
+        throw new Error('No tokens available for vesting');
+      }
+    }
+
+    if (hasCustomSchedules) {
+      const schedules = vesting.schedules;
+      if (!schedules || schedules.length === 0) {
+        throw new Error(
+          'Vesting schedules are required when using scheduleIds or multiple vesting schedules',
+        );
+      }
+
+      const recipientCount =
+        vesting.recipients && vesting.amounts ? vesting.recipients.length : 1;
+
+      if (vesting.scheduleIds) {
+        if (vesting.scheduleIds.length !== recipientCount) {
+          throw new Error(
+            'Vesting scheduleIds array must have the same length as vesting recipients',
+          );
+        }
+
+        for (const [index, scheduleId] of vesting.scheduleIds.entries()) {
+          this.validateUint64LikeNumber(
+            scheduleId,
+            `Vesting scheduleIds[${index}]`,
+          );
+          if (scheduleId >= schedules.length) {
+            throw new Error(
+              `Vesting scheduleIds[${index}] references missing schedule ${scheduleId}`,
+            );
+          }
+        }
+      } else if (
+        schedules.length !== 1 &&
+        schedules.length !== recipientCount
+      ) {
+        throw new Error(
+          'Vesting schedules must either contain exactly one shared schedule or one schedule per recipient when scheduleIds are omitted',
+        );
+      }
+
+      for (const [index, schedule] of schedules.entries()) {
+        const scheduleCliff = schedule.cliffDuration ?? 0;
+        const scheduleDuration = schedule.duration ?? 0;
+
+        this.validateUint64LikeNumber(
+          scheduleCliff,
+          `Vesting schedules[${index}].cliffDuration`,
+        );
+        this.validateUint64LikeNumber(
+          scheduleDuration,
+          `Vesting schedules[${index}].duration`,
+        );
+        if (scheduleCliff > scheduleDuration) {
+          throw new Error(
+            `Vesting schedules[${index}].cliffDuration cannot exceed duration`,
+          );
+        }
+        if (
+          scheduleCliff > 0 &&
+          scheduleDuration > 0 &&
+          scheduleDuration < DERC20_V2_MIN_VESTING_DURATION
+        ) {
+          throw new Error(
+            `Vesting schedules[${index}].duration must be 0 or at least ${DERC20_V2_MIN_VESTING_DURATION} seconds when using cliffs`,
+          );
+        }
+      }
+
       return;
     }
 
-    const vestedAmount = sale.initialSupply - sale.numTokensToSell;
-    if (vestedAmount <= 0n) {
-      throw new Error('No tokens available for vesting');
+    if (cliffDuration < 0) {
+      throw new Error('Vesting cliff duration cannot be negative');
+    }
+    if (duration < 0) {
+      throw new Error('Vesting duration cannot be negative');
+    }
+    if (cliffDuration > duration) {
+      throw new Error('Vesting cliff duration cannot exceed vesting duration');
+    }
+    if (
+      cliffDuration > 0 &&
+      duration > 0 &&
+      duration < DERC20_V2_MIN_VESTING_DURATION
+    ) {
+      throw new Error(
+        `Vesting duration must be 0 or at least ${DERC20_V2_MIN_VESTING_DURATION} seconds when using cliffs`,
+      );
     }
   }
 
@@ -4169,8 +4350,6 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     if (params.sale.numTokensToSell > params.sale.initialSupply) {
       throw new Error('Cannot sell more tokens than initial supply');
     }
-
-    this.validateVestingConfig(params.sale, params.vesting);
 
     this.validateVestingConfig(params.sale, params.vesting);
 

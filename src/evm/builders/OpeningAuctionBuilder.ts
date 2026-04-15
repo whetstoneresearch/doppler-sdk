@@ -23,7 +23,11 @@ import {
   type VestingConfig,
 } from '../types';
 import { type SupportedChainId } from '../addresses';
-import { type BaseAuctionBuilder } from './shared';
+import {
+  normalizeBuilderScheduleId,
+  normalizeBuilderVestingScheduleDuration,
+  type BaseAuctionBuilder,
+} from './shared';
 
 export interface OpeningAuctionConfig {
   auctionDuration: number;
@@ -184,6 +188,11 @@ export class OpeningAuctionBuilder<
     cliffDuration?: number;
     recipients?: Address[];
     amounts?: bigint[];
+    schedules?: {
+      duration?: bigint;
+      cliffDuration?: number;
+    }[];
+    scheduleIds?: Array<number | bigint>;
   }): this {
     if (!params) {
       this.vesting = undefined;
@@ -194,6 +203,16 @@ export class OpeningAuctionBuilder<
       cliffDuration: params.cliffDuration ?? 0,
       recipients: params.recipients,
       amounts: params.amounts,
+      schedules: params.schedules?.map((schedule) => ({
+        duration: normalizeBuilderVestingScheduleDuration(
+          schedule.duration,
+          'Vesting schedule duration',
+        ),
+        cliffDuration: schedule.cliffDuration ?? 0,
+      })),
+      scheduleIds: params.scheduleIds?.map((scheduleId, index) =>
+        normalizeBuilderScheduleId(scheduleId, `Vesting scheduleIds[${index}]`),
+      ),
     };
     return this;
   }

@@ -101,11 +101,18 @@ export interface OpeningAuctionDopplerConfig {
 }
 
 // Vesting configuration
+export interface VestingScheduleConfig {
+  duration: number; // in seconds
+  cliffDuration: number; // in seconds
+}
+
 export interface VestingConfig {
   duration: number; // in seconds
   cliffDuration: number; // in seconds
   recipients?: Address[]; // Optional array of recipient addresses (defaults to [userAddress] if not specified)
   amounts?: bigint[]; // Optional array of vesting amounts per recipient (must match recipients length if provided)
+  schedules?: VestingScheduleConfig[]; // Optional V2 vesting schedule definitions
+  scheduleIds?: number[]; // Optional mapping from recipients to schedule indexes
 }
 
 // Chains where no-op governance is enabled

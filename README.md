@@ -88,6 +88,13 @@ const params = new StaticAuctionBuilder()
     // Optional: specify multiple recipients and amounts
     // recipients: ['0xTeam...', '0xAdvisor...'],
     // amounts: [parseEther('50000000'), parseEther('50000000')]
+    // Optional: define per-beneficiary schedules on the DERC20 V2 path
+    // schedules: [
+    //   { duration: BigInt(180 * 24 * 60 * 60), cliffDuration: 30 * 24 * 60 * 60 },
+    //   { duration: BigInt(365 * 24 * 60 * 60), cliffDuration: 90 * 24 * 60 * 60 },
+    // ],
+    // Optional: if omitted, one schedule is assigned per recipient in order
+    // scheduleIds: [0, 1]
   })
   .withMigration({ type: 'uniswapV2' })
   .withUserAddress('0x...')
@@ -98,7 +105,9 @@ console.log('Pool address:', result.poolAddress);
 console.log('Token address:', result.tokenAddress);
 ```
 
-If you set `cliffDuration > 0`, the SDK now automatically uses the DERC20 V2 factory and exposes schedule-aware token reads via `sdk.getDerc20V2(tokenAddress)`.
+If you set `cliffDuration > 0` or provide `schedules`, the SDK automatically uses the DERC20 V2 factory and exposes schedule-aware token reads via `sdk.getDerc20V2(tokenAddress)`. When `schedules` is provided, omit `scheduleIds` to assign one schedule per recipient in order, or provide `scheduleIds` to reuse schedules across beneficiaries.
+
+For a runnable example, see [examples/multicurve-per-beneficiary-vesting.ts](./examples/multicurve-per-beneficiary-vesting.ts).
 
 > **Tick spacing reminder:** When you provide ticks manually via `poolByTicks`, make sure both `startTick` and `endTick` are exact multiples of the fee tier's tick spacing (100→1, 500→10, 3000→60, 10000→200). The SDK now validates this locally and will fail fast if the ticks are misaligned.
 

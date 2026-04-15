@@ -26,7 +26,12 @@ import {
   type ModuleAddressOverrides,
 } from '../types';
 import { type SupportedChainId } from '../addresses';
-import { computeTicks, type BaseAuctionBuilder } from './shared';
+import {
+  computeTicks,
+  normalizeBuilderScheduleId,
+  normalizeBuilderVestingScheduleDuration,
+  type BaseAuctionBuilder,
+} from './shared';
 
 export class DynamicAuctionBuilder<
   C extends SupportedChainId,
@@ -316,6 +321,11 @@ export class DynamicAuctionBuilder<
     cliffDuration?: number;
     recipients?: Address[];
     amounts?: bigint[];
+    schedules?: {
+      duration?: bigint;
+      cliffDuration?: number;
+    }[];
+    scheduleIds?: Array<number | bigint>;
   }): this {
     if (!params) {
       this.vesting = undefined;
@@ -326,6 +336,16 @@ export class DynamicAuctionBuilder<
       cliffDuration: params.cliffDuration ?? 0,
       recipients: params.recipients,
       amounts: params.amounts,
+      schedules: params.schedules?.map((schedule) => ({
+        duration: normalizeBuilderVestingScheduleDuration(
+          schedule.duration,
+          'Vesting schedule duration',
+        ),
+        cliffDuration: schedule.cliffDuration ?? 0,
+      })),
+      scheduleIds: params.scheduleIds?.map((scheduleId, index) =>
+        normalizeBuilderScheduleId(scheduleId, `Vesting scheduleIds[${index}]`),
+      ),
     };
     return this;
   }

@@ -26,6 +26,8 @@ vi.mock('../../../../src/evm/addresses', async (importOriginal) => {
 const userAddress = '0x1234567890123456789012345678901234567890' as Address;
 const secondaryRecipient =
   '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as Address;
+const tertiaryRecipient =
+  '0xfedcfedcfedcfedcfedcfedcfedcfedcfedcfedc' as Address;
 
 const STANDARD_TOKEN_V2_DATA_ABI = [
   { type: 'string' },
@@ -158,6 +160,124 @@ describe('DopplerFactory V2 cliff vesting', () => {
     expect(decoded[4]).toEqual([userAddress]);
     expect(decoded[5]).toEqual([0n]);
     expect(decoded[6]).toEqual([parseEther('100000')]);
+  });
+
+  it('assigns one custom schedule per recipient when scheduleIds are omitted', async () => {
+    const params = StaticAuctionBuilder.forChain(1)
+      .tokenConfig({
+        name: 'Scheduled Cliff',
+        symbol: 'SCFL',
+        tokenURI: 'ipfs://scheduled-cliff',
+      })
+      .saleConfig({
+        initialSupply: parseEther('1000000'),
+        numTokensToSell: parseEther('900000'),
+        numeraire: mockAddresses.weth,
+      })
+      .poolByTicks({
+        startTick: -120000,
+        endTick: -60000,
+        fee: 3000,
+      })
+      .withVesting({
+        recipients: [userAddress, secondaryRecipient],
+        amounts: [parseEther('55000'), parseEther('45000')],
+        schedules: [
+          {
+            duration: 180n * BigInt(DAY_SECONDS),
+            cliffDuration: 30 * DAY_SECONDS,
+          },
+          {
+            duration: 365n * BigInt(DAY_SECONDS),
+            cliffDuration: 90 * DAY_SECONDS,
+          },
+        ],
+      })
+      .withGovernance({ type: 'noOp' })
+      .withMigration({ type: 'uniswapV2' })
+      .withUserAddress(userAddress)
+      .build();
+
+    const createParams = await factory.encodeCreateStaticAuctionParams(params);
+    const decoded = decodeV2TokenFactoryData(createParams.tokenFactoryData);
+
+    expect(createParams.tokenFactory).toBe(mockAddresses.derc20V2Factory);
+    expect(decoded[3]).toEqual([
+      { cliff: 30n * BigInt(DAY_SECONDS), duration: 180n * BigInt(DAY_SECONDS) },
+      { cliff: 90n * BigInt(DAY_SECONDS), duration: 365n * BigInt(DAY_SECONDS) },
+    ]);
+    expect(decoded[4]).toEqual([
+      getAddress(userAddress),
+      getAddress(secondaryRecipient),
+    ]);
+    expect(decoded[5]).toEqual([0n, 1n]);
+    expect(decoded[6]).toEqual([parseEther('55000'), parseEther('45000')]);
+  });
+
+  it('reuses explicit schedule ids across recipients', () => {
+    const params = MulticurveBuilder.forChain(1)
+      .tokenConfig({
+        name: 'Mapped Schedules',
+        symbol: 'MAP',
+        tokenURI: 'ipfs://mapped-schedules',
+      })
+      .saleConfig({
+        initialSupply: parseEther('1000000'),
+        numTokensToSell: parseEther('700000'),
+        numeraire: mockAddresses.weth,
+      })
+      .poolConfig({
+        fee: 0,
+        tickSpacing: 8,
+        curves: [
+          {
+            tickLower: 0,
+            tickUpper: 80000,
+            numPositions: 8,
+            shares: WAD,
+          },
+        ],
+      })
+      .withVesting({
+        recipients: [userAddress, secondaryRecipient, tertiaryRecipient],
+        amounts: [
+          parseEther('120000'),
+          parseEther('80000'),
+          parseEther('100000'),
+        ],
+        schedules: [
+          {
+            duration: 180n * BigInt(DAY_SECONDS),
+            cliffDuration: 30 * DAY_SECONDS,
+          },
+          {
+            duration: 365n * BigInt(DAY_SECONDS),
+            cliffDuration: 120 * DAY_SECONDS,
+          },
+        ],
+        scheduleIds: [0, 1, 1],
+      })
+      .withGovernance({ type: 'noOp' })
+      .withMigration({ type: 'uniswapV2' })
+      .withUserAddress(userAddress)
+      .build();
+
+    const createParams = factory.encodeCreateMulticurveParams(params);
+    const decoded = decodeV2TokenFactoryData(createParams.tokenFactoryData);
+
+    expect(decoded[3]).toEqual([
+      { cliff: 30n * BigInt(DAY_SECONDS), duration: 180n * BigInt(DAY_SECONDS) },
+      {
+        cliff: 120n * BigInt(DAY_SECONDS),
+        duration: 365n * BigInt(DAY_SECONDS),
+      },
+    ]);
+    expect(decoded[5]).toEqual([0n, 1n, 1n]);
+    expect(decoded[6]).toEqual([
+      parseEther('120000'),
+      parseEther('80000'),
+      parseEther('100000'),
+    ]);
   });
 
   it('uses the V2 factory for opening auctions with cliffs', async () => {
@@ -340,6 +460,235 @@ describe('DopplerFactory V2 cliff vesting', () => {
 
     expect(() => factory.encodeCreateMulticurveParams(params)).toThrow(
       `Vesting duration must be 0 or at least ${DAY_SECONDS} seconds when using cliffs`,
+    );
+  });
+
+  it('rejects explicit schedules mixed with top-level duration settings', () => {
+    const params = MulticurveBuilder.forChain(1)
+      .tokenConfig({
+        name: 'Mixed Schedules',
+        symbol: 'MIX',
+        tokenURI: 'ipfs://mixed-schedules',
+      })
+      .saleConfig({
+        initialSupply: parseEther('1000000'),
+        numTokensToSell: parseEther('900000'),
+        numeraire: mockAddresses.weth,
+      })
+      .poolConfig({
+        fee: 0,
+        tickSpacing: 8,
+        curves: [
+          {
+            tickLower: 0,
+            tickUpper: 80000,
+            numPositions: 8,
+            shares: WAD,
+          },
+        ],
+      })
+      .withVesting({
+        duration: 180n * BigInt(DAY_SECONDS),
+        recipients: [userAddress],
+        amounts: [parseEther('100000')],
+        schedules: [
+          {
+            duration: 365n * BigInt(DAY_SECONDS),
+            cliffDuration: 90 * DAY_SECONDS,
+          },
+        ],
+      })
+      .withGovernance({ type: 'noOp' })
+      .withMigration({ type: 'uniswapV2' })
+      .withUserAddress(userAddress)
+      .build();
+
+    expect(() => factory.encodeCreateMulticurveParams(params)).toThrow(
+      'Use vesting.schedules instead of top-level duration/cliffDuration when configuring multiple vesting schedules',
+    );
+  });
+
+  it('rejects schedule ids that reference missing schedules', () => {
+    const params = MulticurveBuilder.forChain(1)
+      .tokenConfig({
+        name: 'Missing Schedule',
+        symbol: 'MISS',
+        tokenURI: 'ipfs://missing-schedule',
+      })
+      .saleConfig({
+        initialSupply: parseEther('1000000'),
+        numTokensToSell: parseEther('900000'),
+        numeraire: mockAddresses.weth,
+      })
+      .poolConfig({
+        fee: 0,
+        tickSpacing: 8,
+        curves: [
+          {
+            tickLower: 0,
+            tickUpper: 80000,
+            numPositions: 8,
+            shares: WAD,
+          },
+        ],
+      })
+      .withVesting({
+        recipients: [userAddress, secondaryRecipient],
+        amounts: [parseEther('50000'), parseEther('50000')],
+        schedules: [
+          {
+            duration: 180n * BigInt(DAY_SECONDS),
+            cliffDuration: 30 * DAY_SECONDS,
+          },
+        ],
+        scheduleIds: [0, 1],
+      })
+      .withGovernance({ type: 'noOp' })
+      .withMigration({ type: 'uniswapV2' })
+      .withUserAddress(userAddress)
+      .build();
+
+    expect(() => factory.encodeCreateMulticurveParams(params)).toThrow(
+      'Vesting scheduleIds[1] references missing schedule 1',
+    );
+  });
+
+  it('rejects unsafe schedule ids for direct factory callers', () => {
+    const params = MulticurveBuilder.forChain(1)
+      .tokenConfig({
+        name: 'Unsafe Schedule Id',
+        symbol: 'USID',
+        tokenURI: 'ipfs://unsafe-schedule-id',
+      })
+      .saleConfig({
+        initialSupply: parseEther('1000000'),
+        numTokensToSell: parseEther('900000'),
+        numeraire: mockAddresses.weth,
+      })
+      .poolConfig({
+        fee: 0,
+        tickSpacing: 8,
+        curves: [
+          {
+            tickLower: 0,
+            tickUpper: 80000,
+            numPositions: 8,
+            shares: WAD,
+          },
+        ],
+      })
+      .withVesting({
+        recipients: [userAddress],
+        amounts: [parseEther('100000')],
+        schedules: [
+          {
+            duration: 180n * BigInt(DAY_SECONDS),
+            cliffDuration: 30 * DAY_SECONDS,
+          },
+        ],
+      })
+      .withGovernance({ type: 'noOp' })
+      .withMigration({ type: 'uniswapV2' })
+      .withUserAddress(userAddress)
+      .build();
+
+    (params.vesting as any).scheduleIds = [Number.MAX_SAFE_INTEGER + 1];
+
+    expect(() => factory.encodeCreateMulticurveParams(params)).toThrow(
+      'Vesting scheduleIds[0] must be a safe integer',
+    );
+  });
+
+  it('rejects non-integer custom schedule values for direct factory callers', () => {
+    const params = MulticurveBuilder.forChain(1)
+      .tokenConfig({
+        name: 'Fractional Schedule',
+        symbol: 'FRACT',
+        tokenURI: 'ipfs://fractional-schedule',
+      })
+      .saleConfig({
+        initialSupply: parseEther('1000000'),
+        numTokensToSell: parseEther('900000'),
+        numeraire: mockAddresses.weth,
+      })
+      .poolConfig({
+        fee: 0,
+        tickSpacing: 8,
+        curves: [
+          {
+            tickLower: 0,
+            tickUpper: 80000,
+            numPositions: 8,
+            shares: WAD,
+          },
+        ],
+      })
+      .withVesting({
+        recipients: [userAddress],
+        amounts: [parseEther('100000')],
+        schedules: [
+          {
+            duration: 180n * BigInt(DAY_SECONDS),
+            cliffDuration: 30 * DAY_SECONDS,
+          },
+        ],
+      })
+      .withGovernance({ type: 'noOp' })
+      .withMigration({ type: 'uniswapV2' })
+      .withUserAddress(userAddress)
+      .build();
+
+    (params.vesting!.schedules as any)[0].duration = Number.NaN;
+
+    expect(() => factory.encodeCreateMulticurveParams(params)).toThrow(
+      'Vesting schedules[0].duration must be a finite integer',
+    );
+  });
+
+  it('rejects non-safe custom schedule values for direct factory callers', () => {
+    const params = MulticurveBuilder.forChain(1)
+      .tokenConfig({
+        name: 'Unsafe Schedule',
+        symbol: 'UNSAFE',
+        tokenURI: 'ipfs://unsafe-schedule',
+      })
+      .saleConfig({
+        initialSupply: parseEther('1000000'),
+        numTokensToSell: parseEther('900000'),
+        numeraire: mockAddresses.weth,
+      })
+      .poolConfig({
+        fee: 0,
+        tickSpacing: 8,
+        curves: [
+          {
+            tickLower: 0,
+            tickUpper: 80000,
+            numPositions: 8,
+            shares: WAD,
+          },
+        ],
+      })
+      .withVesting({
+        recipients: [userAddress],
+        amounts: [parseEther('100000')],
+        schedules: [
+          {
+            duration: 180n * BigInt(DAY_SECONDS),
+            cliffDuration: 30 * DAY_SECONDS,
+          },
+        ],
+      })
+      .withGovernance({ type: 'noOp' })
+      .withMigration({ type: 'uniswapV2' })
+      .withUserAddress(userAddress)
+      .build();
+
+    (params.vesting!.schedules as any)[0].duration =
+      Number.MAX_SAFE_INTEGER + 1;
+
+    expect(() => factory.encodeCreateMulticurveParams(params)).toThrow(
+      'Vesting schedules[0].duration must be a safe integer',
     );
   });
 
