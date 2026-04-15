@@ -56,6 +56,10 @@ Get price quotes across different Uniswap versions for optimal trading.
 
 Create a multicurve auction that queues until a future start time using the scheduled initializer on Base.
 
+### 12a. [Per-Beneficiary Vesting Schedules](./multicurve-per-beneficiary-vesting.ts)
+
+Create a multicurve auction whose vesting beneficiaries use different cliff and vesting schedules on the DERC20 V2 path. Demonstrates `schedules`, `scheduleIds`, and reading the assigned schedule data back from `sdk.getDerc20V2(...)`.
+
 ### 13. [Multicurve Vanity Launch (Market Cap)](./multicurve-vanity-by-marketcap.ts)
 
 Create a multicurve pool and mine a salt so the deployed token address ends with a chosen hex suffix (identifier). Launches on-chain (requires RPC + PRIVATE_KEY).
