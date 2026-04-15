@@ -154,6 +154,10 @@ describe('Dynamic auction with RehypeDopplerHookMigrator (Base Sepolia fork)', (
             numeraireFeesToLpWad: parseEther('0.25'),
           },
         },
+        proceedsSplit: {
+          recipient: account.address,
+          share: parseEther('0.1'),
+        },
       })
       .withUserAddress(account.address)
       .withTime({ startTimeOffset: 300 })
@@ -199,6 +203,8 @@ describe('Dynamic auction with RehypeDopplerHookMigrator (Base Sepolia fork)', (
     ];
 
     expect(decodedMigration[5]).toBe(addresses.rehypeDopplerHookMigrator);
+    expect(decodedMigration[7]).toBe(account.address);
+    expect(decodedMigration[8]).toBe(parseEther('0.1'));
 
     const [rehypeInit] = decodeAbiParameters(
       [
