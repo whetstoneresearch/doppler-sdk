@@ -50,6 +50,17 @@ describe('Multicurve cliff vesting (Base Sepolia fork)', () => {
     governanceFactory?: number
   } = {}
 
+  const vestedAmountAtTimestamp = (
+    totalAmount: bigint,
+    startTimestamp: bigint,
+    currentTimestamp: bigint,
+    duration: bigint
+  ) => {
+    const elapsed = currentTimestamp > startTimestamp ? currentTimestamp - startTimestamp : 0n
+    const vestedElapsed = elapsed > duration ? duration : elapsed
+    return (totalAmount * vestedElapsed) / duration
+  }
+
   beforeAll(async () => {
     await anvilManager.start(chainId)
 
@@ -211,13 +222,24 @@ describe('Multicurve cliff vesting (Base Sepolia fork)', () => {
 
     const releaseTx = await token.releaseSchedule(0n)
     await testClient.mine({ blocks: 1 })
-    await publicClient.waitForTransactionReceipt({ hash: releaseTx })
+    const releaseReceipt = await publicClient.waitForTransactionReceipt({
+      hash: releaseTx,
+    })
+    const releaseBlock = await publicClient.getBlock({
+      blockNumber: releaseReceipt.blockNumber,
+    })
+    const releasedAmount = vestedAmountAtTimestamp(
+      vestedAmount,
+      vestingStart,
+      releaseBlock.timestamp,
+      vestingDuration
+    )
 
     expect(await token.getVestingDataForSchedule(account.address, 0n)).toEqual({
       totalAmount: vestedAmount,
-      releasedAmount: expectedReleased,
+      releasedAmount,
     })
-    expect(await token.getBalanceOf(account.address)).toBe(expectedReleased)
+    expect(await token.getBalanceOf(account.address)).toBe(releasedAmount)
     expect(await token.getAvailableVestedAmount(account.address)).toBe(0n)
   }, 120_000)
 
@@ -340,12 +362,23 @@ describe('Multicurve cliff vesting (Base Sepolia fork)', () => {
 
     const releaseTx = await token.releaseFor(secondaryRecipient, 1n)
     await testClient.mine({ blocks: 1 })
-    await publicClient.waitForTransactionReceipt({ hash: releaseTx })
+    const releaseReceipt = await publicClient.waitForTransactionReceipt({
+      hash: releaseTx,
+    })
+    const releaseBlock = await publicClient.getBlock({
+      blockNumber: releaseReceipt.blockNumber,
+    })
+    const releasedAmount = vestedAmountAtTimestamp(
+      secondaryAmount,
+      vestingStart,
+      releaseBlock.timestamp,
+      secondarySchedule.duration
+    )
 
     expect(await token.getVestingDataForSchedule(secondaryRecipient, 1n)).toEqual({
       totalAmount: secondaryAmount,
-      releasedAmount: secondaryReleased,
+      releasedAmount,
     })
-    expect(await token.getBalanceOf(secondaryRecipient)).toBe(secondaryReleased)
+    expect(await token.getBalanceOf(secondaryRecipient)).toBe(releasedAmount)
   }, 120_000)
 })
