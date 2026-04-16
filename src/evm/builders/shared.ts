@@ -77,11 +77,14 @@ export interface BaseAuctionBuilder<C extends SupportedChainId> {
     cliffDuration?: number;
     recipients?: Address[];
     amounts?: bigint[];
-    schedules?: {
-      duration?: bigint;
-      cliffDuration?: number;
+    allocations?: {
+      recipient: Address;
+      amount: bigint;
+      schedule: {
+        duration?: bigint;
+        cliffDuration?: number;
+      };
     }[];
-    scheduleIds?: Array<number | bigint>;
   }): this;
 
   /**
@@ -124,6 +127,23 @@ export interface BaseAuctionBuilder<C extends SupportedChainId> {
 
 const MAX_SAFE_INTEGER_BIGINT = BigInt(Number.MAX_SAFE_INTEGER);
 
+export type BuilderVestingScheduleInput = {
+  duration?: bigint;
+  cliffDuration?: number;
+};
+
+export type BuilderVestingInput = {
+  duration?: bigint;
+  cliffDuration?: number;
+  recipients?: Address[];
+  amounts?: bigint[];
+  allocations?: {
+    recipient: Address;
+    amount: bigint;
+    schedule: BuilderVestingScheduleInput;
+  }[];
+};
+
 export function normalizeBuilderVestingScheduleDuration(
   value: bigint | undefined,
   fieldPath: string,
@@ -138,27 +158,17 @@ export function normalizeBuilderVestingScheduleDuration(
   return Number(duration);
 }
 
-export function normalizeBuilderScheduleId(
-  scheduleId: number | bigint,
+export function normalizeBuilderVestingSchedule(
+  schedule: BuilderVestingScheduleInput,
   fieldPath: string,
-): number {
-  if (typeof scheduleId === 'bigint') {
-    if (scheduleId < 0n) {
-      throw new RangeError(`${fieldPath} cannot be negative`);
-    }
-    if (scheduleId > MAX_SAFE_INTEGER_BIGINT) {
-      throw new RangeError(`${fieldPath} must be a safe integer`);
-    }
-    return Number(scheduleId);
-  }
-
-  if (!Number.isSafeInteger(scheduleId)) {
-    throw new RangeError(`${fieldPath} must be a safe integer`);
-  }
-  if (scheduleId < 0) {
-    throw new RangeError(`${fieldPath} cannot be negative`);
-  }
-  return scheduleId;
+): { duration: number; cliffDuration: number } {
+  return {
+    duration: normalizeBuilderVestingScheduleDuration(
+      schedule.duration,
+      `${fieldPath}.duration`,
+    ),
+    cliffDuration: schedule.cliffDuration ?? 0,
+  };
 }
 
 export function computeTicks(

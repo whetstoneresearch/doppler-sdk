@@ -106,14 +106,27 @@ export interface VestingScheduleConfig {
   cliffDuration: number; // in seconds
 }
 
-export interface VestingConfig {
-  duration: number; // in seconds
-  cliffDuration: number; // in seconds
-  recipients?: Address[]; // Optional array of recipient addresses (defaults to [userAddress] if not specified)
-  amounts?: bigint[]; // Optional array of vesting amounts per recipient (must match recipients length if provided)
-  schedules?: VestingScheduleConfig[]; // Optional V2 vesting schedule definitions
-  scheduleIds?: number[]; // Optional mapping from recipients to schedule indexes
+export interface VestingAllocationConfig {
+  recipient: Address;
+  amount: bigint;
+  schedule: VestingScheduleConfig;
 }
+
+export type VestingConfig =
+  | {
+      duration: number; // in seconds
+      cliffDuration: number; // in seconds
+      recipients?: Address[]; // Optional array of recipient addresses (defaults to [userAddress] if not specified)
+      amounts?: bigint[]; // Optional array of vesting amounts per recipient (must match recipients length if provided)
+      allocations?: never;
+    }
+  | {
+      duration?: never;
+      cliffDuration?: never;
+      recipients?: never;
+      amounts?: never;
+      allocations: VestingAllocationConfig[];
+    };
 
 // Chains where no-op governance is enabled
 export const NO_OP_ENABLED_CHAIN_IDS = [

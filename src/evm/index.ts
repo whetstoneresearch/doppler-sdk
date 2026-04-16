@@ -94,6 +94,8 @@ export type {
   StaticPoolConfig,
   DynamicAuctionConfig,
   VestingConfig,
+  VestingAllocationConfig,
+  VestingScheduleConfig,
   MigrationConfig,
   DopplerHookMigrationConfig,
   BeneficiaryData,

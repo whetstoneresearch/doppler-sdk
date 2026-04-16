@@ -162,7 +162,7 @@ describe('DopplerFactory V2 cliff vesting', () => {
     expect(decoded[6]).toEqual([parseEther('100000')]);
   });
 
-  it('assigns one custom schedule per recipient when scheduleIds are omitted', async () => {
+  it('assigns one custom schedule per allocation', async () => {
     const params = StaticAuctionBuilder.forChain(1)
       .tokenConfig({
         name: 'Scheduled Cliff',
@@ -180,16 +180,22 @@ describe('DopplerFactory V2 cliff vesting', () => {
         fee: 3000,
       })
       .withVesting({
-        recipients: [userAddress, secondaryRecipient],
-        amounts: [parseEther('55000'), parseEther('45000')],
-        schedules: [
+        allocations: [
           {
-            duration: 180n * BigInt(DAY_SECONDS),
-            cliffDuration: 30 * DAY_SECONDS,
+            recipient: userAddress,
+            amount: parseEther('55000'),
+            schedule: {
+              duration: 180n * BigInt(DAY_SECONDS),
+              cliffDuration: 30 * DAY_SECONDS,
+            },
           },
           {
-            duration: 365n * BigInt(DAY_SECONDS),
-            cliffDuration: 90 * DAY_SECONDS,
+            recipient: secondaryRecipient,
+            amount: parseEther('45000'),
+            schedule: {
+              duration: 365n * BigInt(DAY_SECONDS),
+              cliffDuration: 90 * DAY_SECONDS,
+            },
           },
         ],
       })
@@ -214,7 +220,7 @@ describe('DopplerFactory V2 cliff vesting', () => {
     expect(decoded[6]).toEqual([parseEther('55000'), parseEther('45000')]);
   });
 
-  it('reuses explicit schedule ids across recipients', () => {
+  it('dedupes identical allocation schedules across recipients', () => {
     const params = MulticurveBuilder.forChain(1)
       .tokenConfig({
         name: 'Mapped Schedules',
@@ -239,23 +245,32 @@ describe('DopplerFactory V2 cliff vesting', () => {
         ],
       })
       .withVesting({
-        recipients: [userAddress, secondaryRecipient, tertiaryRecipient],
-        amounts: [
-          parseEther('120000'),
-          parseEther('80000'),
-          parseEther('100000'),
-        ],
-        schedules: [
+        allocations: [
           {
-            duration: 180n * BigInt(DAY_SECONDS),
-            cliffDuration: 30 * DAY_SECONDS,
+            recipient: userAddress,
+            amount: parseEther('120000'),
+            schedule: {
+              duration: 180n * BigInt(DAY_SECONDS),
+              cliffDuration: 30 * DAY_SECONDS,
+            },
           },
           {
-            duration: 365n * BigInt(DAY_SECONDS),
-            cliffDuration: 120 * DAY_SECONDS,
+            recipient: secondaryRecipient,
+            amount: parseEther('80000'),
+            schedule: {
+              duration: 365n * BigInt(DAY_SECONDS),
+              cliffDuration: 120 * DAY_SECONDS,
+            },
+          },
+          {
+            recipient: tertiaryRecipient,
+            amount: parseEther('100000'),
+            schedule: {
+              duration: 365n * BigInt(DAY_SECONDS),
+              cliffDuration: 120 * DAY_SECONDS,
+            },
           },
         ],
-        scheduleIds: [0, 1, 1],
       })
       .withGovernance({ type: 'noOp' })
       .withMigration({ type: 'uniswapV2' })
@@ -281,7 +296,7 @@ describe('DopplerFactory V2 cliff vesting', () => {
   });
 
   it('uses the V2 factory for opening auctions with cliffs', async () => {
-    const publicClient = createMockPublicClient();
+    const publicClient = createMockPublicClient() as any;
     vi.mocked(publicClient.readContract)
       .mockResolvedValueOnce(mockAddresses.poolManager as any)
       .mockResolvedValueOnce(mockAddresses.dopplerDeployer as any);
@@ -463,7 +478,7 @@ describe('DopplerFactory V2 cliff vesting', () => {
     );
   });
 
-  it('rejects explicit schedules mixed with top-level duration settings', () => {
+  it('rejects direct factory caller input that mixes allocations with shared vesting fields', () => {
     const params = MulticurveBuilder.forChain(1)
       .tokenConfig({
         name: 'Mixed Schedules',
@@ -489,12 +504,14 @@ describe('DopplerFactory V2 cliff vesting', () => {
       })
       .withVesting({
         duration: 180n * BigInt(DAY_SECONDS),
-        recipients: [userAddress],
-        amounts: [parseEther('100000')],
-        schedules: [
+        allocations: [
           {
-            duration: 365n * BigInt(DAY_SECONDS),
-            cliffDuration: 90 * DAY_SECONDS,
+            recipient: userAddress,
+            amount: parseEther('100000'),
+            schedule: {
+              duration: 365n * BigInt(DAY_SECONDS),
+              cliffDuration: 90 * DAY_SECONDS,
+            },
           },
         ],
       })
@@ -503,17 +520,20 @@ describe('DopplerFactory V2 cliff vesting', () => {
       .withUserAddress(userAddress)
       .build();
 
+    // Simulate malformed runtime input from a direct caller bypassing builder typing.
+    (params.vesting as any).duration = 180 * DAY_SECONDS;
+
     expect(() => factory.encodeCreateMulticurveParams(params)).toThrow(
-      'Use vesting.schedules instead of top-level duration/cliffDuration when configuring multiple vesting schedules',
+      'Use vesting.allocations instead of top-level duration/cliffDuration/recipients/amounts when configuring per-beneficiary vesting',
     );
   });
 
-  it('rejects schedule ids that reference missing schedules', () => {
+  it('rejects empty allocation arrays', () => {
     const params = MulticurveBuilder.forChain(1)
       .tokenConfig({
-        name: 'Missing Schedule',
-        symbol: 'MISS',
-        tokenURI: 'ipfs://missing-schedule',
+        name: 'Empty Allocations',
+        symbol: 'EMPTY',
+        tokenURI: 'ipfs://empty-allocations',
       })
       .saleConfig({
         initialSupply: parseEther('1000000'),
@@ -533,15 +553,7 @@ describe('DopplerFactory V2 cliff vesting', () => {
         ],
       })
       .withVesting({
-        recipients: [userAddress, secondaryRecipient],
-        amounts: [parseEther('50000'), parseEther('50000')],
-        schedules: [
-          {
-            duration: 180n * BigInt(DAY_SECONDS),
-            cliffDuration: 30 * DAY_SECONDS,
-          },
-        ],
-        scheduleIds: [0, 1],
+        allocations: [],
       })
       .withGovernance({ type: 'noOp' })
       .withMigration({ type: 'uniswapV2' })
@@ -549,57 +561,11 @@ describe('DopplerFactory V2 cliff vesting', () => {
       .build();
 
     expect(() => factory.encodeCreateMulticurveParams(params)).toThrow(
-      'Vesting scheduleIds[1] references missing schedule 1',
+      'Vesting allocations array cannot be empty',
     );
   });
 
-  it('rejects unsafe schedule ids for direct factory callers', () => {
-    const params = MulticurveBuilder.forChain(1)
-      .tokenConfig({
-        name: 'Unsafe Schedule Id',
-        symbol: 'USID',
-        tokenURI: 'ipfs://unsafe-schedule-id',
-      })
-      .saleConfig({
-        initialSupply: parseEther('1000000'),
-        numTokensToSell: parseEther('900000'),
-        numeraire: mockAddresses.weth,
-      })
-      .poolConfig({
-        fee: 0,
-        tickSpacing: 8,
-        curves: [
-          {
-            tickLower: 0,
-            tickUpper: 80000,
-            numPositions: 8,
-            shares: WAD,
-          },
-        ],
-      })
-      .withVesting({
-        recipients: [userAddress],
-        amounts: [parseEther('100000')],
-        schedules: [
-          {
-            duration: 180n * BigInt(DAY_SECONDS),
-            cliffDuration: 30 * DAY_SECONDS,
-          },
-        ],
-      })
-      .withGovernance({ type: 'noOp' })
-      .withMigration({ type: 'uniswapV2' })
-      .withUserAddress(userAddress)
-      .build();
-
-    (params.vesting as any).scheduleIds = [Number.MAX_SAFE_INTEGER + 1];
-
-    expect(() => factory.encodeCreateMulticurveParams(params)).toThrow(
-      'Vesting scheduleIds[0] must be a safe integer',
-    );
-  });
-
-  it('rejects non-integer custom schedule values for direct factory callers', () => {
+  it('rejects non-integer allocation schedule values for direct factory callers', () => {
     const params = MulticurveBuilder.forChain(1)
       .tokenConfig({
         name: 'Fractional Schedule',
@@ -624,12 +590,14 @@ describe('DopplerFactory V2 cliff vesting', () => {
         ],
       })
       .withVesting({
-        recipients: [userAddress],
-        amounts: [parseEther('100000')],
-        schedules: [
+        allocations: [
           {
-            duration: 180n * BigInt(DAY_SECONDS),
-            cliffDuration: 30 * DAY_SECONDS,
+            recipient: userAddress,
+            amount: parseEther('100000'),
+            schedule: {
+              duration: 180n * BigInt(DAY_SECONDS),
+              cliffDuration: 30 * DAY_SECONDS,
+            },
           },
         ],
       })
@@ -638,14 +606,14 @@ describe('DopplerFactory V2 cliff vesting', () => {
       .withUserAddress(userAddress)
       .build();
 
-    (params.vesting!.schedules as any)[0].duration = Number.NaN;
+    (params.vesting!.allocations as any)[0].schedule.duration = Number.NaN;
 
     expect(() => factory.encodeCreateMulticurveParams(params)).toThrow(
-      'Vesting schedules[0].duration must be a finite integer',
+      'Vesting allocations[0].schedule.duration must be a finite integer',
     );
   });
 
-  it('rejects non-safe custom schedule values for direct factory callers', () => {
+  it('rejects non-safe allocation schedule values for direct factory callers', () => {
     const params = MulticurveBuilder.forChain(1)
       .tokenConfig({
         name: 'Unsafe Schedule',
@@ -670,12 +638,14 @@ describe('DopplerFactory V2 cliff vesting', () => {
         ],
       })
       .withVesting({
-        recipients: [userAddress],
-        amounts: [parseEther('100000')],
-        schedules: [
+        allocations: [
           {
-            duration: 180n * BigInt(DAY_SECONDS),
-            cliffDuration: 30 * DAY_SECONDS,
+            recipient: userAddress,
+            amount: parseEther('100000'),
+            schedule: {
+              duration: 180n * BigInt(DAY_SECONDS),
+              cliffDuration: 30 * DAY_SECONDS,
+            },
           },
         ],
       })
@@ -684,11 +654,11 @@ describe('DopplerFactory V2 cliff vesting', () => {
       .withUserAddress(userAddress)
       .build();
 
-    (params.vesting!.schedules as any)[0].duration =
+    (params.vesting!.allocations as any)[0].schedule.duration =
       Number.MAX_SAFE_INTEGER + 1;
 
     expect(() => factory.encodeCreateMulticurveParams(params)).toThrow(
-      'Vesting schedules[0].duration must be a safe integer',
+      'Vesting allocations[0].schedule.duration must be a safe integer',
     );
   });
 

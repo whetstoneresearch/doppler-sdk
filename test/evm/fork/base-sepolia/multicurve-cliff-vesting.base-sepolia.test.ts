@@ -285,16 +285,22 @@ describe('Multicurve cliff vesting (Base Sepolia fork)', () => {
         })),
       })
       .withVesting({
-        recipients: [account.address, secondaryRecipient],
-        amounts: [primaryAmount, secondaryAmount],
-        schedules: [
+        allocations: [
           {
-            duration: primarySchedule.duration,
-            cliffDuration: Number(primarySchedule.cliffDuration),
+            recipient: account.address,
+            amount: primaryAmount,
+            schedule: {
+              duration: primarySchedule.duration,
+              cliffDuration: Number(primarySchedule.cliffDuration),
+            },
           },
           {
-            duration: secondarySchedule.duration,
-            cliffDuration: Number(secondarySchedule.cliffDuration),
+            recipient: secondaryRecipient,
+            amount: secondaryAmount,
+            schedule: {
+              duration: secondarySchedule.duration,
+              cliffDuration: Number(secondarySchedule.cliffDuration),
+            },
           },
         ],
       })
