@@ -220,8 +220,12 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
 
     if (args.vesting.allocations) {
       return {
-        recipients: args.vesting.allocations.map((allocation) => allocation.recipient),
-        amounts: args.vesting.allocations.map((allocation) => allocation.amount),
+        recipients: args.vesting.allocations.map(
+          (allocation) => allocation.recipient,
+        ),
+        amounts: args.vesting.allocations.map(
+          (allocation) => allocation.amount,
+        ),
       };
     }
 

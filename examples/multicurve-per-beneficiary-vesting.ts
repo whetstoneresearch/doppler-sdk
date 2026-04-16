@@ -9,7 +9,13 @@
 import './env';
 
 import { CHAIN_IDS, DopplerSDK, WAD, getAddresses } from '../src/evm';
-import { createPublicClient, createWalletClient, getAddress, http, parseEther } from 'viem';
+import {
+  createPublicClient,
+  createWalletClient,
+  getAddress,
+  http,
+  parseEther,
+} from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { baseSepolia } from 'viem/chains';
 
@@ -115,7 +121,10 @@ async function main() {
   console.log('Base Sepolia per-beneficiary vesting example');
   console.log('RPC:', rpcUrl);
   console.log('Execute:', shouldExecute);
-  console.log('Beneficiaries:', allocations.map((allocation) => allocation.recipient));
+  console.log(
+    'Beneficiaries:',
+    allocations.map((allocation) => allocation.recipient),
+  );
   console.log(
     'Allocation schedule inputs:',
     allocations.map((allocation) => ({
