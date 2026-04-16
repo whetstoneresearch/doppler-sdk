@@ -1,9 +1,8 @@
 /**
  * Example: Create a Multicurve Auction with Per-Beneficiary Vesting Schedules
  *
- * Demonstrates DERC20 V2 vesting where different beneficiaries can use
- * different cliff and vesting schedules, and multiple beneficiaries can share
- * the same schedule via scheduleIds.
+ * Demonstrates DERC20 V2 vesting where each beneficiary provides an explicit
+ * allocation and schedule. The SDK dedupes identical schedules internally.
  *
  * This script simulates by default. Set EXECUTE=1 to broadcast on Base Sepolia.
  */
@@ -16,7 +15,6 @@ import {
   getAddress,
   http,
   parseEther,
-  type Address,
 } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { baseSepolia } from 'viem/chains';
@@ -56,12 +54,6 @@ async function main() {
     '0x00000000000000000000000000000000000000B2',
   );
 
-  const recipients: Address[] = [teamWallet, advisorWallet, treasuryWallet];
-  const amounts = [
-    parseEther('30000'),
-    parseEther('20000'),
-    parseEther('50000'),
-  ];
   const teamSchedule = {
     duration: BigInt(180 * 24 * 60 * 60),
     cliffDuration: 30 * 24 * 60 * 60,
@@ -70,6 +62,23 @@ async function main() {
     duration: BigInt(365 * 24 * 60 * 60),
     cliffDuration: 90 * 24 * 60 * 60,
   };
+  const allocations = [
+    {
+      recipient: teamWallet,
+      amount: parseEther('30000'),
+      schedule: teamSchedule,
+    },
+    {
+      recipient: advisorWallet,
+      amount: parseEther('20000'),
+      schedule: longTailSchedule,
+    },
+    {
+      recipient: treasuryWallet,
+      amount: parseEther('50000'),
+      schedule: longTailSchedule,
+    },
+  ];
 
   const params = sdk
     .buildMulticurveAuction()
@@ -102,10 +111,7 @@ async function main() {
       ],
     })
     .withVesting({
-      recipients,
-      amounts,
-      schedules: [teamSchedule, longTailSchedule],
-      scheduleIds: [0, 1, 1],
+      allocations,
     })
     .withGovernance({ type: 'default' })
     .withMigration({ type: 'uniswapV2' })
@@ -115,13 +121,17 @@ async function main() {
   console.log('Base Sepolia per-beneficiary vesting example');
   console.log('RPC:', rpcUrl);
   console.log('Execute:', shouldExecute);
-  console.log('Beneficiaries:', recipients);
   console.log(
-    'Schedule mapping:',
-    recipients.map((recipient, index) => ({
-      recipient,
-      amount: amounts[index].toString(),
-      scheduleId: params.vesting?.scheduleIds?.[index] ?? index,
+    'Beneficiaries:',
+    allocations.map((allocation) => allocation.recipient),
+  );
+  console.log(
+    'Allocation schedule inputs:',
+    allocations.map((allocation) => ({
+      recipient: allocation.recipient,
+      amount: allocation.amount.toString(),
+      cliffDuration: allocation.schedule.cliffDuration.toString(),
+      duration: allocation.schedule.duration.toString(),
     })),
   );
 
@@ -146,7 +156,7 @@ async function main() {
   const scheduleCount = await token.getVestingScheduleCount();
   console.log('Vesting schedule count:', scheduleCount.toString());
 
-  for (const recipient of recipients) {
+  for (const { recipient } of allocations) {
     const scheduleIds = await token.getScheduleIdsOf(recipient);
     console.log('Recipient schedules:', {
       recipient,

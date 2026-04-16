@@ -222,18 +222,7 @@ describe('MulticurveBuilder - Vesting with multiple beneficiaries', () => {
     expect(params.vesting?.amounts).toEqual(amounts);
   });
 
-  it('preserves custom schedules and schedule ids for V2 vesting', () => {
-    const recipients = [
-      '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' as `0x${string}`,
-      '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' as `0x${string}`,
-      '0xcccccccccccccccccccccccccccccccccccccccc' as `0x${string}`,
-    ];
-    const amounts = [
-      parseEther('100000'),
-      parseEther('50000'),
-      parseEther('150000'),
-    ];
-
+  it('preserves per-beneficiary allocations for V2 vesting', () => {
     const builder = new MulticurveBuilder(chainId);
     const params = builder
       .tokenConfig({
@@ -261,19 +250,35 @@ describe('MulticurveBuilder - Vesting with multiple beneficiaries', () => {
         ],
       })
       .withVesting({
-        recipients,
-        amounts,
-        schedules: [
+        allocations: [
           {
-            duration: BigInt(365 * 24 * 60 * 60),
-            cliffDuration: 30 * 24 * 60 * 60,
+            recipient:
+              '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' as `0x${string}`,
+            amount: parseEther('100000'),
+            schedule: {
+              duration: BigInt(365 * 24 * 60 * 60),
+              cliffDuration: 30 * 24 * 60 * 60,
+            },
           },
           {
-            duration: BigInt(2 * 365 * 24 * 60 * 60),
-            cliffDuration: 180 * 24 * 60 * 60,
+            recipient:
+              '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' as `0x${string}`,
+            amount: parseEther('50000'),
+            schedule: {
+              duration: BigInt(2 * 365 * 24 * 60 * 60),
+              cliffDuration: 180 * 24 * 60 * 60,
+            },
+          },
+          {
+            recipient:
+              '0xcccccccccccccccccccccccccccccccccccccccc' as `0x${string}`,
+            amount: parseEther('150000'),
+            schedule: {
+              duration: BigInt(2 * 365 * 24 * 60 * 60),
+              cliffDuration: 180 * 24 * 60 * 60,
+            },
           },
         ],
-        scheduleIds: [0, 1, 1],
       })
       .withGovernance({ type: 'default' })
       .withMigration({ type: 'uniswapV2' })
@@ -283,37 +288,32 @@ describe('MulticurveBuilder - Vesting with multiple beneficiaries', () => {
       .build();
 
     expect(params.vesting).toBeDefined();
-    expect(params.vesting?.schedules).toEqual([
+    expect(params.vesting?.allocations).toEqual([
       {
-        duration: 365 * 24 * 60 * 60,
-        cliffDuration: 30 * 24 * 60 * 60,
+        recipient: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        amount: parseEther('100000'),
+        schedule: {
+          duration: 365 * 24 * 60 * 60,
+          cliffDuration: 30 * 24 * 60 * 60,
+        },
       },
       {
-        duration: 2 * 365 * 24 * 60 * 60,
-        cliffDuration: 180 * 24 * 60 * 60,
+        recipient: '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        amount: parseEther('50000'),
+        schedule: {
+          duration: 2 * 365 * 24 * 60 * 60,
+          cliffDuration: 180 * 24 * 60 * 60,
+        },
+      },
+      {
+        recipient: '0xcccccccccccccccccccccccccccccccccccccccc',
+        amount: parseEther('150000'),
+        schedule: {
+          duration: 2 * 365 * 24 * 60 * 60,
+          cliffDuration: 180 * 24 * 60 * 60,
+        },
       },
     ]);
-    expect(params.vesting?.scheduleIds).toEqual([0, 1, 1]);
-  });
-
-  it('rejects unsafe schedule ids before building params', () => {
-    const builder = new MulticurveBuilder(chainId);
-
-    expect(() =>
-      builder.withVesting({
-        recipients: [
-          '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' as `0x${string}`,
-        ],
-        amounts: [parseEther('100000')],
-        schedules: [
-          {
-            duration: BigInt(365 * 24 * 60 * 60),
-            cliffDuration: 30 * 24 * 60 * 60,
-          },
-        ],
-        scheduleIds: [BigInt(Number.MAX_SAFE_INTEGER) + 1n],
-      }),
-    ).toThrow('Vesting scheduleIds[0] must be a safe integer');
   });
 
   it('rejects custom schedule durations that exceed safe integer range', () => {
@@ -321,17 +321,18 @@ describe('MulticurveBuilder - Vesting with multiple beneficiaries', () => {
 
     expect(() =>
       builder.withVesting({
-        recipients: [
-          '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' as `0x${string}`,
-        ],
-        amounts: [parseEther('100000')],
-        schedules: [
+        allocations: [
           {
-            duration: BigInt(Number.MAX_SAFE_INTEGER) + 1n,
-            cliffDuration: 30 * 24 * 60 * 60,
+            recipient:
+              '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' as `0x${string}`,
+            amount: parseEther('100000'),
+            schedule: {
+              duration: BigInt(Number.MAX_SAFE_INTEGER) + 1n,
+              cliffDuration: 30 * 24 * 60 * 60,
+            },
           },
         ],
       }),
-    ).toThrow('Vesting schedule duration must be a safe integer');
+    ).toThrow('Vesting allocations[0].schedule.duration must be a safe integer');
   });
 });

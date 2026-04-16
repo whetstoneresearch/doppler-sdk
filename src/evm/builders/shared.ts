@@ -18,6 +18,33 @@ import type {
 } from '../types';
 import type { SupportedChainId } from '../addresses';
 
+export type BuilderVestingScheduleInput = {
+  duration?: bigint;
+  cliffDuration?: number;
+};
+
+export type BuilderVestingAllocationInput = {
+  recipient: Address;
+  amount: bigint;
+  schedule: BuilderVestingScheduleInput;
+};
+
+export type BuilderVestingInput =
+  | {
+      duration?: bigint;
+      cliffDuration?: number;
+      recipients?: Address[];
+      amounts?: bigint[];
+      allocations?: never;
+    }
+  | {
+      duration?: never;
+      cliffDuration?: never;
+      recipients?: never;
+      amounts?: never;
+      allocations: BuilderVestingAllocationInput[];
+    };
+
 // ============================================================================
 // Common Builder Interface
 // ============================================================================
@@ -72,17 +99,7 @@ export interface BaseAuctionBuilder<C extends SupportedChainId> {
    * Configure token vesting for team/investor allocations.
    * Pass undefined or omit to disable vesting.
    */
-  withVesting(params?: {
-    duration?: bigint;
-    cliffDuration?: number;
-    recipients?: Address[];
-    amounts?: bigint[];
-    schedules?: {
-      duration?: bigint;
-      cliffDuration?: number;
-    }[];
-    scheduleIds?: Array<number | bigint>;
-  }): this;
+  withVesting(params?: BuilderVestingInput): this;
 
   /**
    * Configure governance for the token.
@@ -138,27 +155,17 @@ export function normalizeBuilderVestingScheduleDuration(
   return Number(duration);
 }
 
-export function normalizeBuilderScheduleId(
-  scheduleId: number | bigint,
+export function normalizeBuilderVestingSchedule(
+  schedule: BuilderVestingScheduleInput,
   fieldPath: string,
-): number {
-  if (typeof scheduleId === 'bigint') {
-    if (scheduleId < 0n) {
-      throw new RangeError(`${fieldPath} cannot be negative`);
-    }
-    if (scheduleId > MAX_SAFE_INTEGER_BIGINT) {
-      throw new RangeError(`${fieldPath} must be a safe integer`);
-    }
-    return Number(scheduleId);
-  }
-
-  if (!Number.isSafeInteger(scheduleId)) {
-    throw new RangeError(`${fieldPath} must be a safe integer`);
-  }
-  if (scheduleId < 0) {
-    throw new RangeError(`${fieldPath} cannot be negative`);
-  }
-  return scheduleId;
+): { duration: number; cliffDuration: number } {
+  return {
+    duration: normalizeBuilderVestingScheduleDuration(
+      schedule.duration,
+      `${fieldPath}.duration`,
+    ),
+    cliffDuration: schedule.cliffDuration ?? 0,
+  };
 }
 
 export function computeTicks(
