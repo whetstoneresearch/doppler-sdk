@@ -18,6 +18,33 @@ import type {
 } from '../types';
 import type { SupportedChainId } from '../addresses';
 
+export type BuilderVestingScheduleInput = {
+  duration?: bigint;
+  cliffDuration?: number;
+};
+
+export type BuilderVestingAllocationInput = {
+  recipient: Address;
+  amount: bigint;
+  schedule: BuilderVestingScheduleInput;
+};
+
+export type BuilderVestingInput =
+  | {
+      duration?: bigint;
+      cliffDuration?: number;
+      recipients?: Address[];
+      amounts?: bigint[];
+      allocations?: never;
+    }
+  | {
+      duration?: never;
+      cliffDuration?: never;
+      recipients?: never;
+      amounts?: never;
+      allocations: BuilderVestingAllocationInput[];
+    };
+
 // ============================================================================
 // Common Builder Interface
 // ============================================================================
@@ -72,20 +99,7 @@ export interface BaseAuctionBuilder<C extends SupportedChainId> {
    * Configure token vesting for team/investor allocations.
    * Pass undefined or omit to disable vesting.
    */
-  withVesting(params?: {
-    duration?: bigint;
-    cliffDuration?: number;
-    recipients?: Address[];
-    amounts?: bigint[];
-    allocations?: {
-      recipient: Address;
-      amount: bigint;
-      schedule: {
-        duration?: bigint;
-        cliffDuration?: number;
-      };
-    }[];
-  }): this;
+  withVesting(params?: BuilderVestingInput): this;
 
   /**
    * Configure governance for the token.
@@ -126,23 +140,6 @@ export interface BaseAuctionBuilder<C extends SupportedChainId> {
 }
 
 const MAX_SAFE_INTEGER_BIGINT = BigInt(Number.MAX_SAFE_INTEGER);
-
-export type BuilderVestingScheduleInput = {
-  duration?: bigint;
-  cliffDuration?: number;
-};
-
-export type BuilderVestingInput = {
-  duration?: bigint;
-  cliffDuration?: number;
-  recipients?: Address[];
-  amounts?: bigint[];
-  allocations?: {
-    recipient: Address;
-    amount: bigint;
-    schedule: BuilderVestingScheduleInput;
-  }[];
-};
 
 export function normalizeBuilderVestingScheduleDuration(
   value: bigint | undefined,

@@ -514,7 +514,7 @@ describe('DopplerFactory V2 cliff vesting', () => {
             },
           },
         ],
-      })
+      } as any)
       .withGovernance({ type: 'noOp' })
       .withMigration({ type: 'uniswapV2' })
       .withUserAddress(userAddress)
