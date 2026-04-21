@@ -31,11 +31,6 @@ export {
 } from './migrateLaunch.js';
 
 export {
-  createAbortLaunchInstruction,
-  type AbortLaunchAccounts,
-} from './abortLaunch.js';
-
-export {
   createPreviewSwapExactInInstruction,
   decodePreviewSwapExactInResult,
   type PreviewSwapExactInAccounts,

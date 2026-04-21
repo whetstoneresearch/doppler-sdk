@@ -171,7 +171,7 @@ export type ClaimAsyncInput<
   /** Winner mint (must match market.winner_mint) */
   winnerMint: Address<TAccountWinnerMint>;
   /** EntryByMint for validation that this mint belongs to this market */
-  entryByMint: Address<TAccountEntryByMint>;
+  entryByMint?: Address<TAccountEntryByMint>;
   /** Claimer's winner token account (source for burn) */
   claimerWinnerAta: Address<TAccountClaimerWinnerAta>;
   /** Claimer's quote token account (destination for rewards) */
@@ -282,6 +282,30 @@ export async function getClaimInstructionAsync<
           getAddressFromResolvedInstructionAccount(
             'market',
             accounts.market.value,
+          ),
+        ),
+      ],
+    });
+  }
+  if (!accounts.entryByMint.value) {
+    accounts.entryByMint.value = await getProgramDerivedAddress({
+      programAddress,
+      seeds: [
+        getBytesEncoder().encode(
+          new Uint8Array([
+            101, 110, 116, 114, 121, 95, 98, 121, 95, 109, 105, 110, 116,
+          ]),
+        ),
+        getAddressEncoder().encode(
+          getAddressFromResolvedInstructionAccount(
+            'market',
+            accounts.market.value,
+          ),
+        ),
+        getAddressEncoder().encode(
+          getAddressFromResolvedInstructionAccount(
+            'winnerMint',
+            accounts.winnerMint.value,
           ),
         ),
       ],

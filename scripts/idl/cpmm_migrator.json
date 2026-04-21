@@ -71,8 +71,10 @@
           "signer": true
         },
         {
-          "name": "token_program",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+          "name": "base_token_program"
+        },
+        {
+          "name": "quote_token_program"
         },
         {
           "name": "system_program",
@@ -216,8 +218,10 @@
           "signer": true
         },
         {
-          "name": "token_program",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+          "name": "base_token_program"
+        },
+        {
+          "name": "quote_token_program"
         },
         {
           "name": "system_program",
@@ -251,6 +255,9 @@
               }
             ]
           }
+        },
+        {
+          "name": "cpmm_config"
         }
       ],
       "args": [
@@ -267,6 +274,19 @@
   ],
   "accounts": [
     {
+      "name": "AmmConfig",
+      "discriminator": [
+        218,
+        244,
+        33,
+        104,
+        203,
+        203,
+        43,
+        111
+      ]
+    },
+    {
       "name": "CpmmMigratorState",
       "discriminator": [
         169,
@@ -277,6 +297,19 @@
         248,
         11,
         176
+      ]
+    },
+    {
+      "name": "InitConfig",
+      "discriminator": [
+        97,
+        166,
+        35,
+        7,
+        20,
+        2,
+        164,
+        126
       ]
     },
     {
@@ -416,9 +449,95 @@
       "code": 6018,
       "name": "LaunchConfigMismatch",
       "msg": "Launch configuration mismatch"
+    },
+    {
+      "code": 6019,
+      "name": "InvalidCpmmAdmin",
+      "msg": "CPMM admin signer does not match CPMM config admin"
+    },
+    {
+      "code": 6020,
+      "name": "InvalidPool",
+      "msg": "Invalid pool"
+    },
+    {
+      "code": 6021,
+      "name": "InvalidPoolAuthority",
+      "msg": "Invalid pool authority"
+    },
+    {
+      "code": 6022,
+      "name": "InvalidPosition",
+      "msg": "Invalid position"
     }
   ],
   "types": [
+    {
+      "name": "AmmConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "paused",
+            "type": "bool"
+          },
+          {
+            "name": "numeraire_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "sentinel_allowlist_len",
+            "type": "u8"
+          },
+          {
+            "name": "sentinel_allowlist",
+            "type": {
+              "array": [
+                "pubkey",
+                32
+              ]
+            }
+          },
+          {
+            "name": "max_swap_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "max_fee_split_bps",
+            "type": "u16"
+          },
+          {
+            "name": "max_route_hops",
+            "type": "u8"
+          },
+          {
+            "name": "protocol_fee_enabled",
+            "type": "bool"
+          },
+          {
+            "name": "protocol_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "version",
+            "type": "u8"
+          },
+          {
+            "name": "_reserved",
+            "type": {
+              "array": [
+                "u8",
+                7
+              ]
+            }
+          }
+        ]
+      }
+    },
     {
       "name": "CalldataBuf",
       "docs": [
@@ -557,6 +676,68 @@
               "array": [
                 "u8",
                 14
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "InitConfig",
+      "docs": [
+        "Initializer configuration account."
+      ],
+      "serialization": "bytemuckunsafe",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "migrator_allowlist_len",
+            "type": "u8"
+          },
+          {
+            "name": "migrator_allowlist",
+            "type": {
+              "array": [
+                "pubkey",
+                32
+              ]
+            }
+          },
+          {
+            "name": "sentinel_allowlist_len",
+            "type": "u8"
+          },
+          {
+            "name": "sentinel_allowlist",
+            "type": {
+              "array": [
+                "pubkey",
+                32
+              ]
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "version",
+            "type": "u8"
+          },
+          {
+            "name": "_reserved",
+            "type": {
+              "array": [
+                "u8",
+                31
               ]
             }
           }
@@ -727,6 +908,35 @@
                 "name": "CalldataBuf"
               }
             }
+          },
+          {
+            "name": "curve_kind",
+            "type": "u8"
+          },
+          {
+            "name": "swap_lock",
+            "type": "u8"
+          },
+          {
+            "name": "_pad4",
+            "type": {
+              "array": [
+                "u8",
+                6
+              ]
+            }
+          },
+          {
+            "name": "curve_params",
+            "type": {
+              "defined": {
+                "name": "CalldataBuf"
+              }
+            }
+          },
+          {
+            "name": "quote_deposited",
+            "type": "u64"
           },
           {
             "name": "_reserved",

@@ -31,6 +31,7 @@ import {
 import { SYSVAR_RENT_ADDRESS } from '@solana/sysvars';
 
 import { cpmm, initializer, cpmmMigrator } from '../src/solana/index.js';
+import { SYSVAR_INSTRUCTIONS_ADDRESS } from '../src/solana/core/constants.js';
 
 // ============================================================================
 // Environment
@@ -197,10 +198,11 @@ async function main() {
   });
 
   // ── Build, sign, and send ────────────────────────────────────────────────
-  // addressLookupTable compresses the 7 constant accounts (tokenProgram,
-  // systemProgram, rent, migratorProgram, quoteMint, metadataProgram, config)
-  // to 1-byte ALT indices, keeping the transaction within the 1232-byte limit
-  // even with V4 on-chain metadata.
+  // addressLookupTable compresses the static non-signer accounts
+  // (base/quote token program, systemProgram, rent, migratorProgram,
+  // quoteMint, metadataProgram, config) to ALT indices where available,
+  // keeping the transaction within the 1232-byte limit even with V4
+  // on-chain metadata.
   //
   // The cpmmMigratorState account is forwarded as a remaining account so the
   // register_launch CPI can write the launch's graduation parameters.
@@ -218,10 +220,12 @@ async function main() {
         payer,
         authority: payer,
         migratorProgram: cpmmMigrator.CPMM_MIGRATOR_PROGRAM_ID,
-        tokenProgram: TOKEN_PROGRAM_ADDRESS,
+        baseTokenProgram: TOKEN_PROGRAM_ADDRESS,
+        quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
         systemProgram: SYSTEM_PROGRAM_ADDRESS,
         rent: SYSVAR_RENT_ADDRESS,
         metadataAccount,
+        instructionsSysvar: SYSVAR_INSTRUCTIONS_ADDRESS,
         addressLookupTable: initializer.DOPPLER_DEVNET_ALT,
       },
       {

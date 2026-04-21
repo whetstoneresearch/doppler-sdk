@@ -53,6 +53,11 @@
                 "kind": "account",
                 "path": "market.oracle",
                 "account": "Market"
+              },
+              {
+                "kind": "account",
+                "path": "market.quote_mint",
+                "account": "Market"
               }
             ]
           }
@@ -130,8 +135,7 @@
               },
               {
                 "kind": "account",
-                "path": "market.oracle",
-                "account": "Market"
+                "path": "market"
               },
               {
                 "kind": "account",
@@ -285,8 +289,10 @@
           "signer": true
         },
         {
-          "name": "token_program",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+          "name": "base_token_program"
+        },
+        {
+          "name": "quote_token_program"
         },
         {
           "name": "system_program",
@@ -325,6 +331,10 @@
               {
                 "kind": "account",
                 "path": "oracle"
+              },
+              {
+                "kind": "account",
+                "path": "quote_mint"
               }
             ]
           }
@@ -402,7 +412,7 @@
               },
               {
                 "kind": "account",
-                "path": "oracle"
+                "path": "market"
               },
               {
                 "kind": "account",
@@ -462,6 +472,11 @@
                 "kind": "account",
                 "path": "market.oracle",
                 "account": "Market"
+              },
+              {
+                "kind": "account",
+                "path": "market.quote_mint",
+                "account": "Market"
               }
             ]
           }
@@ -508,10 +523,7 @@
           "name": "initializer_config"
         },
         {
-          "name": "launch",
-          "docs": [
-            "Launch account from initializer"
-          ]
+          "name": "launch"
         },
         {
           "name": "launch_authority",
@@ -544,8 +556,10 @@
           "signer": true
         },
         {
-          "name": "token_program",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+          "name": "base_token_program"
+        },
+        {
+          "name": "quote_token_program"
         },
         {
           "name": "system_program",
@@ -583,6 +597,10 @@
               {
                 "kind": "account",
                 "path": "oracle"
+              },
+              {
+                "kind": "account",
+                "path": "quote_mint"
               }
             ]
           }
@@ -683,7 +701,7 @@
               },
               {
                 "kind": "account",
-                "path": "oracle"
+                "path": "market"
               },
               {
                 "kind": "account",
@@ -1078,15 +1096,15 @@
       "name": "Entry",
       "docs": [
         "Entry PDA: tracks a single entry/outcome in a prediction market.",
-        "Seeds: [b\"entry\", oracle.as_ref(), &entry_id]"
+        "Seeds: [b\"entry\", market.as_ref(), &entry_id]"
       ],
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "oracle",
+            "name": "market",
             "docs": [
-              "The oracle this entry belongs to"
+              "The market this entry belongs to"
             ],
             "type": "pubkey"
           },
@@ -1149,15 +1167,15 @@
       "name": "EntryByMint",
       "docs": [
         "EntryByMint PDA: reverse lookup from mint to entry_id.",
-        "Seeds: [b\"entry_by_mint\", oracle.as_ref(), base_mint.as_ref()]"
+        "Seeds: [b\"entry_by_mint\", market.as_ref(), base_mint.as_ref()]"
       ],
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "oracle",
+            "name": "market",
             "docs": [
-              "The oracle this entry belongs to"
+              "The market this entry belongs to"
             ],
             "type": "pubkey"
           },
@@ -1434,6 +1452,35 @@
             }
           },
           {
+            "name": "curve_kind",
+            "type": "u8"
+          },
+          {
+            "name": "swap_lock",
+            "type": "u8"
+          },
+          {
+            "name": "_pad4",
+            "type": {
+              "array": [
+                "u8",
+                6
+              ]
+            }
+          },
+          {
+            "name": "curve_params",
+            "type": {
+              "defined": {
+                "name": "CalldataBuf"
+              }
+            }
+          },
+          {
+            "name": "quote_deposited",
+            "type": "u64"
+          },
+          {
             "name": "_reserved",
             "type": {
               "array": [
@@ -1449,7 +1496,7 @@
       "name": "Market",
       "docs": [
         "Market PDA: holds pot escrow and accounting for a prediction market.",
-        "Seeds: [b\"market\", oracle.as_ref()]"
+        "Seeds: [b\"market\", oracle.as_ref(), quote_mint.as_ref()]"
       ],
       "type": {
         "kind": "struct",

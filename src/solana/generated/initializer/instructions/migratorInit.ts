@@ -10,7 +10,6 @@ import {
   combineCodec,
   fixDecoderSize,
   fixEncoderSize,
-  getAddressEncoder,
   getBytesDecoder,
   getBytesEncoder,
   getProgramDerivedAddress,
@@ -29,7 +28,6 @@ import {
   type InstructionWithAccounts,
   type InstructionWithData,
   type ReadonlyAccount,
-  type ReadonlySignerAccount,
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
@@ -37,30 +35,30 @@ import {
 } from '@solana/kit';
 import {
   getAccountMetaFactory,
-  getAddressFromResolvedInstructionAccount,
   type ResolvedInstructionAccount,
 } from '@solana/program-client-core';
-import { PREDICTION_MIGRATOR_PROGRAM_ADDRESS } from '../programs';
+import { INITIALIZER_PROGRAM_ADDRESS } from '../programs';
 
-export const MIGRATE_ENTRY_DISCRIMINATOR = new Uint8Array([
-  239, 154, 55, 173, 110, 36, 188, 214,
+export const MIGRATOR_INIT_DISCRIMINATOR = new Uint8Array([
+  184, 104, 5, 97, 50, 28, 253, 16,
 ]);
 
-export function getMigrateEntryDiscriminatorBytes() {
+export function getMigratorInitDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    MIGRATE_ENTRY_DISCRIMINATOR,
+    MIGRATOR_INIT_DISCRIMINATOR,
   );
 }
 
-export type MigrateEntryInstruction<
-  TProgram extends string = typeof PREDICTION_MIGRATOR_PROGRAM_ADDRESS,
-  TAccountInitializerConfig extends string | AccountMeta<string> = string,
+export type MigratorInitInstruction<
+  TProgram extends string = typeof INITIALIZER_PROGRAM_ADDRESS,
+  TAccountConfig extends string | AccountMeta<string> = string,
   TAccountLaunch extends string | AccountMeta<string> = string,
   TAccountLaunchAuthority extends string | AccountMeta<string> = string,
   TAccountBaseMint extends string | AccountMeta<string> = string,
   TAccountQuoteMint extends string | AccountMeta<string> = string,
   TAccountBaseVault extends string | AccountMeta<string> = string,
   TAccountQuoteVault extends string | AccountMeta<string> = string,
+  TAccountMigratorProgram extends string | AccountMeta<string> = string,
   TAccountPayer extends string | AccountMeta<string> = string,
   TAccountBaseTokenProgram extends string | AccountMeta<string> = string,
   TAccountQuoteTokenProgram extends string | AccountMeta<string> = string,
@@ -68,29 +66,24 @@ export type MigrateEntryInstruction<
     '11111111111111111111111111111111',
   TAccountRent extends string | AccountMeta<string> =
     'SysvarRent111111111111111111111111111111111',
-  TAccountOracle extends string | AccountMeta<string> = string,
-  TAccountMarket extends string | AccountMeta<string> = string,
-  TAccountPotVault extends string | AccountMeta<string> = string,
-  TAccountMarketAuthority extends string | AccountMeta<string> = string,
-  TAccountEntry extends string | AccountMeta<string> = string,
-  TAccountEntryByMint extends string | AccountMeta<string> = string,
+  TAccountInstructionsSysvar extends string | AccountMeta<string> =
+    'Sysvar1nstructions1111111111111111111111111',
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
   InstructionWithAccounts<
     [
-      TAccountInitializerConfig extends string
-        ? ReadonlyAccount<TAccountInitializerConfig>
-        : TAccountInitializerConfig,
+      TAccountConfig extends string
+        ? ReadonlyAccount<TAccountConfig>
+        : TAccountConfig,
       TAccountLaunch extends string
-        ? ReadonlyAccount<TAccountLaunch>
+        ? WritableAccount<TAccountLaunch>
         : TAccountLaunch,
       TAccountLaunchAuthority extends string
-        ? ReadonlySignerAccount<TAccountLaunchAuthority> &
-            AccountSignerMeta<TAccountLaunchAuthority>
+        ? ReadonlyAccount<TAccountLaunchAuthority>
         : TAccountLaunchAuthority,
       TAccountBaseMint extends string
-        ? WritableAccount<TAccountBaseMint>
+        ? ReadonlyAccount<TAccountBaseMint>
         : TAccountBaseMint,
       TAccountQuoteMint extends string
         ? ReadonlyAccount<TAccountQuoteMint>
@@ -101,6 +94,9 @@ export type MigrateEntryInstruction<
       TAccountQuoteVault extends string
         ? WritableAccount<TAccountQuoteVault>
         : TAccountQuoteVault,
+      TAccountMigratorProgram extends string
+        ? ReadonlyAccount<TAccountMigratorProgram>
+        : TAccountMigratorProgram,
       TAccountPayer extends string
         ? WritableSignerAccount<TAccountPayer> &
             AccountSignerMeta<TAccountPayer>
@@ -117,201 +113,144 @@ export type MigrateEntryInstruction<
       TAccountRent extends string
         ? ReadonlyAccount<TAccountRent>
         : TAccountRent,
-      TAccountOracle extends string
-        ? ReadonlyAccount<TAccountOracle>
-        : TAccountOracle,
-      TAccountMarket extends string
-        ? WritableAccount<TAccountMarket>
-        : TAccountMarket,
-      TAccountPotVault extends string
-        ? WritableAccount<TAccountPotVault>
-        : TAccountPotVault,
-      TAccountMarketAuthority extends string
-        ? ReadonlyAccount<TAccountMarketAuthority>
-        : TAccountMarketAuthority,
-      TAccountEntry extends string
-        ? WritableAccount<TAccountEntry>
-        : TAccountEntry,
-      TAccountEntryByMint extends string
-        ? ReadonlyAccount<TAccountEntryByMint>
-        : TAccountEntryByMint,
+      TAccountInstructionsSysvar extends string
+        ? ReadonlyAccount<TAccountInstructionsSysvar>
+        : TAccountInstructionsSysvar,
       ...TRemainingAccounts,
     ]
   >;
 
-export type MigrateEntryInstructionData = {
-  discriminator: ReadonlyUint8Array;
-  entryId: ReadonlyUint8Array;
-};
+export type MigratorInitInstructionData = { discriminator: ReadonlyUint8Array };
 
-export type MigrateEntryInstructionDataArgs = { entryId: ReadonlyUint8Array };
+export type MigratorInitInstructionDataArgs = {};
 
-export function getMigrateEntryInstructionDataEncoder(): FixedSizeEncoder<MigrateEntryInstructionDataArgs> {
+export function getMigratorInitInstructionDataEncoder(): FixedSizeEncoder<MigratorInitInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([
-      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['entryId', fixEncoderSize(getBytesEncoder(), 32)],
-    ]),
-    (value) => ({ ...value, discriminator: MIGRATE_ENTRY_DISCRIMINATOR }),
+    getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
+    (value) => ({ ...value, discriminator: MIGRATOR_INIT_DISCRIMINATOR }),
   );
 }
 
-export function getMigrateEntryInstructionDataDecoder(): FixedSizeDecoder<MigrateEntryInstructionData> {
+export function getMigratorInitInstructionDataDecoder(): FixedSizeDecoder<MigratorInitInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['entryId', fixDecoderSize(getBytesDecoder(), 32)],
   ]);
 }
 
-export function getMigrateEntryInstructionDataCodec(): FixedSizeCodec<
-  MigrateEntryInstructionDataArgs,
-  MigrateEntryInstructionData
+export function getMigratorInitInstructionDataCodec(): FixedSizeCodec<
+  MigratorInitInstructionDataArgs,
+  MigratorInitInstructionData
 > {
   return combineCodec(
-    getMigrateEntryInstructionDataEncoder(),
-    getMigrateEntryInstructionDataDecoder(),
+    getMigratorInitInstructionDataEncoder(),
+    getMigratorInitInstructionDataDecoder(),
   );
 }
 
-export type MigrateEntryAsyncInput<
-  TAccountInitializerConfig extends string = string,
+export type MigratorInitAsyncInput<
+  TAccountConfig extends string = string,
   TAccountLaunch extends string = string,
   TAccountLaunchAuthority extends string = string,
   TAccountBaseMint extends string = string,
   TAccountQuoteMint extends string = string,
   TAccountBaseVault extends string = string,
   TAccountQuoteVault extends string = string,
+  TAccountMigratorProgram extends string = string,
   TAccountPayer extends string = string,
   TAccountBaseTokenProgram extends string = string,
   TAccountQuoteTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
   TAccountRent extends string = string,
-  TAccountOracle extends string = string,
-  TAccountMarket extends string = string,
-  TAccountPotVault extends string = string,
-  TAccountMarketAuthority extends string = string,
-  TAccountEntry extends string = string,
-  TAccountEntryByMint extends string = string,
+  TAccountInstructionsSysvar extends string = string,
 > = {
-  initializerConfig: Address<TAccountInitializerConfig>;
-  /** Launch account from initializer */
+  config?: Address<TAccountConfig>;
   launch: Address<TAccountLaunch>;
-  /** Launch authority PDA - signed by initializer */
-  launchAuthority: TransactionSigner<TAccountLaunchAuthority>;
-  /** Base mint for this entry (will burn unsold) */
+  launchAuthority: Address<TAccountLaunchAuthority>;
   baseMint: Address<TAccountBaseMint>;
-  /** Quote mint for this market */
   quoteMint: Address<TAccountQuoteMint>;
-  /** Base vault from launch (source for burn) */
   baseVault: Address<TAccountBaseVault>;
-  /** Quote vault from launch (source for transfer) */
   quoteVault: Address<TAccountQuoteVault>;
+  migratorProgram: Address<TAccountMigratorProgram>;
   payer: TransactionSigner<TAccountPayer>;
   baseTokenProgram: Address<TAccountBaseTokenProgram>;
   quoteTokenProgram: Address<TAccountQuoteTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
   rent?: Address<TAccountRent>;
-  /**
-   * The oracle that determines the winner.
-   * Anchor enforces owner + discriminator (trusted_oracle_interface).
-   */
-  oracle: Address<TAccountOracle>;
-  /** Market PDA */
-  market?: Address<TAccountMarket>;
-  /** Pot vault for holding quote tokens */
-  potVault: Address<TAccountPotVault>;
-  marketAuthority?: Address<TAccountMarketAuthority>;
-  /** Entry PDA */
-  entry: Address<TAccountEntry>;
-  /** EntryByMint PDA (for validation) */
-  entryByMint?: Address<TAccountEntryByMint>;
-  entryId: MigrateEntryInstructionDataArgs['entryId'];
+  instructionsSysvar?: Address<TAccountInstructionsSysvar>;
 };
 
-export async function getMigrateEntryInstructionAsync<
-  TAccountInitializerConfig extends string,
+export async function getMigratorInitInstructionAsync<
+  TAccountConfig extends string,
   TAccountLaunch extends string,
   TAccountLaunchAuthority extends string,
   TAccountBaseMint extends string,
   TAccountQuoteMint extends string,
   TAccountBaseVault extends string,
   TAccountQuoteVault extends string,
+  TAccountMigratorProgram extends string,
   TAccountPayer extends string,
   TAccountBaseTokenProgram extends string,
   TAccountQuoteTokenProgram extends string,
   TAccountSystemProgram extends string,
   TAccountRent extends string,
-  TAccountOracle extends string,
-  TAccountMarket extends string,
-  TAccountPotVault extends string,
-  TAccountMarketAuthority extends string,
-  TAccountEntry extends string,
-  TAccountEntryByMint extends string,
-  TProgramAddress extends Address = typeof PREDICTION_MIGRATOR_PROGRAM_ADDRESS,
+  TAccountInstructionsSysvar extends string,
+  TProgramAddress extends Address = typeof INITIALIZER_PROGRAM_ADDRESS,
 >(
-  input: MigrateEntryAsyncInput<
-    TAccountInitializerConfig,
+  input: MigratorInitAsyncInput<
+    TAccountConfig,
     TAccountLaunch,
     TAccountLaunchAuthority,
     TAccountBaseMint,
     TAccountQuoteMint,
     TAccountBaseVault,
     TAccountQuoteVault,
+    TAccountMigratorProgram,
     TAccountPayer,
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram,
     TAccountSystemProgram,
     TAccountRent,
-    TAccountOracle,
-    TAccountMarket,
-    TAccountPotVault,
-    TAccountMarketAuthority,
-    TAccountEntry,
-    TAccountEntryByMint
+    TAccountInstructionsSysvar
   >,
   config?: { programAddress?: TProgramAddress },
 ): Promise<
-  MigrateEntryInstruction<
+  MigratorInitInstruction<
     TProgramAddress,
-    TAccountInitializerConfig,
+    TAccountConfig,
     TAccountLaunch,
     TAccountLaunchAuthority,
     TAccountBaseMint,
     TAccountQuoteMint,
     TAccountBaseVault,
     TAccountQuoteVault,
+    TAccountMigratorProgram,
     TAccountPayer,
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram,
     TAccountSystemProgram,
     TAccountRent,
-    TAccountOracle,
-    TAccountMarket,
-    TAccountPotVault,
-    TAccountMarketAuthority,
-    TAccountEntry,
-    TAccountEntryByMint
+    TAccountInstructionsSysvar
   >
 > {
   // Program address.
-  const programAddress =
-    config?.programAddress ?? PREDICTION_MIGRATOR_PROGRAM_ADDRESS;
+  const programAddress = config?.programAddress ?? INITIALIZER_PROGRAM_ADDRESS;
 
   // Original accounts.
   const originalAccounts = {
-    initializerConfig: {
-      value: input.initializerConfig ?? null,
-      isWritable: false,
-    },
-    launch: { value: input.launch ?? null, isWritable: false },
+    config: { value: input.config ?? null, isWritable: false },
+    launch: { value: input.launch ?? null, isWritable: true },
     launchAuthority: {
       value: input.launchAuthority ?? null,
       isWritable: false,
     },
-    baseMint: { value: input.baseMint ?? null, isWritable: true },
+    baseMint: { value: input.baseMint ?? null, isWritable: false },
     quoteMint: { value: input.quoteMint ?? null, isWritable: false },
     baseVault: { value: input.baseVault ?? null, isWritable: true },
     quoteVault: { value: input.quoteVault ?? null, isWritable: true },
+    migratorProgram: {
+      value: input.migratorProgram ?? null,
+      isWritable: false,
+    },
     payer: { value: input.payer ?? null, isWritable: true },
     baseTokenProgram: {
       value: input.baseTokenProgram ?? null,
@@ -323,25 +262,27 @@ export async function getMigrateEntryInstructionAsync<
     },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
     rent: { value: input.rent ?? null, isWritable: false },
-    oracle: { value: input.oracle ?? null, isWritable: false },
-    market: { value: input.market ?? null, isWritable: true },
-    potVault: { value: input.potVault ?? null, isWritable: true },
-    marketAuthority: {
-      value: input.marketAuthority ?? null,
+    instructionsSysvar: {
+      value: input.instructionsSysvar ?? null,
       isWritable: false,
     },
-    entry: { value: input.entry ?? null, isWritable: true },
-    entryByMint: { value: input.entryByMint ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
     ResolvedInstructionAccount
   >;
 
-  // Original args.
-  const args = { ...input };
-
   // Resolve default values.
+  if (!accounts.config.value) {
+    accounts.config.value = await getProgramDerivedAddress({
+      programAddress,
+      seeds: [
+        getBytesEncoder().encode(
+          new Uint8Array([99, 111, 110, 102, 105, 103, 95, 118, 51]),
+        ),
+      ],
+    });
+  }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
@@ -350,256 +291,152 @@ export async function getMigrateEntryInstructionAsync<
     accounts.rent.value =
       'SysvarRent111111111111111111111111111111111' as Address<'SysvarRent111111111111111111111111111111111'>;
   }
-  if (!accounts.market.value) {
-    accounts.market.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(new Uint8Array([109, 97, 114, 107, 101, 116])),
-        getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount(
-            'oracle',
-            accounts.oracle.value,
-          ),
-        ),
-        getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount(
-            'quoteMint',
-            accounts.quoteMint.value,
-          ),
-        ),
-      ],
-    });
-  }
-  if (!accounts.marketAuthority.value) {
-    accounts.marketAuthority.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(
-          new Uint8Array([
-            109, 97, 114, 107, 101, 116, 95, 97, 117, 116, 104, 111, 114, 105,
-            116, 121,
-          ]),
-        ),
-        getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount(
-            'market',
-            accounts.market.value,
-          ),
-        ),
-      ],
-    });
-  }
-  if (!accounts.entryByMint.value) {
-    accounts.entryByMint.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(
-          new Uint8Array([
-            101, 110, 116, 114, 121, 95, 98, 121, 95, 109, 105, 110, 116,
-          ]),
-        ),
-        getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount(
-            'market',
-            accounts.market.value,
-          ),
-        ),
-        getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount(
-            'baseMint',
-            accounts.baseMint.value,
-          ),
-        ),
-      ],
-    });
+  if (!accounts.instructionsSysvar.value) {
+    accounts.instructionsSysvar.value =
+      'Sysvar1nstructions1111111111111111111111111' as Address<'Sysvar1nstructions1111111111111111111111111'>;
   }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta('initializerConfig', accounts.initializerConfig),
+      getAccountMeta('config', accounts.config),
       getAccountMeta('launch', accounts.launch),
       getAccountMeta('launchAuthority', accounts.launchAuthority),
       getAccountMeta('baseMint', accounts.baseMint),
       getAccountMeta('quoteMint', accounts.quoteMint),
       getAccountMeta('baseVault', accounts.baseVault),
       getAccountMeta('quoteVault', accounts.quoteVault),
+      getAccountMeta('migratorProgram', accounts.migratorProgram),
       getAccountMeta('payer', accounts.payer),
       getAccountMeta('baseTokenProgram', accounts.baseTokenProgram),
       getAccountMeta('quoteTokenProgram', accounts.quoteTokenProgram),
       getAccountMeta('systemProgram', accounts.systemProgram),
       getAccountMeta('rent', accounts.rent),
-      getAccountMeta('oracle', accounts.oracle),
-      getAccountMeta('market', accounts.market),
-      getAccountMeta('potVault', accounts.potVault),
-      getAccountMeta('marketAuthority', accounts.marketAuthority),
-      getAccountMeta('entry', accounts.entry),
-      getAccountMeta('entryByMint', accounts.entryByMint),
+      getAccountMeta('instructionsSysvar', accounts.instructionsSysvar),
     ],
-    data: getMigrateEntryInstructionDataEncoder().encode(
-      args as MigrateEntryInstructionDataArgs,
-    ),
+    data: getMigratorInitInstructionDataEncoder().encode({}),
     programAddress,
-  } as MigrateEntryInstruction<
+  } as MigratorInitInstruction<
     TProgramAddress,
-    TAccountInitializerConfig,
+    TAccountConfig,
     TAccountLaunch,
     TAccountLaunchAuthority,
     TAccountBaseMint,
     TAccountQuoteMint,
     TAccountBaseVault,
     TAccountQuoteVault,
+    TAccountMigratorProgram,
     TAccountPayer,
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram,
     TAccountSystemProgram,
     TAccountRent,
-    TAccountOracle,
-    TAccountMarket,
-    TAccountPotVault,
-    TAccountMarketAuthority,
-    TAccountEntry,
-    TAccountEntryByMint
+    TAccountInstructionsSysvar
   >);
 }
 
-export type MigrateEntryInput<
-  TAccountInitializerConfig extends string = string,
+export type MigratorInitInput<
+  TAccountConfig extends string = string,
   TAccountLaunch extends string = string,
   TAccountLaunchAuthority extends string = string,
   TAccountBaseMint extends string = string,
   TAccountQuoteMint extends string = string,
   TAccountBaseVault extends string = string,
   TAccountQuoteVault extends string = string,
+  TAccountMigratorProgram extends string = string,
   TAccountPayer extends string = string,
   TAccountBaseTokenProgram extends string = string,
   TAccountQuoteTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
   TAccountRent extends string = string,
-  TAccountOracle extends string = string,
-  TAccountMarket extends string = string,
-  TAccountPotVault extends string = string,
-  TAccountMarketAuthority extends string = string,
-  TAccountEntry extends string = string,
-  TAccountEntryByMint extends string = string,
+  TAccountInstructionsSysvar extends string = string,
 > = {
-  initializerConfig: Address<TAccountInitializerConfig>;
-  /** Launch account from initializer */
+  config: Address<TAccountConfig>;
   launch: Address<TAccountLaunch>;
-  /** Launch authority PDA - signed by initializer */
-  launchAuthority: TransactionSigner<TAccountLaunchAuthority>;
-  /** Base mint for this entry (will burn unsold) */
+  launchAuthority: Address<TAccountLaunchAuthority>;
   baseMint: Address<TAccountBaseMint>;
-  /** Quote mint for this market */
   quoteMint: Address<TAccountQuoteMint>;
-  /** Base vault from launch (source for burn) */
   baseVault: Address<TAccountBaseVault>;
-  /** Quote vault from launch (source for transfer) */
   quoteVault: Address<TAccountQuoteVault>;
+  migratorProgram: Address<TAccountMigratorProgram>;
   payer: TransactionSigner<TAccountPayer>;
   baseTokenProgram: Address<TAccountBaseTokenProgram>;
   quoteTokenProgram: Address<TAccountQuoteTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
   rent?: Address<TAccountRent>;
-  /**
-   * The oracle that determines the winner.
-   * Anchor enforces owner + discriminator (trusted_oracle_interface).
-   */
-  oracle: Address<TAccountOracle>;
-  /** Market PDA */
-  market: Address<TAccountMarket>;
-  /** Pot vault for holding quote tokens */
-  potVault: Address<TAccountPotVault>;
-  marketAuthority: Address<TAccountMarketAuthority>;
-  /** Entry PDA */
-  entry: Address<TAccountEntry>;
-  /** EntryByMint PDA (for validation) */
-  entryByMint: Address<TAccountEntryByMint>;
-  entryId: MigrateEntryInstructionDataArgs['entryId'];
+  instructionsSysvar?: Address<TAccountInstructionsSysvar>;
 };
 
-export function getMigrateEntryInstruction<
-  TAccountInitializerConfig extends string,
+export function getMigratorInitInstruction<
+  TAccountConfig extends string,
   TAccountLaunch extends string,
   TAccountLaunchAuthority extends string,
   TAccountBaseMint extends string,
   TAccountQuoteMint extends string,
   TAccountBaseVault extends string,
   TAccountQuoteVault extends string,
+  TAccountMigratorProgram extends string,
   TAccountPayer extends string,
   TAccountBaseTokenProgram extends string,
   TAccountQuoteTokenProgram extends string,
   TAccountSystemProgram extends string,
   TAccountRent extends string,
-  TAccountOracle extends string,
-  TAccountMarket extends string,
-  TAccountPotVault extends string,
-  TAccountMarketAuthority extends string,
-  TAccountEntry extends string,
-  TAccountEntryByMint extends string,
-  TProgramAddress extends Address = typeof PREDICTION_MIGRATOR_PROGRAM_ADDRESS,
+  TAccountInstructionsSysvar extends string,
+  TProgramAddress extends Address = typeof INITIALIZER_PROGRAM_ADDRESS,
 >(
-  input: MigrateEntryInput<
-    TAccountInitializerConfig,
+  input: MigratorInitInput<
+    TAccountConfig,
     TAccountLaunch,
     TAccountLaunchAuthority,
     TAccountBaseMint,
     TAccountQuoteMint,
     TAccountBaseVault,
     TAccountQuoteVault,
+    TAccountMigratorProgram,
     TAccountPayer,
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram,
     TAccountSystemProgram,
     TAccountRent,
-    TAccountOracle,
-    TAccountMarket,
-    TAccountPotVault,
-    TAccountMarketAuthority,
-    TAccountEntry,
-    TAccountEntryByMint
+    TAccountInstructionsSysvar
   >,
   config?: { programAddress?: TProgramAddress },
-): MigrateEntryInstruction<
+): MigratorInitInstruction<
   TProgramAddress,
-  TAccountInitializerConfig,
+  TAccountConfig,
   TAccountLaunch,
   TAccountLaunchAuthority,
   TAccountBaseMint,
   TAccountQuoteMint,
   TAccountBaseVault,
   TAccountQuoteVault,
+  TAccountMigratorProgram,
   TAccountPayer,
   TAccountBaseTokenProgram,
   TAccountQuoteTokenProgram,
   TAccountSystemProgram,
   TAccountRent,
-  TAccountOracle,
-  TAccountMarket,
-  TAccountPotVault,
-  TAccountMarketAuthority,
-  TAccountEntry,
-  TAccountEntryByMint
+  TAccountInstructionsSysvar
 > {
   // Program address.
-  const programAddress =
-    config?.programAddress ?? PREDICTION_MIGRATOR_PROGRAM_ADDRESS;
+  const programAddress = config?.programAddress ?? INITIALIZER_PROGRAM_ADDRESS;
 
   // Original accounts.
   const originalAccounts = {
-    initializerConfig: {
-      value: input.initializerConfig ?? null,
-      isWritable: false,
-    },
-    launch: { value: input.launch ?? null, isWritable: false },
+    config: { value: input.config ?? null, isWritable: false },
+    launch: { value: input.launch ?? null, isWritable: true },
     launchAuthority: {
       value: input.launchAuthority ?? null,
       isWritable: false,
     },
-    baseMint: { value: input.baseMint ?? null, isWritable: true },
+    baseMint: { value: input.baseMint ?? null, isWritable: false },
     quoteMint: { value: input.quoteMint ?? null, isWritable: false },
     baseVault: { value: input.baseVault ?? null, isWritable: true },
     quoteVault: { value: input.quoteVault ?? null, isWritable: true },
+    migratorProgram: {
+      value: input.migratorProgram ?? null,
+      isWritable: false,
+    },
     payer: { value: input.payer ?? null, isWritable: true },
     baseTokenProgram: {
       value: input.baseTokenProgram ?? null,
@@ -611,23 +448,15 @@ export function getMigrateEntryInstruction<
     },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
     rent: { value: input.rent ?? null, isWritable: false },
-    oracle: { value: input.oracle ?? null, isWritable: false },
-    market: { value: input.market ?? null, isWritable: true },
-    potVault: { value: input.potVault ?? null, isWritable: true },
-    marketAuthority: {
-      value: input.marketAuthority ?? null,
+    instructionsSysvar: {
+      value: input.instructionsSysvar ?? null,
       isWritable: false,
     },
-    entry: { value: input.entry ?? null, isWritable: true },
-    entryByMint: { value: input.entryByMint ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
     ResolvedInstructionAccount
   >;
-
-  // Original args.
-  const args = { ...input };
 
   // Resolve default values.
   if (!accounts.systemProgram.value) {
@@ -638,112 +467,88 @@ export function getMigrateEntryInstruction<
     accounts.rent.value =
       'SysvarRent111111111111111111111111111111111' as Address<'SysvarRent111111111111111111111111111111111'>;
   }
+  if (!accounts.instructionsSysvar.value) {
+    accounts.instructionsSysvar.value =
+      'Sysvar1nstructions1111111111111111111111111' as Address<'Sysvar1nstructions1111111111111111111111111'>;
+  }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta('initializerConfig', accounts.initializerConfig),
+      getAccountMeta('config', accounts.config),
       getAccountMeta('launch', accounts.launch),
       getAccountMeta('launchAuthority', accounts.launchAuthority),
       getAccountMeta('baseMint', accounts.baseMint),
       getAccountMeta('quoteMint', accounts.quoteMint),
       getAccountMeta('baseVault', accounts.baseVault),
       getAccountMeta('quoteVault', accounts.quoteVault),
+      getAccountMeta('migratorProgram', accounts.migratorProgram),
       getAccountMeta('payer', accounts.payer),
       getAccountMeta('baseTokenProgram', accounts.baseTokenProgram),
       getAccountMeta('quoteTokenProgram', accounts.quoteTokenProgram),
       getAccountMeta('systemProgram', accounts.systemProgram),
       getAccountMeta('rent', accounts.rent),
-      getAccountMeta('oracle', accounts.oracle),
-      getAccountMeta('market', accounts.market),
-      getAccountMeta('potVault', accounts.potVault),
-      getAccountMeta('marketAuthority', accounts.marketAuthority),
-      getAccountMeta('entry', accounts.entry),
-      getAccountMeta('entryByMint', accounts.entryByMint),
+      getAccountMeta('instructionsSysvar', accounts.instructionsSysvar),
     ],
-    data: getMigrateEntryInstructionDataEncoder().encode(
-      args as MigrateEntryInstructionDataArgs,
-    ),
+    data: getMigratorInitInstructionDataEncoder().encode({}),
     programAddress,
-  } as MigrateEntryInstruction<
+  } as MigratorInitInstruction<
     TProgramAddress,
-    TAccountInitializerConfig,
+    TAccountConfig,
     TAccountLaunch,
     TAccountLaunchAuthority,
     TAccountBaseMint,
     TAccountQuoteMint,
     TAccountBaseVault,
     TAccountQuoteVault,
+    TAccountMigratorProgram,
     TAccountPayer,
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram,
     TAccountSystemProgram,
     TAccountRent,
-    TAccountOracle,
-    TAccountMarket,
-    TAccountPotVault,
-    TAccountMarketAuthority,
-    TAccountEntry,
-    TAccountEntryByMint
+    TAccountInstructionsSysvar
   >);
 }
 
-export type ParsedMigrateEntryInstruction<
-  TProgram extends string = typeof PREDICTION_MIGRATOR_PROGRAM_ADDRESS,
+export type ParsedMigratorInitInstruction<
+  TProgram extends string = typeof INITIALIZER_PROGRAM_ADDRESS,
   TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
   programAddress: Address<TProgram>;
   accounts: {
-    initializerConfig: TAccountMetas[0];
-    /** Launch account from initializer */
+    config: TAccountMetas[0];
     launch: TAccountMetas[1];
-    /** Launch authority PDA - signed by initializer */
     launchAuthority: TAccountMetas[2];
-    /** Base mint for this entry (will burn unsold) */
     baseMint: TAccountMetas[3];
-    /** Quote mint for this market */
     quoteMint: TAccountMetas[4];
-    /** Base vault from launch (source for burn) */
     baseVault: TAccountMetas[5];
-    /** Quote vault from launch (source for transfer) */
     quoteVault: TAccountMetas[6];
-    payer: TAccountMetas[7];
-    baseTokenProgram: TAccountMetas[8];
-    quoteTokenProgram: TAccountMetas[9];
-    systemProgram: TAccountMetas[10];
-    rent: TAccountMetas[11];
-    /**
-     * The oracle that determines the winner.
-     * Anchor enforces owner + discriminator (trusted_oracle_interface).
-     */
-    oracle: TAccountMetas[12];
-    /** Market PDA */
-    market: TAccountMetas[13];
-    /** Pot vault for holding quote tokens */
-    potVault: TAccountMetas[14];
-    marketAuthority: TAccountMetas[15];
-    /** Entry PDA */
-    entry: TAccountMetas[16];
-    /** EntryByMint PDA (for validation) */
-    entryByMint: TAccountMetas[17];
+    migratorProgram: TAccountMetas[7];
+    payer: TAccountMetas[8];
+    baseTokenProgram: TAccountMetas[9];
+    quoteTokenProgram: TAccountMetas[10];
+    systemProgram: TAccountMetas[11];
+    rent: TAccountMetas[12];
+    instructionsSysvar: TAccountMetas[13];
   };
-  data: MigrateEntryInstructionData;
+  data: MigratorInitInstructionData;
 };
 
-export function parseMigrateEntryInstruction<
+export function parseMigratorInitInstruction<
   TProgram extends string,
   TAccountMetas extends readonly AccountMeta[],
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
-): ParsedMigrateEntryInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 18) {
+): ParsedMigratorInitInstruction<TProgram, TAccountMetas> {
+  if (instruction.accounts.length < 14) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 18,
+        expectedAccountMetas: 14,
       },
     );
   }
@@ -756,25 +561,21 @@ export function parseMigrateEntryInstruction<
   return {
     programAddress: instruction.programAddress,
     accounts: {
-      initializerConfig: getNextAccount(),
+      config: getNextAccount(),
       launch: getNextAccount(),
       launchAuthority: getNextAccount(),
       baseMint: getNextAccount(),
       quoteMint: getNextAccount(),
       baseVault: getNextAccount(),
       quoteVault: getNextAccount(),
+      migratorProgram: getNextAccount(),
       payer: getNextAccount(),
       baseTokenProgram: getNextAccount(),
       quoteTokenProgram: getNextAccount(),
       systemProgram: getNextAccount(),
       rent: getNextAccount(),
-      oracle: getNextAccount(),
-      market: getNextAccount(),
-      potVault: getNextAccount(),
-      marketAuthority: getNextAccount(),
-      entry: getNextAccount(),
-      entryByMint: getNextAccount(),
+      instructionsSysvar: getNextAccount(),
     },
-    data: getMigrateEntryInstructionDataDecoder().decode(instruction.data),
+    data: getMigratorInitInstructionDataDecoder().decode(instruction.data),
   };
 }

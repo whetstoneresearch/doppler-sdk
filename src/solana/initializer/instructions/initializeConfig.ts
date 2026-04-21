@@ -6,7 +6,10 @@ import type {
   AccountSignerMeta,
 } from '@solana/kit';
 import { AccountRole } from '@solana/kit';
-import { SYSTEM_PROGRAM_ADDRESS } from '../../core/constants.js';
+import {
+  SYSTEM_PROGRAM_ADDRESS,
+  SYSVAR_INSTRUCTIONS_ADDRESS,
+} from '../../core/constants.js';
 import { INITIALIZER_PROGRAM_ID } from '../constants.js';
 import type { InitializeConfigArgsArgs } from '../../generated/initializer/index.js';
 import { getInitializeConfigInstructionDataEncoder } from '../../generated/initializer/index.js';
@@ -39,6 +42,7 @@ export interface InitializeConfigAccounts {
   config: Address;
   programData: Address;
   systemProgram?: Address;
+  instructionsSysvar?: Address;
 }
 
 export function createInitializeConfigInstruction(
@@ -51,6 +55,7 @@ export function createInitializeConfigInstruction(
     config,
     programData,
     systemProgram = SYSTEM_PROGRAM_ADDRESS,
+    instructionsSysvar = SYSVAR_INSTRUCTIONS_ADDRESS,
   } = accounts;
 
   const keys: (AccountMeta | AccountSignerMeta)[] = [
@@ -58,6 +63,7 @@ export function createInitializeConfigInstruction(
     { address: config, role: AccountRole.WRITABLE },
     { address: programData, role: AccountRole.READONLY },
     { address: systemProgram, role: AccountRole.READONLY },
+    { address: instructionsSysvar, role: AccountRole.READONLY },
   ];
 
   const data = new Uint8Array(

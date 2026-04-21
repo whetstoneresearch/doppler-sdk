@@ -66,8 +66,10 @@ export type CollectProtocolFeesInstruction<
   TAccountToken1Mint extends string | AccountMeta<string> = string,
   TAccountRecipient0 extends string | AccountMeta<string> = string,
   TAccountRecipient1 extends string | AccountMeta<string> = string,
-  TAccountTokenProgram extends string | AccountMeta<string> =
-    'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
+  TAccountToken0Program extends string | AccountMeta<string> = string,
+  TAccountToken1Program extends string | AccountMeta<string> = string,
+  TAccountInstructionsSysvar extends string | AccountMeta<string> =
+    'Sysvar1nstructions1111111111111111111111111',
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -107,9 +109,15 @@ export type CollectProtocolFeesInstruction<
       TAccountRecipient1 extends string
         ? WritableAccount<TAccountRecipient1>
         : TAccountRecipient1,
-      TAccountTokenProgram extends string
-        ? ReadonlyAccount<TAccountTokenProgram>
-        : TAccountTokenProgram,
+      TAccountToken0Program extends string
+        ? ReadonlyAccount<TAccountToken0Program>
+        : TAccountToken0Program,
+      TAccountToken1Program extends string
+        ? ReadonlyAccount<TAccountToken1Program>
+        : TAccountToken1Program,
+      TAccountInstructionsSysvar extends string
+        ? ReadonlyAccount<TAccountInstructionsSysvar>
+        : TAccountInstructionsSysvar,
       ...TRemainingAccounts,
     ]
   >;
@@ -169,7 +177,9 @@ export type CollectProtocolFeesAsyncInput<
   TAccountToken1Mint extends string = string,
   TAccountRecipient0 extends string = string,
   TAccountRecipient1 extends string = string,
-  TAccountTokenProgram extends string = string,
+  TAccountToken0Program extends string = string,
+  TAccountToken1Program extends string = string,
+  TAccountInstructionsSysvar extends string = string,
 > = {
   config: Address<TAccountConfig>;
   pool: Address<TAccountPool>;
@@ -182,7 +192,9 @@ export type CollectProtocolFeesAsyncInput<
   token1Mint: Address<TAccountToken1Mint>;
   recipient0: Address<TAccountRecipient0>;
   recipient1: Address<TAccountRecipient1>;
-  tokenProgram?: Address<TAccountTokenProgram>;
+  token0Program: Address<TAccountToken0Program>;
+  token1Program: Address<TAccountToken1Program>;
+  instructionsSysvar?: Address<TAccountInstructionsSysvar>;
   max0: CollectProtocolFeesInstructionDataArgs['max0'];
   max1: CollectProtocolFeesInstructionDataArgs['max1'];
 };
@@ -199,7 +211,9 @@ export async function getCollectProtocolFeesInstructionAsync<
   TAccountToken1Mint extends string,
   TAccountRecipient0 extends string,
   TAccountRecipient1 extends string,
-  TAccountTokenProgram extends string,
+  TAccountToken0Program extends string,
+  TAccountToken1Program extends string,
+  TAccountInstructionsSysvar extends string,
   TProgramAddress extends Address = typeof CPMM_PROGRAM_ADDRESS,
 >(
   input: CollectProtocolFeesAsyncInput<
@@ -214,7 +228,9 @@ export async function getCollectProtocolFeesInstructionAsync<
     TAccountToken1Mint,
     TAccountRecipient0,
     TAccountRecipient1,
-    TAccountTokenProgram
+    TAccountToken0Program,
+    TAccountToken1Program,
+    TAccountInstructionsSysvar
   >,
   config?: { programAddress?: TProgramAddress },
 ): Promise<
@@ -231,7 +247,9 @@ export async function getCollectProtocolFeesInstructionAsync<
     TAccountToken1Mint,
     TAccountRecipient0,
     TAccountRecipient1,
-    TAccountTokenProgram
+    TAccountToken0Program,
+    TAccountToken1Program,
+    TAccountInstructionsSysvar
   >
 > {
   // Program address.
@@ -253,7 +271,12 @@ export async function getCollectProtocolFeesInstructionAsync<
     token1Mint: { value: input.token1Mint ?? null, isWritable: false },
     recipient0: { value: input.recipient0 ?? null, isWritable: true },
     recipient1: { value: input.recipient1 ?? null, isWritable: true },
-    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
+    token0Program: { value: input.token0Program ?? null, isWritable: false },
+    token1Program: { value: input.token1Program ?? null, isWritable: false },
+    instructionsSysvar: {
+      value: input.instructionsSysvar ?? null,
+      isWritable: false,
+    },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -277,9 +300,9 @@ export async function getCollectProtocolFeesInstructionAsync<
       ],
     });
   }
-  if (!accounts.tokenProgram.value) {
-    accounts.tokenProgram.value =
-      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
+  if (!accounts.instructionsSysvar.value) {
+    accounts.instructionsSysvar.value =
+      'Sysvar1nstructions1111111111111111111111111' as Address<'Sysvar1nstructions1111111111111111111111111'>;
   }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
@@ -296,7 +319,9 @@ export async function getCollectProtocolFeesInstructionAsync<
       getAccountMeta('token1Mint', accounts.token1Mint),
       getAccountMeta('recipient0', accounts.recipient0),
       getAccountMeta('recipient1', accounts.recipient1),
-      getAccountMeta('tokenProgram', accounts.tokenProgram),
+      getAccountMeta('token0Program', accounts.token0Program),
+      getAccountMeta('token1Program', accounts.token1Program),
+      getAccountMeta('instructionsSysvar', accounts.instructionsSysvar),
     ],
     data: getCollectProtocolFeesInstructionDataEncoder().encode(
       args as CollectProtocolFeesInstructionDataArgs,
@@ -315,7 +340,9 @@ export async function getCollectProtocolFeesInstructionAsync<
     TAccountToken1Mint,
     TAccountRecipient0,
     TAccountRecipient1,
-    TAccountTokenProgram
+    TAccountToken0Program,
+    TAccountToken1Program,
+    TAccountInstructionsSysvar
   >);
 }
 
@@ -331,7 +358,9 @@ export type CollectProtocolFeesInput<
   TAccountToken1Mint extends string = string,
   TAccountRecipient0 extends string = string,
   TAccountRecipient1 extends string = string,
-  TAccountTokenProgram extends string = string,
+  TAccountToken0Program extends string = string,
+  TAccountToken1Program extends string = string,
+  TAccountInstructionsSysvar extends string = string,
 > = {
   config: Address<TAccountConfig>;
   pool: Address<TAccountPool>;
@@ -344,7 +373,9 @@ export type CollectProtocolFeesInput<
   token1Mint: Address<TAccountToken1Mint>;
   recipient0: Address<TAccountRecipient0>;
   recipient1: Address<TAccountRecipient1>;
-  tokenProgram?: Address<TAccountTokenProgram>;
+  token0Program: Address<TAccountToken0Program>;
+  token1Program: Address<TAccountToken1Program>;
+  instructionsSysvar?: Address<TAccountInstructionsSysvar>;
   max0: CollectProtocolFeesInstructionDataArgs['max0'];
   max1: CollectProtocolFeesInstructionDataArgs['max1'];
 };
@@ -361,7 +392,9 @@ export function getCollectProtocolFeesInstruction<
   TAccountToken1Mint extends string,
   TAccountRecipient0 extends string,
   TAccountRecipient1 extends string,
-  TAccountTokenProgram extends string,
+  TAccountToken0Program extends string,
+  TAccountToken1Program extends string,
+  TAccountInstructionsSysvar extends string,
   TProgramAddress extends Address = typeof CPMM_PROGRAM_ADDRESS,
 >(
   input: CollectProtocolFeesInput<
@@ -376,7 +409,9 @@ export function getCollectProtocolFeesInstruction<
     TAccountToken1Mint,
     TAccountRecipient0,
     TAccountRecipient1,
-    TAccountTokenProgram
+    TAccountToken0Program,
+    TAccountToken1Program,
+    TAccountInstructionsSysvar
   >,
   config?: { programAddress?: TProgramAddress },
 ): CollectProtocolFeesInstruction<
@@ -392,7 +427,9 @@ export function getCollectProtocolFeesInstruction<
   TAccountToken1Mint,
   TAccountRecipient0,
   TAccountRecipient1,
-  TAccountTokenProgram
+  TAccountToken0Program,
+  TAccountToken1Program,
+  TAccountInstructionsSysvar
 > {
   // Program address.
   const programAddress = config?.programAddress ?? CPMM_PROGRAM_ADDRESS;
@@ -413,7 +450,12 @@ export function getCollectProtocolFeesInstruction<
     token1Mint: { value: input.token1Mint ?? null, isWritable: false },
     recipient0: { value: input.recipient0 ?? null, isWritable: true },
     recipient1: { value: input.recipient1 ?? null, isWritable: true },
-    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
+    token0Program: { value: input.token0Program ?? null, isWritable: false },
+    token1Program: { value: input.token1Program ?? null, isWritable: false },
+    instructionsSysvar: {
+      value: input.instructionsSysvar ?? null,
+      isWritable: false,
+    },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -424,9 +466,9 @@ export function getCollectProtocolFeesInstruction<
   const args = { ...input };
 
   // Resolve default values.
-  if (!accounts.tokenProgram.value) {
-    accounts.tokenProgram.value =
-      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
+  if (!accounts.instructionsSysvar.value) {
+    accounts.instructionsSysvar.value =
+      'Sysvar1nstructions1111111111111111111111111' as Address<'Sysvar1nstructions1111111111111111111111111'>;
   }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
@@ -443,7 +485,9 @@ export function getCollectProtocolFeesInstruction<
       getAccountMeta('token1Mint', accounts.token1Mint),
       getAccountMeta('recipient0', accounts.recipient0),
       getAccountMeta('recipient1', accounts.recipient1),
-      getAccountMeta('tokenProgram', accounts.tokenProgram),
+      getAccountMeta('token0Program', accounts.token0Program),
+      getAccountMeta('token1Program', accounts.token1Program),
+      getAccountMeta('instructionsSysvar', accounts.instructionsSysvar),
     ],
     data: getCollectProtocolFeesInstructionDataEncoder().encode(
       args as CollectProtocolFeesInstructionDataArgs,
@@ -462,7 +506,9 @@ export function getCollectProtocolFeesInstruction<
     TAccountToken1Mint,
     TAccountRecipient0,
     TAccountRecipient1,
-    TAccountTokenProgram
+    TAccountToken0Program,
+    TAccountToken1Program,
+    TAccountInstructionsSysvar
   >);
 }
 
@@ -483,7 +529,9 @@ export type ParsedCollectProtocolFeesInstruction<
     token1Mint: TAccountMetas[8];
     recipient0: TAccountMetas[9];
     recipient1: TAccountMetas[10];
-    tokenProgram: TAccountMetas[11];
+    token0Program: TAccountMetas[11];
+    token1Program: TAccountMetas[12];
+    instructionsSysvar: TAccountMetas[13];
   };
   data: CollectProtocolFeesInstructionData;
 };
@@ -496,12 +544,12 @@ export function parseCollectProtocolFeesInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedCollectProtocolFeesInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 12) {
+  if (instruction.accounts.length < 14) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 12,
+        expectedAccountMetas: 14,
       },
     );
   }
@@ -525,7 +573,9 @@ export function parseCollectProtocolFeesInstruction<
       token1Mint: getNextAccount(),
       recipient0: getNextAccount(),
       recipient1: getNextAccount(),
-      tokenProgram: getNextAccount(),
+      token0Program: getNextAccount(),
+      token1Program: getNextAccount(),
+      instructionsSysvar: getNextAccount(),
     },
     data: getCollectProtocolFeesInstructionDataDecoder().decode(
       instruction.data,

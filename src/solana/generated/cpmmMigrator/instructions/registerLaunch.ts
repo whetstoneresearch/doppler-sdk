@@ -81,13 +81,14 @@ export type RegisterLaunchInstruction<
   TAccountBaseVault extends string | AccountMeta<string> = string,
   TAccountQuoteVault extends string | AccountMeta<string> = string,
   TAccountPayer extends string | AccountMeta<string> = string,
-  TAccountTokenProgram extends string | AccountMeta<string> =
-    'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
+  TAccountBaseTokenProgram extends string | AccountMeta<string> = string,
+  TAccountQuoteTokenProgram extends string | AccountMeta<string> = string,
   TAccountSystemProgram extends string | AccountMeta<string> =
     '11111111111111111111111111111111',
   TAccountRent extends string | AccountMeta<string> =
     'SysvarRent111111111111111111111111111111111',
   TAccountState extends string | AccountMeta<string> = string,
+  TAccountCpmmConfig extends string | AccountMeta<string> = string,
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -119,9 +120,12 @@ export type RegisterLaunchInstruction<
         ? WritableSignerAccount<TAccountPayer> &
             AccountSignerMeta<TAccountPayer>
         : TAccountPayer,
-      TAccountTokenProgram extends string
-        ? ReadonlyAccount<TAccountTokenProgram>
-        : TAccountTokenProgram,
+      TAccountBaseTokenProgram extends string
+        ? ReadonlyAccount<TAccountBaseTokenProgram>
+        : TAccountBaseTokenProgram,
+      TAccountQuoteTokenProgram extends string
+        ? ReadonlyAccount<TAccountQuoteTokenProgram>
+        : TAccountQuoteTokenProgram,
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
@@ -131,6 +135,9 @@ export type RegisterLaunchInstruction<
       TAccountState extends string
         ? WritableAccount<TAccountState>
         : TAccountState,
+      TAccountCpmmConfig extends string
+        ? ReadonlyAccount<TAccountCpmmConfig>
+        : TAccountCpmmConfig,
       ...TRemainingAccounts,
     ]
   >;
@@ -200,10 +207,12 @@ export type RegisterLaunchAsyncInput<
   TAccountBaseVault extends string = string,
   TAccountQuoteVault extends string = string,
   TAccountPayer extends string = string,
-  TAccountTokenProgram extends string = string,
+  TAccountBaseTokenProgram extends string = string,
+  TAccountQuoteTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
   TAccountRent extends string = string,
   TAccountState extends string = string,
+  TAccountCpmmConfig extends string = string,
 > = {
   initializerConfig: Address<TAccountInitializerConfig>;
   launch: Address<TAccountLaunch>;
@@ -218,12 +227,14 @@ export type RegisterLaunchAsyncInput<
   quoteVault: Address<TAccountQuoteVault>;
   /** Payer for account creation */
   payer: TransactionSigner<TAccountPayer>;
-  tokenProgram?: Address<TAccountTokenProgram>;
+  baseTokenProgram: Address<TAccountBaseTokenProgram>;
+  quoteTokenProgram: Address<TAccountQuoteTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
   rent?: Address<TAccountRent>;
   /** The CpmmMigratorState PDA to create */
   state?: Address<TAccountState>;
-  cpmmConfig: RegisterLaunchInstructionDataArgs['cpmmConfig'];
+  cpmmConfig: Address<TAccountCpmmConfig>;
+  cpmmConfigArg: RegisterLaunchInstructionDataArgs['cpmmConfig'];
   initialSwapFeeBps: RegisterLaunchInstructionDataArgs['initialSwapFeeBps'];
   initialFeeSplitBps: RegisterLaunchInstructionDataArgs['initialFeeSplitBps'];
   recipients: RegisterLaunchInstructionDataArgs['recipients'];
@@ -240,10 +251,12 @@ export async function getRegisterLaunchInstructionAsync<
   TAccountBaseVault extends string,
   TAccountQuoteVault extends string,
   TAccountPayer extends string,
-  TAccountTokenProgram extends string,
+  TAccountBaseTokenProgram extends string,
+  TAccountQuoteTokenProgram extends string,
   TAccountSystemProgram extends string,
   TAccountRent extends string,
   TAccountState extends string,
+  TAccountCpmmConfig extends string,
   TProgramAddress extends Address = typeof CPMM_MIGRATOR_PROGRAM_ADDRESS,
 >(
   input: RegisterLaunchAsyncInput<
@@ -255,10 +268,12 @@ export async function getRegisterLaunchInstructionAsync<
     TAccountBaseVault,
     TAccountQuoteVault,
     TAccountPayer,
-    TAccountTokenProgram,
+    TAccountBaseTokenProgram,
+    TAccountQuoteTokenProgram,
     TAccountSystemProgram,
     TAccountRent,
-    TAccountState
+    TAccountState,
+    TAccountCpmmConfig
   >,
   config?: { programAddress?: TProgramAddress },
 ): Promise<
@@ -272,10 +287,12 @@ export async function getRegisterLaunchInstructionAsync<
     TAccountBaseVault,
     TAccountQuoteVault,
     TAccountPayer,
-    TAccountTokenProgram,
+    TAccountBaseTokenProgram,
+    TAccountQuoteTokenProgram,
     TAccountSystemProgram,
     TAccountRent,
-    TAccountState
+    TAccountState,
+    TAccountCpmmConfig
   >
 > {
   // Program address.
@@ -298,10 +315,18 @@ export async function getRegisterLaunchInstructionAsync<
     baseVault: { value: input.baseVault ?? null, isWritable: false },
     quoteVault: { value: input.quoteVault ?? null, isWritable: false },
     payer: { value: input.payer ?? null, isWritable: true },
-    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
+    baseTokenProgram: {
+      value: input.baseTokenProgram ?? null,
+      isWritable: false,
+    },
+    quoteTokenProgram: {
+      value: input.quoteTokenProgram ?? null,
+      isWritable: false,
+    },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
     rent: { value: input.rent ?? null, isWritable: false },
     state: { value: input.state ?? null, isWritable: true },
+    cpmmConfig: { value: input.cpmmConfig ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -309,13 +334,9 @@ export async function getRegisterLaunchInstructionAsync<
   >;
 
   // Original args.
-  const args = { ...input };
+  const args = { ...input, cpmmConfig: input.cpmmConfigArg };
 
   // Resolve default values.
-  if (!accounts.tokenProgram.value) {
-    accounts.tokenProgram.value =
-      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
-  }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
@@ -350,10 +371,12 @@ export async function getRegisterLaunchInstructionAsync<
       getAccountMeta('baseVault', accounts.baseVault),
       getAccountMeta('quoteVault', accounts.quoteVault),
       getAccountMeta('payer', accounts.payer),
-      getAccountMeta('tokenProgram', accounts.tokenProgram),
+      getAccountMeta('baseTokenProgram', accounts.baseTokenProgram),
+      getAccountMeta('quoteTokenProgram', accounts.quoteTokenProgram),
       getAccountMeta('systemProgram', accounts.systemProgram),
       getAccountMeta('rent', accounts.rent),
       getAccountMeta('state', accounts.state),
+      getAccountMeta('cpmmConfig', accounts.cpmmConfig),
     ],
     data: getRegisterLaunchInstructionDataEncoder().encode(
       args as RegisterLaunchInstructionDataArgs,
@@ -369,10 +392,12 @@ export async function getRegisterLaunchInstructionAsync<
     TAccountBaseVault,
     TAccountQuoteVault,
     TAccountPayer,
-    TAccountTokenProgram,
+    TAccountBaseTokenProgram,
+    TAccountQuoteTokenProgram,
     TAccountSystemProgram,
     TAccountRent,
-    TAccountState
+    TAccountState,
+    TAccountCpmmConfig
   >);
 }
 
@@ -385,10 +410,12 @@ export type RegisterLaunchInput<
   TAccountBaseVault extends string = string,
   TAccountQuoteVault extends string = string,
   TAccountPayer extends string = string,
-  TAccountTokenProgram extends string = string,
+  TAccountBaseTokenProgram extends string = string,
+  TAccountQuoteTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
   TAccountRent extends string = string,
   TAccountState extends string = string,
+  TAccountCpmmConfig extends string = string,
 > = {
   initializerConfig: Address<TAccountInitializerConfig>;
   launch: Address<TAccountLaunch>;
@@ -403,12 +430,14 @@ export type RegisterLaunchInput<
   quoteVault: Address<TAccountQuoteVault>;
   /** Payer for account creation */
   payer: TransactionSigner<TAccountPayer>;
-  tokenProgram?: Address<TAccountTokenProgram>;
+  baseTokenProgram: Address<TAccountBaseTokenProgram>;
+  quoteTokenProgram: Address<TAccountQuoteTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
   rent?: Address<TAccountRent>;
   /** The CpmmMigratorState PDA to create */
   state: Address<TAccountState>;
-  cpmmConfig: RegisterLaunchInstructionDataArgs['cpmmConfig'];
+  cpmmConfig: Address<TAccountCpmmConfig>;
+  cpmmConfigArg: RegisterLaunchInstructionDataArgs['cpmmConfig'];
   initialSwapFeeBps: RegisterLaunchInstructionDataArgs['initialSwapFeeBps'];
   initialFeeSplitBps: RegisterLaunchInstructionDataArgs['initialFeeSplitBps'];
   recipients: RegisterLaunchInstructionDataArgs['recipients'];
@@ -425,10 +454,12 @@ export function getRegisterLaunchInstruction<
   TAccountBaseVault extends string,
   TAccountQuoteVault extends string,
   TAccountPayer extends string,
-  TAccountTokenProgram extends string,
+  TAccountBaseTokenProgram extends string,
+  TAccountQuoteTokenProgram extends string,
   TAccountSystemProgram extends string,
   TAccountRent extends string,
   TAccountState extends string,
+  TAccountCpmmConfig extends string,
   TProgramAddress extends Address = typeof CPMM_MIGRATOR_PROGRAM_ADDRESS,
 >(
   input: RegisterLaunchInput<
@@ -440,10 +471,12 @@ export function getRegisterLaunchInstruction<
     TAccountBaseVault,
     TAccountQuoteVault,
     TAccountPayer,
-    TAccountTokenProgram,
+    TAccountBaseTokenProgram,
+    TAccountQuoteTokenProgram,
     TAccountSystemProgram,
     TAccountRent,
-    TAccountState
+    TAccountState,
+    TAccountCpmmConfig
   >,
   config?: { programAddress?: TProgramAddress },
 ): RegisterLaunchInstruction<
@@ -456,10 +489,12 @@ export function getRegisterLaunchInstruction<
   TAccountBaseVault,
   TAccountQuoteVault,
   TAccountPayer,
-  TAccountTokenProgram,
+  TAccountBaseTokenProgram,
+  TAccountQuoteTokenProgram,
   TAccountSystemProgram,
   TAccountRent,
-  TAccountState
+  TAccountState,
+  TAccountCpmmConfig
 > {
   // Program address.
   const programAddress =
@@ -481,10 +516,18 @@ export function getRegisterLaunchInstruction<
     baseVault: { value: input.baseVault ?? null, isWritable: false },
     quoteVault: { value: input.quoteVault ?? null, isWritable: false },
     payer: { value: input.payer ?? null, isWritable: true },
-    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
+    baseTokenProgram: {
+      value: input.baseTokenProgram ?? null,
+      isWritable: false,
+    },
+    quoteTokenProgram: {
+      value: input.quoteTokenProgram ?? null,
+      isWritable: false,
+    },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
     rent: { value: input.rent ?? null, isWritable: false },
     state: { value: input.state ?? null, isWritable: true },
+    cpmmConfig: { value: input.cpmmConfig ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -492,13 +535,9 @@ export function getRegisterLaunchInstruction<
   >;
 
   // Original args.
-  const args = { ...input };
+  const args = { ...input, cpmmConfig: input.cpmmConfigArg };
 
   // Resolve default values.
-  if (!accounts.tokenProgram.value) {
-    accounts.tokenProgram.value =
-      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
-  }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
@@ -519,10 +558,12 @@ export function getRegisterLaunchInstruction<
       getAccountMeta('baseVault', accounts.baseVault),
       getAccountMeta('quoteVault', accounts.quoteVault),
       getAccountMeta('payer', accounts.payer),
-      getAccountMeta('tokenProgram', accounts.tokenProgram),
+      getAccountMeta('baseTokenProgram', accounts.baseTokenProgram),
+      getAccountMeta('quoteTokenProgram', accounts.quoteTokenProgram),
       getAccountMeta('systemProgram', accounts.systemProgram),
       getAccountMeta('rent', accounts.rent),
       getAccountMeta('state', accounts.state),
+      getAccountMeta('cpmmConfig', accounts.cpmmConfig),
     ],
     data: getRegisterLaunchInstructionDataEncoder().encode(
       args as RegisterLaunchInstructionDataArgs,
@@ -538,10 +579,12 @@ export function getRegisterLaunchInstruction<
     TAccountBaseVault,
     TAccountQuoteVault,
     TAccountPayer,
-    TAccountTokenProgram,
+    TAccountBaseTokenProgram,
+    TAccountQuoteTokenProgram,
     TAccountSystemProgram,
     TAccountRent,
-    TAccountState
+    TAccountState,
+    TAccountCpmmConfig
   >);
 }
 
@@ -564,11 +607,13 @@ export type ParsedRegisterLaunchInstruction<
     quoteVault: TAccountMetas[6];
     /** Payer for account creation */
     payer: TAccountMetas[7];
-    tokenProgram: TAccountMetas[8];
-    systemProgram: TAccountMetas[9];
-    rent: TAccountMetas[10];
+    baseTokenProgram: TAccountMetas[8];
+    quoteTokenProgram: TAccountMetas[9];
+    systemProgram: TAccountMetas[10];
+    rent: TAccountMetas[11];
     /** The CpmmMigratorState PDA to create */
-    state: TAccountMetas[11];
+    state: TAccountMetas[12];
+    cpmmConfig: TAccountMetas[13];
   };
   data: RegisterLaunchInstructionData;
 };
@@ -581,12 +626,12 @@ export function parseRegisterLaunchInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedRegisterLaunchInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 12) {
+  if (instruction.accounts.length < 14) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 12,
+        expectedAccountMetas: 14,
       },
     );
   }
@@ -607,10 +652,12 @@ export function parseRegisterLaunchInstruction<
       baseVault: getNextAccount(),
       quoteVault: getNextAccount(),
       payer: getNextAccount(),
-      tokenProgram: getNextAccount(),
+      baseTokenProgram: getNextAccount(),
+      quoteTokenProgram: getNextAccount(),
       systemProgram: getNextAccount(),
       rent: getNextAccount(),
       state: getNextAccount(),
+      cpmmConfig: getNextAccount(),
     },
     data: getRegisterLaunchInstructionDataDecoder().decode(instruction.data),
   };

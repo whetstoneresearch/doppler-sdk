@@ -6,5 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
+export * from './ammConfig';
 export * from './cpmmMigratorState';
+export * from './initConfig';
 export * from './launch';

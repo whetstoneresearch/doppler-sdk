@@ -94,7 +94,10 @@
           "writable": true
         },
         {
-          "name": "token_program"
+          "name": "token0_program"
+        },
+        {
+          "name": "token1_program"
         },
         {
           "name": "oracle",
@@ -223,7 +226,14 @@
           "writable": true
         },
         {
-          "name": "token_program"
+          "name": "token0_program"
+        },
+        {
+          "name": "token1_program"
+        },
+        {
+          "name": "instructions_sysvar",
+          "address": "Sysvar1nstructions1111111111111111111111111"
         }
       ],
       "args": [
@@ -319,7 +329,14 @@
           "writable": true
         },
         {
-          "name": "token_program"
+          "name": "token0_program"
+        },
+        {
+          "name": "token1_program"
+        },
+        {
+          "name": "instructions_sysvar",
+          "address": "Sysvar1nstructions1111111111111111111111111"
         }
       ],
       "args": [
@@ -440,6 +457,9 @@
           }
         },
         {
+          "name": "program_data"
+        },
+        {
           "name": "payer",
           "writable": true,
           "signer": true
@@ -447,6 +467,10 @@
         {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "instructions_sysvar",
+          "address": "Sysvar1nstructions1111111111111111111111111"
         }
       ],
       "args": [
@@ -633,12 +657,48 @@
         {
           "name": "vault0",
           "writable": true,
-          "signer": true
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  48
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pool"
+              }
+            ]
+          }
         },
         {
           "name": "vault1",
           "writable": true,
-          "signer": true
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  49
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pool"
+              }
+            ]
+          }
         },
         {
           "name": "token0_mint"
@@ -647,12 +707,19 @@
           "name": "token1_mint"
         },
         {
+          "name": "admin",
+          "signer": true
+        },
+        {
           "name": "payer",
           "writable": true,
           "signer": true
         },
         {
-          "name": "token_program"
+          "name": "token0_program"
+        },
+        {
+          "name": "token1_program"
         },
         {
           "name": "system_program",
@@ -945,7 +1012,14 @@
           "writable": true
         },
         {
-          "name": "token_program"
+          "name": "token0_program"
+        },
+        {
+          "name": "token1_program"
+        },
+        {
+          "name": "instructions_sysvar",
+          "address": "Sysvar1nstructions1111111111111111111111111"
         },
         {
           "name": "oracle",
@@ -990,6 +1064,10 @@
         {
           "name": "admin",
           "signer": true
+        },
+        {
+          "name": "instructions_sysvar",
+          "address": "Sysvar1nstructions1111111111111111111111111"
         }
       ],
       "args": [
@@ -1152,14 +1230,127 @@
         },
         {
           "name": "admin_ata0",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "admin"
+              },
+              {
+                "kind": "account",
+                "path": "token0_program"
+              },
+              {
+                "kind": "account",
+                "path": "token0_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
         },
         {
           "name": "admin_ata1",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "admin"
+              },
+              {
+                "kind": "account",
+                "path": "token1_program"
+              },
+              {
+                "kind": "account",
+                "path": "token1_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
         },
         {
-          "name": "token_program"
+          "name": "token0_program"
+        },
+        {
+          "name": "token1_program"
+        },
+        {
+          "name": "instructions_sysvar",
+          "address": "Sysvar1nstructions1111111111111111111111111"
         }
       ],
       "args": []
@@ -1239,7 +1430,14 @@
           "signer": true
         },
         {
-          "name": "token_program"
+          "name": "token0_program"
+        },
+        {
+          "name": "token1_program"
+        },
+        {
+          "name": "instructions_sysvar",
+          "address": "Sysvar1nstructions1111111111111111111111111"
         },
         {
           "name": "oracle",
@@ -1273,6 +1471,19 @@
       "accounts": [
         {
           "name": "config",
+          "writable": true,
+          "relations": [
+            "pool"
+          ]
+        },
+        {
+          "name": "pool",
+          "relations": [
+            "protocol_position"
+          ]
+        },
+        {
+          "name": "protocol_position",
           "writable": true
         },
         {
@@ -1774,6 +1985,11 @@
       "code": 6030,
       "name": "Reentrancy",
       "msg": "Reentrancy"
+    },
+    {
+      "code": 6031,
+      "name": "CpiForbidden",
+      "msg": "CPI calls into this program are forbidden"
     }
   ],
   "types": [
@@ -2093,10 +2309,6 @@
           {
             "name": "observation_interval_sec",
             "type": "u32"
-          },
-          {
-            "name": "num_observations",
-            "type": "u16"
           }
         ]
       }
@@ -2137,10 +2349,9 @@
     },
     {
       "name": "Observation",
-      "serialization": "bytemuckunsafe",
+      "serialization": "bytemuck",
       "repr": {
-        "kind": "c",
-        "packed": true
+        "kind": "c"
       },
       "type": {
         "kind": "struct",
@@ -2148,6 +2359,15 @@
           {
             "name": "timestamp",
             "type": "u32"
+          },
+          {
+            "name": "_pad0",
+            "type": {
+              "array": [
+                "u8",
+                4
+              ]
+            }
           },
           {
             "name": "price0_cumulative",
@@ -2208,10 +2428,9 @@
     },
     {
       "name": "OracleState",
-      "serialization": "bytemuckunsafe",
+      "serialization": "bytemuck",
       "repr": {
-        "kind": "c",
-        "packed": true
+        "kind": "c"
       },
       "type": {
         "kind": "struct",
@@ -2221,16 +2440,8 @@
             "type": "pubkey"
           },
           {
-            "name": "initialized",
-            "type": "bool"
-          },
-          {
             "name": "max_price_change_ratio_q64",
             "type": "u128"
-          },
-          {
-            "name": "last_slot",
-            "type": "u64"
           },
           {
             "name": "trunc_price0_q64",
@@ -2267,6 +2478,10 @@
             }
           },
           {
+            "name": "last_slot",
+            "type": "u64"
+          },
+          {
             "name": "last_timestamp",
             "type": "u32"
           },
@@ -2283,6 +2498,15 @@
             "type": "u16"
           },
           {
+            "name": "_pad0",
+            "type": {
+              "array": [
+                "u8",
+                2
+              ]
+            }
+          },
+          {
             "name": "observations",
             "type": {
               "array": [
@@ -2296,6 +2520,10 @@
             }
           },
           {
+            "name": "initialized",
+            "type": "u8"
+          },
+          {
             "name": "version",
             "type": "u8"
           },
@@ -2304,7 +2532,7 @@
             "type": {
               "array": [
                 "u8",
-                7
+                6
               ]
             }
           }

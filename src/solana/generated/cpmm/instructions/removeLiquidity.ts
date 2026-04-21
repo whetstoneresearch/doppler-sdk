@@ -71,8 +71,10 @@ export type RemoveLiquidityInstruction<
   TAccountToken1Mint extends string | AccountMeta<string> = string,
   TAccountUser0 extends string | AccountMeta<string> = string,
   TAccountUser1 extends string | AccountMeta<string> = string,
-  TAccountTokenProgram extends string | AccountMeta<string> =
-    'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
+  TAccountToken0Program extends string | AccountMeta<string> = string,
+  TAccountToken1Program extends string | AccountMeta<string> = string,
+  TAccountInstructionsSysvar extends string | AccountMeta<string> =
+    'Sysvar1nstructions1111111111111111111111111',
   TAccountOracle extends string | AccountMeta<string> = string,
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
@@ -116,9 +118,15 @@ export type RemoveLiquidityInstruction<
       TAccountUser1 extends string
         ? WritableAccount<TAccountUser1>
         : TAccountUser1,
-      TAccountTokenProgram extends string
-        ? ReadonlyAccount<TAccountTokenProgram>
-        : TAccountTokenProgram,
+      TAccountToken0Program extends string
+        ? ReadonlyAccount<TAccountToken0Program>
+        : TAccountToken0Program,
+      TAccountToken1Program extends string
+        ? ReadonlyAccount<TAccountToken1Program>
+        : TAccountToken1Program,
+      TAccountInstructionsSysvar extends string
+        ? ReadonlyAccount<TAccountInstructionsSysvar>
+        : TAccountInstructionsSysvar,
       TAccountOracle extends string
         ? WritableAccount<TAccountOracle>
         : TAccountOracle,
@@ -187,7 +195,9 @@ export type RemoveLiquidityAsyncInput<
   TAccountToken1Mint extends string = string,
   TAccountUser0 extends string = string,
   TAccountUser1 extends string = string,
-  TAccountTokenProgram extends string = string,
+  TAccountToken0Program extends string = string,
+  TAccountToken1Program extends string = string,
+  TAccountInstructionsSysvar extends string = string,
   TAccountOracle extends string = string,
 > = {
   config: Address<TAccountConfig>;
@@ -202,7 +212,9 @@ export type RemoveLiquidityAsyncInput<
   token1Mint: Address<TAccountToken1Mint>;
   user0: Address<TAccountUser0>;
   user1: Address<TAccountUser1>;
-  tokenProgram?: Address<TAccountTokenProgram>;
+  token0Program: Address<TAccountToken0Program>;
+  token1Program: Address<TAccountToken1Program>;
+  instructionsSysvar?: Address<TAccountInstructionsSysvar>;
   oracle?: Address<TAccountOracle>;
   sharesIn: RemoveLiquidityInstructionDataArgs['sharesIn'];
   minAmount0Out: RemoveLiquidityInstructionDataArgs['minAmount0Out'];
@@ -223,7 +235,9 @@ export async function getRemoveLiquidityInstructionAsync<
   TAccountToken1Mint extends string,
   TAccountUser0 extends string,
   TAccountUser1 extends string,
-  TAccountTokenProgram extends string,
+  TAccountToken0Program extends string,
+  TAccountToken1Program extends string,
+  TAccountInstructionsSysvar extends string,
   TAccountOracle extends string,
   TProgramAddress extends Address = typeof CPMM_PROGRAM_ADDRESS,
 >(
@@ -240,7 +254,9 @@ export async function getRemoveLiquidityInstructionAsync<
     TAccountToken1Mint,
     TAccountUser0,
     TAccountUser1,
-    TAccountTokenProgram,
+    TAccountToken0Program,
+    TAccountToken1Program,
+    TAccountInstructionsSysvar,
     TAccountOracle
   >,
   config?: { programAddress?: TProgramAddress },
@@ -259,7 +275,9 @@ export async function getRemoveLiquidityInstructionAsync<
     TAccountToken1Mint,
     TAccountUser0,
     TAccountUser1,
-    TAccountTokenProgram,
+    TAccountToken0Program,
+    TAccountToken1Program,
+    TAccountInstructionsSysvar,
     TAccountOracle
   >
 > {
@@ -283,7 +301,12 @@ export async function getRemoveLiquidityInstructionAsync<
     token1Mint: { value: input.token1Mint ?? null, isWritable: false },
     user0: { value: input.user0 ?? null, isWritable: true },
     user1: { value: input.user1 ?? null, isWritable: true },
-    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
+    token0Program: { value: input.token0Program ?? null, isWritable: false },
+    token1Program: { value: input.token1Program ?? null, isWritable: false },
+    instructionsSysvar: {
+      value: input.instructionsSysvar ?? null,
+      isWritable: false,
+    },
     oracle: { value: input.oracle ?? null, isWritable: true },
   };
   const accounts = originalAccounts as Record<
@@ -308,9 +331,9 @@ export async function getRemoveLiquidityInstructionAsync<
       ],
     });
   }
-  if (!accounts.tokenProgram.value) {
-    accounts.tokenProgram.value =
-      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
+  if (!accounts.instructionsSysvar.value) {
+    accounts.instructionsSysvar.value =
+      'Sysvar1nstructions1111111111111111111111111' as Address<'Sysvar1nstructions1111111111111111111111111'>;
   }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
@@ -328,7 +351,9 @@ export async function getRemoveLiquidityInstructionAsync<
       getAccountMeta('token1Mint', accounts.token1Mint),
       getAccountMeta('user0', accounts.user0),
       getAccountMeta('user1', accounts.user1),
-      getAccountMeta('tokenProgram', accounts.tokenProgram),
+      getAccountMeta('token0Program', accounts.token0Program),
+      getAccountMeta('token1Program', accounts.token1Program),
+      getAccountMeta('instructionsSysvar', accounts.instructionsSysvar),
       getAccountMeta('oracle', accounts.oracle),
     ],
     data: getRemoveLiquidityInstructionDataEncoder().encode(
@@ -349,7 +374,9 @@ export async function getRemoveLiquidityInstructionAsync<
     TAccountToken1Mint,
     TAccountUser0,
     TAccountUser1,
-    TAccountTokenProgram,
+    TAccountToken0Program,
+    TAccountToken1Program,
+    TAccountInstructionsSysvar,
     TAccountOracle
   >);
 }
@@ -367,7 +394,9 @@ export type RemoveLiquidityInput<
   TAccountToken1Mint extends string = string,
   TAccountUser0 extends string = string,
   TAccountUser1 extends string = string,
-  TAccountTokenProgram extends string = string,
+  TAccountToken0Program extends string = string,
+  TAccountToken1Program extends string = string,
+  TAccountInstructionsSysvar extends string = string,
   TAccountOracle extends string = string,
 > = {
   config: Address<TAccountConfig>;
@@ -382,7 +411,9 @@ export type RemoveLiquidityInput<
   token1Mint: Address<TAccountToken1Mint>;
   user0: Address<TAccountUser0>;
   user1: Address<TAccountUser1>;
-  tokenProgram?: Address<TAccountTokenProgram>;
+  token0Program: Address<TAccountToken0Program>;
+  token1Program: Address<TAccountToken1Program>;
+  instructionsSysvar?: Address<TAccountInstructionsSysvar>;
   oracle?: Address<TAccountOracle>;
   sharesIn: RemoveLiquidityInstructionDataArgs['sharesIn'];
   minAmount0Out: RemoveLiquidityInstructionDataArgs['minAmount0Out'];
@@ -403,7 +434,9 @@ export function getRemoveLiquidityInstruction<
   TAccountToken1Mint extends string,
   TAccountUser0 extends string,
   TAccountUser1 extends string,
-  TAccountTokenProgram extends string,
+  TAccountToken0Program extends string,
+  TAccountToken1Program extends string,
+  TAccountInstructionsSysvar extends string,
   TAccountOracle extends string,
   TProgramAddress extends Address = typeof CPMM_PROGRAM_ADDRESS,
 >(
@@ -420,7 +453,9 @@ export function getRemoveLiquidityInstruction<
     TAccountToken1Mint,
     TAccountUser0,
     TAccountUser1,
-    TAccountTokenProgram,
+    TAccountToken0Program,
+    TAccountToken1Program,
+    TAccountInstructionsSysvar,
     TAccountOracle
   >,
   config?: { programAddress?: TProgramAddress },
@@ -438,7 +473,9 @@ export function getRemoveLiquidityInstruction<
   TAccountToken1Mint,
   TAccountUser0,
   TAccountUser1,
-  TAccountTokenProgram,
+  TAccountToken0Program,
+  TAccountToken1Program,
+  TAccountInstructionsSysvar,
   TAccountOracle
 > {
   // Program address.
@@ -461,7 +498,12 @@ export function getRemoveLiquidityInstruction<
     token1Mint: { value: input.token1Mint ?? null, isWritable: false },
     user0: { value: input.user0 ?? null, isWritable: true },
     user1: { value: input.user1 ?? null, isWritable: true },
-    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
+    token0Program: { value: input.token0Program ?? null, isWritable: false },
+    token1Program: { value: input.token1Program ?? null, isWritable: false },
+    instructionsSysvar: {
+      value: input.instructionsSysvar ?? null,
+      isWritable: false,
+    },
     oracle: { value: input.oracle ?? null, isWritable: true },
   };
   const accounts = originalAccounts as Record<
@@ -473,9 +515,9 @@ export function getRemoveLiquidityInstruction<
   const args = { ...input };
 
   // Resolve default values.
-  if (!accounts.tokenProgram.value) {
-    accounts.tokenProgram.value =
-      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
+  if (!accounts.instructionsSysvar.value) {
+    accounts.instructionsSysvar.value =
+      'Sysvar1nstructions1111111111111111111111111' as Address<'Sysvar1nstructions1111111111111111111111111'>;
   }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
@@ -493,7 +535,9 @@ export function getRemoveLiquidityInstruction<
       getAccountMeta('token1Mint', accounts.token1Mint),
       getAccountMeta('user0', accounts.user0),
       getAccountMeta('user1', accounts.user1),
-      getAccountMeta('tokenProgram', accounts.tokenProgram),
+      getAccountMeta('token0Program', accounts.token0Program),
+      getAccountMeta('token1Program', accounts.token1Program),
+      getAccountMeta('instructionsSysvar', accounts.instructionsSysvar),
       getAccountMeta('oracle', accounts.oracle),
     ],
     data: getRemoveLiquidityInstructionDataEncoder().encode(
@@ -514,7 +558,9 @@ export function getRemoveLiquidityInstruction<
     TAccountToken1Mint,
     TAccountUser0,
     TAccountUser1,
-    TAccountTokenProgram,
+    TAccountToken0Program,
+    TAccountToken1Program,
+    TAccountInstructionsSysvar,
     TAccountOracle
   >);
 }
@@ -537,8 +583,10 @@ export type ParsedRemoveLiquidityInstruction<
     token1Mint: TAccountMetas[9];
     user0: TAccountMetas[10];
     user1: TAccountMetas[11];
-    tokenProgram: TAccountMetas[12];
-    oracle?: TAccountMetas[13] | undefined;
+    token0Program: TAccountMetas[12];
+    token1Program: TAccountMetas[13];
+    instructionsSysvar: TAccountMetas[14];
+    oracle?: TAccountMetas[15] | undefined;
   };
   data: RemoveLiquidityInstructionData;
 };
@@ -551,12 +599,12 @@ export function parseRemoveLiquidityInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedRemoveLiquidityInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 14) {
+  if (instruction.accounts.length < 16) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 14,
+        expectedAccountMetas: 16,
       },
     );
   }
@@ -587,7 +635,9 @@ export function parseRemoveLiquidityInstruction<
       token1Mint: getNextAccount(),
       user0: getNextAccount(),
       user1: getNextAccount(),
-      tokenProgram: getNextAccount(),
+      token0Program: getNextAccount(),
+      token1Program: getNextAccount(),
+      instructionsSysvar: getNextAccount(),
       oracle: getNextOptionalAccount(),
     },
     data: getRemoveLiquidityInstructionDataDecoder().decode(instruction.data),

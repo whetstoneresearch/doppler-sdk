@@ -8,8 +8,12 @@
 
 import {
   combineCodec,
+  fixDecoderSize,
+  fixEncoderSize,
   getArrayDecoder,
   getArrayEncoder,
+  getBytesDecoder,
+  getBytesEncoder,
   getStructDecoder,
   getStructEncoder,
   getU32Decoder,
@@ -19,16 +23,19 @@ import {
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
+  type ReadonlyUint8Array,
 } from '@solana/kit';
 
 export type Observation = {
   timestamp: number;
+  pad0: ReadonlyUint8Array;
   price0Cumulative: Array<bigint>;
   price1Cumulative: Array<bigint>;
 };
 
 export type ObservationArgs = {
   timestamp: number;
+  pad0: ReadonlyUint8Array;
   price0Cumulative: Array<number | bigint>;
   price1Cumulative: Array<number | bigint>;
 };
@@ -36,6 +43,7 @@ export type ObservationArgs = {
 export function getObservationEncoder(): FixedSizeEncoder<ObservationArgs> {
   return getStructEncoder([
     ['timestamp', getU32Encoder()],
+    ['pad0', fixEncoderSize(getBytesEncoder(), 4)],
     ['price0Cumulative', getArrayEncoder(getU64Encoder(), { size: 4 })],
     ['price1Cumulative', getArrayEncoder(getU64Encoder(), { size: 4 })],
   ]);
@@ -44,6 +52,7 @@ export function getObservationEncoder(): FixedSizeEncoder<ObservationArgs> {
 export function getObservationDecoder(): FixedSizeDecoder<Observation> {
   return getStructDecoder([
     ['timestamp', getU32Decoder()],
+    ['pad0', fixDecoderSize(getBytesDecoder(), 4)],
     ['price0Cumulative', getArrayDecoder(getU64Decoder(), { size: 4 })],
     ['price1Cumulative', getArrayDecoder(getU64Decoder(), { size: 4 })],
   ]);

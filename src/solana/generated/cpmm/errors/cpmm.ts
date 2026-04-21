@@ -76,9 +76,12 @@ export const CPMM_ERROR__INVALID_MINT = 0x178c; // 6028
 export const CPMM_ERROR__INVALID_INPUT = 0x178d; // 6029
 /** Reentrancy: Reentrancy */
 export const CPMM_ERROR__REENTRANCY = 0x178e; // 6030
+/** CpiForbidden: CPI calls into this program are forbidden */
+export const CPMM_ERROR__CPI_FORBIDDEN = 0x178f; // 6031
 
 export type CpmmError =
   | typeof CPMM_ERROR__AMOUNT_ZERO
+  | typeof CPMM_ERROR__CPI_FORBIDDEN
   | typeof CPMM_ERROR__INSUFFICIENT_LIQUIDITY
   | typeof CPMM_ERROR__INVALID_DIRECTION
   | typeof CPMM_ERROR__INVALID_FEE
@@ -114,6 +117,7 @@ let cpmmErrorMessages: Record<CpmmError, string> | undefined;
 if (process.env.NODE_ENV !== 'production') {
   cpmmErrorMessages = {
     [CPMM_ERROR__AMOUNT_ZERO]: `Amount zero`,
+    [CPMM_ERROR__CPI_FORBIDDEN]: `CPI calls into this program are forbidden`,
     [CPMM_ERROR__INSUFFICIENT_LIQUIDITY]: `Insufficient liquidity`,
     [CPMM_ERROR__INVALID_DIRECTION]: `Invalid direction`,
     [CPMM_ERROR__INVALID_FEE]: `Invalid fee`,

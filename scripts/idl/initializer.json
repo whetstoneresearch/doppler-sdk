@@ -8,80 +8,6 @@
   },
   "instructions": [
     {
-      "name": "abort_launch",
-      "discriminator": [
-        44,
-        112,
-        192,
-        235,
-        227,
-        61,
-        179,
-        7
-      ],
-      "accounts": [
-        {
-          "name": "config",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  99,
-                  111,
-                  110,
-                  102,
-                  105,
-                  103,
-                  95,
-                  118,
-                  51
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "launch",
-          "writable": true
-        },
-        {
-          "name": "launch_authority"
-        },
-        {
-          "name": "base_vault",
-          "writable": true
-        },
-        {
-          "name": "quote_vault",
-          "writable": true
-        },
-        {
-          "name": "authority",
-          "docs": [
-            "Authority of the launch (must match launch.authority).",
-            "Receives reclaimed vault rent on close."
-          ],
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "authority_base_account",
-          "docs": [
-            "Destination for remaining base tokens"
-          ],
-          "writable": true
-        },
-        {
-          "name": "base_mint"
-        },
-        {
-          "name": "token_program"
-        }
-      ],
-      "args": []
-    },
-    {
       "name": "curve_swap_exact_in",
       "discriminator": [
         196,
@@ -156,7 +82,14 @@
           "optional": true
         },
         {
-          "name": "token_program"
+          "name": "base_token_program"
+        },
+        {
+          "name": "quote_token_program"
+        },
+        {
+          "name": "instructions_sysvar",
+          "address": "Sysvar1nstructions1111111111111111111111111"
         }
       ],
       "args": [
@@ -220,6 +153,10 @@
         {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "instructions_sysvar",
+          "address": "Sysvar1nstructions1111111111111111111111111"
         }
       ],
       "args": [
@@ -345,8 +282,10 @@
           "optional": true
         },
         {
-          "name": "token_program",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+          "name": "base_token_program"
+        },
+        {
+          "name": "quote_token_program"
         },
         {
           "name": "system_program",
@@ -370,6 +309,10 @@
             "Metaplex Token Metadata program."
           ],
           "optional": true
+        },
+        {
+          "name": "instructions_sysvar",
+          "address": "Sysvar1nstructions1111111111111111111111111"
         }
       ],
       "args": [
@@ -447,7 +390,10 @@
           "signer": true
         },
         {
-          "name": "token_program"
+          "name": "base_token_program"
+        },
+        {
+          "name": "quote_token_program"
         },
         {
           "name": "system_program",
@@ -456,6 +402,94 @@
         {
           "name": "rent",
           "address": "SysvarRent111111111111111111111111111111111"
+        },
+        {
+          "name": "instructions_sysvar",
+          "address": "Sysvar1nstructions1111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "migrator_init",
+      "discriminator": [
+        184,
+        104,
+        5,
+        97,
+        50,
+        28,
+        253,
+        16
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103,
+                  95,
+                  118,
+                  51
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "launch",
+          "writable": true
+        },
+        {
+          "name": "launch_authority"
+        },
+        {
+          "name": "base_mint"
+        },
+        {
+          "name": "quote_mint"
+        },
+        {
+          "name": "base_vault",
+          "writable": true
+        },
+        {
+          "name": "quote_vault",
+          "writable": true
+        },
+        {
+          "name": "migrator_program"
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "base_token_program"
+        },
+        {
+          "name": "quote_token_program"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        },
+        {
+          "name": "instructions_sysvar",
+          "address": "Sysvar1nstructions1111111111111111111111111"
         }
       ],
       "args": []
@@ -628,6 +662,67 @@
       ]
     },
     {
+      "name": "update_launch_calldata",
+      "discriminator": [
+        26,
+        225,
+        184,
+        23,
+        167,
+        221,
+        87,
+        92
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103,
+                  95,
+                  118,
+                  51
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "launch",
+          "writable": true
+        },
+        {
+          "name": "authority",
+          "docs": [
+            "Authority of the launch (must match launch.authority or config.admin)"
+          ],
+          "signer": true
+        },
+        {
+          "name": "instructions_sysvar",
+          "address": "Sysvar1nstructions1111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "UpdateLaunchCalldataArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "update_trading_flags",
       "discriminator": [
         40,
@@ -671,6 +766,10 @@
             "Authority of the launch (must match launch.authority or config.admin)"
           ],
           "signer": true
+        },
+        {
+          "name": "instructions_sysvar",
+          "address": "Sysvar1nstructions1111111111111111111111111"
         }
       ],
       "args": [
@@ -741,16 +840,16 @@
       ]
     },
     {
-      "name": "LaunchAborted",
+      "name": "LaunchCalldataUpdated",
       "discriminator": [
-        243,
-        47,
-        210,
-        249,
-        74,
-        119,
-        96,
-        183
+        238,
+        209,
+        255,
+        37,
+        174,
+        34,
+        136,
+        106
       ]
     },
     {
@@ -994,6 +1093,26 @@
       "code": 6034,
       "name": "MetadataCpiFailed",
       "msg": "Metadata CPI failed"
+    },
+    {
+      "code": 6035,
+      "name": "CpiForbidden",
+      "msg": "CPI not allowed"
+    },
+    {
+      "code": 6036,
+      "name": "RemainingAccountSigner",
+      "msg": "Remaining accounts must not be signers"
+    },
+    {
+      "code": 6037,
+      "name": "RemainingAccountWritable",
+      "msg": "Remaining accounts must be readonly"
+    },
+    {
+      "code": 6038,
+      "name": "MigrationIncomplete",
+      "msg": "Migration left vault funds behind"
     }
   ],
   "types": [
@@ -1500,7 +1619,7 @@
       }
     },
     {
-      "name": "LaunchAborted",
+      "name": "LaunchCalldataUpdated",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1632,6 +1751,48 @@
           {
             "name": "allow_sell",
             "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "UpdateLaunchCalldataArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "sentinel_calldata",
+            "type": {
+              "option": "bytes"
+            }
+          },
+          {
+            "name": "migrator_migrate_calldata",
+            "type": {
+              "option": "bytes"
+            }
+          },
+          {
+            "name": "sentinel_remaining_accounts_hash",
+            "type": {
+              "option": {
+                "array": [
+                  "u8",
+                  32
+                ]
+              }
+            }
+          },
+          {
+            "name": "migrator_remaining_accounts_hash",
+            "type": {
+              "option": {
+                "array": [
+                  "u8",
+                  32
+                ]
+              }
+            }
           }
         ]
       }

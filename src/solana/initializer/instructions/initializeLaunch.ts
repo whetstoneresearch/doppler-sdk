@@ -15,6 +15,7 @@ import {
   SYSTEM_PROGRAM_ADDRESS,
   TOKEN_PROGRAM_ADDRESS,
   TOKEN_METADATA_PROGRAM_ID,
+  SYSVAR_INSTRUCTIONS_ADDRESS,
 } from '../../core/constants.js';
 import {
   CURVE_KIND_XYK,
@@ -122,15 +123,19 @@ export interface InitializeLaunchAccounts {
   payer: AddressOrSigner;
   authority?: AddressOrSigner;
   migratorProgram?: Address;
-  tokenProgram?: Address;
+  baseTokenProgram?: Address;
+  quoteTokenProgram?: Address;
   systemProgram?: Address;
   rent: Address;
   /** Required when args.metadataName is non-empty. Derive with getTokenMetadataAddress(baseMint). */
   metadataAccount?: Address;
+  metadataProgram?: Address;
+  instructionsSysvar?: Address;
   /**
    * Optional Address Lookup Table to reference for static accounts.
-   * When provided, constant non-signer accounts (tokenProgram, systemProgram,
-   * rent, migratorProgram, quoteMint when WSOL, metadataProgram, config) are
+   * When provided, constant non-signer accounts (base/quote token program,
+   * systemProgram, rent, migratorProgram, quoteMint when WSOL, metadataProgram,
+   * config) are
    * encoded as ALT lookup metas instead of 32-byte static keys, reducing
    * transaction size by ~200+ bytes and enabling V4 metadata within the
    * 1232-byte Solana transaction limit.
@@ -174,10 +179,13 @@ export async function createInitializeLaunchInstruction(
     payer,
     authority,
     migratorProgram,
-    tokenProgram = TOKEN_PROGRAM_ADDRESS,
+    baseTokenProgram = TOKEN_PROGRAM_ADDRESS,
+    quoteTokenProgram = TOKEN_PROGRAM_ADDRESS,
     systemProgram = SYSTEM_PROGRAM_ADDRESS,
     rent,
     metadataAccount,
+    metadataProgram = TOKEN_METADATA_PROGRAM_ID,
+    instructionsSysvar = SYSVAR_INSTRUCTIONS_ADDRESS,
     addressLookupTable: alt,
   } = accounts;
 
@@ -230,14 +238,17 @@ export async function createInitializeLaunchInstruction(
     keys.push(staticOrLookup(migratorProgram, AccountRole.READONLY));
   }
 
-  keys.push(staticOrLookup(tokenProgram, AccountRole.READONLY));
+  keys.push(staticOrLookup(baseTokenProgram, AccountRole.READONLY));
+  keys.push(staticOrLookup(quoteTokenProgram, AccountRole.READONLY));
   keys.push(staticOrLookup(systemProgram, AccountRole.READONLY));
   keys.push(staticOrLookup(rent, AccountRole.READONLY));
 
   if (withMetadata) {
     keys.push({ address: metadataAccount!, role: AccountRole.WRITABLE });
-    keys.push(staticOrLookup(TOKEN_METADATA_PROGRAM_ID, AccountRole.READONLY));
+    keys.push(staticOrLookup(metadataProgram, AccountRole.READONLY));
   }
+
+  keys.push({ address: instructionsSysvar, role: AccountRole.READONLY });
 
   const encoderArgs: InitializeLaunchArgsArgs = {
     ...args,

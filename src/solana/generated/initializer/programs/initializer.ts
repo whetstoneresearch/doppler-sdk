@@ -41,45 +41,49 @@ import {
   type LaunchArgs,
 } from '../accounts';
 import {
-  getAbortLaunchInstructionAsync,
   getCurveSwapExactInInstructionAsync,
   getInitializeConfigInstructionAsync,
   getInitializeLaunchInstructionAsync,
   getMigrateLaunchInstructionAsync,
+  getMigratorInitInstructionAsync,
   getPreviewMigrationInstruction,
   getPreviewSwapExactInInstruction,
   getSetMigratorAllowlistInstructionAsync,
   getSetSentinelAllowlistInstructionAsync,
+  getUpdateLaunchCalldataInstructionAsync,
   getUpdateTradingFlagsInstructionAsync,
-  parseAbortLaunchInstruction,
   parseCurveSwapExactInInstruction,
   parseInitializeConfigInstruction,
   parseInitializeLaunchInstruction,
   parseMigrateLaunchInstruction,
+  parseMigratorInitInstruction,
   parsePreviewMigrationInstruction,
   parsePreviewSwapExactInInstruction,
   parseSetMigratorAllowlistInstruction,
   parseSetSentinelAllowlistInstruction,
+  parseUpdateLaunchCalldataInstruction,
   parseUpdateTradingFlagsInstruction,
-  type AbortLaunchAsyncInput,
   type CurveSwapExactInAsyncInput,
   type InitializeConfigAsyncInput,
   type InitializeLaunchAsyncInput,
   type MigrateLaunchAsyncInput,
-  type ParsedAbortLaunchInstruction,
+  type MigratorInitAsyncInput,
   type ParsedCurveSwapExactInInstruction,
   type ParsedInitializeConfigInstruction,
   type ParsedInitializeLaunchInstruction,
   type ParsedMigrateLaunchInstruction,
+  type ParsedMigratorInitInstruction,
   type ParsedPreviewMigrationInstruction,
   type ParsedPreviewSwapExactInInstruction,
   type ParsedSetMigratorAllowlistInstruction,
   type ParsedSetSentinelAllowlistInstruction,
+  type ParsedUpdateLaunchCalldataInstruction,
   type ParsedUpdateTradingFlagsInstruction,
   type PreviewMigrationInput,
   type PreviewSwapExactInInput,
   type SetMigratorAllowlistAsyncInput,
   type SetSentinelAllowlistAsyncInput,
+  type UpdateLaunchCalldataAsyncInput,
   type UpdateTradingFlagsAsyncInput,
 } from '../instructions';
 
@@ -124,15 +128,16 @@ export function identifyInitializerAccount(
 }
 
 export enum InitializerInstruction {
-  AbortLaunch,
   CurveSwapExactIn,
   InitializeConfig,
   InitializeLaunch,
   MigrateLaunch,
+  MigratorInit,
   PreviewMigration,
   PreviewSwapExactIn,
   SetMigratorAllowlist,
   SetSentinelAllowlist,
+  UpdateLaunchCalldata,
   UpdateTradingFlags,
 }
 
@@ -140,17 +145,6 @@ export function identifyInitializerInstruction(
   instruction: { data: ReadonlyUint8Array } | ReadonlyUint8Array,
 ): InitializerInstruction {
   const data = 'data' in instruction ? instruction.data : instruction;
-  if (
-    containsBytes(
-      data,
-      fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([44, 112, 192, 235, 227, 61, 179, 7]),
-      ),
-      0,
-    )
-  ) {
-    return InitializerInstruction.AbortLaunch;
-  }
   if (
     containsBytes(
       data,
@@ -194,6 +188,17 @@ export function identifyInitializerInstruction(
     )
   ) {
     return InitializerInstruction.MigrateLaunch;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([184, 104, 5, 97, 50, 28, 253, 16]),
+      ),
+      0,
+    )
+  ) {
+    return InitializerInstruction.MigratorInit;
   }
   if (
     containsBytes(
@@ -243,6 +248,17 @@ export function identifyInitializerInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([26, 225, 184, 23, 167, 221, 87, 92]),
+      ),
+      0,
+    )
+  ) {
+    return InitializerInstruction.UpdateLaunchCalldata;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([40, 204, 40, 16, 219, 190, 133, 78]),
       ),
       0,
@@ -260,9 +276,6 @@ export type ParsedInitializerInstruction<
   TProgram extends string = '4h3Dqyo5qmteJoMxXt3tdtfXELDB6pdRTPU9mWruiKp1',
 > =
   | ({
-      instructionType: InitializerInstruction.AbortLaunch;
-    } & ParsedAbortLaunchInstruction<TProgram>)
-  | ({
       instructionType: InitializerInstruction.CurveSwapExactIn;
     } & ParsedCurveSwapExactInInstruction<TProgram>)
   | ({
@@ -274,6 +287,9 @@ export type ParsedInitializerInstruction<
   | ({
       instructionType: InitializerInstruction.MigrateLaunch;
     } & ParsedMigrateLaunchInstruction<TProgram>)
+  | ({
+      instructionType: InitializerInstruction.MigratorInit;
+    } & ParsedMigratorInitInstruction<TProgram>)
   | ({
       instructionType: InitializerInstruction.PreviewMigration;
     } & ParsedPreviewMigrationInstruction<TProgram>)
@@ -287,6 +303,9 @@ export type ParsedInitializerInstruction<
       instructionType: InitializerInstruction.SetSentinelAllowlist;
     } & ParsedSetSentinelAllowlistInstruction<TProgram>)
   | ({
+      instructionType: InitializerInstruction.UpdateLaunchCalldata;
+    } & ParsedUpdateLaunchCalldataInstruction<TProgram>)
+  | ({
       instructionType: InitializerInstruction.UpdateTradingFlags;
     } & ParsedUpdateTradingFlagsInstruction<TProgram>);
 
@@ -295,13 +314,6 @@ export function parseInitializerInstruction<TProgram extends string>(
 ): ParsedInitializerInstruction<TProgram> {
   const instructionType = identifyInitializerInstruction(instruction);
   switch (instructionType) {
-    case InitializerInstruction.AbortLaunch: {
-      assertIsInstructionWithAccounts(instruction);
-      return {
-        instructionType: InitializerInstruction.AbortLaunch,
-        ...parseAbortLaunchInstruction(instruction),
-      };
-    }
     case InitializerInstruction.CurveSwapExactIn: {
       assertIsInstructionWithAccounts(instruction);
       return {
@@ -330,6 +342,13 @@ export function parseInitializerInstruction<TProgram extends string>(
         ...parseMigrateLaunchInstruction(instruction),
       };
     }
+    case InitializerInstruction.MigratorInit: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: InitializerInstruction.MigratorInit,
+        ...parseMigratorInitInstruction(instruction),
+      };
+    }
     case InitializerInstruction.PreviewMigration: {
       assertIsInstructionWithAccounts(instruction);
       return {
@@ -356,6 +375,13 @@ export function parseInitializerInstruction<TProgram extends string>(
       return {
         instructionType: InitializerInstruction.SetSentinelAllowlist,
         ...parseSetSentinelAllowlistInstruction(instruction),
+      };
+    }
+    case InitializerInstruction.UpdateLaunchCalldata: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: InitializerInstruction.UpdateLaunchCalldata,
+        ...parseUpdateLaunchCalldataInstruction(instruction),
       };
     }
     case InitializerInstruction.UpdateTradingFlags: {
@@ -389,10 +415,6 @@ export type InitializerPluginAccounts = {
 };
 
 export type InitializerPluginInstructions = {
-  abortLaunch: (
-    input: AbortLaunchAsyncInput,
-  ) => ReturnType<typeof getAbortLaunchInstructionAsync> &
-    SelfPlanAndSendFunctions;
   curveSwapExactIn: (
     input: CurveSwapExactInAsyncInput,
   ) => ReturnType<typeof getCurveSwapExactInInstructionAsync> &
@@ -409,6 +431,10 @@ export type InitializerPluginInstructions = {
     input: MakeOptional<MigrateLaunchAsyncInput, 'payer'>,
   ) => ReturnType<typeof getMigrateLaunchInstructionAsync> &
     SelfPlanAndSendFunctions;
+  migratorInit: (
+    input: MakeOptional<MigratorInitAsyncInput, 'payer'>,
+  ) => ReturnType<typeof getMigratorInitInstructionAsync> &
+    SelfPlanAndSendFunctions;
   previewMigration: (
     input: PreviewMigrationInput,
   ) => ReturnType<typeof getPreviewMigrationInstruction> &
@@ -424,6 +450,10 @@ export type InitializerPluginInstructions = {
   setSentinelAllowlist: (
     input: SetSentinelAllowlistAsyncInput,
   ) => ReturnType<typeof getSetSentinelAllowlistInstructionAsync> &
+    SelfPlanAndSendFunctions;
+  updateLaunchCalldata: (
+    input: UpdateLaunchCalldataAsyncInput,
+  ) => ReturnType<typeof getUpdateLaunchCalldataInstructionAsync> &
     SelfPlanAndSendFunctions;
   updateTradingFlags: (
     input: UpdateTradingFlagsAsyncInput,
@@ -448,11 +478,6 @@ export function initializerProgram() {
           launch: addSelfFetchFunctions(client, getLaunchCodec()),
         },
         instructions: {
-          abortLaunch: (input) =>
-            addSelfPlanAndSendFunctions(
-              client,
-              getAbortLaunchInstructionAsync(input),
-            ),
           curveSwapExactIn: (input) =>
             addSelfPlanAndSendFunctions(
               client,
@@ -479,6 +504,14 @@ export function initializerProgram() {
                 payer: input.payer ?? client.payer,
               }),
             ),
+          migratorInit: (input) =>
+            addSelfPlanAndSendFunctions(
+              client,
+              getMigratorInitInstructionAsync({
+                ...input,
+                payer: input.payer ?? client.payer,
+              }),
+            ),
           previewMigration: (input) =>
             addSelfPlanAndSendFunctions(
               client,
@@ -498,6 +531,11 @@ export function initializerProgram() {
             addSelfPlanAndSendFunctions(
               client,
               getSetSentinelAllowlistInstructionAsync(input),
+            ),
+          updateLaunchCalldata: (input) =>
+            addSelfPlanAndSendFunctions(
+              client,
+              getUpdateLaunchCalldataInstructionAsync(input),
             ),
           updateTradingFlags: (input) =>
             addSelfPlanAndSendFunctions(

@@ -69,8 +69,10 @@ export type SwapExactInInstruction<
   TAccountUserIn extends string | AccountMeta<string> = string,
   TAccountUserOut extends string | AccountMeta<string> = string,
   TAccountTrader extends string | AccountMeta<string> = string,
-  TAccountTokenProgram extends string | AccountMeta<string> =
-    'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
+  TAccountToken0Program extends string | AccountMeta<string> = string,
+  TAccountToken1Program extends string | AccountMeta<string> = string,
+  TAccountInstructionsSysvar extends string | AccountMeta<string> =
+    'Sysvar1nstructions1111111111111111111111111',
   TAccountOracle extends string | AccountMeta<string> = string,
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
@@ -108,9 +110,15 @@ export type SwapExactInInstruction<
         ? ReadonlySignerAccount<TAccountTrader> &
             AccountSignerMeta<TAccountTrader>
         : TAccountTrader,
-      TAccountTokenProgram extends string
-        ? ReadonlyAccount<TAccountTokenProgram>
-        : TAccountTokenProgram,
+      TAccountToken0Program extends string
+        ? ReadonlyAccount<TAccountToken0Program>
+        : TAccountToken0Program,
+      TAccountToken1Program extends string
+        ? ReadonlyAccount<TAccountToken1Program>
+        : TAccountToken1Program,
+      TAccountInstructionsSysvar extends string
+        ? ReadonlyAccount<TAccountInstructionsSysvar>
+        : TAccountInstructionsSysvar,
       TAccountOracle extends string
         ? WritableAccount<TAccountOracle>
         : TAccountOracle,
@@ -177,7 +185,9 @@ export type SwapExactInAsyncInput<
   TAccountUserIn extends string = string,
   TAccountUserOut extends string = string,
   TAccountTrader extends string = string,
-  TAccountTokenProgram extends string = string,
+  TAccountToken0Program extends string = string,
+  TAccountToken1Program extends string = string,
+  TAccountInstructionsSysvar extends string = string,
   TAccountOracle extends string = string,
 > = {
   config: Address<TAccountConfig>;
@@ -190,7 +200,9 @@ export type SwapExactInAsyncInput<
   userIn: Address<TAccountUserIn>;
   userOut: Address<TAccountUserOut>;
   trader: TransactionSigner<TAccountTrader>;
-  tokenProgram?: Address<TAccountTokenProgram>;
+  token0Program: Address<TAccountToken0Program>;
+  token1Program: Address<TAccountToken1Program>;
+  instructionsSysvar?: Address<TAccountInstructionsSysvar>;
   oracle?: Address<TAccountOracle>;
   amountIn: SwapExactInInstructionDataArgs['amountIn'];
   minAmountOut: SwapExactInInstructionDataArgs['minAmountOut'];
@@ -209,7 +221,9 @@ export async function getSwapExactInInstructionAsync<
   TAccountUserIn extends string,
   TAccountUserOut extends string,
   TAccountTrader extends string,
-  TAccountTokenProgram extends string,
+  TAccountToken0Program extends string,
+  TAccountToken1Program extends string,
+  TAccountInstructionsSysvar extends string,
   TAccountOracle extends string,
   TProgramAddress extends Address = typeof CPMM_PROGRAM_ADDRESS,
 >(
@@ -224,7 +238,9 @@ export async function getSwapExactInInstructionAsync<
     TAccountUserIn,
     TAccountUserOut,
     TAccountTrader,
-    TAccountTokenProgram,
+    TAccountToken0Program,
+    TAccountToken1Program,
+    TAccountInstructionsSysvar,
     TAccountOracle
   >,
   config?: { programAddress?: TProgramAddress },
@@ -241,7 +257,9 @@ export async function getSwapExactInInstructionAsync<
     TAccountUserIn,
     TAccountUserOut,
     TAccountTrader,
-    TAccountTokenProgram,
+    TAccountToken0Program,
+    TAccountToken1Program,
+    TAccountInstructionsSysvar,
     TAccountOracle
   >
 > {
@@ -260,7 +278,12 @@ export async function getSwapExactInInstructionAsync<
     userIn: { value: input.userIn ?? null, isWritable: true },
     userOut: { value: input.userOut ?? null, isWritable: true },
     trader: { value: input.trader ?? null, isWritable: false },
-    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
+    token0Program: { value: input.token0Program ?? null, isWritable: false },
+    token1Program: { value: input.token1Program ?? null, isWritable: false },
+    instructionsSysvar: {
+      value: input.instructionsSysvar ?? null,
+      isWritable: false,
+    },
     oracle: { value: input.oracle ?? null, isWritable: true },
   };
   const accounts = originalAccounts as Record<
@@ -285,9 +308,9 @@ export async function getSwapExactInInstructionAsync<
       ],
     });
   }
-  if (!accounts.tokenProgram.value) {
-    accounts.tokenProgram.value =
-      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
+  if (!accounts.instructionsSysvar.value) {
+    accounts.instructionsSysvar.value =
+      'Sysvar1nstructions1111111111111111111111111' as Address<'Sysvar1nstructions1111111111111111111111111'>;
   }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
@@ -303,7 +326,9 @@ export async function getSwapExactInInstructionAsync<
       getAccountMeta('userIn', accounts.userIn),
       getAccountMeta('userOut', accounts.userOut),
       getAccountMeta('trader', accounts.trader),
-      getAccountMeta('tokenProgram', accounts.tokenProgram),
+      getAccountMeta('token0Program', accounts.token0Program),
+      getAccountMeta('token1Program', accounts.token1Program),
+      getAccountMeta('instructionsSysvar', accounts.instructionsSysvar),
       getAccountMeta('oracle', accounts.oracle),
     ],
     data: getSwapExactInInstructionDataEncoder().encode(
@@ -322,7 +347,9 @@ export async function getSwapExactInInstructionAsync<
     TAccountUserIn,
     TAccountUserOut,
     TAccountTrader,
-    TAccountTokenProgram,
+    TAccountToken0Program,
+    TAccountToken1Program,
+    TAccountInstructionsSysvar,
     TAccountOracle
   >);
 }
@@ -338,7 +365,9 @@ export type SwapExactInInput<
   TAccountUserIn extends string = string,
   TAccountUserOut extends string = string,
   TAccountTrader extends string = string,
-  TAccountTokenProgram extends string = string,
+  TAccountToken0Program extends string = string,
+  TAccountToken1Program extends string = string,
+  TAccountInstructionsSysvar extends string = string,
   TAccountOracle extends string = string,
 > = {
   config: Address<TAccountConfig>;
@@ -351,7 +380,9 @@ export type SwapExactInInput<
   userIn: Address<TAccountUserIn>;
   userOut: Address<TAccountUserOut>;
   trader: TransactionSigner<TAccountTrader>;
-  tokenProgram?: Address<TAccountTokenProgram>;
+  token0Program: Address<TAccountToken0Program>;
+  token1Program: Address<TAccountToken1Program>;
+  instructionsSysvar?: Address<TAccountInstructionsSysvar>;
   oracle?: Address<TAccountOracle>;
   amountIn: SwapExactInInstructionDataArgs['amountIn'];
   minAmountOut: SwapExactInInstructionDataArgs['minAmountOut'];
@@ -370,7 +401,9 @@ export function getSwapExactInInstruction<
   TAccountUserIn extends string,
   TAccountUserOut extends string,
   TAccountTrader extends string,
-  TAccountTokenProgram extends string,
+  TAccountToken0Program extends string,
+  TAccountToken1Program extends string,
+  TAccountInstructionsSysvar extends string,
   TAccountOracle extends string,
   TProgramAddress extends Address = typeof CPMM_PROGRAM_ADDRESS,
 >(
@@ -385,7 +418,9 @@ export function getSwapExactInInstruction<
     TAccountUserIn,
     TAccountUserOut,
     TAccountTrader,
-    TAccountTokenProgram,
+    TAccountToken0Program,
+    TAccountToken1Program,
+    TAccountInstructionsSysvar,
     TAccountOracle
   >,
   config?: { programAddress?: TProgramAddress },
@@ -401,7 +436,9 @@ export function getSwapExactInInstruction<
   TAccountUserIn,
   TAccountUserOut,
   TAccountTrader,
-  TAccountTokenProgram,
+  TAccountToken0Program,
+  TAccountToken1Program,
+  TAccountInstructionsSysvar,
   TAccountOracle
 > {
   // Program address.
@@ -419,7 +456,12 @@ export function getSwapExactInInstruction<
     userIn: { value: input.userIn ?? null, isWritable: true },
     userOut: { value: input.userOut ?? null, isWritable: true },
     trader: { value: input.trader ?? null, isWritable: false },
-    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
+    token0Program: { value: input.token0Program ?? null, isWritable: false },
+    token1Program: { value: input.token1Program ?? null, isWritable: false },
+    instructionsSysvar: {
+      value: input.instructionsSysvar ?? null,
+      isWritable: false,
+    },
     oracle: { value: input.oracle ?? null, isWritable: true },
   };
   const accounts = originalAccounts as Record<
@@ -431,9 +473,9 @@ export function getSwapExactInInstruction<
   const args = { ...input };
 
   // Resolve default values.
-  if (!accounts.tokenProgram.value) {
-    accounts.tokenProgram.value =
-      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
+  if (!accounts.instructionsSysvar.value) {
+    accounts.instructionsSysvar.value =
+      'Sysvar1nstructions1111111111111111111111111' as Address<'Sysvar1nstructions1111111111111111111111111'>;
   }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
@@ -449,7 +491,9 @@ export function getSwapExactInInstruction<
       getAccountMeta('userIn', accounts.userIn),
       getAccountMeta('userOut', accounts.userOut),
       getAccountMeta('trader', accounts.trader),
-      getAccountMeta('tokenProgram', accounts.tokenProgram),
+      getAccountMeta('token0Program', accounts.token0Program),
+      getAccountMeta('token1Program', accounts.token1Program),
+      getAccountMeta('instructionsSysvar', accounts.instructionsSysvar),
       getAccountMeta('oracle', accounts.oracle),
     ],
     data: getSwapExactInInstructionDataEncoder().encode(
@@ -468,7 +512,9 @@ export function getSwapExactInInstruction<
     TAccountUserIn,
     TAccountUserOut,
     TAccountTrader,
-    TAccountTokenProgram,
+    TAccountToken0Program,
+    TAccountToken1Program,
+    TAccountInstructionsSysvar,
     TAccountOracle
   >);
 }
@@ -489,8 +535,10 @@ export type ParsedSwapExactInInstruction<
     userIn: TAccountMetas[7];
     userOut: TAccountMetas[8];
     trader: TAccountMetas[9];
-    tokenProgram: TAccountMetas[10];
-    oracle?: TAccountMetas[11] | undefined;
+    token0Program: TAccountMetas[10];
+    token1Program: TAccountMetas[11];
+    instructionsSysvar: TAccountMetas[12];
+    oracle?: TAccountMetas[13] | undefined;
   };
   data: SwapExactInInstructionData;
 };
@@ -503,12 +551,12 @@ export function parseSwapExactInInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedSwapExactInInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 12) {
+  if (instruction.accounts.length < 14) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 12,
+        expectedAccountMetas: 14,
       },
     );
   }
@@ -537,7 +585,9 @@ export function parseSwapExactInInstruction<
       userIn: getNextAccount(),
       userOut: getNextAccount(),
       trader: getNextAccount(),
-      tokenProgram: getNextAccount(),
+      token0Program: getNextAccount(),
+      token1Program: getNextAccount(),
+      instructionsSysvar: getNextAccount(),
       oracle: getNextOptionalAccount(),
     },
     data: getSwapExactInInstructionDataDecoder().decode(instruction.data),
