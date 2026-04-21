@@ -6,6 +6,9 @@ import { TOKEN_PROGRAM_ADDRESS } from '@solana-program/token';
 import { initializer, cpmmMigrator } from '@/solana/index.js';
 
 const SYSVAR_RENT_PUBKEY = address('SysvarRent111111111111111111111111111111111');
+const SYSVAR_INSTRUCTIONS_PUBKEY = address(
+  'Sysvar1nstructions1111111111111111111111111',
+);
 
 describe('initializer instructions', () => {
   it('builds initializeConfig with programData account in the correct position', async () => {
@@ -27,11 +30,12 @@ describe('initializer instructions', () => {
     );
 
     expect(ix.programAddress).toBe(initializer.INITIALIZER_PROGRAM_ID);
-    expect(ix.accounts).toHaveLength(4);
+    expect(ix.accounts).toHaveLength(5);
     expect(ix.accounts![0].address).toBe(admin.address);
     expect(ix.accounts![1].address).toBe(config);
     expect(ix.accounts![2].address).toBe(programData);
     expect(ix.accounts![3].address).toBe(SYSTEM_PROGRAM_ADDRESS);
+    expect(ix.accounts![4].address).toBe(SYSVAR_INSTRUCTIONS_PUBKEY);
     expect((ix.accounts![0] as { signer?: unknown }).signer).toBeDefined();
   });
 
@@ -76,7 +80,8 @@ describe('initializer instructions', () => {
         payer: admin,
         authority: admin,
         migratorProgram,
-        tokenProgram: TOKEN_PROGRAM_ADDRESS,
+        baseTokenProgram: TOKEN_PROGRAM_ADDRESS,
+        quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
         systemProgram: SYSTEM_PROGRAM_ADDRESS,
         rent: SYSVAR_RENT_PUBKEY,
       },
@@ -108,12 +113,13 @@ describe('initializer instructions', () => {
     );
 
     expect(ix.programAddress).toBe(initializer.INITIALIZER_PROGRAM_ID);
-    // 13 static accounts + 1 auto-appended cpmmMigratorState remaining account
-    expect(ix.accounts).toHaveLength(14);
+    // 15 static accounts + 1 instructions sysvar + 1 auto-appended
+    // cpmmMigratorState remaining account.
+    expect(ix.accounts).toHaveLength(16);
 
     // Account ordering: config, launch, launchAuthority, baseMint, quoteMint, baseVault, quoteVault, payer,
-    // then optional authority, optional migratorProgram, then token/system/rent,
-    // then auto-appended cpmmMigratorState.
+    // then optional authority, optional migratorProgram, then base/quote token,
+    // system/rent/instructions sysvar, then auto-appended cpmmMigratorState.
     expect(ix.accounts![0].address).toBe(config);
     expect(ix.accounts![1].address).toBe(launch);
     expect(ix.accounts![2].address).toBe(launchAuthority);
@@ -125,10 +131,12 @@ describe('initializer instructions', () => {
     expect(ix.accounts![8].address).toBe(admin.address);
     expect(ix.accounts![9].address).toBe(migratorProgram);
     expect(ix.accounts![10].address).toBe(TOKEN_PROGRAM_ADDRESS);
-    expect(ix.accounts![11].address).toBe(SYSTEM_PROGRAM_ADDRESS);
-    expect(ix.accounts![12].address).toBe(SYSVAR_RENT_PUBKEY);
+    expect(ix.accounts![11].address).toBe(TOKEN_PROGRAM_ADDRESS);
+    expect(ix.accounts![12].address).toBe(SYSTEM_PROGRAM_ADDRESS);
+    expect(ix.accounts![13].address).toBe(SYSVAR_RENT_PUBKEY);
+    expect(ix.accounts![14].address).toBe(SYSVAR_INSTRUCTIONS_PUBKEY);
     const [expectedCpmmMigratorState] = await cpmmMigrator.getCpmmMigratorStateAddress(launch);
-    expect(ix.accounts![13].address).toBe(expectedCpmmMigratorState);
+    expect(ix.accounts![15].address).toBe(expectedCpmmMigratorState);
 
     // Ensure signer metas were attached for the signer accounts.
     for (const idx of [3, 5, 6, 7]) {
@@ -164,7 +172,8 @@ describe('initializer instructions', () => {
           quoteVault,
           payer: admin,
           authority: admin,
-          tokenProgram: TOKEN_PROGRAM_ADDRESS,
+          baseTokenProgram: TOKEN_PROGRAM_ADDRESS,
+          quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
           systemProgram: SYSTEM_PROGRAM_ADDRESS,
           rent: SYSVAR_RENT_PUBKEY,
         },
