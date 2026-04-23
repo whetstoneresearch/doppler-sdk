@@ -2,8 +2,8 @@ name: PR Address Diff
 on:
   pull_request:
     paths:
-      - 'src/addresses.ts'
-      - 'src/deployments.generated.ts'
+      - 'src/evm/addresses.ts'
+      - 'src/evm/deployments.generated.ts'
 
 permissions:
   contents: read
@@ -134,4 +134,3 @@ jobs:
           header: address-diff
           message: ${{ env.COMMENT_BODY }}
           GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
-
