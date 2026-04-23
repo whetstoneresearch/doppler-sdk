@@ -264,8 +264,8 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     noOpMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
       .NoOpMigrator as Address,
     governanceFactory: '0xb4deE32EB70A5E55f3D2d861F49Fb3D79f7a14d9' as Address,
-    noOpGovernanceFactory:
-      '0xe7dfbd5b0a2c3b4464653a9becdc489229ef090e' as Address,
+    noOpGovernanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
+      .NoOpGovernanceFactory as Address,
     launchpadGovernanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
       .LaunchpadGovernanceFactory as Address,
     streamableFeesLocker: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
