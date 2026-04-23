@@ -49,13 +49,14 @@ describe('initializer instructions', () => {
     const namespace = admin.address;
     const launchId = initializer.launchIdFromU64(1n);
     const migratorProgram = cpmmMigrator.CPMM_MIGRATOR_PROGRAM_ID;
+    const cpmmConfig = address('E45nSdnfANtYhCy6qZXo2a7qAWCU6pYjpqsby1bbkaiL');
 
     const [config] = await initializer.getConfigAddress();
     const [launch] = await initializer.getLaunchAddress(namespace, launchId);
     const [launchAuthority] = await initializer.getLaunchAuthorityAddress(launch);
 
     const migratorInitCalldata = cpmmMigrator.encodeRegisterLaunchCalldata({
-      cpmmConfig: address('E45nSdnfANtYhCy6qZXo2a7qAWCU6pYjpqsby1bbkaiL'),
+      cpmmConfig,
       initialSwapFeeBps: 30,
       initialFeeSplitBps: 5000,
       recipients: [{ wallet: admin.address, amount: 700_000n }, { wallet: admin.address, amount: 0n }],
@@ -80,6 +81,7 @@ describe('initializer instructions', () => {
         payer: admin,
         authority: admin,
         migratorProgram,
+        cpmmConfig,
         baseTokenProgram: TOKEN_PROGRAM_ADDRESS,
         quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
         systemProgram: SYSTEM_PROGRAM_ADDRESS,
@@ -113,13 +115,14 @@ describe('initializer instructions', () => {
     );
 
     expect(ix.programAddress).toBe(initializer.INITIALIZER_PROGRAM_ID);
-    // 15 static accounts + 1 instructions sysvar + 1 auto-appended
-    // cpmmMigratorState remaining account.
-    expect(ix.accounts).toHaveLength(16);
+    // 15 static accounts + 1 instructions sysvar + 2 auto-appended CPMM
+    // migrator remaining accounts: cpmmMigratorState and cpmmConfig.
+    expect(ix.accounts).toHaveLength(17);
 
     // Account ordering: config, launch, launchAuthority, baseMint, quoteMint, baseVault, quoteVault, payer,
     // then optional authority, optional migratorProgram, then base/quote token,
-    // system/rent/instructions sysvar, then auto-appended cpmmMigratorState.
+    // system/rent/instructions sysvar, then auto-appended cpmmMigratorState
+    // and cpmmConfig.
     expect(ix.accounts![0].address).toBe(config);
     expect(ix.accounts![1].address).toBe(launch);
     expect(ix.accounts![2].address).toBe(launchAuthority);
@@ -137,6 +140,7 @@ describe('initializer instructions', () => {
     expect(ix.accounts![14].address).toBe(SYSVAR_INSTRUCTIONS_PUBKEY);
     const [expectedCpmmMigratorState] = await cpmmMigrator.getCpmmMigratorStateAddress(launch);
     expect(ix.accounts![15].address).toBe(expectedCpmmMigratorState);
+    expect(ix.accounts![16].address).toBe(cpmmConfig);
 
     // Ensure signer metas were attached for the signer accounts.
     for (const idx of [3, 5, 6, 7]) {

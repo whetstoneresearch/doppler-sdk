@@ -154,17 +154,14 @@ async function main() {
   console.log('');
 
   // ── CPMM migration remaining accounts ────────────────────────────────────
-  // Pool vault keypairs must be generated here so their addresses can be
-  // committed in migratorRemainingAccountsHash. Save these keypairs — they
-  // must be passed as signers in the migrate_launch transaction.
-  // The CPMM program initializes vault0 for token0 and vault1 for token1
-  // during pool initialization; the keypairs themselves are arbitrary.
-  const poolVault0 = await generateKeyPairSigner();
-  const poolVault1 = await generateKeyPairSigner();
-
-  const [pool] = await cpmm.getPoolAddress(baseMint.address, WSOL_MINT);
-  const [poolAuthority] = await cpmm.getPoolAuthorityAddress(pool);
-  const [protocolPosition] = await cpmm.getProtocolPositionAddress(pool);
+  // Migrations commit the canonical preinitialized CPMM graph: pool, authority,
+  // vault PDAs, protocol position, launch LP position, program, and payout ATAs.
+  const poolInit = await cpmm.getPoolInitAddresses(baseMint.address, WSOL_MINT);
+  const pool = poolInit.pool[0];
+  const poolAuthority = poolInit.authority[0];
+  const protocolPosition = poolInit.protocolPosition[0];
+  const poolVault0 = poolInit.vault0[0];
+  const poolVault1 = poolInit.vault1[0];
   const [launchLpPosition] = await cpmm.getPositionAddress(
     pool,
     launchAuthority,
@@ -213,6 +210,7 @@ async function main() {
         payer,
         authority: payer,
         migratorProgram: cpmmMigrator.CPMM_MIGRATOR_PROGRAM_ID,
+        cpmmConfig,
         baseTokenProgram: TOKEN_PROGRAM_ADDRESS,
         quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
         systemProgram: SYSTEM_PROGRAM_ADDRESS,
@@ -252,8 +250,8 @@ async function main() {
             cpmmConfig,
             pool,
             poolAuthority,
-            poolVault0.address,
-            poolVault1.address,
+            poolVault0,
+            poolVault1,
             protocolPosition,
             launchLpPosition,
             cpmm.CPMM_PROGRAM_ID,

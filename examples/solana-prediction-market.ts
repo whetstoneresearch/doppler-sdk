@@ -183,6 +183,7 @@ async function main() {
         const [market] =
           await predictionMigrator.getPredictionMarketAddress(
             oracleStateAddress,
+            WSOL_MINT,
           );
         const [potVault] =
           await predictionMigrator.getPredictionPotVaultAddress(market);
@@ -190,12 +191,12 @@ async function main() {
           await predictionMigrator.getPredictionMarketAuthorityAddress(market);
         const [entryAddress] =
           await predictionMigrator.getPredictionEntryAddress(
-            oracleStateAddress,
+            market,
             entryId,
           );
         const [entryByMint] =
           await predictionMigrator.getPredictionEntryByMintAddress(
-            oracleStateAddress,
+            market,
             baseMint.address,
           );
 
@@ -272,7 +273,7 @@ async function main() {
               ]),
             metadataName: outcome.label,
             metadataSymbol: outcome.label,
-            metadataUri: `https://example.com/prediction/${outcome.label.toLowerCase()}.json`,
+            metadataUri: `ipfs://pred/${outcome.label.toLowerCase()}`,
           },
         );
 

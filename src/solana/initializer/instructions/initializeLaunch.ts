@@ -131,6 +131,8 @@ export interface InitializeLaunchAccounts {
   metadataAccount?: Address;
   metadataProgram?: Address;
   instructionsSysvar?: Address;
+  /** Required when migratorProgram is the CPMM migrator. */
+  cpmmConfig?: Address;
   /**
    * Optional Address Lookup Table to reference for static accounts.
    * When provided, constant non-signer accounts (base/quote token program,
@@ -261,12 +263,18 @@ export async function createInitializeLaunchInstruction(
     getInitializeLaunchInstructionDataEncoder().encode(encoderArgs),
   );
 
-  // When using the CPMM migrator, automatically append the CpmmMigratorState
-  // PDA as a writable remaining account so the register_launch CPI can write
-  // the launch's graduation parameters without the caller managing it manually.
+  // When using the CPMM migrator, append the module-specific accounts required
+  // by register_launch:
+  //   [state, cpmm_config]
   if (migratorProgram === CPMM_MIGRATOR_PROGRAM_ID) {
+    if (!accounts.cpmmConfig) {
+      throw new Error(
+        'cpmmConfig is required when migratorProgram is CPMM_MIGRATOR_PROGRAM_ID',
+      );
+    }
     const [cpmmMigratorState] = await getCpmmMigratorStateAddress(launch);
     keys.push({ address: cpmmMigratorState, role: AccountRole.WRITABLE });
+    keys.push({ address: accounts.cpmmConfig, role: AccountRole.READONLY });
   }
 
   // When using the prediction migrator, automatically derive and append the 6
@@ -280,12 +288,12 @@ export async function createInitializeLaunchInstruction(
       ? baseMint.address
       : baseMint;
 
-    const [market] = await getPredictionMarketAddress(oracleState);
+    const [market] = await getPredictionMarketAddress(oracleState, quoteMint);
     const [potVault] = await getPredictionPotVaultAddress(market);
     const [marketAuthority] = await getPredictionMarketAuthorityAddress(market);
-    const [entry] = await getPredictionEntryAddress(oracleState, entryId);
+    const [entry] = await getPredictionEntryAddress(market, entryId);
     const [entryByMint] = await getPredictionEntryByMintAddress(
-      oracleState,
+      market,
       baseMintAddress,
     );
 

@@ -136,6 +136,8 @@ export {
   getConfigAddress,
   getPoolAddress,
   getPoolAuthorityAddress,
+  getPoolVault0Address,
+  getPoolVault1Address,
   getPositionAddress,
   getOracleAddress,
   getProtocolPositionAddress,
