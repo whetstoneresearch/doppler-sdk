@@ -28,7 +28,7 @@ jobs:
           path: doppler
           sparse-checkout: |
             Deployments.json
-          sparse-checkout-cone: true
+          sparse-checkout-cone-mode: true
 
       - uses: actions/create-github-app-token@v2
         id: generate-token
@@ -53,12 +53,12 @@ jobs:
         run: pnpm install --frozen-lockfile
         working-directory: doppler-sdk
       - name: Generate deployments.generated.ts from Deployments.json
-        run: pnpm run generate:addresses -- --source ../doppler/Deployments.json --out src/deployments.generated.ts
+        run: pnpm run generate:addresses -- --source ../doppler/Deployments.json --out src/evm/deployments.generated.ts
         working-directory: doppler-sdk
       - name: Check for changes
         id: changes
         run: |
-          if git diff --quiet src/deployments.generated.ts; then
+          if [ -z "$(git status --porcelain --untracked-files=all -- src/evm/deployments.generated.ts)" ]; then
             echo "has_changes=false" >> $GITHUB_OUTPUT
             echo "No changes detected in generated addresses"
           else
@@ -84,4 +84,4 @@ jobs:
           branch: chore/update-addresses
           delete-branch: true
           add-paths: |
-            src/deployments.generated.ts
+            src/evm/deployments.generated.ts
