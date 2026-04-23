@@ -55,6 +55,9 @@ jobs:
       - name: Generate deployments.generated.ts from Deployments.json
         run: pnpm run generate:addresses -- --source ../doppler/Deployments.json --out src/evm/deployments.generated.ts
         working-directory: doppler-sdk
+      - name: Format generated addresses
+        run: pnpm exec oxfmt --write src/evm/deployments.generated.ts
+        working-directory: doppler-sdk
       - name: Check for changes
         id: changes
         run: |
