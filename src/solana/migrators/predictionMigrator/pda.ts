@@ -55,11 +55,7 @@ export async function getPredictionEntryAddress(
 ): Promise<ProgramDerivedAddress> {
   return getProgramDerivedAddress({
     programAddress: programId,
-    seeds: [
-      textEncoder.encode('entry'),
-      addressCodec.encode(market),
-      entryId,
-    ],
+    seeds: [textEncoder.encode('entry'), addressCodec.encode(market), entryId],
   });
 }
 

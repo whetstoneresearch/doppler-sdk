@@ -180,20 +180,16 @@ async function main() {
         // These are the accounts the migrator will receive during migration.
         // The instruction builder auto-appends them; we derive them here only
         // to compute migratorRemainingAccountsHash.
-        const [market] =
-          await predictionMigrator.getPredictionMarketAddress(
-            oracleStateAddress,
-            WSOL_MINT,
-          );
+        const [market] = await predictionMigrator.getPredictionMarketAddress(
+          oracleStateAddress,
+          WSOL_MINT,
+        );
         const [potVault] =
           await predictionMigrator.getPredictionPotVaultAddress(market);
         const [marketAuthority] =
           await predictionMigrator.getPredictionMarketAuthorityAddress(market);
         const [entryAddress] =
-          await predictionMigrator.getPredictionEntryAddress(
-            market,
-            entryId,
-          );
+          await predictionMigrator.getPredictionEntryAddress(market, entryId);
         const [entryByMint] =
           await predictionMigrator.getPredictionEntryByMintAddress(
             market,
