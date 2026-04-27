@@ -153,7 +153,9 @@ export function isNoOpEnabledChain(
 
 // Chains where launchpad governance is enabled
 export const LAUNCHPAD_ENABLED_CHAIN_IDS = [
+  CHAIN_IDS.MAINNET,
   CHAIN_IDS.BASE,
+  CHAIN_IDS.BASE_SEPOLIA,
   CHAIN_IDS.MONAD_MAINNET,
 ] as const;
 

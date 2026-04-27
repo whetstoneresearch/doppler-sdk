@@ -24,6 +24,7 @@ const CHAIN_NAMES: Record<number, string> = {
 const MODULE_PATTERNS: [RegExp, string][] = [
   [/TokenFactory/, 'TokenFactory'],
   [/NoOpGovernanceFactory/, 'NoOpGovernanceFactory'],
+  [/LaunchpadGovernanceFactory/, 'LaunchpadGovernanceFactory'],
   [/GovernanceFactory/, 'GovernanceFactory'],
   [/LockableV3Initializer/, 'LockableV3Initializer'],
   [/V4ScheduledMulticurveInitializer/, 'V4ScheduledMulticurveInitializer'],

@@ -391,6 +391,15 @@ describe('Airlock Module Whitelisting', () => {
           () => testModule('NoOpGovernanceFactory', addresses.noOpGovernanceFactory!, ModuleState.GovernanceFactory)
         );
       }
+
+      if (
+        addresses.launchpadGovernanceFactory &&
+        addresses.launchpadGovernanceFactory !== ZERO_ADDRESS
+      ) {
+        it(`LaunchpadGovernanceFactory (${addresses.launchpadGovernanceFactory}) whitelisted`,
+          () => testModule('LaunchpadGovernanceFactory', addresses.launchpadGovernanceFactory!, ModuleState.GovernanceFactory)
+        );
+      }
     });
   }
 });
