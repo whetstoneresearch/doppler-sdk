@@ -18,8 +18,6 @@ import {
   getStructEncoder,
   getU128Decoder,
   getU128Encoder,
-  getU16Decoder,
-  getU16Encoder,
   getU32Decoder,
   getU32Encoder,
   SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
@@ -100,13 +98,11 @@ export type InitializeOracleInstructionData = {
   discriminator: ReadonlyUint8Array;
   maxPriceChangeRatioQ64: bigint;
   observationIntervalSec: number;
-  numObservations: number;
 };
 
 export type InitializeOracleInstructionDataArgs = {
   maxPriceChangeRatioQ64: number | bigint;
   observationIntervalSec: number;
-  numObservations: number;
 };
 
 export function getInitializeOracleInstructionDataEncoder(): FixedSizeEncoder<InitializeOracleInstructionDataArgs> {
@@ -115,7 +111,6 @@ export function getInitializeOracleInstructionDataEncoder(): FixedSizeEncoder<In
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       ['maxPriceChangeRatioQ64', getU128Encoder()],
       ['observationIntervalSec', getU32Encoder()],
-      ['numObservations', getU16Encoder()],
     ]),
     (value) => ({ ...value, discriminator: INITIALIZE_ORACLE_DISCRIMINATOR }),
   );
@@ -126,7 +121,6 @@ export function getInitializeOracleInstructionDataDecoder(): FixedSizeDecoder<In
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['maxPriceChangeRatioQ64', getU128Decoder()],
     ['observationIntervalSec', getU32Decoder()],
-    ['numObservations', getU16Decoder()],
   ]);
 }
 
@@ -156,7 +150,6 @@ export type InitializeOracleAsyncInput<
   systemProgram?: Address<TAccountSystemProgram>;
   maxPriceChangeRatioQ64: InitializeOracleInstructionDataArgs['maxPriceChangeRatioQ64'];
   observationIntervalSec: InitializeOracleInstructionDataArgs['observationIntervalSec'];
-  numObservations: InitializeOracleInstructionDataArgs['numObservations'];
 };
 
 export async function getInitializeOracleInstructionAsync<
@@ -266,7 +259,6 @@ export type InitializeOracleInput<
   systemProgram?: Address<TAccountSystemProgram>;
   maxPriceChangeRatioQ64: InitializeOracleInstructionDataArgs['maxPriceChangeRatioQ64'];
   observationIntervalSec: InitializeOracleInstructionDataArgs['observationIntervalSec'];
-  numObservations: InitializeOracleInstructionDataArgs['numObservations'];
 };
 
 export function getInitializeOracleInstruction<

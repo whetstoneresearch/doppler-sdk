@@ -71,8 +71,8 @@ export type AddLiquidityInstruction<
   TAccountToken1Mint extends string | AccountMeta<string> = string,
   TAccountUser0 extends string | AccountMeta<string> = string,
   TAccountUser1 extends string | AccountMeta<string> = string,
-  TAccountTokenProgram extends string | AccountMeta<string> =
-    'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
+  TAccountToken0Program extends string | AccountMeta<string> = string,
+  TAccountToken1Program extends string | AccountMeta<string> = string,
   TAccountOracle extends string | AccountMeta<string> = string,
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
@@ -116,9 +116,12 @@ export type AddLiquidityInstruction<
       TAccountUser1 extends string
         ? WritableAccount<TAccountUser1>
         : TAccountUser1,
-      TAccountTokenProgram extends string
-        ? ReadonlyAccount<TAccountTokenProgram>
-        : TAccountTokenProgram,
+      TAccountToken0Program extends string
+        ? ReadonlyAccount<TAccountToken0Program>
+        : TAccountToken0Program,
+      TAccountToken1Program extends string
+        ? ReadonlyAccount<TAccountToken1Program>
+        : TAccountToken1Program,
       TAccountOracle extends string
         ? WritableAccount<TAccountOracle>
         : TAccountOracle,
@@ -187,7 +190,8 @@ export type AddLiquidityAsyncInput<
   TAccountToken1Mint extends string = string,
   TAccountUser0 extends string = string,
   TAccountUser1 extends string = string,
-  TAccountTokenProgram extends string = string,
+  TAccountToken0Program extends string = string,
+  TAccountToken1Program extends string = string,
   TAccountOracle extends string = string,
 > = {
   config: Address<TAccountConfig>;
@@ -202,7 +206,8 @@ export type AddLiquidityAsyncInput<
   token1Mint: Address<TAccountToken1Mint>;
   user0: Address<TAccountUser0>;
   user1: Address<TAccountUser1>;
-  tokenProgram?: Address<TAccountTokenProgram>;
+  token0Program: Address<TAccountToken0Program>;
+  token1Program: Address<TAccountToken1Program>;
   oracle?: Address<TAccountOracle>;
   amount0Max: AddLiquidityInstructionDataArgs['amount0Max'];
   amount1Max: AddLiquidityInstructionDataArgs['amount1Max'];
@@ -223,7 +228,8 @@ export async function getAddLiquidityInstructionAsync<
   TAccountToken1Mint extends string,
   TAccountUser0 extends string,
   TAccountUser1 extends string,
-  TAccountTokenProgram extends string,
+  TAccountToken0Program extends string,
+  TAccountToken1Program extends string,
   TAccountOracle extends string,
   TProgramAddress extends Address = typeof CPMM_PROGRAM_ADDRESS,
 >(
@@ -240,7 +246,8 @@ export async function getAddLiquidityInstructionAsync<
     TAccountToken1Mint,
     TAccountUser0,
     TAccountUser1,
-    TAccountTokenProgram,
+    TAccountToken0Program,
+    TAccountToken1Program,
     TAccountOracle
   >,
   config?: { programAddress?: TProgramAddress },
@@ -259,7 +266,8 @@ export async function getAddLiquidityInstructionAsync<
     TAccountToken1Mint,
     TAccountUser0,
     TAccountUser1,
-    TAccountTokenProgram,
+    TAccountToken0Program,
+    TAccountToken1Program,
     TAccountOracle
   >
 > {
@@ -283,7 +291,8 @@ export async function getAddLiquidityInstructionAsync<
     token1Mint: { value: input.token1Mint ?? null, isWritable: false },
     user0: { value: input.user0 ?? null, isWritable: true },
     user1: { value: input.user1 ?? null, isWritable: true },
-    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
+    token0Program: { value: input.token0Program ?? null, isWritable: false },
+    token1Program: { value: input.token1Program ?? null, isWritable: false },
     oracle: { value: input.oracle ?? null, isWritable: true },
   };
   const accounts = originalAccounts as Record<
@@ -308,10 +317,6 @@ export async function getAddLiquidityInstructionAsync<
       ],
     });
   }
-  if (!accounts.tokenProgram.value) {
-    accounts.tokenProgram.value =
-      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
-  }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
@@ -328,7 +333,8 @@ export async function getAddLiquidityInstructionAsync<
       getAccountMeta('token1Mint', accounts.token1Mint),
       getAccountMeta('user0', accounts.user0),
       getAccountMeta('user1', accounts.user1),
-      getAccountMeta('tokenProgram', accounts.tokenProgram),
+      getAccountMeta('token0Program', accounts.token0Program),
+      getAccountMeta('token1Program', accounts.token1Program),
       getAccountMeta('oracle', accounts.oracle),
     ],
     data: getAddLiquidityInstructionDataEncoder().encode(
@@ -349,7 +355,8 @@ export async function getAddLiquidityInstructionAsync<
     TAccountToken1Mint,
     TAccountUser0,
     TAccountUser1,
-    TAccountTokenProgram,
+    TAccountToken0Program,
+    TAccountToken1Program,
     TAccountOracle
   >);
 }
@@ -367,7 +374,8 @@ export type AddLiquidityInput<
   TAccountToken1Mint extends string = string,
   TAccountUser0 extends string = string,
   TAccountUser1 extends string = string,
-  TAccountTokenProgram extends string = string,
+  TAccountToken0Program extends string = string,
+  TAccountToken1Program extends string = string,
   TAccountOracle extends string = string,
 > = {
   config: Address<TAccountConfig>;
@@ -382,7 +390,8 @@ export type AddLiquidityInput<
   token1Mint: Address<TAccountToken1Mint>;
   user0: Address<TAccountUser0>;
   user1: Address<TAccountUser1>;
-  tokenProgram?: Address<TAccountTokenProgram>;
+  token0Program: Address<TAccountToken0Program>;
+  token1Program: Address<TAccountToken1Program>;
   oracle?: Address<TAccountOracle>;
   amount0Max: AddLiquidityInstructionDataArgs['amount0Max'];
   amount1Max: AddLiquidityInstructionDataArgs['amount1Max'];
@@ -403,7 +412,8 @@ export function getAddLiquidityInstruction<
   TAccountToken1Mint extends string,
   TAccountUser0 extends string,
   TAccountUser1 extends string,
-  TAccountTokenProgram extends string,
+  TAccountToken0Program extends string,
+  TAccountToken1Program extends string,
   TAccountOracle extends string,
   TProgramAddress extends Address = typeof CPMM_PROGRAM_ADDRESS,
 >(
@@ -420,7 +430,8 @@ export function getAddLiquidityInstruction<
     TAccountToken1Mint,
     TAccountUser0,
     TAccountUser1,
-    TAccountTokenProgram,
+    TAccountToken0Program,
+    TAccountToken1Program,
     TAccountOracle
   >,
   config?: { programAddress?: TProgramAddress },
@@ -438,7 +449,8 @@ export function getAddLiquidityInstruction<
   TAccountToken1Mint,
   TAccountUser0,
   TAccountUser1,
-  TAccountTokenProgram,
+  TAccountToken0Program,
+  TAccountToken1Program,
   TAccountOracle
 > {
   // Program address.
@@ -461,7 +473,8 @@ export function getAddLiquidityInstruction<
     token1Mint: { value: input.token1Mint ?? null, isWritable: false },
     user0: { value: input.user0 ?? null, isWritable: true },
     user1: { value: input.user1 ?? null, isWritable: true },
-    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
+    token0Program: { value: input.token0Program ?? null, isWritable: false },
+    token1Program: { value: input.token1Program ?? null, isWritable: false },
     oracle: { value: input.oracle ?? null, isWritable: true },
   };
   const accounts = originalAccounts as Record<
@@ -471,12 +484,6 @@ export function getAddLiquidityInstruction<
 
   // Original args.
   const args = { ...input };
-
-  // Resolve default values.
-  if (!accounts.tokenProgram.value) {
-    accounts.tokenProgram.value =
-      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
-  }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
@@ -493,7 +500,8 @@ export function getAddLiquidityInstruction<
       getAccountMeta('token1Mint', accounts.token1Mint),
       getAccountMeta('user0', accounts.user0),
       getAccountMeta('user1', accounts.user1),
-      getAccountMeta('tokenProgram', accounts.tokenProgram),
+      getAccountMeta('token0Program', accounts.token0Program),
+      getAccountMeta('token1Program', accounts.token1Program),
       getAccountMeta('oracle', accounts.oracle),
     ],
     data: getAddLiquidityInstructionDataEncoder().encode(
@@ -514,7 +522,8 @@ export function getAddLiquidityInstruction<
     TAccountToken1Mint,
     TAccountUser0,
     TAccountUser1,
-    TAccountTokenProgram,
+    TAccountToken0Program,
+    TAccountToken1Program,
     TAccountOracle
   >);
 }
@@ -537,8 +546,9 @@ export type ParsedAddLiquidityInstruction<
     token1Mint: TAccountMetas[9];
     user0: TAccountMetas[10];
     user1: TAccountMetas[11];
-    tokenProgram: TAccountMetas[12];
-    oracle?: TAccountMetas[13] | undefined;
+    token0Program: TAccountMetas[12];
+    token1Program: TAccountMetas[13];
+    oracle?: TAccountMetas[14] | undefined;
   };
   data: AddLiquidityInstructionData;
 };
@@ -551,12 +561,12 @@ export function parseAddLiquidityInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedAddLiquidityInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 14) {
+  if (instruction.accounts.length < 15) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 14,
+        expectedAccountMetas: 15,
       },
     );
   }
@@ -587,7 +597,8 @@ export function parseAddLiquidityInstruction<
       token1Mint: getNextAccount(),
       user0: getNextAccount(),
       user1: getNextAccount(),
-      tokenProgram: getNextAccount(),
+      token0Program: getNextAccount(),
+      token1Program: getNextAccount(),
       oracle: getNextOptionalAccount(),
     },
     data: getAddLiquidityInstructionDataDecoder().decode(instruction.data),

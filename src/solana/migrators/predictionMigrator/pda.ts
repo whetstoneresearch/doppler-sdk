@@ -12,11 +12,16 @@ const textEncoder = new TextEncoder();
 
 export async function getPredictionMarketAddress(
   oracleState: Address,
+  quoteMint: Address,
   programId: Address = PREDICTION_MIGRATOR_PROGRAM_ADDRESS,
 ): Promise<ProgramDerivedAddress> {
   return getProgramDerivedAddress({
     programAddress: programId,
-    seeds: [textEncoder.encode('market'), addressCodec.encode(oracleState)],
+    seeds: [
+      textEncoder.encode('market'),
+      addressCodec.encode(oracleState),
+      addressCodec.encode(quoteMint),
+    ],
   });
 }
 
@@ -44,22 +49,18 @@ export async function getPredictionPotVaultAddress(
 }
 
 export async function getPredictionEntryAddress(
-  oracleState: Address,
+  market: Address,
   entryId: ReadonlyUint8Array | Uint8Array,
   programId: Address = PREDICTION_MIGRATOR_PROGRAM_ADDRESS,
 ): Promise<ProgramDerivedAddress> {
   return getProgramDerivedAddress({
     programAddress: programId,
-    seeds: [
-      textEncoder.encode('entry'),
-      addressCodec.encode(oracleState),
-      entryId,
-    ],
+    seeds: [textEncoder.encode('entry'), addressCodec.encode(market), entryId],
   });
 }
 
 export async function getPredictionEntryByMintAddress(
-  oracleState: Address,
+  market: Address,
   mint: Address,
   programId: Address = PREDICTION_MIGRATOR_PROGRAM_ADDRESS,
 ): Promise<ProgramDerivedAddress> {
@@ -67,7 +68,7 @@ export async function getPredictionEntryByMintAddress(
     programAddress: programId,
     seeds: [
       textEncoder.encode('entry_by_mint'),
-      addressCodec.encode(oracleState),
+      addressCodec.encode(market),
       addressCodec.encode(mint),
     ],
   });

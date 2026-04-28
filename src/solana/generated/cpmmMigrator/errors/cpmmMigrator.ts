@@ -52,15 +52,27 @@ export const CPMM_MIGRATOR_ERROR__INVALID_RECIPIENT = 0x1780; // 6016
 export const CPMM_MIGRATOR_ERROR__INVALID_LAUNCH = 0x1781; // 6017
 /** LaunchConfigMismatch: Launch configuration mismatch */
 export const CPMM_MIGRATOR_ERROR__LAUNCH_CONFIG_MISMATCH = 0x1782; // 6018
+/** InvalidCpmmAdmin: CPMM admin signer does not match CPMM config admin */
+export const CPMM_MIGRATOR_ERROR__INVALID_CPMM_ADMIN = 0x1783; // 6019
+/** InvalidPool: Invalid pool */
+export const CPMM_MIGRATOR_ERROR__INVALID_POOL = 0x1784; // 6020
+/** InvalidPoolAuthority: Invalid pool authority */
+export const CPMM_MIGRATOR_ERROR__INVALID_POOL_AUTHORITY = 0x1785; // 6021
+/** InvalidPosition: Invalid position */
+export const CPMM_MIGRATOR_ERROR__INVALID_POSITION = 0x1786; // 6022
 
 export type CpmmMigratorError =
   | typeof CPMM_MIGRATOR_ERROR__ALREADY_MIGRATED
   | typeof CPMM_MIGRATOR_ERROR__EXTRA_RECIPIENT_ACCOUNTS
   | typeof CPMM_MIGRATOR_ERROR__INVALID_AMOUNT
   | typeof CPMM_MIGRATOR_ERROR__INVALID_CONFIG
+  | typeof CPMM_MIGRATOR_ERROR__INVALID_CPMM_ADMIN
   | typeof CPMM_MIGRATOR_ERROR__INVALID_LAUNCH
   | typeof CPMM_MIGRATOR_ERROR__INVALID_MINT
   | typeof CPMM_MIGRATOR_ERROR__INVALID_PHASE
+  | typeof CPMM_MIGRATOR_ERROR__INVALID_POOL
+  | typeof CPMM_MIGRATOR_ERROR__INVALID_POOL_AUTHORITY
+  | typeof CPMM_MIGRATOR_ERROR__INVALID_POSITION
   | typeof CPMM_MIGRATOR_ERROR__INVALID_RECIPIENT
   | typeof CPMM_MIGRATOR_ERROR__INVALID_RECIPIENT_ACCOUNT
   | typeof CPMM_MIGRATOR_ERROR__INVALID_VAULT
@@ -81,9 +93,13 @@ if (process.env.NODE_ENV !== 'production') {
     [CPMM_MIGRATOR_ERROR__EXTRA_RECIPIENT_ACCOUNTS]: `Extra recipient accounts`,
     [CPMM_MIGRATOR_ERROR__INVALID_AMOUNT]: `Invalid amount`,
     [CPMM_MIGRATOR_ERROR__INVALID_CONFIG]: `Invalid config`,
+    [CPMM_MIGRATOR_ERROR__INVALID_CPMM_ADMIN]: `CPMM admin signer does not match CPMM config admin`,
     [CPMM_MIGRATOR_ERROR__INVALID_LAUNCH]: `Invalid launch`,
     [CPMM_MIGRATOR_ERROR__INVALID_MINT]: `Invalid mint`,
     [CPMM_MIGRATOR_ERROR__INVALID_PHASE]: `Invalid phase`,
+    [CPMM_MIGRATOR_ERROR__INVALID_POOL]: `Invalid pool`,
+    [CPMM_MIGRATOR_ERROR__INVALID_POOL_AUTHORITY]: `Invalid pool authority`,
+    [CPMM_MIGRATOR_ERROR__INVALID_POSITION]: `Invalid position`,
     [CPMM_MIGRATOR_ERROR__INVALID_RECIPIENT]: `Invalid recipient`,
     [CPMM_MIGRATOR_ERROR__INVALID_RECIPIENT_ACCOUNT]: `Invalid recipient account`,
     [CPMM_MIGRATOR_ERROR__INVALID_VAULT]: `Invalid vault`,

@@ -39,17 +39,17 @@ import {
 } from '@solana/program-client-core';
 import { INITIALIZER_PROGRAM_ADDRESS } from '../programs';
 
-export const MIGRATE_LAUNCH_DISCRIMINATOR = new Uint8Array([
-  19, 199, 119, 103, 13, 30, 12, 205,
+export const MIGRATOR_INIT_DISCRIMINATOR = new Uint8Array([
+  184, 104, 5, 97, 50, 28, 253, 16,
 ]);
 
-export function getMigrateLaunchDiscriminatorBytes() {
+export function getMigratorInitDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    MIGRATE_LAUNCH_DISCRIMINATOR,
+    MIGRATOR_INIT_DISCRIMINATOR,
   );
 }
 
-export type MigrateLaunchInstruction<
+export type MigratorInitInstruction<
   TProgram extends string = typeof INITIALIZER_PROGRAM_ADDRESS,
   TAccountConfig extends string | AccountMeta<string> = string,
   TAccountLaunch extends string | AccountMeta<string> = string,
@@ -120,36 +120,34 @@ export type MigrateLaunchInstruction<
     ]
   >;
 
-export type MigrateLaunchInstructionData = {
-  discriminator: ReadonlyUint8Array;
-};
+export type MigratorInitInstructionData = { discriminator: ReadonlyUint8Array };
 
-export type MigrateLaunchInstructionDataArgs = {};
+export type MigratorInitInstructionDataArgs = {};
 
-export function getMigrateLaunchInstructionDataEncoder(): FixedSizeEncoder<MigrateLaunchInstructionDataArgs> {
+export function getMigratorInitInstructionDataEncoder(): FixedSizeEncoder<MigratorInitInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
-    (value) => ({ ...value, discriminator: MIGRATE_LAUNCH_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: MIGRATOR_INIT_DISCRIMINATOR }),
   );
 }
 
-export function getMigrateLaunchInstructionDataDecoder(): FixedSizeDecoder<MigrateLaunchInstructionData> {
+export function getMigratorInitInstructionDataDecoder(): FixedSizeDecoder<MigratorInitInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
   ]);
 }
 
-export function getMigrateLaunchInstructionDataCodec(): FixedSizeCodec<
-  MigrateLaunchInstructionDataArgs,
-  MigrateLaunchInstructionData
+export function getMigratorInitInstructionDataCodec(): FixedSizeCodec<
+  MigratorInitInstructionDataArgs,
+  MigratorInitInstructionData
 > {
   return combineCodec(
-    getMigrateLaunchInstructionDataEncoder(),
-    getMigrateLaunchInstructionDataDecoder(),
+    getMigratorInitInstructionDataEncoder(),
+    getMigratorInitInstructionDataDecoder(),
   );
 }
 
-export type MigrateLaunchAsyncInput<
+export type MigratorInitAsyncInput<
   TAccountConfig extends string = string,
   TAccountLaunch extends string = string,
   TAccountLaunchAuthority extends string = string,
@@ -181,7 +179,7 @@ export type MigrateLaunchAsyncInput<
   instructionsSysvar?: Address<TAccountInstructionsSysvar>;
 };
 
-export async function getMigrateLaunchInstructionAsync<
+export async function getMigratorInitInstructionAsync<
   TAccountConfig extends string,
   TAccountLaunch extends string,
   TAccountLaunchAuthority extends string,
@@ -198,7 +196,7 @@ export async function getMigrateLaunchInstructionAsync<
   TAccountInstructionsSysvar extends string,
   TProgramAddress extends Address = typeof INITIALIZER_PROGRAM_ADDRESS,
 >(
-  input: MigrateLaunchAsyncInput<
+  input: MigratorInitAsyncInput<
     TAccountConfig,
     TAccountLaunch,
     TAccountLaunchAuthority,
@@ -216,7 +214,7 @@ export async function getMigrateLaunchInstructionAsync<
   >,
   config?: { programAddress?: TProgramAddress },
 ): Promise<
-  MigrateLaunchInstruction<
+  MigratorInitInstruction<
     TProgramAddress,
     TAccountConfig,
     TAccountLaunch,
@@ -314,9 +312,9 @@ export async function getMigrateLaunchInstructionAsync<
       getAccountMeta('rent', accounts.rent),
       getAccountMeta('instructionsSysvar', accounts.instructionsSysvar),
     ],
-    data: getMigrateLaunchInstructionDataEncoder().encode({}),
+    data: getMigratorInitInstructionDataEncoder().encode({}),
     programAddress,
-  } as MigrateLaunchInstruction<
+  } as MigratorInitInstruction<
     TProgramAddress,
     TAccountConfig,
     TAccountLaunch,
@@ -335,7 +333,7 @@ export async function getMigrateLaunchInstructionAsync<
   >);
 }
 
-export type MigrateLaunchInput<
+export type MigratorInitInput<
   TAccountConfig extends string = string,
   TAccountLaunch extends string = string,
   TAccountLaunchAuthority extends string = string,
@@ -367,7 +365,7 @@ export type MigrateLaunchInput<
   instructionsSysvar?: Address<TAccountInstructionsSysvar>;
 };
 
-export function getMigrateLaunchInstruction<
+export function getMigratorInitInstruction<
   TAccountConfig extends string,
   TAccountLaunch extends string,
   TAccountLaunchAuthority extends string,
@@ -384,7 +382,7 @@ export function getMigrateLaunchInstruction<
   TAccountInstructionsSysvar extends string,
   TProgramAddress extends Address = typeof INITIALIZER_PROGRAM_ADDRESS,
 >(
-  input: MigrateLaunchInput<
+  input: MigratorInitInput<
     TAccountConfig,
     TAccountLaunch,
     TAccountLaunchAuthority,
@@ -401,7 +399,7 @@ export function getMigrateLaunchInstruction<
     TAccountInstructionsSysvar
   >,
   config?: { programAddress?: TProgramAddress },
-): MigrateLaunchInstruction<
+): MigratorInitInstruction<
   TProgramAddress,
   TAccountConfig,
   TAccountLaunch,
@@ -490,9 +488,9 @@ export function getMigrateLaunchInstruction<
       getAccountMeta('rent', accounts.rent),
       getAccountMeta('instructionsSysvar', accounts.instructionsSysvar),
     ],
-    data: getMigrateLaunchInstructionDataEncoder().encode({}),
+    data: getMigratorInitInstructionDataEncoder().encode({}),
     programAddress,
-  } as MigrateLaunchInstruction<
+  } as MigratorInitInstruction<
     TProgramAddress,
     TAccountConfig,
     TAccountLaunch,
@@ -511,7 +509,7 @@ export function getMigrateLaunchInstruction<
   >);
 }
 
-export type ParsedMigrateLaunchInstruction<
+export type ParsedMigratorInitInstruction<
   TProgram extends string = typeof INITIALIZER_PROGRAM_ADDRESS,
   TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
@@ -532,17 +530,17 @@ export type ParsedMigrateLaunchInstruction<
     rent: TAccountMetas[12];
     instructionsSysvar: TAccountMetas[13];
   };
-  data: MigrateLaunchInstructionData;
+  data: MigratorInitInstructionData;
 };
 
-export function parseMigrateLaunchInstruction<
+export function parseMigratorInitInstruction<
   TProgram extends string,
   TAccountMetas extends readonly AccountMeta[],
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
-): ParsedMigrateLaunchInstruction<TProgram, TAccountMetas> {
+): ParsedMigratorInitInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 14) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
@@ -576,6 +574,6 @@ export function parseMigrateLaunchInstruction<
       rent: getNextAccount(),
       instructionsSysvar: getNextAccount(),
     },
-    data: getMigrateLaunchInstructionDataDecoder().decode(instruction.data),
+    data: getMigratorInitInstructionDataDecoder().decode(instruction.data),
   };
 }

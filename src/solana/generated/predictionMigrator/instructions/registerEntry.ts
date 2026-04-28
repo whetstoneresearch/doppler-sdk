@@ -62,8 +62,8 @@ export type RegisterEntryInstruction<
   TAccountBaseVault extends string | AccountMeta<string> = string,
   TAccountQuoteVault extends string | AccountMeta<string> = string,
   TAccountPayer extends string | AccountMeta<string> = string,
-  TAccountTokenProgram extends string | AccountMeta<string> =
-    'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
+  TAccountBaseTokenProgram extends string | AccountMeta<string> = string,
+  TAccountQuoteTokenProgram extends string | AccountMeta<string> = string,
   TAccountSystemProgram extends string | AccountMeta<string> =
     '11111111111111111111111111111111',
   TAccountRent extends string | AccountMeta<string> =
@@ -105,9 +105,12 @@ export type RegisterEntryInstruction<
         ? WritableSignerAccount<TAccountPayer> &
             AccountSignerMeta<TAccountPayer>
         : TAccountPayer,
-      TAccountTokenProgram extends string
-        ? ReadonlyAccount<TAccountTokenProgram>
-        : TAccountTokenProgram,
+      TAccountBaseTokenProgram extends string
+        ? ReadonlyAccount<TAccountBaseTokenProgram>
+        : TAccountBaseTokenProgram,
+      TAccountQuoteTokenProgram extends string
+        ? ReadonlyAccount<TAccountQuoteTokenProgram>
+        : TAccountQuoteTokenProgram,
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
@@ -179,7 +182,8 @@ export type RegisterEntryAsyncInput<
   TAccountBaseVault extends string = string,
   TAccountQuoteVault extends string = string,
   TAccountPayer extends string = string,
-  TAccountTokenProgram extends string = string,
+  TAccountBaseTokenProgram extends string = string,
+  TAccountQuoteTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
   TAccountRent extends string = string,
   TAccountOracle extends string = string,
@@ -190,7 +194,6 @@ export type RegisterEntryAsyncInput<
   TAccountEntryByMint extends string = string,
 > = {
   initializerConfig: Address<TAccountInitializerConfig>;
-  /** Launch account from initializer */
   launch: Address<TAccountLaunch>;
   /** Launch authority PDA - signed by initializer */
   launchAuthority: TransactionSigner<TAccountLaunchAuthority>;
@@ -201,7 +204,8 @@ export type RegisterEntryAsyncInput<
   baseVault: Address<TAccountBaseVault>;
   quoteVault: Address<TAccountQuoteVault>;
   payer: TransactionSigner<TAccountPayer>;
-  tokenProgram?: Address<TAccountTokenProgram>;
+  baseTokenProgram: Address<TAccountBaseTokenProgram>;
+  quoteTokenProgram: Address<TAccountQuoteTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
   rent?: Address<TAccountRent>;
   /** The oracle that this market is tied to */
@@ -227,7 +231,8 @@ export async function getRegisterEntryInstructionAsync<
   TAccountBaseVault extends string,
   TAccountQuoteVault extends string,
   TAccountPayer extends string,
-  TAccountTokenProgram extends string,
+  TAccountBaseTokenProgram extends string,
+  TAccountQuoteTokenProgram extends string,
   TAccountSystemProgram extends string,
   TAccountRent extends string,
   TAccountOracle extends string,
@@ -247,7 +252,8 @@ export async function getRegisterEntryInstructionAsync<
     TAccountBaseVault,
     TAccountQuoteVault,
     TAccountPayer,
-    TAccountTokenProgram,
+    TAccountBaseTokenProgram,
+    TAccountQuoteTokenProgram,
     TAccountSystemProgram,
     TAccountRent,
     TAccountOracle,
@@ -269,7 +275,8 @@ export async function getRegisterEntryInstructionAsync<
     TAccountBaseVault,
     TAccountQuoteVault,
     TAccountPayer,
-    TAccountTokenProgram,
+    TAccountBaseTokenProgram,
+    TAccountQuoteTokenProgram,
     TAccountSystemProgram,
     TAccountRent,
     TAccountOracle,
@@ -300,7 +307,14 @@ export async function getRegisterEntryInstructionAsync<
     baseVault: { value: input.baseVault ?? null, isWritable: false },
     quoteVault: { value: input.quoteVault ?? null, isWritable: false },
     payer: { value: input.payer ?? null, isWritable: true },
-    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
+    baseTokenProgram: {
+      value: input.baseTokenProgram ?? null,
+      isWritable: false,
+    },
+    quoteTokenProgram: {
+      value: input.quoteTokenProgram ?? null,
+      isWritable: false,
+    },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
     rent: { value: input.rent ?? null, isWritable: false },
     oracle: { value: input.oracle ?? null, isWritable: false },
@@ -322,10 +336,6 @@ export async function getRegisterEntryInstructionAsync<
   const args = { ...input };
 
   // Resolve default values.
-  if (!accounts.tokenProgram.value) {
-    accounts.tokenProgram.value =
-      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
-  }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
@@ -343,6 +353,12 @@ export async function getRegisterEntryInstructionAsync<
           getAddressFromResolvedInstructionAccount(
             'oracle',
             accounts.oracle.value,
+          ),
+        ),
+        getAddressEncoder().encode(
+          getAddressFromResolvedInstructionAccount(
+            'quoteMint',
+            accounts.quoteMint.value,
           ),
         ),
       ],
@@ -394,8 +410,8 @@ export async function getRegisterEntryInstructionAsync<
         ),
         getAddressEncoder().encode(
           getAddressFromResolvedInstructionAccount(
-            'oracle',
-            accounts.oracle.value,
+            'market',
+            accounts.market.value,
           ),
         ),
         getAddressEncoder().encode(
@@ -419,7 +435,8 @@ export async function getRegisterEntryInstructionAsync<
       getAccountMeta('baseVault', accounts.baseVault),
       getAccountMeta('quoteVault', accounts.quoteVault),
       getAccountMeta('payer', accounts.payer),
-      getAccountMeta('tokenProgram', accounts.tokenProgram),
+      getAccountMeta('baseTokenProgram', accounts.baseTokenProgram),
+      getAccountMeta('quoteTokenProgram', accounts.quoteTokenProgram),
       getAccountMeta('systemProgram', accounts.systemProgram),
       getAccountMeta('rent', accounts.rent),
       getAccountMeta('oracle', accounts.oracle),
@@ -443,7 +460,8 @@ export async function getRegisterEntryInstructionAsync<
     TAccountBaseVault,
     TAccountQuoteVault,
     TAccountPayer,
-    TAccountTokenProgram,
+    TAccountBaseTokenProgram,
+    TAccountQuoteTokenProgram,
     TAccountSystemProgram,
     TAccountRent,
     TAccountOracle,
@@ -464,7 +482,8 @@ export type RegisterEntryInput<
   TAccountBaseVault extends string = string,
   TAccountQuoteVault extends string = string,
   TAccountPayer extends string = string,
-  TAccountTokenProgram extends string = string,
+  TAccountBaseTokenProgram extends string = string,
+  TAccountQuoteTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
   TAccountRent extends string = string,
   TAccountOracle extends string = string,
@@ -475,7 +494,6 @@ export type RegisterEntryInput<
   TAccountEntryByMint extends string = string,
 > = {
   initializerConfig: Address<TAccountInitializerConfig>;
-  /** Launch account from initializer */
   launch: Address<TAccountLaunch>;
   /** Launch authority PDA - signed by initializer */
   launchAuthority: TransactionSigner<TAccountLaunchAuthority>;
@@ -486,7 +504,8 @@ export type RegisterEntryInput<
   baseVault: Address<TAccountBaseVault>;
   quoteVault: Address<TAccountQuoteVault>;
   payer: TransactionSigner<TAccountPayer>;
-  tokenProgram?: Address<TAccountTokenProgram>;
+  baseTokenProgram: Address<TAccountBaseTokenProgram>;
+  quoteTokenProgram: Address<TAccountQuoteTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
   rent?: Address<TAccountRent>;
   /** The oracle that this market is tied to */
@@ -512,7 +531,8 @@ export function getRegisterEntryInstruction<
   TAccountBaseVault extends string,
   TAccountQuoteVault extends string,
   TAccountPayer extends string,
-  TAccountTokenProgram extends string,
+  TAccountBaseTokenProgram extends string,
+  TAccountQuoteTokenProgram extends string,
   TAccountSystemProgram extends string,
   TAccountRent extends string,
   TAccountOracle extends string,
@@ -532,7 +552,8 @@ export function getRegisterEntryInstruction<
     TAccountBaseVault,
     TAccountQuoteVault,
     TAccountPayer,
-    TAccountTokenProgram,
+    TAccountBaseTokenProgram,
+    TAccountQuoteTokenProgram,
     TAccountSystemProgram,
     TAccountRent,
     TAccountOracle,
@@ -553,7 +574,8 @@ export function getRegisterEntryInstruction<
   TAccountBaseVault,
   TAccountQuoteVault,
   TAccountPayer,
-  TAccountTokenProgram,
+  TAccountBaseTokenProgram,
+  TAccountQuoteTokenProgram,
   TAccountSystemProgram,
   TAccountRent,
   TAccountOracle,
@@ -583,7 +605,14 @@ export function getRegisterEntryInstruction<
     baseVault: { value: input.baseVault ?? null, isWritable: false },
     quoteVault: { value: input.quoteVault ?? null, isWritable: false },
     payer: { value: input.payer ?? null, isWritable: true },
-    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
+    baseTokenProgram: {
+      value: input.baseTokenProgram ?? null,
+      isWritable: false,
+    },
+    quoteTokenProgram: {
+      value: input.quoteTokenProgram ?? null,
+      isWritable: false,
+    },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
     rent: { value: input.rent ?? null, isWritable: false },
     oracle: { value: input.oracle ?? null, isWritable: false },
@@ -605,10 +634,6 @@ export function getRegisterEntryInstruction<
   const args = { ...input };
 
   // Resolve default values.
-  if (!accounts.tokenProgram.value) {
-    accounts.tokenProgram.value =
-      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
-  }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
@@ -629,7 +654,8 @@ export function getRegisterEntryInstruction<
       getAccountMeta('baseVault', accounts.baseVault),
       getAccountMeta('quoteVault', accounts.quoteVault),
       getAccountMeta('payer', accounts.payer),
-      getAccountMeta('tokenProgram', accounts.tokenProgram),
+      getAccountMeta('baseTokenProgram', accounts.baseTokenProgram),
+      getAccountMeta('quoteTokenProgram', accounts.quoteTokenProgram),
       getAccountMeta('systemProgram', accounts.systemProgram),
       getAccountMeta('rent', accounts.rent),
       getAccountMeta('oracle', accounts.oracle),
@@ -653,7 +679,8 @@ export function getRegisterEntryInstruction<
     TAccountBaseVault,
     TAccountQuoteVault,
     TAccountPayer,
-    TAccountTokenProgram,
+    TAccountBaseTokenProgram,
+    TAccountQuoteTokenProgram,
     TAccountSystemProgram,
     TAccountRent,
     TAccountOracle,
@@ -672,7 +699,6 @@ export type ParsedRegisterEntryInstruction<
   programAddress: Address<TProgram>;
   accounts: {
     initializerConfig: TAccountMetas[0];
-    /** Launch account from initializer */
     launch: TAccountMetas[1];
     /** Launch authority PDA - signed by initializer */
     launchAuthority: TAccountMetas[2];
@@ -683,20 +709,21 @@ export type ParsedRegisterEntryInstruction<
     baseVault: TAccountMetas[5];
     quoteVault: TAccountMetas[6];
     payer: TAccountMetas[7];
-    tokenProgram: TAccountMetas[8];
-    systemProgram: TAccountMetas[9];
-    rent: TAccountMetas[10];
+    baseTokenProgram: TAccountMetas[8];
+    quoteTokenProgram: TAccountMetas[9];
+    systemProgram: TAccountMetas[10];
+    rent: TAccountMetas[11];
     /** The oracle that this market is tied to */
-    oracle: TAccountMetas[11];
+    oracle: TAccountMetas[12];
     /** Market PDA - created if first entry */
-    market: TAccountMetas[12];
+    market: TAccountMetas[13];
     /** Pot vault for holding quote tokens */
-    potVault: TAccountMetas[13];
-    marketAuthority: TAccountMetas[14];
+    potVault: TAccountMetas[14];
+    marketAuthority: TAccountMetas[15];
     /** Entry PDA for this entry */
-    entry: TAccountMetas[15];
+    entry: TAccountMetas[16];
     /** EntryByMint PDA for reverse lookup */
-    entryByMint: TAccountMetas[16];
+    entryByMint: TAccountMetas[17];
   };
   data: RegisterEntryInstructionData;
 };
@@ -709,12 +736,12 @@ export function parseRegisterEntryInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedRegisterEntryInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 17) {
+  if (instruction.accounts.length < 18) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 17,
+        expectedAccountMetas: 18,
       },
     );
   }
@@ -735,7 +762,8 @@ export function parseRegisterEntryInstruction<
       baseVault: getNextAccount(),
       quoteVault: getNextAccount(),
       payer: getNextAccount(),
-      tokenProgram: getNextAccount(),
+      baseTokenProgram: getNextAccount(),
+      quoteTokenProgram: getNextAccount(),
       systemProgram: getNextAccount(),
       rent: getNextAccount(),
       oracle: getNextAccount(),

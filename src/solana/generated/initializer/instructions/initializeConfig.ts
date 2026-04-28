@@ -60,6 +60,8 @@ export type InitializeConfigInstruction<
   TAccountProgramData extends string | AccountMeta<string> = string,
   TAccountSystemProgram extends string | AccountMeta<string> =
     '11111111111111111111111111111111',
+  TAccountInstructionsSysvar extends string | AccountMeta<string> =
+    'Sysvar1nstructions1111111111111111111111111',
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -78,6 +80,9 @@ export type InitializeConfigInstruction<
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
+      TAccountInstructionsSysvar extends string
+        ? ReadonlyAccount<TAccountInstructionsSysvar>
+        : TAccountInstructionsSysvar,
       ...TRemainingAccounts,
     ]
   >;
@@ -127,11 +132,13 @@ export type InitializeConfigAsyncInput<
   TAccountConfig extends string = string,
   TAccountProgramData extends string = string,
   TAccountSystemProgram extends string = string,
+  TAccountInstructionsSysvar extends string = string,
 > = {
   admin: TransactionSigner<TAccountAdmin>;
   config?: Address<TAccountConfig>;
   programData: Address<TAccountProgramData>;
   systemProgram?: Address<TAccountSystemProgram>;
+  instructionsSysvar?: Address<TAccountInstructionsSysvar>;
   migratorAllowlist: InitializeConfigInstructionDataArgs['migratorAllowlist'];
   sentinelAllowlist: InitializeConfigInstructionDataArgs['sentinelAllowlist'];
 };
@@ -141,13 +148,15 @@ export async function getInitializeConfigInstructionAsync<
   TAccountConfig extends string,
   TAccountProgramData extends string,
   TAccountSystemProgram extends string,
+  TAccountInstructionsSysvar extends string,
   TProgramAddress extends Address = typeof INITIALIZER_PROGRAM_ADDRESS,
 >(
   input: InitializeConfigAsyncInput<
     TAccountAdmin,
     TAccountConfig,
     TAccountProgramData,
-    TAccountSystemProgram
+    TAccountSystemProgram,
+    TAccountInstructionsSysvar
   >,
   config?: { programAddress?: TProgramAddress },
 ): Promise<
@@ -156,7 +165,8 @@ export async function getInitializeConfigInstructionAsync<
     TAccountAdmin,
     TAccountConfig,
     TAccountProgramData,
-    TAccountSystemProgram
+    TAccountSystemProgram,
+    TAccountInstructionsSysvar
   >
 > {
   // Program address.
@@ -168,6 +178,10 @@ export async function getInitializeConfigInstructionAsync<
     config: { value: input.config ?? null, isWritable: true },
     programData: { value: input.programData ?? null, isWritable: false },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
+    instructionsSysvar: {
+      value: input.instructionsSysvar ?? null,
+      isWritable: false,
+    },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -182,15 +196,17 @@ export async function getInitializeConfigInstructionAsync<
     accounts.config.value = await getProgramDerivedAddress({
       programAddress,
       seeds: [
-        getBytesEncoder().encode(
-          new Uint8Array([99, 111, 110, 102, 105, 103, 95, 118, 51]),
-        ),
+        getBytesEncoder().encode(new Uint8Array([99, 111, 110, 102, 105, 103])),
       ],
     });
   }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+  }
+  if (!accounts.instructionsSysvar.value) {
+    accounts.instructionsSysvar.value =
+      'Sysvar1nstructions1111111111111111111111111' as Address<'Sysvar1nstructions1111111111111111111111111'>;
   }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
@@ -200,6 +216,7 @@ export async function getInitializeConfigInstructionAsync<
       getAccountMeta('config', accounts.config),
       getAccountMeta('programData', accounts.programData),
       getAccountMeta('systemProgram', accounts.systemProgram),
+      getAccountMeta('instructionsSysvar', accounts.instructionsSysvar),
     ],
     data: getInitializeConfigInstructionDataEncoder().encode(
       args as InitializeConfigInstructionDataArgs,
@@ -210,7 +227,8 @@ export async function getInitializeConfigInstructionAsync<
     TAccountAdmin,
     TAccountConfig,
     TAccountProgramData,
-    TAccountSystemProgram
+    TAccountSystemProgram,
+    TAccountInstructionsSysvar
   >);
 }
 
@@ -219,11 +237,13 @@ export type InitializeConfigInput<
   TAccountConfig extends string = string,
   TAccountProgramData extends string = string,
   TAccountSystemProgram extends string = string,
+  TAccountInstructionsSysvar extends string = string,
 > = {
   admin: TransactionSigner<TAccountAdmin>;
   config: Address<TAccountConfig>;
   programData: Address<TAccountProgramData>;
   systemProgram?: Address<TAccountSystemProgram>;
+  instructionsSysvar?: Address<TAccountInstructionsSysvar>;
   migratorAllowlist: InitializeConfigInstructionDataArgs['migratorAllowlist'];
   sentinelAllowlist: InitializeConfigInstructionDataArgs['sentinelAllowlist'];
 };
@@ -233,13 +253,15 @@ export function getInitializeConfigInstruction<
   TAccountConfig extends string,
   TAccountProgramData extends string,
   TAccountSystemProgram extends string,
+  TAccountInstructionsSysvar extends string,
   TProgramAddress extends Address = typeof INITIALIZER_PROGRAM_ADDRESS,
 >(
   input: InitializeConfigInput<
     TAccountAdmin,
     TAccountConfig,
     TAccountProgramData,
-    TAccountSystemProgram
+    TAccountSystemProgram,
+    TAccountInstructionsSysvar
   >,
   config?: { programAddress?: TProgramAddress },
 ): InitializeConfigInstruction<
@@ -247,7 +269,8 @@ export function getInitializeConfigInstruction<
   TAccountAdmin,
   TAccountConfig,
   TAccountProgramData,
-  TAccountSystemProgram
+  TAccountSystemProgram,
+  TAccountInstructionsSysvar
 > {
   // Program address.
   const programAddress = config?.programAddress ?? INITIALIZER_PROGRAM_ADDRESS;
@@ -258,6 +281,10 @@ export function getInitializeConfigInstruction<
     config: { value: input.config ?? null, isWritable: true },
     programData: { value: input.programData ?? null, isWritable: false },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
+    instructionsSysvar: {
+      value: input.instructionsSysvar ?? null,
+      isWritable: false,
+    },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -272,6 +299,10 @@ export function getInitializeConfigInstruction<
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
+  if (!accounts.instructionsSysvar.value) {
+    accounts.instructionsSysvar.value =
+      'Sysvar1nstructions1111111111111111111111111' as Address<'Sysvar1nstructions1111111111111111111111111'>;
+  }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
@@ -280,6 +311,7 @@ export function getInitializeConfigInstruction<
       getAccountMeta('config', accounts.config),
       getAccountMeta('programData', accounts.programData),
       getAccountMeta('systemProgram', accounts.systemProgram),
+      getAccountMeta('instructionsSysvar', accounts.instructionsSysvar),
     ],
     data: getInitializeConfigInstructionDataEncoder().encode(
       args as InitializeConfigInstructionDataArgs,
@@ -290,7 +322,8 @@ export function getInitializeConfigInstruction<
     TAccountAdmin,
     TAccountConfig,
     TAccountProgramData,
-    TAccountSystemProgram
+    TAccountSystemProgram,
+    TAccountInstructionsSysvar
   >);
 }
 
@@ -304,6 +337,7 @@ export type ParsedInitializeConfigInstruction<
     config: TAccountMetas[1];
     programData: TAccountMetas[2];
     systemProgram: TAccountMetas[3];
+    instructionsSysvar: TAccountMetas[4];
   };
   data: InitializeConfigInstructionData;
 };
@@ -316,12 +350,12 @@ export function parseInitializeConfigInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedInitializeConfigInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 4) {
+  if (instruction.accounts.length < 5) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 4,
+        expectedAccountMetas: 5,
       },
     );
   }
@@ -338,6 +372,7 @@ export function parseInitializeConfigInstruction<
       config: getNextAccount(),
       programData: getNextAccount(),
       systemProgram: getNextAccount(),
+      instructionsSysvar: getNextAccount(),
     },
     data: getInitializeConfigInstructionDataDecoder().decode(instruction.data),
   };

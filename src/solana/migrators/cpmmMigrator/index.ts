@@ -10,6 +10,7 @@ import { CPMM_MIGRATOR_INSTRUCTION_DISCRIMINATORS } from './constants.js';
 export {
   CPMM_MIGRATOR_PROGRAM_ID,
   SEED_STATE,
+  SEED_MIGRATION_AUTHORITY,
   MAX_RECIPIENTS,
   CPMM_MIGRATOR_INSTRUCTION_DISCRIMINATORS,
   CPMM_MIGRATOR_ACCOUNT_DISCRIMINATORS,
@@ -41,7 +42,10 @@ export {
   getCpmmMigratorStateCodec,
 } from '../../generated/cpmmMigrator/index.js';
 
-export { getCpmmMigratorStateAddress } from './pda.js';
+export {
+  getCpmmMigrationAuthorityAddress,
+  getCpmmMigratorStateAddress,
+} from './pda.js';
 
 export { fetchCpmmMigratorState } from './client.js';
 

@@ -31,6 +31,7 @@ import {
 import { SYSVAR_RENT_ADDRESS } from '@solana/sysvars';
 
 import { cpmm, initializer, cpmmMigrator } from '../src/solana/index.js';
+import { SYSVAR_INSTRUCTIONS_ADDRESS } from '../src/solana/core/constants.js';
 
 // ============================================================================
 // Environment
@@ -155,27 +156,31 @@ async function main() {
   console.log('');
 
   // ── CPMM migration remaining accounts ────────────────────────────────────
-  // Pool vault keypairs must be generated here so their addresses can be
-  // committed in migratorRemainingAccountsHash. Save these keypairs — they
-  // must be passed as signers in the migrate_launch transaction.
-  // The CPMM program initializes vault0 for token0 and vault1 for token1
-  // during pool initialization; the keypairs themselves are arbitrary.
-  const poolVault0 = await generateKeyPairSigner();
-  const poolVault1 = await generateKeyPairSigner();
-
-  const [pool] = await cpmm.getPoolAddress(baseMint.address, WSOL_MINT);
-  const [poolAuthority] = await cpmm.getPoolAuthorityAddress(pool);
-  const [protocolPosition] = await cpmm.getProtocolPositionAddress(pool);
+  // Migrations commit the canonical preinitialized CPMM graph: pool, authority,
+  // vault PDAs, protocol position, launch LP position, program, and payout ATAs.
+  const poolInit = await cpmm.getPoolInitAddresses(baseMint.address, WSOL_MINT);
+  const pool = poolInit.pool[0];
+  const poolAuthority = poolInit.authority[0];
+  const protocolPosition = poolInit.protocolPosition[0];
+  const poolVault0 = poolInit.vault0[0];
+  const poolVault1 = poolInit.vault1[0];
+  const [migrationAuthority] =
+    await cpmmMigrator.getCpmmMigrationAuthorityAddress();
   const [launchLpPosition] = await cpmm.getPositionAddress(
     pool,
     launchAuthority,
     0n,
   );
 
-  // admin_base_ata receives any unsold curve tokens at migration.
+  // Admin ATAs receive unsold curve tokens and residual migration dust.
   const [payerBaseAta] = await findAssociatedTokenPda({
     owner: payer.address,
     mint: baseMint.address,
+    tokenProgram: TOKEN_PROGRAM_ADDRESS,
+  });
+  const [payerQuoteAta] = await findAssociatedTokenPda({
+    owner: payer.address,
+    mint: WSOL_MINT,
     tokenProgram: TOKEN_PROGRAM_ADDRESS,
   });
 
@@ -185,7 +190,7 @@ async function main() {
   const migratorInitCalldata = cpmmMigrator.encodeRegisterLaunchCalldata({
     cpmmConfig: cpmmConfig,
     initialSwapFeeBps: 100, // 1% swap fee on the graduated CPMM pool
-    initialFeeSplitBps: 8000, // 80% of CPMM swap fees claimable by LP holders; remaining 20% compounds into the pool
+    initialFeeSplitBps: 5000, // 50% of CPMM swap fees claimable by LP holders; remaining 50% compounds into the pool
     recipients: [],
     minRaiseQuote,
     minMigrationPriceQ64Opt: null, // no minimum graduation price floor
@@ -197,13 +202,14 @@ async function main() {
   });
 
   // ── Build, sign, and send ────────────────────────────────────────────────
-  // addressLookupTable compresses the 7 constant accounts (tokenProgram,
-  // systemProgram, rent, migratorProgram, quoteMint, metadataProgram, config)
-  // to 1-byte ALT indices, keeping the transaction within the 1232-byte limit
-  // even with V4 on-chain metadata.
+  // addressLookupTable compresses the static non-signer accounts
+  // (base/quote token program, systemProgram, rent, migratorProgram,
+  // quoteMint, metadataProgram, config) to ALT indices where available,
+  // keeping the transaction within the 1232-byte limit even with V4
+  // on-chain metadata.
   //
-  // The cpmmMigratorState account is forwarded as a remaining account so the
-  // register_launch CPI can write the launch's graduation parameters.
+  // The CPMM migrator register_launch CPI now consumes both the
+  // cpmmMigratorState PDA and cpmmConfig as remaining accounts.
   console.log('Building launch instruction...');
   try {
     const ix = await initializer.createInitializeLaunchInstruction(
@@ -218,10 +224,13 @@ async function main() {
         payer,
         authority: payer,
         migratorProgram: cpmmMigrator.CPMM_MIGRATOR_PROGRAM_ID,
-        tokenProgram: TOKEN_PROGRAM_ADDRESS,
+        cpmmConfig,
+        baseTokenProgram: TOKEN_PROGRAM_ADDRESS,
+        quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
         systemProgram: SYSTEM_PROGRAM_ADDRESS,
         rent: SYSVAR_RENT_ADDRESS,
         metadataAccount,
+        instructionsSysvar: SYSVAR_INSTRUCTIONS_ADDRESS,
         addressLookupTable: initializer.DOPPLER_DEVNET_ALT,
       },
       {
@@ -249,19 +258,21 @@ async function main() {
         // Commits the accounts that must be passed as remaining accounts to
         // migrate_launch in this order: state, cpmm_config, pool, pool_authority,
         // pool_vault0, pool_vault1, protocol_position, launch_lp_position,
-        // cpmm_program, admin_base_ata
+        // cpmm_program, migration_authority, admin_base_ata, admin_quote_ata
         migratorRemainingAccountsHash: initializer.computeRemainingAccountsHash(
           [
             cpmmMigratorState,
             cpmmConfig,
             pool,
             poolAuthority,
-            poolVault0.address,
-            poolVault1.address,
+            poolVault0,
+            poolVault1,
             protocolPosition,
             launchLpPosition,
             cpmm.CPMM_PROGRAM_ID,
+            migrationAuthority,
             payerBaseAta, // admin_base_ata (receives any unsold curve tokens)
+            payerQuoteAta, // admin_quote_ata (receives residual quote dust)
           ],
         ),
         metadataName: 'TEST',
@@ -286,9 +297,12 @@ async function main() {
       rpc,
       rpcSubscriptions,
     });
-    await sendAndConfirmTransaction(signedTransaction, {
-      commitment: 'confirmed',
-    });
+    await sendAndConfirmTransaction(
+      signedTransaction as Parameters<typeof sendAndConfirmTransaction>[0],
+      {
+        commitment: 'confirmed',
+      },
+    );
 
     console.log('');
     console.log('Token launch created successfully!');

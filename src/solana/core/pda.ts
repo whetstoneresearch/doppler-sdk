@@ -9,6 +9,8 @@ import {
   SEED_CONFIG,
   SEED_POOL,
   SEED_AUTHORITY,
+  SEED_VAULT0,
+  SEED_VAULT1,
   SEED_POSITION,
   SEED_ORACLE,
   SEED_PROTOCOL_POSITION,
@@ -114,6 +116,34 @@ export async function getPoolAuthorityAddress(
 }
 
 /**
+ * Derive the token0 vault PDA.
+ * Seeds: ['vault0', pool]
+ */
+export async function getPoolVault0Address(
+  pool: Address,
+  programId: Address = CPMM_PROGRAM_ID,
+): Promise<ProgramDerivedAddress> {
+  return getProgramDerivedAddress({
+    programAddress: programId,
+    seeds: [textEncoder.encode(SEED_VAULT0), addressCodec.encode(pool)],
+  });
+}
+
+/**
+ * Derive the token1 vault PDA.
+ * Seeds: ['vault1', pool]
+ */
+export async function getPoolVault1Address(
+  pool: Address,
+  programId: Address = CPMM_PROGRAM_ID,
+): Promise<ProgramDerivedAddress> {
+  return getProgramDerivedAddress({
+    programAddress: programId,
+    seeds: [textEncoder.encode(SEED_VAULT1), addressCodec.encode(pool)],
+  });
+}
+
+/**
  * Derive the Position PDA address
  * Seeds: ['position', pool, owner, position_id_le_bytes]
  */
@@ -185,6 +215,8 @@ export async function getPoolInitAddresses(
   token1: Address;
   pool: ProgramDerivedAddress;
   authority: ProgramDerivedAddress;
+  vault0: ProgramDerivedAddress;
+  vault1: ProgramDerivedAddress;
   config: ProgramDerivedAddress;
   protocolPosition: ProgramDerivedAddress;
 }> {
@@ -193,8 +225,10 @@ export async function getPoolInitAddresses(
     getConfigAddress(programId),
     getPoolAddress(token0, token1, programId),
   ]);
-  const [authority, protocolPosition] = await Promise.all([
+  const [authority, vault0, vault1, protocolPosition] = await Promise.all([
     getPoolAuthorityAddress(pool[0], programId),
+    getPoolVault0Address(pool[0], programId),
+    getPoolVault1Address(pool[0], programId),
     getProtocolPositionAddress(pool[0], programId),
   ]);
 
@@ -203,6 +237,8 @@ export async function getPoolInitAddresses(
     token1,
     pool,
     authority,
+    vault0,
+    vault1,
     config,
     protocolPosition,
   };

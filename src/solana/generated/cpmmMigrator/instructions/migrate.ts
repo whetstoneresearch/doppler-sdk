@@ -62,8 +62,8 @@ export type MigrateInstruction<
   TAccountBaseVault extends string | AccountMeta<string> = string,
   TAccountQuoteVault extends string | AccountMeta<string> = string,
   TAccountPayer extends string | AccountMeta<string> = string,
-  TAccountTokenProgram extends string | AccountMeta<string> =
-    'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
+  TAccountBaseTokenProgram extends string | AccountMeta<string> = string,
+  TAccountQuoteTokenProgram extends string | AccountMeta<string> = string,
   TAccountSystemProgram extends string | AccountMeta<string> =
     '11111111111111111111111111111111',
   TAccountRent extends string | AccountMeta<string> =
@@ -78,7 +78,9 @@ export type MigrateInstruction<
   TAccountLaunchLpPosition extends string | AccountMeta<string> = string,
   TAccountCpmmProgram extends string | AccountMeta<string> =
     '9PSxVPoPfnbZ8Q1uQhgS6ZxvBjFboZtebNsu34umxkgQ',
+  TAccountMigrationAuthority extends string | AccountMeta<string> = string,
   TAccountAdminBaseAta extends string | AccountMeta<string> = string,
+  TAccountAdminQuoteAta extends string | AccountMeta<string> = string,
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -110,9 +112,12 @@ export type MigrateInstruction<
         ? WritableSignerAccount<TAccountPayer> &
             AccountSignerMeta<TAccountPayer>
         : TAccountPayer,
-      TAccountTokenProgram extends string
-        ? ReadonlyAccount<TAccountTokenProgram>
-        : TAccountTokenProgram,
+      TAccountBaseTokenProgram extends string
+        ? ReadonlyAccount<TAccountBaseTokenProgram>
+        : TAccountBaseTokenProgram,
+      TAccountQuoteTokenProgram extends string
+        ? ReadonlyAccount<TAccountQuoteTokenProgram>
+        : TAccountQuoteTokenProgram,
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
@@ -146,9 +151,15 @@ export type MigrateInstruction<
       TAccountCpmmProgram extends string
         ? ReadonlyAccount<TAccountCpmmProgram>
         : TAccountCpmmProgram,
+      TAccountMigrationAuthority extends string
+        ? ReadonlyAccount<TAccountMigrationAuthority>
+        : TAccountMigrationAuthority,
       TAccountAdminBaseAta extends string
         ? WritableAccount<TAccountAdminBaseAta>
         : TAccountAdminBaseAta,
+      TAccountAdminQuoteAta extends string
+        ? WritableAccount<TAccountAdminQuoteAta>
+        : TAccountAdminQuoteAta,
       ...TRemainingAccounts,
     ]
   >;
@@ -206,7 +217,8 @@ export type MigrateAsyncInput<
   TAccountBaseVault extends string = string,
   TAccountQuoteVault extends string = string,
   TAccountPayer extends string = string,
-  TAccountTokenProgram extends string = string,
+  TAccountBaseTokenProgram extends string = string,
+  TAccountQuoteTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
   TAccountRent extends string = string,
   TAccountState extends string = string,
@@ -218,7 +230,9 @@ export type MigrateAsyncInput<
   TAccountProtocolPosition extends string = string,
   TAccountLaunchLpPosition extends string = string,
   TAccountCpmmProgram extends string = string,
+  TAccountMigrationAuthority extends string = string,
   TAccountAdminBaseAta extends string = string,
+  TAccountAdminQuoteAta extends string = string,
 > = {
   initializerConfig: Address<TAccountInitializerConfig>;
   /**
@@ -237,7 +251,8 @@ export type MigrateAsyncInput<
   quoteVault: Address<TAccountQuoteVault>;
   /** Payer for account creation */
   payer: TransactionSigner<TAccountPayer>;
-  tokenProgram?: Address<TAccountTokenProgram>;
+  baseTokenProgram: Address<TAccountBaseTokenProgram>;
+  quoteTokenProgram: Address<TAccountQuoteTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
   rent?: Address<TAccountRent>;
   /** The CpmmMigratorState PDA */
@@ -245,13 +260,30 @@ export type MigrateAsyncInput<
   cpmmConfig: Address<TAccountCpmmConfig>;
   pool: Address<TAccountPool>;
   poolAuthority: Address<TAccountPoolAuthority>;
+  /** `initialize_pool`, and is constrained again by the CPMM CPI. */
   poolVault0: Address<TAccountPoolVault0>;
+  /** `initialize_pool`, and is constrained again by the CPMM CPI. */
   poolVault1: Address<TAccountPoolVault1>;
   protocolPosition: Address<TAccountProtocolPosition>;
   launchLpPosition: Address<TAccountLaunchLpPosition>;
   cpmmProgram?: Address<TAccountCpmmProgram>;
-  /** Admin's base token ATA for returning unsold curve tokens */
+  /**
+   * Capability PDA this program signs for to authorize `cpmm::initialize_pool`.
+   * the key on the CPI side.
+   */
+  migrationAuthority?: Address<TAccountMigrationAuthority>;
+  /**
+   * Admin's base token ATA for returning unsold curve tokens and any residual
+   * base dust left behind by the `add_liquidity` CPI.
+   */
   adminBaseAta: Address<TAccountAdminBaseAta>;
+  /**
+   * Admin's quote token ATA for sweeping any residual quote dust left behind
+   * by the `add_liquidity` CPI. Transfer fees on either mint can cause
+   * `add_liquidity` to under-consume one side even on the first deposit;
+   * the initializer requires both launch vaults to be zero after migration.
+   */
+  adminQuoteAta: Address<TAccountAdminQuoteAta>;
   baseForDistribution: MigrateInstructionDataArgs['baseForDistribution'];
   baseForLiquidity: MigrateInstructionDataArgs['baseForLiquidity'];
 };
@@ -265,7 +297,8 @@ export async function getMigrateInstructionAsync<
   TAccountBaseVault extends string,
   TAccountQuoteVault extends string,
   TAccountPayer extends string,
-  TAccountTokenProgram extends string,
+  TAccountBaseTokenProgram extends string,
+  TAccountQuoteTokenProgram extends string,
   TAccountSystemProgram extends string,
   TAccountRent extends string,
   TAccountState extends string,
@@ -277,7 +310,9 @@ export async function getMigrateInstructionAsync<
   TAccountProtocolPosition extends string,
   TAccountLaunchLpPosition extends string,
   TAccountCpmmProgram extends string,
+  TAccountMigrationAuthority extends string,
   TAccountAdminBaseAta extends string,
+  TAccountAdminQuoteAta extends string,
   TProgramAddress extends Address = typeof CPMM_MIGRATOR_PROGRAM_ADDRESS,
 >(
   input: MigrateAsyncInput<
@@ -289,7 +324,8 @@ export async function getMigrateInstructionAsync<
     TAccountBaseVault,
     TAccountQuoteVault,
     TAccountPayer,
-    TAccountTokenProgram,
+    TAccountBaseTokenProgram,
+    TAccountQuoteTokenProgram,
     TAccountSystemProgram,
     TAccountRent,
     TAccountState,
@@ -301,7 +337,9 @@ export async function getMigrateInstructionAsync<
     TAccountProtocolPosition,
     TAccountLaunchLpPosition,
     TAccountCpmmProgram,
-    TAccountAdminBaseAta
+    TAccountMigrationAuthority,
+    TAccountAdminBaseAta,
+    TAccountAdminQuoteAta
   >,
   config?: { programAddress?: TProgramAddress },
 ): Promise<
@@ -315,7 +353,8 @@ export async function getMigrateInstructionAsync<
     TAccountBaseVault,
     TAccountQuoteVault,
     TAccountPayer,
-    TAccountTokenProgram,
+    TAccountBaseTokenProgram,
+    TAccountQuoteTokenProgram,
     TAccountSystemProgram,
     TAccountRent,
     TAccountState,
@@ -327,7 +366,9 @@ export async function getMigrateInstructionAsync<
     TAccountProtocolPosition,
     TAccountLaunchLpPosition,
     TAccountCpmmProgram,
-    TAccountAdminBaseAta
+    TAccountMigrationAuthority,
+    TAccountAdminBaseAta,
+    TAccountAdminQuoteAta
   >
 > {
   // Program address.
@@ -350,7 +391,14 @@ export async function getMigrateInstructionAsync<
     baseVault: { value: input.baseVault ?? null, isWritable: true },
     quoteVault: { value: input.quoteVault ?? null, isWritable: true },
     payer: { value: input.payer ?? null, isWritable: true },
-    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
+    baseTokenProgram: {
+      value: input.baseTokenProgram ?? null,
+      isWritable: false,
+    },
+    quoteTokenProgram: {
+      value: input.quoteTokenProgram ?? null,
+      isWritable: false,
+    },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
     rent: { value: input.rent ?? null, isWritable: false },
     state: { value: input.state ?? null, isWritable: true },
@@ -368,7 +416,12 @@ export async function getMigrateInstructionAsync<
       isWritable: true,
     },
     cpmmProgram: { value: input.cpmmProgram ?? null, isWritable: false },
+    migrationAuthority: {
+      value: input.migrationAuthority ?? null,
+      isWritable: false,
+    },
     adminBaseAta: { value: input.adminBaseAta ?? null, isWritable: true },
+    adminQuoteAta: { value: input.adminQuoteAta ?? null, isWritable: true },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -379,10 +432,6 @@ export async function getMigrateInstructionAsync<
   const args = { ...input };
 
   // Resolve default values.
-  if (!accounts.tokenProgram.value) {
-    accounts.tokenProgram.value =
-      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
-  }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
@@ -409,6 +458,19 @@ export async function getMigrateInstructionAsync<
     accounts.cpmmProgram.value =
       '9PSxVPoPfnbZ8Q1uQhgS6ZxvBjFboZtebNsu34umxkgQ' as Address<'9PSxVPoPfnbZ8Q1uQhgS6ZxvBjFboZtebNsu34umxkgQ'>;
   }
+  if (!accounts.migrationAuthority.value) {
+    accounts.migrationAuthority.value = await getProgramDerivedAddress({
+      programAddress,
+      seeds: [
+        getBytesEncoder().encode(
+          new Uint8Array([
+            109, 105, 103, 114, 97, 116, 105, 111, 110, 95, 97, 117, 116, 104,
+            111, 114, 105, 116, 121,
+          ]),
+        ),
+      ],
+    });
+  }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
@@ -421,7 +483,8 @@ export async function getMigrateInstructionAsync<
       getAccountMeta('baseVault', accounts.baseVault),
       getAccountMeta('quoteVault', accounts.quoteVault),
       getAccountMeta('payer', accounts.payer),
-      getAccountMeta('tokenProgram', accounts.tokenProgram),
+      getAccountMeta('baseTokenProgram', accounts.baseTokenProgram),
+      getAccountMeta('quoteTokenProgram', accounts.quoteTokenProgram),
       getAccountMeta('systemProgram', accounts.systemProgram),
       getAccountMeta('rent', accounts.rent),
       getAccountMeta('state', accounts.state),
@@ -433,7 +496,9 @@ export async function getMigrateInstructionAsync<
       getAccountMeta('protocolPosition', accounts.protocolPosition),
       getAccountMeta('launchLpPosition', accounts.launchLpPosition),
       getAccountMeta('cpmmProgram', accounts.cpmmProgram),
+      getAccountMeta('migrationAuthority', accounts.migrationAuthority),
       getAccountMeta('adminBaseAta', accounts.adminBaseAta),
+      getAccountMeta('adminQuoteAta', accounts.adminQuoteAta),
     ],
     data: getMigrateInstructionDataEncoder().encode(
       args as MigrateInstructionDataArgs,
@@ -449,7 +514,8 @@ export async function getMigrateInstructionAsync<
     TAccountBaseVault,
     TAccountQuoteVault,
     TAccountPayer,
-    TAccountTokenProgram,
+    TAccountBaseTokenProgram,
+    TAccountQuoteTokenProgram,
     TAccountSystemProgram,
     TAccountRent,
     TAccountState,
@@ -461,7 +527,9 @@ export async function getMigrateInstructionAsync<
     TAccountProtocolPosition,
     TAccountLaunchLpPosition,
     TAccountCpmmProgram,
-    TAccountAdminBaseAta
+    TAccountMigrationAuthority,
+    TAccountAdminBaseAta,
+    TAccountAdminQuoteAta
   >);
 }
 
@@ -474,7 +542,8 @@ export type MigrateInput<
   TAccountBaseVault extends string = string,
   TAccountQuoteVault extends string = string,
   TAccountPayer extends string = string,
-  TAccountTokenProgram extends string = string,
+  TAccountBaseTokenProgram extends string = string,
+  TAccountQuoteTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
   TAccountRent extends string = string,
   TAccountState extends string = string,
@@ -486,7 +555,9 @@ export type MigrateInput<
   TAccountProtocolPosition extends string = string,
   TAccountLaunchLpPosition extends string = string,
   TAccountCpmmProgram extends string = string,
+  TAccountMigrationAuthority extends string = string,
   TAccountAdminBaseAta extends string = string,
+  TAccountAdminQuoteAta extends string = string,
 > = {
   initializerConfig: Address<TAccountInitializerConfig>;
   /**
@@ -505,7 +576,8 @@ export type MigrateInput<
   quoteVault: Address<TAccountQuoteVault>;
   /** Payer for account creation */
   payer: TransactionSigner<TAccountPayer>;
-  tokenProgram?: Address<TAccountTokenProgram>;
+  baseTokenProgram: Address<TAccountBaseTokenProgram>;
+  quoteTokenProgram: Address<TAccountQuoteTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
   rent?: Address<TAccountRent>;
   /** The CpmmMigratorState PDA */
@@ -513,13 +585,30 @@ export type MigrateInput<
   cpmmConfig: Address<TAccountCpmmConfig>;
   pool: Address<TAccountPool>;
   poolAuthority: Address<TAccountPoolAuthority>;
+  /** `initialize_pool`, and is constrained again by the CPMM CPI. */
   poolVault0: Address<TAccountPoolVault0>;
+  /** `initialize_pool`, and is constrained again by the CPMM CPI. */
   poolVault1: Address<TAccountPoolVault1>;
   protocolPosition: Address<TAccountProtocolPosition>;
   launchLpPosition: Address<TAccountLaunchLpPosition>;
   cpmmProgram?: Address<TAccountCpmmProgram>;
-  /** Admin's base token ATA for returning unsold curve tokens */
+  /**
+   * Capability PDA this program signs for to authorize `cpmm::initialize_pool`.
+   * the key on the CPI side.
+   */
+  migrationAuthority: Address<TAccountMigrationAuthority>;
+  /**
+   * Admin's base token ATA for returning unsold curve tokens and any residual
+   * base dust left behind by the `add_liquidity` CPI.
+   */
   adminBaseAta: Address<TAccountAdminBaseAta>;
+  /**
+   * Admin's quote token ATA for sweeping any residual quote dust left behind
+   * by the `add_liquidity` CPI. Transfer fees on either mint can cause
+   * `add_liquidity` to under-consume one side even on the first deposit;
+   * the initializer requires both launch vaults to be zero after migration.
+   */
+  adminQuoteAta: Address<TAccountAdminQuoteAta>;
   baseForDistribution: MigrateInstructionDataArgs['baseForDistribution'];
   baseForLiquidity: MigrateInstructionDataArgs['baseForLiquidity'];
 };
@@ -533,7 +622,8 @@ export function getMigrateInstruction<
   TAccountBaseVault extends string,
   TAccountQuoteVault extends string,
   TAccountPayer extends string,
-  TAccountTokenProgram extends string,
+  TAccountBaseTokenProgram extends string,
+  TAccountQuoteTokenProgram extends string,
   TAccountSystemProgram extends string,
   TAccountRent extends string,
   TAccountState extends string,
@@ -545,7 +635,9 @@ export function getMigrateInstruction<
   TAccountProtocolPosition extends string,
   TAccountLaunchLpPosition extends string,
   TAccountCpmmProgram extends string,
+  TAccountMigrationAuthority extends string,
   TAccountAdminBaseAta extends string,
+  TAccountAdminQuoteAta extends string,
   TProgramAddress extends Address = typeof CPMM_MIGRATOR_PROGRAM_ADDRESS,
 >(
   input: MigrateInput<
@@ -557,7 +649,8 @@ export function getMigrateInstruction<
     TAccountBaseVault,
     TAccountQuoteVault,
     TAccountPayer,
-    TAccountTokenProgram,
+    TAccountBaseTokenProgram,
+    TAccountQuoteTokenProgram,
     TAccountSystemProgram,
     TAccountRent,
     TAccountState,
@@ -569,7 +662,9 @@ export function getMigrateInstruction<
     TAccountProtocolPosition,
     TAccountLaunchLpPosition,
     TAccountCpmmProgram,
-    TAccountAdminBaseAta
+    TAccountMigrationAuthority,
+    TAccountAdminBaseAta,
+    TAccountAdminQuoteAta
   >,
   config?: { programAddress?: TProgramAddress },
 ): MigrateInstruction<
@@ -582,7 +677,8 @@ export function getMigrateInstruction<
   TAccountBaseVault,
   TAccountQuoteVault,
   TAccountPayer,
-  TAccountTokenProgram,
+  TAccountBaseTokenProgram,
+  TAccountQuoteTokenProgram,
   TAccountSystemProgram,
   TAccountRent,
   TAccountState,
@@ -594,7 +690,9 @@ export function getMigrateInstruction<
   TAccountProtocolPosition,
   TAccountLaunchLpPosition,
   TAccountCpmmProgram,
-  TAccountAdminBaseAta
+  TAccountMigrationAuthority,
+  TAccountAdminBaseAta,
+  TAccountAdminQuoteAta
 > {
   // Program address.
   const programAddress =
@@ -616,7 +714,14 @@ export function getMigrateInstruction<
     baseVault: { value: input.baseVault ?? null, isWritable: true },
     quoteVault: { value: input.quoteVault ?? null, isWritable: true },
     payer: { value: input.payer ?? null, isWritable: true },
-    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
+    baseTokenProgram: {
+      value: input.baseTokenProgram ?? null,
+      isWritable: false,
+    },
+    quoteTokenProgram: {
+      value: input.quoteTokenProgram ?? null,
+      isWritable: false,
+    },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
     rent: { value: input.rent ?? null, isWritable: false },
     state: { value: input.state ?? null, isWritable: true },
@@ -634,7 +739,12 @@ export function getMigrateInstruction<
       isWritable: true,
     },
     cpmmProgram: { value: input.cpmmProgram ?? null, isWritable: false },
+    migrationAuthority: {
+      value: input.migrationAuthority ?? null,
+      isWritable: false,
+    },
     adminBaseAta: { value: input.adminBaseAta ?? null, isWritable: true },
+    adminQuoteAta: { value: input.adminQuoteAta ?? null, isWritable: true },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -645,10 +755,6 @@ export function getMigrateInstruction<
   const args = { ...input };
 
   // Resolve default values.
-  if (!accounts.tokenProgram.value) {
-    accounts.tokenProgram.value =
-      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
-  }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
@@ -673,7 +779,8 @@ export function getMigrateInstruction<
       getAccountMeta('baseVault', accounts.baseVault),
       getAccountMeta('quoteVault', accounts.quoteVault),
       getAccountMeta('payer', accounts.payer),
-      getAccountMeta('tokenProgram', accounts.tokenProgram),
+      getAccountMeta('baseTokenProgram', accounts.baseTokenProgram),
+      getAccountMeta('quoteTokenProgram', accounts.quoteTokenProgram),
       getAccountMeta('systemProgram', accounts.systemProgram),
       getAccountMeta('rent', accounts.rent),
       getAccountMeta('state', accounts.state),
@@ -685,7 +792,9 @@ export function getMigrateInstruction<
       getAccountMeta('protocolPosition', accounts.protocolPosition),
       getAccountMeta('launchLpPosition', accounts.launchLpPosition),
       getAccountMeta('cpmmProgram', accounts.cpmmProgram),
+      getAccountMeta('migrationAuthority', accounts.migrationAuthority),
       getAccountMeta('adminBaseAta', accounts.adminBaseAta),
+      getAccountMeta('adminQuoteAta', accounts.adminQuoteAta),
     ],
     data: getMigrateInstructionDataEncoder().encode(
       args as MigrateInstructionDataArgs,
@@ -701,7 +810,8 @@ export function getMigrateInstruction<
     TAccountBaseVault,
     TAccountQuoteVault,
     TAccountPayer,
-    TAccountTokenProgram,
+    TAccountBaseTokenProgram,
+    TAccountQuoteTokenProgram,
     TAccountSystemProgram,
     TAccountRent,
     TAccountState,
@@ -713,7 +823,9 @@ export function getMigrateInstruction<
     TAccountProtocolPosition,
     TAccountLaunchLpPosition,
     TAccountCpmmProgram,
-    TAccountAdminBaseAta
+    TAccountMigrationAuthority,
+    TAccountAdminBaseAta,
+    TAccountAdminQuoteAta
   >);
 }
 
@@ -740,21 +852,39 @@ export type ParsedMigrateInstruction<
     quoteVault: TAccountMetas[6];
     /** Payer for account creation */
     payer: TAccountMetas[7];
-    tokenProgram: TAccountMetas[8];
-    systemProgram: TAccountMetas[9];
-    rent: TAccountMetas[10];
+    baseTokenProgram: TAccountMetas[8];
+    quoteTokenProgram: TAccountMetas[9];
+    systemProgram: TAccountMetas[10];
+    rent: TAccountMetas[11];
     /** The CpmmMigratorState PDA */
-    state: TAccountMetas[11];
-    cpmmConfig: TAccountMetas[12];
-    pool: TAccountMetas[13];
-    poolAuthority: TAccountMetas[14];
-    poolVault0: TAccountMetas[15];
-    poolVault1: TAccountMetas[16];
-    protocolPosition: TAccountMetas[17];
-    launchLpPosition: TAccountMetas[18];
-    cpmmProgram: TAccountMetas[19];
-    /** Admin's base token ATA for returning unsold curve tokens */
-    adminBaseAta: TAccountMetas[20];
+    state: TAccountMetas[12];
+    cpmmConfig: TAccountMetas[13];
+    pool: TAccountMetas[14];
+    poolAuthority: TAccountMetas[15];
+    /** `initialize_pool`, and is constrained again by the CPMM CPI. */
+    poolVault0: TAccountMetas[16];
+    /** `initialize_pool`, and is constrained again by the CPMM CPI. */
+    poolVault1: TAccountMetas[17];
+    protocolPosition: TAccountMetas[18];
+    launchLpPosition: TAccountMetas[19];
+    cpmmProgram: TAccountMetas[20];
+    /**
+     * Capability PDA this program signs for to authorize `cpmm::initialize_pool`.
+     * the key on the CPI side.
+     */
+    migrationAuthority: TAccountMetas[21];
+    /**
+     * Admin's base token ATA for returning unsold curve tokens and any residual
+     * base dust left behind by the `add_liquidity` CPI.
+     */
+    adminBaseAta: TAccountMetas[22];
+    /**
+     * Admin's quote token ATA for sweeping any residual quote dust left behind
+     * by the `add_liquidity` CPI. Transfer fees on either mint can cause
+     * `add_liquidity` to under-consume one side even on the first deposit;
+     * the initializer requires both launch vaults to be zero after migration.
+     */
+    adminQuoteAta: TAccountMetas[23];
   };
   data: MigrateInstructionData;
 };
@@ -767,12 +897,12 @@ export function parseMigrateInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedMigrateInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 21) {
+  if (instruction.accounts.length < 24) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 21,
+        expectedAccountMetas: 24,
       },
     );
   }
@@ -793,7 +923,8 @@ export function parseMigrateInstruction<
       baseVault: getNextAccount(),
       quoteVault: getNextAccount(),
       payer: getNextAccount(),
-      tokenProgram: getNextAccount(),
+      baseTokenProgram: getNextAccount(),
+      quoteTokenProgram: getNextAccount(),
       systemProgram: getNextAccount(),
       rent: getNextAccount(),
       state: getNextAccount(),
@@ -805,7 +936,9 @@ export function parseMigrateInstruction<
       protocolPosition: getNextAccount(),
       launchLpPosition: getNextAccount(),
       cpmmProgram: getNextAccount(),
+      migrationAuthority: getNextAccount(),
       adminBaseAta: getNextAccount(),
+      adminQuoteAta: getNextAccount(),
     },
     data: getMigrateInstructionDataDecoder().decode(instruction.data),
   };

@@ -3,6 +3,7 @@ import { AccountRole } from '@solana/kit';
 import {
   CPMM_PROGRAM_ID,
   TOKEN_PROGRAM_ADDRESS,
+  SYSVAR_INSTRUCTIONS_ADDRESS,
   INSTRUCTION_DISCRIMINATORS,
 } from '../core/constants.js';
 import type { SwapExactInArgs, SwapDirection } from '../core/types.js';
@@ -32,8 +33,14 @@ export interface SwapExactInAccounts {
   userOut: Address;
   /** User authority (signer) */
   user: Address;
-  /** SPL Token program */
+  /** Token0 program; defaults to tokenProgram or classic SPL Token */
+  token0Program?: Address;
+  /** Token1 program; defaults to tokenProgram or classic SPL Token */
+  token1Program?: Address;
+  /** Deprecated shared token program fallback */
   tokenProgram?: Address;
+  /** Instructions sysvar */
+  instructionsSysvar?: Address;
   /** Oracle account (optional, required if updateOracle is true) */
   oracle?: Address;
   /** Optional remaining accounts (sentinel program/state, route/oracle data) */
@@ -90,10 +97,15 @@ export function createSwapExactInInstruction(
     userIn,
     userOut,
     user,
+    token0Program,
+    token1Program,
     tokenProgram = TOKEN_PROGRAM_ADDRESS,
+    instructionsSysvar = SYSVAR_INSTRUCTIONS_ADDRESS,
     oracle,
     remainingAccounts = [],
   } = accounts;
+  const resolvedToken0Program = token0Program ?? tokenProgram;
+  const resolvedToken1Program = token1Program ?? tokenProgram;
 
   // Build account metas in order expected by the program
   const keys: AccountMeta[] = [
@@ -107,7 +119,9 @@ export function createSwapExactInInstruction(
     { address: userIn, role: AccountRole.WRITABLE },
     { address: userOut, role: AccountRole.WRITABLE },
     { address: user, role: AccountRole.READONLY_SIGNER },
-    { address: tokenProgram, role: AccountRole.READONLY },
+    { address: resolvedToken0Program, role: AccountRole.READONLY },
+    { address: resolvedToken1Program, role: AccountRole.READONLY },
+    { address: instructionsSysvar, role: AccountRole.READONLY },
   ];
 
   // Add oracle if provided (always writable due to Anchor #[account(mut)] constraint)
@@ -151,6 +165,10 @@ export function createSwapInstruction(params: {
   oracle?: Address;
   remainingAccounts?: Address[];
   updateOracle?: boolean;
+  token0Program?: Address;
+  token1Program?: Address;
+  tokenProgram?: Address;
+  instructionsSysvar?: Address;
   programId?: Address;
 }): Instruction {
   const {
@@ -170,6 +188,10 @@ export function createSwapInstruction(params: {
     oracle,
     remainingAccounts,
     updateOracle = false,
+    token0Program,
+    token1Program,
+    tokenProgram,
+    instructionsSysvar,
     programId = CPMM_PROGRAM_ID,
   } = params;
 
@@ -191,6 +213,10 @@ export function createSwapInstruction(params: {
       userIn,
       userOut,
       user,
+      token0Program,
+      token1Program,
+      tokenProgram,
+      instructionsSysvar,
       oracle,
       remainingAccounts,
     },

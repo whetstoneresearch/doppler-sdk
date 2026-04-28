@@ -6,6 +6,7 @@ export const CPMM_MIGRATOR_PROGRAM_ID: Address = address(
 );
 
 export const SEED_STATE = 'state';
+export const SEED_MIGRATION_AUTHORITY = 'migration_authority';
 
 // Source of truth: programs/cpmm_migrator/src/constants.rs
 export const MAX_RECIPIENTS = 2;

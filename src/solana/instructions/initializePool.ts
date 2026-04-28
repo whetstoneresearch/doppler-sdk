@@ -36,7 +36,7 @@ function isTransactionSigner(
 /** Create an account meta, embedding signer if provided */
 function createSignerAccountMeta(
   value: AddressOrSigner,
-  role: typeof AccountRole.WRITABLE_SIGNER,
+  role: typeof AccountRole.READONLY_SIGNER | typeof AccountRole.WRITABLE_SIGNER,
 ): AccountMeta | AccountSignerMeta {
   if (isTransactionSigner(value)) {
     return {
@@ -60,22 +60,28 @@ export interface InitializePoolAccounts {
   protocolPosition: Address;
   /** Pool authority PDA (read-only, PDA: ['authority', pool]) */
   authority: Address;
-  /** Vault for token0 (writable signer - pass TransactionSigner to include signer in instruction) */
-  vault0: Address | TransactionSigner;
-  /** Vault for token1 (writable signer - pass TransactionSigner to include signer in instruction) */
-  vault1: Address | TransactionSigner;
+  /** Vault PDA for token0 (writable, PDA: ['vault0', pool]) */
+  vault0: Address;
+  /** Vault PDA for token1 (writable, PDA: ['vault1', pool]) */
+  vault1: Address;
   /** Token0 mint (read-only, must be lexicographically smaller) */
   token0Mint: Address;
   /** Token1 mint (read-only, must be lexicographically larger) */
   token1Mint: Address;
   /** Payer for account creation (writable signer - pass TransactionSigner to include signer in instruction) */
   payer: Address | TransactionSigner;
-  /** SPL Token program */
+  /** Token0 program; defaults to tokenProgram or classic SPL Token */
+  token0Program?: Address;
+  /** Token1 program; defaults to tokenProgram or classic SPL Token */
+  token1Program?: Address;
+  /** Deprecated shared token program fallback */
   tokenProgram?: Address;
   /** System program */
   systemProgram?: Address;
   /** Rent sysvar */
   rent: Address;
+  /** Migrator authority PDA signer authorizing pool initialization */
+  migrationAuthority: Address | TransactionSigner;
 }
 
 /**
@@ -98,12 +104,13 @@ export interface InitializePoolAccounts {
  *     pool: addresses.pool[0],
  *     protocolPosition: addresses.protocolPosition[0],
  *     authority: addresses.authority[0],
- *     vault0: vault0Keypair.publicKey,
- *     vault1: vault1Keypair.publicKey,
+ *     vault0: addresses.vault0[0],
+ *     vault1: addresses.vault1[0],
  *     token0Mint: addresses.token0,
  *     token1Mint: addresses.token1,
- *     payer: payerPublicKey,
+ *     payer: payerSigner,
  *     rent: SYSVAR_RENT_PUBKEY,
+ *     migrationAuthority,
  *   },
  *   {
  *     mintA: mintA,
@@ -131,26 +138,32 @@ export function createInitializePoolInstruction(
     token0Mint,
     token1Mint,
     payer,
+    token0Program,
+    token1Program,
     tokenProgram = TOKEN_PROGRAM_ADDRESS,
     systemProgram = SYSTEM_PROGRAM_ADDRESS,
     rent,
+    migrationAuthority,
   } = accounts;
+  const resolvedToken0Program = token0Program ?? tokenProgram;
+  const resolvedToken1Program = token1Program ?? tokenProgram;
 
-  // Build account metas in order expected by the program
-  // For signer accounts (vault0, vault1, payer), embed the signer if provided
+  // Build account metas in order expected by the program.
   const keys: (AccountMeta | AccountSignerMeta)[] = [
     { address: config, role: AccountRole.READONLY },
     { address: pool, role: AccountRole.WRITABLE },
     { address: protocolPosition, role: AccountRole.WRITABLE },
     { address: authority, role: AccountRole.READONLY },
-    createSignerAccountMeta(vault0, AccountRole.WRITABLE_SIGNER),
-    createSignerAccountMeta(vault1, AccountRole.WRITABLE_SIGNER),
+    { address: vault0, role: AccountRole.WRITABLE },
+    { address: vault1, role: AccountRole.WRITABLE },
     { address: token0Mint, role: AccountRole.READONLY },
     { address: token1Mint, role: AccountRole.READONLY },
     createSignerAccountMeta(payer, AccountRole.WRITABLE_SIGNER),
-    { address: tokenProgram, role: AccountRole.READONLY },
+    { address: resolvedToken0Program, role: AccountRole.READONLY },
+    { address: resolvedToken1Program, role: AccountRole.READONLY },
     { address: systemProgram, role: AccountRole.READONLY },
     { address: rent, role: AccountRole.READONLY },
+    createSignerAccountMeta(migrationAuthority, AccountRole.READONLY_SIGNER),
   ];
 
   const data = encodeInstructionData(

@@ -6,6 +6,9 @@ import { TOKEN_PROGRAM_ADDRESS } from '@solana-program/token';
 import { initializer, cpmmMigrator } from '@/solana/index.js';
 
 const SYSVAR_RENT_PUBKEY = address('SysvarRent111111111111111111111111111111111');
+const SYSVAR_INSTRUCTIONS_PUBKEY = address(
+  'Sysvar1nstructions1111111111111111111111111',
+);
 
 describe('initializer instructions', () => {
   it('builds initializeConfig with programData account in the correct position', async () => {
@@ -27,11 +30,12 @@ describe('initializer instructions', () => {
     );
 
     expect(ix.programAddress).toBe(initializer.INITIALIZER_PROGRAM_ID);
-    expect(ix.accounts).toHaveLength(4);
+    expect(ix.accounts).toHaveLength(5);
     expect(ix.accounts![0].address).toBe(admin.address);
     expect(ix.accounts![1].address).toBe(config);
     expect(ix.accounts![2].address).toBe(programData);
     expect(ix.accounts![3].address).toBe(SYSTEM_PROGRAM_ADDRESS);
+    expect(ix.accounts![4].address).toBe(SYSVAR_INSTRUCTIONS_PUBKEY);
     expect((ix.accounts![0] as { signer?: unknown }).signer).toBeDefined();
   });
 
@@ -45,13 +49,14 @@ describe('initializer instructions', () => {
     const namespace = admin.address;
     const launchId = initializer.launchIdFromU64(1n);
     const migratorProgram = cpmmMigrator.CPMM_MIGRATOR_PROGRAM_ID;
+    const cpmmConfig = address('E45nSdnfANtYhCy6qZXo2a7qAWCU6pYjpqsby1bbkaiL');
 
     const [config] = await initializer.getConfigAddress();
     const [launch] = await initializer.getLaunchAddress(namespace, launchId);
     const [launchAuthority] = await initializer.getLaunchAuthorityAddress(launch);
 
     const migratorInitCalldata = cpmmMigrator.encodeRegisterLaunchCalldata({
-      cpmmConfig: address('E45nSdnfANtYhCy6qZXo2a7qAWCU6pYjpqsby1bbkaiL'),
+      cpmmConfig,
       initialSwapFeeBps: 30,
       initialFeeSplitBps: 5000,
       recipients: [{ wallet: admin.address, amount: 700_000n }, { wallet: admin.address, amount: 0n }],
@@ -76,7 +81,9 @@ describe('initializer instructions', () => {
         payer: admin,
         authority: admin,
         migratorProgram,
-        tokenProgram: TOKEN_PROGRAM_ADDRESS,
+        cpmmConfig,
+        baseTokenProgram: TOKEN_PROGRAM_ADDRESS,
+        quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
         systemProgram: SYSTEM_PROGRAM_ADDRESS,
         rent: SYSVAR_RENT_PUBKEY,
       },
@@ -108,12 +115,15 @@ describe('initializer instructions', () => {
     );
 
     expect(ix.programAddress).toBe(initializer.INITIALIZER_PROGRAM_ID);
-    // 13 static accounts + 1 auto-appended cpmmMigratorState remaining account
-    expect(ix.accounts).toHaveLength(14);
+    // 14 required/static accounts + 2 optional metadata placeholders +
+    // 1 instructions sysvar + 2 auto-appended CPMM migrator remaining
+    // accounts: cpmmMigratorState and cpmmConfig.
+    expect(ix.accounts).toHaveLength(19);
 
     // Account ordering: config, launch, launchAuthority, baseMint, quoteMint, baseVault, quoteVault, payer,
-    // then optional authority, optional migratorProgram, then token/system/rent,
-    // then auto-appended cpmmMigratorState.
+    // then optional authority, optional migratorProgram, then base/quote token,
+    // system/rent, optional metadata placeholders, instructions sysvar, then
+    // auto-appended cpmmMigratorState and cpmmConfig.
     expect(ix.accounts![0].address).toBe(config);
     expect(ix.accounts![1].address).toBe(launch);
     expect(ix.accounts![2].address).toBe(launchAuthority);
@@ -125,10 +135,15 @@ describe('initializer instructions', () => {
     expect(ix.accounts![8].address).toBe(admin.address);
     expect(ix.accounts![9].address).toBe(migratorProgram);
     expect(ix.accounts![10].address).toBe(TOKEN_PROGRAM_ADDRESS);
-    expect(ix.accounts![11].address).toBe(SYSTEM_PROGRAM_ADDRESS);
-    expect(ix.accounts![12].address).toBe(SYSVAR_RENT_PUBKEY);
+    expect(ix.accounts![11].address).toBe(TOKEN_PROGRAM_ADDRESS);
+    expect(ix.accounts![12].address).toBe(SYSTEM_PROGRAM_ADDRESS);
+    expect(ix.accounts![13].address).toBe(SYSVAR_RENT_PUBKEY);
+    expect(ix.accounts![14].address).toBe(initializer.INITIALIZER_PROGRAM_ID);
+    expect(ix.accounts![15].address).toBe(initializer.INITIALIZER_PROGRAM_ID);
+    expect(ix.accounts![16].address).toBe(SYSVAR_INSTRUCTIONS_PUBKEY);
     const [expectedCpmmMigratorState] = await cpmmMigrator.getCpmmMigratorStateAddress(launch);
-    expect(ix.accounts![13].address).toBe(expectedCpmmMigratorState);
+    expect(ix.accounts![17].address).toBe(expectedCpmmMigratorState);
+    expect(ix.accounts![18].address).toBe(cpmmConfig);
 
     // Ensure signer metas were attached for the signer accounts.
     for (const idx of [3, 5, 6, 7]) {
@@ -164,7 +179,8 @@ describe('initializer instructions', () => {
           quoteVault,
           payer: admin,
           authority: admin,
-          tokenProgram: TOKEN_PROGRAM_ADDRESS,
+          baseTokenProgram: TOKEN_PROGRAM_ADDRESS,
+          quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
           systemProgram: SYSTEM_PROGRAM_ADDRESS,
           rent: SYSVAR_RENT_PUBKEY,
         },

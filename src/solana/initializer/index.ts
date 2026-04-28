@@ -79,8 +79,6 @@ export {
   type CurveSwapExactInAccounts,
   createMigrateLaunchInstruction,
   type MigrateLaunchAccounts,
-  createAbortLaunchInstruction,
-  type AbortLaunchAccounts,
   createPreviewSwapExactInInstruction,
   decodePreviewSwapExactInResult,
   type PreviewSwapExactInAccounts,

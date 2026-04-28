@@ -51,8 +51,8 @@ export function getEntryDiscriminatorBytes() {
 
 export type Entry = {
   discriminator: ReadonlyUint8Array;
-  /** The oracle this entry belongs to */
-  oracle: Address;
+  /** The market this entry belongs to */
+  market: Address;
   /** Unique identifier for this entry within the market */
   entryId: ReadonlyUint8Array;
   /** The token mint for this entry */
@@ -68,8 +68,8 @@ export type Entry = {
 };
 
 export type EntryArgs = {
-  /** The oracle this entry belongs to */
-  oracle: Address;
+  /** The market this entry belongs to */
+  market: Address;
   /** Unique identifier for this entry within the market */
   entryId: ReadonlyUint8Array;
   /** The token mint for this entry */
@@ -89,7 +89,7 @@ export function getEntryEncoder(): FixedSizeEncoder<EntryArgs> {
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['oracle', getAddressEncoder()],
+      ['market', getAddressEncoder()],
       ['entryId', fixEncoderSize(getBytesEncoder(), 32)],
       ['baseMint', getAddressEncoder()],
       ['contribution', getU64Encoder()],
@@ -105,7 +105,7 @@ export function getEntryEncoder(): FixedSizeEncoder<EntryArgs> {
 export function getEntryDecoder(): FixedSizeDecoder<Entry> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['oracle', getAddressDecoder()],
+    ['market', getAddressDecoder()],
     ['entryId', fixDecoderSize(getBytesDecoder(), 32)],
     ['baseMint', getAddressDecoder()],
     ['contribution', getU64Decoder()],

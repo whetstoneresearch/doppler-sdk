@@ -28,6 +28,7 @@ import {
   type Instruction,
   type InstructionWithAccounts,
   type InstructionWithData,
+  type ReadonlyAccount,
   type ReadonlySignerAccount,
   type ReadonlyUint8Array,
   type TransactionSigner,
@@ -52,6 +53,8 @@ export function getTransferAdminDiscriminatorBytes() {
 export type TransferAdminInstruction<
   TProgram extends string = typeof CPMM_PROGRAM_ADDRESS,
   TAccountConfig extends string | AccountMeta<string> = string,
+  TAccountPool extends string | AccountMeta<string> = string,
+  TAccountProtocolPosition extends string | AccountMeta<string> = string,
   TAccountAdmin extends string | AccountMeta<string> = string,
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
@@ -61,6 +64,12 @@ export type TransferAdminInstruction<
       TAccountConfig extends string
         ? WritableAccount<TAccountConfig>
         : TAccountConfig,
+      TAccountPool extends string
+        ? ReadonlyAccount<TAccountPool>
+        : TAccountPool,
+      TAccountProtocolPosition extends string
+        ? WritableAccount<TAccountProtocolPosition>
+        : TAccountProtocolPosition,
       TAccountAdmin extends string
         ? ReadonlySignerAccount<TAccountAdmin> &
             AccountSignerMeta<TAccountAdmin>
@@ -105,27 +114,49 @@ export function getTransferAdminInstructionDataCodec(): FixedSizeCodec<
 
 export type TransferAdminInput<
   TAccountConfig extends string = string,
+  TAccountPool extends string = string,
+  TAccountProtocolPosition extends string = string,
   TAccountAdmin extends string = string,
 > = {
   config: Address<TAccountConfig>;
+  pool: Address<TAccountPool>;
+  protocolPosition: Address<TAccountProtocolPosition>;
   admin: TransactionSigner<TAccountAdmin>;
   newAdmin: TransferAdminInstructionDataArgs['newAdmin'];
 };
 
 export function getTransferAdminInstruction<
   TAccountConfig extends string,
+  TAccountPool extends string,
+  TAccountProtocolPosition extends string,
   TAccountAdmin extends string,
   TProgramAddress extends Address = typeof CPMM_PROGRAM_ADDRESS,
 >(
-  input: TransferAdminInput<TAccountConfig, TAccountAdmin>,
+  input: TransferAdminInput<
+    TAccountConfig,
+    TAccountPool,
+    TAccountProtocolPosition,
+    TAccountAdmin
+  >,
   config?: { programAddress?: TProgramAddress },
-): TransferAdminInstruction<TProgramAddress, TAccountConfig, TAccountAdmin> {
+): TransferAdminInstruction<
+  TProgramAddress,
+  TAccountConfig,
+  TAccountPool,
+  TAccountProtocolPosition,
+  TAccountAdmin
+> {
   // Program address.
   const programAddress = config?.programAddress ?? CPMM_PROGRAM_ADDRESS;
 
   // Original accounts.
   const originalAccounts = {
     config: { value: input.config ?? null, isWritable: true },
+    pool: { value: input.pool ?? null, isWritable: false },
+    protocolPosition: {
+      value: input.protocolPosition ?? null,
+      isWritable: true,
+    },
     admin: { value: input.admin ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -140,6 +171,8 @@ export function getTransferAdminInstruction<
   return Object.freeze({
     accounts: [
       getAccountMeta('config', accounts.config),
+      getAccountMeta('pool', accounts.pool),
+      getAccountMeta('protocolPosition', accounts.protocolPosition),
       getAccountMeta('admin', accounts.admin),
     ],
     data: getTransferAdminInstructionDataEncoder().encode(
@@ -149,6 +182,8 @@ export function getTransferAdminInstruction<
   } as TransferAdminInstruction<
     TProgramAddress,
     TAccountConfig,
+    TAccountPool,
+    TAccountProtocolPosition,
     TAccountAdmin
   >);
 }
@@ -160,7 +195,9 @@ export type ParsedTransferAdminInstruction<
   programAddress: Address<TProgram>;
   accounts: {
     config: TAccountMetas[0];
-    admin: TAccountMetas[1];
+    pool: TAccountMetas[1];
+    protocolPosition: TAccountMetas[2];
+    admin: TAccountMetas[3];
   };
   data: TransferAdminInstructionData;
 };
@@ -173,12 +210,12 @@ export function parseTransferAdminInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedTransferAdminInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 2) {
+  if (instruction.accounts.length < 4) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 2,
+        expectedAccountMetas: 4,
       },
     );
   }
@@ -190,7 +227,12 @@ export function parseTransferAdminInstruction<
   };
   return {
     programAddress: instruction.programAddress,
-    accounts: { config: getNextAccount(), admin: getNextAccount() },
+    accounts: {
+      config: getNextAccount(),
+      pool: getNextAccount(),
+      protocolPosition: getNextAccount(),
+      admin: getNextAccount(),
+    },
     data: getTransferAdminInstructionDataDecoder().decode(instruction.data),
   };
 }

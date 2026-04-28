@@ -84,12 +84,21 @@ export const INITIALIZER_ERROR__INVALID_METADATA_PROGRAM = 0x1790; // 6032
 export const INITIALIZER_ERROR__INVALID_METADATA_ACCOUNT = 0x1791; // 6033
 /** MetadataCpiFailed: Metadata CPI failed */
 export const INITIALIZER_ERROR__METADATA_CPI_FAILED = 0x1792; // 6034
+/** CpiForbidden: CPI not allowed */
+export const INITIALIZER_ERROR__CPI_FORBIDDEN = 0x1793; // 6035
+/** RemainingAccountSigner: Remaining accounts must not be signers */
+export const INITIALIZER_ERROR__REMAINING_ACCOUNT_SIGNER = 0x1794; // 6036
+/** RemainingAccountWritable: Remaining accounts must be readonly */
+export const INITIALIZER_ERROR__REMAINING_ACCOUNT_WRITABLE = 0x1795; // 6037
+/** MigrationIncomplete: Migration left vault funds behind */
+export const INITIALIZER_ERROR__MIGRATION_INCOMPLETE = 0x1796; // 6038
 
 export type InitializerError =
   | typeof INITIALIZER_ERROR__ALLOWLIST_FULL
   | typeof INITIALIZER_ERROR__ALREADY_MIGRATED
   | typeof INITIALIZER_ERROR__BUY_NOT_ALLOWED
   | typeof INITIALIZER_ERROR__CALLDATA_TOO_LARGE
+  | typeof INITIALIZER_ERROR__CPI_FORBIDDEN
   | typeof INITIALIZER_ERROR__CURVE_LIQUIDITY_INSUFFICIENT
   | typeof INITIALIZER_ERROR__CURVE_PARAMS_INVALID
   | typeof INITIALIZER_ERROR__INVALID_AMOUNT
@@ -106,6 +115,7 @@ export type InitializerError =
   | typeof INITIALIZER_ERROR__LAUNCH_LOCKED
   | typeof INITIALIZER_ERROR__MATH_OVERFLOW
   | typeof INITIALIZER_ERROR__METADATA_CPI_FAILED
+  | typeof INITIALIZER_ERROR__MIGRATION_INCOMPLETE
   | typeof INITIALIZER_ERROR__MIGRATOR_CPI_FAILED
   | typeof INITIALIZER_ERROR__MIGRATOR_NOT_ALLOWLISTED
   | typeof INITIALIZER_ERROR__MISSING_METADATA_ACCOUNTS
@@ -113,6 +123,8 @@ export type InitializerError =
   | typeof INITIALIZER_ERROR__QUOTE_VAULT_NOT_EMPTY
   | typeof INITIALIZER_ERROR__REMAINING_ACCOUNT_OVERLAP
   | typeof INITIALIZER_ERROR__REMAINING_ACCOUNTS_COMMITMENT_MISMATCH
+  | typeof INITIALIZER_ERROR__REMAINING_ACCOUNT_SIGNER
+  | typeof INITIALIZER_ERROR__REMAINING_ACCOUNT_WRITABLE
   | typeof INITIALIZER_ERROR__SELL_NOT_ALLOWED
   | typeof INITIALIZER_ERROR__SENTINEL_CPI_FAILED
   | typeof INITIALIZER_ERROR__SENTINEL_NOT_ALLOWLISTED
@@ -129,6 +141,7 @@ if (process.env.NODE_ENV !== 'production') {
     [INITIALIZER_ERROR__ALREADY_MIGRATED]: `Already migrated`,
     [INITIALIZER_ERROR__BUY_NOT_ALLOWED]: `Buy not allowed`,
     [INITIALIZER_ERROR__CALLDATA_TOO_LARGE]: `Calldata too large`,
+    [INITIALIZER_ERROR__CPI_FORBIDDEN]: `CPI not allowed`,
     [INITIALIZER_ERROR__CURVE_LIQUIDITY_INSUFFICIENT]: `Curve liquidity insufficient`,
     [INITIALIZER_ERROR__CURVE_PARAMS_INVALID]: `Curve params invalid`,
     [INITIALIZER_ERROR__INVALID_AMOUNT]: `Invalid amount`,
@@ -145,6 +158,7 @@ if (process.env.NODE_ENV !== 'production') {
     [INITIALIZER_ERROR__LAUNCH_LOCKED]: `Launch locked`,
     [INITIALIZER_ERROR__MATH_OVERFLOW]: `Math overflow`,
     [INITIALIZER_ERROR__METADATA_CPI_FAILED]: `Metadata CPI failed`,
+    [INITIALIZER_ERROR__MIGRATION_INCOMPLETE]: `Migration left vault funds behind`,
     [INITIALIZER_ERROR__MIGRATOR_CPI_FAILED]: `Migrator CPI failed`,
     [INITIALIZER_ERROR__MIGRATOR_NOT_ALLOWLISTED]: `Migrator not allowlisted`,
     [INITIALIZER_ERROR__MISSING_METADATA_ACCOUNTS]: `Missing metadata accounts`,
@@ -152,6 +166,8 @@ if (process.env.NODE_ENV !== 'production') {
     [INITIALIZER_ERROR__QUOTE_VAULT_NOT_EMPTY]: `Quote vault not empty`,
     [INITIALIZER_ERROR__REMAINING_ACCOUNT_OVERLAP]: `Remaining account overlaps with protocol account`,
     [INITIALIZER_ERROR__REMAINING_ACCOUNTS_COMMITMENT_MISMATCH]: `Remaining accounts commitment mismatch`,
+    [INITIALIZER_ERROR__REMAINING_ACCOUNT_SIGNER]: `Remaining accounts must not be signers`,
+    [INITIALIZER_ERROR__REMAINING_ACCOUNT_WRITABLE]: `Remaining accounts must be readonly`,
     [INITIALIZER_ERROR__SELL_NOT_ALLOWED]: `Sell not allowed`,
     [INITIALIZER_ERROR__SENTINEL_CPI_FAILED]: `Sentinel CPI failed`,
     [INITIALIZER_ERROR__SENTINEL_NOT_ALLOWLISTED]: `Sentinel not allowlisted`,

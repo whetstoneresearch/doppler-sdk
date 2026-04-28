@@ -49,8 +49,8 @@ export function getEntryByMintDiscriminatorBytes() {
 
 export type EntryByMint = {
   discriminator: ReadonlyUint8Array;
-  /** The oracle this entry belongs to */
-  oracle: Address;
+  /** The market this entry belongs to */
+  market: Address;
   /** The base mint */
   baseMint: Address;
   /** The entry_id for reverse lookup */
@@ -62,8 +62,8 @@ export type EntryByMint = {
 };
 
 export type EntryByMintArgs = {
-  /** The oracle this entry belongs to */
-  oracle: Address;
+  /** The market this entry belongs to */
+  market: Address;
   /** The base mint */
   baseMint: Address;
   /** The entry_id for reverse lookup */
@@ -79,7 +79,7 @@ export function getEntryByMintEncoder(): FixedSizeEncoder<EntryByMintArgs> {
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['oracle', getAddressEncoder()],
+      ['market', getAddressEncoder()],
       ['baseMint', getAddressEncoder()],
       ['entryId', fixEncoderSize(getBytesEncoder(), 32)],
       ['bump', getU8Encoder()],
@@ -93,7 +93,7 @@ export function getEntryByMintEncoder(): FixedSizeEncoder<EntryByMintArgs> {
 export function getEntryByMintDecoder(): FixedSizeDecoder<EntryByMint> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['oracle', getAddressDecoder()],
+    ['market', getAddressDecoder()],
     ['baseMint', getAddressDecoder()],
     ['entryId', fixDecoderSize(getBytesDecoder(), 32)],
     ['bump', getU8Decoder()],

@@ -5,6 +5,9 @@ export {
 } from '@solana-program/token';
 export { SYSTEM_PROGRAM_ADDRESS } from '@solana-program/system';
 export { SYSVAR_RENT_ADDRESS } from '@solana/sysvars';
+export const SYSVAR_INSTRUCTIONS_ADDRESS: Address = address(
+  'Sysvar1nstructions1111111111111111111111111',
+);
 
 /**
  * CPMM AMM program ID (devnet)
@@ -55,6 +58,12 @@ export const SEED_POOL = 'pool';
 
 /** Seed prefix for pool authority PDA: ['authority', pool] */
 export const SEED_AUTHORITY = 'authority';
+
+/** Seed prefix for token0 vault PDA: ['vault0', pool] */
+export const SEED_VAULT0 = 'vault0';
+
+/** Seed prefix for token1 vault PDA: ['vault1', pool] */
+export const SEED_VAULT1 = 'vault1';
 
 /** Seed prefix for Position PDA: ['position', pool, owner, position_id] */
 export const SEED_POSITION = 'position';

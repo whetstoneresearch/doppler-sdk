@@ -24,7 +24,7 @@ export function encodeU64LE(value: bigint): Uint8Array {
 
 /**
  * Derive the InitConfig PDA address.
- * Seeds: ['config_v3']
+ * Seeds: ['config']
  */
 export async function getConfigAddress(
   programId: Address = INITIALIZER_PROGRAM_ID,
@@ -50,7 +50,7 @@ export async function getProgramDataAddress(
 
 /**
  * Derive the Launch PDA address.
- * Seeds: ['launch_v3', namespace, launch_id_bytes_32]
+ * Seeds: ['launch', namespace, launch_id_bytes_32]
  */
 export async function getLaunchAddress(
   namespace: Address,
@@ -72,7 +72,7 @@ export async function getLaunchAddress(
 
 /**
  * Derive the Launch authority PDA address.
- * Seeds: ['launch_authority_v3', launch]
+ * Seeds: ['launch_authority', launch]
  */
 export async function getLaunchAuthorityAddress(
   launch: Address,

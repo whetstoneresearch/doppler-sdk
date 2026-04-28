@@ -33,10 +33,16 @@ import {
   type SelfPlanAndSendFunctions,
 } from '@solana/program-client-core';
 import {
+  getAmmConfigCodec,
   getCpmmMigratorStateCodec,
+  getInitConfigCodec,
   getLaunchCodec,
+  type AmmConfig,
+  type AmmConfigArgs,
   type CpmmMigratorState,
   type CpmmMigratorStateArgs,
+  type InitConfig,
+  type InitConfigArgs,
   type Launch,
   type LaunchArgs,
 } from '../accounts';
@@ -55,7 +61,9 @@ export const CPMM_MIGRATOR_PROGRAM_ADDRESS =
   '7WMUTNC41eMCo6eGH5Sy2xbgE3AycvLbFPo95AU9CSUd' as Address<'7WMUTNC41eMCo6eGH5Sy2xbgE3AycvLbFPo95AU9CSUd'>;
 
 export enum CpmmMigratorAccount {
+  AmmConfig,
   CpmmMigratorState,
+  InitConfig,
   Launch,
 }
 
@@ -67,12 +75,34 @@ export function identifyCpmmMigratorAccount(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([218, 244, 33, 104, 203, 203, 43, 111]),
+      ),
+      0,
+    )
+  ) {
+    return CpmmMigratorAccount.AmmConfig;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([169, 86, 255, 187, 37, 248, 11, 176]),
       ),
       0,
     )
   ) {
     return CpmmMigratorAccount.CpmmMigratorState;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([97, 166, 35, 7, 20, 2, 164, 126]),
+      ),
+      0,
+    )
+  ) {
+    return CpmmMigratorAccount.InitConfig;
   }
   if (
     containsBytes(
@@ -174,8 +204,12 @@ export type CpmmMigratorPlugin = {
 };
 
 export type CpmmMigratorPluginAccounts = {
+  ammConfig: ReturnType<typeof getAmmConfigCodec> &
+    SelfFetchFunctions<AmmConfigArgs, AmmConfig>;
   cpmmMigratorState: ReturnType<typeof getCpmmMigratorStateCodec> &
     SelfFetchFunctions<CpmmMigratorStateArgs, CpmmMigratorState>;
+  initConfig: ReturnType<typeof getInitConfigCodec> &
+    SelfFetchFunctions<InitConfigArgs, InitConfig>;
   launch: ReturnType<typeof getLaunchCodec> &
     SelfFetchFunctions<LaunchArgs, Launch>;
 };
@@ -203,10 +237,12 @@ export function cpmmMigratorProgram() {
       ...client,
       cpmmMigrator: <CpmmMigratorPlugin>{
         accounts: {
+          ammConfig: addSelfFetchFunctions(client, getAmmConfigCodec()),
           cpmmMigratorState: addSelfFetchFunctions(
             client,
             getCpmmMigratorStateCodec(),
           ),
+          initConfig: addSelfFetchFunctions(client, getInitConfigCodec()),
           launch: addSelfFetchFunctions(client, getLaunchCodec()),
         },
         instructions: {

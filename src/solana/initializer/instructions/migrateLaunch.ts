@@ -9,6 +9,7 @@ import { AccountRole } from '@solana/kit';
 import {
   SYSTEM_PROGRAM_ADDRESS,
   TOKEN_PROGRAM_ADDRESS,
+  SYSVAR_INSTRUCTIONS_ADDRESS,
 } from '../../core/constants.js';
 import {
   INITIALIZER_INSTRUCTION_DISCRIMINATORS,
@@ -49,9 +50,11 @@ export interface MigrateLaunchAccounts {
   quoteVault: Address;
   migratorProgram: Address;
   payer: AddressOrSigner;
-  tokenProgram?: Address;
+  baseTokenProgram?: Address;
+  quoteTokenProgram?: Address;
   systemProgram?: Address;
   rent: Address;
+  instructionsSysvar?: Address;
 }
 
 export function createMigrateLaunchInstruction(
@@ -68,9 +71,11 @@ export function createMigrateLaunchInstruction(
     quoteVault,
     migratorProgram,
     payer,
-    tokenProgram = TOKEN_PROGRAM_ADDRESS,
+    baseTokenProgram = TOKEN_PROGRAM_ADDRESS,
+    quoteTokenProgram = TOKEN_PROGRAM_ADDRESS,
     systemProgram = SYSTEM_PROGRAM_ADDRESS,
     rent,
+    instructionsSysvar = SYSVAR_INSTRUCTIONS_ADDRESS,
   } = accounts;
 
   const keys: (AccountMeta | AccountSignerMeta)[] = [
@@ -83,9 +88,11 @@ export function createMigrateLaunchInstruction(
     { address: quoteVault, role: AccountRole.WRITABLE },
     { address: migratorProgram, role: AccountRole.READONLY },
     createSignerAccountMeta(payer, AccountRole.WRITABLE_SIGNER),
-    { address: tokenProgram, role: AccountRole.READONLY },
+    { address: baseTokenProgram, role: AccountRole.READONLY },
+    { address: quoteTokenProgram, role: AccountRole.READONLY },
     { address: systemProgram, role: AccountRole.READONLY },
     { address: rent, role: AccountRole.READONLY },
+    { address: instructionsSysvar, role: AccountRole.READONLY },
   ];
 
   const data = encodeInstructionData(

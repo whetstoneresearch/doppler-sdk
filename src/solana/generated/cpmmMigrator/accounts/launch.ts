@@ -88,6 +88,11 @@ export type Launch = {
   migratorProgram: Address;
   migratorInitCalldata: CalldataBuf;
   migratorMigrateCalldata: CalldataBuf;
+  curveKind: number;
+  swapLock: number;
+  pad4: ReadonlyUint8Array;
+  curveParams: CalldataBuf;
+  quoteDeposited: bigint;
   reserved: ReadonlyUint8Array;
 };
 
@@ -121,6 +126,11 @@ export type LaunchArgs = {
   migratorProgram: Address;
   migratorInitCalldata: CalldataBufArgs;
   migratorMigrateCalldata: CalldataBufArgs;
+  curveKind: number;
+  swapLock: number;
+  pad4: ReadonlyUint8Array;
+  curveParams: CalldataBufArgs;
+  quoteDeposited: number | bigint;
   reserved: ReadonlyUint8Array;
 };
 
@@ -158,6 +168,11 @@ export function getLaunchEncoder(): FixedSizeEncoder<LaunchArgs> {
       ['migratorProgram', getAddressEncoder()],
       ['migratorInitCalldata', getCalldataBufEncoder()],
       ['migratorMigrateCalldata', getCalldataBufEncoder()],
+      ['curveKind', getU8Encoder()],
+      ['swapLock', getU8Encoder()],
+      ['pad4', fixEncoderSize(getBytesEncoder(), 6)],
+      ['curveParams', getCalldataBufEncoder()],
+      ['quoteDeposited', getU64Encoder()],
       ['reserved', fixEncoderSize(getBytesEncoder(), 64)],
     ]),
     (value) => ({ ...value, discriminator: LAUNCH_DISCRIMINATOR }),
@@ -197,6 +212,11 @@ export function getLaunchDecoder(): FixedSizeDecoder<Launch> {
     ['migratorProgram', getAddressDecoder()],
     ['migratorInitCalldata', getCalldataBufDecoder()],
     ['migratorMigrateCalldata', getCalldataBufDecoder()],
+    ['curveKind', getU8Decoder()],
+    ['swapLock', getU8Decoder()],
+    ['pad4', fixDecoderSize(getBytesDecoder(), 6)],
+    ['curveParams', getCalldataBufDecoder()],
+    ['quoteDeposited', getU64Decoder()],
     ['reserved', fixDecoderSize(getBytesDecoder(), 64)],
   ]);
 }
@@ -260,5 +280,5 @@ export async function fetchAllMaybeLaunch(
 }
 
 export function getLaunchSize(): number {
-  return 1214;
+  return 1488;
 }

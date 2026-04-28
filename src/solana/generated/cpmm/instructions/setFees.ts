@@ -53,6 +53,8 @@ export type SetFeesInstruction<
   TAccountConfig extends string | AccountMeta<string> = string,
   TAccountPool extends string | AccountMeta<string> = string,
   TAccountAdmin extends string | AccountMeta<string> = string,
+  TAccountInstructionsSysvar extends string | AccountMeta<string> =
+    'Sysvar1nstructions1111111111111111111111111',
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -68,6 +70,9 @@ export type SetFeesInstruction<
         ? ReadonlySignerAccount<TAccountAdmin> &
             AccountSignerMeta<TAccountAdmin>
         : TAccountAdmin,
+      TAccountInstructionsSysvar extends string
+        ? ReadonlyAccount<TAccountInstructionsSysvar>
+        : TAccountInstructionsSysvar,
       ...TRemainingAccounts,
     ]
   >;
@@ -116,10 +121,12 @@ export type SetFeesInput<
   TAccountConfig extends string = string,
   TAccountPool extends string = string,
   TAccountAdmin extends string = string,
+  TAccountInstructionsSysvar extends string = string,
 > = {
   config: Address<TAccountConfig>;
   pool: Address<TAccountPool>;
   admin: TransactionSigner<TAccountAdmin>;
+  instructionsSysvar?: Address<TAccountInstructionsSysvar>;
   swapFeeBps: SetFeesInstructionDataArgs['swapFeeBps'];
   feeSplitBps: SetFeesInstructionDataArgs['feeSplitBps'];
 };
@@ -128,15 +135,22 @@ export function getSetFeesInstruction<
   TAccountConfig extends string,
   TAccountPool extends string,
   TAccountAdmin extends string,
+  TAccountInstructionsSysvar extends string,
   TProgramAddress extends Address = typeof CPMM_PROGRAM_ADDRESS,
 >(
-  input: SetFeesInput<TAccountConfig, TAccountPool, TAccountAdmin>,
+  input: SetFeesInput<
+    TAccountConfig,
+    TAccountPool,
+    TAccountAdmin,
+    TAccountInstructionsSysvar
+  >,
   config?: { programAddress?: TProgramAddress },
 ): SetFeesInstruction<
   TProgramAddress,
   TAccountConfig,
   TAccountPool,
-  TAccountAdmin
+  TAccountAdmin,
+  TAccountInstructionsSysvar
 > {
   // Program address.
   const programAddress = config?.programAddress ?? CPMM_PROGRAM_ADDRESS;
@@ -146,6 +160,10 @@ export function getSetFeesInstruction<
     config: { value: input.config ?? null, isWritable: false },
     pool: { value: input.pool ?? null, isWritable: true },
     admin: { value: input.admin ?? null, isWritable: false },
+    instructionsSysvar: {
+      value: input.instructionsSysvar ?? null,
+      isWritable: false,
+    },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -155,12 +173,19 @@ export function getSetFeesInstruction<
   // Original args.
   const args = { ...input };
 
+  // Resolve default values.
+  if (!accounts.instructionsSysvar.value) {
+    accounts.instructionsSysvar.value =
+      'Sysvar1nstructions1111111111111111111111111' as Address<'Sysvar1nstructions1111111111111111111111111'>;
+  }
+
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
       getAccountMeta('config', accounts.config),
       getAccountMeta('pool', accounts.pool),
       getAccountMeta('admin', accounts.admin),
+      getAccountMeta('instructionsSysvar', accounts.instructionsSysvar),
     ],
     data: getSetFeesInstructionDataEncoder().encode(
       args as SetFeesInstructionDataArgs,
@@ -170,7 +195,8 @@ export function getSetFeesInstruction<
     TProgramAddress,
     TAccountConfig,
     TAccountPool,
-    TAccountAdmin
+    TAccountAdmin,
+    TAccountInstructionsSysvar
   >);
 }
 
@@ -183,6 +209,7 @@ export type ParsedSetFeesInstruction<
     config: TAccountMetas[0];
     pool: TAccountMetas[1];
     admin: TAccountMetas[2];
+    instructionsSysvar: TAccountMetas[3];
   };
   data: SetFeesInstructionData;
 };
@@ -195,12 +222,12 @@ export function parseSetFeesInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedSetFeesInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 3) {
+  if (instruction.accounts.length < 4) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 3,
+        expectedAccountMetas: 4,
       },
     );
   }
@@ -216,6 +243,7 @@ export function parseSetFeesInstruction<
       config: getNextAccount(),
       pool: getNextAccount(),
       admin: getNextAccount(),
+      instructionsSysvar: getNextAccount(),
     },
     data: getSetFeesInstructionDataDecoder().decode(instruction.data),
   };

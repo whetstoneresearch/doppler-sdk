@@ -61,8 +61,10 @@ export type SkimInstruction<
   TAccountToken1Mint extends string | AccountMeta<string> = string,
   TAccountAdminAta0 extends string | AccountMeta<string> = string,
   TAccountAdminAta1 extends string | AccountMeta<string> = string,
-  TAccountTokenProgram extends string | AccountMeta<string> =
-    'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
+  TAccountToken0Program extends string | AccountMeta<string> = string,
+  TAccountToken1Program extends string | AccountMeta<string> = string,
+  TAccountInstructionsSysvar extends string | AccountMeta<string> =
+    'Sysvar1nstructions1111111111111111111111111',
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -99,9 +101,15 @@ export type SkimInstruction<
       TAccountAdminAta1 extends string
         ? WritableAccount<TAccountAdminAta1>
         : TAccountAdminAta1,
-      TAccountTokenProgram extends string
-        ? ReadonlyAccount<TAccountTokenProgram>
-        : TAccountTokenProgram,
+      TAccountToken0Program extends string
+        ? ReadonlyAccount<TAccountToken0Program>
+        : TAccountToken0Program,
+      TAccountToken1Program extends string
+        ? ReadonlyAccount<TAccountToken1Program>
+        : TAccountToken1Program,
+      TAccountInstructionsSysvar extends string
+        ? ReadonlyAccount<TAccountInstructionsSysvar>
+        : TAccountInstructionsSysvar,
       ...TRemainingAccounts,
     ]
   >;
@@ -144,7 +152,9 @@ export type SkimAsyncInput<
   TAccountToken1Mint extends string = string,
   TAccountAdminAta0 extends string = string,
   TAccountAdminAta1 extends string = string,
-  TAccountTokenProgram extends string = string,
+  TAccountToken0Program extends string = string,
+  TAccountToken1Program extends string = string,
+  TAccountInstructionsSysvar extends string = string,
 > = {
   config: Address<TAccountConfig>;
   pool: Address<TAccountPool>;
@@ -154,9 +164,11 @@ export type SkimAsyncInput<
   vault1: Address<TAccountVault1>;
   token0Mint: Address<TAccountToken0Mint>;
   token1Mint: Address<TAccountToken1Mint>;
-  adminAta0: Address<TAccountAdminAta0>;
-  adminAta1: Address<TAccountAdminAta1>;
-  tokenProgram?: Address<TAccountTokenProgram>;
+  adminAta0?: Address<TAccountAdminAta0>;
+  adminAta1?: Address<TAccountAdminAta1>;
+  token0Program: Address<TAccountToken0Program>;
+  token1Program: Address<TAccountToken1Program>;
+  instructionsSysvar?: Address<TAccountInstructionsSysvar>;
 };
 
 export async function getSkimInstructionAsync<
@@ -170,7 +182,9 @@ export async function getSkimInstructionAsync<
   TAccountToken1Mint extends string,
   TAccountAdminAta0 extends string,
   TAccountAdminAta1 extends string,
-  TAccountTokenProgram extends string,
+  TAccountToken0Program extends string,
+  TAccountToken1Program extends string,
+  TAccountInstructionsSysvar extends string,
   TProgramAddress extends Address = typeof CPMM_PROGRAM_ADDRESS,
 >(
   input: SkimAsyncInput<
@@ -184,7 +198,9 @@ export async function getSkimInstructionAsync<
     TAccountToken1Mint,
     TAccountAdminAta0,
     TAccountAdminAta1,
-    TAccountTokenProgram
+    TAccountToken0Program,
+    TAccountToken1Program,
+    TAccountInstructionsSysvar
   >,
   config?: { programAddress?: TProgramAddress },
 ): Promise<
@@ -200,7 +216,9 @@ export async function getSkimInstructionAsync<
     TAccountToken1Mint,
     TAccountAdminAta0,
     TAccountAdminAta1,
-    TAccountTokenProgram
+    TAccountToken0Program,
+    TAccountToken1Program,
+    TAccountInstructionsSysvar
   >
 > {
   // Program address.
@@ -218,7 +236,12 @@ export async function getSkimInstructionAsync<
     token1Mint: { value: input.token1Mint ?? null, isWritable: false },
     adminAta0: { value: input.adminAta0 ?? null, isWritable: true },
     adminAta1: { value: input.adminAta1 ?? null, isWritable: true },
-    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
+    token0Program: { value: input.token0Program ?? null, isWritable: false },
+    token1Program: { value: input.token1Program ?? null, isWritable: false },
+    instructionsSysvar: {
+      value: input.instructionsSysvar ?? null,
+      isWritable: false,
+    },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -239,9 +262,61 @@ export async function getSkimInstructionAsync<
       ],
     });
   }
-  if (!accounts.tokenProgram.value) {
-    accounts.tokenProgram.value =
-      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
+  if (!accounts.adminAta0.value) {
+    accounts.adminAta0.value = await getProgramDerivedAddress({
+      programAddress:
+        'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>,
+      seeds: [
+        getAddressEncoder().encode(
+          getAddressFromResolvedInstructionAccount(
+            'admin',
+            accounts.admin.value,
+          ),
+        ),
+        getAddressEncoder().encode(
+          getAddressFromResolvedInstructionAccount(
+            'token0Program',
+            accounts.token0Program.value,
+          ),
+        ),
+        getAddressEncoder().encode(
+          getAddressFromResolvedInstructionAccount(
+            'token0Mint',
+            accounts.token0Mint.value,
+          ),
+        ),
+      ],
+    });
+  }
+  if (!accounts.adminAta1.value) {
+    accounts.adminAta1.value = await getProgramDerivedAddress({
+      programAddress:
+        'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>,
+      seeds: [
+        getAddressEncoder().encode(
+          getAddressFromResolvedInstructionAccount(
+            'admin',
+            accounts.admin.value,
+          ),
+        ),
+        getAddressEncoder().encode(
+          getAddressFromResolvedInstructionAccount(
+            'token1Program',
+            accounts.token1Program.value,
+          ),
+        ),
+        getAddressEncoder().encode(
+          getAddressFromResolvedInstructionAccount(
+            'token1Mint',
+            accounts.token1Mint.value,
+          ),
+        ),
+      ],
+    });
+  }
+  if (!accounts.instructionsSysvar.value) {
+    accounts.instructionsSysvar.value =
+      'Sysvar1nstructions1111111111111111111111111' as Address<'Sysvar1nstructions1111111111111111111111111'>;
   }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
@@ -257,7 +332,9 @@ export async function getSkimInstructionAsync<
       getAccountMeta('token1Mint', accounts.token1Mint),
       getAccountMeta('adminAta0', accounts.adminAta0),
       getAccountMeta('adminAta1', accounts.adminAta1),
-      getAccountMeta('tokenProgram', accounts.tokenProgram),
+      getAccountMeta('token0Program', accounts.token0Program),
+      getAccountMeta('token1Program', accounts.token1Program),
+      getAccountMeta('instructionsSysvar', accounts.instructionsSysvar),
     ],
     data: getSkimInstructionDataEncoder().encode({}),
     programAddress,
@@ -273,7 +350,9 @@ export async function getSkimInstructionAsync<
     TAccountToken1Mint,
     TAccountAdminAta0,
     TAccountAdminAta1,
-    TAccountTokenProgram
+    TAccountToken0Program,
+    TAccountToken1Program,
+    TAccountInstructionsSysvar
   >);
 }
 
@@ -288,7 +367,9 @@ export type SkimInput<
   TAccountToken1Mint extends string = string,
   TAccountAdminAta0 extends string = string,
   TAccountAdminAta1 extends string = string,
-  TAccountTokenProgram extends string = string,
+  TAccountToken0Program extends string = string,
+  TAccountToken1Program extends string = string,
+  TAccountInstructionsSysvar extends string = string,
 > = {
   config: Address<TAccountConfig>;
   pool: Address<TAccountPool>;
@@ -300,7 +381,9 @@ export type SkimInput<
   token1Mint: Address<TAccountToken1Mint>;
   adminAta0: Address<TAccountAdminAta0>;
   adminAta1: Address<TAccountAdminAta1>;
-  tokenProgram?: Address<TAccountTokenProgram>;
+  token0Program: Address<TAccountToken0Program>;
+  token1Program: Address<TAccountToken1Program>;
+  instructionsSysvar?: Address<TAccountInstructionsSysvar>;
 };
 
 export function getSkimInstruction<
@@ -314,7 +397,9 @@ export function getSkimInstruction<
   TAccountToken1Mint extends string,
   TAccountAdminAta0 extends string,
   TAccountAdminAta1 extends string,
-  TAccountTokenProgram extends string,
+  TAccountToken0Program extends string,
+  TAccountToken1Program extends string,
+  TAccountInstructionsSysvar extends string,
   TProgramAddress extends Address = typeof CPMM_PROGRAM_ADDRESS,
 >(
   input: SkimInput<
@@ -328,7 +413,9 @@ export function getSkimInstruction<
     TAccountToken1Mint,
     TAccountAdminAta0,
     TAccountAdminAta1,
-    TAccountTokenProgram
+    TAccountToken0Program,
+    TAccountToken1Program,
+    TAccountInstructionsSysvar
   >,
   config?: { programAddress?: TProgramAddress },
 ): SkimInstruction<
@@ -343,7 +430,9 @@ export function getSkimInstruction<
   TAccountToken1Mint,
   TAccountAdminAta0,
   TAccountAdminAta1,
-  TAccountTokenProgram
+  TAccountToken0Program,
+  TAccountToken1Program,
+  TAccountInstructionsSysvar
 > {
   // Program address.
   const programAddress = config?.programAddress ?? CPMM_PROGRAM_ADDRESS;
@@ -360,7 +449,12 @@ export function getSkimInstruction<
     token1Mint: { value: input.token1Mint ?? null, isWritable: false },
     adminAta0: { value: input.adminAta0 ?? null, isWritable: true },
     adminAta1: { value: input.adminAta1 ?? null, isWritable: true },
-    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
+    token0Program: { value: input.token0Program ?? null, isWritable: false },
+    token1Program: { value: input.token1Program ?? null, isWritable: false },
+    instructionsSysvar: {
+      value: input.instructionsSysvar ?? null,
+      isWritable: false,
+    },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -368,9 +462,9 @@ export function getSkimInstruction<
   >;
 
   // Resolve default values.
-  if (!accounts.tokenProgram.value) {
-    accounts.tokenProgram.value =
-      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
+  if (!accounts.instructionsSysvar.value) {
+    accounts.instructionsSysvar.value =
+      'Sysvar1nstructions1111111111111111111111111' as Address<'Sysvar1nstructions1111111111111111111111111'>;
   }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
@@ -386,7 +480,9 @@ export function getSkimInstruction<
       getAccountMeta('token1Mint', accounts.token1Mint),
       getAccountMeta('adminAta0', accounts.adminAta0),
       getAccountMeta('adminAta1', accounts.adminAta1),
-      getAccountMeta('tokenProgram', accounts.tokenProgram),
+      getAccountMeta('token0Program', accounts.token0Program),
+      getAccountMeta('token1Program', accounts.token1Program),
+      getAccountMeta('instructionsSysvar', accounts.instructionsSysvar),
     ],
     data: getSkimInstructionDataEncoder().encode({}),
     programAddress,
@@ -402,7 +498,9 @@ export function getSkimInstruction<
     TAccountToken1Mint,
     TAccountAdminAta0,
     TAccountAdminAta1,
-    TAccountTokenProgram
+    TAccountToken0Program,
+    TAccountToken1Program,
+    TAccountInstructionsSysvar
   >);
 }
 
@@ -422,7 +520,9 @@ export type ParsedSkimInstruction<
     token1Mint: TAccountMetas[7];
     adminAta0: TAccountMetas[8];
     adminAta1: TAccountMetas[9];
-    tokenProgram: TAccountMetas[10];
+    token0Program: TAccountMetas[10];
+    token1Program: TAccountMetas[11];
+    instructionsSysvar: TAccountMetas[12];
   };
   data: SkimInstructionData;
 };
@@ -435,12 +535,12 @@ export function parseSkimInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedSkimInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 11) {
+  if (instruction.accounts.length < 13) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 11,
+        expectedAccountMetas: 13,
       },
     );
   }
@@ -463,7 +563,9 @@ export function parseSkimInstruction<
       token1Mint: getNextAccount(),
       adminAta0: getNextAccount(),
       adminAta1: getNextAccount(),
-      tokenProgram: getNextAccount(),
+      token0Program: getNextAccount(),
+      token1Program: getNextAccount(),
+      instructionsSysvar: getNextAccount(),
     },
     data: getSkimInstructionDataDecoder().decode(instruction.data),
   };

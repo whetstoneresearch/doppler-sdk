@@ -40,6 +40,7 @@ import {
   predictionMigrator,
   trustedOracle,
 } from '../src/solana/index.js';
+import { SYSVAR_INSTRUCTIONS_ADDRESS } from '../src/solana/core/constants.js';
 
 // ============================================================================
 // Environment
@@ -134,9 +135,12 @@ async function main() {
       );
       const signedTransaction =
         await signTransactionMessageWithSigners(transactionMessage);
-      await sendAndConfirmTransaction(signedTransaction, {
-        commitment: 'confirmed',
-      });
+      await sendAndConfirmTransaction(
+        signedTransaction as Parameters<typeof sendAndConfirmTransaction>[0],
+        {
+          commitment: 'confirmed',
+        },
+      );
       console.log(
         '  Oracle created:',
         getSignatureFromTransaction(signedTransaction),
@@ -179,22 +183,19 @@ async function main() {
         // These are the accounts the migrator will receive during migration.
         // The instruction builder auto-appends them; we derive them here only
         // to compute migratorRemainingAccountsHash.
-        const [market] =
-          await predictionMigrator.getPredictionMarketAddress(
-            oracleStateAddress,
-          );
+        const [market] = await predictionMigrator.getPredictionMarketAddress(
+          oracleStateAddress,
+          WSOL_MINT,
+        );
         const [potVault] =
           await predictionMigrator.getPredictionPotVaultAddress(market);
         const [marketAuthority] =
           await predictionMigrator.getPredictionMarketAuthorityAddress(market);
         const [entryAddress] =
-          await predictionMigrator.getPredictionEntryAddress(
-            oracleStateAddress,
-            entryId,
-          );
+          await predictionMigrator.getPredictionEntryAddress(market, entryId);
         const [entryByMint] =
           await predictionMigrator.getPredictionEntryByMintAddress(
-            oracleStateAddress,
+            market,
             baseMint.address,
           );
 
@@ -209,8 +210,9 @@ async function main() {
           .encode({ entryId });
 
         // ── Build the initializeLaunch instruction ───────────────────────────
-        // The ALT covers tokenProgram, systemProgram, rent, config, WSOL_MINT, and
-        // the prediction migrator program (index 8), keeping the transaction within
+        // The ALT covers the shared static accounts used by initializeLaunch,
+        // including the token program, system program, rent, config, WSOL_MINT,
+        // and the prediction migrator program, keeping the transaction within
         // the 1232-byte limit despite the 6 register_entry remaining accounts.
         // The instruction builder automatically appends the 6 register_entry
         // remaining accounts for the prediction migrator.
@@ -227,10 +229,12 @@ async function main() {
             authority: payer,
             migratorProgram:
               predictionMigrator.PREDICTION_MIGRATOR_PROGRAM_ADDRESS,
-            tokenProgram: TOKEN_PROGRAM_ADDRESS,
+            baseTokenProgram: TOKEN_PROGRAM_ADDRESS,
+            quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
             systemProgram: SYSTEM_PROGRAM_ADDRESS,
             rent: SYSVAR_RENT_ADDRESS,
             metadataAccount,
+            instructionsSysvar: SYSVAR_INSTRUCTIONS_ADDRESS,
             addressLookupTable: initializer.DOPPLER_DEVNET_ALT,
           },
           {
@@ -266,9 +270,9 @@ async function main() {
                 entryAddress,
                 entryByMint,
               ]),
-            metadataName: outcome.label,
-            metadataSymbol: outcome.label,
-            metadataUri: `https://example.com/prediction/${outcome.label.toLowerCase()}.json`,
+            metadataName: '',
+            metadataSymbol: '',
+            metadataUri: '',
           },
         );
 
@@ -284,9 +288,12 @@ async function main() {
         );
         const signedTransaction =
           await signTransactionMessageWithSigners(transactionMessage);
-        await sendAndConfirmTransaction(signedTransaction, {
-          commitment: 'confirmed',
-        });
+        await sendAndConfirmTransaction(
+          signedTransaction as Parameters<typeof sendAndConfirmTransaction>[0],
+          {
+            commitment: 'confirmed',
+          },
+        );
 
         console.log(`  ${outcome.label} launch created!`);
         console.log(

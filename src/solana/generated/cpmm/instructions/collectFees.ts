@@ -65,8 +65,10 @@ export type CollectFeesInstruction<
   TAccountToken1Mint extends string | AccountMeta<string> = string,
   TAccountUser0 extends string | AccountMeta<string> = string,
   TAccountUser1 extends string | AccountMeta<string> = string,
-  TAccountTokenProgram extends string | AccountMeta<string> =
-    'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
+  TAccountToken0Program extends string | AccountMeta<string> = string,
+  TAccountToken1Program extends string | AccountMeta<string> = string,
+  TAccountInstructionsSysvar extends string | AccountMeta<string> =
+    'Sysvar1nstructions1111111111111111111111111',
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -103,9 +105,15 @@ export type CollectFeesInstruction<
       TAccountUser1 extends string
         ? WritableAccount<TAccountUser1>
         : TAccountUser1,
-      TAccountTokenProgram extends string
-        ? ReadonlyAccount<TAccountTokenProgram>
-        : TAccountTokenProgram,
+      TAccountToken0Program extends string
+        ? ReadonlyAccount<TAccountToken0Program>
+        : TAccountToken0Program,
+      TAccountToken1Program extends string
+        ? ReadonlyAccount<TAccountToken1Program>
+        : TAccountToken1Program,
+      TAccountInstructionsSysvar extends string
+        ? ReadonlyAccount<TAccountInstructionsSysvar>
+        : TAccountInstructionsSysvar,
       ...TRemainingAccounts,
     ]
   >;
@@ -161,7 +169,9 @@ export type CollectFeesAsyncInput<
   TAccountToken1Mint extends string = string,
   TAccountUser0 extends string = string,
   TAccountUser1 extends string = string,
-  TAccountTokenProgram extends string = string,
+  TAccountToken0Program extends string = string,
+  TAccountToken1Program extends string = string,
+  TAccountInstructionsSysvar extends string = string,
 > = {
   pool: Address<TAccountPool>;
   position: Address<TAccountPosition>;
@@ -173,7 +183,9 @@ export type CollectFeesAsyncInput<
   token1Mint: Address<TAccountToken1Mint>;
   user0: Address<TAccountUser0>;
   user1: Address<TAccountUser1>;
-  tokenProgram?: Address<TAccountTokenProgram>;
+  token0Program: Address<TAccountToken0Program>;
+  token1Program: Address<TAccountToken1Program>;
+  instructionsSysvar?: Address<TAccountInstructionsSysvar>;
   max0: CollectFeesInstructionDataArgs['max0'];
   max1: CollectFeesInstructionDataArgs['max1'];
 };
@@ -189,7 +201,9 @@ export async function getCollectFeesInstructionAsync<
   TAccountToken1Mint extends string,
   TAccountUser0 extends string,
   TAccountUser1 extends string,
-  TAccountTokenProgram extends string,
+  TAccountToken0Program extends string,
+  TAccountToken1Program extends string,
+  TAccountInstructionsSysvar extends string,
   TProgramAddress extends Address = typeof CPMM_PROGRAM_ADDRESS,
 >(
   input: CollectFeesAsyncInput<
@@ -203,7 +217,9 @@ export async function getCollectFeesInstructionAsync<
     TAccountToken1Mint,
     TAccountUser0,
     TAccountUser1,
-    TAccountTokenProgram
+    TAccountToken0Program,
+    TAccountToken1Program,
+    TAccountInstructionsSysvar
   >,
   config?: { programAddress?: TProgramAddress },
 ): Promise<
@@ -219,7 +235,9 @@ export async function getCollectFeesInstructionAsync<
     TAccountToken1Mint,
     TAccountUser0,
     TAccountUser1,
-    TAccountTokenProgram
+    TAccountToken0Program,
+    TAccountToken1Program,
+    TAccountInstructionsSysvar
   >
 > {
   // Program address.
@@ -237,7 +255,12 @@ export async function getCollectFeesInstructionAsync<
     token1Mint: { value: input.token1Mint ?? null, isWritable: false },
     user0: { value: input.user0 ?? null, isWritable: true },
     user1: { value: input.user1 ?? null, isWritable: true },
-    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
+    token0Program: { value: input.token0Program ?? null, isWritable: false },
+    token1Program: { value: input.token1Program ?? null, isWritable: false },
+    instructionsSysvar: {
+      value: input.instructionsSysvar ?? null,
+      isWritable: false,
+    },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -261,9 +284,9 @@ export async function getCollectFeesInstructionAsync<
       ],
     });
   }
-  if (!accounts.tokenProgram.value) {
-    accounts.tokenProgram.value =
-      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
+  if (!accounts.instructionsSysvar.value) {
+    accounts.instructionsSysvar.value =
+      'Sysvar1nstructions1111111111111111111111111' as Address<'Sysvar1nstructions1111111111111111111111111'>;
   }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
@@ -279,7 +302,9 @@ export async function getCollectFeesInstructionAsync<
       getAccountMeta('token1Mint', accounts.token1Mint),
       getAccountMeta('user0', accounts.user0),
       getAccountMeta('user1', accounts.user1),
-      getAccountMeta('tokenProgram', accounts.tokenProgram),
+      getAccountMeta('token0Program', accounts.token0Program),
+      getAccountMeta('token1Program', accounts.token1Program),
+      getAccountMeta('instructionsSysvar', accounts.instructionsSysvar),
     ],
     data: getCollectFeesInstructionDataEncoder().encode(
       args as CollectFeesInstructionDataArgs,
@@ -297,7 +322,9 @@ export async function getCollectFeesInstructionAsync<
     TAccountToken1Mint,
     TAccountUser0,
     TAccountUser1,
-    TAccountTokenProgram
+    TAccountToken0Program,
+    TAccountToken1Program,
+    TAccountInstructionsSysvar
   >);
 }
 
@@ -312,7 +339,9 @@ export type CollectFeesInput<
   TAccountToken1Mint extends string = string,
   TAccountUser0 extends string = string,
   TAccountUser1 extends string = string,
-  TAccountTokenProgram extends string = string,
+  TAccountToken0Program extends string = string,
+  TAccountToken1Program extends string = string,
+  TAccountInstructionsSysvar extends string = string,
 > = {
   pool: Address<TAccountPool>;
   position: Address<TAccountPosition>;
@@ -324,7 +353,9 @@ export type CollectFeesInput<
   token1Mint: Address<TAccountToken1Mint>;
   user0: Address<TAccountUser0>;
   user1: Address<TAccountUser1>;
-  tokenProgram?: Address<TAccountTokenProgram>;
+  token0Program: Address<TAccountToken0Program>;
+  token1Program: Address<TAccountToken1Program>;
+  instructionsSysvar?: Address<TAccountInstructionsSysvar>;
   max0: CollectFeesInstructionDataArgs['max0'];
   max1: CollectFeesInstructionDataArgs['max1'];
 };
@@ -340,7 +371,9 @@ export function getCollectFeesInstruction<
   TAccountToken1Mint extends string,
   TAccountUser0 extends string,
   TAccountUser1 extends string,
-  TAccountTokenProgram extends string,
+  TAccountToken0Program extends string,
+  TAccountToken1Program extends string,
+  TAccountInstructionsSysvar extends string,
   TProgramAddress extends Address = typeof CPMM_PROGRAM_ADDRESS,
 >(
   input: CollectFeesInput<
@@ -354,7 +387,9 @@ export function getCollectFeesInstruction<
     TAccountToken1Mint,
     TAccountUser0,
     TAccountUser1,
-    TAccountTokenProgram
+    TAccountToken0Program,
+    TAccountToken1Program,
+    TAccountInstructionsSysvar
   >,
   config?: { programAddress?: TProgramAddress },
 ): CollectFeesInstruction<
@@ -369,7 +404,9 @@ export function getCollectFeesInstruction<
   TAccountToken1Mint,
   TAccountUser0,
   TAccountUser1,
-  TAccountTokenProgram
+  TAccountToken0Program,
+  TAccountToken1Program,
+  TAccountInstructionsSysvar
 > {
   // Program address.
   const programAddress = config?.programAddress ?? CPMM_PROGRAM_ADDRESS;
@@ -386,7 +423,12 @@ export function getCollectFeesInstruction<
     token1Mint: { value: input.token1Mint ?? null, isWritable: false },
     user0: { value: input.user0 ?? null, isWritable: true },
     user1: { value: input.user1 ?? null, isWritable: true },
-    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
+    token0Program: { value: input.token0Program ?? null, isWritable: false },
+    token1Program: { value: input.token1Program ?? null, isWritable: false },
+    instructionsSysvar: {
+      value: input.instructionsSysvar ?? null,
+      isWritable: false,
+    },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -397,9 +439,9 @@ export function getCollectFeesInstruction<
   const args = { ...input };
 
   // Resolve default values.
-  if (!accounts.tokenProgram.value) {
-    accounts.tokenProgram.value =
-      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
+  if (!accounts.instructionsSysvar.value) {
+    accounts.instructionsSysvar.value =
+      'Sysvar1nstructions1111111111111111111111111' as Address<'Sysvar1nstructions1111111111111111111111111'>;
   }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
@@ -415,7 +457,9 @@ export function getCollectFeesInstruction<
       getAccountMeta('token1Mint', accounts.token1Mint),
       getAccountMeta('user0', accounts.user0),
       getAccountMeta('user1', accounts.user1),
-      getAccountMeta('tokenProgram', accounts.tokenProgram),
+      getAccountMeta('token0Program', accounts.token0Program),
+      getAccountMeta('token1Program', accounts.token1Program),
+      getAccountMeta('instructionsSysvar', accounts.instructionsSysvar),
     ],
     data: getCollectFeesInstructionDataEncoder().encode(
       args as CollectFeesInstructionDataArgs,
@@ -433,7 +477,9 @@ export function getCollectFeesInstruction<
     TAccountToken1Mint,
     TAccountUser0,
     TAccountUser1,
-    TAccountTokenProgram
+    TAccountToken0Program,
+    TAccountToken1Program,
+    TAccountInstructionsSysvar
   >);
 }
 
@@ -453,7 +499,9 @@ export type ParsedCollectFeesInstruction<
     token1Mint: TAccountMetas[7];
     user0: TAccountMetas[8];
     user1: TAccountMetas[9];
-    tokenProgram: TAccountMetas[10];
+    token0Program: TAccountMetas[10];
+    token1Program: TAccountMetas[11];
+    instructionsSysvar: TAccountMetas[12];
   };
   data: CollectFeesInstructionData;
 };
@@ -466,12 +514,12 @@ export function parseCollectFeesInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedCollectFeesInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 11) {
+  if (instruction.accounts.length < 13) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 11,
+        expectedAccountMetas: 13,
       },
     );
   }
@@ -494,7 +542,9 @@ export function parseCollectFeesInstruction<
       token1Mint: getNextAccount(),
       user0: getNextAccount(),
       user1: getNextAccount(),
-      tokenProgram: getNextAccount(),
+      token0Program: getNextAccount(),
+      token1Program: getNextAccount(),
+      instructionsSysvar: getNextAccount(),
     },
     data: getCollectFeesInstructionDataDecoder().decode(instruction.data),
   };

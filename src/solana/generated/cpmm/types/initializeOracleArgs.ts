@@ -12,8 +12,6 @@ import {
   getStructEncoder,
   getU128Decoder,
   getU128Encoder,
-  getU16Decoder,
-  getU16Encoder,
   getU32Decoder,
   getU32Encoder,
   type FixedSizeCodec,
@@ -24,20 +22,17 @@ import {
 export type InitializeOracleArgs = {
   maxPriceChangeRatioQ64: bigint;
   observationIntervalSec: number;
-  numObservations: number;
 };
 
 export type InitializeOracleArgsArgs = {
   maxPriceChangeRatioQ64: number | bigint;
   observationIntervalSec: number;
-  numObservations: number;
 };
 
 export function getInitializeOracleArgsEncoder(): FixedSizeEncoder<InitializeOracleArgsArgs> {
   return getStructEncoder([
     ['maxPriceChangeRatioQ64', getU128Encoder()],
     ['observationIntervalSec', getU32Encoder()],
-    ['numObservations', getU16Encoder()],
   ]);
 }
 
@@ -45,7 +40,6 @@ export function getInitializeOracleArgsDecoder(): FixedSizeDecoder<InitializeOra
   return getStructDecoder([
     ['maxPriceChangeRatioQ64', getU128Decoder()],
     ['observationIntervalSec', getU32Decoder()],
-    ['numObservations', getU16Decoder()],
   ]);
 }
 

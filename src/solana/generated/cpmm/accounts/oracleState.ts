@@ -19,8 +19,6 @@ import {
   getAddressEncoder,
   getArrayDecoder,
   getArrayEncoder,
-  getBooleanDecoder,
-  getBooleanEncoder,
   getBytesDecoder,
   getBytesEncoder,
   getStructDecoder,
@@ -68,40 +66,42 @@ export function getOracleStateDiscriminatorBytes() {
 export type OracleState = {
   discriminator: ReadonlyUint8Array;
   pool: Address;
-  initialized: boolean;
   maxPriceChangeRatioQ64: bigint;
-  lastSlot: bigint;
   truncPrice0Q64: bigint;
   truncPrice1Q64: bigint;
   deviation0Q64: bigint;
   deviation1Q64: bigint;
   price0Cumulative: Array<bigint>;
   price1Cumulative: Array<bigint>;
+  lastSlot: bigint;
   lastTimestamp: number;
   lastObservationTimestamp: number;
   observationIntervalSec: number;
   observationIndex: number;
+  pad0: ReadonlyUint8Array;
   observations: Array<Observation>;
+  initialized: number;
   version: number;
   reserved: ReadonlyUint8Array;
 };
 
 export type OracleStateArgs = {
   pool: Address;
-  initialized: boolean;
   maxPriceChangeRatioQ64: number | bigint;
-  lastSlot: number | bigint;
   truncPrice0Q64: number | bigint;
   truncPrice1Q64: number | bigint;
   deviation0Q64: number | bigint;
   deviation1Q64: number | bigint;
   price0Cumulative: Array<number | bigint>;
   price1Cumulative: Array<number | bigint>;
+  lastSlot: number | bigint;
   lastTimestamp: number;
   lastObservationTimestamp: number;
   observationIntervalSec: number;
   observationIndex: number;
+  pad0: ReadonlyUint8Array;
   observations: Array<ObservationArgs>;
+  initialized: number;
   version: number;
   reserved: ReadonlyUint8Array;
 };
@@ -112,22 +112,23 @@ export function getOracleStateEncoder(): FixedSizeEncoder<OracleStateArgs> {
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       ['pool', getAddressEncoder()],
-      ['initialized', getBooleanEncoder()],
       ['maxPriceChangeRatioQ64', getU128Encoder()],
-      ['lastSlot', getU64Encoder()],
       ['truncPrice0Q64', getU128Encoder()],
       ['truncPrice1Q64', getU128Encoder()],
       ['deviation0Q64', getU128Encoder()],
       ['deviation1Q64', getU128Encoder()],
       ['price0Cumulative', getArrayEncoder(getU64Encoder(), { size: 4 })],
       ['price1Cumulative', getArrayEncoder(getU64Encoder(), { size: 4 })],
+      ['lastSlot', getU64Encoder()],
       ['lastTimestamp', getU32Encoder()],
       ['lastObservationTimestamp', getU32Encoder()],
       ['observationIntervalSec', getU32Encoder()],
       ['observationIndex', getU16Encoder()],
+      ['pad0', fixEncoderSize(getBytesEncoder(), 2)],
       ['observations', getArrayEncoder(getObservationEncoder(), { size: 64 })],
+      ['initialized', getU8Encoder()],
       ['version', getU8Encoder()],
-      ['reserved', fixEncoderSize(getBytesEncoder(), 7)],
+      ['reserved', fixEncoderSize(getBytesEncoder(), 6)],
     ]),
     (value) => ({ ...value, discriminator: ORACLE_STATE_DISCRIMINATOR }),
   );
@@ -138,22 +139,23 @@ export function getOracleStateDecoder(): FixedSizeDecoder<OracleState> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['pool', getAddressDecoder()],
-    ['initialized', getBooleanDecoder()],
     ['maxPriceChangeRatioQ64', getU128Decoder()],
-    ['lastSlot', getU64Decoder()],
     ['truncPrice0Q64', getU128Decoder()],
     ['truncPrice1Q64', getU128Decoder()],
     ['deviation0Q64', getU128Decoder()],
     ['deviation1Q64', getU128Decoder()],
     ['price0Cumulative', getArrayDecoder(getU64Decoder(), { size: 4 })],
     ['price1Cumulative', getArrayDecoder(getU64Decoder(), { size: 4 })],
+    ['lastSlot', getU64Decoder()],
     ['lastTimestamp', getU32Decoder()],
     ['lastObservationTimestamp', getU32Decoder()],
     ['observationIntervalSec', getU32Decoder()],
     ['observationIndex', getU16Decoder()],
+    ['pad0', fixDecoderSize(getBytesDecoder(), 2)],
     ['observations', getArrayDecoder(getObservationDecoder(), { size: 64 })],
+    ['initialized', getU8Decoder()],
     ['version', getU8Decoder()],
-    ['reserved', fixDecoderSize(getBytesDecoder(), 7)],
+    ['reserved', fixDecoderSize(getBytesDecoder(), 6)],
   ]);
 }
 
@@ -219,5 +221,5 @@ export async function fetchAllMaybeOracleState(
 }
 
 export function getOracleStateSize(): number {
-  return 4567;
+  return 4824;
 }

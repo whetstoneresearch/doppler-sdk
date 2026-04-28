@@ -7,28 +7,34 @@
  */
 
 import {
+  addDecoderSizePrefix,
+  addEncoderSizePrefix,
   combineCodec,
   fixDecoderSize,
   fixEncoderSize,
   getBytesDecoder,
   getBytesEncoder,
+  getOptionDecoder,
+  getOptionEncoder,
   getProgramDerivedAddress,
   getStructDecoder,
   getStructEncoder,
-  getU8Decoder,
-  getU8Encoder,
+  getU32Decoder,
+  getU32Encoder,
   SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
   SolanaError,
   transformEncoder,
   type AccountMeta,
   type AccountSignerMeta,
   type Address,
-  type FixedSizeCodec,
-  type FixedSizeDecoder,
-  type FixedSizeEncoder,
+  type Codec,
+  type Decoder,
+  type Encoder,
   type Instruction,
   type InstructionWithAccounts,
   type InstructionWithData,
+  type Option,
+  type OptionOrNullable,
   type ReadonlyAccount,
   type ReadonlySignerAccount,
   type ReadonlyUint8Array,
@@ -41,17 +47,17 @@ import {
 } from '@solana/program-client-core';
 import { INITIALIZER_PROGRAM_ADDRESS } from '../programs';
 
-export const UPDATE_TRADING_FLAGS_DISCRIMINATOR = new Uint8Array([
-  40, 204, 40, 16, 219, 190, 133, 78,
+export const UPDATE_LAUNCH_CALLDATA_DISCRIMINATOR = new Uint8Array([
+  26, 225, 184, 23, 167, 221, 87, 92,
 ]);
 
-export function getUpdateTradingFlagsDiscriminatorBytes() {
+export function getUpdateLaunchCalldataDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    UPDATE_TRADING_FLAGS_DISCRIMINATOR,
+    UPDATE_LAUNCH_CALLDATA_DISCRIMINATOR,
   );
 }
 
-export type UpdateTradingFlagsInstruction<
+export type UpdateLaunchCalldataInstruction<
   TProgram extends string = typeof INITIALIZER_PROGRAM_ADDRESS,
   TAccountConfig extends string | AccountMeta<string> = string,
   TAccountLaunch extends string | AccountMeta<string> = string,
@@ -80,50 +86,90 @@ export type UpdateTradingFlagsInstruction<
     ]
   >;
 
-export type UpdateTradingFlagsInstructionData = {
+export type UpdateLaunchCalldataInstructionData = {
   discriminator: ReadonlyUint8Array;
-  allowBuy: number;
-  allowSell: number;
+  sentinelCalldata: Option<ReadonlyUint8Array>;
+  migratorMigrateCalldata: Option<ReadonlyUint8Array>;
+  sentinelRemainingAccountsHash: Option<ReadonlyUint8Array>;
+  migratorRemainingAccountsHash: Option<ReadonlyUint8Array>;
 };
 
-export type UpdateTradingFlagsInstructionDataArgs = {
-  allowBuy: number;
-  allowSell: number;
+export type UpdateLaunchCalldataInstructionDataArgs = {
+  sentinelCalldata: OptionOrNullable<ReadonlyUint8Array>;
+  migratorMigrateCalldata: OptionOrNullable<ReadonlyUint8Array>;
+  sentinelRemainingAccountsHash: OptionOrNullable<ReadonlyUint8Array>;
+  migratorRemainingAccountsHash: OptionOrNullable<ReadonlyUint8Array>;
 };
 
-export function getUpdateTradingFlagsInstructionDataEncoder(): FixedSizeEncoder<UpdateTradingFlagsInstructionDataArgs> {
+export function getUpdateLaunchCalldataInstructionDataEncoder(): Encoder<UpdateLaunchCalldataInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['allowBuy', getU8Encoder()],
-      ['allowSell', getU8Encoder()],
+      [
+        'sentinelCalldata',
+        getOptionEncoder(
+          addEncoderSizePrefix(getBytesEncoder(), getU32Encoder()),
+        ),
+      ],
+      [
+        'migratorMigrateCalldata',
+        getOptionEncoder(
+          addEncoderSizePrefix(getBytesEncoder(), getU32Encoder()),
+        ),
+      ],
+      [
+        'sentinelRemainingAccountsHash',
+        getOptionEncoder(fixEncoderSize(getBytesEncoder(), 32)),
+      ],
+      [
+        'migratorRemainingAccountsHash',
+        getOptionEncoder(fixEncoderSize(getBytesEncoder(), 32)),
+      ],
     ]),
     (value) => ({
       ...value,
-      discriminator: UPDATE_TRADING_FLAGS_DISCRIMINATOR,
+      discriminator: UPDATE_LAUNCH_CALLDATA_DISCRIMINATOR,
     }),
   );
 }
 
-export function getUpdateTradingFlagsInstructionDataDecoder(): FixedSizeDecoder<UpdateTradingFlagsInstructionData> {
+export function getUpdateLaunchCalldataInstructionDataDecoder(): Decoder<UpdateLaunchCalldataInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['allowBuy', getU8Decoder()],
-    ['allowSell', getU8Decoder()],
+    [
+      'sentinelCalldata',
+      getOptionDecoder(
+        addDecoderSizePrefix(getBytesDecoder(), getU32Decoder()),
+      ),
+    ],
+    [
+      'migratorMigrateCalldata',
+      getOptionDecoder(
+        addDecoderSizePrefix(getBytesDecoder(), getU32Decoder()),
+      ),
+    ],
+    [
+      'sentinelRemainingAccountsHash',
+      getOptionDecoder(fixDecoderSize(getBytesDecoder(), 32)),
+    ],
+    [
+      'migratorRemainingAccountsHash',
+      getOptionDecoder(fixDecoderSize(getBytesDecoder(), 32)),
+    ],
   ]);
 }
 
-export function getUpdateTradingFlagsInstructionDataCodec(): FixedSizeCodec<
-  UpdateTradingFlagsInstructionDataArgs,
-  UpdateTradingFlagsInstructionData
+export function getUpdateLaunchCalldataInstructionDataCodec(): Codec<
+  UpdateLaunchCalldataInstructionDataArgs,
+  UpdateLaunchCalldataInstructionData
 > {
   return combineCodec(
-    getUpdateTradingFlagsInstructionDataEncoder(),
-    getUpdateTradingFlagsInstructionDataDecoder(),
+    getUpdateLaunchCalldataInstructionDataEncoder(),
+    getUpdateLaunchCalldataInstructionDataDecoder(),
   );
 }
 
-export type UpdateTradingFlagsAsyncInput<
+export type UpdateLaunchCalldataAsyncInput<
   TAccountConfig extends string = string,
   TAccountLaunch extends string = string,
   TAccountAuthority extends string = string,
@@ -134,18 +180,20 @@ export type UpdateTradingFlagsAsyncInput<
   /** Authority of the launch (must match launch.authority or config.admin) */
   authority: TransactionSigner<TAccountAuthority>;
   instructionsSysvar?: Address<TAccountInstructionsSysvar>;
-  allowBuy: UpdateTradingFlagsInstructionDataArgs['allowBuy'];
-  allowSell: UpdateTradingFlagsInstructionDataArgs['allowSell'];
+  sentinelCalldata: UpdateLaunchCalldataInstructionDataArgs['sentinelCalldata'];
+  migratorMigrateCalldata: UpdateLaunchCalldataInstructionDataArgs['migratorMigrateCalldata'];
+  sentinelRemainingAccountsHash: UpdateLaunchCalldataInstructionDataArgs['sentinelRemainingAccountsHash'];
+  migratorRemainingAccountsHash: UpdateLaunchCalldataInstructionDataArgs['migratorRemainingAccountsHash'];
 };
 
-export async function getUpdateTradingFlagsInstructionAsync<
+export async function getUpdateLaunchCalldataInstructionAsync<
   TAccountConfig extends string,
   TAccountLaunch extends string,
   TAccountAuthority extends string,
   TAccountInstructionsSysvar extends string,
   TProgramAddress extends Address = typeof INITIALIZER_PROGRAM_ADDRESS,
 >(
-  input: UpdateTradingFlagsAsyncInput<
+  input: UpdateLaunchCalldataAsyncInput<
     TAccountConfig,
     TAccountLaunch,
     TAccountAuthority,
@@ -153,7 +201,7 @@ export async function getUpdateTradingFlagsInstructionAsync<
   >,
   config?: { programAddress?: TProgramAddress },
 ): Promise<
-  UpdateTradingFlagsInstruction<
+  UpdateLaunchCalldataInstruction<
     TProgramAddress,
     TAccountConfig,
     TAccountLaunch,
@@ -204,11 +252,11 @@ export async function getUpdateTradingFlagsInstructionAsync<
       getAccountMeta('authority', accounts.authority),
       getAccountMeta('instructionsSysvar', accounts.instructionsSysvar),
     ],
-    data: getUpdateTradingFlagsInstructionDataEncoder().encode(
-      args as UpdateTradingFlagsInstructionDataArgs,
+    data: getUpdateLaunchCalldataInstructionDataEncoder().encode(
+      args as UpdateLaunchCalldataInstructionDataArgs,
     ),
     programAddress,
-  } as UpdateTradingFlagsInstruction<
+  } as UpdateLaunchCalldataInstruction<
     TProgramAddress,
     TAccountConfig,
     TAccountLaunch,
@@ -217,7 +265,7 @@ export async function getUpdateTradingFlagsInstructionAsync<
   >);
 }
 
-export type UpdateTradingFlagsInput<
+export type UpdateLaunchCalldataInput<
   TAccountConfig extends string = string,
   TAccountLaunch extends string = string,
   TAccountAuthority extends string = string,
@@ -228,25 +276,27 @@ export type UpdateTradingFlagsInput<
   /** Authority of the launch (must match launch.authority or config.admin) */
   authority: TransactionSigner<TAccountAuthority>;
   instructionsSysvar?: Address<TAccountInstructionsSysvar>;
-  allowBuy: UpdateTradingFlagsInstructionDataArgs['allowBuy'];
-  allowSell: UpdateTradingFlagsInstructionDataArgs['allowSell'];
+  sentinelCalldata: UpdateLaunchCalldataInstructionDataArgs['sentinelCalldata'];
+  migratorMigrateCalldata: UpdateLaunchCalldataInstructionDataArgs['migratorMigrateCalldata'];
+  sentinelRemainingAccountsHash: UpdateLaunchCalldataInstructionDataArgs['sentinelRemainingAccountsHash'];
+  migratorRemainingAccountsHash: UpdateLaunchCalldataInstructionDataArgs['migratorRemainingAccountsHash'];
 };
 
-export function getUpdateTradingFlagsInstruction<
+export function getUpdateLaunchCalldataInstruction<
   TAccountConfig extends string,
   TAccountLaunch extends string,
   TAccountAuthority extends string,
   TAccountInstructionsSysvar extends string,
   TProgramAddress extends Address = typeof INITIALIZER_PROGRAM_ADDRESS,
 >(
-  input: UpdateTradingFlagsInput<
+  input: UpdateLaunchCalldataInput<
     TAccountConfig,
     TAccountLaunch,
     TAccountAuthority,
     TAccountInstructionsSysvar
   >,
   config?: { programAddress?: TProgramAddress },
-): UpdateTradingFlagsInstruction<
+): UpdateLaunchCalldataInstruction<
   TProgramAddress,
   TAccountConfig,
   TAccountLaunch,
@@ -288,11 +338,11 @@ export function getUpdateTradingFlagsInstruction<
       getAccountMeta('authority', accounts.authority),
       getAccountMeta('instructionsSysvar', accounts.instructionsSysvar),
     ],
-    data: getUpdateTradingFlagsInstructionDataEncoder().encode(
-      args as UpdateTradingFlagsInstructionDataArgs,
+    data: getUpdateLaunchCalldataInstructionDataEncoder().encode(
+      args as UpdateLaunchCalldataInstructionDataArgs,
     ),
     programAddress,
-  } as UpdateTradingFlagsInstruction<
+  } as UpdateLaunchCalldataInstruction<
     TProgramAddress,
     TAccountConfig,
     TAccountLaunch,
@@ -301,7 +351,7 @@ export function getUpdateTradingFlagsInstruction<
   >);
 }
 
-export type ParsedUpdateTradingFlagsInstruction<
+export type ParsedUpdateLaunchCalldataInstruction<
   TProgram extends string = typeof INITIALIZER_PROGRAM_ADDRESS,
   TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
@@ -313,17 +363,17 @@ export type ParsedUpdateTradingFlagsInstruction<
     authority: TAccountMetas[2];
     instructionsSysvar: TAccountMetas[3];
   };
-  data: UpdateTradingFlagsInstructionData;
+  data: UpdateLaunchCalldataInstructionData;
 };
 
-export function parseUpdateTradingFlagsInstruction<
+export function parseUpdateLaunchCalldataInstruction<
   TProgram extends string,
   TAccountMetas extends readonly AccountMeta[],
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
-): ParsedUpdateTradingFlagsInstruction<TProgram, TAccountMetas> {
+): ParsedUpdateLaunchCalldataInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 4) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
@@ -347,7 +397,7 @@ export function parseUpdateTradingFlagsInstruction<
       authority: getNextAccount(),
       instructionsSysvar: getNextAccount(),
     },
-    data: getUpdateTradingFlagsInstructionDataDecoder().decode(
+    data: getUpdateLaunchCalldataInstructionDataDecoder().decode(
       instruction.data,
     ),
   };
