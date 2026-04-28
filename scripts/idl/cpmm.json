@@ -707,10 +707,6 @@
           "name": "token1_mint"
         },
         {
-          "name": "admin",
-          "signer": true
-        },
-        {
           "name": "payer",
           "writable": true,
           "signer": true
@@ -728,6 +724,15 @@
         {
           "name": "rent",
           "address": "SysvarRent111111111111111111111111111111111"
+        },
+        {
+          "name": "migration_authority",
+          "docs": [
+            "Capability PDA owned by the trusted migrator program. Anchor enforces",
+            "`is_signer`; the handler verifies the pubkey matches the expected",
+            "derivation. Together these prove the CPI originated from the migrator."
+          ],
+          "signer": true
         }
       ],
       "args": [

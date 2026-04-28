@@ -37,9 +37,9 @@ export const PREDICTION_SENTINEL_PROGRAM_ID: Address = address(
 // PDA Seeds (must match programs/initializer/src/constants.rs)
 // ============================================================================
 
-export const SEED_CONFIG = 'config_v3';
-export const SEED_LAUNCH = 'launch_v3';
-export const SEED_LAUNCH_AUTHORITY = 'launch_authority_v3';
+export const SEED_CONFIG = 'config';
+export const SEED_LAUNCH = 'launch';
+export const SEED_LAUNCH_AUTHORITY = 'launch_authority';
 
 // ============================================================================
 // Remaining Accounts Hash

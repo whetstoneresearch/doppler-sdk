@@ -164,16 +164,23 @@ async function main() {
   const protocolPosition = poolInit.protocolPosition[0];
   const poolVault0 = poolInit.vault0[0];
   const poolVault1 = poolInit.vault1[0];
+  const [migrationAuthority] =
+    await cpmmMigrator.getCpmmMigrationAuthorityAddress();
   const [launchLpPosition] = await cpmm.getPositionAddress(
     pool,
     launchAuthority,
     0n,
   );
 
-  // admin_base_ata receives any unsold curve tokens at migration.
+  // Admin ATAs receive unsold curve tokens and residual migration dust.
   const [payerBaseAta] = await findAssociatedTokenPda({
     owner: payer.address,
     mint: baseMint.address,
+    tokenProgram: TOKEN_PROGRAM_ADDRESS,
+  });
+  const [payerQuoteAta] = await findAssociatedTokenPda({
+    owner: payer.address,
+    mint: WSOL_MINT,
     tokenProgram: TOKEN_PROGRAM_ADDRESS,
   });
 
@@ -251,7 +258,7 @@ async function main() {
         // Commits the accounts that must be passed as remaining accounts to
         // migrate_launch in this order: state, cpmm_config, pool, pool_authority,
         // pool_vault0, pool_vault1, protocol_position, launch_lp_position,
-        // cpmm_program, admin_base_ata
+        // cpmm_program, migration_authority, admin_base_ata, admin_quote_ata
         migratorRemainingAccountsHash: initializer.computeRemainingAccountsHash(
           [
             cpmmMigratorState,
@@ -263,7 +270,9 @@ async function main() {
             protocolPosition,
             launchLpPosition,
             cpmm.CPMM_PROGRAM_ID,
+            migrationAuthority,
             payerBaseAta, // admin_base_ata (receives any unsold curve tokens)
+            payerQuoteAta, // admin_quote_ata (receives residual quote dust)
           ],
         ),
         metadataName: 'TEST',
@@ -288,9 +297,12 @@ async function main() {
       rpc,
       rpcSubscriptions,
     });
-    await sendAndConfirmTransaction(signedTransaction, {
-      commitment: 'confirmed',
-    });
+    await sendAndConfirmTransaction(
+      signedTransaction as Parameters<typeof sendAndConfirmTransaction>[0],
+      {
+        commitment: 'confirmed',
+      },
+    );
 
     console.log('');
     console.log('Token launch created successfully!');

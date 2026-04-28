@@ -235,9 +235,7 @@ export async function getUpdateLaunchCalldataInstructionAsync<
     accounts.config.value = await getProgramDerivedAddress({
       programAddress,
       seeds: [
-        getBytesEncoder().encode(
-          new Uint8Array([99, 111, 110, 102, 105, 103, 95, 118, 51]),
-        ),
+        getBytesEncoder().encode(new Uint8Array([99, 111, 110, 102, 105, 103])),
       ],
     });
   }

@@ -108,7 +108,6 @@ const ALT_INDEX: Record<string, number> = {
   [TOKEN_METADATA_PROGRAM_ID]: 4,
   [CPMM_MIGRATOR_PROGRAM_ID]: 5,
   So11111111111111111111111111111111111111112: 6,
-  // index 7 = config PDA — resolved at call time from accounts.config
   [PREDICTION_MIGRATOR_PROGRAM_ADDRESS]: 8,
 };
 
@@ -136,11 +135,9 @@ export interface InitializeLaunchAccounts {
   /**
    * Optional Address Lookup Table to reference for static accounts.
    * When provided, constant non-signer accounts (base/quote token program,
-   * systemProgram, rent, migratorProgram, quoteMint when WSOL, metadataProgram,
-   * config) are
-   * encoded as ALT lookup metas instead of 32-byte static keys, reducing
-   * transaction size by ~200+ bytes and enabling V4 metadata within the
-   * 1232-byte Solana transaction limit.
+   * systemProgram, rent, migratorProgram, quoteMint when WSOL, metadataProgram)
+   * are encoded as ALT lookup metas instead of 32-byte static keys, reducing
+   * transaction size while keeping versioned config PDAs explicit.
    *
    * Use DOPPLER_DEVNET_ALT for devnet.
    */
@@ -202,10 +199,7 @@ export async function createInitializeLaunchInstruction(
     );
   }
 
-  // Build an ALT index map that also includes the config PDA at index 7.
-  const altIndexMap: Record<string, number> = alt
-    ? { ...ALT_INDEX, [config]: 7 }
-    : {};
+  const altIndexMap: Record<string, number> = alt ? ALT_INDEX : {};
 
   function staticOrLookup(
     addr: Address,
@@ -248,6 +242,9 @@ export async function createInitializeLaunchInstruction(
   if (withMetadata) {
     keys.push({ address: metadataAccount!, role: AccountRole.WRITABLE });
     keys.push(staticOrLookup(metadataProgram, AccountRole.READONLY));
+  } else {
+    keys.push({ address: programId, role: AccountRole.READONLY });
+    keys.push({ address: programId, role: AccountRole.READONLY });
   }
 
   keys.push({ address: instructionsSysvar, role: AccountRole.READONLY });

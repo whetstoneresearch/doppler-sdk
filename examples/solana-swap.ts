@@ -157,9 +157,12 @@ async function main() {
       rpc,
       rpcSubscriptions,
     });
-    await sendAndConfirmTransaction(signedTransaction, {
-      commitment: 'confirmed',
-    });
+    await sendAndConfirmTransaction(
+      signedTransaction as Parameters<typeof sendAndConfirmTransaction>[0],
+      {
+        commitment: 'confirmed',
+      },
+    );
 
     console.log('');
     console.log('Swap confirmed!');

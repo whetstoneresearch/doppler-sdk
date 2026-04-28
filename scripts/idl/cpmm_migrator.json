@@ -121,10 +121,16 @@
         },
         {
           "name": "pool_vault0",
+          "docs": [
+            "`initialize_pool`, and is constrained again by the CPMM CPI."
+          ],
           "writable": true
         },
         {
           "name": "pool_vault1",
+          "docs": [
+            "`initialize_pool`, and is constrained again by the CPMM CPI."
+          ],
           "writable": true
         },
         {
@@ -140,9 +146,55 @@
           "address": "9PSxVPoPfnbZ8Q1uQhgS6ZxvBjFboZtebNsu34umxkgQ"
         },
         {
+          "name": "migration_authority",
+          "docs": [
+            "Capability PDA this program signs for to authorize `cpmm::initialize_pool`.",
+            "the key on the CPI side."
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  105,
+                  103,
+                  114,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
           "name": "admin_base_ata",
           "docs": [
-            "Admin's base token ATA for returning unsold curve tokens"
+            "Admin's base token ATA for returning unsold curve tokens and any residual",
+            "base dust left behind by the `add_liquidity` CPI."
+          ],
+          "writable": true
+        },
+        {
+          "name": "admin_quote_ata",
+          "docs": [
+            "Admin's quote token ATA for sweeping any residual quote dust left behind",
+            "by the `add_liquidity` CPI. Transfer fees on either mint can cause",
+            "`add_liquidity` to under-consume one side even on the first deposit;",
+            "the initializer requires both launch vaults to be zero after migration."
           ],
           "writable": true
         }

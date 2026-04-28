@@ -162,16 +162,23 @@ async function main() {
   const protocolPosition = poolInit.protocolPosition[0];
   const poolVault0 = poolInit.vault0[0];
   const poolVault1 = poolInit.vault1[0];
+  const [migrationAuthority] =
+    await cpmmMigrator.getCpmmMigrationAuthorityAddress();
   const [launchLpPosition] = await cpmm.getPositionAddress(
     pool,
     launchAuthority,
     0n,
   );
 
-  // Both recipients use payer on devnet; swap for real wallets in production.
+  // Payer receives admin dust and both example recipient allocations.
   const [payerBaseAta] = await findAssociatedTokenPda({
     owner: payer.address,
     mint: baseMint.address,
+    tokenProgram: TOKEN_PROGRAM_ADDRESS,
+  });
+  const [payerQuoteAta] = await findAssociatedTokenPda({
+    owner: payer.address,
+    mint: WSOL_MINT,
     tokenProgram: TOKEN_PROGRAM_ADDRESS,
   });
 
@@ -243,7 +250,8 @@ async function main() {
         // Commits the accounts that must be passed as remaining accounts to
         // migrate_launch: state, cpmm_config, pool, pool_authority, pool_vault0,
         // pool_vault1, protocol_position, launch_lp_position, cpmm_program,
-        // admin_base_ata, creator_ata, team_ata
+        // migration_authority, admin_base_ata, admin_quote_ata, creator_ata,
+        // team_ata
         migratorRemainingAccountsHash: initializer.computeRemainingAccountsHash(
           [
             cpmmMigratorState,
@@ -255,14 +263,16 @@ async function main() {
             protocolPosition,
             launchLpPosition,
             cpmm.CPMM_PROGRAM_ID,
+            migrationAuthority,
             payerBaseAta, // admin_base_ata
+            payerQuoteAta, // admin_quote_ata
             payerBaseAta, // creator recipient ATA (CREATOR_SHARE → payer)
             payerBaseAta, // team recipient ATA (TEAM_SHARE → payer)
           ],
         ),
-        metadataName: 'Advanced Token',
-        metadataSymbol: 'ADVTK',
-        metadataUri: 'https://example.com/advanced-token.json',
+        metadataName: 'Adv Token',
+        metadataSymbol: 'ADV',
+        metadataUri: 'https://example.com/a.json',
       },
     );
 
@@ -282,9 +292,12 @@ async function main() {
       rpc,
       rpcSubscriptions,
     });
-    await sendAndConfirmTransaction(signedTransaction, {
-      commitment: 'confirmed',
-    });
+    await sendAndConfirmTransaction(
+      signedTransaction as Parameters<typeof sendAndConfirmTransaction>[0],
+      {
+        commitment: 'confirmed',
+      },
+    );
 
     console.log('');
     console.log('Token launch created successfully!');

@@ -39,6 +39,7 @@ import {
   sendAndConfirmTransactionFactory,
   getSignatureFromTransaction,
   AccountRole,
+  address,
   type Address,
 } from '@solana/kit';
 import { SYSVAR_RENT_ADDRESS } from '@solana/sysvars';
@@ -61,6 +62,20 @@ if (!keypairJson) {
 // WSOL mint — pools use the wrapped SPL mint since native SOL can't live in token vaults.
 const WSOL_MINT: Address =
   'So11111111111111111111111111111111111111112' as Address;
+const COMPUTE_BUDGET_PROGRAM_ID = address(
+  'ComputeBudget111111111111111111111111111111',
+);
+
+function createSetComputeUnitLimitInstruction(units: number) {
+  const data = new Uint8Array(5);
+  data[0] = 2;
+  new DataView(data.buffer).setUint32(1, units, true);
+  return {
+    programAddress: COMPUTE_BUDGET_PROGRAM_ID,
+    accounts: [],
+    data,
+  };
+}
 
 // ============================================================================
 // Price feed
@@ -162,6 +177,8 @@ async function main() {
   const protocolPosition = poolInit.protocolPosition[0];
   const poolVault0 = poolInit.vault0[0];
   const poolVault1 = poolInit.vault1[0];
+  const [migrationAuthority] =
+    await cpmmMigrator.getCpmmMigrationAuthorityAddress();
   const [launchLpPosition] = await cpmm.getPositionAddress(
     pool,
     launchAuthority,
@@ -171,6 +188,11 @@ async function main() {
   const [payerBaseAta] = await findAssociatedTokenPda({
     owner: payer.address,
     mint: baseMint.address,
+    tokenProgram: TOKEN_PROGRAM_ADDRESS,
+  });
+  const [payerQuoteAta] = await findAssociatedTokenPda({
+    owner: payer.address,
+    mint: WSOL_MINT,
     tokenProgram: TOKEN_PROGRAM_ADDRESS,
   });
 
@@ -239,7 +261,8 @@ async function main() {
         // Commits the accounts that must be passed as remaining accounts to
         // migrate_launch: state, cpmm_config, pool, pool_authority, pool_vault0,
         // pool_vault1, protocol_position, launch_lp_position, cpmm_program,
-        // admin_base_ata, creator_ata, team_ata
+        // migration_authority, admin_base_ata, admin_quote_ata, creator_ata,
+        // team_ata
         migratorRemainingAccountsHash: initializer.computeRemainingAccountsHash(
           [
             cpmmMigratorState,
@@ -251,14 +274,16 @@ async function main() {
             protocolPosition,
             launchLpPosition,
             cpmm.CPMM_PROGRAM_ID,
+            migrationAuthority,
             payerBaseAta, // admin_base_ata (unsold curve tokens)
+            payerQuoteAta, // admin_quote_ata (residual quote dust)
             payerBaseAta, // creator recipient ATA (CREATOR_SHARE → payer)
             payerBaseAta, // team recipient ATA (TEAM_SHARE → payer)
           ],
         ),
         metadataName: 'E2E Token',
-        metadataSymbol: 'E2ETK',
-        metadataUri: 'https://example.com/e2e-token.json',
+        metadataSymbol: 'E2E',
+        metadataUri: 'https://example.com/e.json',
       },
     );
 
@@ -278,9 +303,12 @@ async function main() {
       rpc,
       rpcSubscriptions,
     });
-    await sendAndConfirmTransaction(signedTransaction, {
-      commitment: 'confirmed',
-    });
+    await sendAndConfirmTransaction(
+      signedTransaction as Parameters<typeof sendAndConfirmTransaction>[0],
+      {
+        commitment: 'confirmed',
+      },
+    );
 
     console.log('');
     console.log('Token launch created successfully!');
@@ -447,9 +475,12 @@ async function main() {
       const signedTransaction =
         await signTransactionMessageWithSigners(transactionMessage);
 
-      await sendAndConfirmTransaction(signedTransaction, {
-        commitment: 'confirmed',
-      });
+      await sendAndConfirmTransaction(
+        signedTransaction as Parameters<typeof sendAndConfirmTransaction>[0],
+        {
+          commitment: 'confirmed',
+        },
+      );
 
       console.log(
         '  Curve buy confirmed:',
@@ -496,7 +527,9 @@ async function main() {
         { address: protocolPosition, role: AccountRole.WRITABLE },
         { address: launchLpPosition, role: AccountRole.WRITABLE },
         { address: cpmm.CPMM_PROGRAM_ID, role: AccountRole.READONLY }, // cpmm program
+        { address: migrationAuthority, role: AccountRole.READONLY },
         { address: payerBaseAta, role: AccountRole.WRITABLE }, // admin_base_ata (unsold curve tokens)
+        { address: payerQuoteAta, role: AccountRole.WRITABLE }, // admin_quote_ata (residual quote dust)
         { address: payerBaseAta, role: AccountRole.WRITABLE }, // creator recipient ATA (CREATOR_SHARE → payer)
         { address: payerBaseAta, role: AccountRole.WRITABLE }, // team recipient ATA (TEAM_SHARE → payer)
       ],
@@ -510,15 +543,22 @@ async function main() {
         (tx) => setTransactionMessageFeePayerSigner(payer, tx),
         (tx) =>
           setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
-        (tx) => appendTransactionMessageInstructions([migrateLaunchIx], tx),
+        (tx) =>
+          appendTransactionMessageInstructions(
+            [createSetComputeUnitLimitInstruction(400_000), migrateLaunchIx],
+            tx,
+          ),
       );
 
       const signedTransaction =
         await signTransactionMessageWithSigners(transactionMessage);
 
-      await sendAndConfirmTransaction(signedTransaction, {
-        commitment: 'confirmed',
-      });
+      await sendAndConfirmTransaction(
+        signedTransaction as Parameters<typeof sendAndConfirmTransaction>[0],
+        {
+          commitment: 'confirmed',
+        },
+      );
 
       console.log(
         '  Migration confirmed:',

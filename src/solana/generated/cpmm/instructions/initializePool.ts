@@ -71,7 +71,6 @@ export type InitializePoolInstruction<
   TAccountVault1 extends string | AccountMeta<string> = string,
   TAccountToken0Mint extends string | AccountMeta<string> = string,
   TAccountToken1Mint extends string | AccountMeta<string> = string,
-  TAccountAdmin extends string | AccountMeta<string> = string,
   TAccountPayer extends string | AccountMeta<string> = string,
   TAccountToken0Program extends string | AccountMeta<string> = string,
   TAccountToken1Program extends string | AccountMeta<string> = string,
@@ -79,6 +78,7 @@ export type InitializePoolInstruction<
     '11111111111111111111111111111111',
   TAccountRent extends string | AccountMeta<string> =
     'SysvarRent111111111111111111111111111111111',
+  TAccountMigrationAuthority extends string | AccountMeta<string> = string,
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -108,10 +108,6 @@ export type InitializePoolInstruction<
       TAccountToken1Mint extends string
         ? ReadonlyAccount<TAccountToken1Mint>
         : TAccountToken1Mint,
-      TAccountAdmin extends string
-        ? ReadonlySignerAccount<TAccountAdmin> &
-            AccountSignerMeta<TAccountAdmin>
-        : TAccountAdmin,
       TAccountPayer extends string
         ? WritableSignerAccount<TAccountPayer> &
             AccountSignerMeta<TAccountPayer>
@@ -128,6 +124,10 @@ export type InitializePoolInstruction<
       TAccountRent extends string
         ? ReadonlyAccount<TAccountRent>
         : TAccountRent,
+      TAccountMigrationAuthority extends string
+        ? ReadonlySignerAccount<TAccountMigrationAuthority> &
+            AccountSignerMeta<TAccountMigrationAuthority>
+        : TAccountMigrationAuthority,
       ...TRemainingAccounts,
     ]
   >;
@@ -197,12 +197,12 @@ export type InitializePoolAsyncInput<
   TAccountVault1 extends string = string,
   TAccountToken0Mint extends string = string,
   TAccountToken1Mint extends string = string,
-  TAccountAdmin extends string = string,
   TAccountPayer extends string = string,
   TAccountToken0Program extends string = string,
   TAccountToken1Program extends string = string,
   TAccountSystemProgram extends string = string,
   TAccountRent extends string = string,
+  TAccountMigrationAuthority extends string = string,
 > = {
   config: Address<TAccountConfig>;
   pool?: Address<TAccountPool>;
@@ -212,12 +212,17 @@ export type InitializePoolAsyncInput<
   vault1?: Address<TAccountVault1>;
   token0Mint: Address<TAccountToken0Mint>;
   token1Mint: Address<TAccountToken1Mint>;
-  admin: TransactionSigner<TAccountAdmin>;
   payer: TransactionSigner<TAccountPayer>;
   token0Program: Address<TAccountToken0Program>;
   token1Program: Address<TAccountToken1Program>;
   systemProgram?: Address<TAccountSystemProgram>;
   rent?: Address<TAccountRent>;
+  /**
+   * Capability PDA owned by the trusted migrator program. Anchor enforces
+   * `is_signer`; the handler verifies the pubkey matches the expected
+   * derivation. Together these prove the CPI originated from the migrator.
+   */
+  migrationAuthority: TransactionSigner<TAccountMigrationAuthority>;
   mintA: InitializePoolInstructionDataArgs['mintA'];
   mintB: InitializePoolInstructionDataArgs['mintB'];
   initialSwapFeeBps: InitializePoolInstructionDataArgs['initialSwapFeeBps'];
@@ -235,12 +240,12 @@ export async function getInitializePoolInstructionAsync<
   TAccountVault1 extends string,
   TAccountToken0Mint extends string,
   TAccountToken1Mint extends string,
-  TAccountAdmin extends string,
   TAccountPayer extends string,
   TAccountToken0Program extends string,
   TAccountToken1Program extends string,
   TAccountSystemProgram extends string,
   TAccountRent extends string,
+  TAccountMigrationAuthority extends string,
   TProgramAddress extends Address = typeof CPMM_PROGRAM_ADDRESS,
 >(
   input: InitializePoolAsyncInput<
@@ -252,12 +257,12 @@ export async function getInitializePoolInstructionAsync<
     TAccountVault1,
     TAccountToken0Mint,
     TAccountToken1Mint,
-    TAccountAdmin,
     TAccountPayer,
     TAccountToken0Program,
     TAccountToken1Program,
     TAccountSystemProgram,
-    TAccountRent
+    TAccountRent,
+    TAccountMigrationAuthority
   >,
   config?: { programAddress?: TProgramAddress },
 ): Promise<
@@ -271,12 +276,12 @@ export async function getInitializePoolInstructionAsync<
     TAccountVault1,
     TAccountToken0Mint,
     TAccountToken1Mint,
-    TAccountAdmin,
     TAccountPayer,
     TAccountToken0Program,
     TAccountToken1Program,
     TAccountSystemProgram,
-    TAccountRent
+    TAccountRent,
+    TAccountMigrationAuthority
   >
 > {
   // Program address.
@@ -295,12 +300,15 @@ export async function getInitializePoolInstructionAsync<
     vault1: { value: input.vault1 ?? null, isWritable: true },
     token0Mint: { value: input.token0Mint ?? null, isWritable: false },
     token1Mint: { value: input.token1Mint ?? null, isWritable: false },
-    admin: { value: input.admin ?? null, isWritable: false },
     payer: { value: input.payer ?? null, isWritable: true },
     token0Program: { value: input.token0Program ?? null, isWritable: false },
     token1Program: { value: input.token1Program ?? null, isWritable: false },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
     rent: { value: input.rent ?? null, isWritable: false },
+    migrationAuthority: {
+      value: input.migrationAuthority ?? null,
+      isWritable: false,
+    },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -402,12 +410,12 @@ export async function getInitializePoolInstructionAsync<
       getAccountMeta('vault1', accounts.vault1),
       getAccountMeta('token0Mint', accounts.token0Mint),
       getAccountMeta('token1Mint', accounts.token1Mint),
-      getAccountMeta('admin', accounts.admin),
       getAccountMeta('payer', accounts.payer),
       getAccountMeta('token0Program', accounts.token0Program),
       getAccountMeta('token1Program', accounts.token1Program),
       getAccountMeta('systemProgram', accounts.systemProgram),
       getAccountMeta('rent', accounts.rent),
+      getAccountMeta('migrationAuthority', accounts.migrationAuthority),
     ],
     data: getInitializePoolInstructionDataEncoder().encode(
       args as InitializePoolInstructionDataArgs,
@@ -423,12 +431,12 @@ export async function getInitializePoolInstructionAsync<
     TAccountVault1,
     TAccountToken0Mint,
     TAccountToken1Mint,
-    TAccountAdmin,
     TAccountPayer,
     TAccountToken0Program,
     TAccountToken1Program,
     TAccountSystemProgram,
-    TAccountRent
+    TAccountRent,
+    TAccountMigrationAuthority
   >);
 }
 
@@ -441,12 +449,12 @@ export type InitializePoolInput<
   TAccountVault1 extends string = string,
   TAccountToken0Mint extends string = string,
   TAccountToken1Mint extends string = string,
-  TAccountAdmin extends string = string,
   TAccountPayer extends string = string,
   TAccountToken0Program extends string = string,
   TAccountToken1Program extends string = string,
   TAccountSystemProgram extends string = string,
   TAccountRent extends string = string,
+  TAccountMigrationAuthority extends string = string,
 > = {
   config: Address<TAccountConfig>;
   pool: Address<TAccountPool>;
@@ -456,12 +464,17 @@ export type InitializePoolInput<
   vault1: Address<TAccountVault1>;
   token0Mint: Address<TAccountToken0Mint>;
   token1Mint: Address<TAccountToken1Mint>;
-  admin: TransactionSigner<TAccountAdmin>;
   payer: TransactionSigner<TAccountPayer>;
   token0Program: Address<TAccountToken0Program>;
   token1Program: Address<TAccountToken1Program>;
   systemProgram?: Address<TAccountSystemProgram>;
   rent?: Address<TAccountRent>;
+  /**
+   * Capability PDA owned by the trusted migrator program. Anchor enforces
+   * `is_signer`; the handler verifies the pubkey matches the expected
+   * derivation. Together these prove the CPI originated from the migrator.
+   */
+  migrationAuthority: TransactionSigner<TAccountMigrationAuthority>;
   mintA: InitializePoolInstructionDataArgs['mintA'];
   mintB: InitializePoolInstructionDataArgs['mintB'];
   initialSwapFeeBps: InitializePoolInstructionDataArgs['initialSwapFeeBps'];
@@ -479,12 +492,12 @@ export function getInitializePoolInstruction<
   TAccountVault1 extends string,
   TAccountToken0Mint extends string,
   TAccountToken1Mint extends string,
-  TAccountAdmin extends string,
   TAccountPayer extends string,
   TAccountToken0Program extends string,
   TAccountToken1Program extends string,
   TAccountSystemProgram extends string,
   TAccountRent extends string,
+  TAccountMigrationAuthority extends string,
   TProgramAddress extends Address = typeof CPMM_PROGRAM_ADDRESS,
 >(
   input: InitializePoolInput<
@@ -496,12 +509,12 @@ export function getInitializePoolInstruction<
     TAccountVault1,
     TAccountToken0Mint,
     TAccountToken1Mint,
-    TAccountAdmin,
     TAccountPayer,
     TAccountToken0Program,
     TAccountToken1Program,
     TAccountSystemProgram,
-    TAccountRent
+    TAccountRent,
+    TAccountMigrationAuthority
   >,
   config?: { programAddress?: TProgramAddress },
 ): InitializePoolInstruction<
@@ -514,12 +527,12 @@ export function getInitializePoolInstruction<
   TAccountVault1,
   TAccountToken0Mint,
   TAccountToken1Mint,
-  TAccountAdmin,
   TAccountPayer,
   TAccountToken0Program,
   TAccountToken1Program,
   TAccountSystemProgram,
-  TAccountRent
+  TAccountRent,
+  TAccountMigrationAuthority
 > {
   // Program address.
   const programAddress = config?.programAddress ?? CPMM_PROGRAM_ADDRESS;
@@ -537,12 +550,15 @@ export function getInitializePoolInstruction<
     vault1: { value: input.vault1 ?? null, isWritable: true },
     token0Mint: { value: input.token0Mint ?? null, isWritable: false },
     token1Mint: { value: input.token1Mint ?? null, isWritable: false },
-    admin: { value: input.admin ?? null, isWritable: false },
     payer: { value: input.payer ?? null, isWritable: true },
     token0Program: { value: input.token0Program ?? null, isWritable: false },
     token1Program: { value: input.token1Program ?? null, isWritable: false },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
     rent: { value: input.rent ?? null, isWritable: false },
+    migrationAuthority: {
+      value: input.migrationAuthority ?? null,
+      isWritable: false,
+    },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -573,12 +589,12 @@ export function getInitializePoolInstruction<
       getAccountMeta('vault1', accounts.vault1),
       getAccountMeta('token0Mint', accounts.token0Mint),
       getAccountMeta('token1Mint', accounts.token1Mint),
-      getAccountMeta('admin', accounts.admin),
       getAccountMeta('payer', accounts.payer),
       getAccountMeta('token0Program', accounts.token0Program),
       getAccountMeta('token1Program', accounts.token1Program),
       getAccountMeta('systemProgram', accounts.systemProgram),
       getAccountMeta('rent', accounts.rent),
+      getAccountMeta('migrationAuthority', accounts.migrationAuthority),
     ],
     data: getInitializePoolInstructionDataEncoder().encode(
       args as InitializePoolInstructionDataArgs,
@@ -594,12 +610,12 @@ export function getInitializePoolInstruction<
     TAccountVault1,
     TAccountToken0Mint,
     TAccountToken1Mint,
-    TAccountAdmin,
     TAccountPayer,
     TAccountToken0Program,
     TAccountToken1Program,
     TAccountSystemProgram,
-    TAccountRent
+    TAccountRent,
+    TAccountMigrationAuthority
   >);
 }
 
@@ -617,12 +633,17 @@ export type ParsedInitializePoolInstruction<
     vault1: TAccountMetas[5];
     token0Mint: TAccountMetas[6];
     token1Mint: TAccountMetas[7];
-    admin: TAccountMetas[8];
-    payer: TAccountMetas[9];
-    token0Program: TAccountMetas[10];
-    token1Program: TAccountMetas[11];
-    systemProgram: TAccountMetas[12];
-    rent: TAccountMetas[13];
+    payer: TAccountMetas[8];
+    token0Program: TAccountMetas[9];
+    token1Program: TAccountMetas[10];
+    systemProgram: TAccountMetas[11];
+    rent: TAccountMetas[12];
+    /**
+     * Capability PDA owned by the trusted migrator program. Anchor enforces
+     * `is_signer`; the handler verifies the pubkey matches the expected
+     * derivation. Together these prove the CPI originated from the migrator.
+     */
+    migrationAuthority: TAccountMetas[13];
   };
   data: InitializePoolInstructionData;
 };
@@ -661,12 +682,12 @@ export function parseInitializePoolInstruction<
       vault1: getNextAccount(),
       token0Mint: getNextAccount(),
       token1Mint: getNextAccount(),
-      admin: getNextAccount(),
       payer: getNextAccount(),
       token0Program: getNextAccount(),
       token1Program: getNextAccount(),
       systemProgram: getNextAccount(),
       rent: getNextAccount(),
+      migrationAuthority: getNextAccount(),
     },
     data: getInitializePoolInstructionDataDecoder().decode(instruction.data),
   };

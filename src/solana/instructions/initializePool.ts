@@ -68,8 +68,6 @@ export interface InitializePoolAccounts {
   token0Mint: Address;
   /** Token1 mint (read-only, must be lexicographically larger) */
   token1Mint: Address;
-  /** CPMM config admin (read-only signer) */
-  admin: Address | TransactionSigner;
   /** Payer for account creation (writable signer - pass TransactionSigner to include signer in instruction) */
   payer: Address | TransactionSigner;
   /** Token0 program; defaults to tokenProgram or classic SPL Token */
@@ -82,6 +80,8 @@ export interface InitializePoolAccounts {
   systemProgram?: Address;
   /** Rent sysvar */
   rent: Address;
+  /** Migrator authority PDA signer authorizing pool initialization */
+  migrationAuthority: Address | TransactionSigner;
 }
 
 /**
@@ -108,9 +108,9 @@ export interface InitializePoolAccounts {
  *     vault1: addresses.vault1[0],
  *     token0Mint: addresses.token0,
  *     token1Mint: addresses.token1,
- *     admin: adminSigner,
  *     payer: payerSigner,
  *     rent: SYSVAR_RENT_PUBKEY,
+ *     migrationAuthority,
  *   },
  *   {
  *     mintA: mintA,
@@ -137,19 +137,18 @@ export function createInitializePoolInstruction(
     vault1,
     token0Mint,
     token1Mint,
-    admin,
     payer,
     token0Program,
     token1Program,
     tokenProgram = TOKEN_PROGRAM_ADDRESS,
     systemProgram = SYSTEM_PROGRAM_ADDRESS,
     rent,
+    migrationAuthority,
   } = accounts;
   const resolvedToken0Program = token0Program ?? tokenProgram;
   const resolvedToken1Program = token1Program ?? tokenProgram;
 
-  // Build account metas in order expected by the program
-  // For signer accounts (admin, payer), embed the signer if provided.
+  // Build account metas in order expected by the program.
   const keys: (AccountMeta | AccountSignerMeta)[] = [
     { address: config, role: AccountRole.READONLY },
     { address: pool, role: AccountRole.WRITABLE },
@@ -159,12 +158,12 @@ export function createInitializePoolInstruction(
     { address: vault1, role: AccountRole.WRITABLE },
     { address: token0Mint, role: AccountRole.READONLY },
     { address: token1Mint, role: AccountRole.READONLY },
-    createSignerAccountMeta(admin, AccountRole.READONLY_SIGNER),
     createSignerAccountMeta(payer, AccountRole.WRITABLE_SIGNER),
     { address: resolvedToken0Program, role: AccountRole.READONLY },
     { address: resolvedToken1Program, role: AccountRole.READONLY },
     { address: systemProgram, role: AccountRole.READONLY },
     { address: rent, role: AccountRole.READONLY },
+    createSignerAccountMeta(migrationAuthority, AccountRole.READONLY_SIGNER),
   ];
 
   const data = encodeInstructionData(

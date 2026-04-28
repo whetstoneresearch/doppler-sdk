@@ -505,9 +505,7 @@ export async function getInitializeLaunchInstructionAsync<
     accounts.config.value = await getProgramDerivedAddress({
       programAddress,
       seeds: [
-        getBytesEncoder().encode(
-          new Uint8Array([99, 111, 110, 102, 105, 103, 95, 118, 51]),
-        ),
+        getBytesEncoder().encode(new Uint8Array([99, 111, 110, 102, 105, 103])),
       ],
     });
   }
@@ -518,7 +516,7 @@ export async function getInitializeLaunchInstructionAsync<
         getBytesEncoder().encode(
           new Uint8Array([
             108, 97, 117, 110, 99, 104, 95, 97, 117, 116, 104, 111, 114, 105,
-            116, 121, 95, 118, 51,
+            116, 121,
           ]),
         ),
         getAddressEncoder().encode(

@@ -135,9 +135,12 @@ async function main() {
       );
       const signedTransaction =
         await signTransactionMessageWithSigners(transactionMessage);
-      await sendAndConfirmTransaction(signedTransaction, {
-        commitment: 'confirmed',
-      });
+      await sendAndConfirmTransaction(
+        signedTransaction as Parameters<typeof sendAndConfirmTransaction>[0],
+        {
+          commitment: 'confirmed',
+        },
+      );
       console.log(
         '  Oracle created:',
         getSignatureFromTransaction(signedTransaction),
@@ -267,9 +270,9 @@ async function main() {
                 entryAddress,
                 entryByMint,
               ]),
-            metadataName: outcome.label,
-            metadataSymbol: outcome.label,
-            metadataUri: `ipfs://pred/${outcome.label.toLowerCase()}`,
+            metadataName: '',
+            metadataSymbol: '',
+            metadataUri: '',
           },
         );
 
@@ -285,9 +288,12 @@ async function main() {
         );
         const signedTransaction =
           await signTransactionMessageWithSigners(transactionMessage);
-        await sendAndConfirmTransaction(signedTransaction, {
-          commitment: 'confirmed',
-        });
+        await sendAndConfirmTransaction(
+          signedTransaction as Parameters<typeof sendAndConfirmTransaction>[0],
+          {
+            commitment: 'confirmed',
+          },
+        );
 
         console.log(`  ${outcome.label} launch created!`);
         console.log(
