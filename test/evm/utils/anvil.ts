@@ -13,6 +13,9 @@
 
 import { type ChildProcess, spawn } from 'child_process'
 import { CHAIN_IDS } from '../../../src/evm'
+import { loadTestEnv } from './env'
+
+loadTestEnv()
 
 /** Default Anvil mnemonic - generates the same accounts every time */
 export const ANVIL_MNEMONIC =

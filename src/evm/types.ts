@@ -1079,7 +1079,9 @@ export interface ModuleAddressOverrides {
 
   // Migrators
   v2Migrator?: Address;
+  v2MigratorSplit?: Address;
   v4Migrator?: Address;
+  v4MigratorSplit?: Address;
   dopplerHookMigrator?: Address;
   rehypeDopplerHookMigrator?: Address;
   noOpMigrator?: Address;

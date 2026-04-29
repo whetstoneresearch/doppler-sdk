@@ -14,7 +14,10 @@ describe('Multicurve (Ethereum Mainnet fork) smoke test', () => {
 
   const chainId = CHAIN_IDS.MAINNET
   const addresses = getAddresses(chainId)
-  const publicClient = getTestClient(chainId)
+  const publicClient = getTestClient(chainId, {
+    retryCount: 1,
+    retryDelay: 250,
+  })
   const sdk = new DopplerSDK({ publicClient, chainId })
 
   const configuredModules: Array<{
@@ -38,8 +41,28 @@ describe('Multicurve (Ethereum Mainnet fork) smoke test', () => {
       expectedState: 3,
     },
     {
+      label: 'DopplerHookInitializer',
+      address: addresses.dopplerHookInitializer,
+      expectedState: 3,
+    },
+    {
+      label: 'LockableUniswapV3Initializer',
+      address: addresses.lockableV3Initializer,
+      expectedState: 3,
+    },
+    {
+      label: 'GovernanceFactory',
+      address: addresses.governanceFactory,
+      expectedState: 2,
+    },
+    {
       label: 'NoOpGovernanceFactory',
       address: addresses.noOpGovernanceFactory,
+      expectedState: 2,
+    },
+    {
+      label: 'LaunchpadGovernanceFactory',
+      address: addresses.launchpadGovernanceFactory,
       expectedState: 2,
     },
     {
@@ -48,8 +71,23 @@ describe('Multicurve (Ethereum Mainnet fork) smoke test', () => {
       expectedState: 4,
     },
     {
+      label: 'UniswapV2MigratorSplit',
+      address: addresses.v2MigratorSplit,
+      expectedState: 4,
+    },
+    {
       label: 'V4Migrator',
       address: addresses.v4Migrator,
+      expectedState: 4,
+    },
+    {
+      label: 'UniswapV4MigratorSplit',
+      address: addresses.v4MigratorSplit,
+      expectedState: 4,
+    },
+    {
+      label: 'DopplerHookMigrator',
+      address: addresses.dopplerHookMigrator,
       expectedState: 4,
     },
     {
@@ -69,24 +107,35 @@ describe('Multicurve (Ethereum Mainnet fork) smoke test', () => {
     expect(addresses.uniswapV4Quoter).not.toBe(ZERO_ADDRESS)
   })
 
-  it('verifies whitelisted module states for configured Ethereum mainnet modules', async () => {
-    for (const module of configuredModules) {
-      if (!module.address || module.address === ZERO_ADDRESS) continue
+  it(
+    'verifies whitelisted module states for configured Ethereum mainnet modules',
+    { timeout: 180_000 },
+    async () => {
+      const activeModules = configuredModules.filter(
+        (module): module is typeof module & { address: Address } =>
+          Boolean(module.address) && module.address !== ZERO_ADDRESS,
+      )
 
-      const state = await publicClient.readContract({
-        address: addresses.airlock,
-        abi: airlockAbi,
-        functionName: 'getModuleState',
-        args: [module.address],
-      })
+      const moduleStates = await Promise.all(
+        activeModules.map(async (module) => ({
+          module,
+          state: await publicClient.readContract({
+            address: addresses.airlock,
+            abi: airlockAbi,
+            functionName: 'getModuleState',
+            args: [module.address],
+          }),
+        })),
+      )
 
-      expect(
-        Number(state),
-        `${module.label} expected state ${module.expectedState}`,
-      ).toBe(module.expectedState)
-      await delay(250)
-    }
-  })
+      for (const { module, state } of moduleStates) {
+        expect(
+          Number(state),
+          `${module.label} expected state ${module.expectedState}`,
+        ).toBe(module.expectedState)
+      }
+    },
+  )
 
   it('defaults multicurve governance to noOp on Ethereum mainnet', () => {
     const params = sdk

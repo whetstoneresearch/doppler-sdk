@@ -14,6 +14,7 @@ import {
   hasRpcUrl,
   isAnvilForkEnabled,
 } from '../../utils';
+import { dopplerHookWhitelistAbi, ModuleState } from '../../utils/whitelisting';
 
 describe('Dynamic auction with RehypeDopplerHookMigrator (Base Sepolia fork)', () => {
   if (!isAnvilForkEnabled()) {
@@ -47,7 +48,8 @@ describe('Dynamic auction with RehypeDopplerHookMigrator (Base Sepolia fork)', (
       const [
         initializerState,
         dopplerHookMigratorState,
-        rehypeHookMigratorState,
+        rehypeHookMigratorAirlockState,
+        rehypeHookMigratorEnabledFlag,
         tokenFactoryState,
         governanceFactoryState,
       ] = await Promise.all([
@@ -70,6 +72,12 @@ describe('Dynamic auction with RehypeDopplerHookMigrator (Base Sepolia fork)', (
           args: [addresses.rehypeDopplerHookMigrator!],
         }),
         publicClient.readContract({
+          address: addresses.dopplerHookMigrator!,
+          abi: dopplerHookWhitelistAbi,
+          functionName: 'isDopplerHookEnabled',
+          args: [addresses.rehypeDopplerHookMigrator!],
+        }),
+        publicClient.readContract({
           address: addresses.airlock,
           abi: airlockAbi,
           functionName: 'getModuleState',
@@ -84,11 +92,12 @@ describe('Dynamic auction with RehypeDopplerHookMigrator (Base Sepolia fork)', (
       ]);
 
       modulesWhitelisted =
-        Number(initializerState) === 3 &&
-        Number(dopplerHookMigratorState) === 4 &&
-        Number(rehypeHookMigratorState) === 4 &&
-        Number(tokenFactoryState) === 1 &&
-        Number(governanceFactoryState) === 2;
+        Number(initializerState) === ModuleState.PoolInitializer &&
+        Number(dopplerHookMigratorState) === ModuleState.LiquidityMigrator &&
+        Number(rehypeHookMigratorAirlockState) === ModuleState.NotWhitelisted &&
+        rehypeHookMigratorEnabledFlag > 0n &&
+        Number(tokenFactoryState) === ModuleState.TokenFactory &&
+        Number(governanceFactoryState) === ModuleState.GovernanceFactory;
     } catch (error) {
       console.error('Failed to check module states:', error);
     }

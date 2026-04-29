@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll } from 'vitest'
 import { parseEther } from 'viem'
 import { DopplerSDK, getAddresses, CHAIN_IDS, airlockAbi, WAD } from '../../../../src/evm'
 import { getTestClient, hasRpcUrl, getRpcEnvVar } from '../../utils'
+import { dopplerHookWhitelistAbi, ModuleState } from '../../utils/whitelisting'
 
 describe('Multicurve with RehypeDopplerHook (Base Sepolia) test', () => {
   if (!hasRpcUrl(CHAIN_IDS.BASE_SEPOLIA)) {
@@ -17,7 +18,13 @@ describe('Multicurve with RehypeDopplerHook (Base Sepolia) test', () => {
   const REHYPE_DOPPLER_HOOK_ADDRESS =
     addresses.rehypeDopplerHookInitializer as `0x${string}`
 
-  let states: { tokenFactory?: number; governanceFactory?: number; initializer?: number; migrator?: number } = {}
+  let states: {
+    tokenFactory?: number
+    governanceFactory?: number
+    initializer?: number
+    migrator?: number
+    rehypeInitializerAirlock?: number
+  } = {}
   let airlockOwner: `0x${string}` | undefined
   let isRehypeHookEnabled = false
 
@@ -36,14 +43,10 @@ describe('Multicurve with RehypeDopplerHook (Base Sepolia) test', () => {
     } catch (e) {
       console.log('Failed to get airlock owner:', e)
     }
-    const dopplerHookInitializerAbi = [
-      { name: 'isDopplerHookEnabled', type: 'function', stateMutability: 'view', inputs: [{ name: 'dopplerHook', type: 'address' }], outputs: [{ name: '', type: 'uint256' }] }
-    ] as const
-    
     try {
       const hookFlag = await publicClient.readContract({
         address: addresses.dopplerHookInitializer!,
-        abi: dopplerHookInitializerAbi,
+        abi: dopplerHookWhitelistAbi,
         functionName: 'isDopplerHookEnabled',
         args: [REHYPE_DOPPLER_HOOK_ADDRESS],
       })
@@ -61,6 +64,16 @@ describe('Multicurve with RehypeDopplerHook (Base Sepolia) test', () => {
         args: [addresses.dopplerHookInitializer!],
       }) as unknown as number
       states.initializer = Number(initState)
+    } catch {}
+
+    try {
+      const rehypeInitializerAirlockState = await publicClient.readContract({
+        address: addresses.airlock,
+        abi: airlockAbi,
+        functionName: 'getModuleState',
+        args: [REHYPE_DOPPLER_HOOK_ADDRESS],
+      }) as unknown as number
+      states.rehypeInitializerAirlock = Number(rehypeInitializerAirlockState)
     } catch {}
 
     try {
@@ -99,6 +112,8 @@ describe('Multicurve with RehypeDopplerHook (Base Sepolia) test', () => {
     expect(states.governanceFactory).toBe(2)
     expect(states.initializer).toBe(3)
     expect(states.migrator).toBe(4)
+    expect(states.rehypeInitializerAirlock).toBe(ModuleState.NotWhitelisted)
+    expect(isRehypeHookEnabled).toBe(true)
     expect(airlockOwner).toBeDefined()
 
     const builder = sdk
@@ -154,6 +169,8 @@ describe('Multicurve with RehypeDopplerHook (Base Sepolia) test', () => {
     expect(states.governanceFactory).toBe(2)
     expect(states.initializer).toBe(3)
     expect(states.migrator).toBe(4)
+    expect(states.rehypeInitializerAirlock).toBe(ModuleState.NotWhitelisted)
+    expect(isRehypeHookEnabled).toBe(true)
     expect(airlockOwner).toBeDefined()
 
     const BUYBACK_DST = '0x0000000000000000000000000000000000000007' as `0x${string}`

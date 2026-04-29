@@ -23,6 +23,9 @@ export const mockAddresses: ChainAddresses = {
   v2Migrator: getAddress(
     '0x5000000000000000000000000000000000000005',
   ) as Address,
+  v2MigratorSplit: getAddress(
+    '0x5000000000000000000000000000000000000027',
+  ) as Address,
   v4Initializer: getAddress(
     '0x7000000000000000000000000000000000000007',
   ) as Address,
@@ -40,6 +43,9 @@ export const mockAddresses: ChainAddresses = {
   ) as Address,
   v4Migrator: getAddress(
     '0x8000000000000000000000000000000000000008',
+  ) as Address,
+  v4MigratorSplit: getAddress(
+    '0x8000000000000000000000000000000000000028',
   ) as Address,
   dopplerHookMigrator: getAddress(
     '0x8100000000000000000000000000000000000008',

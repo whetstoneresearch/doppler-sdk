@@ -21,7 +21,6 @@ import {
   type WalletClient,
   type TestClient,
   type Account,
-  type Transport,
   defineChain,
   createPublicClient,
   createWalletClient,
@@ -32,13 +31,15 @@ import { base, baseSepolia, mainnet, sepolia } from 'viem/chains'
 import { privateKeyToAccount } from 'viem/accounts'
 import { createRateLimitedClient } from './rpc'
 import { CHAIN_IDS } from '../../../src/evm'
+import { loadTestEnv } from './env'
 import {
   ANVIL_ACCOUNTS,
   getAnvilManager,
   getAnvilPort,
-  isAnvilForkEnabled,
 } from './anvil'
 import { getTestMode, type TestMode } from './testHelpers'
+
+loadTestEnv()
 
 /** Default retry configuration for test clients */
 const DEFAULT_TEST_CLIENT_CONFIG = {
@@ -94,6 +95,7 @@ const CHAIN_CONFIG: Record<number, ChainTestConfig> = {
   [CHAIN_IDS.MONAD_MAINNET]: {
     chain: monadMainnet,
     envVar: 'MONAD_MAINNET_RPC_URL',
+    alchemyNetwork: 'monad-mainnet',
   },
 }
 

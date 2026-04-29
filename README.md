@@ -1558,7 +1558,7 @@ pnpm build
 pnpm test
 
 # Run specific test suite
-pnpm test airlock-whitelisting
+pnpm test:whitelisting
 
 # Run tests in watch mode
 pnpm test:watch
@@ -1571,7 +1571,7 @@ pnpm dev
 
 The SDK includes comprehensive tests covering:
 
-- **Airlock Whitelisting**: Verifies that all modules are properly whitelisted on deployed Airlock contracts across all chains
+- **Airlock Whitelisting**: Verifies that all modules are properly whitelisted on Ethereum Mainnet, Monad Mainnet, Base Mainnet, and Base Sepolia
 - **Multicurve Functionality**: Tests multicurve auction creation and quoting
 - **Token Address Mining**: Tests for generating optimized token addresses
 
@@ -1580,12 +1580,23 @@ See [`test/README.md`](./test/README.md) for detailed testing documentation.
 To run whitelisting tests:
 
 ```bash
-# Uses default public RPCs
-pnpm test airlock-whitelisting
+# Canonical whitelist audit
+pnpm test:whitelisting
 
-# Or with Alchemy (faster and more reliable)
-ALCHEMY_API_KEY=your_key_here pnpm test airlock-whitelisting
+# With Alchemy fallback (faster and more reliable)
+ALCHEMY_API_KEY=your_key_here pnpm test:whitelisting
+
+# Limit to specific whitelist-audit chains when needed
+TEST_CHAINS=mainnet,base,base-sepolia,monad-mainnet pnpm test:whitelisting
 ```
+
+The whitelisting suite is scoped to Ethereum Mainnet, Monad Mainnet, Base Mainnet, and Base Sepolia.
+
+Whitelisting test RPC priority is:
+
+1. Chain-specific RPC URL env var (`ETH_MAINNET_RPC_URL`, `BASE_RPC_URL`, `BASE_SEPOLIA_RPC_URL`, `MONAD_MAINNET_RPC_URL`)
+2. `ALCHEMY_API_KEY` fallback for supported Alchemy networks, including Monad Mainnet
+3. Public/default RPC URL
 
 To run fork tests (Anvil):
 
