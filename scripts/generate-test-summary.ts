@@ -22,18 +22,42 @@ const CHAIN_NAMES: Record<number, string> = {
 // Module name extraction from test titles
 // Order matters: more specific patterns must come before less specific ones
 const MODULE_PATTERNS: [RegExp, string][] = [
+  [
+    /RehypeDopplerHookInitializer.*not whitelisted on Airlock/,
+    'RehypeDopplerHookInitializer on Airlock',
+  ],
+  [
+    /RehypeDopplerHookInitializer.*enabled on DopplerHookInitializer/,
+    'RehypeDopplerHookInitializer on DopplerHookInitializer',
+  ],
+  [
+    /RehypeDopplerHookMigrator.*not whitelisted on Airlock/,
+    'RehypeDopplerHookMigrator on Airlock',
+  ],
+  [
+    /RehypeDopplerHookMigrator.*enabled on DopplerHookMigrator/,
+    'RehypeDopplerHookMigrator on DopplerHookMigrator',
+  ],
   [/TokenFactory/, 'TokenFactory'],
   [/NoOpGovernanceFactory/, 'NoOpGovernanceFactory'],
   [/LaunchpadGovernanceFactory/, 'LaunchpadGovernanceFactory'],
   [/GovernanceFactory/, 'GovernanceFactory'],
-  [/LockableV3Initializer/, 'LockableV3Initializer'],
+  [/DopplerHookInitializer/, 'DopplerHookInitializer'],
+  [
+    /Lockable(?:Uniswap)?V3Initializer/,
+    'LockableUniswapV3Initializer',
+  ],
   [/V4ScheduledMulticurveInitializer/, 'V4ScheduledMulticurveInitializer'],
   [/V4MulticurveInitializer/, 'V4MulticurveInitializer'],
-  [/V3Initializer/, 'V3Initializer'],
-  [/V4Initializer/, 'V4Initializer'],
+  [/V4DecayMulticurveInitializer/, 'V4DecayMulticurveInitializer'],
+  [/(?:Uniswap)?V3Initializer/, 'UniswapV3Initializer'],
+  [/(?:Uniswap)?V4Initializer/, 'UniswapV4Initializer'],
   [/NoOpMigrator/, 'NoOpMigrator'],
-  [/V2Migrator/, 'V2Migrator'],
-  [/V4Migrator/, 'V4Migrator'],
+  [/(?:Uniswap)?V2MigratorSplit/, 'UniswapV2MigratorSplit'],
+  [/(?:Uniswap)?V2Migrator/, 'UniswapV2Migrator'],
+  [/DopplerHookMigrator/, 'DopplerHookMigrator'],
+  [/(?:Uniswap)?V4MigratorSplit/, 'UniswapV4MigratorSplit'],
+  [/(?:Uniswap)?V4Migrator/, 'UniswapV4Migrator'],
 ];
 
 interface VitestJsonResult {

@@ -5,22 +5,11 @@
  * This runs before each test file.
  */
 
-import * as dotenv from 'dotenv'
-import { resolve } from 'path'
-import { existsSync } from 'fs'
 import { expect } from 'vitest'
 import { isAddress, isHash } from 'viem'
+import { loadTestEnv } from '../utils/env'
 
-// Load .env files from project root (check multiple common names)
-const projectRoot = resolve(__dirname, '../../..')
-const envFiles = ['.env.local', '.env', '.env.development']
-for (const file of envFiles) {
-  const envPath = resolve(projectRoot, file)
-  if (existsSync(envPath)) {
-    dotenv.config({ path: envPath })
-    break
-  }
-}
+loadTestEnv()
 
 /**
  * Custom matcher: toBeValidAddress
