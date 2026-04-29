@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { Address } from 'viem';
 import { OpeningAuctionBuilder } from '../../../../src/evm/builders';
-import { CHAIN_IDS } from '../../../../src/evm/addresses';
+import { CHAIN_IDS, type SupportedChainId } from '../../../../src/evm/addresses';
 import {
   DEFAULT_AUCTION_DURATION,
   DEFAULT_EPOCH_LENGTH,
@@ -77,7 +77,7 @@ function builderWithMissing(field: MissingField) {
   return builder;
 }
 
-function buildValidOpeningAuction(chainId = CHAIN_IDS.BASE) {
+function buildValidOpeningAuction(chainId: SupportedChainId = CHAIN_IDS.BASE) {
   return OpeningAuctionBuilder.forChain(chainId)
     .tokenConfig(BASE_TOKEN)
     .saleConfig(BASE_SALE)
@@ -160,6 +160,39 @@ describe('OpeningAuctionBuilder', () => {
       const params = buildValidOpeningAuction(CHAIN_IDS.INK).build();
 
       expect(params.governance).toEqual({ type: 'default' });
+    });
+
+    it.each([
+      CHAIN_IDS.MAINNET,
+      CHAIN_IDS.BASE,
+      CHAIN_IDS.BASE_SEPOLIA,
+      CHAIN_IDS.MONAD_MAINNET,
+    ] as const)(
+      'preserves launchpad governance on launchpad-enabled chain %s',
+      (chainId) => {
+        const params = buildValidOpeningAuction(chainId)
+          .withGovernance({
+            type: 'launchpad',
+            multisig: USER,
+          })
+          .build();
+
+        expect(params.governance).toEqual({
+          type: 'launchpad',
+          multisig: USER,
+        });
+      },
+    );
+
+    it('rejects launchpad governance on unsupported chains', () => {
+      const builder = buildValidOpeningAuction(CHAIN_IDS.INK).withGovernance({
+        type: 'launchpad',
+        multisig: USER,
+      });
+
+      expect(() => builder.build()).toThrow(
+        `Launchpad governance is not supported on chain ${CHAIN_IDS.INK}. Use a supported chain or a different governance type.`,
+      );
     });
   });
 

@@ -152,6 +152,8 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     governanceFactory: ZERO_ADDRESS,
     noOpGovernanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MAINNET]
       .NoOpGovernanceFactory as Address,
+    launchpadGovernanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MAINNET]
+      .LaunchpadGovernanceFactory as Address,
     streamableFeesLocker: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MAINNET]
       .StreamableFeesLocker as Address,
     universalRouter: '0x66a9893cc07d91d95644aedd05d03f95e1dba8af' as Address,
@@ -343,6 +345,9 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       .GovernanceFactory as Address,
     noOpGovernanceFactory:
       '0x916b8987e4ad325c10d58ed8dc2036a6ff5eb228' as Address,
+    launchpadGovernanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[
+      CHAIN_IDS.BASE_SEPOLIA
+    ].LaunchpadGovernanceFactory as Address,
     streamableFeesLocker: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
       .StreamableFeesLocker as Address,
     universalRouter: '0x492E6456D9528771018DeB9E87ef7750EF184104' as Address,
