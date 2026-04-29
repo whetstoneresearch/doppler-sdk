@@ -1475,6 +1475,169 @@ describe('DopplerFactory', () => {
       expect(decoded[8]).toBe(parseEther('0.1'));
     });
 
+    it('encodes dopplerHook rehype migration with proceeds split', async () => {
+      const proceedsRecipient =
+        '0x1111111111111111111111111111111111111111' as Address;
+      const buybackDestination =
+        '0x1234567890123456789012345678901234567890' as Address;
+
+      const marketCapParams = DynamicAuctionBuilder.forChain(1)
+        .tokenConfig({
+          name: 'Test Token',
+          symbol: 'TEST',
+          tokenURI: 'https://example.com/token',
+        })
+        .saleConfig({
+          initialSupply: parseEther('1000000'),
+          numTokensToSell: parseEther('500000'),
+          numeraire: mockAddresses.weth,
+        })
+        .withMarketCapRange({
+          marketCap: { start: 500_000, min: 50_000 },
+          numerairePrice: 3000,
+          minProceeds: parseEther('100'),
+          maxProceeds: parseEther('10000'),
+          fee: 3000,
+          tickSpacing: 10,
+          duration: 7 * DAY_SECONDS,
+          epochLength: 3600,
+        })
+        .withGovernance({ type: 'noOp' })
+        .withMigration({ type: 'uniswapV4', fee: 3000, tickSpacing: 10 })
+        .withUserAddress(buybackDestination)
+        .build();
+
+      const params: CreateDynamicAuctionParams = {
+        ...marketCapParams,
+        migration: {
+          type: 'dopplerHook',
+          fee: 500,
+          useDynamicFee: true,
+          tickSpacing: 20,
+          lockDuration: DAY_SECONDS,
+          beneficiaries: [
+            {
+              beneficiary: buybackDestination,
+              shares: parseEther('1'),
+            },
+          ],
+          rehype: {
+            buybackDestination,
+            customFee: 3000,
+            feeDistributionInfo: {
+              assetFeesToAssetBuybackWad: parseEther('0.25'),
+              assetFeesToNumeraireBuybackWad: parseEther('0.25'),
+              assetFeesToBeneficiaryWad: parseEther('0.25'),
+              assetFeesToLpWad: parseEther('0.25'),
+              numeraireFeesToAssetBuybackWad: parseEther('0.25'),
+              numeraireFeesToNumeraireBuybackWad: parseEther('0.25'),
+              numeraireFeesToBeneficiaryWad: parseEther('0.25'),
+              numeraireFeesToLpWad: parseEther('0.25'),
+            },
+          },
+          proceedsSplit: {
+            recipient: proceedsRecipient,
+            share: parseEther('0.1'),
+          },
+        },
+      };
+
+      const { createParams } =
+        await factory.encodeCreateDynamicAuctionParams(params);
+
+      const decoded = decodeAbiParameters(
+        [
+          { type: 'uint24' },
+          { type: 'bool' },
+          { type: 'int24' },
+          { type: 'uint32' },
+          {
+            type: 'tuple[]',
+            components: [
+              { type: 'address', name: 'beneficiary' },
+              { type: 'uint96', name: 'shares' },
+            ],
+          },
+          { type: 'address' },
+          { type: 'bytes' },
+          { type: 'address' },
+          { type: 'uint256' },
+        ],
+        createParams.liquidityMigratorData,
+      ) as readonly [
+        number,
+        boolean,
+        number,
+        number,
+        readonly { beneficiary: Address; shares: bigint }[],
+        Address,
+        `0x${string}`,
+        Address,
+        bigint,
+      ];
+
+      const [rehypeInit] = decodeAbiParameters(
+        [
+          {
+            type: 'tuple',
+            components: [
+              { name: 'numeraire', type: 'address' },
+              { name: 'buybackDst', type: 'address' },
+              { name: 'customFee', type: 'uint24' },
+              { name: 'feeRoutingMode', type: 'uint8' },
+              {
+                name: 'feeDistributionInfo',
+                type: 'tuple',
+                components: [
+                  { name: 'assetFeesToAssetBuybackWad', type: 'uint256' },
+                  { name: 'assetFeesToNumeraireBuybackWad', type: 'uint256' },
+                  { name: 'assetFeesToBeneficiaryWad', type: 'uint256' },
+                  { name: 'assetFeesToLpWad', type: 'uint256' },
+                  { name: 'numeraireFeesToAssetBuybackWad', type: 'uint256' },
+                  {
+                    name: 'numeraireFeesToNumeraireBuybackWad',
+                    type: 'uint256',
+                  },
+                  { name: 'numeraireFeesToBeneficiaryWad', type: 'uint256' },
+                  { name: 'numeraireFeesToLpWad', type: 'uint256' },
+                ],
+              },
+            ],
+          },
+        ],
+        decoded[6],
+      ) as readonly [
+        {
+          numeraire: Address;
+          buybackDst: Address;
+          customFee: number;
+          feeRoutingMode: number;
+          feeDistributionInfo: {
+            assetFeesToLpWad: bigint;
+            numeraireFeesToLpWad: bigint;
+          };
+        },
+      ];
+
+      expect(decoded[0]).toBe(500);
+      expect(decoded[1]).toBe(true);
+      expect(decoded[2]).toBe(20);
+      expect(decoded[3]).toBe(DAY_SECONDS);
+      expect(decoded[5]).toBe(mockAddresses.rehypeDopplerHookMigrator);
+      expect(decoded[7]).toBe(proceedsRecipient);
+      expect(decoded[8]).toBe(parseEther('0.1'));
+      expect(rehypeInit.numeraire).toBe(mockAddresses.weth);
+      expect(rehypeInit.buybackDst).toBe(buybackDestination);
+      expect(Number(rehypeInit.customFee)).toBe(3000);
+      expect(rehypeInit.feeRoutingMode).toBe(0);
+      expect(rehypeInit.feeDistributionInfo.assetFeesToLpWad).toBe(
+        parseEther('0.25'),
+      );
+      expect(rehypeInit.feeDistributionInfo.numeraireFeesToLpWad).toBe(
+        parseEther('0.25'),
+      );
+    });
+
     it('should allow overriding gas when creating a dynamic auction', async () => {
       const mockTxHash =
         '0xfeedfeedfeedfeedfeedfeedfeedfeedfeedfeedfeedfeedfeedfeedfeedfeed';
