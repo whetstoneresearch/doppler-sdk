@@ -15,9 +15,10 @@ All types referenced are exported from `src/types.ts`.
   - `dopplerERC20V1`: newer DopplerERC20V1 template with schedule vesting and balance-limit settings; selected explicitly with `type: 'dopplerERC20V1'` or automatically when template-specific fields are present
 - Governance is required:
   - Call `withGovernance(...)` in all cases.
-  - `withGovernance()` with no arguments applies standard governance defaults.
-  - `withGovernance({ noOp: true })` explicitly selects no‑op governance (requires chain support).
-  - Or provide `initialVotingDelay`, `initialVotingPeriod`, and `initialProposalThreshold`, or `withGovernance({ useDefaults: true })`.
+  - Use `withGovernance({ type: 'default' })` for standard governance defaults.
+  - Use `withGovernance({ type: 'noOp' })` where the chain supports no-op governance.
+  - Use `withGovernance({ type: 'launchpad', multisig })` on launchpad-enabled chains.
+  - Or provide `withGovernance({ type: 'custom', initialVotingDelay, initialVotingPeriod, initialProposalThreshold })`.
 - Fee tiers and tick spacing: 100→1, 500→10, 3000→60, 10000→200
 
 Price → Ticks conversion used by builders:
@@ -70,10 +71,11 @@ Methods (chainable):
   - withAirlock(address)
   - withTokenFactory(address)
   - withV3Initializer(address)
-  - withGovernanceFactory(address) — used for both standard and no‑op governance
+  - withGovernanceFactory(address) — used for standard, no-op, and launchpad governance
   - withV2Migrator(address)
-  - withV3Migrator(address)
+  - withV2MigratorSplit(address)
   - withV4Migrator(address)
+  - withV4MigratorSplit(address)
   - build(): CreateStaticAuctionParams
   - Throws if required sections are missing
 
@@ -96,7 +98,7 @@ const params = sdk.buildStaticAuction()
     numerairePrice: 3000, // ETH = $3000 USD
   })
   .withVesting({ duration: BigInt(365*24*60*60) })
-  .withGovernance() // required
+  .withGovernance({ type: 'default' })
   .withMigration({ type: 'uniswapV2' })
   .withUserAddress(user)
   .build()
@@ -107,7 +109,7 @@ const paramsLegacy = new StaticAuctionBuilder()
   .saleConfig({ initialSupply: parseEther('1_000_000_000'), numTokensToSell: parseEther('900_000_000'), numeraire: weth })
   .poolByPriceRange({ priceRange: { startPrice: 0.0001, endPrice: 0.001 }, fee: 3000 })
   .withVesting({ duration: BigInt(365*24*60*60) }) // All unsold tokens vest to userAddress
-  .withGovernance() // required; no args → standard governance defaults
+  .withGovernance({ type: 'default' })
   .withMigration({ type: 'uniswapV2' })
   .withUserAddress(user)
   .build()
@@ -126,7 +128,7 @@ const paramsMultiVest = new StaticAuctionBuilder()
     recipients: ['0xTeam...', '0xAdvisor...', '0xTreasury...'],
     amounts: [parseEther('30_000_000'), parseEther('20_000_000'), parseEther('50_000_000')] // Total: 100M of 100M unsold
   })
-  .withGovernance()
+  .withGovernance({ type: 'default' })
   .withMigration({ type: 'uniswapV2' })
   .withUserAddress(user)
   .build()
@@ -158,7 +160,7 @@ const paramsPerSchedule = new StaticAuctionBuilder()
       },
     ],
   })
-  .withGovernance()
+  .withGovernance({ type: 'default' })
   .withMigration({ type: 'uniswapV2' })
   .withUserAddress(user)
   .build()
@@ -202,8 +204,8 @@ Methods (chainable):
   - Standard tokens with `cliffDuration > 0` or `allocations` route through legacy DERC20 V2. With explicit `type: 'dopplerERC20V1'` or template-specific fields, shared schedules using `duration` plus `cliffDuration` and per-beneficiary `allocations` stay on the DopplerERC20V1 factory path.
   - `recipients`: Optional array of addresses to receive vested tokens. Defaults to `[userAddress]` if not provided.
   - `amounts`: Optional array of token amounts corresponding to each recipient. Must match `recipients` length if provided. Defaults to all unsold tokens to `userAddress` if not provided.
-- withGovernance(GovernanceConfig | { useDefaults: true } | { noOp: true } | undefined)
-  - Call is required; `withGovernance()` applies standard defaults; `{ useDefaults: true }` also applies defaults; `{ noOp: true }` explicitly selects no‑op.
+- withGovernance(GovernanceOption)
+  - Call is required; use `{ type: 'default' }`, `{ type: 'noOp' }`, `{ type: 'launchpad', multisig }`, or `{ type: 'custom', ... }`.
 - withMigration(MigrationConfig)
 - withUserAddress(address)
 - withIntegrator(address?)
@@ -215,10 +217,11 @@ Methods (chainable):
   - withV4Initializer(address)
   - withPoolManager(address)
   - withDopplerDeployer(address)
-  - withGovernanceFactory(address) — used for both standard and no‑op governance
+  - withGovernanceFactory(address) — used for standard, no-op, and launchpad governance
   - withV2Migrator(address)
-  - withV3Migrator(address)
+  - withV2MigratorSplit(address)
   - withV4Migrator(address)
+  - withV4MigratorSplit(address)
 - build(): CreateDynamicAuctionParams
   - Ensures `gamma` finalized, fills defaults, and throws if required sections are missing
 
@@ -245,7 +248,7 @@ const params = sdk.buildDynamicAuction()
     // duration: 7 * DAY_SECONDS,   // Optional: defaults to 7 days
     // epochLength: 3600,           // Optional: defaults to 1 hour
   })
-  .withGovernance({ useDefaults: true })
+  .withGovernance({ type: 'default' })
   .withMigration({ type: 'uniswapV4', fee: 3000, tickSpacing: 60, streamableFees: { ... } })
   .withUserAddress(user)
   .build()
@@ -256,7 +259,7 @@ const paramsManual = new DynamicAuctionBuilder()
   .saleConfig({ initialSupply: parseEther('1_000_000'), numTokensToSell: parseEther('900_000'), numeraire: weth })
   .poolConfig({ fee: 3000, tickSpacing: 10 }) // Use poolConfig() + auctionByTicks() for manual config (tickSpacing <= 30)
   .auctionByTicks({ startTick: 100000, endTick: 200000, minProceeds: parseEther('100'), maxProceeds: parseEther('1000') })
-  .withGovernance({ useDefaults: true })
+  .withGovernance({ type: 'default' })
   .withMigration({ type: 'uniswapV2' })
   .withUserAddress(user)
   .build()
@@ -301,7 +304,7 @@ Methods (chainable):
 - withGovernance(GovernanceConfig)
   - Call is required; use `{ type: 'default' }`, `{ type: 'custom', ... }`, or `{ type: 'noOp' }` where supported
 - withMigration(MigrationConfig)
-  - Supports `uniswapV2`, `uniswapV3`, or `uniswapV4`
+  - Supports `uniswapV2`, `uniswapV2Split`, `uniswapV4`, `uniswapV4Split`, and `noOp`
 - withUserAddress(address)
 - withIntegrator(address?)
 - Address overrides (optional):
@@ -310,8 +313,9 @@ Methods (chainable):
   - withV4MulticurveInitializer(address)
   - withGovernanceFactory(address)
   - withV2Migrator(address)
-  - withV3Migrator(address)
+  - withV2MigratorSplit(address)
   - withV4Migrator(address)
+  - withV4MigratorSplit(address)
 - build(): CreateMulticurveParams
 
 Validation highlights:
@@ -426,7 +430,9 @@ Methods (chainable):
   - withDopplerDeployer(address)
   - withGovernanceFactory(address)
   - withV2Migrator(address)
+  - withV2MigratorSplit(address)
   - withV4Migrator(address)
+  - withV4MigratorSplit(address)
   - withNoOpMigrator(address)
   - withOpeningAuctionInitializer(address)
   - withOpeningAuctionPositionManager(address)

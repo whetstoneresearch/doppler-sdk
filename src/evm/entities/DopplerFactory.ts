@@ -39,6 +39,8 @@ import type {
   OpeningAuctionCreateResult,
   OpeningAuctionCompleteResult,
   GovernanceOption,
+  ProceedsSplitConfig,
+  StreamableFeesConfig,
 } from '../types';
 import { hasDopplerERC20V1OnlyTokenConfigFields } from '../builders/shared';
 import { RehypeFeeRoutingMode } from '../types';
@@ -3576,6 +3578,17 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
         // V2 migrator expects empty data
         return '0x' as Hex;
 
+      case 'uniswapV2Split': {
+        const proceedsRecipient =
+          config.proceedsSplit?.recipient ?? ZERO_ADDRESS;
+        const proceedsShare = config.proceedsSplit?.share ?? 0n;
+
+        return encodeAbiParameters(
+          [{ type: 'address' }, { type: 'uint256' }],
+          [proceedsRecipient, proceedsShare],
+        );
+      }
+
       case 'noOp':
         // NoOp migrator expects empty data
         return '0x' as Hex;
@@ -3621,6 +3634,45 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
             beneficiaryData,
           ],
         );
+
+      case 'uniswapV4Split': {
+        const beneficiaryData = [...config.streamableFees.beneficiaries].sort(
+          (a, b) => {
+            const addrA = a.beneficiary.toLowerCase();
+            const addrB = b.beneficiary.toLowerCase();
+            return addrA < addrB ? -1 : addrA > addrB ? 1 : 0;
+          },
+        );
+
+        const proceedsRecipient =
+          config.proceedsSplit?.recipient ?? ZERO_ADDRESS;
+        const proceedsShare = config.proceedsSplit?.share ?? 0n;
+
+        return encodeAbiParameters(
+          [
+            { type: 'uint24' },
+            { type: 'int24' },
+            { type: 'uint32' },
+            {
+              type: 'tuple[]',
+              components: [
+                { type: 'address', name: 'beneficiary' },
+                { type: 'uint96', name: 'shares' },
+              ],
+            },
+            { type: 'address' },
+            { type: 'uint256' },
+          ],
+          [
+            config.fee,
+            config.tickSpacing,
+            config.streamableFees.lockDuration,
+            beneficiaryData,
+            proceedsRecipient,
+            proceedsShare,
+          ],
+        );
+      }
 
       case 'dopplerHook': {
         const dopplerHookConfig = config as DopplerHookMigrationConfig;
@@ -3825,6 +3877,70 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     if (numeraireRowTotal !== WAD) {
       throw new Error(
         `Rehype numeraire fee distribution must sum to ${WAD} (100%), but got ${numeraireRowTotal}`,
+      );
+    }
+  }
+
+  private validateV4StreamableFeesConfig(
+    streamableFees: StreamableFeesConfig | undefined,
+    label: string,
+    required = false,
+  ): void {
+    if (!streamableFees) {
+      if (required) {
+        throw new Error(`${label} requires streamableFees configuration`);
+      }
+      return;
+    }
+
+    const beneficiaries = streamableFees.beneficiaries;
+    if (beneficiaries.length === 0) {
+      throw new Error(`At least one beneficiary is required for ${label}`);
+    }
+
+    const totalShares = beneficiaries.reduce((sum, b) => sum + b.shares, 0n);
+    if (totalShares !== WAD) {
+      throw new Error(
+        `Beneficiary shares must sum to ${WAD} (100%), but got ${totalShares}`,
+      );
+    }
+
+    for (const beneficiary of beneficiaries) {
+      if (beneficiary.shares <= 0n) {
+        throw new Error('Each beneficiary must have positive shares');
+      }
+    }
+
+    const lockDuration = Number(streamableFees.lockDuration);
+    if (!Number.isInteger(lockDuration) || lockDuration < 0) {
+      throw new Error(
+        `${label} lockDuration must be a non-negative integer number of seconds`,
+      );
+    }
+    if (lockDuration > 0xffffffff) {
+      throw new Error(`${label} lockDuration must fit within uint32`);
+    }
+  }
+
+  private validateProceedsSplitConfig(
+    proceedsSplit: ProceedsSplitConfig | undefined,
+    label: string,
+  ): void {
+    if (!proceedsSplit) return;
+
+    if (proceedsSplit.recipient === ZERO_ADDRESS) {
+      throw new Error(
+        `${label} proceeds split recipient cannot be zero address`,
+      );
+    }
+
+    if (proceedsSplit.share < 0n) {
+      throw new Error(`${label} proceeds split share cannot be negative`);
+    }
+
+    if (proceedsSplit.share > MAX_PROCEEDS_SPLIT_SHARE) {
+      throw new Error(
+        `${label} proceeds split share cannot exceed ${MAX_PROCEEDS_SPLIT_SHARE}`,
       );
     }
   }
@@ -4998,24 +5114,30 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       );
     }
 
-    if (
-      params.migration.type === 'uniswapV4' &&
-      params.migration.streamableFees
-    ) {
-      const beneficiaries = params.migration.streamableFees.beneficiaries;
-      if (beneficiaries.length === 0) {
-        throw new Error(
-          'At least one beneficiary is required for V4 migration',
-        );
-      }
+    if (params.migration.type === 'uniswapV2Split') {
+      this.validateProceedsSplitConfig(
+        params.migration.proceedsSplit,
+        'V2 split migration',
+      );
+    }
 
-      // Check that shares sum to 100% (WAD)
-      const totalShares = beneficiaries.reduce((sum, b) => sum + b.shares, 0n);
-      if (totalShares !== WAD) {
-        throw new Error(
-          `Beneficiary shares must sum to ${WAD} (100%), but got ${totalShares}`,
-        );
-      }
+    if (params.migration.type === 'uniswapV4') {
+      this.validateV4StreamableFeesConfig(
+        params.migration.streamableFees,
+        'V4 migration',
+      );
+    }
+
+    if (params.migration.type === 'uniswapV4Split') {
+      this.validateV4StreamableFeesConfig(
+        params.migration.streamableFees,
+        'V4 split migration',
+        true,
+      );
+      this.validateProceedsSplitConfig(
+        params.migration.proceedsSplit,
+        'V4 split migration',
+      );
     }
 
     // Validate pool beneficiaries for V3 locked pools
@@ -5113,24 +5235,30 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     }
 
     // Validate migration config
-    if (
-      params.migration.type === 'uniswapV4' &&
-      params.migration.streamableFees
-    ) {
-      const beneficiaries = params.migration.streamableFees.beneficiaries;
-      if (beneficiaries.length === 0) {
-        throw new Error(
-          'At least one beneficiary is required for V4 migration',
-        );
-      }
+    if (params.migration.type === 'uniswapV2Split') {
+      this.validateProceedsSplitConfig(
+        params.migration.proceedsSplit,
+        'V2 split migration',
+      );
+    }
 
-      // Check that shares sum to 100% (WAD)
-      const totalShares = beneficiaries.reduce((sum, b) => sum + b.shares, 0n);
-      if (totalShares !== WAD) {
-        throw new Error(
-          `Beneficiary shares must sum to ${WAD} (100%), but got ${totalShares}`,
-        );
-      }
+    if (params.migration.type === 'uniswapV4') {
+      this.validateV4StreamableFeesConfig(
+        params.migration.streamableFees,
+        'V4 migration',
+      );
+    }
+
+    if (params.migration.type === 'uniswapV4Split') {
+      this.validateV4StreamableFeesConfig(
+        params.migration.streamableFees,
+        'V4 split migration',
+        true,
+      );
+      this.validateProceedsSplitConfig(
+        params.migration.proceedsSplit,
+        'V4 split migration',
+      );
     }
 
     if (params.migration.type === 'dopplerHook') {
@@ -5192,25 +5320,10 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
         normalizeRehypeDopplerHookMigratorConfig(migration.rehype);
       }
 
-      if (migration.proceedsSplit) {
-        if (migration.proceedsSplit.recipient === ZERO_ADDRESS) {
-          throw new Error(
-            'DopplerHook proceeds split recipient cannot be zero address',
-          );
-        }
-
-        if (migration.proceedsSplit.share < 0n) {
-          throw new Error(
-            'DopplerHook proceeds split share cannot be negative',
-          );
-        }
-
-        if (migration.proceedsSplit.share > MAX_PROCEEDS_SPLIT_SHARE) {
-          throw new Error(
-            `DopplerHook proceeds split share cannot exceed ${MAX_PROCEEDS_SPLIT_SHARE}`,
-          );
-        }
-      }
+      this.validateProceedsSplitConfig(
+        migration.proceedsSplit,
+        'DopplerHook migration',
+      );
     }
   }
 
@@ -5346,6 +5459,32 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
         'dopplerHook migration type is not supported for opening auctions',
       );
     }
+
+    if (params.migration.type === 'uniswapV2Split') {
+      this.validateProceedsSplitConfig(
+        params.migration.proceedsSplit,
+        'V2 split migration',
+      );
+    }
+
+    if (params.migration.type === 'uniswapV4') {
+      this.validateV4StreamableFeesConfig(
+        params.migration.streamableFees,
+        'V4 migration',
+      );
+    }
+
+    if (params.migration.type === 'uniswapV4Split') {
+      this.validateV4StreamableFeesConfig(
+        params.migration.streamableFees,
+        'V4 split migration',
+        true,
+      );
+      this.validateProceedsSplitConfig(
+        params.migration.proceedsSplit,
+        'V4 split migration',
+      );
+    }
   }
 
   /**
@@ -5399,22 +5538,30 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       );
     }
 
-    if (
-      params.migration.type === 'uniswapV4' &&
-      params.migration.streamableFees
-    ) {
-      const beneficiaries = params.migration.streamableFees.beneficiaries;
-      if (beneficiaries.length === 0) {
-        throw new Error(
-          'At least one beneficiary is required for V4 migration',
-        );
-      }
-      const totalShares = beneficiaries.reduce((sum, b) => sum + b.shares, 0n);
-      if (totalShares !== WAD) {
-        throw new Error(
-          `Beneficiary shares must sum to ${WAD} (100%), but got ${totalShares}`,
-        );
-      }
+    if (params.migration.type === 'uniswapV2Split') {
+      this.validateProceedsSplitConfig(
+        params.migration.proceedsSplit,
+        'V2 split migration',
+      );
+    }
+
+    if (params.migration.type === 'uniswapV4') {
+      this.validateV4StreamableFeesConfig(
+        params.migration.streamableFees,
+        'V4 migration',
+      );
+    }
+
+    if (params.migration.type === 'uniswapV4Split') {
+      this.validateV4StreamableFeesConfig(
+        params.migration.streamableFees,
+        'V4 split migration',
+        true,
+      );
+      this.validateProceedsSplitConfig(
+        params.migration.proceedsSplit,
+        'V4 split migration',
+      );
     }
   }
 
@@ -5444,6 +5591,16 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     switch (config.type) {
       case 'uniswapV2':
         return overrides?.v2Migrator ?? addresses.v2Migrator;
+      case 'uniswapV2Split': {
+        const v2SplitAddress =
+          overrides?.v2MigratorSplit ?? addresses.v2MigratorSplit;
+        if (!v2SplitAddress || v2SplitAddress === ZERO_ADDRESS) {
+          throw new Error(
+            'UniswapV2MigratorSplit not deployed on this chain. Use uniswapV2 migration or provide override via modules.v2MigratorSplit.',
+          );
+        }
+        return v2SplitAddress;
+      }
       case 'uniswapV4': {
         const v4Address = overrides?.v4Migrator ?? addresses.v4Migrator;
         if (v4Address === '0x0000000000000000000000000000000000000000') {
@@ -5452,6 +5609,16 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
           );
         }
         return v4Address;
+      }
+      case 'uniswapV4Split': {
+        const v4SplitAddress =
+          overrides?.v4MigratorSplit ?? addresses.v4MigratorSplit;
+        if (!v4SplitAddress || v4SplitAddress === ZERO_ADDRESS) {
+          throw new Error(
+            'UniswapV4MigratorSplit not deployed on this chain. Use uniswapV4 migration or provide override via modules.v4MigratorSplit.',
+          );
+        }
+        return v4SplitAddress;
       }
       case 'dopplerHook': {
         const dopplerHookMigratorAddress =

@@ -11,7 +11,7 @@ The Doppler SDK consolidates functionality from the previous `doppler-v3-sdk` an
 - **Static Auctions**: Fixed price range liquidity bootstrapping using Uniswap V3
 - **Dynamic Auctions**: Gradual Dutch auctions using Uniswap V4 hooks
 - **Multicurve Initializer**: Seed Uniswap V4 pools across multiple curves
-- **Flexible Migration**: Support for migrating to Uniswap V2, V3, or V4
+- **Flexible Migration**: Support for V2, V2 split, V4, V4 split, DopplerHook, and no-op migration paths
 - **Token Management**: Built-in support for DERC20 tokens with vesting
 - **Type Safety**: Full TypeScript support with discriminated unions
 - **Chain Support**: Works with Base, Unichain, Ink, and other EVM chains
@@ -232,7 +232,7 @@ const params = new DynamicAuctionBuilder()
   .withDopplerDeployer('0xDeployer...')
   .withTokenFactory('0xFactory...')
   .withV4Initializer('0xInitializer...')
-  .withGovernanceFactory('0xGovFactory...') // used for both standard and no‑op governance
+  .withGovernanceFactory('0xGovFactory...') // used for standard, no-op, or launchpad governance overrides
   // .withV2Migrator('0xV2Migrator...')
   // .withV3Migrator('0xV3Migrator...')
   // .withV4Migrator('0xV4Migrator...')
@@ -354,7 +354,7 @@ const params = new MulticurveBuilder(base.id)
     ],
   })
   .withGovernance({ type: 'default' })
-  // Choose a migration path (V2, V3, or V4)
+  // Choose a migration path (V2, V2 split, V4, V4 split, DopplerHook, or noOp)
   .withMigration({ type: 'uniswapV2' })
   .withUserAddress('0x...')
   .build();
@@ -1092,16 +1092,6 @@ migration: {
 }
 ```
 
-### Migrate to Uniswap V3
-
-```typescript
-migration: {
-  type: 'uniswapV3',
-  fee: 3000,        // 0.3%
-  tickSpacing: 60,  // Standard for 0.3% pools
-}
-```
-
 ### Migrate to Uniswap V4
 
 ```typescript
@@ -1117,6 +1107,84 @@ migration: {
   },
 }
 ```
+
+### Migrate to Uniswap V2 with Proceeds Split + Top-ups
+
+```typescript
+migration: {
+  type: 'uniswapV2Split',
+  proceedsSplit: {
+    recipient: '0xRecipient...',
+    share: parseEther('0.1'), // 10%, capped at 50%
+  },
+}
+```
+
+- The split recipient receives the configured share of numeraire proceeds during migration.
+- If the asset/numeraire pair was topped up in `TopUpDistributor` before migration, the split recipient also receives those top-ups automatically.
+
+### Migrate to Uniswap V4 with Proceeds Split + Top-ups
+
+```typescript
+migration: {
+  type: 'uniswapV4Split',
+  fee: 3000,
+  tickSpacing: 8,
+  streamableFees: {
+    lockDuration: 30 * 24 * 60 * 60,
+    beneficiaries: [
+      { beneficiary: '0xAirlockOwner...', shares: parseEther('0.05') },
+      { beneficiary: '0xTeam...', shares: parseEther('0.95') },
+    ],
+  },
+  proceedsSplit: {
+    recipient: '0xRecipient...',
+    share: parseEther('0.1'),
+  },
+}
+```
+
+- `streamableFees` is required for `uniswapV4Split`.
+- Beneficiaries must sum to `1e18`, and the Airlock owner must be included with at least 5% shares.
+- The split recipient also receives any `TopUpDistributor` funds pulled during migration.
+
+### TopUpDistributor Top-ups
+
+The SDK exposes `sdk.topUpDistributor` and `sdk.getTopUpDistributor(address?)`
+for building, simulating, and submitting `topUp({ asset, numeraire, amount })`
+transactions where `getAddresses(chainId).topUpDistributor` is configured. The helper methods
+accept the same object shape for `buildTopUpTransaction({ asset, numeraire, amount })` and
+`simulateTopUp({ asset, numeraire, amount })`. ETH top-ups use `numeraire = ZERO_ADDRESS` and
+send `value = amount`; ERC20 top-ups send no native value and require the user to approve the
+`TopUpDistributor` before calling `topUp`.
+
+```typescript
+import { ZERO_ADDRESS } from '@whetstone-research/doppler-sdk/evm';
+import { parseEther } from 'viem';
+
+const topUps = sdk.topUpDistributor;
+
+const tx = topUps.buildTopUpTransaction({
+  asset: tokenAddress,
+  numeraire: ZERO_ADDRESS,
+  amount: parseEther('1'),
+});
+
+const simulation = await topUps.simulateTopUp({
+  asset: tokenAddress,
+  numeraire: ZERO_ADDRESS,
+  amount: parseEther('1'),
+});
+
+await topUps.topUp({
+  asset: tokenAddress,
+  numeraire: ZERO_ADDRESS,
+  amount: parseEther('1'),
+});
+```
+
+Split migrators pull any TopUpDistributor balance for the asset/numeraire pair during migration
+and pay it to the configured split recipient.
 
 ### Migrate via DopplerHookMigrator (Dynamic Auctions)
 
@@ -1327,7 +1395,7 @@ const builder = new StaticAuctionBuilder(base.id)
   })
   .poolByTicks({ startTick: -92100, endTick: -69060, fee: 3000 })
   .withGovernance({ type: 'default' })
-  .withMigration({ type: 'uniswapV3', fee: 3000, tickSpacing: 60 })
+  .withMigration({ type: 'uniswapV4', fee: 3000, tickSpacing: 60 })
   .withUserAddress('0x...');
 
 const staticParams = builder.build();

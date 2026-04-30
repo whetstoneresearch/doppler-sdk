@@ -20,8 +20,7 @@ import {
  *
  * This example shows how to provide a custom migration data encoder
  * using the fluent .withCustomMigrationEncoder() method. The custom
- * encoder can handle specialized migration logic beyond the default
- * V2/V3/V4 migrations.
+ * encoder can handle specialized migration logic for supported migration types.
  */
 
 // Create a custom migration encoder
@@ -31,18 +30,6 @@ const customMigrationEncoder: MigrationEncoder = (config: MigrationConfig) => {
       // Custom V2 encoding - perhaps with additional metadata
       console.log('Custom V2 encoding with additional metadata');
       return encodeAbiParameters([{ type: 'string' }], ['custom-v2-metadata']);
-
-    case 'uniswapV3':
-      // Custom V3 encoding - perhaps with different parameter ordering
-      console.log('Custom V3 encoding with extended parameters');
-      return encodeAbiParameters(
-        [
-          { type: 'uint24' }, // fee
-          { type: 'int24' }, // tickSpacing
-          { type: 'bool' }, // additional custom flag
-        ],
-        [config.fee, config.tickSpacing, true],
-      );
 
     case 'uniswapV4':
       // Custom V4 encoding - perhaps with different beneficiary format
@@ -56,8 +43,15 @@ const customMigrationEncoder: MigrationEncoder = (config: MigrationConfig) => {
 
       return customData;
 
+    case 'uniswapV2Split':
+    case 'uniswapV4Split':
+    case 'dopplerHook':
+    case 'noOp':
+      throw new Error(`This example encoder does not handle ${config.type}`);
+
     default:
-      throw new Error(`Unsupported migration type: ${(config as any).type}`);
+      const exhaustive: never = config;
+      throw new Error(`Unsupported migration type: ${exhaustive}`);
   }
 };
 
@@ -95,7 +89,7 @@ async function main() {
     sale: {
       initialSupply: BigInt('1000000000000000000000000000'),
       numTokensToSell: BigInt('900000000000000000000000000'),
-      numeraire: '0x4200000000000000000000000000000000000006', // WETH on Base
+      numeraire: '0x4200000000000000000000000000000000000006' as `0x${string}`, // WETH on Base
     },
     pool: {
       startTick: -276400,
@@ -104,7 +98,7 @@ async function main() {
     },
     governance: { type: 'default' as const },
     migration: {
-      type: 'uniswapV3' as const,
+      type: 'uniswapV4' as const,
       fee: 3000,
       tickSpacing: 60,
     },
@@ -147,8 +141,9 @@ function factoryOnlyExample() {
   return factory;
 }
 
-if (require.main === module) {
-  main().catch(console.error);
-}
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});
 
 export { customMigrationEncoder, main, factoryOnlyExample };

@@ -73,6 +73,7 @@ export interface ChainAddresses {
   noOpGovernanceFactory?: Address;
   launchpadGovernanceFactory?: Address;
   streamableFeesLocker?: Address;
+  topUpDistributor?: Address;
 
   // Router contracts
   universalRouter: Address;
@@ -173,6 +174,8 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       .LaunchpadGovernanceFactory as Address,
     streamableFeesLocker: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MAINNET]
       .StreamableFeesLocker as Address,
+    topUpDistributor: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MAINNET]
+      .TopUpDistributor as Address,
     universalRouter: '0x66a9893cc07d91d95644aedd05d03f95e1dba8af' as Address,
     permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3' as Address,
     weth: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' as Address,
@@ -302,6 +305,8 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       .LaunchpadGovernanceFactory as Address,
     streamableFeesLocker: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
       .StreamableFeesLocker as Address,
+    topUpDistributor: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
+      .TopUpDistributor as Address,
     universalRouter: '0x6ff5693b99212da76ad316178a184ab56d299b43' as Address,
     univ2Router02: '0x4752ba5dbc23f44d87826276bf6fd6b1c372ad24' as Address,
     uniswapV2Factory: '0x8909Dc15e40173Ff4699343b6eB8132c65e18eC6' as Address,
@@ -394,6 +399,8 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     ].LaunchpadGovernanceFactory as Address,
     streamableFeesLocker: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
       .StreamableFeesLocker as Address,
+    topUpDistributor: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
+      .TopUpDistributor as Address,
     universalRouter: '0x492E6456D9528771018DeB9E87ef7750EF184104' as Address,
     univ2Router02: '0x1689E7B1F10000AE47eBfE339a4f69dECd19F602' as Address,
     uniswapV2Factory: '0x7Ae58f10f7849cA6F5fB71b7f45CB416c9204b1e' as Address,
@@ -605,6 +612,8 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     launchpadGovernanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[
       CHAIN_IDS.MONAD_MAINNET
     ].LaunchpadGovernanceFactory as Address,
+    topUpDistributor: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_MAINNET]
+      .TopUpDistributor as Address,
     v4ScheduledMulticurveInitializer: GENERATED_DOPPLER_DEPLOYMENTS[
       CHAIN_IDS.MONAD_MAINNET
     ].UniswapV4ScheduledMulticurveInitializer as Address,

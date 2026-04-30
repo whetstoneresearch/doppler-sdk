@@ -6,6 +6,12 @@ export { DopplerSDK } from './DopplerSDK';
 // Export factory and auction classes
 export { DopplerFactory } from './entities/DopplerFactory';
 export type { MigrationEncoder } from './entities/DopplerFactory';
+export { TopUpDistributor } from './entities/TopUpDistributor';
+export type {
+  TopUpParams,
+  TopUpSimulationResult,
+  TopUpTransaction,
+} from './entities/TopUpDistributor';
 export {
   StaticAuction,
   DynamicAuction,
@@ -98,6 +104,12 @@ export type {
   VestingAllocationConfig,
   VestingScheduleConfig,
   MigrationConfig,
+  ProceedsSplitConfig,
+  StreamableFeesConfig,
+  UniswapV2MigrationConfig,
+  UniswapV2SplitMigrationConfig,
+  UniswapV4MigrationConfig,
+  UniswapV4SplitMigrationConfig,
   DopplerHookMigrationConfig,
   BeneficiaryData,
 
