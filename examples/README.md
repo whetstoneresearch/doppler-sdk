@@ -60,6 +60,10 @@ Create a multicurve auction that queues until a future start time using the sche
 
 Create a multicurve auction whose vesting beneficiaries use different cliff and vesting schedules on the DERC20 V2 path. Demonstrates the `allocations` API and reading the assigned schedule data back from `sdk.getDerc20V2(...)`.
 
+### 12b. [DopplerERC20V1 Token Configuration](./doppler-erc20-v1.ts)
+
+Create a `dopplerERC20V1` token selected automatically from template-specific balance-limit fields, enumerate vesting schedules, release a partial vested amount by schedule or across schedules, and read max-balance-limit state. The default DopplerERC20V1 integration adds protocol balance-limit exclusions; custom `withTokenFactory(address)` paths must provide any required exclusions explicitly. This implementation does not configure or expose yearly mint inflation.
+
 ### 13. [Multicurve Vanity Launch (Market Cap)](./multicurve-vanity-by-marketcap.ts)
 
 Create a multicurve pool and mine a salt so the deployed token address ends with a chosen hex suffix (identifier). Launches on-chain (requires RPC + PRIVATE_KEY).

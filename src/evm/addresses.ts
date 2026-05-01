@@ -27,6 +27,8 @@ export interface ChainAddresses {
   tokenFactory: Address;
   derc20V2Factory?: Address;
   derc20V2Implementation?: Address;
+  dopplerERC20V1Factory?: Address;
+  dopplerERC20V1Implementation?: Address;
 
   // Static auction contracts (V3)
   v3Initializer: Address;
@@ -119,6 +121,14 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     derc20V2Implementation: getGeneratedAddress(
       CHAIN_IDS.MAINNET,
       'CloneDERC20VotesV2',
+    ),
+    dopplerERC20V1Factory: getGeneratedAddress(
+      CHAIN_IDS.MAINNET,
+      'DopplerERC20V1Factory',
+    ),
+    dopplerERC20V1Implementation: getGeneratedAddress(
+      CHAIN_IDS.MAINNET,
+      'DopplerERC20V1',
     ),
     v3Initializer: ZERO_ADDRESS,
     v3Quoter: ZERO_ADDRESS,
@@ -235,6 +245,14 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       CHAIN_IDS.BASE,
       'CloneDERC20VotesV2',
     ),
+    dopplerERC20V1Factory: getGeneratedAddress(
+      CHAIN_IDS.BASE,
+      'DopplerERC20V1Factory',
+    ),
+    dopplerERC20V1Implementation: getGeneratedAddress(
+      CHAIN_IDS.BASE,
+      'DopplerERC20V1',
+    ),
     v3Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
       .UniswapV3Initializer as Address,
     v3Quoter: '0x3d4e44Eb1374240CE5F1B871ab261CD16335B76a' as Address,
@@ -286,9 +304,11 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       .StreamableFeesLocker as Address,
     universalRouter: '0x6ff5693b99212da76ad316178a184ab56d299b43' as Address,
     univ2Router02: '0x4752ba5dbc23f44d87826276bf6fd6b1c372ad24' as Address,
+    uniswapV2Factory: '0x8909Dc15e40173Ff4699343b6eB8132c65e18eC6' as Address,
     permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3' as Address,
     bundler: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE].Bundler as Address,
     weth: '0x4200000000000000000000000000000000000006' as Address,
+    uniswapV3Factory: '0x33128a8fC17869897dcE68Ed026d694621f6FDfD' as Address,
     uniswapV4Quoter: '0x0d5e0f971ed27fbff6c2837bf31316121532048d' as Address,
   },
   [CHAIN_IDS.BASE_SEPOLIA]: {
@@ -303,6 +323,14 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     derc20V2Implementation: getGeneratedAddress(
       CHAIN_IDS.BASE_SEPOLIA,
       'CloneDERC20VotesV2',
+    ),
+    dopplerERC20V1Factory: getGeneratedAddress(
+      CHAIN_IDS.BASE_SEPOLIA,
+      'DopplerERC20V1Factory',
+    ),
+    dopplerERC20V1Implementation: getGeneratedAddress(
+      CHAIN_IDS.BASE_SEPOLIA,
+      'DopplerERC20V1',
     ),
     doppler404Factory: '0xdd8cea2890f1b3498436f19ec8da8fecc2cb7af7' as Address,
     v3Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
@@ -368,9 +396,11 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       .StreamableFeesLocker as Address,
     universalRouter: '0x492E6456D9528771018DeB9E87ef7750EF184104' as Address,
     univ2Router02: '0x1689E7B1F10000AE47eBfE339a4f69dECd19F602' as Address,
+    uniswapV2Factory: '0x7Ae58f10f7849cA6F5fB71b7f45CB416c9204b1e' as Address,
     permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3' as Address,
     bundler: '0x69DB7c20cDdA49Bed2bFb21e16Fa218330C50661' as Address,
     weth: '0x4200000000000000000000000000000000000006' as Address,
+    uniswapV3Factory: '0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24' as Address,
     uniswapV4Quoter: '0x4A6513c898fe1B2d0E78d3b0e0A4a151589B1cBa' as Address,
   },
   [CHAIN_IDS.INK]: {
@@ -440,6 +470,7 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     streamableFeesLocker: ZERO_ADDRESS, // Not yet deployed
     universalRouter: '0xef740bf23acae26f6492b10de645d6b98dc8eaf3' as Address,
     univ2Router02: '0x284f11109359a7e1306c3e447ef14d38400063ff' as Address,
+    uniswapV2Factory: '0x1f98400000000000000000000000000000000002' as Address,
     permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3' as Address,
     bundler: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.UNICHAIN]
       .Bundler as Address,
@@ -538,6 +569,14 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       CHAIN_IDS.MONAD_MAINNET,
       'CloneDERC20VotesV2',
     ),
+    dopplerERC20V1Factory: getGeneratedAddress(
+      CHAIN_IDS.MONAD_MAINNET,
+      'DopplerERC20V1Factory',
+    ),
+    dopplerERC20V1Implementation: getGeneratedAddress(
+      CHAIN_IDS.MONAD_MAINNET,
+      'DopplerERC20V1',
+    ),
     v3Initializer: ZERO_ADDRESS,
     v3Quoter: '0x66266174564170519409d8853898f065c719536b' as Address,
     lockableV3Initializer: GENERATED_DOPPLER_DEPLOYMENTS[
@@ -581,6 +620,7 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     streamableFeesLocker: ZERO_ADDRESS, // Not yet deployed
     universalRouter: '0x0d97dc33264bfc1c226207428a79b26757fb9dc3' as Address,
     univ2Router02: ZERO_ADDRESS,
+    uniswapV2Factory: '0x182a927119d56008d921126764bf884221b10f59' as Address,
     permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3' as Address,
     bundler: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_MAINNET]
       .Bundler as Address,
