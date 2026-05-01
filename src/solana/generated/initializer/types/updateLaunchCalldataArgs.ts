@@ -32,6 +32,7 @@ export type UpdateLaunchCalldataArgs = {
   sentinelCalldata: Option<ReadonlyUint8Array>;
   migratorMigrateCalldata: Option<ReadonlyUint8Array>;
   sentinelRemainingAccountsHash: Option<ReadonlyUint8Array>;
+  migratorInitRemainingAccountsHash: Option<ReadonlyUint8Array>;
   migratorRemainingAccountsHash: Option<ReadonlyUint8Array>;
 };
 
@@ -39,6 +40,7 @@ export type UpdateLaunchCalldataArgsArgs = {
   sentinelCalldata: OptionOrNullable<ReadonlyUint8Array>;
   migratorMigrateCalldata: OptionOrNullable<ReadonlyUint8Array>;
   sentinelRemainingAccountsHash: OptionOrNullable<ReadonlyUint8Array>;
+  migratorInitRemainingAccountsHash: OptionOrNullable<ReadonlyUint8Array>;
   migratorRemainingAccountsHash: OptionOrNullable<ReadonlyUint8Array>;
 };
 
@@ -58,6 +60,10 @@ export function getUpdateLaunchCalldataArgsEncoder(): Encoder<UpdateLaunchCallda
     ],
     [
       'sentinelRemainingAccountsHash',
+      getOptionEncoder(fixEncoderSize(getBytesEncoder(), 32)),
+    ],
+    [
+      'migratorInitRemainingAccountsHash',
       getOptionEncoder(fixEncoderSize(getBytesEncoder(), 32)),
     ],
     [
@@ -83,6 +89,10 @@ export function getUpdateLaunchCalldataArgsDecoder(): Decoder<UpdateLaunchCallda
     ],
     [
       'sentinelRemainingAccountsHash',
+      getOptionDecoder(fixDecoderSize(getBytesDecoder(), 32)),
+    ],
+    [
+      'migratorInitRemainingAccountsHash',
       getOptionDecoder(fixDecoderSize(getBytesDecoder(), 32)),
     ],
     [

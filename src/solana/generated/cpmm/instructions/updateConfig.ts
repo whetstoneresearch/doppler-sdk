@@ -10,25 +10,32 @@ import {
   combineCodec,
   fixDecoderSize,
   fixEncoderSize,
+  getAddressDecoder,
+  getAddressEncoder,
+  getArrayDecoder,
+  getArrayEncoder,
+  getBooleanDecoder,
+  getBooleanEncoder,
   getBytesDecoder,
   getBytesEncoder,
   getStructDecoder,
   getStructEncoder,
   getU16Decoder,
   getU16Encoder,
+  getU8Decoder,
+  getU8Encoder,
   SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
   SolanaError,
   transformEncoder,
   type AccountMeta,
   type AccountSignerMeta,
   type Address,
-  type FixedSizeCodec,
-  type FixedSizeDecoder,
-  type FixedSizeEncoder,
+  type Codec,
+  type Decoder,
+  type Encoder,
   type Instruction,
   type InstructionWithAccounts,
   type InstructionWithData,
-  type ReadonlyAccount,
   type ReadonlySignerAccount,
   type ReadonlyUint8Array,
   type TransactionSigner,
@@ -40,18 +47,19 @@ import {
 } from '@solana/program-client-core';
 import { CPMM_PROGRAM_ADDRESS } from '../programs';
 
-export const SET_FEES_DISCRIMINATOR = new Uint8Array([
-  137, 178, 49, 58, 0, 245, 242, 190,
+export const UPDATE_CONFIG_DISCRIMINATOR = new Uint8Array([
+  29, 158, 252, 191, 10, 83, 219, 99,
 ]);
 
-export function getSetFeesDiscriminatorBytes() {
-  return fixEncoderSize(getBytesEncoder(), 8).encode(SET_FEES_DISCRIMINATOR);
+export function getUpdateConfigDiscriminatorBytes() {
+  return fixEncoderSize(getBytesEncoder(), 8).encode(
+    UPDATE_CONFIG_DISCRIMINATOR,
+  );
 }
 
-export type SetFeesInstruction<
+export type UpdateConfigInstruction<
   TProgram extends string = typeof CPMM_PROGRAM_ADDRESS,
   TAccountConfig extends string | AccountMeta<string> = string,
-  TAccountPool extends string | AccountMeta<string> = string,
   TAccountAdmin extends string | AccountMeta<string> = string,
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
@@ -59,11 +67,8 @@ export type SetFeesInstruction<
   InstructionWithAccounts<
     [
       TAccountConfig extends string
-        ? ReadonlyAccount<TAccountConfig>
+        ? WritableAccount<TAccountConfig>
         : TAccountConfig,
-      TAccountPool extends string
-        ? WritableAccount<TAccountPool>
-        : TAccountPool,
       TAccountAdmin extends string
         ? ReadonlySignerAccount<TAccountAdmin> &
             AccountSignerMeta<TAccountAdmin>
@@ -72,79 +77,95 @@ export type SetFeesInstruction<
     ]
   >;
 
-export type SetFeesInstructionData = {
+export type UpdateConfigInstructionData = {
   discriminator: ReadonlyUint8Array;
-  swapFeeBps: number;
-  feeSplitBps: number;
+  numeraireMint: Address;
+  maxSwapFeeBps: number;
+  maxFeeSplitBps: number;
+  maxRouteHops: number;
+  protocolFeeEnabled: boolean;
+  protocolFeeBps: number;
+  sentinelAllowlist: Array<Address>;
 };
 
-export type SetFeesInstructionDataArgs = {
-  swapFeeBps: number;
-  feeSplitBps: number;
+export type UpdateConfigInstructionDataArgs = {
+  numeraireMint: Address;
+  maxSwapFeeBps: number;
+  maxFeeSplitBps: number;
+  maxRouteHops: number;
+  protocolFeeEnabled: boolean;
+  protocolFeeBps: number;
+  sentinelAllowlist: Array<Address>;
 };
 
-export function getSetFeesInstructionDataEncoder(): FixedSizeEncoder<SetFeesInstructionDataArgs> {
+export function getUpdateConfigInstructionDataEncoder(): Encoder<UpdateConfigInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['swapFeeBps', getU16Encoder()],
-      ['feeSplitBps', getU16Encoder()],
+      ['numeraireMint', getAddressEncoder()],
+      ['maxSwapFeeBps', getU16Encoder()],
+      ['maxFeeSplitBps', getU16Encoder()],
+      ['maxRouteHops', getU8Encoder()],
+      ['protocolFeeEnabled', getBooleanEncoder()],
+      ['protocolFeeBps', getU16Encoder()],
+      ['sentinelAllowlist', getArrayEncoder(getAddressEncoder())],
     ]),
-    (value) => ({ ...value, discriminator: SET_FEES_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: UPDATE_CONFIG_DISCRIMINATOR }),
   );
 }
 
-export function getSetFeesInstructionDataDecoder(): FixedSizeDecoder<SetFeesInstructionData> {
+export function getUpdateConfigInstructionDataDecoder(): Decoder<UpdateConfigInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['swapFeeBps', getU16Decoder()],
-    ['feeSplitBps', getU16Decoder()],
+    ['numeraireMint', getAddressDecoder()],
+    ['maxSwapFeeBps', getU16Decoder()],
+    ['maxFeeSplitBps', getU16Decoder()],
+    ['maxRouteHops', getU8Decoder()],
+    ['protocolFeeEnabled', getBooleanDecoder()],
+    ['protocolFeeBps', getU16Decoder()],
+    ['sentinelAllowlist', getArrayDecoder(getAddressDecoder())],
   ]);
 }
 
-export function getSetFeesInstructionDataCodec(): FixedSizeCodec<
-  SetFeesInstructionDataArgs,
-  SetFeesInstructionData
+export function getUpdateConfigInstructionDataCodec(): Codec<
+  UpdateConfigInstructionDataArgs,
+  UpdateConfigInstructionData
 > {
   return combineCodec(
-    getSetFeesInstructionDataEncoder(),
-    getSetFeesInstructionDataDecoder(),
+    getUpdateConfigInstructionDataEncoder(),
+    getUpdateConfigInstructionDataDecoder(),
   );
 }
 
-export type SetFeesInput<
+export type UpdateConfigInput<
   TAccountConfig extends string = string,
-  TAccountPool extends string = string,
   TAccountAdmin extends string = string,
 > = {
   config: Address<TAccountConfig>;
-  pool: Address<TAccountPool>;
   admin: TransactionSigner<TAccountAdmin>;
-  swapFeeBps: SetFeesInstructionDataArgs['swapFeeBps'];
-  feeSplitBps: SetFeesInstructionDataArgs['feeSplitBps'];
+  numeraireMint: UpdateConfigInstructionDataArgs['numeraireMint'];
+  maxSwapFeeBps: UpdateConfigInstructionDataArgs['maxSwapFeeBps'];
+  maxFeeSplitBps: UpdateConfigInstructionDataArgs['maxFeeSplitBps'];
+  maxRouteHops: UpdateConfigInstructionDataArgs['maxRouteHops'];
+  protocolFeeEnabled: UpdateConfigInstructionDataArgs['protocolFeeEnabled'];
+  protocolFeeBps: UpdateConfigInstructionDataArgs['protocolFeeBps'];
+  sentinelAllowlist: UpdateConfigInstructionDataArgs['sentinelAllowlist'];
 };
 
-export function getSetFeesInstruction<
+export function getUpdateConfigInstruction<
   TAccountConfig extends string,
-  TAccountPool extends string,
   TAccountAdmin extends string,
   TProgramAddress extends Address = typeof CPMM_PROGRAM_ADDRESS,
 >(
-  input: SetFeesInput<TAccountConfig, TAccountPool, TAccountAdmin>,
+  input: UpdateConfigInput<TAccountConfig, TAccountAdmin>,
   config?: { programAddress?: TProgramAddress },
-): SetFeesInstruction<
-  TProgramAddress,
-  TAccountConfig,
-  TAccountPool,
-  TAccountAdmin
-> {
+): UpdateConfigInstruction<TProgramAddress, TAccountConfig, TAccountAdmin> {
   // Program address.
   const programAddress = config?.programAddress ?? CPMM_PROGRAM_ADDRESS;
 
   // Original accounts.
   const originalAccounts = {
-    config: { value: input.config ?? null, isWritable: false },
-    pool: { value: input.pool ?? null, isWritable: true },
+    config: { value: input.config ?? null, isWritable: true },
     admin: { value: input.admin ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -159,48 +180,41 @@ export function getSetFeesInstruction<
   return Object.freeze({
     accounts: [
       getAccountMeta('config', accounts.config),
-      getAccountMeta('pool', accounts.pool),
       getAccountMeta('admin', accounts.admin),
     ],
-    data: getSetFeesInstructionDataEncoder().encode(
-      args as SetFeesInstructionDataArgs,
+    data: getUpdateConfigInstructionDataEncoder().encode(
+      args as UpdateConfigInstructionDataArgs,
     ),
     programAddress,
-  } as SetFeesInstruction<
-    TProgramAddress,
-    TAccountConfig,
-    TAccountPool,
-    TAccountAdmin
-  >);
+  } as UpdateConfigInstruction<TProgramAddress, TAccountConfig, TAccountAdmin>);
 }
 
-export type ParsedSetFeesInstruction<
+export type ParsedUpdateConfigInstruction<
   TProgram extends string = typeof CPMM_PROGRAM_ADDRESS,
   TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
   programAddress: Address<TProgram>;
   accounts: {
     config: TAccountMetas[0];
-    pool: TAccountMetas[1];
-    admin: TAccountMetas[2];
+    admin: TAccountMetas[1];
   };
-  data: SetFeesInstructionData;
+  data: UpdateConfigInstructionData;
 };
 
-export function parseSetFeesInstruction<
+export function parseUpdateConfigInstruction<
   TProgram extends string,
   TAccountMetas extends readonly AccountMeta[],
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
-): ParsedSetFeesInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 3) {
+): ParsedUpdateConfigInstruction<TProgram, TAccountMetas> {
+  if (instruction.accounts.length < 2) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 3,
+        expectedAccountMetas: 2,
       },
     );
   }
@@ -212,11 +226,7 @@ export function parseSetFeesInstruction<
   };
   return {
     programAddress: instruction.programAddress,
-    accounts: {
-      config: getNextAccount(),
-      pool: getNextAccount(),
-      admin: getNextAccount(),
-    },
-    data: getSetFeesInstructionDataDecoder().decode(instruction.data),
+    accounts: { config: getNextAccount(), admin: getNextAccount() },
+    data: getUpdateConfigInstructionDataDecoder().decode(instruction.data),
   };
 }

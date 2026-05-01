@@ -83,10 +83,6 @@
         },
         {
           "name": "quote_token_program"
-        },
-        {
-          "name": "instructions_sysvar",
-          "address": "Sysvar1nstructions1111111111111111111111111"
         }
       ],
       "args": [
@@ -147,10 +143,6 @@
         {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
-        },
-        {
-          "name": "instructions_sysvar",
-          "address": "Sysvar1nstructions1111111111111111111111111"
         }
       ],
       "args": [
@@ -297,10 +289,6 @@
             "Metaplex Token Metadata program."
           ],
           "optional": true
-        },
-        {
-          "name": "instructions_sysvar",
-          "address": "Sysvar1nstructions1111111111111111111111111"
         }
       ],
       "args": [
@@ -387,10 +375,6 @@
         {
           "name": "rent",
           "address": "SysvarRent111111111111111111111111111111111"
-        },
-        {
-          "name": "instructions_sysvar",
-          "address": "Sysvar1nstructions1111111111111111111111111"
         }
       ],
       "args": []
@@ -468,10 +452,6 @@
         {
           "name": "rent",
           "address": "SysvarRent111111111111111111111111111111111"
-        },
-        {
-          "name": "instructions_sysvar",
-          "address": "Sysvar1nstructions1111111111111111111111111"
         }
       ],
       "args": []
@@ -638,6 +618,50 @@
       ]
     },
     {
+      "name": "transfer_admin",
+      "discriminator": [
+        42,
+        242,
+        66,
+        106,
+        228,
+        10,
+        111,
+        156
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "new_admin",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
       "name": "update_launch_calldata",
       "discriminator": [
         26,
@@ -678,10 +702,6 @@
             "Authority of the launch (must match launch.authority or config.admin)"
           ],
           "signer": true
-        },
-        {
-          "name": "instructions_sysvar",
-          "address": "Sysvar1nstructions1111111111111111111111111"
         }
       ],
       "args": [
@@ -736,10 +756,6 @@
             "Authority of the launch (must match launch.authority or config.admin)"
           ],
           "signer": true
-        },
-        {
-          "name": "instructions_sysvar",
-          "address": "Sysvar1nstructions1111111111111111111111111"
         }
       ],
       "args": [
@@ -783,6 +799,19 @@
     }
   ],
   "events": [
+    {
+      "name": "AdminTransferred",
+      "discriminator": [
+        255,
+        147,
+        182,
+        5,
+        199,
+        217,
+        38,
+        179
+      ]
+    },
     {
       "name": "ConfigInitialized",
       "discriminator": [
@@ -986,106 +1015,131 @@
     },
     {
       "code": 6019,
+      "name": "SellDisableNotAllowed",
+      "msg": "Sell disable not allowed once enabled"
+    },
+    {
+      "code": 6020,
       "name": "InvalidDirection",
       "msg": "Invalid direction"
     },
     {
-      "code": 6020,
+      "code": 6021,
       "name": "AllowlistFull",
       "msg": "Allowlist full"
     },
     {
-      "code": 6021,
+      "code": 6022,
       "name": "InvalidInput",
       "msg": "Invalid input"
     },
     {
-      "code": 6022,
+      "code": 6023,
       "name": "AlreadyMigrated",
       "msg": "Already migrated"
     },
     {
-      "code": 6023,
+      "code": 6024,
       "name": "QuoteVaultNotEmpty",
       "msg": "Quote vault not empty"
     },
     {
-      "code": 6024,
+      "code": 6025,
       "name": "LaunchLocked",
       "msg": "Launch locked"
     },
     {
-      "code": 6025,
+      "code": 6026,
       "name": "InvalidCurveKind",
       "msg": "Invalid curve kind"
     },
     {
-      "code": 6026,
+      "code": 6027,
       "name": "CurveParamsInvalid",
       "msg": "Curve params invalid"
     },
     {
-      "code": 6027,
+      "code": 6028,
       "name": "RemainingAccountOverlap",
       "msg": "Remaining account overlaps with protocol account"
     },
     {
-      "code": 6028,
+      "code": 6029,
       "name": "MissingRemainingAccountsCommitment",
       "msg": "Missing remaining accounts commitment"
     },
     {
-      "code": 6029,
+      "code": 6030,
       "name": "RemainingAccountsCommitmentMismatch",
       "msg": "Remaining accounts commitment mismatch"
     },
     {
-      "code": 6030,
+      "code": 6031,
       "name": "InvalidOracle",
       "msg": "Invalid oracle account"
     },
     {
-      "code": 6031,
+      "code": 6032,
       "name": "MissingMetadataAccounts",
       "msg": "Missing metadata accounts"
     },
     {
-      "code": 6032,
+      "code": 6033,
       "name": "InvalidMetadataProgram",
       "msg": "Invalid metadata program"
     },
     {
-      "code": 6033,
+      "code": 6034,
       "name": "InvalidMetadataAccount",
       "msg": "Invalid metadata account"
     },
     {
-      "code": 6034,
+      "code": 6035,
       "name": "MetadataCpiFailed",
       "msg": "Metadata CPI failed"
     },
     {
-      "code": 6035,
+      "code": 6036,
       "name": "CpiForbidden",
       "msg": "CPI not allowed"
     },
     {
-      "code": 6036,
+      "code": 6037,
       "name": "RemainingAccountSigner",
       "msg": "Remaining accounts must not be signers"
     },
     {
-      "code": 6037,
+      "code": 6038,
       "name": "RemainingAccountWritable",
       "msg": "Remaining accounts must be readonly"
     },
     {
-      "code": 6038,
+      "code": 6039,
       "name": "MigrationIncomplete",
       "msg": "Migration left vault funds behind"
     }
   ],
   "types": [
+    {
+      "name": "AdminTransferred",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "config",
+            "type": "pubkey"
+          },
+          {
+            "name": "old_admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "new_admin",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
     {
       "name": "CalldataBuf",
       "repr": {
@@ -1349,9 +1403,22 @@
             }
           },
           {
+            "name": "migrator_init_remaining_accounts_hash",
+            "docs": [
+              "Commitment hash for migrator-init remaining accounts.",
+              "Computed as hash(u32_len || pubkey_0 || ... || pubkey_n)."
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
             "name": "migrator_remaining_accounts_hash",
             "docs": [
-              "Commitment hash for migrate remaining accounts.",
+              "Commitment hash for migrator-migrate remaining accounts.",
               "Computed as hash(u32_len || pubkey_0 || ... || pubkey_n)."
             ],
             "type": {
@@ -1744,6 +1811,17 @@
           },
           {
             "name": "sentinel_remaining_accounts_hash",
+            "type": {
+              "option": {
+                "array": [
+                  "u8",
+                  32
+                ]
+              }
+            }
+          },
+          {
+            "name": "migrator_init_remaining_accounts_hash",
             "type": {
               "option": {
                 "array": [

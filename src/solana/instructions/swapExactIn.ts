@@ -3,7 +3,6 @@ import { AccountRole } from '@solana/kit';
 import {
   CPMM_PROGRAM_ID,
   TOKEN_PROGRAM_ADDRESS,
-  SYSVAR_INSTRUCTIONS_ADDRESS,
   INSTRUCTION_DISCRIMINATORS,
 } from '../core/constants.js';
 import type { SwapExactInArgs, SwapDirection } from '../core/types.js';
@@ -39,8 +38,6 @@ export interface SwapExactInAccounts {
   token1Program?: Address;
   /** Deprecated shared token program fallback */
   tokenProgram?: Address;
-  /** Instructions sysvar */
-  instructionsSysvar?: Address;
   /** Oracle account (optional, required if updateOracle is true) */
   oracle?: Address;
   /** Optional remaining accounts (sentinel program/state, route/oracle data) */
@@ -100,7 +97,6 @@ export function createSwapExactInInstruction(
     token0Program,
     token1Program,
     tokenProgram = TOKEN_PROGRAM_ADDRESS,
-    instructionsSysvar = SYSVAR_INSTRUCTIONS_ADDRESS,
     oracle,
     remainingAccounts = [],
   } = accounts;
@@ -121,7 +117,6 @@ export function createSwapExactInInstruction(
     { address: user, role: AccountRole.READONLY_SIGNER },
     { address: resolvedToken0Program, role: AccountRole.READONLY },
     { address: resolvedToken1Program, role: AccountRole.READONLY },
-    { address: instructionsSysvar, role: AccountRole.READONLY },
   ];
 
   // Add oracle if provided (always writable due to Anchor #[account(mut)] constraint)
@@ -168,7 +163,6 @@ export function createSwapInstruction(params: {
   token0Program?: Address;
   token1Program?: Address;
   tokenProgram?: Address;
-  instructionsSysvar?: Address;
   programId?: Address;
 }): Instruction {
   const {
@@ -191,7 +185,6 @@ export function createSwapInstruction(params: {
     token0Program,
     token1Program,
     tokenProgram,
-    instructionsSysvar,
     programId = CPMM_PROGRAM_ID,
   } = params;
 
@@ -216,7 +209,6 @@ export function createSwapInstruction(params: {
       token0Program,
       token1Program,
       tokenProgram,
-      instructionsSysvar,
       oracle,
       remainingAccounts,
     },

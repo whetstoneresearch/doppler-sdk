@@ -58,14 +58,15 @@ export type ClaimInstruction<
   TAccountMarketAuthority extends string | AccountMeta<string> = string,
   TAccountPotVault extends string | AccountMeta<string> = string,
   TAccountWinnerMint extends string | AccountMeta<string> = string,
+  TAccountQuoteMint extends string | AccountMeta<string> = string,
   TAccountEntryByMint extends string | AccountMeta<string> = string,
   TAccountClaimerWinnerAta extends string | AccountMeta<string> = string,
   TAccountClaimerQuoteAta extends string | AccountMeta<string> = string,
   TAccountClaimer extends string | AccountMeta<string> = string,
   TAccountReceipt extends string | AccountMeta<string> = string,
   TAccountPayer extends string | AccountMeta<string> = string,
-  TAccountTokenProgram extends string | AccountMeta<string> =
-    'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
+  TAccountBaseTokenProgram extends string | AccountMeta<string> = string,
+  TAccountQuoteTokenProgram extends string | AccountMeta<string> = string,
   TAccountSystemProgram extends string | AccountMeta<string> =
     '11111111111111111111111111111111',
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
@@ -85,6 +86,9 @@ export type ClaimInstruction<
       TAccountWinnerMint extends string
         ? WritableAccount<TAccountWinnerMint>
         : TAccountWinnerMint,
+      TAccountQuoteMint extends string
+        ? ReadonlyAccount<TAccountQuoteMint>
+        : TAccountQuoteMint,
       TAccountEntryByMint extends string
         ? ReadonlyAccount<TAccountEntryByMint>
         : TAccountEntryByMint,
@@ -105,9 +109,12 @@ export type ClaimInstruction<
         ? WritableSignerAccount<TAccountPayer> &
             AccountSignerMeta<TAccountPayer>
         : TAccountPayer,
-      TAccountTokenProgram extends string
-        ? ReadonlyAccount<TAccountTokenProgram>
-        : TAccountTokenProgram,
+      TAccountBaseTokenProgram extends string
+        ? ReadonlyAccount<TAccountBaseTokenProgram>
+        : TAccountBaseTokenProgram,
+      TAccountQuoteTokenProgram extends string
+        ? ReadonlyAccount<TAccountQuoteTokenProgram>
+        : TAccountQuoteTokenProgram,
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
@@ -154,13 +161,15 @@ export type ClaimAsyncInput<
   TAccountMarketAuthority extends string = string,
   TAccountPotVault extends string = string,
   TAccountWinnerMint extends string = string,
+  TAccountQuoteMint extends string = string,
   TAccountEntryByMint extends string = string,
   TAccountClaimerWinnerAta extends string = string,
   TAccountClaimerQuoteAta extends string = string,
   TAccountClaimer extends string = string,
   TAccountReceipt extends string = string,
   TAccountPayer extends string = string,
-  TAccountTokenProgram extends string = string,
+  TAccountBaseTokenProgram extends string = string,
+  TAccountQuoteTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
   /** Market PDA */
@@ -170,6 +179,8 @@ export type ClaimAsyncInput<
   potVault: Address<TAccountPotVault>;
   /** Winner mint (must match market.winner_mint) */
   winnerMint: Address<TAccountWinnerMint>;
+  /** Quote mint used for reward payouts */
+  quoteMint: Address<TAccountQuoteMint>;
   /** EntryByMint for validation that this mint belongs to this market */
   entryByMint?: Address<TAccountEntryByMint>;
   /** Claimer's winner token account (source for burn) */
@@ -182,7 +193,8 @@ export type ClaimAsyncInput<
   receipt?: Address<TAccountReceipt>;
   /** Payer for receipt creation (can be same as claimer) */
   payer: TransactionSigner<TAccountPayer>;
-  tokenProgram?: Address<TAccountTokenProgram>;
+  baseTokenProgram: Address<TAccountBaseTokenProgram>;
+  quoteTokenProgram: Address<TAccountQuoteTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
   burnAmount: ClaimInstructionDataArgs['burnAmount'];
 };
@@ -192,13 +204,15 @@ export async function getClaimInstructionAsync<
   TAccountMarketAuthority extends string,
   TAccountPotVault extends string,
   TAccountWinnerMint extends string,
+  TAccountQuoteMint extends string,
   TAccountEntryByMint extends string,
   TAccountClaimerWinnerAta extends string,
   TAccountClaimerQuoteAta extends string,
   TAccountClaimer extends string,
   TAccountReceipt extends string,
   TAccountPayer extends string,
-  TAccountTokenProgram extends string,
+  TAccountBaseTokenProgram extends string,
+  TAccountQuoteTokenProgram extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof PREDICTION_MIGRATOR_PROGRAM_ADDRESS,
 >(
@@ -207,13 +221,15 @@ export async function getClaimInstructionAsync<
     TAccountMarketAuthority,
     TAccountPotVault,
     TAccountWinnerMint,
+    TAccountQuoteMint,
     TAccountEntryByMint,
     TAccountClaimerWinnerAta,
     TAccountClaimerQuoteAta,
     TAccountClaimer,
     TAccountReceipt,
     TAccountPayer,
-    TAccountTokenProgram,
+    TAccountBaseTokenProgram,
+    TAccountQuoteTokenProgram,
     TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress },
@@ -224,13 +240,15 @@ export async function getClaimInstructionAsync<
     TAccountMarketAuthority,
     TAccountPotVault,
     TAccountWinnerMint,
+    TAccountQuoteMint,
     TAccountEntryByMint,
     TAccountClaimerWinnerAta,
     TAccountClaimerQuoteAta,
     TAccountClaimer,
     TAccountReceipt,
     TAccountPayer,
-    TAccountTokenProgram,
+    TAccountBaseTokenProgram,
+    TAccountQuoteTokenProgram,
     TAccountSystemProgram
   >
 > {
@@ -247,6 +265,7 @@ export async function getClaimInstructionAsync<
     },
     potVault: { value: input.potVault ?? null, isWritable: true },
     winnerMint: { value: input.winnerMint ?? null, isWritable: true },
+    quoteMint: { value: input.quoteMint ?? null, isWritable: false },
     entryByMint: { value: input.entryByMint ?? null, isWritable: false },
     claimerWinnerAta: {
       value: input.claimerWinnerAta ?? null,
@@ -256,7 +275,14 @@ export async function getClaimInstructionAsync<
     claimer: { value: input.claimer ?? null, isWritable: false },
     receipt: { value: input.receipt ?? null, isWritable: true },
     payer: { value: input.payer ?? null, isWritable: true },
-    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
+    baseTokenProgram: {
+      value: input.baseTokenProgram ?? null,
+      isWritable: false,
+    },
+    quoteTokenProgram: {
+      value: input.quoteTokenProgram ?? null,
+      isWritable: false,
+    },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -333,10 +359,6 @@ export async function getClaimInstructionAsync<
       ],
     });
   }
-  if (!accounts.tokenProgram.value) {
-    accounts.tokenProgram.value =
-      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
-  }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
@@ -349,13 +371,15 @@ export async function getClaimInstructionAsync<
       getAccountMeta('marketAuthority', accounts.marketAuthority),
       getAccountMeta('potVault', accounts.potVault),
       getAccountMeta('winnerMint', accounts.winnerMint),
+      getAccountMeta('quoteMint', accounts.quoteMint),
       getAccountMeta('entryByMint', accounts.entryByMint),
       getAccountMeta('claimerWinnerAta', accounts.claimerWinnerAta),
       getAccountMeta('claimerQuoteAta', accounts.claimerQuoteAta),
       getAccountMeta('claimer', accounts.claimer),
       getAccountMeta('receipt', accounts.receipt),
       getAccountMeta('payer', accounts.payer),
-      getAccountMeta('tokenProgram', accounts.tokenProgram),
+      getAccountMeta('baseTokenProgram', accounts.baseTokenProgram),
+      getAccountMeta('quoteTokenProgram', accounts.quoteTokenProgram),
       getAccountMeta('systemProgram', accounts.systemProgram),
     ],
     data: getClaimInstructionDataEncoder().encode(
@@ -368,13 +392,15 @@ export async function getClaimInstructionAsync<
     TAccountMarketAuthority,
     TAccountPotVault,
     TAccountWinnerMint,
+    TAccountQuoteMint,
     TAccountEntryByMint,
     TAccountClaimerWinnerAta,
     TAccountClaimerQuoteAta,
     TAccountClaimer,
     TAccountReceipt,
     TAccountPayer,
-    TAccountTokenProgram,
+    TAccountBaseTokenProgram,
+    TAccountQuoteTokenProgram,
     TAccountSystemProgram
   >);
 }
@@ -384,13 +410,15 @@ export type ClaimInput<
   TAccountMarketAuthority extends string = string,
   TAccountPotVault extends string = string,
   TAccountWinnerMint extends string = string,
+  TAccountQuoteMint extends string = string,
   TAccountEntryByMint extends string = string,
   TAccountClaimerWinnerAta extends string = string,
   TAccountClaimerQuoteAta extends string = string,
   TAccountClaimer extends string = string,
   TAccountReceipt extends string = string,
   TAccountPayer extends string = string,
-  TAccountTokenProgram extends string = string,
+  TAccountBaseTokenProgram extends string = string,
+  TAccountQuoteTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
   /** Market PDA */
@@ -400,6 +428,8 @@ export type ClaimInput<
   potVault: Address<TAccountPotVault>;
   /** Winner mint (must match market.winner_mint) */
   winnerMint: Address<TAccountWinnerMint>;
+  /** Quote mint used for reward payouts */
+  quoteMint: Address<TAccountQuoteMint>;
   /** EntryByMint for validation that this mint belongs to this market */
   entryByMint: Address<TAccountEntryByMint>;
   /** Claimer's winner token account (source for burn) */
@@ -412,7 +442,8 @@ export type ClaimInput<
   receipt: Address<TAccountReceipt>;
   /** Payer for receipt creation (can be same as claimer) */
   payer: TransactionSigner<TAccountPayer>;
-  tokenProgram?: Address<TAccountTokenProgram>;
+  baseTokenProgram: Address<TAccountBaseTokenProgram>;
+  quoteTokenProgram: Address<TAccountQuoteTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
   burnAmount: ClaimInstructionDataArgs['burnAmount'];
 };
@@ -422,13 +453,15 @@ export function getClaimInstruction<
   TAccountMarketAuthority extends string,
   TAccountPotVault extends string,
   TAccountWinnerMint extends string,
+  TAccountQuoteMint extends string,
   TAccountEntryByMint extends string,
   TAccountClaimerWinnerAta extends string,
   TAccountClaimerQuoteAta extends string,
   TAccountClaimer extends string,
   TAccountReceipt extends string,
   TAccountPayer extends string,
-  TAccountTokenProgram extends string,
+  TAccountBaseTokenProgram extends string,
+  TAccountQuoteTokenProgram extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof PREDICTION_MIGRATOR_PROGRAM_ADDRESS,
 >(
@@ -437,13 +470,15 @@ export function getClaimInstruction<
     TAccountMarketAuthority,
     TAccountPotVault,
     TAccountWinnerMint,
+    TAccountQuoteMint,
     TAccountEntryByMint,
     TAccountClaimerWinnerAta,
     TAccountClaimerQuoteAta,
     TAccountClaimer,
     TAccountReceipt,
     TAccountPayer,
-    TAccountTokenProgram,
+    TAccountBaseTokenProgram,
+    TAccountQuoteTokenProgram,
     TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress },
@@ -453,13 +488,15 @@ export function getClaimInstruction<
   TAccountMarketAuthority,
   TAccountPotVault,
   TAccountWinnerMint,
+  TAccountQuoteMint,
   TAccountEntryByMint,
   TAccountClaimerWinnerAta,
   TAccountClaimerQuoteAta,
   TAccountClaimer,
   TAccountReceipt,
   TAccountPayer,
-  TAccountTokenProgram,
+  TAccountBaseTokenProgram,
+  TAccountQuoteTokenProgram,
   TAccountSystemProgram
 > {
   // Program address.
@@ -475,6 +512,7 @@ export function getClaimInstruction<
     },
     potVault: { value: input.potVault ?? null, isWritable: true },
     winnerMint: { value: input.winnerMint ?? null, isWritable: true },
+    quoteMint: { value: input.quoteMint ?? null, isWritable: false },
     entryByMint: { value: input.entryByMint ?? null, isWritable: false },
     claimerWinnerAta: {
       value: input.claimerWinnerAta ?? null,
@@ -484,7 +522,14 @@ export function getClaimInstruction<
     claimer: { value: input.claimer ?? null, isWritable: false },
     receipt: { value: input.receipt ?? null, isWritable: true },
     payer: { value: input.payer ?? null, isWritable: true },
-    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
+    baseTokenProgram: {
+      value: input.baseTokenProgram ?? null,
+      isWritable: false,
+    },
+    quoteTokenProgram: {
+      value: input.quoteTokenProgram ?? null,
+      isWritable: false,
+    },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -496,10 +541,6 @@ export function getClaimInstruction<
   const args = { ...input };
 
   // Resolve default values.
-  if (!accounts.tokenProgram.value) {
-    accounts.tokenProgram.value =
-      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
-  }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
@@ -512,13 +553,15 @@ export function getClaimInstruction<
       getAccountMeta('marketAuthority', accounts.marketAuthority),
       getAccountMeta('potVault', accounts.potVault),
       getAccountMeta('winnerMint', accounts.winnerMint),
+      getAccountMeta('quoteMint', accounts.quoteMint),
       getAccountMeta('entryByMint', accounts.entryByMint),
       getAccountMeta('claimerWinnerAta', accounts.claimerWinnerAta),
       getAccountMeta('claimerQuoteAta', accounts.claimerQuoteAta),
       getAccountMeta('claimer', accounts.claimer),
       getAccountMeta('receipt', accounts.receipt),
       getAccountMeta('payer', accounts.payer),
-      getAccountMeta('tokenProgram', accounts.tokenProgram),
+      getAccountMeta('baseTokenProgram', accounts.baseTokenProgram),
+      getAccountMeta('quoteTokenProgram', accounts.quoteTokenProgram),
       getAccountMeta('systemProgram', accounts.systemProgram),
     ],
     data: getClaimInstructionDataEncoder().encode(
@@ -531,13 +574,15 @@ export function getClaimInstruction<
     TAccountMarketAuthority,
     TAccountPotVault,
     TAccountWinnerMint,
+    TAccountQuoteMint,
     TAccountEntryByMint,
     TAccountClaimerWinnerAta,
     TAccountClaimerQuoteAta,
     TAccountClaimer,
     TAccountReceipt,
     TAccountPayer,
-    TAccountTokenProgram,
+    TAccountBaseTokenProgram,
+    TAccountQuoteTokenProgram,
     TAccountSystemProgram
   >);
 }
@@ -555,20 +600,23 @@ export type ParsedClaimInstruction<
     potVault: TAccountMetas[2];
     /** Winner mint (must match market.winner_mint) */
     winnerMint: TAccountMetas[3];
+    /** Quote mint used for reward payouts */
+    quoteMint: TAccountMetas[4];
     /** EntryByMint for validation that this mint belongs to this market */
-    entryByMint: TAccountMetas[4];
+    entryByMint: TAccountMetas[5];
     /** Claimer's winner token account (source for burn) */
-    claimerWinnerAta: TAccountMetas[5];
+    claimerWinnerAta: TAccountMetas[6];
     /** Claimer's quote token account (destination for rewards) */
-    claimerQuoteAta: TAccountMetas[6];
+    claimerQuoteAta: TAccountMetas[7];
     /** Claimer wallet (signer) */
-    claimer: TAccountMetas[7];
+    claimer: TAccountMetas[8];
     /** Claim receipt PDA (created if first claim) */
-    receipt: TAccountMetas[8];
+    receipt: TAccountMetas[9];
     /** Payer for receipt creation (can be same as claimer) */
-    payer: TAccountMetas[9];
-    tokenProgram: TAccountMetas[10];
-    systemProgram: TAccountMetas[11];
+    payer: TAccountMetas[10];
+    baseTokenProgram: TAccountMetas[11];
+    quoteTokenProgram: TAccountMetas[12];
+    systemProgram: TAccountMetas[13];
   };
   data: ClaimInstructionData;
 };
@@ -581,12 +629,12 @@ export function parseClaimInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedClaimInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 12) {
+  if (instruction.accounts.length < 14) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 12,
+        expectedAccountMetas: 14,
       },
     );
   }
@@ -603,13 +651,15 @@ export function parseClaimInstruction<
       marketAuthority: getNextAccount(),
       potVault: getNextAccount(),
       winnerMint: getNextAccount(),
+      quoteMint: getNextAccount(),
       entryByMint: getNextAccount(),
       claimerWinnerAta: getNextAccount(),
       claimerQuoteAta: getNextAccount(),
       claimer: getNextAccount(),
       receipt: getNextAccount(),
       payer: getNextAccount(),
-      tokenProgram: getNextAccount(),
+      baseTokenProgram: getNextAccount(),
+      quoteTokenProgram: getNextAccount(),
       systemProgram: getNextAccount(),
     },
     data: getClaimInstructionDataDecoder().decode(instruction.data),

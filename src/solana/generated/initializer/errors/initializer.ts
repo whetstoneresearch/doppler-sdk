@@ -52,46 +52,48 @@ export const INITIALIZER_ERROR__SENTINEL_REJECTED = 0x1780; // 6016
 export const INITIALIZER_ERROR__BUY_NOT_ALLOWED = 0x1781; // 6017
 /** SellNotAllowed: Sell not allowed */
 export const INITIALIZER_ERROR__SELL_NOT_ALLOWED = 0x1782; // 6018
+/** SellDisableNotAllowed: Sell disable not allowed once enabled */
+export const INITIALIZER_ERROR__SELL_DISABLE_NOT_ALLOWED = 0x1783; // 6019
 /** InvalidDirection: Invalid direction */
-export const INITIALIZER_ERROR__INVALID_DIRECTION = 0x1783; // 6019
+export const INITIALIZER_ERROR__INVALID_DIRECTION = 0x1784; // 6020
 /** AllowlistFull: Allowlist full */
-export const INITIALIZER_ERROR__ALLOWLIST_FULL = 0x1784; // 6020
+export const INITIALIZER_ERROR__ALLOWLIST_FULL = 0x1785; // 6021
 /** InvalidInput: Invalid input */
-export const INITIALIZER_ERROR__INVALID_INPUT = 0x1785; // 6021
+export const INITIALIZER_ERROR__INVALID_INPUT = 0x1786; // 6022
 /** AlreadyMigrated: Already migrated */
-export const INITIALIZER_ERROR__ALREADY_MIGRATED = 0x1786; // 6022
+export const INITIALIZER_ERROR__ALREADY_MIGRATED = 0x1787; // 6023
 /** QuoteVaultNotEmpty: Quote vault not empty */
-export const INITIALIZER_ERROR__QUOTE_VAULT_NOT_EMPTY = 0x1787; // 6023
+export const INITIALIZER_ERROR__QUOTE_VAULT_NOT_EMPTY = 0x1788; // 6024
 /** LaunchLocked: Launch locked */
-export const INITIALIZER_ERROR__LAUNCH_LOCKED = 0x1788; // 6024
+export const INITIALIZER_ERROR__LAUNCH_LOCKED = 0x1789; // 6025
 /** InvalidCurveKind: Invalid curve kind */
-export const INITIALIZER_ERROR__INVALID_CURVE_KIND = 0x1789; // 6025
+export const INITIALIZER_ERROR__INVALID_CURVE_KIND = 0x178a; // 6026
 /** CurveParamsInvalid: Curve params invalid */
-export const INITIALIZER_ERROR__CURVE_PARAMS_INVALID = 0x178a; // 6026
+export const INITIALIZER_ERROR__CURVE_PARAMS_INVALID = 0x178b; // 6027
 /** RemainingAccountOverlap: Remaining account overlaps with protocol account */
-export const INITIALIZER_ERROR__REMAINING_ACCOUNT_OVERLAP = 0x178b; // 6027
+export const INITIALIZER_ERROR__REMAINING_ACCOUNT_OVERLAP = 0x178c; // 6028
 /** MissingRemainingAccountsCommitment: Missing remaining accounts commitment */
-export const INITIALIZER_ERROR__MISSING_REMAINING_ACCOUNTS_COMMITMENT = 0x178c; // 6028
+export const INITIALIZER_ERROR__MISSING_REMAINING_ACCOUNTS_COMMITMENT = 0x178d; // 6029
 /** RemainingAccountsCommitmentMismatch: Remaining accounts commitment mismatch */
-export const INITIALIZER_ERROR__REMAINING_ACCOUNTS_COMMITMENT_MISMATCH = 0x178d; // 6029
+export const INITIALIZER_ERROR__REMAINING_ACCOUNTS_COMMITMENT_MISMATCH = 0x178e; // 6030
 /** InvalidOracle: Invalid oracle account */
-export const INITIALIZER_ERROR__INVALID_ORACLE = 0x178e; // 6030
+export const INITIALIZER_ERROR__INVALID_ORACLE = 0x178f; // 6031
 /** MissingMetadataAccounts: Missing metadata accounts */
-export const INITIALIZER_ERROR__MISSING_METADATA_ACCOUNTS = 0x178f; // 6031
+export const INITIALIZER_ERROR__MISSING_METADATA_ACCOUNTS = 0x1790; // 6032
 /** InvalidMetadataProgram: Invalid metadata program */
-export const INITIALIZER_ERROR__INVALID_METADATA_PROGRAM = 0x1790; // 6032
+export const INITIALIZER_ERROR__INVALID_METADATA_PROGRAM = 0x1791; // 6033
 /** InvalidMetadataAccount: Invalid metadata account */
-export const INITIALIZER_ERROR__INVALID_METADATA_ACCOUNT = 0x1791; // 6033
+export const INITIALIZER_ERROR__INVALID_METADATA_ACCOUNT = 0x1792; // 6034
 /** MetadataCpiFailed: Metadata CPI failed */
-export const INITIALIZER_ERROR__METADATA_CPI_FAILED = 0x1792; // 6034
+export const INITIALIZER_ERROR__METADATA_CPI_FAILED = 0x1793; // 6035
 /** CpiForbidden: CPI not allowed */
-export const INITIALIZER_ERROR__CPI_FORBIDDEN = 0x1793; // 6035
+export const INITIALIZER_ERROR__CPI_FORBIDDEN = 0x1794; // 6036
 /** RemainingAccountSigner: Remaining accounts must not be signers */
-export const INITIALIZER_ERROR__REMAINING_ACCOUNT_SIGNER = 0x1794; // 6036
+export const INITIALIZER_ERROR__REMAINING_ACCOUNT_SIGNER = 0x1795; // 6037
 /** RemainingAccountWritable: Remaining accounts must be readonly */
-export const INITIALIZER_ERROR__REMAINING_ACCOUNT_WRITABLE = 0x1795; // 6037
+export const INITIALIZER_ERROR__REMAINING_ACCOUNT_WRITABLE = 0x1796; // 6038
 /** MigrationIncomplete: Migration left vault funds behind */
-export const INITIALIZER_ERROR__MIGRATION_INCOMPLETE = 0x1796; // 6038
+export const INITIALIZER_ERROR__MIGRATION_INCOMPLETE = 0x1797; // 6039
 
 export type InitializerError =
   | typeof INITIALIZER_ERROR__ALLOWLIST_FULL
@@ -125,6 +127,7 @@ export type InitializerError =
   | typeof INITIALIZER_ERROR__REMAINING_ACCOUNTS_COMMITMENT_MISMATCH
   | typeof INITIALIZER_ERROR__REMAINING_ACCOUNT_SIGNER
   | typeof INITIALIZER_ERROR__REMAINING_ACCOUNT_WRITABLE
+  | typeof INITIALIZER_ERROR__SELL_DISABLE_NOT_ALLOWED
   | typeof INITIALIZER_ERROR__SELL_NOT_ALLOWED
   | typeof INITIALIZER_ERROR__SENTINEL_CPI_FAILED
   | typeof INITIALIZER_ERROR__SENTINEL_NOT_ALLOWLISTED
@@ -168,6 +171,7 @@ if (process.env.NODE_ENV !== 'production') {
     [INITIALIZER_ERROR__REMAINING_ACCOUNTS_COMMITMENT_MISMATCH]: `Remaining accounts commitment mismatch`,
     [INITIALIZER_ERROR__REMAINING_ACCOUNT_SIGNER]: `Remaining accounts must not be signers`,
     [INITIALIZER_ERROR__REMAINING_ACCOUNT_WRITABLE]: `Remaining accounts must be readonly`,
+    [INITIALIZER_ERROR__SELL_DISABLE_NOT_ALLOWED]: `Sell disable not allowed once enabled`,
     [INITIALIZER_ERROR__SELL_NOT_ALLOWED]: `Sell not allowed`,
     [INITIALIZER_ERROR__SENTINEL_CPI_FAILED]: `Sentinel CPI failed`,
     [INITIALIZER_ERROR__SENTINEL_NOT_ALLOWLISTED]: `Sentinel not allowlisted`,

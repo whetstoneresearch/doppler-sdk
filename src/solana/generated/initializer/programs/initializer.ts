@@ -50,6 +50,7 @@ import {
   getPreviewSwapExactInInstruction,
   getSetMigratorAllowlistInstructionAsync,
   getSetSentinelAllowlistInstructionAsync,
+  getTransferAdminInstructionAsync,
   getUpdateLaunchCalldataInstructionAsync,
   getUpdateTradingFlagsInstructionAsync,
   parseCurveSwapExactInInstruction,
@@ -61,6 +62,7 @@ import {
   parsePreviewSwapExactInInstruction,
   parseSetMigratorAllowlistInstruction,
   parseSetSentinelAllowlistInstruction,
+  parseTransferAdminInstruction,
   parseUpdateLaunchCalldataInstruction,
   parseUpdateTradingFlagsInstruction,
   type CurveSwapExactInAsyncInput,
@@ -77,12 +79,14 @@ import {
   type ParsedPreviewSwapExactInInstruction,
   type ParsedSetMigratorAllowlistInstruction,
   type ParsedSetSentinelAllowlistInstruction,
+  type ParsedTransferAdminInstruction,
   type ParsedUpdateLaunchCalldataInstruction,
   type ParsedUpdateTradingFlagsInstruction,
   type PreviewMigrationInput,
   type PreviewSwapExactInInput,
   type SetMigratorAllowlistAsyncInput,
   type SetSentinelAllowlistAsyncInput,
+  type TransferAdminAsyncInput,
   type UpdateLaunchCalldataAsyncInput,
   type UpdateTradingFlagsAsyncInput,
 } from '../instructions';
@@ -137,6 +141,7 @@ export enum InitializerInstruction {
   PreviewSwapExactIn,
   SetMigratorAllowlist,
   SetSentinelAllowlist,
+  TransferAdmin,
   UpdateLaunchCalldata,
   UpdateTradingFlags,
 }
@@ -248,6 +253,17 @@ export function identifyInitializerInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([42, 242, 66, 106, 228, 10, 111, 156]),
+      ),
+      0,
+    )
+  ) {
+    return InitializerInstruction.TransferAdmin;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([26, 225, 184, 23, 167, 221, 87, 92]),
       ),
       0,
@@ -302,6 +318,9 @@ export type ParsedInitializerInstruction<
   | ({
       instructionType: InitializerInstruction.SetSentinelAllowlist;
     } & ParsedSetSentinelAllowlistInstruction<TProgram>)
+  | ({
+      instructionType: InitializerInstruction.TransferAdmin;
+    } & ParsedTransferAdminInstruction<TProgram>)
   | ({
       instructionType: InitializerInstruction.UpdateLaunchCalldata;
     } & ParsedUpdateLaunchCalldataInstruction<TProgram>)
@@ -377,6 +396,13 @@ export function parseInitializerInstruction<TProgram extends string>(
         ...parseSetSentinelAllowlistInstruction(instruction),
       };
     }
+    case InitializerInstruction.TransferAdmin: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: InitializerInstruction.TransferAdmin,
+        ...parseTransferAdminInstruction(instruction),
+      };
+    }
     case InitializerInstruction.UpdateLaunchCalldata: {
       assertIsInstructionWithAccounts(instruction);
       return {
@@ -450,6 +476,10 @@ export type InitializerPluginInstructions = {
   setSentinelAllowlist: (
     input: SetSentinelAllowlistAsyncInput,
   ) => ReturnType<typeof getSetSentinelAllowlistInstructionAsync> &
+    SelfPlanAndSendFunctions;
+  transferAdmin: (
+    input: TransferAdminAsyncInput,
+  ) => ReturnType<typeof getTransferAdminInstructionAsync> &
     SelfPlanAndSendFunctions;
   updateLaunchCalldata: (
     input: UpdateLaunchCalldataAsyncInput,
@@ -531,6 +561,11 @@ export function initializerProgram() {
             addSelfPlanAndSendFunctions(
               client,
               getSetSentinelAllowlistInstructionAsync(input),
+            ),
+          transferAdmin: (input) =>
+            addSelfPlanAndSendFunctions(
+              client,
+              getTransferAdminInstructionAsync(input),
             ),
           updateLaunchCalldata: (input) =>
             addSelfPlanAndSendFunctions(

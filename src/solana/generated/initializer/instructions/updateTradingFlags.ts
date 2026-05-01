@@ -56,8 +56,6 @@ export type UpdateTradingFlagsInstruction<
   TAccountConfig extends string | AccountMeta<string> = string,
   TAccountLaunch extends string | AccountMeta<string> = string,
   TAccountAuthority extends string | AccountMeta<string> = string,
-  TAccountInstructionsSysvar extends string | AccountMeta<string> =
-    'Sysvar1nstructions1111111111111111111111111',
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -73,9 +71,6 @@ export type UpdateTradingFlagsInstruction<
         ? ReadonlySignerAccount<TAccountAuthority> &
             AccountSignerMeta<TAccountAuthority>
         : TAccountAuthority,
-      TAccountInstructionsSysvar extends string
-        ? ReadonlyAccount<TAccountInstructionsSysvar>
-        : TAccountInstructionsSysvar,
       ...TRemainingAccounts,
     ]
   >;
@@ -127,13 +122,11 @@ export type UpdateTradingFlagsAsyncInput<
   TAccountConfig extends string = string,
   TAccountLaunch extends string = string,
   TAccountAuthority extends string = string,
-  TAccountInstructionsSysvar extends string = string,
 > = {
   config?: Address<TAccountConfig>;
   launch: Address<TAccountLaunch>;
   /** Authority of the launch (must match launch.authority or config.admin) */
   authority: TransactionSigner<TAccountAuthority>;
-  instructionsSysvar?: Address<TAccountInstructionsSysvar>;
   allowBuy: UpdateTradingFlagsInstructionDataArgs['allowBuy'];
   allowSell: UpdateTradingFlagsInstructionDataArgs['allowSell'];
 };
@@ -142,14 +135,12 @@ export async function getUpdateTradingFlagsInstructionAsync<
   TAccountConfig extends string,
   TAccountLaunch extends string,
   TAccountAuthority extends string,
-  TAccountInstructionsSysvar extends string,
   TProgramAddress extends Address = typeof INITIALIZER_PROGRAM_ADDRESS,
 >(
   input: UpdateTradingFlagsAsyncInput<
     TAccountConfig,
     TAccountLaunch,
-    TAccountAuthority,
-    TAccountInstructionsSysvar
+    TAccountAuthority
   >,
   config?: { programAddress?: TProgramAddress },
 ): Promise<
@@ -157,8 +148,7 @@ export async function getUpdateTradingFlagsInstructionAsync<
     TProgramAddress,
     TAccountConfig,
     TAccountLaunch,
-    TAccountAuthority,
-    TAccountInstructionsSysvar
+    TAccountAuthority
   >
 > {
   // Program address.
@@ -169,10 +159,6 @@ export async function getUpdateTradingFlagsInstructionAsync<
     config: { value: input.config ?? null, isWritable: false },
     launch: { value: input.launch ?? null, isWritable: true },
     authority: { value: input.authority ?? null, isWritable: false },
-    instructionsSysvar: {
-      value: input.instructionsSysvar ?? null,
-      isWritable: false,
-    },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -191,10 +177,6 @@ export async function getUpdateTradingFlagsInstructionAsync<
       ],
     });
   }
-  if (!accounts.instructionsSysvar.value) {
-    accounts.instructionsSysvar.value =
-      'Sysvar1nstructions1111111111111111111111111' as Address<'Sysvar1nstructions1111111111111111111111111'>;
-  }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
@@ -202,7 +184,6 @@ export async function getUpdateTradingFlagsInstructionAsync<
       getAccountMeta('config', accounts.config),
       getAccountMeta('launch', accounts.launch),
       getAccountMeta('authority', accounts.authority),
-      getAccountMeta('instructionsSysvar', accounts.instructionsSysvar),
     ],
     data: getUpdateTradingFlagsInstructionDataEncoder().encode(
       args as UpdateTradingFlagsInstructionDataArgs,
@@ -212,8 +193,7 @@ export async function getUpdateTradingFlagsInstructionAsync<
     TProgramAddress,
     TAccountConfig,
     TAccountLaunch,
-    TAccountAuthority,
-    TAccountInstructionsSysvar
+    TAccountAuthority
   >);
 }
 
@@ -221,13 +201,11 @@ export type UpdateTradingFlagsInput<
   TAccountConfig extends string = string,
   TAccountLaunch extends string = string,
   TAccountAuthority extends string = string,
-  TAccountInstructionsSysvar extends string = string,
 > = {
   config: Address<TAccountConfig>;
   launch: Address<TAccountLaunch>;
   /** Authority of the launch (must match launch.authority or config.admin) */
   authority: TransactionSigner<TAccountAuthority>;
-  instructionsSysvar?: Address<TAccountInstructionsSysvar>;
   allowBuy: UpdateTradingFlagsInstructionDataArgs['allowBuy'];
   allowSell: UpdateTradingFlagsInstructionDataArgs['allowSell'];
 };
@@ -236,22 +214,19 @@ export function getUpdateTradingFlagsInstruction<
   TAccountConfig extends string,
   TAccountLaunch extends string,
   TAccountAuthority extends string,
-  TAccountInstructionsSysvar extends string,
   TProgramAddress extends Address = typeof INITIALIZER_PROGRAM_ADDRESS,
 >(
   input: UpdateTradingFlagsInput<
     TAccountConfig,
     TAccountLaunch,
-    TAccountAuthority,
-    TAccountInstructionsSysvar
+    TAccountAuthority
   >,
   config?: { programAddress?: TProgramAddress },
 ): UpdateTradingFlagsInstruction<
   TProgramAddress,
   TAccountConfig,
   TAccountLaunch,
-  TAccountAuthority,
-  TAccountInstructionsSysvar
+  TAccountAuthority
 > {
   // Program address.
   const programAddress = config?.programAddress ?? INITIALIZER_PROGRAM_ADDRESS;
@@ -261,10 +236,6 @@ export function getUpdateTradingFlagsInstruction<
     config: { value: input.config ?? null, isWritable: false },
     launch: { value: input.launch ?? null, isWritable: true },
     authority: { value: input.authority ?? null, isWritable: false },
-    instructionsSysvar: {
-      value: input.instructionsSysvar ?? null,
-      isWritable: false,
-    },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -274,19 +245,12 @@ export function getUpdateTradingFlagsInstruction<
   // Original args.
   const args = { ...input };
 
-  // Resolve default values.
-  if (!accounts.instructionsSysvar.value) {
-    accounts.instructionsSysvar.value =
-      'Sysvar1nstructions1111111111111111111111111' as Address<'Sysvar1nstructions1111111111111111111111111'>;
-  }
-
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
       getAccountMeta('config', accounts.config),
       getAccountMeta('launch', accounts.launch),
       getAccountMeta('authority', accounts.authority),
-      getAccountMeta('instructionsSysvar', accounts.instructionsSysvar),
     ],
     data: getUpdateTradingFlagsInstructionDataEncoder().encode(
       args as UpdateTradingFlagsInstructionDataArgs,
@@ -296,8 +260,7 @@ export function getUpdateTradingFlagsInstruction<
     TProgramAddress,
     TAccountConfig,
     TAccountLaunch,
-    TAccountAuthority,
-    TAccountInstructionsSysvar
+    TAccountAuthority
   >);
 }
 
@@ -311,7 +274,6 @@ export type ParsedUpdateTradingFlagsInstruction<
     launch: TAccountMetas[1];
     /** Authority of the launch (must match launch.authority or config.admin) */
     authority: TAccountMetas[2];
-    instructionsSysvar: TAccountMetas[3];
   };
   data: UpdateTradingFlagsInstructionData;
 };
@@ -324,12 +286,12 @@ export function parseUpdateTradingFlagsInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedUpdateTradingFlagsInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 4) {
+  if (instruction.accounts.length < 3) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 4,
+        expectedAccountMetas: 3,
       },
     );
   }
@@ -345,7 +307,6 @@ export function parseUpdateTradingFlagsInstruction<
       config: getNextAccount(),
       launch: getNextAccount(),
       authority: getNextAccount(),
-      instructionsSysvar: getNextAccount(),
     },
     data: getUpdateTradingFlagsInstructionDataDecoder().decode(
       instruction.data,

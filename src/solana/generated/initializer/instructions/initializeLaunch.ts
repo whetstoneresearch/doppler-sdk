@@ -85,8 +85,6 @@ export type InitializeLaunchInstruction<
     'SysvarRent111111111111111111111111111111111',
   TAccountMetadataAccount extends string | AccountMeta<string> = string,
   TAccountMetadataProgram extends string | AccountMeta<string> = string,
-  TAccountInstructionsSysvar extends string | AccountMeta<string> =
-    'Sysvar1nstructions1111111111111111111111111',
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -145,9 +143,6 @@ export type InitializeLaunchInstruction<
       TAccountMetadataProgram extends string
         ? ReadonlyAccount<TAccountMetadataProgram>
         : TAccountMetadataProgram,
-      TAccountInstructionsSysvar extends string
-        ? ReadonlyAccount<TAccountInstructionsSysvar>
-        : TAccountInstructionsSysvar,
       ...TRemainingAccounts,
     ]
   >;
@@ -179,7 +174,12 @@ export type InitializeLaunchInstructionData = {
    */
   sentinelRemainingAccountsHash: ReadonlyUint8Array;
   /**
-   * Commitment hash for migrate remaining accounts.
+   * Commitment hash for migrator-init remaining accounts.
+   * Computed as hash(u32_len || pubkey_0 || ... || pubkey_n).
+   */
+  migratorInitRemainingAccountsHash: ReadonlyUint8Array;
+  /**
+   * Commitment hash for migrator-migrate remaining accounts.
    * Computed as hash(u32_len || pubkey_0 || ... || pubkey_n).
    */
   migratorRemainingAccountsHash: ReadonlyUint8Array;
@@ -217,7 +217,12 @@ export type InitializeLaunchInstructionDataArgs = {
    */
   sentinelRemainingAccountsHash: ReadonlyUint8Array;
   /**
-   * Commitment hash for migrate remaining accounts.
+   * Commitment hash for migrator-init remaining accounts.
+   * Computed as hash(u32_len || pubkey_0 || ... || pubkey_n).
+   */
+  migratorInitRemainingAccountsHash: ReadonlyUint8Array;
+  /**
+   * Commitment hash for migrator-migrate remaining accounts.
    * Computed as hash(u32_len || pubkey_0 || ... || pubkey_n).
    */
   migratorRemainingAccountsHash: ReadonlyUint8Array;
@@ -262,6 +267,10 @@ export function getInitializeLaunchInstructionDataEncoder(): Encoder<InitializeL
         addEncoderSizePrefix(getBytesEncoder(), getU32Encoder()),
       ],
       ['sentinelRemainingAccountsHash', fixEncoderSize(getBytesEncoder(), 32)],
+      [
+        'migratorInitRemainingAccountsHash',
+        fixEncoderSize(getBytesEncoder(), 32),
+      ],
       ['migratorRemainingAccountsHash', fixEncoderSize(getBytesEncoder(), 32)],
       ['metadataName', addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
       [
@@ -306,6 +315,10 @@ export function getInitializeLaunchInstructionDataDecoder(): Decoder<InitializeL
       addDecoderSizePrefix(getBytesDecoder(), getU32Decoder()),
     ],
     ['sentinelRemainingAccountsHash', fixDecoderSize(getBytesDecoder(), 32)],
+    [
+      'migratorInitRemainingAccountsHash',
+      fixDecoderSize(getBytesDecoder(), 32),
+    ],
     ['migratorRemainingAccountsHash', fixDecoderSize(getBytesDecoder(), 32)],
     ['metadataName', addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
     ['metadataSymbol', addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
@@ -340,7 +353,6 @@ export type InitializeLaunchAsyncInput<
   TAccountRent extends string = string,
   TAccountMetadataAccount extends string = string,
   TAccountMetadataProgram extends string = string,
-  TAccountInstructionsSysvar extends string = string,
 > = {
   config?: Address<TAccountConfig>;
   launch: Address<TAccountLaunch>;
@@ -362,7 +374,6 @@ export type InitializeLaunchAsyncInput<
   metadataAccount?: Address<TAccountMetadataAccount>;
   /** Metaplex Token Metadata program. */
   metadataProgram?: Address<TAccountMetadataProgram>;
-  instructionsSysvar?: Address<TAccountInstructionsSysvar>;
   namespace: InitializeLaunchInstructionDataArgs['namespace'];
   launchId: InitializeLaunchInstructionDataArgs['launchId'];
   baseDecimals: InitializeLaunchInstructionDataArgs['baseDecimals'];
@@ -383,6 +394,7 @@ export type InitializeLaunchAsyncInput<
   migratorInitCalldata: InitializeLaunchInstructionDataArgs['migratorInitCalldata'];
   migratorMigrateCalldata: InitializeLaunchInstructionDataArgs['migratorMigrateCalldata'];
   sentinelRemainingAccountsHash: InitializeLaunchInstructionDataArgs['sentinelRemainingAccountsHash'];
+  migratorInitRemainingAccountsHash: InitializeLaunchInstructionDataArgs['migratorInitRemainingAccountsHash'];
   migratorRemainingAccountsHash: InitializeLaunchInstructionDataArgs['migratorRemainingAccountsHash'];
   metadataName: InitializeLaunchInstructionDataArgs['metadataName'];
   metadataSymbol: InitializeLaunchInstructionDataArgs['metadataSymbol'];
@@ -406,7 +418,6 @@ export async function getInitializeLaunchInstructionAsync<
   TAccountRent extends string,
   TAccountMetadataAccount extends string,
   TAccountMetadataProgram extends string,
-  TAccountInstructionsSysvar extends string,
   TProgramAddress extends Address = typeof INITIALIZER_PROGRAM_ADDRESS,
 >(
   input: InitializeLaunchAsyncInput<
@@ -425,8 +436,7 @@ export async function getInitializeLaunchInstructionAsync<
     TAccountSystemProgram,
     TAccountRent,
     TAccountMetadataAccount,
-    TAccountMetadataProgram,
-    TAccountInstructionsSysvar
+    TAccountMetadataProgram
   >,
   config?: { programAddress?: TProgramAddress },
 ): Promise<
@@ -447,8 +457,7 @@ export async function getInitializeLaunchInstructionAsync<
     TAccountSystemProgram,
     TAccountRent,
     TAccountMetadataAccount,
-    TAccountMetadataProgram,
-    TAccountInstructionsSysvar
+    TAccountMetadataProgram
   >
 > {
   // Program address.
@@ -485,10 +494,6 @@ export async function getInitializeLaunchInstructionAsync<
     metadataAccount: { value: input.metadataAccount ?? null, isWritable: true },
     metadataProgram: {
       value: input.metadataProgram ?? null,
-      isWritable: false,
-    },
-    instructionsSysvar: {
-      value: input.instructionsSysvar ?? null,
       isWritable: false,
     },
   };
@@ -536,10 +541,6 @@ export async function getInitializeLaunchInstructionAsync<
     accounts.rent.value =
       'SysvarRent111111111111111111111111111111111' as Address<'SysvarRent111111111111111111111111111111111'>;
   }
-  if (!accounts.instructionsSysvar.value) {
-    accounts.instructionsSysvar.value =
-      'Sysvar1nstructions1111111111111111111111111' as Address<'Sysvar1nstructions1111111111111111111111111'>;
-  }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
@@ -560,7 +561,6 @@ export async function getInitializeLaunchInstructionAsync<
       getAccountMeta('rent', accounts.rent),
       getAccountMeta('metadataAccount', accounts.metadataAccount),
       getAccountMeta('metadataProgram', accounts.metadataProgram),
-      getAccountMeta('instructionsSysvar', accounts.instructionsSysvar),
     ],
     data: getInitializeLaunchInstructionDataEncoder().encode(
       args as InitializeLaunchInstructionDataArgs,
@@ -583,8 +583,7 @@ export async function getInitializeLaunchInstructionAsync<
     TAccountSystemProgram,
     TAccountRent,
     TAccountMetadataAccount,
-    TAccountMetadataProgram,
-    TAccountInstructionsSysvar
+    TAccountMetadataProgram
   >);
 }
 
@@ -605,7 +604,6 @@ export type InitializeLaunchInput<
   TAccountRent extends string = string,
   TAccountMetadataAccount extends string = string,
   TAccountMetadataProgram extends string = string,
-  TAccountInstructionsSysvar extends string = string,
 > = {
   config: Address<TAccountConfig>;
   launch: Address<TAccountLaunch>;
@@ -627,7 +625,6 @@ export type InitializeLaunchInput<
   metadataAccount?: Address<TAccountMetadataAccount>;
   /** Metaplex Token Metadata program. */
   metadataProgram?: Address<TAccountMetadataProgram>;
-  instructionsSysvar?: Address<TAccountInstructionsSysvar>;
   namespace: InitializeLaunchInstructionDataArgs['namespace'];
   launchId: InitializeLaunchInstructionDataArgs['launchId'];
   baseDecimals: InitializeLaunchInstructionDataArgs['baseDecimals'];
@@ -648,6 +645,7 @@ export type InitializeLaunchInput<
   migratorInitCalldata: InitializeLaunchInstructionDataArgs['migratorInitCalldata'];
   migratorMigrateCalldata: InitializeLaunchInstructionDataArgs['migratorMigrateCalldata'];
   sentinelRemainingAccountsHash: InitializeLaunchInstructionDataArgs['sentinelRemainingAccountsHash'];
+  migratorInitRemainingAccountsHash: InitializeLaunchInstructionDataArgs['migratorInitRemainingAccountsHash'];
   migratorRemainingAccountsHash: InitializeLaunchInstructionDataArgs['migratorRemainingAccountsHash'];
   metadataName: InitializeLaunchInstructionDataArgs['metadataName'];
   metadataSymbol: InitializeLaunchInstructionDataArgs['metadataSymbol'];
@@ -671,7 +669,6 @@ export function getInitializeLaunchInstruction<
   TAccountRent extends string,
   TAccountMetadataAccount extends string,
   TAccountMetadataProgram extends string,
-  TAccountInstructionsSysvar extends string,
   TProgramAddress extends Address = typeof INITIALIZER_PROGRAM_ADDRESS,
 >(
   input: InitializeLaunchInput<
@@ -690,8 +687,7 @@ export function getInitializeLaunchInstruction<
     TAccountSystemProgram,
     TAccountRent,
     TAccountMetadataAccount,
-    TAccountMetadataProgram,
-    TAccountInstructionsSysvar
+    TAccountMetadataProgram
   >,
   config?: { programAddress?: TProgramAddress },
 ): InitializeLaunchInstruction<
@@ -711,8 +707,7 @@ export function getInitializeLaunchInstruction<
   TAccountSystemProgram,
   TAccountRent,
   TAccountMetadataAccount,
-  TAccountMetadataProgram,
-  TAccountInstructionsSysvar
+  TAccountMetadataProgram
 > {
   // Program address.
   const programAddress = config?.programAddress ?? INITIALIZER_PROGRAM_ADDRESS;
@@ -750,10 +745,6 @@ export function getInitializeLaunchInstruction<
       value: input.metadataProgram ?? null,
       isWritable: false,
     },
-    instructionsSysvar: {
-      value: input.instructionsSysvar ?? null,
-      isWritable: false,
-    },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -771,10 +762,6 @@ export function getInitializeLaunchInstruction<
   if (!accounts.rent.value) {
     accounts.rent.value =
       'SysvarRent111111111111111111111111111111111' as Address<'SysvarRent111111111111111111111111111111111'>;
-  }
-  if (!accounts.instructionsSysvar.value) {
-    accounts.instructionsSysvar.value =
-      'Sysvar1nstructions1111111111111111111111111' as Address<'Sysvar1nstructions1111111111111111111111111'>;
   }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
@@ -796,7 +783,6 @@ export function getInitializeLaunchInstruction<
       getAccountMeta('rent', accounts.rent),
       getAccountMeta('metadataAccount', accounts.metadataAccount),
       getAccountMeta('metadataProgram', accounts.metadataProgram),
-      getAccountMeta('instructionsSysvar', accounts.instructionsSysvar),
     ],
     data: getInitializeLaunchInstructionDataEncoder().encode(
       args as InitializeLaunchInstructionDataArgs,
@@ -819,8 +805,7 @@ export function getInitializeLaunchInstruction<
     TAccountSystemProgram,
     TAccountRent,
     TAccountMetadataAccount,
-    TAccountMetadataProgram,
-    TAccountInstructionsSysvar
+    TAccountMetadataProgram
   >);
 }
 
@@ -850,7 +835,6 @@ export type ParsedInitializeLaunchInstruction<
     metadataAccount?: TAccountMetas[14] | undefined;
     /** Metaplex Token Metadata program. */
     metadataProgram?: TAccountMetas[15] | undefined;
-    instructionsSysvar: TAccountMetas[16];
   };
   data: InitializeLaunchInstructionData;
 };
@@ -863,12 +847,12 @@ export function parseInitializeLaunchInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedInitializeLaunchInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 17) {
+  if (instruction.accounts.length < 16) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 17,
+        expectedAccountMetas: 16,
       },
     );
   }
@@ -903,7 +887,6 @@ export function parseInitializeLaunchInstruction<
       rent: getNextAccount(),
       metadataAccount: getNextOptionalAccount(),
       metadataProgram: getNextOptionalAccount(),
-      instructionsSysvar: getNextAccount(),
     },
     data: getInitializeLaunchInstructionDataDecoder().decode(instruction.data),
   };

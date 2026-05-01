@@ -68,6 +68,7 @@ import {
   getSwapExactInInstructionAsync,
   getTransferAdminInstruction,
   getUnpauseInstruction,
+  getUpdateConfigInstruction,
   parseAddLiquidityInstruction,
   parseClosePositionInstruction,
   parseCollectFeesInstruction,
@@ -89,6 +90,7 @@ import {
   parseSwapExactInInstruction,
   parseTransferAdminInstruction,
   parseUnpauseInstruction,
+  parseUpdateConfigInstruction,
   type AddLiquidityAsyncInput,
   type ClosePositionInput,
   type CollectFeesAsyncInput,
@@ -120,6 +122,7 @@ import {
   type ParsedSwapExactInInstruction,
   type ParsedTransferAdminInstruction,
   type ParsedUnpauseInstruction,
+  type ParsedUpdateConfigInstruction,
   type PauseInput,
   type PreviewSwapExactInInput,
   type QuoteToNumeraireInput,
@@ -131,6 +134,7 @@ import {
   type SwapExactInAsyncInput,
   type TransferAdminInput,
   type UnpauseInput,
+  type UpdateConfigInput,
 } from '../instructions';
 
 export const CPMM_PROGRAM_ADDRESS =
@@ -219,6 +223,7 @@ export enum CpmmInstruction {
   SwapExactIn,
   TransferAdmin,
   Unpause,
+  UpdateConfig,
 }
 
 export function identifyCpmmInstruction(
@@ -456,6 +461,17 @@ export function identifyCpmmInstruction(
   ) {
     return CpmmInstruction.Unpause;
   }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([29, 158, 252, 191, 10, 83, 219, 99]),
+      ),
+      0,
+    )
+  ) {
+    return CpmmInstruction.UpdateConfig;
+  }
   throw new SolanaError(
     SOLANA_ERROR__PROGRAM_CLIENTS__FAILED_TO_IDENTIFY_INSTRUCTION,
     { instructionData: data, programName: 'cpmm' },
@@ -527,7 +543,10 @@ export type ParsedCpmmInstruction<
     } & ParsedTransferAdminInstruction<TProgram>)
   | ({
       instructionType: CpmmInstruction.Unpause;
-    } & ParsedUnpauseInstruction<TProgram>);
+    } & ParsedUnpauseInstruction<TProgram>)
+  | ({
+      instructionType: CpmmInstruction.UpdateConfig;
+    } & ParsedUpdateConfigInstruction<TProgram>);
 
 export function parseCpmmInstruction<TProgram extends string>(
   instruction: Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array>,
@@ -681,6 +700,13 @@ export function parseCpmmInstruction<TProgram extends string>(
         ...parseUnpauseInstruction(instruction),
       };
     }
+    case CpmmInstruction.UpdateConfig: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: CpmmInstruction.UpdateConfig,
+        ...parseUpdateConfigInstruction(instruction),
+      };
+    }
     default:
       throw new SolanaError(
         SOLANA_ERROR__PROGRAM_CLIENTS__UNRECOGNIZED_INSTRUCTION_TYPE,
@@ -783,6 +809,9 @@ export type CpmmPluginInstructions = {
   unpause: (
     input: UnpauseInput,
   ) => ReturnType<typeof getUnpauseInstruction> & SelfPlanAndSendFunctions;
+  updateConfig: (
+    input: UpdateConfigInput,
+  ) => ReturnType<typeof getUpdateConfigInstruction> & SelfPlanAndSendFunctions;
 };
 
 export type CpmmPluginRequirements = ClientWithRpc<
@@ -906,6 +935,11 @@ export function cpmmProgram() {
             ),
           unpause: (input) =>
             addSelfPlanAndSendFunctions(client, getUnpauseInstruction(input)),
+          updateConfig: (input) =>
+            addSelfPlanAndSendFunctions(
+              client,
+              getUpdateConfigInstruction(input),
+            ),
         },
       },
     };

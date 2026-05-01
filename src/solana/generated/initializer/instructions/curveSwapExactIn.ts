@@ -68,8 +68,6 @@ export type CurveSwapExactInInstruction<
   TAccountSentinelProgram extends string | AccountMeta<string> = string,
   TAccountBaseTokenProgram extends string | AccountMeta<string> = string,
   TAccountQuoteTokenProgram extends string | AccountMeta<string> = string,
-  TAccountInstructionsSysvar extends string | AccountMeta<string> =
-    'Sysvar1nstructions1111111111111111111111111',
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -114,9 +112,6 @@ export type CurveSwapExactInInstruction<
       TAccountQuoteTokenProgram extends string
         ? ReadonlyAccount<TAccountQuoteTokenProgram>
         : TAccountQuoteTokenProgram,
-      TAccountInstructionsSysvar extends string
-        ? ReadonlyAccount<TAccountInstructionsSysvar>
-        : TAccountInstructionsSysvar,
       ...TRemainingAccounts,
     ]
   >;
@@ -179,7 +174,6 @@ export type CurveSwapExactInAsyncInput<
   TAccountSentinelProgram extends string = string,
   TAccountBaseTokenProgram extends string = string,
   TAccountQuoteTokenProgram extends string = string,
-  TAccountInstructionsSysvar extends string = string,
 > = {
   config?: Address<TAccountConfig>;
   launch: Address<TAccountLaunch>;
@@ -195,7 +189,6 @@ export type CurveSwapExactInAsyncInput<
   sentinelProgram?: Address<TAccountSentinelProgram>;
   baseTokenProgram: Address<TAccountBaseTokenProgram>;
   quoteTokenProgram: Address<TAccountQuoteTokenProgram>;
-  instructionsSysvar?: Address<TAccountInstructionsSysvar>;
   amountIn: CurveSwapExactInInstructionDataArgs['amountIn'];
   minAmountOut: CurveSwapExactInInstructionDataArgs['minAmountOut'];
   direction: CurveSwapExactInInstructionDataArgs['direction'];
@@ -215,7 +208,6 @@ export async function getCurveSwapExactInInstructionAsync<
   TAccountSentinelProgram extends string,
   TAccountBaseTokenProgram extends string,
   TAccountQuoteTokenProgram extends string,
-  TAccountInstructionsSysvar extends string,
   TProgramAddress extends Address = typeof INITIALIZER_PROGRAM_ADDRESS,
 >(
   input: CurveSwapExactInAsyncInput<
@@ -231,8 +223,7 @@ export async function getCurveSwapExactInInstructionAsync<
     TAccountUser,
     TAccountSentinelProgram,
     TAccountBaseTokenProgram,
-    TAccountQuoteTokenProgram,
-    TAccountInstructionsSysvar
+    TAccountQuoteTokenProgram
   >,
   config?: { programAddress?: TProgramAddress },
 ): Promise<
@@ -250,8 +241,7 @@ export async function getCurveSwapExactInInstructionAsync<
     TAccountUser,
     TAccountSentinelProgram,
     TAccountBaseTokenProgram,
-    TAccountQuoteTokenProgram,
-    TAccountInstructionsSysvar
+    TAccountQuoteTokenProgram
   >
 > {
   // Program address.
@@ -287,10 +277,6 @@ export async function getCurveSwapExactInInstructionAsync<
       value: input.quoteTokenProgram ?? null,
       isWritable: false,
     },
-    instructionsSysvar: {
-      value: input.instructionsSysvar ?? null,
-      isWritable: false,
-    },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -309,10 +295,6 @@ export async function getCurveSwapExactInInstructionAsync<
       ],
     });
   }
-  if (!accounts.instructionsSysvar.value) {
-    accounts.instructionsSysvar.value =
-      'Sysvar1nstructions1111111111111111111111111' as Address<'Sysvar1nstructions1111111111111111111111111'>;
-  }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
@@ -330,7 +312,6 @@ export async function getCurveSwapExactInInstructionAsync<
       getAccountMeta('sentinelProgram', accounts.sentinelProgram),
       getAccountMeta('baseTokenProgram', accounts.baseTokenProgram),
       getAccountMeta('quoteTokenProgram', accounts.quoteTokenProgram),
-      getAccountMeta('instructionsSysvar', accounts.instructionsSysvar),
     ],
     data: getCurveSwapExactInInstructionDataEncoder().encode(
       args as CurveSwapExactInInstructionDataArgs,
@@ -350,8 +331,7 @@ export async function getCurveSwapExactInInstructionAsync<
     TAccountUser,
     TAccountSentinelProgram,
     TAccountBaseTokenProgram,
-    TAccountQuoteTokenProgram,
-    TAccountInstructionsSysvar
+    TAccountQuoteTokenProgram
   >);
 }
 
@@ -369,7 +349,6 @@ export type CurveSwapExactInInput<
   TAccountSentinelProgram extends string = string,
   TAccountBaseTokenProgram extends string = string,
   TAccountQuoteTokenProgram extends string = string,
-  TAccountInstructionsSysvar extends string = string,
 > = {
   config: Address<TAccountConfig>;
   launch: Address<TAccountLaunch>;
@@ -385,7 +364,6 @@ export type CurveSwapExactInInput<
   sentinelProgram?: Address<TAccountSentinelProgram>;
   baseTokenProgram: Address<TAccountBaseTokenProgram>;
   quoteTokenProgram: Address<TAccountQuoteTokenProgram>;
-  instructionsSysvar?: Address<TAccountInstructionsSysvar>;
   amountIn: CurveSwapExactInInstructionDataArgs['amountIn'];
   minAmountOut: CurveSwapExactInInstructionDataArgs['minAmountOut'];
   direction: CurveSwapExactInInstructionDataArgs['direction'];
@@ -405,7 +383,6 @@ export function getCurveSwapExactInInstruction<
   TAccountSentinelProgram extends string,
   TAccountBaseTokenProgram extends string,
   TAccountQuoteTokenProgram extends string,
-  TAccountInstructionsSysvar extends string,
   TProgramAddress extends Address = typeof INITIALIZER_PROGRAM_ADDRESS,
 >(
   input: CurveSwapExactInInput<
@@ -421,8 +398,7 @@ export function getCurveSwapExactInInstruction<
     TAccountUser,
     TAccountSentinelProgram,
     TAccountBaseTokenProgram,
-    TAccountQuoteTokenProgram,
-    TAccountInstructionsSysvar
+    TAccountQuoteTokenProgram
   >,
   config?: { programAddress?: TProgramAddress },
 ): CurveSwapExactInInstruction<
@@ -439,8 +415,7 @@ export function getCurveSwapExactInInstruction<
   TAccountUser,
   TAccountSentinelProgram,
   TAccountBaseTokenProgram,
-  TAccountQuoteTokenProgram,
-  TAccountInstructionsSysvar
+  TAccountQuoteTokenProgram
 > {
   // Program address.
   const programAddress = config?.programAddress ?? INITIALIZER_PROGRAM_ADDRESS;
@@ -475,10 +450,6 @@ export function getCurveSwapExactInInstruction<
       value: input.quoteTokenProgram ?? null,
       isWritable: false,
     },
-    instructionsSysvar: {
-      value: input.instructionsSysvar ?? null,
-      isWritable: false,
-    },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -487,12 +458,6 @@ export function getCurveSwapExactInInstruction<
 
   // Original args.
   const args = { ...input };
-
-  // Resolve default values.
-  if (!accounts.instructionsSysvar.value) {
-    accounts.instructionsSysvar.value =
-      'Sysvar1nstructions1111111111111111111111111' as Address<'Sysvar1nstructions1111111111111111111111111'>;
-  }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
@@ -510,7 +475,6 @@ export function getCurveSwapExactInInstruction<
       getAccountMeta('sentinelProgram', accounts.sentinelProgram),
       getAccountMeta('baseTokenProgram', accounts.baseTokenProgram),
       getAccountMeta('quoteTokenProgram', accounts.quoteTokenProgram),
-      getAccountMeta('instructionsSysvar', accounts.instructionsSysvar),
     ],
     data: getCurveSwapExactInInstructionDataEncoder().encode(
       args as CurveSwapExactInInstructionDataArgs,
@@ -530,8 +494,7 @@ export function getCurveSwapExactInInstruction<
     TAccountUser,
     TAccountSentinelProgram,
     TAccountBaseTokenProgram,
-    TAccountQuoteTokenProgram,
-    TAccountInstructionsSysvar
+    TAccountQuoteTokenProgram
   >);
 }
 
@@ -555,7 +518,6 @@ export type ParsedCurveSwapExactInInstruction<
     sentinelProgram?: TAccountMetas[10] | undefined;
     baseTokenProgram: TAccountMetas[11];
     quoteTokenProgram: TAccountMetas[12];
-    instructionsSysvar: TAccountMetas[13];
   };
   data: CurveSwapExactInInstructionData;
 };
@@ -568,12 +530,12 @@ export function parseCurveSwapExactInInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedCurveSwapExactInInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 14) {
+  if (instruction.accounts.length < 13) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 14,
+        expectedAccountMetas: 13,
       },
     );
   }
@@ -605,7 +567,6 @@ export function parseCurveSwapExactInInstruction<
       sentinelProgram: getNextOptionalAccount(),
       baseTokenProgram: getNextAccount(),
       quoteTokenProgram: getNextAccount(),
-      instructionsSysvar: getNextAccount(),
     },
     data: getCurveSwapExactInInstructionDataDecoder().decode(instruction.data),
   };

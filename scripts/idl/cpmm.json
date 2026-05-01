@@ -230,10 +230,6 @@
         },
         {
           "name": "token1_program"
-        },
-        {
-          "name": "instructions_sysvar",
-          "address": "Sysvar1nstructions1111111111111111111111111"
         }
       ],
       "args": [
@@ -333,10 +329,6 @@
         },
         {
           "name": "token1_program"
-        },
-        {
-          "name": "instructions_sysvar",
-          "address": "Sysvar1nstructions1111111111111111111111111"
         }
       ],
       "args": [
@@ -467,10 +459,6 @@
         {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
-        },
-        {
-          "name": "instructions_sysvar",
-          "address": "Sysvar1nstructions1111111111111111111111111"
         }
       ],
       "args": [
@@ -1023,10 +1011,6 @@
           "name": "token1_program"
         },
         {
-          "name": "instructions_sysvar",
-          "address": "Sysvar1nstructions1111111111111111111111111"
-        },
-        {
           "name": "oracle",
           "writable": true,
           "optional": true
@@ -1069,10 +1053,6 @@
         {
           "name": "admin",
           "signer": true
-        },
-        {
-          "name": "instructions_sysvar",
-          "address": "Sysvar1nstructions1111111111111111111111111"
         }
       ],
       "args": [
@@ -1352,10 +1332,6 @@
         },
         {
           "name": "token1_program"
-        },
-        {
-          "name": "instructions_sysvar",
-          "address": "Sysvar1nstructions1111111111111111111111111"
         }
       ],
       "args": []
@@ -1441,10 +1417,6 @@
           "name": "token1_program"
         },
         {
-          "name": "instructions_sysvar",
-          "address": "Sysvar1nstructions1111111111111111111111111"
-        },
-        {
           "name": "oracle",
           "writable": true,
           "optional": true
@@ -1476,19 +1448,6 @@
       "accounts": [
         {
           "name": "config",
-          "writable": true,
-          "relations": [
-            "pool"
-          ]
-        },
-        {
-          "name": "pool",
-          "relations": [
-            "protocol_position"
-          ]
-        },
-        {
-          "name": "protocol_position",
           "writable": true
         },
         {
@@ -1498,12 +1457,8 @@
       ],
       "args": [
         {
-          "name": "args",
-          "type": {
-            "defined": {
-              "name": "TransferAdminArgs"
-            }
-          }
+          "name": "new_admin",
+          "type": "pubkey"
         }
       ]
     },
@@ -1530,6 +1485,39 @@
         }
       ],
       "args": []
+    },
+    {
+      "name": "update_config",
+      "discriminator": [
+        29,
+        158,
+        252,
+        191,
+        10,
+        83,
+        219,
+        99
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "writable": true
+        },
+        {
+          "name": "admin",
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "UpdateConfigArgs"
+            }
+          }
+        }
+      ]
     }
   ],
   "accounts": [
@@ -1637,6 +1625,19 @@
         19,
         107,
         115
+      ]
+    },
+    {
+      "name": "ConfigUpdated",
+      "discriminator": [
+        40,
+        241,
+        230,
+        122,
+        11,
+        19,
+        198,
+        194
       ]
     },
     {
@@ -1995,6 +1996,11 @@
       "code": 6031,
       "name": "CpiForbidden",
       "msg": "CPI calls into this program are forbidden"
+    },
+    {
+      "code": 6032,
+      "name": "UseCollectProtocolFees",
+      "msg": "Protocol position must be claimed via collect_protocol_fees"
     }
   ],
   "types": [
@@ -2212,6 +2218,50 @@
           {
             "name": "max1",
             "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ConfigUpdated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "config",
+            "type": "pubkey"
+          },
+          {
+            "name": "admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "numeraire_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "sentinel_allowlist_len",
+            "type": "u8"
+          },
+          {
+            "name": "max_swap_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "max_fee_split_bps",
+            "type": "u16"
+          },
+          {
+            "name": "max_route_hops",
+            "type": "u8"
+          },
+          {
+            "name": "protocol_fee_enabled",
+            "type": "bool"
+          },
+          {
+            "name": "protocol_fee_bps",
+            "type": "u16"
           }
         ]
       }
@@ -3150,22 +3200,48 @@
       }
     },
     {
-      "name": "TransferAdminArgs",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "new_admin",
-            "type": "pubkey"
-          }
-        ]
-      }
-    },
-    {
       "name": "Unpaused",
       "type": {
         "kind": "struct",
         "fields": []
+      }
+    },
+    {
+      "name": "UpdateConfigArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "numeraire_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "max_swap_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "max_fee_split_bps",
+            "type": "u16"
+          },
+          {
+            "name": "max_route_hops",
+            "type": "u8"
+          },
+          {
+            "name": "protocol_fee_enabled",
+            "type": "bool"
+          },
+          {
+            "name": "protocol_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "sentinel_allowlist",
+            "type": {
+              "vec": "pubkey"
+            }
+          }
+        ]
       }
     }
   ]

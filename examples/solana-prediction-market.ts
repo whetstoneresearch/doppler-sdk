@@ -40,7 +40,6 @@ import {
   predictionMigrator,
   trustedOracle,
 } from '../src/solana/index.js';
-import { SYSVAR_INSTRUCTIONS_ADDRESS } from '../src/solana/core/constants.js';
 
 // ============================================================================
 // Environment
@@ -234,7 +233,6 @@ async function main() {
             systemProgram: SYSTEM_PROGRAM_ADDRESS,
             rent: SYSVAR_RENT_ADDRESS,
             metadataAccount,
-            instructionsSysvar: SYSVAR_INSTRUCTIONS_ADDRESS,
             addressLookupTable: initializer.DOPPLER_DEVNET_ALT,
           },
           {
@@ -261,6 +259,15 @@ async function main() {
             // Prediction sentinel reads oracle_state to check is_finalized.
             sentinelRemainingAccountsHash:
               initializer.computeRemainingAccountsHash([oracleStateAddress]),
+            migratorInitRemainingAccountsHash:
+              initializer.computeRemainingAccountsHash([
+                oracleStateAddress,
+                market,
+                potVault,
+                marketAuthority,
+                entryAddress,
+                entryByMint,
+              ]),
             migratorRemainingAccountsHash:
               initializer.computeRemainingAccountsHash([
                 oracleStateAddress,

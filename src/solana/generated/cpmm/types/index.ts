@@ -28,6 +28,7 @@ export {
   getCollectProtocolFeesCodec,
 } from './collectProtocolFees';
 export * from './collectProtocolFeesArgs';
+export * from './configUpdated';
 export * from './createPositionArgs';
 export * from './feesUpdated';
 export * from './initializeConfigArgs';
@@ -60,5 +61,5 @@ export * from './setSentinelArgs';
 export * from './skimmed';
 export * from './swap';
 export * from './swapExactInArgs';
-export * from './transferAdminArgs';
 export * from './unpaused';
+export * from './updateConfigArgs';

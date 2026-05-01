@@ -61,7 +61,12 @@ export type InitializeLaunchArgs = {
    */
   sentinelRemainingAccountsHash: ReadonlyUint8Array;
   /**
-   * Commitment hash for migrate remaining accounts.
+   * Commitment hash for migrator-init remaining accounts.
+   * Computed as hash(u32_len || pubkey_0 || ... || pubkey_n).
+   */
+  migratorInitRemainingAccountsHash: ReadonlyUint8Array;
+  /**
+   * Commitment hash for migrator-migrate remaining accounts.
    * Computed as hash(u32_len || pubkey_0 || ... || pubkey_n).
    */
   migratorRemainingAccountsHash: ReadonlyUint8Array;
@@ -99,7 +104,12 @@ export type InitializeLaunchArgsArgs = {
    */
   sentinelRemainingAccountsHash: ReadonlyUint8Array;
   /**
-   * Commitment hash for migrate remaining accounts.
+   * Commitment hash for migrator-init remaining accounts.
+   * Computed as hash(u32_len || pubkey_0 || ... || pubkey_n).
+   */
+  migratorInitRemainingAccountsHash: ReadonlyUint8Array;
+  /**
+   * Commitment hash for migrator-migrate remaining accounts.
    * Computed as hash(u32_len || pubkey_0 || ... || pubkey_n).
    */
   migratorRemainingAccountsHash: ReadonlyUint8Array;
@@ -142,6 +152,10 @@ export function getInitializeLaunchArgsEncoder(): Encoder<InitializeLaunchArgsAr
       addEncoderSizePrefix(getBytesEncoder(), getU32Encoder()),
     ],
     ['sentinelRemainingAccountsHash', fixEncoderSize(getBytesEncoder(), 32)],
+    [
+      'migratorInitRemainingAccountsHash',
+      fixEncoderSize(getBytesEncoder(), 32),
+    ],
     ['migratorRemainingAccountsHash', fixEncoderSize(getBytesEncoder(), 32)],
     ['metadataName', addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
     ['metadataSymbol', addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
@@ -180,6 +194,10 @@ export function getInitializeLaunchArgsDecoder(): Decoder<InitializeLaunchArgs> 
       addDecoderSizePrefix(getBytesDecoder(), getU32Decoder()),
     ],
     ['sentinelRemainingAccountsHash', fixDecoderSize(getBytesDecoder(), 32)],
+    [
+      'migratorInitRemainingAccountsHash',
+      fixDecoderSize(getBytesDecoder(), 32),
+    ],
     ['migratorRemainingAccountsHash', fixDecoderSize(getBytesDecoder(), 32)],
     ['metadataName', addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
     ['metadataSymbol', addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],

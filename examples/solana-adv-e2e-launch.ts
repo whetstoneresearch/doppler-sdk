@@ -45,7 +45,6 @@ import {
 import { SYSVAR_RENT_ADDRESS } from '@solana/sysvars';
 
 import { cpmm, initializer, cpmmMigrator } from '../src/solana/index.js';
-import { SYSVAR_INSTRUCTIONS_ADDRESS } from '../src/solana/core/constants.js';
 
 // ============================================================================
 // Environment
@@ -234,7 +233,6 @@ async function main() {
         systemProgram: SYSTEM_PROGRAM_ADDRESS,
         rent: SYSVAR_RENT_ADDRESS,
         metadataAccount,
-        instructionsSysvar: SYSVAR_INSTRUCTIONS_ADDRESS,
         addressLookupTable: initializer.DOPPLER_DEVNET_ALT,
       },
       {
@@ -258,6 +256,11 @@ async function main() {
         migratorMigrateCalldata,
         sentinelRemainingAccountsHash:
           initializer.EMPTY_REMAINING_ACCOUNTS_HASH,
+        migratorInitRemainingAccountsHash:
+          initializer.computeRemainingAccountsHash([
+            cpmmMigratorState,
+            cpmmConfig,
+          ]),
         // Commits the accounts that must be passed as remaining accounts to
         // migrate_launch: state, cpmm_config, pool, pool_authority, pool_vault0,
         // pool_vault1, protocol_position, launch_lp_position, cpmm_program,
@@ -442,7 +445,6 @@ async function main() {
         sentinelProgram: initializer.CPMM_SENTINEL_PROGRAM_ID,
         baseTokenProgram: TOKEN_PROGRAM_ADDRESS,
         quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
-        instructionsSysvar: SYSVAR_INSTRUCTIONS_ADDRESS,
       },
       {
         amountIn: BUY_AMOUNT_IN,
@@ -511,7 +513,6 @@ async function main() {
       quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
       systemProgram: SYSTEM_PROGRAM_ADDRESS,
       rent: SYSVAR_RENT_ADDRESS,
-      instructionsSysvar: SYSVAR_INSTRUCTIONS_ADDRESS,
     });
 
     const migrateLaunchIx = {
