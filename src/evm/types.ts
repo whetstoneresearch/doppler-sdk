@@ -334,20 +334,52 @@ export interface DopplerHookMigrationConfig {
   };
 }
 
+export interface ProceedsSplitConfig {
+  recipient: Address;
+  share: bigint;
+}
+
+export interface StreamableFeesConfig {
+  lockDuration: number; // in seconds
+  beneficiaries: BeneficiaryData[]; // Uses shares in WAD (1e18 = 100%)
+}
+
+export interface UniswapV2MigrationConfig {
+  type: 'uniswapV2';
+}
+
+export interface UniswapV2SplitMigrationConfig {
+  type: 'uniswapV2Split';
+  // Optional proceeds split paid out during migration.
+  proceedsSplit?: ProceedsSplitConfig;
+}
+
+export interface UniswapV4MigrationConfig {
+  type: 'uniswapV4';
+  fee: number;
+  tickSpacing: number;
+  // Configuration for fee streaming via StreamableFeesLocker (optional)
+  // When omitted, fees are not locked and beneficiaries are not configured
+  // This is useful when using noOp governance where lock duration is not meaningful
+  streamableFees?: StreamableFeesConfig;
+}
+
+export interface UniswapV4SplitMigrationConfig {
+  type: 'uniswapV4Split';
+  fee: number;
+  tickSpacing: number;
+  // Required for split V4 migration because the migrator always configures
+  // locker beneficiaries and lock duration during initialization.
+  streamableFees: StreamableFeesConfig;
+  // Optional proceeds split paid out during migration.
+  proceedsSplit?: ProceedsSplitConfig;
+}
+
 export type MigrationConfig =
-  | { type: 'uniswapV2' } // Basic migration to a new Uniswap v2 pool
-  | {
-      type: 'uniswapV4';
-      fee: number;
-      tickSpacing: number;
-      // Configuration for fee streaming via StreamableFeesLocker (optional)
-      // When omitted, fees are not locked and beneficiaries are not configured
-      // This is useful when using noOp governance where lock duration is not meaningful
-      streamableFees?: {
-        lockDuration: number; // in seconds
-        beneficiaries: BeneficiaryData[]; // Uses shares in WAD (1e18 = 100%)
-      };
-    }
+  | UniswapV2MigrationConfig // Basic migration to a new Uniswap v2 pool
+  | UniswapV2SplitMigrationConfig // V2 migration with proceeds split + TopUpDistributor support
+  | UniswapV4MigrationConfig
+  | UniswapV4SplitMigrationConfig
   | DopplerHookMigrationConfig // Dynamic-only: migration via DopplerHookMigrator
   | { type: 'noOp' }; // No migration - used with lockable beneficiaries
 

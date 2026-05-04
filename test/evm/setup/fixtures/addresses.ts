@@ -94,6 +94,9 @@ export const mockAddresses: ChainAddresses = {
   launchpadGovernanceFactory: getAddress(
     '0x1500000000000000000000000000000000000025',
   ) as Address,
+  topUpDistributor: getAddress(
+    '0x1500000000000000000000000000000000000026',
+  ) as Address,
   universalRouter: getAddress(
     '0x1600000000000000000000000000000000000021',
   ) as Address,

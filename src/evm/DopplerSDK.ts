@@ -22,6 +22,7 @@ import {
 } from './entities/auction';
 import { Quoter } from './entities/quoter';
 import { Derc20, Derc20V2, DopplerERC20V1 } from './entities/token';
+import { TopUpDistributor } from './entities/TopUpDistributor';
 import {
   StaticAuctionBuilder,
   DynamicAuctionBuilder,
@@ -41,6 +42,7 @@ export class DopplerSDK<C extends SupportedChainId = SupportedChainId> {
   public chainId: C;
   private _factory?: DopplerFactory<C>;
   private _quoter?: Quoter;
+  private _topUpDistributor?: TopUpDistributor;
 
   constructor(config: DopplerSDKConfig) {
     this.publicClient = config.publicClient;
@@ -70,6 +72,40 @@ export class DopplerSDK<C extends SupportedChainId = SupportedChainId> {
       this._quoter = new Quoter(this.publicClient, this.chainId);
     }
     return this._quoter;
+  }
+
+  /**
+   * Get the configured TopUpDistributor instance for split-migrator top-ups.
+   */
+  get topUpDistributor(): TopUpDistributor {
+    if (!this._topUpDistributor) {
+      this._topUpDistributor = this.getTopUpDistributor();
+    }
+    return this._topUpDistributor;
+  }
+
+  /**
+   * Get a TopUpDistributor instance using the chain default or an explicit override.
+   */
+  getTopUpDistributor(topUpDistributorAddress?: Address): TopUpDistributor {
+    const resolvedTopUpDistributor =
+      topUpDistributorAddress ?? getAddresses(this.chainId).topUpDistributor;
+
+    if (
+      !resolvedTopUpDistributor ||
+      resolvedTopUpDistributor === ZERO_ADDRESS
+    ) {
+      throw new Error(
+        'TopUpDistributor address is not configured on this chain. ' +
+          'Pass topUpDistributorAddress to getTopUpDistributor().',
+      );
+    }
+
+    return new TopUpDistributor(
+      this.publicClient,
+      this.walletClient,
+      resolvedTopUpDistributor,
+    );
   }
 
   /**

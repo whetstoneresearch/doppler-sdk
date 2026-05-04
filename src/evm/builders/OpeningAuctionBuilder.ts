@@ -329,8 +329,16 @@ export class OpeningAuctionBuilder<
     return this.overrideModule('v2Migrator', address);
   }
 
+  withV2MigratorSplit(address: Address): this {
+    return this.overrideModule('v2MigratorSplit', address);
+  }
+
   withV4Migrator(address: Address): this {
     return this.overrideModule('v4Migrator', address);
+  }
+
+  withV4MigratorSplit(address: Address): this {
+    return this.overrideModule('v4MigratorSplit', address);
   }
 
   withNoOpMigrator(address: Address): this {

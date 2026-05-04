@@ -14,7 +14,7 @@ Create a gradual Dutch auction that adjusts price over time based on demand.
 
 ### 3. [Multicurve Initializer (V4)](./multicurve-initializer.ts)
 
-Create a pool seeded with the low/medium/high market cap presets in one initializer call. Use any standard migration path (V2/V3/V4) and optionally tailor individual tiers.
+Create a pool seeded with the low/medium/high market cap presets in one initializer call. Use a supported migration path (V2/V4, split variants, or noOp) and optionally tailor individual tiers.
 
 ### 4. [Multicurve with Lockable Beneficiaries](./multicurve-lockable-beneficiaries.ts)
 
@@ -109,6 +109,14 @@ export TOKEN_ADDRESS=0x... # launched multicurve token
 export TRANSFER_TO=0x...   # optional
 pnpm tsx examples/multicurve-swap-transfer-eth-sepolia.ts
 ```
+
+### 22. [TopUpDistributor Top-ups](./top-up-distributor.ts)
+
+Build ETH and ERC20 top-up calldata by default, simulate with explicit asset and amount env vars, and only broadcast with `EXECUTE_TOP_UP=true` plus `CONFIRM_TOP_UP=true`. ERC20 top-ups require a prior approval for the TopUpDistributor.
+
+### 23. [Split Migrator + Launchpad Governance](./split-migrator-launchpad-governance.ts)
+
+Minimal builder examples for `uniswapV2Split` / `uniswapV4Split` migrations and launchpad governance.
 
 ## Prerequisites
 

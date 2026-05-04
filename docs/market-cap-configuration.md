@@ -37,7 +37,7 @@ const params = sdk.buildStaticAuction()
     numerairePrice: 3000  // ETH = $3000
   })
   .withVesting()
-  .withGovernance()
+  .withGovernance({ type: 'default' })
   .withMigration({ type: 'uniswapV2' })
   .withUserAddress(userAddress)
   .build()
@@ -60,7 +60,7 @@ const params = sdk.buildDynamicAuction()
     maxProceeds: parseEther('5000'),  // Cap at 5000 ETH
     fee: 3000                         // 0.3% fee (tickSpacing derived automatically)
   })
-  .withGovernance()
+  .withGovernance({ type: 'default' })
   .withMigration({ type: 'uniswapV4', ... })
   .withUserAddress(userAddress)
   .build()
@@ -85,7 +85,7 @@ const params = sdk.buildMulticurveAuction()
     ]
   })
   .withVesting()
-  .withGovernance()
+  .withGovernance({ type: 'default' })
   .withMigration({ type: 'uniswapV2' })
   .withUserAddress(userAddress)
   .build()
@@ -382,5 +382,4 @@ Use `tickToMarketCap()` to reverse-check what market cap a tick represents.
   - `examples/static-auction-by-marketcap.ts`
   - `examples/dynamic-auction-by-marketcap.ts`
   - `examples/multicurve-by-marketcap.ts`
-
 

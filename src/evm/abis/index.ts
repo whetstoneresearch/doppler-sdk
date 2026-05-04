@@ -1,5 +1,19 @@
 // Core contract ABIs needed for static and dynamic auctions
 
+export const topUpDistributorAbi = [
+  {
+    type: 'function',
+    name: 'topUp',
+    inputs: [
+      { name: 'asset', type: 'address', internalType: 'address' },
+      { name: 'numeraire', type: 'address', internalType: 'address' },
+      { name: 'amount', type: 'uint256', internalType: 'uint256' },
+    ],
+    outputs: [],
+    stateMutability: 'payable',
+  },
+] as const;
+
 export const airlockAbi = [
   {
     type: 'constructor',
