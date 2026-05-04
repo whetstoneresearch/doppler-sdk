@@ -49,6 +49,26 @@ const STANDARD_TOKEN_V2_ABI = [
   { type: 'string' },
 ] as const;
 
+const DOPPLER_ERC20_V1_TOKEN_ABI = [
+  { type: 'string' },
+  { type: 'string' },
+  {
+    type: 'tuple[]',
+    components: [
+      { type: 'uint64', name: 'cliff' },
+      { type: 'uint64', name: 'duration' },
+    ],
+  },
+  { type: 'address[]' },
+  { type: 'uint256[]' },
+  { type: 'uint256[]' },
+  { type: 'string' },
+  { type: 'uint256' },
+  { type: 'uint48' },
+  { type: 'address' },
+  { type: 'address[]' },
+] as const;
+
 const DOPPLER404_TOKEN_ABI = [
   { type: 'string' },
   { type: 'string' },
@@ -58,6 +78,8 @@ const DOPPLER404_TOKEN_ABI = [
 
 const V2_IMPLEMENTATION =
   '0x4BBfed1c27CDE12eF6638251D81ab4e3be7556b7' as Address;
+const DOPPLER_ERC20_V1_IMPLEMENTATION =
+  '0xDB7B520bb5C3a2C5d4871198081911359f93be87' as Address;
 
 function computeCreate2Address(
   salt: Hash,
@@ -291,6 +313,78 @@ describe('mineTokenAddress', () => {
       }),
     ).toThrow(
       'TokenAddressMiner: v2Implementation is required for standard-v2 tokens',
+    );
+  });
+
+  it('mines dopplerERC20V1 token addresses using the clone init code hash', () => {
+    const initialSupply = 1_000_000n;
+    const tokenData = encodeAbiParameters(DOPPLER_ERC20_V1_TOKEN_ABI, [
+      'Vanity Token V1',
+      'VNY1',
+      [{ cliff: 90n, duration: 180n }],
+      [RECIPIENT],
+      [0n],
+      [100n],
+      'ipfs://token-v1',
+      10_000n,
+      1_800,
+      OWNER,
+      [RECIPIENT],
+    ]);
+
+    const result = mineTokenAddress({
+      prefix: '0',
+      tokenFactory: TOKEN_FACTORY,
+      initialSupply,
+      recipient: RECIPIENT,
+      owner: OWNER,
+      tokenData,
+      tokenVariant: 'dopplerERC20V1',
+      v2Implementation: DOPPLER_ERC20_V1_IMPLEMENTATION,
+    });
+
+    expect(result.tokenAddress.slice(2).toLowerCase().startsWith('0')).toBe(
+      true,
+    );
+
+    const initHash = computeSoladyCloneInitCodeHash(
+      DOPPLER_ERC20_V1_IMPLEMENTATION,
+    );
+    const manualAddress = computeCreate2Address(
+      result.salt,
+      initHash,
+      TOKEN_FACTORY,
+    );
+    expect(manualAddress).toBe(result.tokenAddress);
+  });
+
+  it('throws when dopplerERC20V1 mining is attempted without an implementation address', () => {
+    const tokenData = encodeAbiParameters(DOPPLER_ERC20_V1_TOKEN_ABI, [
+      'Vanity Token V1',
+      'VNY1',
+      [{ cliff: 90n, duration: 180n }],
+      [RECIPIENT],
+      [0n],
+      [100n],
+      'ipfs://token-v1',
+      10_000n,
+      1_800,
+      OWNER,
+      [RECIPIENT],
+    ]);
+
+    expect(() =>
+      mineTokenAddress({
+        prefix: '0',
+        tokenFactory: TOKEN_FACTORY,
+        initialSupply: 1_000_000n,
+        recipient: RECIPIENT,
+        owner: OWNER,
+        tokenData,
+        tokenVariant: 'dopplerERC20V1',
+      }),
+    ).toThrow(
+      'TokenAddressMiner: v2Implementation is required for dopplerERC20V1 tokens',
     );
   });
 

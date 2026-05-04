@@ -1560,7 +1560,7 @@ Note: Dual-prefix mining takes significantly longer than single-prefix mining. C
 - **Prefix format**: Omit the `0x` prefix (e.g., use `'dead'` not `'0x dead'`)
 - **Case insensitive**: `'DEAD'`, `'dead'`, and `'DeAd'` are equivalent
 - **Iteration limit**: Longer prefixes require more iterations. A 4-character hex prefix takes ~65,000 attempts on average.
-- **Token variants**: Set `tokenVariant: 'doppler404'` for DN404-style tokens
+- **Token variants**: Set `tokenVariant: 'standard-v2'` or `tokenVariant: 'dopplerERC20V1'` with `v2Implementation` for clone templates, or `tokenVariant: 'doppler404'` for DN404-style tokens
 - **Salt preservation**: High-level helpers like `createStaticAuction` and `createDynamicAuction` recompute salts internally to ensure proper token ordering. To use a mined salt, call `encodeCreate*Params` and submit the transaction manually via `publicClient.writeContract`
 - **Hook flags**: The miner automatically ensures V4 hooks have the correct permission flags for Doppler operations
 
