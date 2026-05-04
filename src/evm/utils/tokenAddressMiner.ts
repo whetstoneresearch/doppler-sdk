@@ -16,7 +16,11 @@ import {
 
 const DEFAULT_MAX_ITERATIONS = 1_000_000;
 
-export type TokenVariant = 'standard' | 'standard-v2' | 'doppler404';
+export type TokenVariant =
+  | 'standard'
+  | 'standard-v2'
+  | 'dopplerERC20V1'
+  | 'doppler404';
 
 // TokenFactory80 has the same deterministic CREATE2 address across all chains where it is deployed.
 const TOKEN_FACTORY_80_ADDRESS =
@@ -48,6 +52,10 @@ export interface TokenAddressMiningParams {
   tokenData: Hex;
   tokenVariant?: TokenVariant;
   customBytecode?: Hex;
+  /**
+   * Implementation address for token templates deployed as Solady clones.
+   * Used by `standard-v2` and `dopplerERC20V1`.
+   */
   v2Implementation?: Address;
   maxIterations?: number;
   startSalt?: bigint;
@@ -88,6 +96,26 @@ const STANDARD_TOKEN_V2_DATA_ABI = [
   { type: 'string' },
 ] as const;
 
+const DOPPLER_ERC20_V1_TOKEN_DATA_ABI = [
+  { type: 'string' },
+  { type: 'string' },
+  {
+    type: 'tuple[]',
+    components: [
+      { type: 'uint64', name: 'cliff' },
+      { type: 'uint64', name: 'duration' },
+    ],
+  },
+  { type: 'address[]' },
+  { type: 'uint256[]' },
+  { type: 'uint256[]' },
+  { type: 'string' },
+  { type: 'uint256' },
+  { type: 'uint48' },
+  { type: 'address' },
+  { type: 'address[]' },
+] as const;
+
 const DOPPLER404_TOKEN_DATA_ABI = [
   { type: 'string' },
   { type: 'string' },
@@ -123,7 +151,7 @@ function hexToBytes(hex: string): Uint8Array {
   const cleanHex = hex.startsWith('0x') ? hex.slice(2) : hex;
   const bytes = new Uint8Array(cleanHex.length / 2);
   for (let i = 0; i < bytes.length; i++) {
-    bytes[i] = parseInt(cleanHex.substr(i * 2, 2), 16);
+    bytes[i] = parseInt(cleanHex.slice(i * 2, i * 2 + 2), 16);
   }
   return bytes;
 }
@@ -245,6 +273,19 @@ function buildTokenInitHash(params: {
     if (!v2Implementation) {
       throw new Error(
         'TokenAddressMiner: v2Implementation is required for standard-v2 tokens',
+      );
+    }
+
+    return computeSoladyCloneInitCodeHash(v2Implementation);
+  }
+
+  if (variant === 'dopplerERC20V1') {
+    decodeAbiParameters(DOPPLER_ERC20_V1_TOKEN_DATA_ABI, tokenData);
+    // `v2Implementation` is the shared clone implementation input for both
+    // CloneDERC20VotesV2 and DopplerERC20V1 token factories.
+    if (!v2Implementation) {
+      throw new Error(
+        'TokenAddressMiner: v2Implementation is required for dopplerERC20V1 tokens',
       );
     }
 
