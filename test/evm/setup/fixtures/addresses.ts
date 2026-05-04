@@ -14,6 +14,12 @@ export const mockAddresses: ChainAddresses = {
   derc20V2Implementation: getAddress(
     '0x2000000000000000000000000000000000000004',
   ) as Address,
+  dopplerERC20V1Factory: getAddress(
+    '0x2000000000000000000000000000000000000005',
+  ) as Address,
+  dopplerERC20V1Implementation: getAddress(
+    '0x2000000000000000000000000000000000000006',
+  ) as Address,
   v3Initializer: getAddress(
     '0x3000000000000000000000000000000000000003',
   ) as Address,
@@ -64,6 +70,12 @@ export const mockAddresses: ChainAddresses = {
   ) as Address,
   weth: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' as Address, // Already checksummed
   v3Quoter: getAddress('0xd000000000000000000000000000000000000013') as Address,
+  uniswapV2Factory: getAddress(
+    '0x1900000000000000000000000000000000000026',
+  ) as Address,
+  uniswapV3Factory: getAddress(
+    '0x1900000000000000000000000000000000000027',
+  ) as Address,
   univ2Router02: getAddress(
     '0xf000000000000000000000000000000000000015',
   ) as Address,

@@ -22,7 +22,7 @@ export type SupportedChain =
 export type SupportedPublicClient = unknown;
 
 // Core configuration types
-// Token configuration (discriminated union)
+// Token configuration
 export interface StandardTokenConfig {
   type?: 'standard'; // default behavior (backwards compatible)
   name: string;
@@ -30,6 +30,17 @@ export interface StandardTokenConfig {
   tokenURI: string;
   yearlyMintRate?: bigint; // Optional yearly mint rate (in WAD, default: 2% = 0.02e18)
 }
+
+export type DopplerERC20V1OnlyTokenConfigFields = {
+  maxBalanceLimit?: bigint;
+  balanceLimitEnd?: number;
+  controller?: Address;
+  excludedFromBalanceLimit?: Address[];
+};
+
+type RequireAtLeastOne<T> = {
+  [K in keyof T]-?: Required<Pick<T, K>> & Partial<Omit<T, K>>;
+}[keyof T];
 
 export interface Doppler404TokenConfig {
   type: 'doppler404';
@@ -40,7 +51,25 @@ export interface Doppler404TokenConfig {
   unit?: bigint;
 }
 
-export type TokenConfig = StandardTokenConfig | Doppler404TokenConfig;
+export type DopplerERC20V1TokenConfig = {
+  type: 'dopplerERC20V1';
+  name: string;
+  symbol: string;
+  tokenURI: string;
+} & DopplerERC20V1OnlyTokenConfigFields;
+
+export type InferredDopplerERC20V1TokenConfig = {
+  type?: never;
+  name: string;
+  symbol: string;
+  tokenURI: string;
+} & RequireAtLeastOne<DopplerERC20V1OnlyTokenConfigFields>;
+
+export type TokenConfig =
+  | StandardTokenConfig
+  | Doppler404TokenConfig
+  | DopplerERC20V1TokenConfig
+  | InferredDopplerERC20V1TokenConfig;
 
 export interface SaleConfig {
   initialSupply: bigint;
@@ -1051,6 +1080,7 @@ export interface ModuleAddressOverrides {
   // Core deployment & routing
   airlock?: Address;
   tokenFactory?: Address;
+  dopplerERC20V1Factory?: Address;
 
   // Initializers
   v3Initializer?: Address;

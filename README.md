@@ -832,6 +832,67 @@ import { Derc20 } from '@whetstone-research/doppler-sdk/evm';
 const tokenDirect = new Derc20(publicClient, walletClient, tokenAddress);
 ```
 
+### DopplerERC20V1 Tokens
+
+Use the newer DopplerERC20V1 token template by either setting `type: 'dopplerERC20V1'` explicitly or by passing fields such as `maxBalanceLimit` with `balanceLimitEnd`, `controller`, or `excludedFromBalanceLimit`. When selected, the SDK uses the configured `dopplerERC20V1Factory` by default. `withTokenFactory(address)` is a generic factory override and takes precedence, but it must point to a factory compatible with the selected token path and token data ABI. `controller` is optional and defaults to the zero address, set it only if early balance-limit disable should be possible. Standard configs without the specific fields still use the legacy `standard` path, where cliff/allocation vesting routes to legacy DERC20 V2. Keep explicit `type: 'dopplerERC20V1'` when you want its behavior but have no specific fields to infer from.
+
+When balance limiting is enabled on the default DopplerERC20V1 integration, the SDK encodes user exclusions plus determinable protocol recipients for the selected auction path into deployment-time `excludedFromBalanceLimit`, including initializers, hooks, PoolManager, migrators, known migration pools, no-op governance, and launchpad governance multisigs. Custom `withTokenFactory(address)` paths receive only the `excludedFromBalanceLimit` entries supplied in `tokenConfig`, so custom factory users must provide any required deployment-time exclusions themselves. Exclusions cannot be added later through the controller or governance. Default and custom governance timelocks are not precomputed before create, so account for them before deployment or disable strict limits early via the controller when needed.
+
+DopplerERC20V1 supports vesting through `withVesting` while staying on the DopplerERC20V1 factory path: use `duration` with optional `cliffDuration` for a shared schedule, or `allocations` for per-beneficiary schedules.
+
+```typescript
+const params = new StaticAuctionBuilder(base.id)
+  .tokenConfig({
+    name: 'My Doppler Token',
+    symbol: 'MDT',
+    tokenURI: 'ipfs://doppler-token.json',
+    maxBalanceLimit: parseEther('10000'),
+    balanceLimitEnd: Math.floor(Date.now() / 1000) + 30 * DAY_SECONDS,
+    controller: userAddress, // optional; defaults to zero address when omitted
+    excludedFromBalanceLimit: [userAddress], // default DopplerERC20V1 path also adds protocol modules
+  })
+  .saleConfig({
+    initialSupply: parseEther('1000000'),
+    numTokensToSell: parseEther('900000'),
+    numeraire: wethAddress,
+  })
+  .poolByTicks({ startTick: -120000, endTick: -60000, fee: 3000 })
+  .withVesting({
+    duration: 365n * BigInt(DAY_SECONDS),
+    cliffDuration: 30 * DAY_SECONDS,
+    recipients: [userAddress],
+    amounts: [parseEther('100000')],
+  })
+  .withMigration({ type: 'uniswapV2' })
+  .withUserAddress(userAddress)
+  .build();
+```
+
+DopplerERC20V1 token data includes schedule vesting and balance-limit controls, but it intentionally omits `yearlyMintRate`; DopplerERC20V1 tokens do not expose `mintInflation` or mint-rate update helpers.
+
+```typescript
+const token = sdk.getDopplerERC20V1(tokenAddress);
+const scheduleCount = await token.getVestingScheduleCount();
+
+for (let scheduleId = 0n; scheduleId < scheduleCount; scheduleId++) {
+  const schedule = await token.getVestingSchedule(scheduleId);
+  const available = await token.getAvailableVestedAmountForSchedule(
+    userAddress,
+    scheduleId,
+  );
+  console.log(schedule, available);
+
+  // Release half of the available vested amount for one schedule.
+  if (available > 0n) await token.releaseSchedule(scheduleId, available / 2n);
+}
+
+console.log(await token.getMaxBalanceLimit());
+console.log(await token.getBalanceLimitEnd());
+console.log(await token.isBalanceLimitActive());
+```
+
+For a runnable example, see [examples/doppler-erc20-v1.ts](./examples/doppler-erc20-v1.ts).
+
 ### Governance Delegation (ERC20Votes)
 
 DERC20 extends OpenZeppelin's ERC20Votes. Voting power is tracked via checkpoints and only updates once an address delegates voting power (typically to itself). The SDK exposes simple read/write helpers for delegation.

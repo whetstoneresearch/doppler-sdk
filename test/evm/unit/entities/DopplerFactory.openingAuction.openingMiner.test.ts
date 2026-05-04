@@ -52,6 +52,22 @@ describe('DopplerFactory opening auction miner', () => {
     tokenURI: 'https://example.com/omt.json',
   } as const;
 
+  const DOPPLER_ERC20_V1_TOKEN_FACTORY_DATA = {
+    kind: 'dopplerERC20V1',
+    name: 'Opening Miner Token',
+    symbol: 'OMT',
+    schedules: [{ cliff: 30n * 24n * 60n * 60n, duration: 180n * 24n * 60n * 60n }],
+    beneficiaries: [getAddress('0x2222222222222222222222222222222222222222') as Address],
+    scheduleIds: [0n],
+    amounts: [parseEther('2')],
+    tokenURI: 'https://example.com/omt.json',
+    maxBalanceLimit: parseEther('1000'),
+    balanceLimitEnd: 1_800_000_000,
+    controller: getAddress('0x3333333333333333333333333333333333333333') as Address,
+    excludedFromBalanceLimit: [getAddress('0x4444444444444444444444444444444444444444') as Address],
+    implementation: mockAddresses.dopplerERC20V1Implementation!,
+  } as const;
+
   const baseParams = {
     auctionDeployer: AUCTION_DEPLOYER as Address,
     openingAuctionInitializer: OPENING_AUCTION_INITIALIZER,
@@ -175,5 +191,63 @@ describe('DopplerFactory opening auction miner', () => {
 
     expect(encodedTokenFactoryData).toBe(expected);
   });
-});
 
+  it('returns encodedTokenFactoryData matching encodeAbiParameters for dopplerERC20V1 variant', () => {
+    const mineOpeningAuctionHookAddress = (
+      factory as unknown as {
+        mineOpeningAuctionHookAddress(
+          params: unknown,
+        ): readonly [string, Address, Address, `0x${string}`];
+      }
+    ).mineOpeningAuctionHookAddress.bind(factory);
+
+    const [_salt, hookAddress, _tokenAddress, encodedTokenFactoryData] =
+      mineOpeningAuctionHookAddress({
+        ...baseParams,
+        tokenVariant: 'dopplerERC20V1',
+        tokenFactory: mockAddresses.dopplerERC20V1Factory,
+        tokenFactoryData: DOPPLER_ERC20_V1_TOKEN_FACTORY_DATA,
+        includeProtocolBalanceLimitExclusions: true,
+      });
+
+    const expected = encodeAbiParameters(
+      [
+        { type: 'string' },
+        { type: 'string' },
+        {
+          type: 'tuple[]',
+          components: [
+            { type: 'uint64', name: 'cliff' },
+            { type: 'uint64', name: 'duration' },
+          ],
+        },
+        { type: 'address[]' },
+        { type: 'uint256[]' },
+        { type: 'uint256[]' },
+        { type: 'string' },
+        { type: 'uint256' },
+        { type: 'uint48' },
+        { type: 'address' },
+        { type: 'address[]' },
+      ],
+      [
+        DOPPLER_ERC20_V1_TOKEN_FACTORY_DATA.name,
+        DOPPLER_ERC20_V1_TOKEN_FACTORY_DATA.symbol,
+        DOPPLER_ERC20_V1_TOKEN_FACTORY_DATA.schedules,
+        DOPPLER_ERC20_V1_TOKEN_FACTORY_DATA.beneficiaries,
+        DOPPLER_ERC20_V1_TOKEN_FACTORY_DATA.scheduleIds,
+        DOPPLER_ERC20_V1_TOKEN_FACTORY_DATA.amounts,
+        DOPPLER_ERC20_V1_TOKEN_FACTORY_DATA.tokenURI,
+        DOPPLER_ERC20_V1_TOKEN_FACTORY_DATA.maxBalanceLimit,
+        DOPPLER_ERC20_V1_TOKEN_FACTORY_DATA.balanceLimitEnd,
+        DOPPLER_ERC20_V1_TOKEN_FACTORY_DATA.controller,
+        [
+          ...DOPPLER_ERC20_V1_TOKEN_FACTORY_DATA.excludedFromBalanceLimit,
+          hookAddress,
+        ],
+      ],
+    );
+
+    expect(encodedTokenFactoryData).toBe(expected);
+  });
+});

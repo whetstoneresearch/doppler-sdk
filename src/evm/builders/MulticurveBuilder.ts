@@ -35,6 +35,7 @@ import {
   type BuilderVestingInput,
   type MarketCapPresetOverrides,
   buildCurvesFromPresets,
+  normalizeBuilderTokenConfig,
   normalizeBuilderVestingSchedule,
 } from './shared';
 
@@ -85,40 +86,11 @@ export class MulticurveBuilder<
     return new MulticurveBuilder(chainId);
   }
 
-  tokenConfig(
-    params:
-      | {
-          type?: 'standard';
-          name: string;
-          symbol: string;
-          tokenURI: string;
-          yearlyMintRate?: bigint;
-        }
-      | {
-          type: 'doppler404';
-          name: string;
-          symbol: string;
-          baseURI: string;
-          unit?: bigint;
-        },
-  ): this {
-    if (params && 'type' in params && params.type === 'doppler404') {
-      this.token = {
-        type: 'doppler404',
-        name: params.name,
-        symbol: params.symbol,
-        baseURI: params.baseURI,
-        unit: params.unit,
-      };
-    } else {
-      this.token = {
-        type: 'standard',
-        name: params.name,
-        symbol: params.symbol,
-        tokenURI: params.tokenURI,
-        yearlyMintRate: params.yearlyMintRate ?? DEFAULT_V3_YEARLY_MINT_RATE,
-      };
-    }
+  tokenConfig(params: TokenConfig): this {
+    this.token = normalizeBuilderTokenConfig(
+      params,
+      DEFAULT_V3_YEARLY_MINT_RATE,
+    );
     return this;
   }
 
