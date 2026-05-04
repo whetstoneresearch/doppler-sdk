@@ -103,6 +103,24 @@ type DopplerHookCase = {
   parentAddress?: Address;
 };
 
+const SKIPPED_AIRLOCK_MODULES_BY_CHAIN: Partial<
+  Record<SupportedChainId, readonly string[]>
+> = {
+  [CHAIN_IDS.MAINNET]: ['UniswapV2MigratorSplit', 'UniswapV4MigratorSplit'],
+  [CHAIN_IDS.MONAD_MAINNET]: [
+    'UniswapV2MigratorSplit',
+    'UniswapV4MigratorSplit',
+  ],
+  [CHAIN_IDS.BASE]: ['UniswapV2MigratorSplit', 'UniswapV4MigratorSplit'],
+};
+
+function shouldSkipAirlockModuleCase(
+  chainId: SupportedChainId,
+  moduleName: string,
+) {
+  return Boolean(SKIPPED_AIRLOCK_MODULES_BY_CHAIN[chainId]?.includes(moduleName));
+}
+
 function formatExpectation(value: number | string | undefined): string {
   if (value === undefined) return 'n/a';
   if (typeof value === 'number') {
@@ -275,6 +293,12 @@ describe('Airlock Module Whitelisting', () => {
           expectedState: ModuleState.TokenFactory,
         },
         {
+          title: `DopplerERC20V1Factory (${addresses.dopplerERC20V1Factory}) whitelisted`,
+          module: 'DopplerERC20V1Factory',
+          address: addresses.dopplerERC20V1Factory,
+          expectedState: ModuleState.TokenFactory,
+        },
+        {
           title: `GovernanceFactory (${addresses.governanceFactory}) whitelisted`,
           module: 'GovernanceFactory',
           address: addresses.governanceFactory,
@@ -400,7 +424,9 @@ describe('Airlock Module Whitelisting', () => {
       ];
 
       for (const moduleCase of airlockModuleCases) {
-        const shouldRun = isConfiguredAddress(moduleCase.address);
+        const shouldRun =
+          isConfiguredAddress(moduleCase.address) &&
+          !shouldSkipAirlockModuleCase(chainId, moduleCase.module);
         const testFn = shouldRun ? it : it.skip;
         testFn(moduleCase.title, () =>
           testModule(

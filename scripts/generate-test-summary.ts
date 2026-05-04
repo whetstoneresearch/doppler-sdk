@@ -38,6 +38,7 @@ const MODULE_PATTERNS: [RegExp, string][] = [
     /RehypeDopplerHookMigrator.*enabled on DopplerHookMigrator/,
     'RehypeDopplerHookMigrator on DopplerHookMigrator',
   ],
+  [/DopplerERC20V1Factory/, 'DopplerERC20V1Factory'],
   [/TokenFactory/, 'TokenFactory'],
   [/NoOpGovernanceFactory/, 'NoOpGovernanceFactory'],
   [/LaunchpadGovernanceFactory/, 'LaunchpadGovernanceFactory'],
