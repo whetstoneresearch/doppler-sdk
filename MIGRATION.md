@@ -121,7 +121,7 @@ import { parseEther } from 'viem'
 import { DynamicAuctionBuilder } from '@whetstone-research/doppler-sdk/evm'
 
 // Build params with a fluent, type-safe builder
-const params = new DynamicAuctionBuilder()
+const params = new DynamicAuctionBuilder(chainId)
   .tokenConfig({
     name: 'Community Token',
     symbol: 'COMM',
@@ -447,7 +447,7 @@ import { parseEther } from 'viem'
 const sdk = new DopplerSDK({ publicClient, walletClient, chainId })
 
 // Build params with the builder
-const params = new DynamicAuctionBuilder()
+const params = new DynamicAuctionBuilder(chainId)
   .tokenConfig({ name: 'Example Token', symbol: 'EXT', tokenURI: 'ipfs://...' })
   .saleConfig({ initialSupply: parseEther('1000000'), numTokensToSell: parseEther('900000'), numeraire: wethAddress })
   .poolConfig({ fee: 3000, tickSpacing: 60 })

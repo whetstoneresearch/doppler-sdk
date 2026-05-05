@@ -47,16 +47,17 @@ function getTestChainIds(): SupportedChainId[] {
     return [...WHITELIST_TEST_CHAIN_IDS];
   }
   const chainNames = testChains.split(',').map((s) => s.trim());
-  const chainIds: SupportedChainId[] = [];
-  for (const name of chainNames) {
-    const id = CHAIN_NAME_TO_ID[name];
-    if (id !== undefined) {
-      chainIds.push(id);
-    } else {
-      console.warn(`Unknown chain name: ${name}`);
-    }
+  const unknownChainNames = chainNames.filter(
+    (name) => !(name in CHAIN_NAME_TO_ID),
+  );
+  if (unknownChainNames.length > 0) {
+    throw new Error(
+      `Unknown TEST_CHAINS value(s): ${unknownChainNames.join(', ')}. ` +
+        `Supported values: all, ${Object.keys(CHAIN_NAME_TO_ID).join(', ')}`,
+    );
   }
-  return chainIds;
+
+  return chainNames.map((name) => CHAIN_NAME_TO_ID[name]);
 }
 
 // Track results for summary
@@ -73,7 +74,9 @@ interface TestResult {
 
 const testResults = new Map<string, TestResult>();
 
-function getTestResultKey(result: Pick<TestResult, 'chainId' | 'module' | 'address'>) {
+function getTestResultKey(
+  result: Pick<TestResult, 'chainId' | 'module' | 'address'>,
+) {
   return `${result.chainId}:${result.module}:${result.address}`;
 }
 
@@ -118,7 +121,9 @@ function shouldSkipAirlockModuleCase(
   chainId: SupportedChainId,
   moduleName: string,
 ) {
-  return Boolean(SKIPPED_AIRLOCK_MODULES_BY_CHAIN[chainId]?.includes(moduleName));
+  return Boolean(
+    SKIPPED_AIRLOCK_MODULES_BY_CHAIN[chainId]?.includes(moduleName),
+  );
 }
 
 function formatExpectation(value: number | string | undefined): string {
@@ -129,7 +134,6 @@ function formatExpectation(value: number | string | undefined): string {
   return value;
 }
 
-
 describe('Airlock Module Whitelisting', () => {
   // Use filtered chain IDs from env var (defaults to all)
   const supportedChainIds = getTestChainIds();
@@ -137,7 +141,15 @@ describe('Airlock Module Whitelisting', () => {
   // Print summary after all tests
   afterAll(() => {
     const finalResults = Array.from(testResults.values());
-    const failed = finalResults.filter(r => r.status === 'FAIL' || r.status === 'RPC_ERROR');
+    const failed = finalResults.filter(
+      (r) => r.status === 'FAIL' || r.status === 'RPC_ERROR',
+    );
+    if (finalResults.length === 0) {
+      throw new Error(
+        'Whitelist audit ran zero module checks. Verify TEST_CHAINS and RPC configuration before release.',
+      );
+    }
+
     if (failed.length > 0 || finalResults.length > 0) {
       console.log('\n' + '='.repeat(80));
       console.log('  TEST RESULTS SUMMARY');
@@ -152,15 +164,26 @@ describe('Airlock Module Whitelisting', () => {
 
       for (const [chainId, results] of byChain) {
         const chainName = results[0]?.chain || `Chain ${chainId}`;
-        const passed = results.filter(r => r.status === 'PASS').length;
-        const failedCount = results.filter(r => r.status === 'FAIL' || r.status === 'RPC_ERROR').length;
-        console.log(`\n  ${chainName} (${chainId}): ${passed} passed, ${failedCount} failed`);
+        const passed = results.filter((r) => r.status === 'PASS').length;
+        const failedCount = results.filter(
+          (r) => r.status === 'FAIL' || r.status === 'RPC_ERROR',
+        ).length;
+        console.log(
+          `\n  ${chainName} (${chainId}): ${passed} passed, ${failedCount} failed`,
+        );
 
         for (const r of results) {
-          const icon = r.status === 'PASS' ? '[PASS]' : r.status === 'SKIP' ? '[SKIP]' : '[FAIL]';
+          const icon =
+            r.status === 'PASS'
+              ? '[PASS]'
+              : r.status === 'SKIP'
+                ? '[SKIP]'
+                : '[FAIL]';
           console.log(`    ${icon} ${r.module}: ${r.address}`);
           if (r.status === 'FAIL') {
-            console.log(`           Expected: ${formatExpectation(r.expected)}`);
+            console.log(
+              `           Expected: ${formatExpectation(r.expected)}`,
+            );
             console.log(`           Actual:   ${formatExpectation(r.actual)}`);
           } else if (r.status === 'RPC_ERROR') {
             console.log(`           Error: ${r.error}`);
@@ -201,7 +224,7 @@ describe('Airlock Module Whitelisting', () => {
       async function testModule(
         moduleName: string,
         moduleAddress: Address,
-        expectedState: ModuleState
+        expectedState: ModuleState,
       ) {
         const result: TestResult = {
           chain: chainName,
@@ -226,7 +249,7 @@ describe('Airlock Module Whitelisting', () => {
             result.status = 'FAIL';
             recordTestResult(result);
             throw new Error(
-              `State=${formatExpectation(result.actual)}, expected ${formatExpectation(expectedState)} | ${moduleAddress}`
+              `State=${formatExpectation(result.actual)}, expected ${formatExpectation(expectedState)} | ${moduleAddress}`,
             );
           }
 

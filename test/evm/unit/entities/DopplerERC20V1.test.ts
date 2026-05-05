@@ -270,6 +270,63 @@ describe('DopplerERC20V1', () => {
     });
   });
 
+  it('reads ERC20 metadata, balances, supply, and allowance', async () => {
+    vi.mocked(publicClient.readContract)
+      .mockResolvedValueOnce('Doppler V1')
+      .mockResolvedValueOnce('DPLR')
+      .mockResolvedValueOnce(18)
+      .mockResolvedValueOnce('ipfs://token-metadata')
+      .mockResolvedValueOnce(1234n)
+      .mockResolvedValueOnce(5678n)
+      .mockResolvedValueOnce(42n);
+
+    await expect(token.getName()).resolves.toBe('Doppler V1');
+    await expect(token.getSymbol()).resolves.toBe('DPLR');
+    await expect(token.getDecimals()).resolves.toBe(18);
+    await expect(token.getTokenURI()).resolves.toBe('ipfs://token-metadata');
+    await expect(token.getBalanceOf(beneficiary)).resolves.toBe(1234n);
+    await expect(token.getTotalSupply()).resolves.toBe(5678n);
+    await expect(token.getAllowance(owner, spender)).resolves.toBe(42n);
+
+    expect(publicClient.readContract).toHaveBeenNthCalledWith(1, {
+      address: mockTokenAddress,
+      abi: expect.any(Array),
+      functionName: 'name',
+    });
+    expect(publicClient.readContract).toHaveBeenNthCalledWith(2, {
+      address: mockTokenAddress,
+      abi: expect.any(Array),
+      functionName: 'symbol',
+    });
+    expect(publicClient.readContract).toHaveBeenNthCalledWith(3, {
+      address: mockTokenAddress,
+      abi: expect.any(Array),
+      functionName: 'decimals',
+    });
+    expect(publicClient.readContract).toHaveBeenNthCalledWith(4, {
+      address: mockTokenAddress,
+      abi: expect.any(Array),
+      functionName: 'tokenURI',
+    });
+    expect(publicClient.readContract).toHaveBeenNthCalledWith(5, {
+      address: mockTokenAddress,
+      abi: expect.any(Array),
+      functionName: 'balanceOf',
+      args: [beneficiary],
+    });
+    expect(publicClient.readContract).toHaveBeenNthCalledWith(6, {
+      address: mockTokenAddress,
+      abi: expect.any(Array),
+      functionName: 'totalSupply',
+    });
+    expect(publicClient.readContract).toHaveBeenNthCalledWith(7, {
+      address: mockTokenAddress,
+      abi: expect.any(Array),
+      functionName: 'allowance',
+      args: [owner, spender],
+    });
+  });
+
   it('reads schedule vesting data', async () => {
     vi.mocked(publicClient.readContract)
       .mockResolvedValueOnce(2n)
@@ -358,6 +415,21 @@ describe('DopplerERC20V1', () => {
       args: unknown[];
     }> = [
       {
+        run: () => token.approve(spender, 25n),
+        functionName: 'approve',
+        args: [spender, 25n],
+      },
+      {
+        run: () => token.transfer(beneficiary, 50n),
+        functionName: 'transfer',
+        args: [beneficiary, 50n],
+      },
+      {
+        run: () => token.transferFrom(owner, beneficiary, 75n),
+        functionName: 'transferFrom',
+        args: [owner, beneficiary, 75n],
+      },
+      {
         run: () => token.delegate(delegatee),
         functionName: 'delegate',
         args: [delegatee],
@@ -403,6 +475,11 @@ describe('DopplerERC20V1', () => {
         args: [],
       },
       {
+        run: () => token.updateTokenURI('ipfs://updated-token-uri'),
+        functionName: 'updateTokenURI',
+        args: ['ipfs://updated-token-uri'],
+      },
+      {
         run: () => token.burn(123n),
         functionName: 'burn',
         args: [123n],
@@ -428,6 +505,30 @@ describe('DopplerERC20V1', () => {
       });
     });
     expect(walletClient.writeContract).toHaveBeenCalledTimes(expectedWrites.length);
+  });
+
+  it('passes gas overrides through write simulations and wallet writes', async () => {
+    const gas = 123_456n;
+
+    vi.mocked(publicClient.simulateContract).mockResolvedValueOnce({
+      request: {
+        address: mockTokenAddress,
+        abi: dopplerERC20V1Abi,
+        functionName: 'approve',
+        args: [spender, 1n],
+      },
+    } as never);
+    vi.mocked(walletClient.writeContract).mockResolvedValueOnce(txHash);
+
+    await expect(token.approve(spender, 1n, { gas })).resolves.toBe(txHash);
+
+    expect(walletClient.writeContract).toHaveBeenCalledWith({
+      address: mockTokenAddress,
+      abi: dopplerERC20V1Abi,
+      functionName: 'approve',
+      args: [spender, 1n],
+      gas,
+    });
   });
 
   it('writes delegateBySig from wallet typed data', async () => {

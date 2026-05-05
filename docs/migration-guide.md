@@ -117,7 +117,7 @@ const { poolAddress, tokenAddress } = await factory.create({
 ```typescript
 import { StaticAuctionBuilder } from '@whetstone-research/doppler-sdk/evm'
 
-const params = new StaticAuctionBuilder()
+const params = new StaticAuctionBuilder(chainId)
   .tokenConfig({ name: 'My Token', symbol: 'MTK', tokenURI: 'https://example.com/token' })
   .saleConfig({
     initialSupply: parseEther('1000000'),
@@ -183,7 +183,7 @@ const { hookAddress, tokenAddress } = await factory.create({
 ```typescript
 import { DynamicAuctionBuilder, DAY_SECONDS } from '@whetstone-research/doppler-sdk/evm'
 
-const params = new DynamicAuctionBuilder()
+const params = new DynamicAuctionBuilder(chainId)
   .tokenConfig({ name: 'My Token', symbol: 'MTK', tokenURI: 'https://example.com/token' })
   .saleConfig({ initialSupply: parseEther('1000000'), numTokensToSell: parseEther('500000'), numeraire: wethAddress })
   .poolConfig({ fee: 3000, tickSpacing: 60 })

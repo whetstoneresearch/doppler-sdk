@@ -375,6 +375,95 @@ describe('MulticurveBuilder', () => {
       );
     });
 
+    it.each([
+      ['Date', new Date('2027-01-01T00:00:00.000Z')],
+      ['bigint', 1_861_459_201n],
+    ] as const)(
+      'normalizes %s startingTime to seconds',
+      (_label, startingTime) => {
+        const expectedStartingTime =
+          startingTime instanceof Date
+            ? Math.floor(startingTime.getTime() / 1000)
+            : Number(startingTime);
+
+        const params = buildBaseBuilder()
+          .withRehypeDopplerHook({
+            hookAddress: '0x9999999999999999999999999999999999999999' as Address,
+            buybackDestination:
+              '0x8888888888888888888888888888888888888888' as Address,
+            startFee: 3000,
+            endFee: 3000,
+            durationSeconds: 0,
+            startingTime,
+            feeDistributionInfo: {
+              assetFeesToAssetBuybackWad: parseEther('0.25'),
+              assetFeesToNumeraireBuybackWad: parseEther('0.25'),
+              assetFeesToBeneficiaryWad: parseEther('0.25'),
+              assetFeesToLpWad: parseEther('0.25'),
+              numeraireFeesToAssetBuybackWad: parseEther('0.25'),
+              numeraireFeesToNumeraireBuybackWad: parseEther('0.25'),
+              numeraireFeesToBeneficiaryWad: parseEther('0.25'),
+              numeraireFeesToLpWad: parseEther('0.25'),
+            },
+          })
+          .build();
+
+        const rehype = (params.initializer as { type: 'rehype'; config: { startingTime: number } }).config;
+        expect(rehype.startingTime).toBe(expectedStartingTime);
+      },
+    );
+
+    it('rejects graduationMarketCap and farTick together', () => {
+      expect(() =>
+        buildBaseBuilder().withRehypeDopplerHook({
+          hookAddress: '0x9999999999999999999999999999999999999999' as Address,
+          buybackDestination:
+            '0x8888888888888888888888888888888888888888' as Address,
+          startFee: 3000,
+          endFee: 3000,
+          durationSeconds: 0,
+          graduationMarketCap: 500_000,
+          farTick: 100,
+          feeDistributionInfo: {
+            assetFeesToAssetBuybackWad: parseEther('0.25'),
+            assetFeesToNumeraireBuybackWad: parseEther('0.25'),
+            assetFeesToBeneficiaryWad: parseEther('0.25'),
+            assetFeesToLpWad: parseEther('0.25'),
+            numeraireFeesToAssetBuybackWad: parseEther('0.25'),
+            numeraireFeesToNumeraireBuybackWad: parseEther('0.25'),
+            numeraireFeesToBeneficiaryWad: parseEther('0.25'),
+            numeraireFeesToLpWad: parseEther('0.25'),
+          },
+        }),
+      ).toThrow('Cannot specify both graduationMarketCap and farTick');
+    });
+
+    it('rejects graduationMarketCap during build when numerairePrice is missing', () => {
+      const builder = buildBaseBuilder().withRehypeDopplerHook({
+        hookAddress: '0x9999999999999999999999999999999999999999' as Address,
+        buybackDestination:
+          '0x8888888888888888888888888888888888888888' as Address,
+        startFee: 3000,
+        endFee: 3000,
+        durationSeconds: 0,
+        graduationMarketCap: 500_000,
+        feeDistributionInfo: {
+          assetFeesToAssetBuybackWad: parseEther('0.25'),
+          assetFeesToNumeraireBuybackWad: parseEther('0.25'),
+          assetFeesToBeneficiaryWad: parseEther('0.25'),
+          assetFeesToLpWad: parseEther('0.25'),
+          numeraireFeesToAssetBuybackWad: parseEther('0.25'),
+          numeraireFeesToNumeraireBuybackWad: parseEther('0.25'),
+          numeraireFeesToBeneficiaryWad: parseEther('0.25'),
+          numeraireFeesToLpWad: parseEther('0.25'),
+        },
+      });
+
+      expect(() => builder.build()).toThrow(
+        'graduationMarketCap requires numerairePrice',
+      );
+    });
+
     it('normalizes legacy rehype fields into fee schedule and matrix fields', () => {
       const params = buildBaseBuilder()
         .withRehypeDopplerHook({

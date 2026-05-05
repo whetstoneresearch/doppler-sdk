@@ -48,10 +48,15 @@ const UNISWAP_V2_PAIR_INIT_CODE_HASH =
 const UNISWAP_V3_POOL_INIT_CODE_HASH =
   '0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54' as const;
 
-function computeUniswapV2PairAddress(tokenA: Address, tokenB: Address): Address {
+function computeUniswapV2PairAddress(
+  tokenA: Address,
+  tokenB: Address,
+): Address {
   const [token0, token1] =
     BigInt(tokenA) < BigInt(tokenB) ? [tokenA, tokenB] : [tokenB, tokenA];
-  const salt = keccak256(encodePacked(['address', 'address'], [token0, token1]));
+  const salt = keccak256(
+    encodePacked(['address', 'address'], [token0, token1]),
+  );
   const hash = keccak256(
     `0xff${mockAddresses.uniswapV2Factory!.slice(2)}${salt.slice(2)}${UNISWAP_V2_PAIR_INIT_CODE_HASH.slice(2)}`,
   );
@@ -212,6 +217,44 @@ describe('DopplerFactory DopplerERC20V1 token routing', () => {
     ]);
     expect(decoded).toHaveLength(11);
     expect(decoded).not.toContain(20_000_000_000_000_000n);
+  });
+
+  it('adds the Uniswap V2 pair exclusion for V2 split migrations', async () => {
+    const balanceLimitEnd = Math.floor(Date.now() / 1000) + 30 * DAY_SECONDS;
+    const params = StaticAuctionBuilder.forChain(1)
+      .tokenConfig({
+        type: 'dopplerERC20V1',
+        name: 'Split Token',
+        symbol: 'SPV1',
+        tokenURI: 'ipfs://split-token',
+        maxBalanceLimit: parseEther('10000'),
+        balanceLimitEnd,
+      })
+      .saleConfig({
+        initialSupply: parseEther('1000000'),
+        numTokensToSell: parseEther('900000'),
+        numeraire: mockAddresses.weth,
+      })
+      .poolByTicks({ startTick: -120000, endTick: -60000, fee: 3000 })
+      .withGovernance({ type: 'default' })
+      .withMigration({
+        type: 'uniswapV2Split',
+        proceedsSplit: {
+          recipient: beneficiary,
+          share: parseEther('0.1'),
+        },
+      })
+      .withUserAddress(userAddress)
+      .build();
+
+    const createParams = await factory.encodeCreateStaticAuctionParams(params);
+    const tokenAddress = computeV1TokenAddress(createParams.salt);
+    const decoded = decodeV1TokenFactoryData(createParams.tokenFactoryData);
+
+    expect(createParams.liquidityMigrator).toBe(mockAddresses.v2MigratorSplit);
+    expect(decoded[10]).toContain(
+      computeUniswapV2PairAddress(mockAddresses.weth, tokenAddress),
+    );
   });
 
   it('adds PoolManager to active static exclusions for Uniswap V4 migration', async () => {
