@@ -1,5 +1,5 @@
-import { defineConfig, mergeConfig } from 'vitest/config'
-import baseConfig from './vitest.config'
+import { defineConfig, mergeConfig } from 'vitest/config';
+import baseConfig from './vitest.config';
 
 /**
  * Live test configuration
@@ -13,10 +13,7 @@ export default mergeConfig(
   baseConfig,
   defineConfig({
     test: {
-      include: [
-        'test/evm/e2e/**/*.test.ts',
-        'test/evm/airlock-whitelisting.test.ts',
-      ],
+      include: ['test/evm/e2e/**/*.test.ts'],
       exclude: [
         'node_modules/',
         'dist/',
@@ -44,5 +41,5 @@ export default mergeConfig(
       // Retry on flaky network issues
       retry: 2,
     },
-  })
-)
+  }),
+);

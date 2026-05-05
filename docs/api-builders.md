@@ -62,7 +62,7 @@ Methods (chainable):
   - `recipients`: Optional array of addresses to receive vested tokens. Defaults to `[userAddress]` if not provided.
   - `amounts`: Optional array of token amounts corresponding to each recipient. Must match `recipients` length if provided. Defaults to all unsold tokens to `userAddress` if not provided.
   - `allocations`: Optional array of `{ recipient, amount, schedule }` entries for per-beneficiary schedule vesting. Identical schedules are deduped internally.
-- withGovernance(GovernanceConfig | { useDefaults: true } | { noOp: true } | undefined)
+- withGovernance(GovernanceOption)
 - withMigration(MigrationConfig)
 - withUserAddress(address)
 - withIntegrator(address?)
@@ -104,7 +104,7 @@ const params = sdk.buildStaticAuction()
   .build()
 
 // Example 2: Single vesting beneficiary with price range (legacy)
-const paramsLegacy = new StaticAuctionBuilder()
+const paramsLegacy = new StaticAuctionBuilder(chainId)
   .tokenConfig({ name: 'My Token', symbol: 'MTK', tokenURI: 'https://example.com/mtk.json' })
   .saleConfig({ initialSupply: parseEther('1_000_000_000'), numTokensToSell: parseEther('900_000_000'), numeraire: weth })
   .poolByPriceRange({ priceRange: { startPrice: 0.0001, endPrice: 0.001 }, fee: 3000 })
@@ -115,7 +115,7 @@ const paramsLegacy = new StaticAuctionBuilder()
   .build()
 
 // Example 3: Multiple vesting beneficiaries
-const paramsMultiVest = new StaticAuctionBuilder()
+const paramsMultiVest = new StaticAuctionBuilder(chainId)
   .tokenConfig({ name: 'My Token', symbol: 'MTK', tokenURI: 'https://example.com/mtk.json' })
   .saleConfig({ initialSupply: parseEther('1_000_000_000'), numTokensToSell: parseEther('900_000_000'), numeraire: weth })
   .withMarketCapRange({
@@ -134,7 +134,7 @@ const paramsMultiVest = new StaticAuctionBuilder()
   .build()
 
 // Example 4: Per-beneficiary vesting schedules (DERC20 V2)
-const paramsPerSchedule = new StaticAuctionBuilder()
+const paramsPerSchedule = new StaticAuctionBuilder(chainId)
   .tokenConfig({ name: 'My Token', symbol: 'MTK', tokenURI: 'https://example.com/mtk.json' })
   .saleConfig({ initialSupply: parseEther('1_000_000_000'), numTokensToSell: parseEther('900_000_000'), numeraire: weth })
   .withMarketCapRange({
@@ -254,7 +254,7 @@ const params = sdk.buildDynamicAuction()
   .build()
 
 // Example 2: Using raw ticks (for advanced users or custom fee/tickSpacing)
-const paramsManual = new DynamicAuctionBuilder()
+const paramsManual = new DynamicAuctionBuilder(chainId)
   .tokenConfig({ name: 'My Token', symbol: 'MTK', tokenURI: 'https://example.com/mtk.json' })
   .saleConfig({ initialSupply: parseEther('1_000_000'), numTokensToSell: parseEther('900_000'), numeraire: weth })
   .poolConfig({ fee: 3000, tickSpacing: 10 }) // Use poolConfig() + auctionByTicks() for manual config (tickSpacing <= 30)
@@ -301,7 +301,7 @@ Methods (chainable):
 - withVesting({ duration?, cliffDuration?, recipients?, amounts?, allocations? } | undefined)
   - `recipients`: Optional array of addresses to receive vested tokens. Defaults to `[userAddress]` if not provided.
   - `amounts`: Optional array of token amounts corresponding to each recipient. Must match `recipients` length if provided. Defaults to all unsold tokens to `userAddress` if not provided.
-- withGovernance(GovernanceConfig)
+- withGovernance(GovernanceOption)
   - Call is required; use `{ type: 'default' }`, `{ type: 'custom', ... }`, or `{ type: 'noOp' }` where supported
 - withMigration(MigrationConfig)
   - Supports `uniswapV2`, `uniswapV2Split`, `uniswapV4`, `uniswapV4Split`, and `noOp`

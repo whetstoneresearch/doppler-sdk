@@ -65,8 +65,9 @@ Static auctions use Uniswap V3 pools with concentrated liquidity in a fixed pric
 
 ```typescript
 import { StaticAuctionBuilder } from '@whetstone-research/doppler-sdk/evm';
+import { base } from 'viem/chains';
 
-const params = new StaticAuctionBuilder()
+const params = new StaticAuctionBuilder(base.id)
   .tokenConfig({
     name: 'My Token',
     symbol: 'MTK',
@@ -186,8 +187,9 @@ import {
   DynamicAuctionBuilder,
   DAY_SECONDS,
 } from '@whetstone-research/doppler-sdk/evm';
+import { base } from 'viem/chains';
 
-const params = new DynamicAuctionBuilder()
+const params = new DynamicAuctionBuilder(base.id)
   .tokenConfig({
     name: 'My Token',
     symbol: 'MTK',
@@ -598,9 +600,10 @@ import {
   DynamicAuctionBuilder,
 } from '@whetstone-research/doppler-sdk/evm';
 import { parseEther } from 'viem';
+import { base } from 'viem/chains';
 
 // Dynamic auction via builder
-const dynamicParams = new DynamicAuctionBuilder()
+const dynamicParams = new DynamicAuctionBuilder(base.id)
   .tokenConfig({
     name: 'My Token',
     symbol: 'MTK',
@@ -624,7 +627,7 @@ const dynamicParams = new DynamicAuctionBuilder()
 const dyn = await sdk.factory.createDynamicAuction(dynamicParams);
 
 // Static auction via builder
-const staticParams = new StaticAuctionBuilder()
+const staticParams = new StaticAuctionBuilder(base.id)
   .tokenConfig({
     name: 'My Token',
     symbol: 'MTK',
@@ -652,7 +655,7 @@ The SDK intelligently applies defaults when parameters are omitted. Here are exa
 
 ```typescript
 // Minimal static auction via builder
-const staticMinimal = new StaticAuctionBuilder()
+const staticMinimal = new StaticAuctionBuilder(base.id)
   .tokenConfig({
     name: 'My Token',
     symbol: 'MTK',
@@ -671,7 +674,7 @@ const staticMinimal = new StaticAuctionBuilder()
 const staticResult = await sdk.factory.createStaticAuction(staticMinimal);
 
 // Minimal dynamic auction via builder
-const dynamicMinimal = new DynamicAuctionBuilder()
+const dynamicMinimal = new DynamicAuctionBuilder(base.id)
   .tokenConfig({
     name: 'My Token',
     symbol: 'MTK',
@@ -1450,7 +1453,7 @@ import {
 import { parseEther, keccak256, encodePacked, encodeAbiParameters } from 'viem';
 import { base } from 'viem/chains';
 
-const builder = new DynamicAuctionBuilder()
+const builder = new DynamicAuctionBuilder(base.id)
   .tokenConfig({
     name: 'My Token',
     symbol: 'MTK',
@@ -1704,8 +1707,6 @@ The SDK includes comprehensive tests covering:
 - **Multicurve Functionality**: Tests multicurve auction creation and quoting
 - **Token Address Mining**: Tests for generating optimized token addresses
 
-See [`test/README.md`](./test/README.md) for detailed testing documentation.
-
 To run whitelisting tests:
 
 ```bash
@@ -1719,7 +1720,7 @@ ALCHEMY_API_KEY=your_key_here pnpm test:whitelisting
 TEST_CHAINS=mainnet,base,base-sepolia,monad-mainnet pnpm test:whitelisting
 ```
 
-The whitelisting suite is scoped to Ethereum Mainnet, Monad Mainnet, Base Mainnet, and Base Sepolia.
+The whitelisting suite is scoped to the release-audit chains: Ethereum Mainnet, Monad Mainnet, Base Mainnet, and Base Sepolia.
 
 Whitelisting test RPC priority is:
 

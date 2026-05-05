@@ -239,7 +239,7 @@ const gasEstimate = await publicClient.estimateGas({
 
 ## Testing Examples
 
-The SDK includes fork tests for all examples to ensure they work correctly. These tests run against live testnet data and validate the complete example flows.
+The SDK includes fork tests for selected EVM example flows. These tests run against forked/live network state and validate the covered example paths without implying every example file has a dedicated fork test.
 
 ### Running Fork Tests
 
@@ -261,7 +261,7 @@ pnpm test:watch
 
 ### Test Coverage
 
-The following examples have corresponding fork tests:
+The following example groups have corresponding fork tests:
 
 - **Multicurve Examples**: `test/multicurve*.test.ts`
 - **Quote & Swap**: `test/multicurve-quote-swap.test.ts`
@@ -280,5 +280,5 @@ Fork tests validate:
 For questions or issues:
 
 - Read the [SDK documentation](../README.md)
-- Check the [migration guide](../docs/MIGRATION.md)
+- Check the [migration guide](../docs/migration-guide.md)
 - Open an issue on [GitHub](https://github.com/doppler-sdk/issues)

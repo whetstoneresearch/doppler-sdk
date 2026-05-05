@@ -617,7 +617,8 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     numeraire: Address;
   }): Address | undefined {
     if (
-      args.migration.type !== 'uniswapV2' ||
+      (args.migration.type !== 'uniswapV2' &&
+        args.migration.type !== 'uniswapV2Split') ||
       !args.addresses.uniswapV2Factory
     ) {
       return undefined;
@@ -5635,7 +5636,7 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       }
       case 'noOp': {
         const noOpAddress = overrides?.noOpMigrator ?? addresses.noOpMigrator;
-        if (!noOpAddress) {
+        if (!noOpAddress || noOpAddress === ZERO_ADDRESS) {
           throw new Error(
             'NoOpMigrator not configured on this chain. Provide override via modules.noOpMigrator or update chain config.',
           );

@@ -2,10 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { privateKeyToAccount } from 'viem/accounts';
 import { decodeAbiParameters, parseEther, type Address } from 'viem';
 import { DopplerFactory } from '../../../../src/evm/entities/DopplerFactory';
-import {
-  CHAIN_IDS,
-  getAddresses,
-} from '../../../../src/evm/addresses';
+import { CHAIN_IDS, getAddresses } from '../../../../src/evm/addresses';
 import type {
   CreateDynamicAuctionParams,
   CreateStaticAuctionParams,
@@ -134,9 +131,8 @@ describe('DopplerFactory split migrator support', () => {
       blockTimestamp: 1,
     };
 
-    const { createParams } = await factory.encodeCreateDynamicAuctionParams(
-      params,
-    );
+    const { createParams } =
+      await factory.encodeCreateDynamicAuctionParams(params);
 
     expect(createParams.liquidityMigrator).toBe(
       getAddresses(CHAIN_IDS.BASE_SEPOLIA).v4MigratorSplit,
@@ -204,9 +200,41 @@ describe('DopplerFactory split migrator support', () => {
       userAddress: account.address,
     } as CreateStaticAuctionParams;
 
-    await expect(factory.encodeCreateStaticAuctionParams(params)).rejects.toThrow(
+    await expect(
+      factory.encodeCreateStaticAuctionParams(params),
+    ).rejects.toThrow(
       'V4 split migration requires streamableFees configuration',
     );
+  });
+
+  it('rejects a zero-address no-op migrator override', async () => {
+    const params: CreateStaticAuctionParams = {
+      token: {
+        name: 'NoOp Token',
+        symbol: 'NOOP',
+        tokenURI: 'https://example.com/token.json',
+      },
+      sale: {
+        initialSupply: parseEther('1000000'),
+        numTokensToSell: parseEther('500000'),
+        numeraire: '0x4200000000000000000000000000000000000006' as Address,
+      },
+      pool: {
+        startTick: -276400,
+        endTick: -276200,
+        fee: 10000,
+      },
+      governance: { type: 'default' },
+      migration: { type: 'noOp' },
+      userAddress: account.address,
+      modules: {
+        noOpMigrator: '0x0000000000000000000000000000000000000000',
+      },
+    };
+
+    await expect(
+      factory.encodeCreateStaticAuctionParams(params),
+    ).rejects.toThrow('NoOpMigrator not configured on this chain');
   });
 
   it('rejects split proceeds shares above the contract maximum', async () => {
@@ -237,7 +265,9 @@ describe('DopplerFactory split migrator support', () => {
       userAddress: account.address,
     };
 
-    await expect(factory.encodeCreateStaticAuctionParams(params)).rejects.toThrow(
+    await expect(
+      factory.encodeCreateStaticAuctionParams(params),
+    ).rejects.toThrow(
       `V2 split migration proceeds split share cannot exceed ${parseEther('0.5')}`,
     );
   });
