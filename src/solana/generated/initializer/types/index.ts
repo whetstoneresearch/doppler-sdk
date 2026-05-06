@@ -6,6 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
+export * from './adminTransferred';
 export * from './calldataBuf';
 export * from './configInitialized';
 export * from './curveSwap';

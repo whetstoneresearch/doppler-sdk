@@ -9,7 +9,6 @@ import { AccountRole } from '@solana/kit';
 import {
   SYSTEM_PROGRAM_ADDRESS,
   TOKEN_PROGRAM_ADDRESS,
-  SYSVAR_INSTRUCTIONS_ADDRESS,
 } from '../../core/constants.js';
 import { INITIALIZER_PROGRAM_ID } from '../constants.js';
 import { getCurveSwapExactInInstructionDataEncoder } from '../../generated/initializer/index.js';
@@ -55,7 +54,6 @@ export interface CurveSwapExactInAccounts {
   sentinelProgram?: Address;
   baseTokenProgram?: Address;
   quoteTokenProgram?: Address;
-  instructionsSysvar?: Address;
 }
 
 export function createCurveSwapExactInInstruction(
@@ -77,7 +75,6 @@ export function createCurveSwapExactInInstruction(
     sentinelProgram = SYSTEM_PROGRAM_ADDRESS,
     baseTokenProgram = TOKEN_PROGRAM_ADDRESS,
     quoteTokenProgram = TOKEN_PROGRAM_ADDRESS,
-    instructionsSysvar = SYSVAR_INSTRUCTIONS_ADDRESS,
   } = accounts;
 
   const keys: (AccountMeta | AccountSignerMeta)[] = [
@@ -97,7 +94,6 @@ export function createCurveSwapExactInInstruction(
     { address: sentinelProgram, role: AccountRole.READONLY },
     { address: baseTokenProgram, role: AccountRole.READONLY },
     { address: quoteTokenProgram, role: AccountRole.READONLY },
-    { address: instructionsSysvar, role: AccountRole.READONLY },
   ];
 
   const data = new Uint8Array(

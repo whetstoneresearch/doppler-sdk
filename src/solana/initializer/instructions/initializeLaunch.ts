@@ -15,7 +15,6 @@ import {
   SYSTEM_PROGRAM_ADDRESS,
   TOKEN_PROGRAM_ADDRESS,
   TOKEN_METADATA_PROGRAM_ID,
-  SYSVAR_INSTRUCTIONS_ADDRESS,
 } from '../../core/constants.js';
 import {
   CURVE_KIND_XYK,
@@ -129,7 +128,6 @@ export interface InitializeLaunchAccounts {
   /** Required when args.metadataName is non-empty. Derive with getTokenMetadataAddress(baseMint). */
   metadataAccount?: Address;
   metadataProgram?: Address;
-  instructionsSysvar?: Address;
   /** Required when migratorProgram is the CPMM migrator. */
   cpmmConfig?: Address;
   /**
@@ -184,7 +182,6 @@ export async function createInitializeLaunchInstruction(
     rent,
     metadataAccount,
     metadataProgram = TOKEN_METADATA_PROGRAM_ID,
-    instructionsSysvar = SYSVAR_INSTRUCTIONS_ADDRESS,
     addressLookupTable: alt,
   } = accounts;
 
@@ -246,8 +243,6 @@ export async function createInitializeLaunchInstruction(
     keys.push({ address: programId, role: AccountRole.READONLY });
     keys.push({ address: programId, role: AccountRole.READONLY });
   }
-
-  keys.push({ address: instructionsSysvar, role: AccountRole.READONLY });
 
   const encoderArgs: InitializeLaunchArgsArgs = {
     ...args,

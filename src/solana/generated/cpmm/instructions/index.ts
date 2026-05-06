@@ -27,3 +27,4 @@ export * from './skim';
 export * from './swapExactIn';
 export * from './transferAdmin';
 export * from './unpause';
+export * from './updateConfig';

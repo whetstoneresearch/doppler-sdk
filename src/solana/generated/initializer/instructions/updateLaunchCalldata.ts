@@ -62,8 +62,6 @@ export type UpdateLaunchCalldataInstruction<
   TAccountConfig extends string | AccountMeta<string> = string,
   TAccountLaunch extends string | AccountMeta<string> = string,
   TAccountAuthority extends string | AccountMeta<string> = string,
-  TAccountInstructionsSysvar extends string | AccountMeta<string> =
-    'Sysvar1nstructions1111111111111111111111111',
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -79,9 +77,6 @@ export type UpdateLaunchCalldataInstruction<
         ? ReadonlySignerAccount<TAccountAuthority> &
             AccountSignerMeta<TAccountAuthority>
         : TAccountAuthority,
-      TAccountInstructionsSysvar extends string
-        ? ReadonlyAccount<TAccountInstructionsSysvar>
-        : TAccountInstructionsSysvar,
       ...TRemainingAccounts,
     ]
   >;
@@ -91,6 +86,7 @@ export type UpdateLaunchCalldataInstructionData = {
   sentinelCalldata: Option<ReadonlyUint8Array>;
   migratorMigrateCalldata: Option<ReadonlyUint8Array>;
   sentinelRemainingAccountsHash: Option<ReadonlyUint8Array>;
+  migratorInitRemainingAccountsHash: Option<ReadonlyUint8Array>;
   migratorRemainingAccountsHash: Option<ReadonlyUint8Array>;
 };
 
@@ -98,6 +94,7 @@ export type UpdateLaunchCalldataInstructionDataArgs = {
   sentinelCalldata: OptionOrNullable<ReadonlyUint8Array>;
   migratorMigrateCalldata: OptionOrNullable<ReadonlyUint8Array>;
   sentinelRemainingAccountsHash: OptionOrNullable<ReadonlyUint8Array>;
+  migratorInitRemainingAccountsHash: OptionOrNullable<ReadonlyUint8Array>;
   migratorRemainingAccountsHash: OptionOrNullable<ReadonlyUint8Array>;
 };
 
@@ -119,6 +116,10 @@ export function getUpdateLaunchCalldataInstructionDataEncoder(): Encoder<UpdateL
       ],
       [
         'sentinelRemainingAccountsHash',
+        getOptionEncoder(fixEncoderSize(getBytesEncoder(), 32)),
+      ],
+      [
+        'migratorInitRemainingAccountsHash',
         getOptionEncoder(fixEncoderSize(getBytesEncoder(), 32)),
       ],
       [
@@ -153,6 +154,10 @@ export function getUpdateLaunchCalldataInstructionDataDecoder(): Decoder<UpdateL
       getOptionDecoder(fixDecoderSize(getBytesDecoder(), 32)),
     ],
     [
+      'migratorInitRemainingAccountsHash',
+      getOptionDecoder(fixDecoderSize(getBytesDecoder(), 32)),
+    ],
+    [
       'migratorRemainingAccountsHash',
       getOptionDecoder(fixDecoderSize(getBytesDecoder(), 32)),
     ],
@@ -173,16 +178,15 @@ export type UpdateLaunchCalldataAsyncInput<
   TAccountConfig extends string = string,
   TAccountLaunch extends string = string,
   TAccountAuthority extends string = string,
-  TAccountInstructionsSysvar extends string = string,
 > = {
   config?: Address<TAccountConfig>;
   launch: Address<TAccountLaunch>;
   /** Authority of the launch (must match launch.authority or config.admin) */
   authority: TransactionSigner<TAccountAuthority>;
-  instructionsSysvar?: Address<TAccountInstructionsSysvar>;
   sentinelCalldata: UpdateLaunchCalldataInstructionDataArgs['sentinelCalldata'];
   migratorMigrateCalldata: UpdateLaunchCalldataInstructionDataArgs['migratorMigrateCalldata'];
   sentinelRemainingAccountsHash: UpdateLaunchCalldataInstructionDataArgs['sentinelRemainingAccountsHash'];
+  migratorInitRemainingAccountsHash: UpdateLaunchCalldataInstructionDataArgs['migratorInitRemainingAccountsHash'];
   migratorRemainingAccountsHash: UpdateLaunchCalldataInstructionDataArgs['migratorRemainingAccountsHash'];
 };
 
@@ -190,14 +194,12 @@ export async function getUpdateLaunchCalldataInstructionAsync<
   TAccountConfig extends string,
   TAccountLaunch extends string,
   TAccountAuthority extends string,
-  TAccountInstructionsSysvar extends string,
   TProgramAddress extends Address = typeof INITIALIZER_PROGRAM_ADDRESS,
 >(
   input: UpdateLaunchCalldataAsyncInput<
     TAccountConfig,
     TAccountLaunch,
-    TAccountAuthority,
-    TAccountInstructionsSysvar
+    TAccountAuthority
   >,
   config?: { programAddress?: TProgramAddress },
 ): Promise<
@@ -205,8 +207,7 @@ export async function getUpdateLaunchCalldataInstructionAsync<
     TProgramAddress,
     TAccountConfig,
     TAccountLaunch,
-    TAccountAuthority,
-    TAccountInstructionsSysvar
+    TAccountAuthority
   >
 > {
   // Program address.
@@ -217,10 +218,6 @@ export async function getUpdateLaunchCalldataInstructionAsync<
     config: { value: input.config ?? null, isWritable: false },
     launch: { value: input.launch ?? null, isWritable: true },
     authority: { value: input.authority ?? null, isWritable: false },
-    instructionsSysvar: {
-      value: input.instructionsSysvar ?? null,
-      isWritable: false,
-    },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -239,10 +236,6 @@ export async function getUpdateLaunchCalldataInstructionAsync<
       ],
     });
   }
-  if (!accounts.instructionsSysvar.value) {
-    accounts.instructionsSysvar.value =
-      'Sysvar1nstructions1111111111111111111111111' as Address<'Sysvar1nstructions1111111111111111111111111'>;
-  }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
@@ -250,7 +243,6 @@ export async function getUpdateLaunchCalldataInstructionAsync<
       getAccountMeta('config', accounts.config),
       getAccountMeta('launch', accounts.launch),
       getAccountMeta('authority', accounts.authority),
-      getAccountMeta('instructionsSysvar', accounts.instructionsSysvar),
     ],
     data: getUpdateLaunchCalldataInstructionDataEncoder().encode(
       args as UpdateLaunchCalldataInstructionDataArgs,
@@ -260,8 +252,7 @@ export async function getUpdateLaunchCalldataInstructionAsync<
     TProgramAddress,
     TAccountConfig,
     TAccountLaunch,
-    TAccountAuthority,
-    TAccountInstructionsSysvar
+    TAccountAuthority
   >);
 }
 
@@ -269,16 +260,15 @@ export type UpdateLaunchCalldataInput<
   TAccountConfig extends string = string,
   TAccountLaunch extends string = string,
   TAccountAuthority extends string = string,
-  TAccountInstructionsSysvar extends string = string,
 > = {
   config: Address<TAccountConfig>;
   launch: Address<TAccountLaunch>;
   /** Authority of the launch (must match launch.authority or config.admin) */
   authority: TransactionSigner<TAccountAuthority>;
-  instructionsSysvar?: Address<TAccountInstructionsSysvar>;
   sentinelCalldata: UpdateLaunchCalldataInstructionDataArgs['sentinelCalldata'];
   migratorMigrateCalldata: UpdateLaunchCalldataInstructionDataArgs['migratorMigrateCalldata'];
   sentinelRemainingAccountsHash: UpdateLaunchCalldataInstructionDataArgs['sentinelRemainingAccountsHash'];
+  migratorInitRemainingAccountsHash: UpdateLaunchCalldataInstructionDataArgs['migratorInitRemainingAccountsHash'];
   migratorRemainingAccountsHash: UpdateLaunchCalldataInstructionDataArgs['migratorRemainingAccountsHash'];
 };
 
@@ -286,22 +276,19 @@ export function getUpdateLaunchCalldataInstruction<
   TAccountConfig extends string,
   TAccountLaunch extends string,
   TAccountAuthority extends string,
-  TAccountInstructionsSysvar extends string,
   TProgramAddress extends Address = typeof INITIALIZER_PROGRAM_ADDRESS,
 >(
   input: UpdateLaunchCalldataInput<
     TAccountConfig,
     TAccountLaunch,
-    TAccountAuthority,
-    TAccountInstructionsSysvar
+    TAccountAuthority
   >,
   config?: { programAddress?: TProgramAddress },
 ): UpdateLaunchCalldataInstruction<
   TProgramAddress,
   TAccountConfig,
   TAccountLaunch,
-  TAccountAuthority,
-  TAccountInstructionsSysvar
+  TAccountAuthority
 > {
   // Program address.
   const programAddress = config?.programAddress ?? INITIALIZER_PROGRAM_ADDRESS;
@@ -311,10 +298,6 @@ export function getUpdateLaunchCalldataInstruction<
     config: { value: input.config ?? null, isWritable: false },
     launch: { value: input.launch ?? null, isWritable: true },
     authority: { value: input.authority ?? null, isWritable: false },
-    instructionsSysvar: {
-      value: input.instructionsSysvar ?? null,
-      isWritable: false,
-    },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -324,19 +307,12 @@ export function getUpdateLaunchCalldataInstruction<
   // Original args.
   const args = { ...input };
 
-  // Resolve default values.
-  if (!accounts.instructionsSysvar.value) {
-    accounts.instructionsSysvar.value =
-      'Sysvar1nstructions1111111111111111111111111' as Address<'Sysvar1nstructions1111111111111111111111111'>;
-  }
-
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
       getAccountMeta('config', accounts.config),
       getAccountMeta('launch', accounts.launch),
       getAccountMeta('authority', accounts.authority),
-      getAccountMeta('instructionsSysvar', accounts.instructionsSysvar),
     ],
     data: getUpdateLaunchCalldataInstructionDataEncoder().encode(
       args as UpdateLaunchCalldataInstructionDataArgs,
@@ -346,8 +322,7 @@ export function getUpdateLaunchCalldataInstruction<
     TProgramAddress,
     TAccountConfig,
     TAccountLaunch,
-    TAccountAuthority,
-    TAccountInstructionsSysvar
+    TAccountAuthority
   >);
 }
 
@@ -361,7 +336,6 @@ export type ParsedUpdateLaunchCalldataInstruction<
     launch: TAccountMetas[1];
     /** Authority of the launch (must match launch.authority or config.admin) */
     authority: TAccountMetas[2];
-    instructionsSysvar: TAccountMetas[3];
   };
   data: UpdateLaunchCalldataInstructionData;
 };
@@ -374,12 +348,12 @@ export function parseUpdateLaunchCalldataInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedUpdateLaunchCalldataInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 4) {
+  if (instruction.accounts.length < 3) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 4,
+        expectedAccountMetas: 3,
       },
     );
   }
@@ -395,7 +369,6 @@ export function parseUpdateLaunchCalldataInstruction<
       config: getNextAccount(),
       launch: getNextAccount(),
       authority: getNextAccount(),
-      instructionsSysvar: getNextAccount(),
     },
     data: getUpdateLaunchCalldataInstructionDataDecoder().decode(
       instruction.data,

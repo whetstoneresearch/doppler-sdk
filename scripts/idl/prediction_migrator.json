@@ -109,6 +109,12 @@
           "writable": true
         },
         {
+          "name": "quote_mint",
+          "docs": [
+            "Quote mint used for reward payouts"
+          ]
+        },
+        {
           "name": "entry_by_mint",
           "docs": [
             "EntryByMint for validation that this mint belongs to this market"
@@ -205,8 +211,10 @@
           "signer": true
         },
         {
-          "name": "token_program",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+          "name": "base_token_program"
+        },
+        {
+          "name": "quote_token_program"
         },
         {
           "name": "system_program",

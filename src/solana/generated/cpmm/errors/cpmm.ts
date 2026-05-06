@@ -78,6 +78,8 @@ export const CPMM_ERROR__INVALID_INPUT = 0x178d; // 6029
 export const CPMM_ERROR__REENTRANCY = 0x178e; // 6030
 /** CpiForbidden: CPI calls into this program are forbidden */
 export const CPMM_ERROR__CPI_FORBIDDEN = 0x178f; // 6031
+/** UseCollectProtocolFees: Protocol position must be claimed via collect_protocol_fees */
+export const CPMM_ERROR__USE_COLLECT_PROTOCOL_FEES = 0x1790; // 6032
 
 export type CpmmError =
   | typeof CPMM_ERROR__AMOUNT_ZERO
@@ -111,6 +113,7 @@ export type CpmmError =
   | typeof CPMM_ERROR__SLIPPAGE_EXCEEDED
   | typeof CPMM_ERROR__TOTAL_SHARES_ZERO
   | typeof CPMM_ERROR__UNAUTHORIZED
+  | typeof CPMM_ERROR__USE_COLLECT_PROTOCOL_FEES
   | typeof CPMM_ERROR__ZERO_SHARES_OUT;
 
 let cpmmErrorMessages: Record<CpmmError, string> | undefined;
@@ -147,6 +150,7 @@ if (process.env.NODE_ENV !== 'production') {
     [CPMM_ERROR__SLIPPAGE_EXCEEDED]: `Slippage exceeded`,
     [CPMM_ERROR__TOTAL_SHARES_ZERO]: `Total shares zero`,
     [CPMM_ERROR__UNAUTHORIZED]: `Unauthorized`,
+    [CPMM_ERROR__USE_COLLECT_PROTOCOL_FEES]: `Protocol position must be claimed via collect_protocol_fees`,
     [CPMM_ERROR__ZERO_SHARES_OUT]: `Zero shares out`,
   };
 }

@@ -66,8 +66,6 @@ export type MigratorInitInstruction<
     '11111111111111111111111111111111',
   TAccountRent extends string | AccountMeta<string> =
     'SysvarRent111111111111111111111111111111111',
-  TAccountInstructionsSysvar extends string | AccountMeta<string> =
-    'Sysvar1nstructions1111111111111111111111111',
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -113,9 +111,6 @@ export type MigratorInitInstruction<
       TAccountRent extends string
         ? ReadonlyAccount<TAccountRent>
         : TAccountRent,
-      TAccountInstructionsSysvar extends string
-        ? ReadonlyAccount<TAccountInstructionsSysvar>
-        : TAccountInstructionsSysvar,
       ...TRemainingAccounts,
     ]
   >;
@@ -161,7 +156,6 @@ export type MigratorInitAsyncInput<
   TAccountQuoteTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
   TAccountRent extends string = string,
-  TAccountInstructionsSysvar extends string = string,
 > = {
   config?: Address<TAccountConfig>;
   launch: Address<TAccountLaunch>;
@@ -176,7 +170,6 @@ export type MigratorInitAsyncInput<
   quoteTokenProgram: Address<TAccountQuoteTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
   rent?: Address<TAccountRent>;
-  instructionsSysvar?: Address<TAccountInstructionsSysvar>;
 };
 
 export async function getMigratorInitInstructionAsync<
@@ -193,7 +186,6 @@ export async function getMigratorInitInstructionAsync<
   TAccountQuoteTokenProgram extends string,
   TAccountSystemProgram extends string,
   TAccountRent extends string,
-  TAccountInstructionsSysvar extends string,
   TProgramAddress extends Address = typeof INITIALIZER_PROGRAM_ADDRESS,
 >(
   input: MigratorInitAsyncInput<
@@ -209,8 +201,7 @@ export async function getMigratorInitInstructionAsync<
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram,
     TAccountSystemProgram,
-    TAccountRent,
-    TAccountInstructionsSysvar
+    TAccountRent
   >,
   config?: { programAddress?: TProgramAddress },
 ): Promise<
@@ -228,8 +219,7 @@ export async function getMigratorInitInstructionAsync<
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram,
     TAccountSystemProgram,
-    TAccountRent,
-    TAccountInstructionsSysvar
+    TAccountRent
   >
 > {
   // Program address.
@@ -262,10 +252,6 @@ export async function getMigratorInitInstructionAsync<
     },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
     rent: { value: input.rent ?? null, isWritable: false },
-    instructionsSysvar: {
-      value: input.instructionsSysvar ?? null,
-      isWritable: false,
-    },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -289,10 +275,6 @@ export async function getMigratorInitInstructionAsync<
     accounts.rent.value =
       'SysvarRent111111111111111111111111111111111' as Address<'SysvarRent111111111111111111111111111111111'>;
   }
-  if (!accounts.instructionsSysvar.value) {
-    accounts.instructionsSysvar.value =
-      'Sysvar1nstructions1111111111111111111111111' as Address<'Sysvar1nstructions1111111111111111111111111'>;
-  }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
@@ -310,7 +292,6 @@ export async function getMigratorInitInstructionAsync<
       getAccountMeta('quoteTokenProgram', accounts.quoteTokenProgram),
       getAccountMeta('systemProgram', accounts.systemProgram),
       getAccountMeta('rent', accounts.rent),
-      getAccountMeta('instructionsSysvar', accounts.instructionsSysvar),
     ],
     data: getMigratorInitInstructionDataEncoder().encode({}),
     programAddress,
@@ -328,8 +309,7 @@ export async function getMigratorInitInstructionAsync<
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram,
     TAccountSystemProgram,
-    TAccountRent,
-    TAccountInstructionsSysvar
+    TAccountRent
   >);
 }
 
@@ -347,7 +327,6 @@ export type MigratorInitInput<
   TAccountQuoteTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
   TAccountRent extends string = string,
-  TAccountInstructionsSysvar extends string = string,
 > = {
   config: Address<TAccountConfig>;
   launch: Address<TAccountLaunch>;
@@ -362,7 +341,6 @@ export type MigratorInitInput<
   quoteTokenProgram: Address<TAccountQuoteTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
   rent?: Address<TAccountRent>;
-  instructionsSysvar?: Address<TAccountInstructionsSysvar>;
 };
 
 export function getMigratorInitInstruction<
@@ -379,7 +357,6 @@ export function getMigratorInitInstruction<
   TAccountQuoteTokenProgram extends string,
   TAccountSystemProgram extends string,
   TAccountRent extends string,
-  TAccountInstructionsSysvar extends string,
   TProgramAddress extends Address = typeof INITIALIZER_PROGRAM_ADDRESS,
 >(
   input: MigratorInitInput<
@@ -395,8 +372,7 @@ export function getMigratorInitInstruction<
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram,
     TAccountSystemProgram,
-    TAccountRent,
-    TAccountInstructionsSysvar
+    TAccountRent
   >,
   config?: { programAddress?: TProgramAddress },
 ): MigratorInitInstruction<
@@ -413,8 +389,7 @@ export function getMigratorInitInstruction<
   TAccountBaseTokenProgram,
   TAccountQuoteTokenProgram,
   TAccountSystemProgram,
-  TAccountRent,
-  TAccountInstructionsSysvar
+  TAccountRent
 > {
   // Program address.
   const programAddress = config?.programAddress ?? INITIALIZER_PROGRAM_ADDRESS;
@@ -446,10 +421,6 @@ export function getMigratorInitInstruction<
     },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
     rent: { value: input.rent ?? null, isWritable: false },
-    instructionsSysvar: {
-      value: input.instructionsSysvar ?? null,
-      isWritable: false,
-    },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -464,10 +435,6 @@ export function getMigratorInitInstruction<
   if (!accounts.rent.value) {
     accounts.rent.value =
       'SysvarRent111111111111111111111111111111111' as Address<'SysvarRent111111111111111111111111111111111'>;
-  }
-  if (!accounts.instructionsSysvar.value) {
-    accounts.instructionsSysvar.value =
-      'Sysvar1nstructions1111111111111111111111111' as Address<'Sysvar1nstructions1111111111111111111111111'>;
   }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
@@ -486,7 +453,6 @@ export function getMigratorInitInstruction<
       getAccountMeta('quoteTokenProgram', accounts.quoteTokenProgram),
       getAccountMeta('systemProgram', accounts.systemProgram),
       getAccountMeta('rent', accounts.rent),
-      getAccountMeta('instructionsSysvar', accounts.instructionsSysvar),
     ],
     data: getMigratorInitInstructionDataEncoder().encode({}),
     programAddress,
@@ -504,8 +470,7 @@ export function getMigratorInitInstruction<
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram,
     TAccountSystemProgram,
-    TAccountRent,
-    TAccountInstructionsSysvar
+    TAccountRent
   >);
 }
 
@@ -528,7 +493,6 @@ export type ParsedMigratorInitInstruction<
     quoteTokenProgram: TAccountMetas[10];
     systemProgram: TAccountMetas[11];
     rent: TAccountMetas[12];
-    instructionsSysvar: TAccountMetas[13];
   };
   data: MigratorInitInstructionData;
 };
@@ -541,12 +505,12 @@ export function parseMigratorInitInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedMigratorInitInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 14) {
+  if (instruction.accounts.length < 13) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 14,
+        expectedAccountMetas: 13,
       },
     );
   }
@@ -572,7 +536,6 @@ export function parseMigratorInitInstruction<
       quoteTokenProgram: getNextAccount(),
       systemProgram: getNextAccount(),
       rent: getNextAccount(),
-      instructionsSysvar: getNextAccount(),
     },
     data: getMigratorInitInstructionDataDecoder().decode(instruction.data),
   };

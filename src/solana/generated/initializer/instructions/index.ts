@@ -15,5 +15,6 @@ export * from './previewMigration';
 export * from './previewSwapExactIn';
 export * from './setMigratorAllowlist';
 export * from './setSentinelAllowlist';
+export * from './transferAdmin';
 export * from './updateLaunchCalldata';
 export * from './updateTradingFlags';
