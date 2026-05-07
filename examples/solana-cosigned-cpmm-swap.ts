@@ -1,7 +1,8 @@
 /**
- * Example: Advanced E2E Launch — State Tracking Across Bonding Curve and Spot Market (Solana)
+ * Example: Cosigned CPMM Swap E2E (Solana)
  *
- * Full lifecycle from launch creation to graduated CPMM pool:
+ * Full lifecycle from launch creation to a graduated CPMM pool, then a
+ * post-migration swap that forwards a readonly cosigner to the pool sentinel:
  *
  *   1. Create XYK launch with CPMM migrator
  *   2. List all launches owned by this wallet (indexer-style enumeration)
@@ -11,6 +12,12 @@
  *   6. Verify final launch state
  *   7. Read migrator state to confirm recipients and CPMM config
  *   8. Discover the graduated CPMM pool and read spot price
+ *   9. Configure CPMM sentinel signer forwarding
+ *  10. Execute a CPMM swap cosigned by a readonly signer
+ *
+ * Note: the deployed cpmm_sentinel only requires a signer if one remaining
+ * account has exactly one byte of data equal to 0xA5. If you have such a marker
+ * account, pass it via COSIGNER_MARKER_ACCOUNT to exercise strict enforcement.
  */
 import './env.js';
 
@@ -43,6 +50,7 @@ import {
   type Address,
 } from '@solana/kit';
 import { SYSVAR_RENT_ADDRESS } from '@solana/sysvars';
+import { readFileSync } from 'fs';
 
 import { cpmm, initializer, cpmmMigrator } from '../src/solana/index.js';
 
@@ -50,12 +58,30 @@ import { cpmm, initializer, cpmmMigrator } from '../src/solana/index.js';
 // Environment
 // ============================================================================
 
-const keypairJson = process.env.SOLANA_KEYPAIR;
+const keypairJson = process.env.SOLANA_KEYPAIR_PATH
+  ? readFileSync(process.env.SOLANA_KEYPAIR_PATH, 'utf8')
+  : process.env.SOLANA_KEYPAIR;
+const cosignerKeypairJson = process.env.COSIGNER_KEYPAIR_PATH
+  ? readFileSync(process.env.COSIGNER_KEYPAIR_PATH, 'utf8')
+  : process.env.COSIGNER_KEYPAIR;
 const rpcUrl = process.env.SOLANA_RPC_URL ?? 'https://api.devnet.solana.com';
 const wsUrl = process.env.SOLANA_WS_URL ?? 'wss://api.devnet.solana.com';
 
 if (!keypairJson) {
   throw new Error('SOLANA_KEYPAIR must be set (JSON array of 64 bytes)');
+}
+
+async function loadCosigner() {
+  if (!cosignerKeypairJson) {
+    console.warn(
+      'COSIGNER_KEYPAIR(_PATH) not set; generating an ephemeral cosigner for this devnet example.',
+    );
+    return generateKeyPairSigner();
+  }
+
+  return createKeyPairSignerFromBytes(
+    new Uint8Array(JSON.parse(cosignerKeypairJson)),
+  );
 }
 
 // WSOL mint — pools use the wrapped SPL mint since native SOL can't live in token vaults.
@@ -284,8 +310,8 @@ async function main() {
             payerBaseAta, // team recipient ATA (TEAM_SHARE → payer)
           ],
         ),
-        // Keep metadata empty so this larger example transaction remains
-        // below Solana's 1232-byte transaction size limit.
+        // Skip metadata in this e2e so initialize_launch stays below Solana's
+        // transaction size limit while still deploying a new mint.
         metadataName: '',
         metadataSymbol: '',
         metadataUri: '',
@@ -624,6 +650,137 @@ async function main() {
         console.log('  Swap fee:     ', pool.swapFeeBps, 'bps');
         console.log('  Spot price0:  ', price0.toFixed(8), '(base/WSOL)');
         console.log('  Spot price1:  ', price1.toFixed(8), '(WSOL/base)');
+
+        // ── Step 9: Enable sentinel signer forwarding on the graduated pool ─
+        //
+        // set_sentinel is a CPMM admin action. On devnet, run this example with
+        // the Doppler devnet admin keypair so the payer matches cpmmConfig.admin.
+        console.log('Step 9: Enabling CPMM sentinel signer forwarding...');
+        const setSentinelIx = cpmm.createSetSentinelInstruction({
+          config: cpmmConfig,
+          pool: poolAddress,
+          admin: payer,
+          sentinelProgram: initializer.CPMM_SENTINEL_PROGRAM_ID,
+          sentinelFlags: cpmm.SF_BEFORE_SWAP | cpmm.SF_FORWARD_READONLY_SIGNERS,
+        });
+
+        {
+          const { value: latestBlockhash } = await rpc
+            .getLatestBlockhash()
+            .send();
+
+          const transactionMessage = pipe(
+            createTransactionMessage({ version: 0 }),
+            (tx) => setTransactionMessageFeePayerSigner(payer, tx),
+            (tx) =>
+              setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
+            (tx) => appendTransactionMessageInstructions([setSentinelIx], tx),
+          );
+
+          const signedTransaction =
+            await signTransactionMessageWithSigners(transactionMessage);
+
+          await sendAndConfirmTransaction(
+            signedTransaction as Parameters<
+              typeof sendAndConfirmTransaction
+            >[0],
+            {
+              commitment: 'confirmed',
+            },
+          );
+
+          console.log(
+            '  Sentinel update confirmed:',
+            getSignatureFromTransaction(signedTransaction),
+          );
+        }
+        console.log('');
+
+        // ── Step 10: Execute a post-migration CPMM swap with a cosigner ─────
+        console.log('Step 10: Executing cosigned CPMM swap...');
+        const cosigner = await loadCosigner();
+        const markerAccount = process.env.COSIGNER_MARKER_ACCOUNT
+          ? address(process.env.COSIGNER_MARKER_ACCOUNT)
+          : undefined;
+
+        const direction = pool.token0Mint === baseMint.address ? 0 : 1;
+        const COSIGNED_SWAP_AMOUNT_IN = 1_000_000n; // 1 base token atom unit at 6 decimals
+        const quote = cpmm.getSwapQuote(
+          pool,
+          COSIGNED_SWAP_AMOUNT_IN,
+          direction,
+        );
+        const minAmountOut = (quote.amountOut * 9_500n) / 10_000n; // 5% slippage for devnet
+
+        const userToken0 =
+          pool.token0Mint === baseMint.address ? userBaseAta : userQuoteAta;
+        const userToken1 =
+          pool.token1Mint === baseMint.address ? userBaseAta : userQuoteAta;
+        const remainingAccounts = [
+          initializer.CPMM_SENTINEL_PROGRAM_ID,
+          ...(markerAccount ? [markerAccount] : []),
+          cosigner,
+        ];
+
+        const cosignedSwapIx = cpmm.createSwapInstruction({
+          config: cpmmConfig,
+          pool: poolAddress,
+          authority: pool.authority,
+          vault0: pool.vault0,
+          vault1: pool.vault1,
+          token0Mint: pool.token0Mint,
+          token1Mint: pool.token1Mint,
+          userToken0,
+          userToken1,
+          user: payer,
+          amountIn: COSIGNED_SWAP_AMOUNT_IN,
+          minAmountOut,
+          direction,
+          remainingAccounts,
+        });
+
+        {
+          const { value: latestBlockhash } = await rpc
+            .getLatestBlockhash()
+            .send();
+
+          const transactionMessage = pipe(
+            createTransactionMessage({ version: 0 }),
+            (tx) => setTransactionMessageFeePayerSigner(payer, tx),
+            (tx) =>
+              setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
+            (tx) =>
+              appendTransactionMessageInstructions(
+                [createSetComputeUnitLimitInstruction(400_000), cosignedSwapIx],
+                tx,
+              ),
+          );
+
+          const signedTransaction =
+            await signTransactionMessageWithSigners(transactionMessage);
+
+          await sendAndConfirmTransaction(
+            signedTransaction as Parameters<
+              typeof sendAndConfirmTransaction
+            >[0],
+            {
+              commitment: 'confirmed',
+            },
+          );
+
+          console.log(
+            '  Cosigned swap confirmed:',
+            getSignatureFromTransaction(signedTransaction),
+          );
+          console.log('  Cosigner:', cosigner.address);
+          if (markerAccount) {
+            console.log('  Marker account:', markerAccount);
+          } else {
+            console.log(
+              '  No marker account provided; signer was forwarded but not required by cpmm_sentinel.',
+            );
+          }
+        }
       } else {
         console.log('  CPMM pool not found — may not be initialized yet');
       }
@@ -634,7 +791,7 @@ async function main() {
     }
 
     console.log('');
-    console.log('E2E tracking example complete.');
+    console.log('Cosigned CPMM swap E2E example complete.');
   } catch (error) {
     console.error('Error:', error);
     process.exit(1);

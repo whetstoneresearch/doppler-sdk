@@ -273,9 +273,11 @@ async function main() {
             payerBaseAta, // team recipient ATA (TEAM_SHARE → payer)
           ],
         ),
-        metadataName: 'Adv Token',
-        metadataSymbol: 'ADV',
-        metadataUri: 'https://example.com/a.json',
+        // Keep metadata empty so this larger example transaction remains
+        // below Solana's 1232-byte transaction size limit.
+        metadataName: '',
+        metadataSymbol: '',
+        metadataUri: '',
       },
     );
 

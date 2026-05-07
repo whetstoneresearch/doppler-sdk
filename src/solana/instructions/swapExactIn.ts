@@ -1,9 +1,48 @@
-import type { Address, Instruction } from '@solana/kit';
+import type {
+  AccountMeta,
+  AccountSignerMeta,
+  Address,
+  Instruction,
+  TransactionSigner,
+} from '@solana/kit';
 import { AccountRole, createNoopSigner } from '@solana/kit';
 import { CPMM_PROGRAM_ADDRESS } from '../generated/cpmm/programs/index.js';
 import { getSwapExactInInstruction } from '../generated/cpmm/instructions/index.js';
 import { TOKEN_PROGRAM_ADDRESS } from '../core/constants.js';
 import type { SwapDirection } from '../core/types.js';
+
+type RemainingAccount =
+  | Address
+  | AccountMeta
+  | AccountSignerMeta
+  | TransactionSigner;
+
+function isTransactionSigner(
+  value: RemainingAccount,
+): value is TransactionSigner {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'address' in value &&
+    'signTransactions' in value
+  );
+}
+
+function toRemainingAccountMeta(
+  account: RemainingAccount,
+): AccountMeta | AccountSignerMeta {
+  if (typeof account === 'string') {
+    return { address: account, role: AccountRole.READONLY };
+  }
+  if (isTransactionSigner(account)) {
+    return {
+      address: account.address,
+      role: AccountRole.READONLY_SIGNER,
+      signer: account,
+    };
+  }
+  return account;
+}
 
 /**
  * Helper to create swap instruction with simplified parameters
@@ -18,12 +57,12 @@ export function createSwapInstruction(params: {
   token1Mint: Address;
   userToken0: Address;
   userToken1: Address;
-  user: Address;
+  user: Address | TransactionSigner;
   amountIn: bigint;
   minAmountOut: bigint;
   direction: SwapDirection;
   oracle?: Address;
-  remainingAccounts?: Address[];
+  remainingAccounts?: RemainingAccount[];
   updateOracle?: boolean;
   token0Program?: Address;
   token1Program?: Address;
@@ -52,6 +91,7 @@ export function createSwapInstruction(params: {
     tokenProgram,
     programId = CPMM_PROGRAM_ADDRESS,
   } = params;
+  const trader = typeof user === 'string' ? createNoopSigner(user) : user;
 
   // Determine vaults and user accounts based on direction
   const [vaultIn, vaultOut] =
@@ -70,7 +110,7 @@ export function createSwapInstruction(params: {
       token1Mint,
       userIn,
       userOut,
-      trader: createNoopSigner(user),
+      trader,
       token0Program: token0Program ?? tokenProgram ?? TOKEN_PROGRAM_ADDRESS,
       token1Program: token1Program ?? tokenProgram ?? TOKEN_PROGRAM_ADDRESS,
       oracle,
@@ -86,10 +126,7 @@ export function createSwapInstruction(params: {
     ...instruction,
     accounts: [
       ...(instruction.accounts ?? []),
-      ...remainingAccounts.map((address) => ({
-        address,
-        role: AccountRole.READONLY,
-      })),
+      ...remainingAccounts.map(toRemainingAccountMeta),
     ],
   };
 }

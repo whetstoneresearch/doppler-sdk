@@ -5,6 +5,7 @@ import type {
   AccountLookupMeta,
   TransactionSigner,
   AccountSignerMeta,
+  ReadonlyUint8Array,
 } from '@solana/kit';
 import {
   AccountRole,
@@ -20,7 +21,10 @@ import {
   CURVE_KIND_XYK,
   CURVE_PARAMS_FORMAT_XYK_V0,
   INITIALIZER_PROGRAM_ID,
+  SF_AFTER_CREATE,
+  SF_BEFORE_CREATE,
 } from '../constants.js';
+import { computeRemainingAccountsHash } from '../helpers.js';
 import { CPMM_MIGRATOR_PROGRAM_ID } from '../../migrators/cpmmMigrator/constants.js';
 import { getCpmmMigratorStateAddress } from '../../migrators/cpmmMigrator/pda.js';
 import { PREDICTION_MIGRATOR_PROGRAM_ADDRESS } from '../../generated/predictionMigrator/programs/predictionMigrator.js';
@@ -42,13 +46,22 @@ import { getInitializeLaunchInstructionDataEncoder } from '../../generated/initi
  */
 export type InitializeLaunchParams = Omit<
   InitializeLaunchArgsArgs,
-  'allowBuy' | 'allowSell' | 'migratorProgram'
+  | 'allowBuy'
+  | 'allowSell'
+  | 'sentinelProgram'
+  | 'migratorProgram'
+  | 'sentinelCreateRemainingAccountsLen'
+  | 'sentinelCreateRemainingAccountsHash'
 > & {
   allowBuy: boolean;
   allowSell: boolean;
+  sentinelProgram?: Address;
+  sentinelCreateRemainingAccountsLen?: number;
+  sentinelCreateRemainingAccountsHash?: ReadonlyUint8Array;
 };
 
 type AddressOrSigner = Address | TransactionSigner;
+type ReadonlyRemainingAccount = AddressOrSigner;
 
 function isTransactionSigner(
   value: AddressOrSigner,
@@ -108,6 +121,7 @@ const ALT_INDEX: Record<string, number> = {
   [CPMM_MIGRATOR_PROGRAM_ID]: 5,
   So11111111111111111111111111111111111111112: 6,
   [PREDICTION_MIGRATOR_PROGRAM_ADDRESS]: 8,
+  A9DojSvj32PMTTGctEcWZu9GSKuQVEhPkBXxDxmYu34o: 10,
 };
 
 export interface InitializeLaunchAccounts {
@@ -120,6 +134,7 @@ export interface InitializeLaunchAccounts {
   quoteVault: AddressOrSigner;
   payer: AddressOrSigner;
   authority?: AddressOrSigner;
+  sentinelProgram?: Address;
   migratorProgram?: Address;
   baseTokenProgram?: Address;
   quoteTokenProgram?: Address;
@@ -130,6 +145,12 @@ export interface InitializeLaunchAccounts {
   metadataProgram?: Address;
   /** Required when migratorProgram is the CPMM migrator. */
   cpmmConfig?: Address;
+  /**
+   * Remaining accounts committed to initialize_launch create hooks.
+   * These are forwarded as readonly metas; TransactionSigner values are
+   * forwarded as readonly signers.
+   */
+  sentinelCreateRemainingAccounts?: ReadonlyArray<ReadonlyRemainingAccount>;
   /**
    * Optional Address Lookup Table to reference for static accounts.
    * When provided, constant non-signer accounts (base/quote token program,
@@ -175,6 +196,7 @@ export async function createInitializeLaunchInstruction(
     quoteVault,
     payer,
     authority,
+    sentinelProgram,
     migratorProgram,
     baseTokenProgram = TOKEN_PROGRAM_ADDRESS,
     quoteTokenProgram = TOKEN_PROGRAM_ADDRESS,
@@ -182,6 +204,7 @@ export async function createInitializeLaunchInstruction(
     rent,
     metadataAccount,
     metadataProgram = TOKEN_METADATA_PROGRAM_ID,
+    sentinelCreateRemainingAccounts = [],
     addressLookupTable: alt,
   } = accounts;
 
@@ -195,6 +218,13 @@ export async function createInitializeLaunchInstruction(
         'Derive it with await initializer.getTokenMetadataAddress(baseMintAddress).',
     );
   }
+
+  const createHooksEnabled =
+    (args.sentinelFlags & (SF_BEFORE_CREATE | SF_AFTER_CREATE)) !== 0;
+  const sentinelCreateRemainingAccountAddresses =
+    sentinelCreateRemainingAccounts.map((account) =>
+      isTransactionSigner(account) ? account.address : account,
+    );
 
   const altIndexMap: Record<string, number> = alt ? ALT_INDEX : {};
 
@@ -224,12 +254,21 @@ export async function createInitializeLaunchInstruction(
     createAccountMeta(payer, AccountRole.WRITABLE_SIGNER),
   ];
 
-  if (authority) {
-    keys.push(createAccountMeta(authority, AccountRole.READONLY_SIGNER));
-  }
-  if (migratorProgram) {
-    keys.push(staticOrLookup(migratorProgram, AccountRole.READONLY));
-  }
+  keys.push(
+    authority
+      ? createAccountMeta(authority, AccountRole.READONLY_SIGNER)
+      : staticOrLookup(programId, AccountRole.READONLY),
+  );
+  keys.push(
+    sentinelProgram
+      ? staticOrLookup(sentinelProgram, AccountRole.READONLY)
+      : staticOrLookup(programId, AccountRole.READONLY),
+  );
+  keys.push(
+    migratorProgram
+      ? staticOrLookup(migratorProgram, AccountRole.READONLY)
+      : staticOrLookup(programId, AccountRole.READONLY),
+  );
 
   keys.push(staticOrLookup(baseTokenProgram, AccountRole.READONLY));
   keys.push(staticOrLookup(quoteTokenProgram, AccountRole.READONLY));
@@ -240,19 +279,40 @@ export async function createInitializeLaunchInstruction(
     keys.push({ address: metadataAccount!, role: AccountRole.WRITABLE });
     keys.push(staticOrLookup(metadataProgram, AccountRole.READONLY));
   } else {
-    keys.push({ address: programId, role: AccountRole.READONLY });
-    keys.push({ address: programId, role: AccountRole.READONLY });
+    keys.push(staticOrLookup(programId, AccountRole.READONLY));
+    keys.push(staticOrLookup(programId, AccountRole.READONLY));
   }
 
   const encoderArgs: InitializeLaunchArgsArgs = {
     ...args,
     allowBuy: args.allowBuy ? 1 : 0,
     allowSell: args.allowSell ? 1 : 0,
+    sentinelProgram:
+      args.sentinelProgram ?? sentinelProgram ?? SYSTEM_PROGRAM_ADDRESS,
+    sentinelCreateRemainingAccountsLen:
+      args.sentinelCreateRemainingAccountsLen ??
+      sentinelCreateRemainingAccounts.length,
     migratorProgram: migratorProgram ?? SYSTEM_PROGRAM_ADDRESS,
+    sentinelCreateRemainingAccountsHash:
+      args.sentinelCreateRemainingAccountsHash ??
+      (createHooksEnabled
+        ? computeRemainingAccountsHash(sentinelCreateRemainingAccountAddresses)
+        : new Uint8Array(32)),
   };
 
   const data = new Uint8Array(
     getInitializeLaunchInstructionDataEncoder().encode(encoderArgs),
+  );
+
+  keys.push(
+    ...sentinelCreateRemainingAccounts.map((account) =>
+      createAccountMeta(
+        account,
+        isTransactionSigner(account)
+          ? AccountRole.READONLY_SIGNER
+          : AccountRole.READONLY,
+      ),
+    ),
   );
 
   // When using the CPMM migrator, append the module-specific accounts required

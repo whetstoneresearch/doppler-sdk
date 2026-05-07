@@ -255,6 +255,13 @@
           "optional": true
         },
         {
+          "name": "sentinel_program",
+          "docs": [
+            "Optional sentinel program for create hooks"
+          ],
+          "optional": true
+        },
+        {
           "name": "migrator_program",
           "docs": [
             "Optional migrator program for init hook"
@@ -1378,6 +1385,10 @@
             "type": "bytes"
           },
           {
+            "name": "sentinel_create_remaining_accounts_len",
+            "type": "u32"
+          },
+          {
             "name": "migrator_program",
             "type": "pubkey"
           },
@@ -1388,6 +1399,19 @@
           {
             "name": "migrator_migrate_calldata",
             "type": "bytes"
+          },
+          {
+            "name": "sentinel_create_remaining_accounts_hash",
+            "docs": [
+              "Commitment hash for initialize_launch sentinel remaining accounts.",
+              "Computed as hash(u32_len || pubkey_0 || ... || pubkey_n)."
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
           },
           {
             "name": "sentinel_remaining_accounts_hash",

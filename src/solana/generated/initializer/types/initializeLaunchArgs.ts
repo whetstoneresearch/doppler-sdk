@@ -52,9 +52,15 @@ export type InitializeLaunchArgs = {
   sentinelProgram: Address;
   sentinelFlags: number;
   sentinelCalldata: ReadonlyUint8Array;
+  sentinelCreateRemainingAccountsLen: number;
   migratorProgram: Address;
   migratorInitCalldata: ReadonlyUint8Array;
   migratorMigrateCalldata: ReadonlyUint8Array;
+  /**
+   * Commitment hash for initialize_launch sentinel remaining accounts.
+   * Computed as hash(u32_len || pubkey_0 || ... || pubkey_n).
+   */
+  sentinelCreateRemainingAccountsHash: ReadonlyUint8Array;
   /**
    * Commitment hash for swap/preview sentinel remaining accounts.
    * Computed as hash(u32_len || pubkey_0 || ... || pubkey_n).
@@ -95,9 +101,15 @@ export type InitializeLaunchArgsArgs = {
   sentinelProgram: Address;
   sentinelFlags: number;
   sentinelCalldata: ReadonlyUint8Array;
+  sentinelCreateRemainingAccountsLen: number;
   migratorProgram: Address;
   migratorInitCalldata: ReadonlyUint8Array;
   migratorMigrateCalldata: ReadonlyUint8Array;
+  /**
+   * Commitment hash for initialize_launch sentinel remaining accounts.
+   * Computed as hash(u32_len || pubkey_0 || ... || pubkey_n).
+   */
+  sentinelCreateRemainingAccountsHash: ReadonlyUint8Array;
   /**
    * Commitment hash for swap/preview sentinel remaining accounts.
    * Computed as hash(u32_len || pubkey_0 || ... || pubkey_n).
@@ -142,6 +154,7 @@ export function getInitializeLaunchArgsEncoder(): Encoder<InitializeLaunchArgsAr
       'sentinelCalldata',
       addEncoderSizePrefix(getBytesEncoder(), getU32Encoder()),
     ],
+    ['sentinelCreateRemainingAccountsLen', getU32Encoder()],
     ['migratorProgram', getAddressEncoder()],
     [
       'migratorInitCalldata',
@@ -150,6 +163,10 @@ export function getInitializeLaunchArgsEncoder(): Encoder<InitializeLaunchArgsAr
     [
       'migratorMigrateCalldata',
       addEncoderSizePrefix(getBytesEncoder(), getU32Encoder()),
+    ],
+    [
+      'sentinelCreateRemainingAccountsHash',
+      fixEncoderSize(getBytesEncoder(), 32),
     ],
     ['sentinelRemainingAccountsHash', fixEncoderSize(getBytesEncoder(), 32)],
     [
@@ -184,6 +201,7 @@ export function getInitializeLaunchArgsDecoder(): Decoder<InitializeLaunchArgs> 
       'sentinelCalldata',
       addDecoderSizePrefix(getBytesDecoder(), getU32Decoder()),
     ],
+    ['sentinelCreateRemainingAccountsLen', getU32Decoder()],
     ['migratorProgram', getAddressDecoder()],
     [
       'migratorInitCalldata',
@@ -192,6 +210,10 @@ export function getInitializeLaunchArgsDecoder(): Decoder<InitializeLaunchArgs> 
     [
       'migratorMigrateCalldata',
       addDecoderSizePrefix(getBytesDecoder(), getU32Decoder()),
+    ],
+    [
+      'sentinelCreateRemainingAccountsHash',
+      fixDecoderSize(getBytesDecoder(), 32),
     ],
     ['sentinelRemainingAccountsHash', fixDecoderSize(getBytesDecoder(), 32)],
     [

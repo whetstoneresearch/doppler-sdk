@@ -63,7 +63,8 @@ export const EMPTY_REMAINING_ACCOUNTS_HASH = new Uint8Array([
  * Devnet ALT containing static accounts shared by every initializeLaunch tx.
  * Indices: 0=TOKEN_PROGRAM, 1=SYSTEM_PROGRAM, 2=SYSVAR_RENT,
  *          3=INITIALIZER_PROGRAM, 4=TOKEN_METADATA_PROGRAM,
- *          5=CPMM_MIGRATOR_PROGRAM, 6=WSOL_MINT, 7=config PDA
+ *          5=CPMM_MIGRATOR_PROGRAM, 6=WSOL_MINT,
+ *          8/9=PREDICTION_MIGRATOR_PROGRAM, 10=initializer config PDA
  */
 export const DOPPLER_DEVNET_ALT: Address = address(
   '7r5rdLkGMzTq5Q2kBhkePw4ZTeZEooHgTXktYoamNmVq',
@@ -94,6 +95,10 @@ export const CURVE_PARAMS_FORMAT_XYK_V0 = 0x00;
 
 export const SF_BEFORE_SWAP = 1 << 0;
 export const SF_AFTER_SWAP = 1 << 1;
+export const SF_BEFORE_CREATE = 1 << 2;
+export const SF_AFTER_CREATE = 1 << 3;
+export const SF_BEFORE_MIGRATE = 1 << 4;
+export const SF_AFTER_MIGRATE = 1 << 5;
 
 export const SENTINEL_NO_CHANGE = 0xffff;
 
