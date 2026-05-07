@@ -135,7 +135,7 @@ async function main() {
       token1Mint: pool.token1Mint,
       userToken0: userIn,
       userToken1: userOut,
-      user: payer.address,
+      user: payer,
       amountIn: AMOUNT_IN,
       minAmountOut,
       direction,

@@ -96,6 +96,12 @@ export const SF_BEFORE_REMOVE_LIQ = 1 << 4;
 /** Sentinel hook: called after remove liquidity */
 export const SF_AFTER_REMOVE_LIQ = 1 << 5;
 
+/** Require an oracle account when invoking sentinel hooks */
+export const SF_REQUIRE_ORACLE = 1 << 6;
+
+/** Preserve readonly signer metas when forwarding remaining accounts to sentinels */
+export const SF_FORWARD_READONLY_SIGNERS = 1 << 7;
+
 /** Sentinel return value indicating "no change" to fee parameter */
 export const SENTINEL_NO_CHANGE = 0xffff;
 
