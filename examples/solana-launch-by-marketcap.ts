@@ -31,6 +31,7 @@ import { cpmm, initializer, cpmmMigrator } from '../src/solana/index.js';
 import {
   assertTransactionFits,
   assertSolanaExampleNetwork,
+  createLookupTableForInstruction,
   createSolanaClientsFromEnv,
   getMetadataByteLength,
   getSolPriceUsd,
@@ -165,14 +166,8 @@ async function main() {
   });
 
   // ── Build, sign, and send ────────────────────────────────────────────────
-  // addressLookupTable compresses the static non-signer accounts
-  // (base/quote token program, systemProgram, rent, migratorProgram,
-  // quoteMint, metadataProgram, config) to ALT indices where available,
-  // keeping the transaction within the 1232-byte limit even with V4
-  // on-chain metadata.
-  //
-  // The CPMM migrator register_launch CPI now consumes both the
-  // cpmmMigratorState PDA and cpmmConfig as remaining accounts.
+  // The CPMM migrator register_launch CPI consumes both the cpmmMigratorState
+  // PDA and cpmmConfig as remaining accounts.
   console.log('Building launch instruction...');
   try {
     const metadata = {
@@ -199,7 +194,6 @@ async function main() {
         systemProgram: SYSTEM_PROGRAM_ADDRESS,
         rent: SYSVAR_RENT_ADDRESS,
         metadataAccount,
-        addressLookupTable: initializer.DOPPLER_DEVNET_ALT,
       },
       {
         namespace,
@@ -232,15 +226,27 @@ async function main() {
         ...metadata,
       },
     );
+    const lookupTable = await createLookupTableForInstruction({
+      rpc,
+      rpcSubscriptions,
+      payer,
+      instruction: ix,
+      label: 'initialize_launch lookup table',
+    });
 
     const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
 
-    const transactionMessage = pipe(
-      createTransactionMessage({ version: 0 }),
-      (tx) => setTransactionMessageFeePayerSigner(payer, tx),
-      (tx) => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
-      (tx) => appendTransactionMessageInstructions([ix], tx),
-    );
+    const transactionMessage =
+      initializer.compressTransactionMessageWithLookupTable(
+        pipe(
+          createTransactionMessage({ version: 0 }),
+          (tx) => setTransactionMessageFeePayerSigner(payer, tx),
+          (tx) =>
+            setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
+          (tx) => appendTransactionMessageInstructions([ix], tx),
+        ),
+        lookupTable,
+      );
     assertTransactionFits(transactionMessage, {
       label: 'initialize_launch',
       metadataBytes: getMetadataByteLength(metadata),

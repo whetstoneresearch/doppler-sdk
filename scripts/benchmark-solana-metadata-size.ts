@@ -192,7 +192,6 @@ async function buildMessage(
       systemProgram: SYSTEM_PROGRAM_ADDRESS,
       rent: SYSVAR_RENT_ADDRESS,
       metadataAccount: context.metadataAccount,
-      addressLookupTable: initializer.DOPPLER_DEVNET_ALT,
     },
     {
       namespace: context.payer.address,
@@ -230,13 +229,13 @@ async function buildMessage(
     createTransactionMessage({ version: 0 }),
     (tx) => setTransactionMessageFeePayerSigner(context.payer, tx),
     (tx) => setTransactionMessageLifetimeUsingBlockhash(DUMMY_BLOCKHASH, tx),
-    (tx) =>
-      appendTransactionMessageInstructions([ix], tx),
+    (tx) => appendTransactionMessageInstructions([ix], tx),
   );
 
   return options.simulateLaunchAlt
     ? initializer.compressTransactionMessageWithLookupTable(message, {
-        lookupTableAddress: initializer.DOPPLER_DEVNET_ALT,
+        lookupTableAddress:
+          '7r5rdLkGMzTq5Q2kBhkePw4ZTeZEooHgTXktYoamNmVq' as Address,
         addresses: initializer.getInstructionLookupTableAddresses(ix),
       })
     : message;
@@ -332,7 +331,6 @@ async function buildPredictionMessage(metadata: {
       systemProgram: SYSTEM_PROGRAM_ADDRESS,
       rent: SYSVAR_RENT_ADDRESS,
       metadataAccount,
-      addressLookupTable: initializer.DOPPLER_DEVNET_ALT,
     },
     {
       namespace,
@@ -558,5 +556,5 @@ const results = await Promise.all([
 
 console.table(results);
 console.log(
-  `Assumptions: ASCII name=${METADATA_NAME.length} bytes, symbol=${METADATA_SYMBOL.length} bytes, sample=${JSON.stringify(SAMPLE_METADATA)}, variable URI, devnet ALT enabled.`,
+  `Assumptions: ASCII name=${METADATA_NAME.length} bytes, symbol=${METADATA_SYMBOL.length} bytes, sample=${JSON.stringify(SAMPLE_METADATA)}, variable URI, launch-specific ALT simulation enabled.`,
 );

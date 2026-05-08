@@ -56,21 +56,6 @@ export const EMPTY_REMAINING_ACCOUNTS_HASH = new Uint8Array([
 ]);
 
 // ============================================================================
-// Address Lookup Tables
-// ============================================================================
-
-/**
- * Devnet ALT containing static accounts shared by every initializeLaunch tx.
- * Indices: 0=TOKEN_PROGRAM, 1=SYSTEM_PROGRAM, 2=SYSVAR_RENT,
- *          3=INITIALIZER_PROGRAM, 4=TOKEN_METADATA_PROGRAM,
- *          5=CPMM_MIGRATOR_PROGRAM, 6=WSOL_MINT,
- *          8/9=PREDICTION_MIGRATOR_PROGRAM, 10=initializer config PDA
- */
-export const DOPPLER_DEVNET_ALT: Address = address(
-  '7r5rdLkGMzTq5Q2kBhkePw4ZTeZEooHgTXktYoamNmVq',
-);
-
-// ============================================================================
 // Limits
 // ============================================================================
 

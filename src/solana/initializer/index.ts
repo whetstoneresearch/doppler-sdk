@@ -27,7 +27,6 @@ export {
   SENTINEL_NO_CHANGE,
   INITIALIZER_INSTRUCTION_DISCRIMINATORS,
   INITIALIZER_ACCOUNT_DISCRIMINATORS,
-  DOPPLER_DEVNET_ALT,
 } from './constants.js';
 
 // Generated types and codec factories

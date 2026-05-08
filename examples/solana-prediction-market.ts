@@ -39,6 +39,7 @@ import {
 } from '../src/solana/index.js';
 import {
   assertSolanaExampleNetwork,
+  createLookupTableForInstruction,
   createSolanaClientsFromEnv,
   loadKeypairSignerFromEnv,
 } from './solanaExampleHelpers.js';
@@ -196,10 +197,6 @@ async function main() {
           .encode({ entryId });
 
         // ── Build the initializeLaunch instruction ───────────────────────────
-        // The ALT covers the shared static accounts used by initializeLaunch,
-        // including the token program, system program, rent, config, WSOL_MINT,
-        // and the prediction migrator program, keeping the transaction within
-        // the 1232-byte limit despite the 6 register_entry remaining accounts.
         // The instruction builder automatically appends the 6 register_entry
         // remaining accounts for the prediction migrator.
         const ix = await initializer.createInitializeLaunchInstruction(
@@ -220,7 +217,6 @@ async function main() {
             systemProgram: SYSTEM_PROGRAM_ADDRESS,
             rent: SYSVAR_RENT_ADDRESS,
             metadataAccount,
-            addressLookupTable: initializer.DOPPLER_DEVNET_ALT,
           },
           {
             namespace,
@@ -271,17 +267,31 @@ async function main() {
             metadataUri: `https://example.com/${outcome.label.toLowerCase()}.json`,
           },
         );
+        const lookupTable = await createLookupTableForInstruction({
+          rpc,
+          rpcSubscriptions,
+          payer,
+          instruction: ix,
+          label: `${outcome.label} initialize_launch lookup table`,
+        });
 
         const { value: latestBlockhash } = await rpc
           .getLatestBlockhash()
           .send();
-        const transactionMessage = pipe(
-          createTransactionMessage({ version: 0 }),
-          (tx) => setTransactionMessageFeePayerSigner(payer, tx),
-          (tx) =>
-            setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
-          (tx) => appendTransactionMessageInstructions([ix], tx),
-        );
+        const transactionMessage =
+          initializer.compressTransactionMessageWithLookupTable(
+            pipe(
+              createTransactionMessage({ version: 0 }),
+              (tx) => setTransactionMessageFeePayerSigner(payer, tx),
+              (tx) =>
+                setTransactionMessageLifetimeUsingBlockhash(
+                  latestBlockhash,
+                  tx,
+                ),
+              (tx) => appendTransactionMessageInstructions([ix], tx),
+            ),
+            lookupTable,
+          );
         const signedTransaction =
           await signTransactionMessageWithSigners(transactionMessage);
         await sendAndConfirmTransaction(

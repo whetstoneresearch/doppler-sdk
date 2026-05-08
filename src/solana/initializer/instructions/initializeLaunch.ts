@@ -2,7 +2,6 @@ import type {
   Address,
   Instruction,
   AccountMeta,
-  AccountLookupMeta,
   TransactionSigner,
   AccountSignerMeta,
   ReadonlyUint8Array,
@@ -108,22 +107,6 @@ export async function getTokenMetadataAddress(mint: Address): Promise<Address> {
   return metadataAddress;
 }
 
-/**
- * Known index of each static account in the Doppler devnet ALT
- * (7r5rdLkGMzTq5Q2kBhkePw4ZTeZEooHgTXktYoamNmVq).
- */
-const ALT_INDEX: Record<string, number> = {
-  [TOKEN_PROGRAM_ADDRESS]: 0,
-  [SYSTEM_PROGRAM_ADDRESS]: 1,
-  SysvarRent111111111111111111111111111111111: 2,
-  [INITIALIZER_PROGRAM_ID]: 3,
-  [TOKEN_METADATA_PROGRAM_ID]: 4,
-  [CPMM_MIGRATOR_PROGRAM_ID]: 5,
-  So11111111111111111111111111111111111111112: 6,
-  [PREDICTION_MIGRATOR_PROGRAM_ADDRESS]: 8,
-  A9DojSvj32PMTTGctEcWZu9GSKuQVEhPkBXxDxmYu34o: 10,
-};
-
 export interface InitializeLaunchAccounts {
   config: Address;
   launch: Address;
@@ -151,16 +134,6 @@ export interface InitializeLaunchAccounts {
    * forwarded as readonly signers.
    */
   sentinelCreateRemainingAccounts?: ReadonlyArray<ReadonlyRemainingAccount>;
-  /**
-   * Optional Address Lookup Table to reference for static accounts.
-   * When provided, constant non-signer accounts (base/quote token program,
-   * systemProgram, rent, migratorProgram, quoteMint when WSOL, metadataProgram)
-   * are encoded as ALT lookup metas instead of 32-byte static keys, reducing
-   * transaction size while keeping versioned config PDAs explicit.
-   *
-   * Use DOPPLER_DEVNET_ALT for devnet.
-   */
-  addressLookupTable?: Address;
 }
 
 function validateInitializeLaunchCurveParams(
@@ -205,7 +178,6 @@ export async function createInitializeLaunchInstruction(
     metadataAccount,
     metadataProgram = TOKEN_METADATA_PROGRAM_ID,
     sentinelCreateRemainingAccounts = [],
-    addressLookupTable: alt,
   } = accounts;
 
   const withMetadata = Boolean(
@@ -226,29 +198,12 @@ export async function createInitializeLaunchInstruction(
       isTransactionSigner(account) ? account.address : account,
     );
 
-  const altIndexMap: Record<string, number> = alt ? ALT_INDEX : {};
-
-  function staticOrLookup(
-    addr: Address,
-    role: AccountRole.READONLY | AccountRole.WRITABLE,
-  ): AccountMeta | AccountLookupMeta {
-    if (alt && altIndexMap[addr] !== undefined) {
-      return {
-        address: addr,
-        role,
-        lookupTableAddress: alt,
-        addressIndex: altIndexMap[addr]!,
-      };
-    }
-    return { address: addr, role };
-  }
-
-  const keys: (AccountMeta | AccountSignerMeta | AccountLookupMeta)[] = [
-    staticOrLookup(config, AccountRole.READONLY),
+  const keys: (AccountMeta | AccountSignerMeta)[] = [
+    { address: config, role: AccountRole.READONLY },
     { address: launch, role: AccountRole.WRITABLE },
     { address: launchAuthority, role: AccountRole.READONLY },
     createAccountMeta(baseMint, AccountRole.WRITABLE_SIGNER),
-    staticOrLookup(quoteMint, AccountRole.READONLY),
+    { address: quoteMint, role: AccountRole.READONLY },
     createAccountMeta(baseVault, AccountRole.WRITABLE_SIGNER),
     createAccountMeta(quoteVault, AccountRole.WRITABLE_SIGNER),
     createAccountMeta(payer, AccountRole.WRITABLE_SIGNER),
@@ -257,30 +212,30 @@ export async function createInitializeLaunchInstruction(
   keys.push(
     authority
       ? createAccountMeta(authority, AccountRole.READONLY_SIGNER)
-      : staticOrLookup(programId, AccountRole.READONLY),
+      : { address: programId, role: AccountRole.READONLY },
   );
   keys.push(
     sentinelProgram
-      ? staticOrLookup(sentinelProgram, AccountRole.READONLY)
-      : staticOrLookup(programId, AccountRole.READONLY),
+      ? { address: sentinelProgram, role: AccountRole.READONLY }
+      : { address: programId, role: AccountRole.READONLY },
   );
   keys.push(
     migratorProgram
-      ? staticOrLookup(migratorProgram, AccountRole.READONLY)
-      : staticOrLookup(programId, AccountRole.READONLY),
+      ? { address: migratorProgram, role: AccountRole.READONLY }
+      : { address: programId, role: AccountRole.READONLY },
   );
 
-  keys.push(staticOrLookup(baseTokenProgram, AccountRole.READONLY));
-  keys.push(staticOrLookup(quoteTokenProgram, AccountRole.READONLY));
-  keys.push(staticOrLookup(systemProgram, AccountRole.READONLY));
-  keys.push(staticOrLookup(rent, AccountRole.READONLY));
+  keys.push({ address: baseTokenProgram, role: AccountRole.READONLY });
+  keys.push({ address: quoteTokenProgram, role: AccountRole.READONLY });
+  keys.push({ address: systemProgram, role: AccountRole.READONLY });
+  keys.push({ address: rent, role: AccountRole.READONLY });
 
   if (withMetadata) {
     keys.push({ address: metadataAccount!, role: AccountRole.WRITABLE });
-    keys.push(staticOrLookup(metadataProgram, AccountRole.READONLY));
+    keys.push({ address: metadataProgram, role: AccountRole.READONLY });
   } else {
-    keys.push(staticOrLookup(programId, AccountRole.READONLY));
-    keys.push(staticOrLookup(programId, AccountRole.READONLY));
+    keys.push({ address: programId, role: AccountRole.READONLY });
+    keys.push({ address: programId, role: AccountRole.READONLY });
   }
 
   const encoderArgs: InitializeLaunchArgsArgs = {
