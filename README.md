@@ -1,20 +1,20 @@
 # Doppler SDK
 
-A unified TypeScript SDK for interacting with the Doppler Protocol - enabling fair token launches through Dutch auction mechanisms on Uniswap.
+A unified TypeScript SDK for interacting with the Doppler Protocol across EVM and Solana/SVM deployments.
 
 ## Overview
 
-The Doppler SDK consolidates functionality from the previous `doppler-v3-sdk` and `doppler-v4-sdk` packages into a single, intuitive interface. It provides comprehensive support for creating and managing token auctions on Ethereum and EVM-compatible chains.
+The Doppler SDK exposes network-specific entrypoints for creating, managing, and interacting with Doppler launches. The EVM entrypoint consolidates functionality from the previous `doppler-v3-sdk` and `doppler-v4-sdk` packages into one interface for Ethereum and EVM-compatible chains. The Solana entrypoint provides generated instruction builders, PDA helpers, clients, React bindings, and examples for Doppler's SVM programs.
 
 ### Key Features
 
-- **Static Auctions**: Fixed price range liquidity bootstrapping using Uniswap V3
-- **Dynamic Auctions**: Gradual Dutch auctions using Uniswap V4 hooks
-- **Multicurve Initializer**: Seed Uniswap V4 pools across multiple curves
-- **Flexible Migration**: Support for V2, V2 split, V4, V4 split, DopplerHook, and no-op migration paths
-- **Token Management**: Built-in support for DERC20 tokens with vesting
-- **Type Safety**: Full TypeScript support with discriminated unions
-- **Chain Support**: Works with Base, Unichain, Ink, and other EVM chains
+- **EVM Auctions**: Static auctions, dynamic auctions, and multicurve launches across Uniswap V3/V4 paths
+- **EVM Migration Paths**: Support for V2, V2 split, V4, V4 split, DopplerHook, and no-op migration
+- **Solana Launches**: Initializer, CPMM, migrator, sentinel, oracle, and Token-2022-compatible instruction helpers
+- **Solana Clients and React**: Read clients, PDA helpers, generated codecs, and optional React bindings
+- **Token Management**: Built-in EVM support for DERC20 tokens with vesting
+- **Type Safety**: Full TypeScript support across EVM and Solana entrypoints
+- **Network Support**: EVM deployments on Base, Unichain, Ink, and other supported chains; Solana/SVM support via explicit Solana program deployments
 
 ## Installation
 
@@ -26,11 +26,17 @@ yarn add @whetstone-research/doppler-sdk viem
 pnpm add @whetstone-research/doppler-sdk viem
 ```
 
-Import EVM APIs from `@whetstone-research/doppler-sdk/evm`. Solana APIs live under
-`@whetstone-research/doppler-sdk/solana` and React bindings under
-`@whetstone-research/doppler-sdk/solana/react`.
+Use network-specific entrypoints:
+
+```typescript
+import { DopplerSDK } from '@whetstone-research/doppler-sdk/evm';
+import { initializer, cpmm, cpmmMigrator } from '@whetstone-research/doppler-sdk/solana';
+import { DopplerSolanaProvider } from '@whetstone-research/doppler-sdk/solana/react';
+```
 
 ## Quick Start
+
+### EVM
 
 ```typescript
 import { DopplerSDK } from '@whetstone-research/doppler-sdk/evm';
@@ -56,6 +62,36 @@ const sdk = new DopplerSDK({
   chainId: base.id,
 });
 ```
+
+### Solana
+
+```typescript
+import { address, createSolanaRpc, type Address } from '@solana/kit';
+import { cpmm, initializer } from '@whetstone-research/doppler-sdk/solana';
+
+const rpc = createSolanaRpc('https://api.devnet.solana.com');
+const WSOL_MINT: Address =
+  'So11111111111111111111111111111111111111112' as Address;
+
+if (!process.env.BASE_MINT) {
+  throw new Error('BASE_MINT must be set');
+}
+
+const baseMint = address(process.env.BASE_MINT);
+const [initializerConfig] = await initializer.getConfigAddress();
+const [cpmmConfig] = await cpmm.getConfigAddress();
+const pool = await cpmm.getPoolByMints(rpc, baseMint, WSOL_MINT);
+
+console.log('Initializer config:', initializerConfig);
+console.log('CPMM config:', cpmmConfig);
+console.log('Pool:', pool?.address ?? 'not found');
+```
+
+For runnable Solana flows, see:
+
+- [examples/solana-launch-by-marketcap.ts](./examples/solana-launch-by-marketcap.ts)
+- [examples/solana-adv-e2e-launch.ts](./examples/solana-adv-e2e-launch.ts)
+- [examples/solana-swap.ts](./examples/solana-swap.ts)
 
 ## Creating Auctions
 
