@@ -73,6 +73,7 @@ export interface ChainAddresses {
   noOpGovernanceFactory?: Address;
   launchpadGovernanceFactory?: Address;
   streamableFeesLocker?: Address;
+  streamableFeesLockerV2?: Address;
   topUpDistributor?: Address;
 
   // Router contracts
@@ -174,6 +175,10 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       .LaunchpadGovernanceFactory as Address,
     streamableFeesLocker: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MAINNET]
       .StreamableFeesLocker as Address,
+    streamableFeesLockerV2: getGeneratedAddress(
+      CHAIN_IDS.MAINNET,
+      'StreamableFeesLockerV2',
+    ),
     topUpDistributor: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MAINNET]
       .TopUpDistributor as Address,
     universalRouter: '0x66a9893cc07d91d95644aedd05d03f95e1dba8af' as Address,
@@ -305,6 +310,10 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       .LaunchpadGovernanceFactory as Address,
     streamableFeesLocker: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
       .StreamableFeesLocker as Address,
+    streamableFeesLockerV2: getGeneratedAddress(
+      CHAIN_IDS.BASE,
+      'StreamableFeesLockerV2',
+    ),
     topUpDistributor: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
       .TopUpDistributor as Address,
     universalRouter: '0x6ff5693b99212da76ad316178a184ab56d299b43' as Address,
@@ -399,6 +408,10 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     ].LaunchpadGovernanceFactory as Address,
     streamableFeesLocker: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
       .StreamableFeesLocker as Address,
+    streamableFeesLockerV2: getGeneratedAddress(
+      CHAIN_IDS.BASE_SEPOLIA,
+      'StreamableFeesLockerV2',
+    ),
     topUpDistributor: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
       .TopUpDistributor as Address,
     universalRouter: '0x492E6456D9528771018DeB9E87ef7750EF184104' as Address,
@@ -627,6 +640,10 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       CHAIN_IDS.MONAD_MAINNET,
     ),
     streamableFeesLocker: ZERO_ADDRESS, // Not yet deployed
+    streamableFeesLockerV2: getGeneratedAddress(
+      CHAIN_IDS.MONAD_MAINNET,
+      'StreamableFeesLockerV2',
+    ),
     universalRouter: '0x0d97dc33264bfc1c226207428a79b26757fb9dc3' as Address,
     univ2Router02: ZERO_ADDRESS,
     uniswapV2Factory: '0x182a927119d56008d921126764bf884221b10f59' as Address,

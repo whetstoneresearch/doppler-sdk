@@ -65,6 +65,9 @@ export const mockAddresses: ChainAddresses = {
   streamableFeesLocker: getAddress(
     '0xa000000000000000000000000000000000000010',
   ) as Address,
+  streamableFeesLockerV2: getAddress(
+    '0xa000000000000000000000000000000000000012',
+  ) as Address,
   poolManager: getAddress(
     '0xb000000000000000000000000000000000000011',
   ) as Address,

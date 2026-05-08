@@ -508,6 +508,199 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     return [];
   }
 
+  private resolveGovernanceFactoryAddress(args: {
+    governance: GovernanceOption<C>;
+    modules?: ModuleAddressOverrides;
+    addresses: ReturnType<typeof getAddresses>;
+    noOpError: string;
+    launchpadError: string;
+    standardError: string;
+  }): Address {
+    if (args.governance.type === 'noOp') {
+      const resolved =
+        args.modules?.governanceFactory ??
+        args.addresses.noOpGovernanceFactory ??
+        ZERO_ADDRESS;
+      if (!resolved || resolved === ZERO_ADDRESS) {
+        throw new Error(args.noOpError);
+      }
+      return resolved;
+    }
+
+    if (args.governance.type === 'launchpad') {
+      const resolved =
+        args.modules?.governanceFactory ??
+        args.addresses.launchpadGovernanceFactory ??
+        ZERO_ADDRESS;
+      if (!resolved || resolved === ZERO_ADDRESS) {
+        throw new Error(args.launchpadError);
+      }
+      return resolved;
+    }
+
+    const resolved =
+      args.modules?.governanceFactory ?? args.addresses.governanceFactory;
+    if (!resolved || resolved === ZERO_ADDRESS) {
+      throw new Error(args.standardError);
+    }
+    return resolved;
+  }
+
+  private shouldAutoExcludeGovernanceTimelock(args: {
+    governance: GovernanceOption<C>;
+    governanceFactory: Address;
+    modules?: ModuleAddressOverrides;
+    addresses: ReturnType<typeof getAddresses>;
+  }): boolean {
+    if (
+      args.governance.type !== 'default' &&
+      args.governance.type !== 'custom'
+    ) {
+      return false;
+    }
+
+    if (args.modules?.governanceFactory) {
+      return false;
+    }
+
+    const noOpGovernanceFactory = args.addresses.noOpGovernanceFactory;
+    return (
+      !noOpGovernanceFactory ||
+      args.governanceFactory.toLowerCase() !==
+        noOpGovernanceFactory.toLowerCase()
+    );
+  }
+
+  private resolveMigrationLockerBalanceLimitExclusions(
+    migration: MigrationConfig,
+    addresses: ReturnType<typeof getAddresses>,
+  ): (Address | undefined)[] {
+    if (
+      (migration.type === 'uniswapV4' || migration.type === 'uniswapV4Split') &&
+      migration.streamableFees
+    ) {
+      return [addresses.streamableFeesLocker];
+    }
+
+    if (migration.type === 'dopplerHook') {
+      return [
+        addresses.streamableFeesLockerV2 ?? addresses.streamableFeesLocker,
+      ];
+    }
+
+    return [];
+  }
+
+  private withDopplerERC20V1EncodedBalanceLimitExclusions(
+    tokenFactoryData: Hex,
+    exclusions: readonly (Address | undefined)[],
+  ): Hex {
+    const decoded = decodeAbiParameters(
+      [
+        { type: 'string' },
+        { type: 'string' },
+        {
+          type: 'tuple[]',
+          components: [
+            { type: 'uint64', name: 'cliff' },
+            { type: 'uint64', name: 'duration' },
+          ],
+        },
+        { type: 'address[]' },
+        { type: 'uint256[]' },
+        { type: 'uint256[]' },
+        { type: 'string' },
+        { type: 'uint256' },
+        { type: 'uint48' },
+        { type: 'address' },
+        { type: 'address[]' },
+      ],
+      tokenFactoryData,
+    ) as readonly [
+      string,
+      string,
+      readonly { cliff: bigint; duration: bigint }[],
+      readonly Address[],
+      readonly bigint[],
+      readonly bigint[],
+      string,
+      bigint,
+      number,
+      Address,
+      readonly Address[],
+    ];
+
+    if (decoded[7] === 0n && decoded[8] === 0) {
+      return tokenFactoryData;
+    }
+
+    return encodeAbiParameters(
+      [
+        { type: 'string' },
+        { type: 'string' },
+        {
+          type: 'tuple[]',
+          components: [
+            { type: 'uint64', name: 'cliff' },
+            { type: 'uint64', name: 'duration' },
+          ],
+        },
+        { type: 'address[]' },
+        { type: 'uint256[]' },
+        { type: 'uint256[]' },
+        { type: 'string' },
+        { type: 'uint256' },
+        { type: 'uint48' },
+        { type: 'address' },
+        { type: 'address[]' },
+      ],
+      [
+        decoded[0],
+        decoded[1],
+        decoded[2],
+        decoded[3],
+        decoded[4],
+        decoded[5],
+        decoded[6],
+        decoded[7],
+        decoded[8],
+        decoded[9],
+        this.mergeDopplerERC20V1BalanceLimitExclusions(decoded[10], exclusions),
+      ],
+    );
+  }
+
+  private withSimulationGovernanceTimelockExclusion(args: {
+    createParams: CreateParams;
+    simResult: readonly unknown[];
+    token: TokenConfig;
+    governance: GovernanceOption<C>;
+    modules?: ModuleAddressOverrides;
+    addresses: ReturnType<typeof getAddresses>;
+  }): CreateParams {
+    if (
+      !this.isDopplerERC20V1Token(args.token) ||
+      !this.usesDefaultDopplerERC20V1Integration(args.modules) ||
+      args.simResult.length < 4 ||
+      !this.shouldAutoExcludeGovernanceTimelock({
+        governance: args.governance,
+        governanceFactory: args.createParams.governanceFactory,
+        modules: args.modules,
+        addresses: args.addresses,
+      })
+    ) {
+      return args.createParams;
+    }
+
+    return {
+      ...args.createParams,
+      tokenFactoryData: this.withDopplerERC20V1EncodedBalanceLimitExclusions(
+        args.createParams.tokenFactoryData,
+        [args.simResult[3] as Address],
+      ),
+    };
+  }
+
   private withDopplerERC20V1BalanceLimitExclusions(
     tokenFactoryData: DopplerERC20V1TokenFactoryData,
     exclusions: readonly (Address | undefined)[],
@@ -1153,6 +1346,10 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
               params.migration.type === 'uniswapV4'
                 ? (params.modules?.poolManager ?? addresses.poolManager)
                 : undefined,
+              ...this.resolveMigrationLockerBalanceLimitExclusions(
+                params.migration,
+                addresses,
+              ),
               ...this.resolveGovernanceBalanceLimitExclusions(
                 params.governance,
               ),
@@ -1210,40 +1407,17 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     })();
 
     // 4.1 Choose governance factory
-    const governanceFactoryAddress: Address = (() => {
-      if (params.governance.type === 'noOp') {
-        const resolved =
-          params.modules?.governanceFactory ??
-          addresses.noOpGovernanceFactory ??
-          ZERO_ADDRESS;
-        if (!resolved || resolved === ZERO_ADDRESS) {
-          throw new Error(
-            'No-op governance requested, but no-op governanceFactory is not configured on this chain. Provide a governanceFactory override or use a supported chain.',
-          );
-        }
-        return resolved;
-      }
-      if (params.governance.type === 'launchpad') {
-        const resolved =
-          params.modules?.governanceFactory ??
-          addresses.launchpadGovernanceFactory ??
-          ZERO_ADDRESS;
-        if (!resolved || resolved === ZERO_ADDRESS) {
-          throw new Error(
-            'Launchpad governance requested, but launchpadGovernanceFactory is not configured on this chain. Provide a governanceFactory override or use a supported chain.',
-          );
-        }
-        return resolved;
-      }
-      const resolved =
-        params.modules?.governanceFactory ?? addresses.governanceFactory;
-      if (!resolved || resolved === ZERO_ADDRESS) {
-        throw new Error(
-          'Standard governance requested but governanceFactory is not deployed on this chain.',
-        );
-      }
-      return resolved;
-    })();
+    const governanceFactoryAddress = this.resolveGovernanceFactoryAddress({
+      governance: params.governance,
+      modules: params.modules,
+      addresses,
+      noOpError:
+        'No-op governance requested, but no-op governanceFactory is not configured on this chain. Provide a governanceFactory override or use a supported chain.',
+      launchpadError:
+        'Launchpad governance requested, but launchpadGovernanceFactory is not configured on this chain. Provide a governanceFactory override or use a supported chain.',
+      standardError:
+        'Standard governance requested but governanceFactory is not deployed on this chain.',
+    });
 
     if (!tokenFactoryData) {
       throw new Error('Token factory data could not be resolved.');
@@ -1600,7 +1774,14 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       const isToken0 = BigInt(tokenAddress) < numeraireBigInt;
       const wantToken0 = isToken0Expected(params.sale.numeraire);
       if ((wantToken0 && isToken0) || (!wantToken0 && !isToken0)) {
-        return createParams;
+        return this.withSimulationGovernanceTimelockExclusion({
+          createParams,
+          simResult,
+          token: params.token,
+          governance: params.governance,
+          modules: params.modules,
+          addresses,
+        });
       }
 
       attempt += 1n;
@@ -1741,6 +1922,10 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
                     poolInitializerAddress,
                     params.modules?.poolManager ?? addresses.poolManager,
                     liquidityMigratorAddress,
+                    ...this.resolveMigrationLockerBalanceLimitExclusions(
+                      params.migration,
+                      addresses,
+                    ),
                     ...this.resolveGovernanceBalanceLimitExclusions(
                       params.governance,
                     ),
@@ -1826,40 +2011,17 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     })();
 
     // 7.1 Choose governance factory
-    const governanceFactoryAddress: Address = (() => {
-      if (params.governance.type === 'noOp') {
-        const resolved =
-          params.modules?.governanceFactory ??
-          addresses.noOpGovernanceFactory ??
-          ZERO_ADDRESS;
-        if (!resolved || resolved === ZERO_ADDRESS) {
-          throw new Error(
-            'No-op governance requested, but no-op governanceFactory is not configured on this chain. Provide a governanceFactory override or use a supported chain.',
-          );
-        }
-        return resolved;
-      }
-      if (params.governance.type === 'launchpad') {
-        const resolved =
-          params.modules?.governanceFactory ??
-          addresses.launchpadGovernanceFactory ??
-          ZERO_ADDRESS;
-        if (!resolved || resolved === ZERO_ADDRESS) {
-          throw new Error(
-            'Launchpad governance requested, but launchpadGovernanceFactory is not configured on this chain. Provide a governanceFactory override or use a supported chain.',
-          );
-        }
-        return resolved;
-      }
-      const resolved =
-        params.modules?.governanceFactory ?? addresses.governanceFactory;
-      if (!resolved || resolved === ZERO_ADDRESS) {
-        throw new Error(
-          'Standard governance requested but governanceFactory is not deployed on this chain.',
-        );
-      }
-      return resolved;
-    })();
+    const governanceFactoryAddress = this.resolveGovernanceFactoryAddress({
+      governance: params.governance,
+      modules: params.modules,
+      addresses,
+      noOpError:
+        'No-op governance requested, but no-op governanceFactory is not configured on this chain. Provide a governanceFactory override or use a supported chain.',
+      launchpadError:
+        'Launchpad governance requested, but launchpadGovernanceFactory is not configured on this chain. Provide a governanceFactory override or use a supported chain.',
+      standardError:
+        'Standard governance requested but governanceFactory is not deployed on this chain.',
+    });
 
     // 8. Build the complete CreateParams for the V4-style ABI
     const createParams = {
@@ -2057,14 +2219,26 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       hooks: hookAddress,
     });
 
+    const createParamsWithTimelock =
+      this.withSimulationGovernanceTimelockExclusion({
+        createParams,
+        simResult,
+        token: params.token,
+        governance: params.governance,
+        modules: params.modules,
+        addresses,
+      });
+
     return {
-      createParams,
+      createParams: createParamsWithTimelock,
       hookAddress,
       tokenAddress,
       poolId,
       gasEstimate,
       execute: () =>
-        this.createDynamicAuction(params, { _createParams: createParams }),
+        this.createDynamicAuction(params, {
+          _createParams: createParamsWithTimelock,
+        }),
     };
   }
 
@@ -2265,6 +2439,10 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
                     poolManagerForAuction,
                     auctionDeployer,
                     liquidityMigratorAddress,
+                    ...this.resolveMigrationLockerBalanceLimitExclusions(
+                      params.migration,
+                      addresses,
+                    ),
                     ...this.resolveGovernanceBalanceLimitExclusions(
                       params.governance,
                     ),
@@ -2348,40 +2526,17 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       );
     })();
 
-    const governanceFactoryAddress: Address = (() => {
-      if (params.governance.type === 'noOp') {
-        const resolved =
-          params.modules?.governanceFactory ??
-          addresses.noOpGovernanceFactory ??
-          ZERO_ADDRESS;
-        if (!resolved || resolved === ZERO_ADDRESS) {
-          throw new Error(
-            'No-op governance requested, but no-op governanceFactory is not configured on this chain. Provide a governanceFactory override or use a supported chain.',
-          );
-        }
-        return resolved;
-      }
-      if (params.governance.type === 'launchpad') {
-        const resolved =
-          params.modules?.governanceFactory ??
-          addresses.launchpadGovernanceFactory ??
-          ZERO_ADDRESS;
-        if (!resolved || resolved === ZERO_ADDRESS) {
-          throw new Error(
-            'Launchpad governance requested, but launchpadGovernanceFactory is not configured on this chain. Provide a governanceFactory override or use a supported chain.',
-          );
-        }
-        return resolved;
-      }
-      const resolved =
-        params.modules?.governanceFactory ?? addresses.governanceFactory;
-      if (!resolved || resolved === ZERO_ADDRESS) {
-        throw new Error(
-          'Standard governance requested but governanceFactory is not deployed on this chain.',
-        );
-      }
-      return resolved;
-    })();
+    const governanceFactoryAddress = this.resolveGovernanceFactoryAddress({
+      governance: params.governance,
+      modules: params.modules,
+      addresses,
+      noOpError:
+        'No-op governance requested, but no-op governanceFactory is not configured on this chain. Provide a governanceFactory override or use a supported chain.',
+      launchpadError:
+        'Launchpad governance requested, but launchpadGovernanceFactory is not configured on this chain. Provide a governanceFactory override or use a supported chain.',
+      standardError:
+        'Standard governance requested but governanceFactory is not deployed on this chain.',
+    });
 
     if (!tokenFactoryData) {
       throw new Error('Token factory data could not be resolved.');
@@ -2447,15 +2602,25 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       throw new Error('Failed to simulate opening auction create');
     }
 
+    const createParamsWithTimelock =
+      this.withSimulationGovernanceTimelockExclusion({
+        createParams,
+        simResult,
+        token: params.token,
+        governance: params.governance,
+        modules: params.modules,
+        addresses,
+      });
+
     return {
-      createParams,
+      createParams: createParamsWithTimelock,
       openingAuctionHookAddress: simResult[1] as Address,
       tokenAddress: simResult[0] as Address,
       minedSalt,
       gasEstimate,
       execute: () =>
         this.createOpeningAuction(params, {
-          _createParams: createParams,
+          _createParams: createParamsWithTimelock,
           _minedSalt: minedSalt,
         }),
     };
@@ -4627,6 +4792,10 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
                 resolvedInitializer,
                 resolvedMigrator,
                 params.modules?.poolManager ?? addresses.poolManager,
+                ...this.resolveMigrationLockerBalanceLimitExclusions(
+                  params.migration,
+                  addresses,
+                ),
                 ...this.resolveGovernanceBalanceLimitExclusions(
                   params.governance,
                 ),
@@ -4656,40 +4825,17 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       );
     }
 
-    const governanceFactoryAddress: Address = (() => {
-      if (params.governance.type === 'noOp') {
-        const resolved =
-          params.modules?.governanceFactory ??
-          addresses.noOpGovernanceFactory ??
-          ZERO_ADDRESS;
-        if (!resolved || resolved === ZERO_ADDRESS) {
-          throw new Error(
-            'No-op governance requested, but no-op governanceFactory is not configured on this chain.',
-          );
-        }
-        return resolved;
-      }
-      if (params.governance.type === 'launchpad') {
-        const resolved =
-          params.modules?.governanceFactory ??
-          addresses.launchpadGovernanceFactory ??
-          ZERO_ADDRESS;
-        if (!resolved || resolved === ZERO_ADDRESS) {
-          throw new Error(
-            'Launchpad governance requested, but launchpadGovernanceFactory is not configured on this chain.',
-          );
-        }
-        return resolved;
-      }
-      const resolved =
-        params.modules?.governanceFactory ?? addresses.governanceFactory;
-      if (!resolved || resolved === ZERO_ADDRESS) {
-        throw new Error(
-          'Standard governance requested but governanceFactory is not deployed on this chain.',
-        );
-      }
-      return resolved;
-    })();
+    const governanceFactoryAddress = this.resolveGovernanceFactoryAddress({
+      governance: params.governance,
+      modules: params.modules,
+      addresses,
+      noOpError:
+        'No-op governance requested, but no-op governanceFactory is not configured on this chain.',
+      launchpadError:
+        'Launchpad governance requested, but launchpadGovernanceFactory is not configured on this chain.',
+      standardError:
+        'Standard governance requested but governanceFactory is not deployed on this chain.',
+    });
 
     if (!tokenFactoryData) {
       throw new Error('Token factory data could not be resolved.');
@@ -4753,13 +4899,25 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     const tokenAddress = simResult[0] as Address;
     const poolId = await this.computeMulticurvePoolId(params, tokenAddress);
 
+    const createParamsWithTimelock =
+      this.withSimulationGovernanceTimelockExclusion({
+        createParams,
+        simResult,
+        token: params.token,
+        governance: params.governance,
+        modules: params.modules,
+        addresses,
+      });
+
     return {
-      createParams,
+      createParams: createParamsWithTimelock,
       tokenAddress,
       poolId,
       gasEstimate,
       execute: () =>
-        this.createMulticurve(params, { _createParams: createParams }),
+        this.createMulticurve(params, {
+          _createParams: createParamsWithTimelock,
+        }),
     };
   }
 
