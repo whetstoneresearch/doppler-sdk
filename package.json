@@ -79,6 +79,7 @@
   },
   "dependencies": {
     "@noble/hashes": "^2.0.1",
+    "@solana-program/address-lookup-table": "^0.11.0",
     "@solana-program/system": "^0.12.0",
     "@solana-program/token": "^0.12.0",
     "@solana/kit": "^6.3.1",

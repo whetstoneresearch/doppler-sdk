@@ -9,9 +9,6 @@ import './env.js';
 
 import {
   address,
-  createKeyPairSignerFromBytes,
-  createSolanaRpc,
-  createSolanaRpcSubscriptions,
   pipe,
   createTransactionMessage,
   setTransactionMessageFeePayerSigner,
@@ -26,21 +23,16 @@ import {
 import {
   TOKEN_PROGRAM_ADDRESS,
   findAssociatedTokenPda,
+  getCreateAssociatedTokenIdempotentInstruction,
 } from '@solana-program/token';
 
 import { cpmm } from '../src/solana/index.js';
+import {
+  assertSolanaExampleNetwork,
+  createSolanaClientsFromEnv,
+  loadKeypairSignerFromEnv,
+} from './solanaExampleHelpers.js';
 
-// ============================================================================
-// Environment
-// ============================================================================
-
-const keypairJson = process.env.SOLANA_KEYPAIR;
-const rpcUrl = process.env.SOLANA_RPC_URL ?? 'https://api.devnet.solana.com';
-const wsUrl = process.env.SOLANA_WS_URL ?? 'wss://api.devnet.solana.com';
-
-if (!keypairJson) {
-  throw new Error('SOLANA_KEYPAIR must be set (JSON array of 64 bytes)');
-}
 if (!process.env.MINT_0 || !process.env.MINT_1) {
   throw new Error(
     'MINT_0 and MINT_1 must be set to the two token mints of the pool',
@@ -56,12 +48,9 @@ const MINT_1: Address = address(process.env.MINT_1);
 // ============================================================================
 
 async function main() {
-  const payer = await createKeyPairSignerFromBytes(
-    new Uint8Array(JSON.parse(keypairJson as string)),
-  );
-
-  const rpc = createSolanaRpc(rpcUrl);
-  const rpcSubscriptions = createSolanaRpcSubscriptions(wsUrl);
+  const payer = await loadKeypairSignerFromEnv();
+  const { rpc, rpcSubscriptions, network } = createSolanaClientsFromEnv();
+  assertSolanaExampleNetwork(network);
 
   // ── Fetch pool state ─────────────────────────────────────────────────────
   console.log('Fetching pool state...');
@@ -83,16 +72,18 @@ async function main() {
 
   // ── Quote the swap ───────────────────────────────────────────────────────
   // direction 0 = token0→token1, direction 1 = token1→token0.
-  const direction = 0 as const; // token0 → token1
-  const AMOUNT_IN = 1_000_000n; // 1 token (assuming 6 decimals)
+  const direction = (process.env.SWAP_DIRECTION === '1' ? 1 : 0) as 0 | 1;
+  const AMOUNT_IN = BigInt(process.env.AMOUNT_IN ?? '1000000');
 
   const quote = cpmm.getSwapQuote(pool, AMOUNT_IN, direction);
 
   const SLIPPAGE_BPS = 50n; // 0.5%
   const minAmountOut = (quote.amountOut * (10_000n - SLIPPAGE_BPS)) / 10_000n;
 
-  console.log('Swap quote (token0 → token1):');
-  console.log('  Amount in:     ', AMOUNT_IN.toString(), '(token0 atoms)');
+  console.log(
+    `Swap quote (${direction === 0 ? 'token0 → token1' : 'token1 → token0'}):`,
+  );
+  console.log('  Amount in:     ', AMOUNT_IN.toString(), '(input token atoms)');
   console.log(
     '  Amount out:    ',
     quote.amountOut.toString(),
@@ -105,14 +96,16 @@ async function main() {
 
   // ── Derive PDAs and user token accounts ─────────────────────────────────
   const [config] = await cpmm.getConfigAddress();
+  const inputMint = direction === 0 ? pool.token0Mint : pool.token1Mint;
+  const outputMint = direction === 0 ? pool.token1Mint : pool.token0Mint;
   const [userIn] = await findAssociatedTokenPda({
     owner: payer.address,
-    mint: pool.token0Mint,
+    mint: inputMint,
     tokenProgram: TOKEN_PROGRAM_ADDRESS,
   });
   const [userOut] = await findAssociatedTokenPda({
     owner: payer.address,
-    mint: pool.token1Mint,
+    mint: outputMint,
     tokenProgram: TOKEN_PROGRAM_ADDRESS,
   });
 
@@ -140,6 +133,18 @@ async function main() {
       minAmountOut,
       direction,
     });
+    const createUserInAtaIx = getCreateAssociatedTokenIdempotentInstruction({
+      payer,
+      ata: userIn,
+      owner: payer.address,
+      mint: inputMint,
+    });
+    const createUserOutAtaIx = getCreateAssociatedTokenIdempotentInstruction({
+      payer,
+      ata: userOut,
+      owner: payer.address,
+      mint: outputMint,
+    });
 
     const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
 
@@ -147,7 +152,11 @@ async function main() {
       createTransactionMessage({ version: 0 }),
       (tx) => setTransactionMessageFeePayerSigner(payer, tx),
       (tx) => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
-      (tx) => appendTransactionMessageInstructions([ix], tx),
+      (tx) =>
+        appendTransactionMessageInstructions(
+          [createUserInAtaIx, createUserOutAtaIx, ix],
+          tx,
+        ),
     );
 
     const signedTransaction =

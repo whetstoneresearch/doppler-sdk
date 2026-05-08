@@ -49,6 +49,13 @@ export {
 
 export { fetchCpmmMigratorState } from './client.js';
 
+export {
+  buildCpmmMigrationRemainingAccounts,
+  buildCpmmMigrationRemainingAccountsHash,
+  type CpmmMigrationRemainingAccounts,
+  type CpmmMigrationRemainingAccountsInput,
+} from './remainingAccounts.js';
+
 export function encodeRegisterLaunchCalldata(
   args: RegisterLaunchArgsArgs,
 ): Uint8Array {

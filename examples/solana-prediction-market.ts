@@ -19,9 +19,6 @@ import './env.js';
 import { TOKEN_PROGRAM_ADDRESS } from '@solana-program/token';
 import { SYSTEM_PROGRAM_ADDRESS } from '@solana-program/system';
 import {
-  createKeyPairSignerFromBytes,
-  createSolanaRpc,
-  createSolanaRpcSubscriptions,
   generateKeyPairSigner,
   pipe,
   createTransactionMessage,
@@ -40,18 +37,11 @@ import {
   predictionMigrator,
   trustedOracle,
 } from '../src/solana/index.js';
-
-// ============================================================================
-// Environment
-// ============================================================================
-
-const keypairJson = process.env.SOLANA_KEYPAIR;
-const rpcUrl = process.env.SOLANA_RPC_URL ?? 'https://api.devnet.solana.com';
-const wsUrl = process.env.SOLANA_WS_URL ?? 'wss://api.devnet.solana.com';
-
-if (!keypairJson) {
-  throw new Error('SOLANA_KEYPAIR must be set (JSON array of 64 bytes)');
-}
+import {
+  assertSolanaExampleNetwork,
+  createSolanaClientsFromEnv,
+  loadKeypairSignerFromEnv,
+} from './solanaExampleHelpers.js';
 
 // WSOL mint — the quote token (SOL wrapped as SPL token so it can live in vaults).
 const WSOL_MINT: Address =
@@ -62,12 +52,9 @@ const WSOL_MINT: Address =
 // ============================================================================
 
 async function main() {
-  const payer = await createKeyPairSignerFromBytes(
-    new Uint8Array(JSON.parse(keypairJson as string)),
-  );
-
-  const rpc = createSolanaRpc(rpcUrl);
-  const rpcSubscriptions = createSolanaRpcSubscriptions(wsUrl);
+  const payer = await loadKeypairSignerFromEnv();
+  const { rpc, rpcSubscriptions, network } = createSolanaClientsFromEnv();
+  assertSolanaExampleNetwork(network);
 
   // ── Token supply parameters ─────────────────────────────────────────────
   //
@@ -277,9 +264,11 @@ async function main() {
                 entryAddress,
                 entryByMint,
               ]),
-            metadataName: '',
-            metadataSymbol: '',
-            metadataUri: '',
+            // @todo Prediction launch metadata needs a custom ALT; this shape
+            // currently exceeds Solana's transaction size limit.
+            metadataName: `${outcome.label} Token`,
+            metadataSymbol: outcome.label,
+            metadataUri: `https://example.com/${outcome.label.toLowerCase()}.json`,
           },
         );
 

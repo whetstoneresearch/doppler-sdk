@@ -32,9 +32,6 @@ import {
   getTransferSolInstruction,
 } from '@solana-program/system';
 import {
-  createKeyPairSignerFromBytes,
-  createSolanaRpc,
-  createSolanaRpcSubscriptions,
   generateKeyPairSigner,
   getBase64EncodedWireTransaction,
   pipe,
@@ -45,86 +42,51 @@ import {
   signTransactionMessageWithSigners,
   sendAndConfirmTransactionFactory,
   getSignatureFromTransaction,
-  AccountRole,
   address,
   type Address,
 } from '@solana/kit';
 import { SYSVAR_RENT_ADDRESS } from '@solana/sysvars';
-import { readFileSync } from 'fs';
 
 import { cpmm, initializer, cpmmMigrator } from '../src/solana/index.js';
-
-// ============================================================================
-// Environment
-// ============================================================================
-
-const keypairJson = process.env.SOLANA_KEYPAIR_PATH
-  ? readFileSync(process.env.SOLANA_KEYPAIR_PATH, 'utf8')
-  : process.env.SOLANA_KEYPAIR;
-const cosignerKeypairJson = process.env.COSIGNER_KEYPAIR_PATH
-  ? readFileSync(process.env.COSIGNER_KEYPAIR_PATH, 'utf8')
-  : process.env.COSIGNER_KEYPAIR;
-const rpcUrl = process.env.SOLANA_RPC_URL ?? 'https://api.devnet.solana.com';
-const wsUrl = process.env.SOLANA_WS_URL ?? 'wss://api.devnet.solana.com';
-
-if (!keypairJson) {
-  throw new Error('SOLANA_KEYPAIR must be set (JSON array of 64 bytes)');
-}
+import {
+  assertTransactionFits,
+  assertSolanaExampleNetwork,
+  createLookupTableForInstruction,
+  createSetComputeUnitLimitInstruction,
+  createSolanaClientsFromEnv,
+  getMetadataByteLength,
+  getSolPriceUsd,
+  getTokenAccountRentLamports,
+  loadKeypairSignerFromEnv,
+} from './solanaExampleHelpers.js';
 
 async function loadCosigner() {
-  if (!cosignerKeypairJson) {
+  if (!process.env.COSIGNER_KEYPAIR_PATH && !process.env.COSIGNER_KEYPAIR) {
     console.warn(
-      'COSIGNER_KEYPAIR(_PATH) not set; generating an ephemeral cosigner for this devnet example.',
+      'COSIGNER_KEYPAIR(_PATH) not set; generating an ephemeral cosigner for this example.',
     );
     return generateKeyPairSigner();
   }
 
-  return createKeyPairSignerFromBytes(
-    new Uint8Array(JSON.parse(cosignerKeypairJson)),
-  );
+  return loadKeypairSignerFromEnv({
+    pathEnv: 'COSIGNER_KEYPAIR_PATH',
+    jsonEnv: 'COSIGNER_KEYPAIR',
+    label: 'COSIGNER_KEYPAIR',
+  });
 }
 
 // WSOL mint — pools use the wrapped SPL mint since native SOL can't live in token vaults.
 const WSOL_MINT: Address =
   'So11111111111111111111111111111111111111112' as Address;
-const COMPUTE_BUDGET_PROGRAM_ID = address(
-  'ComputeBudget111111111111111111111111111111',
-);
-
-function createSetComputeUnitLimitInstruction(units: number) {
-  const data = new Uint8Array(5);
-  data[0] = 2;
-  new DataView(data.buffer).setUint32(1, units, true);
-  return {
-    programAddress: COMPUTE_BUDGET_PROGRAM_ID,
-    accounts: [],
-    data,
-  };
-}
-
-// ============================================================================
-// Price feed
-// ============================================================================
-
-async function getSolPriceUsd(): Promise<number> {
-  const response = await fetch(
-    'https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd',
-  );
-  const data = await response.json();
-  return data.solana.usd;
-}
 
 // ============================================================================
 // Main
 // ============================================================================
 
 async function main() {
-  const payer = await createKeyPairSignerFromBytes(
-    new Uint8Array(JSON.parse(keypairJson as string)),
-  );
-
-  const rpc = createSolanaRpc(rpcUrl);
-  const rpcSubscriptions = createSolanaRpcSubscriptions(wsUrl);
+  const payer = await loadKeypairSignerFromEnv();
+  const { rpc, rpcSubscriptions, network } = createSolanaClientsFromEnv();
+  assertSolanaExampleNetwork(network);
 
   // ── Token supply ─────────────────────────────────────────────────────────
   const BASE_DECIMALS = 6;
@@ -148,7 +110,7 @@ async function main() {
   const CPMM_SWAP_FEE_SPLIT_BPS = 5000; // 50% of CPMM swap fees claimable by LP holders; remaining 50% compounds into the pool
 
   // ── Graduation threshold and price floor ────────────────────────────────
-  const MIN_SOL_RAISE = 0.1; // devnet testing threshold
+  const MIN_SOL_RAISE = 0.1; // low example threshold
   const minRaiseQuote = BigInt(MIN_SOL_RAISE * 1_000_000_000);
 
   // ── Market cap → virtual reserves ────────────────────────────────────────
@@ -180,36 +142,6 @@ async function main() {
   const [launch] = await initializer.getLaunchAddress(namespace, launchId);
   const [launchAuthority] = await initializer.getLaunchAuthorityAddress(launch);
   const [initializerConfig] = await initializer.getConfigAddress();
-  const [cpmmConfig] = await cpmm.getConfigAddress();
-  const [cpmmMigratorState] =
-    await cpmmMigrator.getCpmmMigratorStateAddress(launch);
-
-  console.log('Derived addresses:');
-  console.log('  Launch:          ', launch);
-  console.log('  Launch authority:', launchAuthority);
-  console.log('  Initializer config:', initializerConfig);
-  console.log('  CPMM config:     ', cpmmConfig);
-  console.log('  CPMM migrator state:', cpmmMigratorState);
-  console.log('');
-
-  // ── CPMM migration remaining accounts ────────────────────────────────────
-  // Migrations commit the canonical CPMM graph that will be created/used
-  // during migrate_launch: pool, authority, vault PDAs, protocol position,
-  // launch LP position, program, and payout ATAs.
-  const poolInit = await cpmm.getPoolInitAddresses(baseMint.address, WSOL_MINT);
-  const pool = poolInit.pool[0];
-  const poolAuthority = poolInit.authority[0];
-  const protocolPosition = poolInit.protocolPosition[0];
-  const poolVault0 = poolInit.vault0[0];
-  const poolVault1 = poolInit.vault1[0];
-  const [migrationAuthority] =
-    await cpmmMigrator.getCpmmMigrationAuthorityAddress();
-  const [launchLpPosition] = await cpmm.getPositionAddress(
-    pool,
-    launchAuthority,
-    0n,
-  );
-
   const [payerBaseAta] = await findAssociatedTokenPda({
     owner: payer.address,
     mint: baseMint.address,
@@ -221,13 +153,34 @@ async function main() {
     tokenProgram: TOKEN_PROGRAM_ADDRESS,
   });
 
+  const migrationAccounts =
+    await cpmmMigrator.buildCpmmMigrationRemainingAccounts({
+      launch,
+      baseMint: baseMint.address,
+      quoteMint: WSOL_MINT,
+      launchAuthority,
+      adminBaseAta: payerBaseAta,
+      adminQuoteAta: payerQuoteAta,
+      recipientAtas: [payerBaseAta, payerBaseAta],
+    });
+  const cpmmConfig = migrationAccounts.cpmmConfig;
+  const cpmmMigratorState = migrationAccounts.cpmmMigratorState;
+
+  console.log('Derived addresses:');
+  console.log('  Launch:          ', launch);
+  console.log('  Launch authority:', launchAuthority);
+  console.log('  Initializer config:', initializerConfig);
+  console.log('  CPMM config:     ', cpmmConfig);
+  console.log('  CPMM migrator state:', cpmmMigratorState);
+  console.log('');
+
   const migratorInitCalldata = cpmmMigrator.encodeRegisterLaunchCalldata({
     cpmmConfig: cpmmConfig,
     initialSwapFeeBps: CPMM_SWAP_FEE_BPS,
     initialFeeSplitBps: CPMM_SWAP_FEE_SPLIT_BPS,
     recipients: [
       { wallet: payer.address, amount: CREATOR_SHARE },
-      { wallet: payer.address, amount: TEAM_SHARE }, // use payer as team wallet on devnet
+      { wallet: payer.address, amount: TEAM_SHARE }, // use payer as team wallet in this example
     ],
     minRaiseQuote,
     minMigrationPriceQ64Opt: null,
@@ -241,6 +194,12 @@ async function main() {
   // ── Build, sign, and send ────────────────────────────────────────────────
   console.log('Building launch instruction...');
   try {
+    const metadata = {
+      metadataName: 'TEST',
+      metadataSymbol: 'TEST',
+      metadataUri: 'https://example.com/metadata/test-token.json',
+    };
+
     const ix = await initializer.createInitializeLaunchInstruction(
       {
         config: initializerConfig,
@@ -259,7 +218,6 @@ async function main() {
         systemProgram: SYSTEM_PROGRAM_ADDRESS,
         rent: SYSVAR_RENT_ADDRESS,
         metadataAccount,
-        addressLookupTable: initializer.DOPPLER_DEVNET_ALT,
       },
       {
         namespace,
@@ -287,45 +245,35 @@ async function main() {
             cpmmMigratorState,
             cpmmConfig,
           ]),
-        // Commits the accounts that must be passed as remaining accounts to
-        // migrate_launch: state, cpmm_config, pool, pool_authority, pool_vault0,
-        // pool_vault1, protocol_position, launch_lp_position, cpmm_program,
-        // migration_authority, admin_base_ata, admin_quote_ata, creator_ata,
-        // team_ata
-        migratorRemainingAccountsHash: initializer.computeRemainingAccountsHash(
-          [
-            cpmmMigratorState,
-            cpmmConfig,
-            pool,
-            poolAuthority,
-            poolVault0,
-            poolVault1,
-            protocolPosition,
-            launchLpPosition,
-            cpmm.CPMM_PROGRAM_ID,
-            migrationAuthority,
-            payerBaseAta, // admin_base_ata (unsold curve tokens)
-            payerQuoteAta, // admin_quote_ata (residual quote dust)
-            payerBaseAta, // creator recipient ATA (CREATOR_SHARE → payer)
-            payerBaseAta, // team recipient ATA (TEAM_SHARE → payer)
-          ],
-        ),
-        // Skip metadata in this e2e so initialize_launch stays below Solana's
-        // transaction size limit while still deploying a new mint.
-        metadataName: '',
-        metadataSymbol: '',
-        metadataUri: '',
+        migratorRemainingAccountsHash: migrationAccounts.hash,
+        ...metadata,
       },
     );
+    const lookupTable = await createLookupTableForInstruction({
+      rpc,
+      rpcSubscriptions,
+      payer,
+      instruction: ix,
+      label: 'initialize_launch lookup table',
+    });
 
     const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
 
-    const transactionMessage = pipe(
-      createTransactionMessage({ version: 0 }),
-      (tx) => setTransactionMessageFeePayerSigner(payer, tx),
-      (tx) => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
-      (tx) => appendTransactionMessageInstructions([ix], tx),
+    const transactionMessage =
+      initializer.compressTransactionMessageWithLookupTable(
+      pipe(
+        createTransactionMessage({ version: 0 }),
+        (tx) => setTransactionMessageFeePayerSigner(payer, tx),
+        (tx) =>
+          setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
+        (tx) => appendTransactionMessageInstructions([ix], tx),
+      ),
+      lookupTable,
     );
+    assertTransactionFits(transactionMessage, {
+      label: 'initialize_launch',
+      metadataBytes: getMetadataByteLength(metadata),
+    });
 
     const signedTransaction =
       await signTransactionMessageWithSigners(transactionMessage);
@@ -436,8 +384,6 @@ async function main() {
       tokenProgram: TOKEN_PROGRAM_ADDRESS,
     });
 
-    const RENT_WSOL_ATA = 2_039_280n; // minimum lamports for a token account
-
     const createBaseAtaIx = getCreateAssociatedTokenIdempotentInstruction({
       payer,
       ata: userBaseAta,
@@ -453,7 +399,7 @@ async function main() {
     const transferSolIx = getTransferSolInstruction({
       source: payer,
       destination: userQuoteAta,
-      amount: BUY_AMOUNT_IN + RENT_WSOL_ATA,
+      amount: BUY_AMOUNT_IN + getTokenAccountRentLamports(),
     });
 
     const syncNativeIx = getSyncNativeInstruction({ account: userQuoteAta });
@@ -547,20 +493,7 @@ async function main() {
       ...migrateLaunchIxBase,
       accounts: [
         ...(migrateLaunchIxBase.accounts ?? []),
-        { address: cpmmMigratorState, role: AccountRole.WRITABLE },
-        { address: cpmmConfig, role: AccountRole.READONLY },
-        { address: pool, role: AccountRole.WRITABLE },
-        { address: poolAuthority, role: AccountRole.READONLY },
-        { address: poolVault0, role: AccountRole.WRITABLE },
-        { address: poolVault1, role: AccountRole.WRITABLE },
-        { address: protocolPosition, role: AccountRole.WRITABLE },
-        { address: launchLpPosition, role: AccountRole.WRITABLE },
-        { address: cpmm.CPMM_PROGRAM_ID, role: AccountRole.READONLY }, // cpmm program
-        { address: migrationAuthority, role: AccountRole.READONLY },
-        { address: payerBaseAta, role: AccountRole.WRITABLE }, // admin_base_ata (unsold curve tokens)
-        { address: payerQuoteAta, role: AccountRole.WRITABLE }, // admin_quote_ata (residual quote dust)
-        { address: payerBaseAta, role: AccountRole.WRITABLE }, // creator recipient ATA (CREATOR_SHARE → payer)
-        { address: payerBaseAta, role: AccountRole.WRITABLE }, // team recipient ATA (TEAM_SHARE → payer)
+        ...migrationAccounts.metas,
       ],
     };
 
@@ -653,8 +586,9 @@ async function main() {
 
         // ── Step 9: Enable sentinel signer forwarding on the graduated pool ─
         //
-        // set_sentinel is a CPMM admin action. On devnet, run this example with
-        // the Doppler devnet admin keypair so the payer matches cpmmConfig.admin.
+        // set_sentinel is a CPMM admin action. On the Doppler devnet
+        // deployment, run this example with the devnet admin keypair so the
+        // payer matches cpmmConfig.admin.
         console.log('Step 9: Enabling CPMM sentinel signer forwarding...');
         const setSentinelIx = cpmm.createSetSentinelInstruction({
           config: cpmmConfig,
@@ -710,7 +644,7 @@ async function main() {
           COSIGNED_SWAP_AMOUNT_IN,
           direction,
         );
-        const minAmountOut = (quote.amountOut * 9_500n) / 10_000n; // 5% slippage for devnet
+        const minAmountOut = (quote.amountOut * 9_500n) / 10_000n; // 5% example slippage
 
         const userToken0 =
           pool.token0Mint === baseMint.address ? userBaseAta : userQuoteAta;

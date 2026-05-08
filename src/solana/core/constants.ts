@@ -10,7 +10,7 @@ export const SYSVAR_INSTRUCTIONS_ADDRESS: Address = address(
 );
 
 /**
- * CPMM AMM program ID (devnet)
+ * CPMM AMM program ID for the currently published Solana deployment.
  */
 export const CPMM_PROGRAM_ID: Address = address(
   '9PSxVPoPfnbZ8Q1uQhgS6ZxvBjFboZtebNsu34umxkgQ',
