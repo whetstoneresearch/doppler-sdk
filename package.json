@@ -50,7 +50,8 @@
     "generate:addresses": "node ./scripts/generate-addresses.mjs --source ../doppler/Deployments.json --out src/evm/deployments.generated.ts",
     "generate-snapshot": "tsx ./scripts/snapshot-addresses.ts",
     "generate:codecs": "tsx scripts/codegen.ts && oxfmt --write src/solana/generated/",
-    "test:solana:local:setup": "tsx scripts/setup-solana-local-test-validator.ts"
+    "test:solana:local:setup": "tsx scripts/setup-solana-local-test-validator.ts",
+    "solana:migrate-launch": "tsx scripts/migrate-launch.ts"
   },
   "prettier": {
     "printWidth": 80,
