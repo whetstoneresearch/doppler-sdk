@@ -109,7 +109,10 @@ export async function buildAddressLookupTableSetupInstructions({
 }
 
 export function compressTransactionMessageWithLookupTable<
-  TTransactionMessage extends Exclude<TransactionMessage, { version: 'legacy' }>,
+  TTransactionMessage extends Exclude<
+    TransactionMessage,
+    { version: 'legacy' }
+  >,
 >(
   transactionMessage: TTransactionMessage,
   {

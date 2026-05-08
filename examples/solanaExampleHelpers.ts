@@ -85,11 +85,7 @@ export function assertSolanaExampleNetwork(
 }
 
 function parseSolanaNetwork(value: string): SolanaExampleNetwork {
-  if (
-    value === 'devnet' ||
-    value === 'mainnet-beta' ||
-    value === 'custom'
-  ) {
+  if (value === 'devnet' || value === 'mainnet-beta' || value === 'custom') {
     return value;
   }
 
@@ -213,10 +209,10 @@ export async function createLookupTableForInstruction({
   const addresses = initializer.getInstructionLookupTableAddresses(instruction);
   const lookupTable =
     await initializer.buildAddressLookupTableSetupInstructions({
-    authority: payer,
-    payer,
-    recentSlot,
-    addresses,
+      authority: payer,
+      payer,
+      recentSlot,
+      addresses,
     });
 
   const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();

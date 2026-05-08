@@ -239,15 +239,15 @@ async function main() {
 
     const transactionMessage =
       initializer.compressTransactionMessageWithLookupTable(
-      pipe(
-        createTransactionMessage({ version: 0 }),
-        (tx) => setTransactionMessageFeePayerSigner(payer, tx),
-        (tx) =>
-          setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
-        (tx) => appendTransactionMessageInstructions([ix], tx),
-      ),
-      lookupTable,
-    );
+        pipe(
+          createTransactionMessage({ version: 0 }),
+          (tx) => setTransactionMessageFeePayerSigner(payer, tx),
+          (tx) =>
+            setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
+          (tx) => appendTransactionMessageInstructions([ix], tx),
+        ),
+        lookupTable,
+      );
     assertTransactionFits(transactionMessage, {
       label: 'initialize_launch',
       metadataBytes: getMetadataByteLength(metadata),
