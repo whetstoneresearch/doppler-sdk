@@ -58,6 +58,7 @@ describe('initializer instructions', () => {
       recipients: [{ wallet: admin.address, amount: 700_000n }, { wallet: admin.address, amount: 0n }],
       minRaiseQuote: 500_000n,
       minMigrationPriceQ64Opt: null,
+      migratedPoolHookConfig: null,
     });
 
     const migratorMigratePayload = cpmmMigrator.encodeMigratePayload({

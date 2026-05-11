@@ -162,6 +162,7 @@ async function main() {
     ],
     minRaiseQuote,
     minMigrationPriceQ64Opt,
+    migratedPoolHookConfig: null,
   });
 
   const migratorMigratePayload = cpmmMigrator.encodeMigratePayload({

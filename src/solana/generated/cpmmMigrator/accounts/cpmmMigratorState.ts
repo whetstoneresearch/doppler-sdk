@@ -31,6 +31,8 @@ import {
   getU128Encoder,
   getU16Decoder,
   getU16Encoder,
+  getU32Decoder,
+  getU32Encoder,
   getU64Decoder,
   getU64Encoder,
   getU8Decoder,
@@ -81,6 +83,10 @@ export type CpmmMigratorState = {
   initialFeeSplitBps: number;
   /** Padding for alignment */
   pad0: ReadonlyUint8Array;
+  /** Hook program to set on the migrated CPMM pool */
+  migratedPoolHookProgram: Address;
+  /** Hook flags to set on the migrated CPMM pool */
+  migratedPoolHookFlags: number;
   /** Recipients for base token distribution at migration */
   recipients: Array<Recipient>;
   /** Minimum quote tokens required to migrate */
@@ -108,6 +114,10 @@ export type CpmmMigratorStateArgs = {
   initialFeeSplitBps: number;
   /** Padding for alignment */
   pad0: ReadonlyUint8Array;
+  /** Hook program to set on the migrated CPMM pool */
+  migratedPoolHookProgram: Address;
+  /** Hook flags to set on the migrated CPMM pool */
+  migratedPoolHookFlags: number;
   /** Recipients for base token distribution at migration */
   recipients: Array<RecipientArgs>;
   /** Minimum quote tokens required to migrate */
@@ -133,6 +143,8 @@ export function getCpmmMigratorStateEncoder(): Encoder<CpmmMigratorStateArgs> {
       ['initialSwapFeeBps', getU16Encoder()],
       ['initialFeeSplitBps', getU16Encoder()],
       ['pad0', fixEncoderSize(getBytesEncoder(), 4)],
+      ['migratedPoolHookProgram', getAddressEncoder()],
+      ['migratedPoolHookFlags', getU32Encoder()],
       ['recipients', getArrayEncoder(getRecipientEncoder(), { size: 2 })],
       ['minRaiseQuote', getU64Encoder()],
       ['minMigrationPriceQ64Opt', getOptionEncoder(getU128Encoder())],
@@ -154,6 +166,8 @@ export function getCpmmMigratorStateDecoder(): Decoder<CpmmMigratorState> {
     ['initialSwapFeeBps', getU16Decoder()],
     ['initialFeeSplitBps', getU16Decoder()],
     ['pad0', fixDecoderSize(getBytesDecoder(), 4)],
+    ['migratedPoolHookProgram', getAddressDecoder()],
+    ['migratedPoolHookFlags', getU32Decoder()],
     ['recipients', getArrayDecoder(getRecipientDecoder(), { size: 2 })],
     ['minRaiseQuote', getU64Decoder()],
     ['minMigrationPriceQ64Opt', getOptionDecoder(getU128Decoder())],
