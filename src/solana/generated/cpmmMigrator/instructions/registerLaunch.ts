@@ -55,8 +55,12 @@ import {
 } from '@solana/program-client-core';
 import { CPMM_MIGRATOR_PROGRAM_ADDRESS } from '../programs';
 import {
+  getMigratedPoolHookConfigDecoder,
+  getMigratedPoolHookConfigEncoder,
   getRecipientDecoder,
   getRecipientEncoder,
+  type MigratedPoolHookConfig,
+  type MigratedPoolHookConfigArgs,
   type Recipient,
   type RecipientArgs,
 } from '../types';
@@ -150,6 +154,7 @@ export type RegisterLaunchInstructionData = {
   recipients: Array<Recipient>;
   minRaiseQuote: bigint;
   minMigrationPriceQ64Opt: Option<bigint>;
+  migratedPoolHookConfig: Option<MigratedPoolHookConfig>;
 };
 
 export type RegisterLaunchInstructionDataArgs = {
@@ -159,6 +164,7 @@ export type RegisterLaunchInstructionDataArgs = {
   recipients: Array<RecipientArgs>;
   minRaiseQuote: number | bigint;
   minMigrationPriceQ64Opt: OptionOrNullable<number | bigint>;
+  migratedPoolHookConfig: OptionOrNullable<MigratedPoolHookConfigArgs>;
 };
 
 export function getRegisterLaunchInstructionDataEncoder(): Encoder<RegisterLaunchInstructionDataArgs> {
@@ -171,6 +177,10 @@ export function getRegisterLaunchInstructionDataEncoder(): Encoder<RegisterLaunc
       ['recipients', getArrayEncoder(getRecipientEncoder())],
       ['minRaiseQuote', getU64Encoder()],
       ['minMigrationPriceQ64Opt', getOptionEncoder(getU128Encoder())],
+      [
+        'migratedPoolHookConfig',
+        getOptionEncoder(getMigratedPoolHookConfigEncoder()),
+      ],
     ]),
     (value) => ({ ...value, discriminator: REGISTER_LAUNCH_DISCRIMINATOR }),
   );
@@ -185,6 +195,10 @@ export function getRegisterLaunchInstructionDataDecoder(): Decoder<RegisterLaunc
     ['recipients', getArrayDecoder(getRecipientDecoder())],
     ['minRaiseQuote', getU64Decoder()],
     ['minMigrationPriceQ64Opt', getOptionDecoder(getU128Decoder())],
+    [
+      'migratedPoolHookConfig',
+      getOptionDecoder(getMigratedPoolHookConfigDecoder()),
+    ],
   ]);
 }
 
@@ -240,6 +254,7 @@ export type RegisterLaunchAsyncInput<
   recipients: RegisterLaunchInstructionDataArgs['recipients'];
   minRaiseQuote: RegisterLaunchInstructionDataArgs['minRaiseQuote'];
   minMigrationPriceQ64Opt: RegisterLaunchInstructionDataArgs['minMigrationPriceQ64Opt'];
+  migratedPoolHookConfig: RegisterLaunchInstructionDataArgs['migratedPoolHookConfig'];
 };
 
 export async function getRegisterLaunchInstructionAsync<
@@ -446,6 +461,7 @@ export type RegisterLaunchInput<
   recipients: RegisterLaunchInstructionDataArgs['recipients'];
   minRaiseQuote: RegisterLaunchInstructionDataArgs['minRaiseQuote'];
   minMigrationPriceQ64Opt: RegisterLaunchInstructionDataArgs['minMigrationPriceQ64Opt'];
+  migratedPoolHookConfig: RegisterLaunchInstructionDataArgs['migratedPoolHookConfig'];
 };
 
 export function getRegisterLaunchInstruction<

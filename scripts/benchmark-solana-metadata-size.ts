@@ -17,6 +17,7 @@ import {
 import { SYSVAR_RENT_ADDRESS } from '@solana/sysvars';
 
 import {
+  cpmm,
   cpmmMigrator,
   initializer,
   predictionMigrator,
@@ -32,6 +33,11 @@ const SAMPLE_METADATA = {
   metadataSymbol: 'TEST',
   metadataUri: 'https://example.com/metadata/test-token.json',
 };
+const REQUESTED_METADATA = {
+  metadataName: METADATA_NAME,
+  metadataSymbol: METADATA_SYMBOL,
+  metadataUri: SAMPLE_METADATA.metadataUri,
+};
 const DUMMY_BLOCKHASH = {
   blockhash: '11111111111111111111111111111111',
   lastValidBlockHeight: 0n,
@@ -41,6 +47,7 @@ type Shape = 'simple' | 'advanced';
 
 interface BenchmarkContext {
   shape: Shape;
+  migratedPoolHookConfig: boolean;
   payer: Awaited<ReturnType<typeof generateKeyPairSigner>>;
   baseMint: Awaited<ReturnType<typeof generateKeyPairSigner>>;
   baseVault: Awaited<ReturnType<typeof generateKeyPairSigner>>;
@@ -69,7 +76,14 @@ function metadataBytes(metadata: {
   );
 }
 
-async function setupContext(shape: Shape): Promise<BenchmarkContext> {
+async function setupContext(
+  shape: Shape,
+  {
+    migratedPoolHookConfig = false,
+  }: {
+    migratedPoolHookConfig?: boolean;
+  } = {},
+): Promise<BenchmarkContext> {
   const payer = await generateKeyPairSigner();
   const baseMint = await generateKeyPairSigner();
   const baseVault = await generateKeyPairSigner();
@@ -129,6 +143,12 @@ async function setupContext(shape: Shape): Promise<BenchmarkContext> {
         : [],
     minRaiseQuote: 50n * 1_000_000_000n,
     minMigrationPriceQ64Opt: null,
+    migratedPoolHookConfig: migratedPoolHookConfig
+      ? {
+          hookProgram: initializer.CPMM_HOOK_PROGRAM_ID,
+          hookFlags: cpmm.HF_BEFORE_SWAP | cpmm.HF_FORWARD_READONLY_SIGNERS,
+        }
+      : null,
   });
 
   const migratorMigratePayload = cpmmMigrator.encodeMigratePayload({
@@ -138,6 +158,7 @@ async function setupContext(shape: Shape): Promise<BenchmarkContext> {
 
   return {
     shape,
+    migratedPoolHookConfig,
     payer,
     baseMint,
     baseVault,
@@ -460,8 +481,11 @@ async function findMaxPredictionUriBytes(): Promise<number> {
   return low;
 }
 
-async function benchmark(shape: Shape) {
-  const context = await setupContext(shape);
+async function benchmark(
+  shape: Shape,
+  options: { migratedPoolHookConfig?: boolean } = {},
+) {
+  const context = await setupContext(shape, options);
   const empty = await measure(context, {
     metadataName: '',
     metadataSymbol: '',
@@ -479,6 +503,7 @@ async function benchmark(shape: Shape) {
     metadataUri: 'u'.repeat(maxUriBytes),
   });
   const sample = await measure(context, SAMPLE_METADATA);
+  const requested = await measure(context, REQUESTED_METADATA);
   const launchAltMaxUriBytes = await findMaxUriBytes(context, {
     simulateLaunchAlt: true,
   });
@@ -492,9 +517,12 @@ async function benchmark(shape: Shape) {
   const launchAltSample = await measure(context, SAMPLE_METADATA, {
     simulateLaunchAlt: true,
   });
+  const launchAltRequested = await measure(context, REQUESTED_METADATA, {
+    simulateLaunchAlt: true,
+  });
 
   return {
-    shape,
+    shape: context.migratedPoolHookConfig ? `${shape}+hook` : shape,
     emptySize: empty.size,
     fixedNameSymbolSize: fixedNoUri.size,
     nameBytes: METADATA_NAME.length,
@@ -506,10 +534,15 @@ async function benchmark(shape: Shape) {
     sampleMetadataBytes: sample.metadataBytes,
     sampleSize: sample.size,
     sampleRemainingBytes: sample.remaining,
+    requestedMetadataBytes: requested.metadataBytes,
+    requestedSize: requested.size,
+    requestedRemainingBytes: requested.remaining,
     launchAltMaxUriBytes,
     launchAltMaxMetadataBytes: launchAltMax.metadataBytes,
     launchAltSampleSize: launchAltSample.size,
     launchAltSampleRemainingBytes: launchAltSample.remaining,
+    launchAltRequestedSize: launchAltRequested.size,
+    launchAltRequestedRemainingBytes: launchAltRequested.remaining,
   };
 }
 
@@ -550,11 +583,13 @@ async function benchmarkPrediction() {
 
 const results = await Promise.all([
   benchmark('simple'),
+  benchmark('simple', { migratedPoolHookConfig: true }),
   benchmark('advanced'),
+  benchmark('advanced', { migratedPoolHookConfig: true }),
   benchmarkPrediction(),
 ]);
 
 console.table(results);
 console.log(
-  `Assumptions: ASCII name=${METADATA_NAME.length} bytes, symbol=${METADATA_SYMBOL.length} bytes, sample=${JSON.stringify(SAMPLE_METADATA)}, variable URI, launch-specific ALT simulation enabled.`,
+  `Assumptions: ASCII name=${METADATA_NAME.length} bytes, symbol=${METADATA_SYMBOL.length} bytes, sample=${JSON.stringify(SAMPLE_METADATA)}, requested=${JSON.stringify(REQUESTED_METADATA)}, variable URI, launch-specific ALT simulation enabled.`,
 );

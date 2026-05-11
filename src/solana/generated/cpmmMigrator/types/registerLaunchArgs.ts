@@ -30,8 +30,12 @@ import {
   type OptionOrNullable,
 } from '@solana/kit';
 import {
+  getMigratedPoolHookConfigDecoder,
+  getMigratedPoolHookConfigEncoder,
   getRecipientDecoder,
   getRecipientEncoder,
+  type MigratedPoolHookConfig,
+  type MigratedPoolHookConfigArgs,
   type Recipient,
   type RecipientArgs,
 } from '.';
@@ -47,6 +51,7 @@ export type RegisterLaunchArgs = {
   recipients: Array<Recipient>;
   minRaiseQuote: bigint;
   minMigrationPriceQ64Opt: Option<bigint>;
+  migratedPoolHookConfig: Option<MigratedPoolHookConfig>;
 };
 
 export type RegisterLaunchArgsArgs = {
@@ -56,6 +61,7 @@ export type RegisterLaunchArgsArgs = {
   recipients: Array<RecipientArgs>;
   minRaiseQuote: number | bigint;
   minMigrationPriceQ64Opt: OptionOrNullable<number | bigint>;
+  migratedPoolHookConfig: OptionOrNullable<MigratedPoolHookConfigArgs>;
 };
 
 export function getRegisterLaunchArgsEncoder(): Encoder<RegisterLaunchArgsArgs> {
@@ -66,6 +72,10 @@ export function getRegisterLaunchArgsEncoder(): Encoder<RegisterLaunchArgsArgs> 
     ['recipients', getArrayEncoder(getRecipientEncoder())],
     ['minRaiseQuote', getU64Encoder()],
     ['minMigrationPriceQ64Opt', getOptionEncoder(getU128Encoder())],
+    [
+      'migratedPoolHookConfig',
+      getOptionEncoder(getMigratedPoolHookConfigEncoder()),
+    ],
   ]);
 }
 
@@ -77,6 +87,10 @@ export function getRegisterLaunchArgsDecoder(): Decoder<RegisterLaunchArgs> {
     ['recipients', getArrayDecoder(getRecipientDecoder())],
     ['minRaiseQuote', getU64Decoder()],
     ['minMigrationPriceQ64Opt', getOptionDecoder(getU128Decoder())],
+    [
+      'migratedPoolHookConfig',
+      getOptionDecoder(getMigratedPoolHookConfigDecoder()),
+    ],
   ]);
 }
 

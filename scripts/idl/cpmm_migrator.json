@@ -647,6 +647,20 @@
             }
           },
           {
+            "name": "migrated_pool_hook_program",
+            "docs": [
+              "Hook program to set on the migrated CPMM pool"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "migrated_pool_hook_flags",
+            "docs": [
+              "Hook flags to set on the migrated CPMM pool"
+            ],
+            "type": "u32"
+          },
+          {
             "name": "recipients",
             "docs": [
               "Recipients for base token distribution at migration"
@@ -1050,6 +1064,22 @@
       }
     },
     {
+      "name": "MigratedPoolHookConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "hook_program",
+            "type": "pubkey"
+          },
+          {
+            "name": "hook_flags",
+            "type": "u32"
+          }
+        ]
+      }
+    },
+    {
       "name": "PayloadBuf",
       "docs": [
         "Variable-length payload buffer."
@@ -1131,6 +1161,16 @@
             "name": "min_migration_price_q64_opt",
             "type": {
               "option": "u128"
+            }
+          },
+          {
+            "name": "migrated_pool_hook_config",
+            "type": {
+              "option": {
+                "defined": {
+                  "name": "MigratedPoolHookConfig"
+                }
+              }
             }
           }
         ]

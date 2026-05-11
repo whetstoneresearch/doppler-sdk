@@ -23,6 +23,7 @@ describe('cpmmMigrator payload encoders', () => {
         ],
         minRaiseQuote: 500_000n,
         minMigrationPriceQ64Opt: null,
+        migratedPoolHookConfig: null,
       });
 
       expect([...result.slice(0, 8)]).toEqual([...REGISTER_LAUNCH_DISCRIMINATOR]);
@@ -39,12 +40,39 @@ describe('cpmmMigrator payload encoders', () => {
         ],
         minRaiseQuote: 500_000n,
         minMigrationPriceQ64Opt: null,
+        migratedPoolHookConfig: null,
       });
 
       // initialSwapFeeBps is a u16 at bytes 8+32 (after discriminator + cpmmConfig pubkey)
       const view = new DataView(result.buffer, result.byteOffset);
       const is_fee_bps = view.getUint16(8 + 32, true);
       expect(is_fee_bps).toBe(42);
+    });
+
+    it('encodes migrated pool hook config only when provided', () => {
+      const withoutHook = cpmmMigrator.encodeRegisterLaunchPayload({
+        cpmmConfig: TEST_CONFIG,
+        initialSwapFeeBps: 30,
+        initialFeeSplitBps: 5000,
+        recipients: [],
+        minRaiseQuote: 500_000n,
+        minMigrationPriceQ64Opt: null,
+        migratedPoolHookConfig: null,
+      });
+      const withHook = cpmmMigrator.encodeRegisterLaunchPayload({
+        cpmmConfig: TEST_CONFIG,
+        initialSwapFeeBps: 30,
+        initialFeeSplitBps: 5000,
+        recipients: [],
+        minRaiseQuote: 500_000n,
+        minMigrationPriceQ64Opt: null,
+        migratedPoolHookConfig: {
+          hookProgram: initializer.CPMM_HOOK_PROGRAM_ID,
+          hookFlags: cpmm.HF_BEFORE_SWAP | cpmm.HF_FORWARD_READONLY_SIGNERS,
+        },
+      });
+
+      expect(withHook.length - withoutHook.length).toBe(36);
     });
   });
 

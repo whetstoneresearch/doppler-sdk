@@ -158,6 +158,7 @@ async function main() {
     recipients: [],
     minRaiseQuote,
     minMigrationPriceQ64Opt: null, // no minimum graduation price floor
+    migratedPoolHookConfig: null,
   });
 
   const migratorMigratePayload = cpmmMigrator.encodeMigratePayload({

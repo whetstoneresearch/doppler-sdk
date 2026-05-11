@@ -12,12 +12,11 @@
  *   6. Verify final launch state
  *   7. Read migrator state to confirm recipients and CPMM config
  *   8. Discover the graduated CPMM pool and read spot price
- *   9. Configure CPMM hook signer forwarding
- *  10. Execute a CPMM swap cosigned by a readonly signer
+ *   9. Execute a CPMM swap cosigned by a readonly signer
  *
- * Note: the deployed cpmm_hook only requires a signer if one remaining
- * account has exactly one byte of data equal to 0xA5. If you have such a marker
- * account, pass it via COSIGNER_MARKER_ACCOUNT to exercise strict enforcement.
+ * Note: the default cpmm_hook ignores forwarded cosigners. This example verifies
+ * that readonly signer forwarding is configured for migrated CPMM pools so
+ * custom integrator hooks can enforce their own cosigner policy.
  */
 import './env.js';
 
@@ -42,7 +41,6 @@ import {
   signTransactionMessageWithSigners,
   sendAndConfirmTransactionFactory,
   getSignatureFromTransaction,
-  address,
   type Address,
 } from '@solana/kit';
 import { SYSVAR_RENT_ADDRESS } from '@solana/sysvars';
@@ -108,6 +106,9 @@ async function main() {
   const CURVE_FEE_BPS = 200; // 2% swap fee during the bonding curve phase — stays in the quote vault, compounding into the curve
   const CPMM_SWAP_FEE_BPS = 100; // 1% swap fee on the graduated CPMM pool
   const CPMM_SWAP_FEE_SPLIT_BPS = 5000; // 50% of CPMM swap fees claimable by LP holders; remaining 50% compounds into the pool
+  const INITIALIZER_HOOK_FLAGS = initializer.HF_BEFORE_SWAP;
+  const CPMM_HOOK_FLAGS =
+    cpmm.HF_BEFORE_SWAP | cpmm.HF_FORWARD_READONLY_SIGNERS;
 
   // ── Graduation threshold and price floor ────────────────────────────────
   const MIN_SOL_RAISE = 0.1; // low example threshold
@@ -184,6 +185,10 @@ async function main() {
     ],
     minRaiseQuote,
     minMigrationPriceQ64Opt: null,
+    migratedPoolHookConfig: {
+      hookProgram: initializer.CPMM_HOOK_PROGRAM_ID,
+      hookFlags: CPMM_HOOK_FLAGS,
+    },
   });
 
   const migratorMigratePayload = cpmmMigrator.encodeMigratePayload({
@@ -234,7 +239,7 @@ async function main() {
         allowBuy: true,
         allowSell: true,
         hookProgram: initializer.CPMM_HOOK_PROGRAM_ID,
-        hookFlags: initializer.HF_BEFORE_SWAP,
+        hookFlags: INITIALIZER_HOOK_FLAGS,
         hookPayload: new Uint8Array(),
         migratorInitPayload,
         migratorMigratePayload,
@@ -583,61 +588,21 @@ async function main() {
         console.log('  reserve0:     ', pool.reserve0.toString());
         console.log('  reserve1:     ', pool.reserve1.toString());
         console.log('  Swap fee:     ', pool.swapFeeBps, 'bps');
+        console.log('  Hook flags:   ', pool.hookFlags);
+        if (
+          pool.hookProgram !== initializer.CPMM_HOOK_PROGRAM_ID ||
+          pool.hookFlags !== CPMM_HOOK_FLAGS
+        ) {
+          throw new Error(
+            `Migrated pool hook mismatch: got program ${pool.hookProgram} flags ${pool.hookFlags}, expected program ${initializer.CPMM_HOOK_PROGRAM_ID} flags ${CPMM_HOOK_FLAGS}`,
+          );
+        }
         console.log('  Spot price0:  ', price0.toFixed(8), '(base/WSOL)');
         console.log('  Spot price1:  ', price1.toFixed(8), '(WSOL/base)');
 
-        // ── Step 9: Enable hook signer forwarding on the graduated pool ─
-        //
-        // set_hook is a CPMM admin action. On the Doppler devnet
-        // deployment, run this example with the devnet admin keypair so the
-        // payer matches cpmmConfig.admin.
-        console.log('Step 9: Enabling CPMM hook signer forwarding...');
-        const setHookIx = cpmm.createSetHookInstruction({
-          config: cpmmConfig,
-          pool: poolAddress,
-          admin: payer,
-          hookProgram: initializer.CPMM_HOOK_PROGRAM_ID,
-          hookFlags: cpmm.HF_BEFORE_SWAP | cpmm.HF_FORWARD_READONLY_SIGNERS,
-        });
-
-        {
-          const { value: latestBlockhash } = await rpc
-            .getLatestBlockhash()
-            .send();
-
-          const transactionMessage = pipe(
-            createTransactionMessage({ version: 0 }),
-            (tx) => setTransactionMessageFeePayerSigner(payer, tx),
-            (tx) =>
-              setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
-            (tx) => appendTransactionMessageInstructions([setHookIx], tx),
-          );
-
-          const signedTransaction =
-            await signTransactionMessageWithSigners(transactionMessage);
-
-          await sendAndConfirmTransaction(
-            signedTransaction as Parameters<
-              typeof sendAndConfirmTransaction
-            >[0],
-            {
-              commitment: 'confirmed',
-            },
-          );
-
-          console.log(
-            '  Hook update confirmed:',
-            getSignatureFromTransaction(signedTransaction),
-          );
-        }
-        console.log('');
-
-        // ── Step 10: Execute a post-migration CPMM swap with a cosigner ─────
-        console.log('Step 10: Executing cosigned CPMM swap...');
+        // ── Step 9: Execute a post-migration CPMM swap with a cosigner ─────
+        console.log('Step 9: Executing cosigned CPMM swap...');
         const cosigner = await loadCosigner();
-        const markerAccount = process.env.COSIGNER_MARKER_ACCOUNT
-          ? address(process.env.COSIGNER_MARKER_ACCOUNT)
-          : undefined;
 
         const tradeDirection = pool.token0Mint === baseMint.address ? 0 : 1;
         const COSIGNED_SWAP_AMOUNT_IN = 1_000_000n; // 1 base token atom unit at 6 decimals
@@ -652,11 +617,7 @@ async function main() {
           pool.token0Mint === baseMint.address ? userBaseAta : userQuoteAta;
         const userToken1 =
           pool.token1Mint === baseMint.address ? userBaseAta : userQuoteAta;
-        const remainingAccounts = [
-          initializer.CPMM_HOOK_PROGRAM_ID,
-          ...(markerAccount ? [markerAccount] : []),
-          cosigner,
-        ];
+        const remainingAccounts = [initializer.CPMM_HOOK_PROGRAM_ID, cosigner];
 
         const cosignedSwapIx = cpmm.createSwapInstruction({
           config: cpmmConfig,
@@ -709,13 +670,9 @@ async function main() {
             getSignatureFromTransaction(signedTransaction),
           );
           console.log('  Cosigner:', cosigner.address);
-          if (markerAccount) {
-            console.log('  Marker account:', markerAccount);
-          } else {
-            console.log(
-              '  No marker account provided; signer was forwarded but not required by cpmm_hook.',
-            );
-          }
+          console.log(
+            '  Default cpmm_hook ignores cosigners; custom hooks can enforce them.',
+          );
         }
       } else {
         console.log('  CPMM pool not found — may not be initialized yet');
