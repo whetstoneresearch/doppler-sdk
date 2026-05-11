@@ -26,13 +26,13 @@ export interface CpmmMigrationRemainingAccounts {
   addresses: Address[];
   metas: AccountMeta[];
   hash: Uint8Array;
-  cpmmMigratorState: Address;
+  cpmmMigrationState: Address;
   cpmmConfig: Address;
   pool: Address;
   poolAuthority: Address;
   poolVault0: Address;
   poolVault1: Address;
-  protocolPosition: Address;
+  protocolFeePosition: Address;
   launchLpPosition: Address;
   migrationAuthority: Address;
 }
@@ -47,7 +47,7 @@ export async function buildCpmmMigrationRemainingAccounts({
   recipientAtas,
   cpmmProgram = CPMM_PROGRAM_ID,
 }: CpmmMigrationRemainingAccountsInput): Promise<CpmmMigrationRemainingAccounts> {
-  const [cpmmMigratorState] = await getCpmmMigratorStateAddress(launch);
+  const [cpmmMigrationState] = await getCpmmMigratorStateAddress(launch);
   const [migrationAuthority] = await getCpmmMigrationAuthorityAddress();
   const poolInit = await getPoolInitAddresses(baseMint, quoteMint, cpmmProgram);
   const pool = poolInit.pool[0];
@@ -59,13 +59,13 @@ export async function buildCpmmMigrationRemainingAccounts({
   );
 
   const addresses = [
-    cpmmMigratorState,
+    cpmmMigrationState,
     poolInit.config[0],
     pool,
     poolInit.authority[0],
     poolInit.vault0[0],
     poolInit.vault1[0],
-    poolInit.protocolPosition[0],
+    poolInit.protocolFeePosition[0],
     launchLpPosition,
     cpmmProgram,
     migrationAuthority,
@@ -78,13 +78,13 @@ export async function buildCpmmMigrationRemainingAccounts({
     addresses,
     hash: computeRemainingAccountsHash(addresses),
     metas: [
-      { address: cpmmMigratorState, role: AccountRole.WRITABLE },
+      { address: cpmmMigrationState, role: AccountRole.WRITABLE },
       { address: poolInit.config[0], role: AccountRole.READONLY },
       { address: pool, role: AccountRole.WRITABLE },
       { address: poolInit.authority[0], role: AccountRole.READONLY },
       { address: poolInit.vault0[0], role: AccountRole.WRITABLE },
       { address: poolInit.vault1[0], role: AccountRole.WRITABLE },
-      { address: poolInit.protocolPosition[0], role: AccountRole.WRITABLE },
+      { address: poolInit.protocolFeePosition[0], role: AccountRole.WRITABLE },
       { address: launchLpPosition, role: AccountRole.WRITABLE },
       { address: cpmmProgram, role: AccountRole.READONLY },
       { address: migrationAuthority, role: AccountRole.READONLY },
@@ -95,13 +95,13 @@ export async function buildCpmmMigrationRemainingAccounts({
         role: AccountRole.WRITABLE,
       })),
     ],
-    cpmmMigratorState,
+    cpmmMigrationState,
     cpmmConfig: poolInit.config[0],
     pool,
     poolAuthority: poolInit.authority[0],
     poolVault0: poolInit.vault0[0],
     poolVault1: poolInit.vault1[0],
-    protocolPosition: poolInit.protocolPosition[0],
+    protocolFeePosition: poolInit.protocolFeePosition[0],
     launchLpPosition,
     migrationAuthority,
   };

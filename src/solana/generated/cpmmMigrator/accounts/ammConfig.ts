@@ -56,8 +56,8 @@ export type AmmConfig = {
   admin: Address;
   paused: boolean;
   numeraireMint: Address;
-  sentinelAllowlistLen: number;
-  sentinelAllowlist: Array<Address>;
+  hookAllowlistLen: number;
+  hookAllowlist: Array<Address>;
   maxSwapFeeBps: number;
   maxFeeSplitBps: number;
   maxRouteHops: number;
@@ -71,8 +71,8 @@ export type AmmConfigArgs = {
   admin: Address;
   paused: boolean;
   numeraireMint: Address;
-  sentinelAllowlistLen: number;
-  sentinelAllowlist: Array<Address>;
+  hookAllowlistLen: number;
+  hookAllowlist: Array<Address>;
   maxSwapFeeBps: number;
   maxFeeSplitBps: number;
   maxRouteHops: number;
@@ -90,8 +90,8 @@ export function getAmmConfigEncoder(): FixedSizeEncoder<AmmConfigArgs> {
       ['admin', getAddressEncoder()],
       ['paused', getBooleanEncoder()],
       ['numeraireMint', getAddressEncoder()],
-      ['sentinelAllowlistLen', getU8Encoder()],
-      ['sentinelAllowlist', getArrayEncoder(getAddressEncoder(), { size: 32 })],
+      ['hookAllowlistLen', getU8Encoder()],
+      ['hookAllowlist', getArrayEncoder(getAddressEncoder(), { size: 32 })],
       ['maxSwapFeeBps', getU16Encoder()],
       ['maxFeeSplitBps', getU16Encoder()],
       ['maxRouteHops', getU8Encoder()],
@@ -111,8 +111,8 @@ export function getAmmConfigDecoder(): FixedSizeDecoder<AmmConfig> {
     ['admin', getAddressDecoder()],
     ['paused', getBooleanDecoder()],
     ['numeraireMint', getAddressDecoder()],
-    ['sentinelAllowlistLen', getU8Decoder()],
-    ['sentinelAllowlist', getArrayDecoder(getAddressDecoder(), { size: 32 })],
+    ['hookAllowlistLen', getU8Decoder()],
+    ['hookAllowlist', getArrayDecoder(getAddressDecoder(), { size: 32 })],
     ['maxSwapFeeBps', getU16Decoder()],
     ['maxFeeSplitBps', getU16Decoder()],
     ['maxRouteHops', getU8Decoder()],

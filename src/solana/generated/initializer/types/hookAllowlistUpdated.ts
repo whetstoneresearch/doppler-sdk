@@ -20,30 +20,30 @@ import {
   type FixedSizeEncoder,
 } from '@solana/kit';
 
-export type SentinelAllowlistUpdated = { config: Address; newLen: number };
+export type HookAllowlistUpdated = { config: Address; newLen: number };
 
-export type SentinelAllowlistUpdatedArgs = SentinelAllowlistUpdated;
+export type HookAllowlistUpdatedArgs = HookAllowlistUpdated;
 
-export function getSentinelAllowlistUpdatedEncoder(): FixedSizeEncoder<SentinelAllowlistUpdatedArgs> {
+export function getHookAllowlistUpdatedEncoder(): FixedSizeEncoder<HookAllowlistUpdatedArgs> {
   return getStructEncoder([
     ['config', getAddressEncoder()],
     ['newLen', getU8Encoder()],
   ]);
 }
 
-export function getSentinelAllowlistUpdatedDecoder(): FixedSizeDecoder<SentinelAllowlistUpdated> {
+export function getHookAllowlistUpdatedDecoder(): FixedSizeDecoder<HookAllowlistUpdated> {
   return getStructDecoder([
     ['config', getAddressDecoder()],
     ['newLen', getU8Decoder()],
   ]);
 }
 
-export function getSentinelAllowlistUpdatedCodec(): FixedSizeCodec<
-  SentinelAllowlistUpdatedArgs,
-  SentinelAllowlistUpdated
+export function getHookAllowlistUpdatedCodec(): FixedSizeCodec<
+  HookAllowlistUpdatedArgs,
+  HookAllowlistUpdated
 > {
   return combineCodec(
-    getSentinelAllowlistUpdatedEncoder(),
-    getSentinelAllowlistUpdatedDecoder(),
+    getHookAllowlistUpdatedEncoder(),
+    getHookAllowlistUpdatedDecoder(),
   );
 }

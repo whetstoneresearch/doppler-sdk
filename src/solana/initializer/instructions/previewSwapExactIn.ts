@@ -17,15 +17,15 @@ export interface PreviewSwapExactInAccounts {
   launch: Address;
   baseVault: Address;
   quoteVault: Address;
-  sentinelProgram?: Address;
+  hookProgram?: Address;
 }
 
 export function createPreviewSwapExactInInstruction(
   accounts: PreviewSwapExactInAccounts,
-  args: { amountIn: bigint; direction: number },
+  args: { amountIn: bigint; tradeDirection: number },
   programId: Address = INITIALIZER_PROGRAM_ID,
 ): Instruction {
-  const { launch, baseVault, quoteVault, sentinelProgram } = accounts;
+  const { launch, baseVault, quoteVault, hookProgram } = accounts;
 
   const keys = [
     { address: launch, role: AccountRole.READONLY },
@@ -33,8 +33,8 @@ export function createPreviewSwapExactInInstruction(
     { address: quoteVault, role: AccountRole.READONLY },
   ] as const;
 
-  const accountsList = sentinelProgram
-    ? [...keys, { address: sentinelProgram, role: AccountRole.READONLY }]
+  const accountsList = hookProgram
+    ? [...keys, { address: hookProgram, role: AccountRole.READONLY }]
     : keys;
 
   const data = new Uint8Array(

@@ -50,7 +50,7 @@ export interface InitializeConfigAccounts {
  *     maxRouteHops: 3,
  *     protocolFeeEnabled: true,
  *     protocolFeeBps: 500,
- *     sentinelAllowlist: [],
+ *     hookAllowlist: [],
  *   }
  * );
  * ```

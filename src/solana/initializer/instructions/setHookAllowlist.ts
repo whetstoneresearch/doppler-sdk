@@ -8,7 +8,7 @@ import type {
 import { AccountRole } from '@solana/kit';
 import {} from '../../core/constants.js';
 import { INITIALIZER_PROGRAM_ID } from '../constants.js';
-import { getSetSentinelAllowlistInstructionDataEncoder } from '../../generated/initializer/index.js';
+import { getSetHookAllowlistInstructionDataEncoder } from '../../generated/initializer/index.js';
 
 type AddressOrSigner = Address | TransactionSigner;
 
@@ -33,13 +33,13 @@ function createSignerAccountMeta(
   return { address: value, role };
 }
 
-export interface SetSentinelAllowlistAccounts {
+export interface SetHookAllowlistAccounts {
   admin: AddressOrSigner;
   config: Address;
 }
 
-export function createSetSentinelAllowlistInstruction(
-  accounts: SetSentinelAllowlistAccounts,
+export function createSetHookAllowlistInstruction(
+  accounts: SetHookAllowlistAccounts,
   allowlist: Address[],
   programId: Address = INITIALIZER_PROGRAM_ID,
 ): Instruction {
@@ -51,7 +51,7 @@ export function createSetSentinelAllowlistInstruction(
   ];
 
   const data = new Uint8Array(
-    getSetSentinelAllowlistInstructionDataEncoder().encode({ allowlist }),
+    getSetHookAllowlistInstructionDataEncoder().encode({ allowlist }),
   );
 
   return { programAddress: programId, accounts: keys, data };

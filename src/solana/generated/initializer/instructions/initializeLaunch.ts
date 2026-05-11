@@ -76,7 +76,7 @@ export type InitializeLaunchInstruction<
   TAccountQuoteVault extends string | AccountMeta<string> = string,
   TAccountPayer extends string | AccountMeta<string> = string,
   TAccountAuthority extends string | AccountMeta<string> = string,
-  TAccountSentinelProgram extends string | AccountMeta<string> = string,
+  TAccountHookProgram extends string | AccountMeta<string> = string,
   TAccountMigratorProgram extends string | AccountMeta<string> = string,
   TAccountBaseTokenProgram extends string | AccountMeta<string> = string,
   TAccountQuoteTokenProgram extends string | AccountMeta<string> = string,
@@ -123,9 +123,9 @@ export type InitializeLaunchInstruction<
         ? ReadonlySignerAccount<TAccountAuthority> &
             AccountSignerMeta<TAccountAuthority>
         : TAccountAuthority,
-      TAccountSentinelProgram extends string
-        ? ReadonlyAccount<TAccountSentinelProgram>
-        : TAccountSentinelProgram,
+      TAccountHookProgram extends string
+        ? ReadonlyAccount<TAccountHookProgram>
+        : TAccountHookProgram,
       TAccountMigratorProgram extends string
         ? ReadonlyAccount<TAccountMigratorProgram>
         : TAccountMigratorProgram,
@@ -166,23 +166,23 @@ export type InitializeLaunchInstructionData = {
   curveParams: ReadonlyUint8Array;
   allowBuy: number;
   allowSell: number;
-  sentinelProgram: Address;
-  sentinelFlags: number;
-  sentinelCalldata: ReadonlyUint8Array;
-  sentinelCreateRemainingAccountsLen: number;
+  hookProgram: Address;
+  hookFlags: number;
+  hookPayload: ReadonlyUint8Array;
+  hookCreateRemainingAccountsLen: number;
   migratorProgram: Address;
-  migratorInitCalldata: ReadonlyUint8Array;
-  migratorMigrateCalldata: ReadonlyUint8Array;
+  migratorInitPayload: ReadonlyUint8Array;
+  migratorMigratePayload: ReadonlyUint8Array;
   /**
-   * Commitment hash for initialize_launch sentinel remaining accounts.
+   * Commitment hash for initialize_launch hook remaining accounts.
    * Computed as hash(u32_len || pubkey_0 || ... || pubkey_n).
    */
-  sentinelCreateRemainingAccountsHash: ReadonlyUint8Array;
+  hookCreateRemainingAccountsHash: ReadonlyUint8Array;
   /**
-   * Commitment hash for swap/preview sentinel remaining accounts.
+   * Commitment hash for swap/preview hook remaining accounts.
    * Computed as hash(u32_len || pubkey_0 || ... || pubkey_n).
    */
-  sentinelRemainingAccountsHash: ReadonlyUint8Array;
+  hookRemainingAccountsHash: ReadonlyUint8Array;
   /**
    * Commitment hash for migrator-init remaining accounts.
    * Computed as hash(u32_len || pubkey_0 || ... || pubkey_n).
@@ -215,23 +215,23 @@ export type InitializeLaunchInstructionDataArgs = {
   curveParams: ReadonlyUint8Array;
   allowBuy: number;
   allowSell: number;
-  sentinelProgram: Address;
-  sentinelFlags: number;
-  sentinelCalldata: ReadonlyUint8Array;
-  sentinelCreateRemainingAccountsLen: number;
+  hookProgram: Address;
+  hookFlags: number;
+  hookPayload: ReadonlyUint8Array;
+  hookCreateRemainingAccountsLen: number;
   migratorProgram: Address;
-  migratorInitCalldata: ReadonlyUint8Array;
-  migratorMigrateCalldata: ReadonlyUint8Array;
+  migratorInitPayload: ReadonlyUint8Array;
+  migratorMigratePayload: ReadonlyUint8Array;
   /**
-   * Commitment hash for initialize_launch sentinel remaining accounts.
+   * Commitment hash for initialize_launch hook remaining accounts.
    * Computed as hash(u32_len || pubkey_0 || ... || pubkey_n).
    */
-  sentinelCreateRemainingAccountsHash: ReadonlyUint8Array;
+  hookCreateRemainingAccountsHash: ReadonlyUint8Array;
   /**
-   * Commitment hash for swap/preview sentinel remaining accounts.
+   * Commitment hash for swap/preview hook remaining accounts.
    * Computed as hash(u32_len || pubkey_0 || ... || pubkey_n).
    */
-  sentinelRemainingAccountsHash: ReadonlyUint8Array;
+  hookRemainingAccountsHash: ReadonlyUint8Array;
   /**
    * Commitment hash for migrator-init remaining accounts.
    * Computed as hash(u32_len || pubkey_0 || ... || pubkey_n).
@@ -267,27 +267,24 @@ export function getInitializeLaunchInstructionDataEncoder(): Encoder<InitializeL
       ['curveParams', addEncoderSizePrefix(getBytesEncoder(), getU32Encoder())],
       ['allowBuy', getU8Encoder()],
       ['allowSell', getU8Encoder()],
-      ['sentinelProgram', getAddressEncoder()],
-      ['sentinelFlags', getU32Encoder()],
-      [
-        'sentinelCalldata',
-        addEncoderSizePrefix(getBytesEncoder(), getU32Encoder()),
-      ],
-      ['sentinelCreateRemainingAccountsLen', getU32Encoder()],
+      ['hookProgram', getAddressEncoder()],
+      ['hookFlags', getU32Encoder()],
+      ['hookPayload', addEncoderSizePrefix(getBytesEncoder(), getU32Encoder())],
+      ['hookCreateRemainingAccountsLen', getU32Encoder()],
       ['migratorProgram', getAddressEncoder()],
       [
-        'migratorInitCalldata',
+        'migratorInitPayload',
         addEncoderSizePrefix(getBytesEncoder(), getU32Encoder()),
       ],
       [
-        'migratorMigrateCalldata',
+        'migratorMigratePayload',
         addEncoderSizePrefix(getBytesEncoder(), getU32Encoder()),
       ],
       [
-        'sentinelCreateRemainingAccountsHash',
+        'hookCreateRemainingAccountsHash',
         fixEncoderSize(getBytesEncoder(), 32),
       ],
-      ['sentinelRemainingAccountsHash', fixEncoderSize(getBytesEncoder(), 32)],
+      ['hookRemainingAccountsHash', fixEncoderSize(getBytesEncoder(), 32)],
       [
         'migratorInitRemainingAccountsHash',
         fixEncoderSize(getBytesEncoder(), 32),
@@ -320,27 +317,21 @@ export function getInitializeLaunchInstructionDataDecoder(): Decoder<InitializeL
     ['curveParams', addDecoderSizePrefix(getBytesDecoder(), getU32Decoder())],
     ['allowBuy', getU8Decoder()],
     ['allowSell', getU8Decoder()],
-    ['sentinelProgram', getAddressDecoder()],
-    ['sentinelFlags', getU32Decoder()],
-    [
-      'sentinelCalldata',
-      addDecoderSizePrefix(getBytesDecoder(), getU32Decoder()),
-    ],
-    ['sentinelCreateRemainingAccountsLen', getU32Decoder()],
+    ['hookProgram', getAddressDecoder()],
+    ['hookFlags', getU32Decoder()],
+    ['hookPayload', addDecoderSizePrefix(getBytesDecoder(), getU32Decoder())],
+    ['hookCreateRemainingAccountsLen', getU32Decoder()],
     ['migratorProgram', getAddressDecoder()],
     [
-      'migratorInitCalldata',
+      'migratorInitPayload',
       addDecoderSizePrefix(getBytesDecoder(), getU32Decoder()),
     ],
     [
-      'migratorMigrateCalldata',
+      'migratorMigratePayload',
       addDecoderSizePrefix(getBytesDecoder(), getU32Decoder()),
     ],
-    [
-      'sentinelCreateRemainingAccountsHash',
-      fixDecoderSize(getBytesDecoder(), 32),
-    ],
-    ['sentinelRemainingAccountsHash', fixDecoderSize(getBytesDecoder(), 32)],
+    ['hookCreateRemainingAccountsHash', fixDecoderSize(getBytesDecoder(), 32)],
+    ['hookRemainingAccountsHash', fixDecoderSize(getBytesDecoder(), 32)],
     [
       'migratorInitRemainingAccountsHash',
       fixDecoderSize(getBytesDecoder(), 32),
@@ -372,7 +363,7 @@ export type InitializeLaunchAsyncInput<
   TAccountQuoteVault extends string = string,
   TAccountPayer extends string = string,
   TAccountAuthority extends string = string,
-  TAccountSentinelProgram extends string = string,
+  TAccountHookProgram extends string = string,
   TAccountMigratorProgram extends string = string,
   TAccountBaseTokenProgram extends string = string,
   TAccountQuoteTokenProgram extends string = string,
@@ -391,8 +382,8 @@ export type InitializeLaunchAsyncInput<
   payer: TransactionSigner<TAccountPayer>;
   /** Optional authority (creator/admin). If not provided, launch is permissionless. */
   authority?: TransactionSigner<TAccountAuthority>;
-  /** Optional sentinel program for create hooks */
-  sentinelProgram?: Address<TAccountSentinelProgram>;
+  /** Optional hook program for create hooks */
+  hookProgram?: Address<TAccountHookProgram>;
   /** Optional migrator program for init hook */
   migratorProgram?: Address<TAccountMigratorProgram>;
   baseTokenProgram: Address<TAccountBaseTokenProgram>;
@@ -416,15 +407,15 @@ export type InitializeLaunchAsyncInput<
   curveParams: InitializeLaunchInstructionDataArgs['curveParams'];
   allowBuy: InitializeLaunchInstructionDataArgs['allowBuy'];
   allowSell: InitializeLaunchInstructionDataArgs['allowSell'];
-  sentinelProgramArg: InitializeLaunchInstructionDataArgs['sentinelProgram'];
-  sentinelFlags: InitializeLaunchInstructionDataArgs['sentinelFlags'];
-  sentinelCalldata: InitializeLaunchInstructionDataArgs['sentinelCalldata'];
-  sentinelCreateRemainingAccountsLen: InitializeLaunchInstructionDataArgs['sentinelCreateRemainingAccountsLen'];
+  hookProgramArg: InitializeLaunchInstructionDataArgs['hookProgram'];
+  hookFlags: InitializeLaunchInstructionDataArgs['hookFlags'];
+  hookPayload: InitializeLaunchInstructionDataArgs['hookPayload'];
+  hookCreateRemainingAccountsLen: InitializeLaunchInstructionDataArgs['hookCreateRemainingAccountsLen'];
   migratorProgramArg: InitializeLaunchInstructionDataArgs['migratorProgram'];
-  migratorInitCalldata: InitializeLaunchInstructionDataArgs['migratorInitCalldata'];
-  migratorMigrateCalldata: InitializeLaunchInstructionDataArgs['migratorMigrateCalldata'];
-  sentinelCreateRemainingAccountsHash: InitializeLaunchInstructionDataArgs['sentinelCreateRemainingAccountsHash'];
-  sentinelRemainingAccountsHash: InitializeLaunchInstructionDataArgs['sentinelRemainingAccountsHash'];
+  migratorInitPayload: InitializeLaunchInstructionDataArgs['migratorInitPayload'];
+  migratorMigratePayload: InitializeLaunchInstructionDataArgs['migratorMigratePayload'];
+  hookCreateRemainingAccountsHash: InitializeLaunchInstructionDataArgs['hookCreateRemainingAccountsHash'];
+  hookRemainingAccountsHash: InitializeLaunchInstructionDataArgs['hookRemainingAccountsHash'];
   migratorInitRemainingAccountsHash: InitializeLaunchInstructionDataArgs['migratorInitRemainingAccountsHash'];
   migratorRemainingAccountsHash: InitializeLaunchInstructionDataArgs['migratorRemainingAccountsHash'];
   metadataName: InitializeLaunchInstructionDataArgs['metadataName'];
@@ -442,7 +433,7 @@ export async function getInitializeLaunchInstructionAsync<
   TAccountQuoteVault extends string,
   TAccountPayer extends string,
   TAccountAuthority extends string,
-  TAccountSentinelProgram extends string,
+  TAccountHookProgram extends string,
   TAccountMigratorProgram extends string,
   TAccountBaseTokenProgram extends string,
   TAccountQuoteTokenProgram extends string,
@@ -462,7 +453,7 @@ export async function getInitializeLaunchInstructionAsync<
     TAccountQuoteVault,
     TAccountPayer,
     TAccountAuthority,
-    TAccountSentinelProgram,
+    TAccountHookProgram,
     TAccountMigratorProgram,
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram,
@@ -484,7 +475,7 @@ export async function getInitializeLaunchInstructionAsync<
     TAccountQuoteVault,
     TAccountPayer,
     TAccountAuthority,
-    TAccountSentinelProgram,
+    TAccountHookProgram,
     TAccountMigratorProgram,
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram,
@@ -511,10 +502,7 @@ export async function getInitializeLaunchInstructionAsync<
     quoteVault: { value: input.quoteVault ?? null, isWritable: true },
     payer: { value: input.payer ?? null, isWritable: true },
     authority: { value: input.authority ?? null, isWritable: false },
-    sentinelProgram: {
-      value: input.sentinelProgram ?? null,
-      isWritable: false,
-    },
+    hookProgram: { value: input.hookProgram ?? null, isWritable: false },
     migratorProgram: {
       value: input.migratorProgram ?? null,
       isWritable: false,
@@ -543,7 +531,7 @@ export async function getInitializeLaunchInstructionAsync<
   // Original args.
   const args = {
     ...input,
-    sentinelProgram: input.sentinelProgramArg,
+    hookProgram: input.hookProgramArg,
     migratorProgram: input.migratorProgramArg,
   };
 
@@ -596,7 +584,7 @@ export async function getInitializeLaunchInstructionAsync<
       getAccountMeta('quoteVault', accounts.quoteVault),
       getAccountMeta('payer', accounts.payer),
       getAccountMeta('authority', accounts.authority),
-      getAccountMeta('sentinelProgram', accounts.sentinelProgram),
+      getAccountMeta('hookProgram', accounts.hookProgram),
       getAccountMeta('migratorProgram', accounts.migratorProgram),
       getAccountMeta('baseTokenProgram', accounts.baseTokenProgram),
       getAccountMeta('quoteTokenProgram', accounts.quoteTokenProgram),
@@ -620,7 +608,7 @@ export async function getInitializeLaunchInstructionAsync<
     TAccountQuoteVault,
     TAccountPayer,
     TAccountAuthority,
-    TAccountSentinelProgram,
+    TAccountHookProgram,
     TAccountMigratorProgram,
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram,
@@ -641,7 +629,7 @@ export type InitializeLaunchInput<
   TAccountQuoteVault extends string = string,
   TAccountPayer extends string = string,
   TAccountAuthority extends string = string,
-  TAccountSentinelProgram extends string = string,
+  TAccountHookProgram extends string = string,
   TAccountMigratorProgram extends string = string,
   TAccountBaseTokenProgram extends string = string,
   TAccountQuoteTokenProgram extends string = string,
@@ -660,8 +648,8 @@ export type InitializeLaunchInput<
   payer: TransactionSigner<TAccountPayer>;
   /** Optional authority (creator/admin). If not provided, launch is permissionless. */
   authority?: TransactionSigner<TAccountAuthority>;
-  /** Optional sentinel program for create hooks */
-  sentinelProgram?: Address<TAccountSentinelProgram>;
+  /** Optional hook program for create hooks */
+  hookProgram?: Address<TAccountHookProgram>;
   /** Optional migrator program for init hook */
   migratorProgram?: Address<TAccountMigratorProgram>;
   baseTokenProgram: Address<TAccountBaseTokenProgram>;
@@ -685,15 +673,15 @@ export type InitializeLaunchInput<
   curveParams: InitializeLaunchInstructionDataArgs['curveParams'];
   allowBuy: InitializeLaunchInstructionDataArgs['allowBuy'];
   allowSell: InitializeLaunchInstructionDataArgs['allowSell'];
-  sentinelProgramArg: InitializeLaunchInstructionDataArgs['sentinelProgram'];
-  sentinelFlags: InitializeLaunchInstructionDataArgs['sentinelFlags'];
-  sentinelCalldata: InitializeLaunchInstructionDataArgs['sentinelCalldata'];
-  sentinelCreateRemainingAccountsLen: InitializeLaunchInstructionDataArgs['sentinelCreateRemainingAccountsLen'];
+  hookProgramArg: InitializeLaunchInstructionDataArgs['hookProgram'];
+  hookFlags: InitializeLaunchInstructionDataArgs['hookFlags'];
+  hookPayload: InitializeLaunchInstructionDataArgs['hookPayload'];
+  hookCreateRemainingAccountsLen: InitializeLaunchInstructionDataArgs['hookCreateRemainingAccountsLen'];
   migratorProgramArg: InitializeLaunchInstructionDataArgs['migratorProgram'];
-  migratorInitCalldata: InitializeLaunchInstructionDataArgs['migratorInitCalldata'];
-  migratorMigrateCalldata: InitializeLaunchInstructionDataArgs['migratorMigrateCalldata'];
-  sentinelCreateRemainingAccountsHash: InitializeLaunchInstructionDataArgs['sentinelCreateRemainingAccountsHash'];
-  sentinelRemainingAccountsHash: InitializeLaunchInstructionDataArgs['sentinelRemainingAccountsHash'];
+  migratorInitPayload: InitializeLaunchInstructionDataArgs['migratorInitPayload'];
+  migratorMigratePayload: InitializeLaunchInstructionDataArgs['migratorMigratePayload'];
+  hookCreateRemainingAccountsHash: InitializeLaunchInstructionDataArgs['hookCreateRemainingAccountsHash'];
+  hookRemainingAccountsHash: InitializeLaunchInstructionDataArgs['hookRemainingAccountsHash'];
   migratorInitRemainingAccountsHash: InitializeLaunchInstructionDataArgs['migratorInitRemainingAccountsHash'];
   migratorRemainingAccountsHash: InitializeLaunchInstructionDataArgs['migratorRemainingAccountsHash'];
   metadataName: InitializeLaunchInstructionDataArgs['metadataName'];
@@ -711,7 +699,7 @@ export function getInitializeLaunchInstruction<
   TAccountQuoteVault extends string,
   TAccountPayer extends string,
   TAccountAuthority extends string,
-  TAccountSentinelProgram extends string,
+  TAccountHookProgram extends string,
   TAccountMigratorProgram extends string,
   TAccountBaseTokenProgram extends string,
   TAccountQuoteTokenProgram extends string,
@@ -731,7 +719,7 @@ export function getInitializeLaunchInstruction<
     TAccountQuoteVault,
     TAccountPayer,
     TAccountAuthority,
-    TAccountSentinelProgram,
+    TAccountHookProgram,
     TAccountMigratorProgram,
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram,
@@ -752,7 +740,7 @@ export function getInitializeLaunchInstruction<
   TAccountQuoteVault,
   TAccountPayer,
   TAccountAuthority,
-  TAccountSentinelProgram,
+  TAccountHookProgram,
   TAccountMigratorProgram,
   TAccountBaseTokenProgram,
   TAccountQuoteTokenProgram,
@@ -778,10 +766,7 @@ export function getInitializeLaunchInstruction<
     quoteVault: { value: input.quoteVault ?? null, isWritable: true },
     payer: { value: input.payer ?? null, isWritable: true },
     authority: { value: input.authority ?? null, isWritable: false },
-    sentinelProgram: {
-      value: input.sentinelProgram ?? null,
-      isWritable: false,
-    },
+    hookProgram: { value: input.hookProgram ?? null, isWritable: false },
     migratorProgram: {
       value: input.migratorProgram ?? null,
       isWritable: false,
@@ -810,7 +795,7 @@ export function getInitializeLaunchInstruction<
   // Original args.
   const args = {
     ...input,
-    sentinelProgram: input.sentinelProgramArg,
+    hookProgram: input.hookProgramArg,
     migratorProgram: input.migratorProgramArg,
   };
 
@@ -836,7 +821,7 @@ export function getInitializeLaunchInstruction<
       getAccountMeta('quoteVault', accounts.quoteVault),
       getAccountMeta('payer', accounts.payer),
       getAccountMeta('authority', accounts.authority),
-      getAccountMeta('sentinelProgram', accounts.sentinelProgram),
+      getAccountMeta('hookProgram', accounts.hookProgram),
       getAccountMeta('migratorProgram', accounts.migratorProgram),
       getAccountMeta('baseTokenProgram', accounts.baseTokenProgram),
       getAccountMeta('quoteTokenProgram', accounts.quoteTokenProgram),
@@ -860,7 +845,7 @@ export function getInitializeLaunchInstruction<
     TAccountQuoteVault,
     TAccountPayer,
     TAccountAuthority,
-    TAccountSentinelProgram,
+    TAccountHookProgram,
     TAccountMigratorProgram,
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram,
@@ -887,8 +872,8 @@ export type ParsedInitializeLaunchInstruction<
     payer: TAccountMetas[7];
     /** Optional authority (creator/admin). If not provided, launch is permissionless. */
     authority?: TAccountMetas[8] | undefined;
-    /** Optional sentinel program for create hooks */
-    sentinelProgram?: TAccountMetas[9] | undefined;
+    /** Optional hook program for create hooks */
+    hookProgram?: TAccountMetas[9] | undefined;
     /** Optional migrator program for init hook */
     migratorProgram?: TAccountMetas[10] | undefined;
     baseTokenProgram: TAccountMetas[11];
@@ -944,7 +929,7 @@ export function parseInitializeLaunchInstruction<
       quoteVault: getNextAccount(),
       payer: getNextAccount(),
       authority: getNextOptionalAccount(),
-      sentinelProgram: getNextOptionalAccount(),
+      hookProgram: getNextOptionalAccount(),
       migratorProgram: getNextOptionalAccount(),
       baseTokenProgram: getNextAccount(),
       quoteTokenProgram: getNextAccount(),

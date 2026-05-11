@@ -20,8 +20,8 @@ import {
   CURVE_KIND_XYK,
   CURVE_PARAMS_FORMAT_XYK_V0,
   INITIALIZER_PROGRAM_ID,
-  SF_AFTER_CREATE,
-  SF_BEFORE_CREATE,
+  HF_AFTER_CREATE,
+  HF_BEFORE_CREATE,
 } from '../constants.js';
 import { computeRemainingAccountsHash } from '../helpers.js';
 import { CPMM_MIGRATOR_PROGRAM_ID } from '../../migrators/cpmmMigrator/constants.js';
@@ -47,16 +47,16 @@ export type InitializeLaunchParams = Omit<
   InitializeLaunchArgsArgs,
   | 'allowBuy'
   | 'allowSell'
-  | 'sentinelProgram'
+  | 'hookProgram'
   | 'migratorProgram'
-  | 'sentinelCreateRemainingAccountsLen'
-  | 'sentinelCreateRemainingAccountsHash'
+  | 'hookCreateRemainingAccountsLen'
+  | 'hookCreateRemainingAccountsHash'
 > & {
   allowBuy: boolean;
   allowSell: boolean;
-  sentinelProgram?: Address;
-  sentinelCreateRemainingAccountsLen?: number;
-  sentinelCreateRemainingAccountsHash?: ReadonlyUint8Array;
+  hookProgram?: Address;
+  hookCreateRemainingAccountsLen?: number;
+  hookCreateRemainingAccountsHash?: ReadonlyUint8Array;
 };
 
 type AddressOrSigner = Address | TransactionSigner;
@@ -117,7 +117,7 @@ export interface InitializeLaunchAccounts {
   quoteVault: AddressOrSigner;
   payer: AddressOrSigner;
   authority?: AddressOrSigner;
-  sentinelProgram?: Address;
+  hookProgram?: Address;
   migratorProgram?: Address;
   baseTokenProgram?: Address;
   quoteTokenProgram?: Address;
@@ -133,7 +133,7 @@ export interface InitializeLaunchAccounts {
    * These are forwarded as readonly metas; TransactionSigner values are
    * forwarded as readonly signers.
    */
-  sentinelCreateRemainingAccounts?: ReadonlyArray<ReadonlyRemainingAccount>;
+  hookCreateRemainingAccounts?: ReadonlyArray<ReadonlyRemainingAccount>;
 }
 
 function validateInitializeLaunchCurveParams(
@@ -169,7 +169,7 @@ export async function createInitializeLaunchInstruction(
     quoteVault,
     payer,
     authority,
-    sentinelProgram,
+    hookProgram,
     migratorProgram,
     baseTokenProgram = TOKEN_PROGRAM_ADDRESS,
     quoteTokenProgram = TOKEN_PROGRAM_ADDRESS,
@@ -177,7 +177,7 @@ export async function createInitializeLaunchInstruction(
     rent,
     metadataAccount,
     metadataProgram = TOKEN_METADATA_PROGRAM_ID,
-    sentinelCreateRemainingAccounts = [],
+    hookCreateRemainingAccounts = [],
   } = accounts;
 
   const withMetadata = Boolean(
@@ -192,11 +192,10 @@ export async function createInitializeLaunchInstruction(
   }
 
   const createHooksEnabled =
-    (args.sentinelFlags & (SF_BEFORE_CREATE | SF_AFTER_CREATE)) !== 0;
-  const sentinelCreateRemainingAccountAddresses =
-    sentinelCreateRemainingAccounts.map((account) =>
-      isTransactionSigner(account) ? account.address : account,
-    );
+    (args.hookFlags & (HF_BEFORE_CREATE | HF_AFTER_CREATE)) !== 0;
+  const hookCreateRemainingAccountAddresses = hookCreateRemainingAccounts.map(
+    (account) => (isTransactionSigner(account) ? account.address : account),
+  );
 
   const keys: (AccountMeta | AccountSignerMeta)[] = [
     { address: config, role: AccountRole.READONLY },
@@ -215,8 +214,8 @@ export async function createInitializeLaunchInstruction(
       : { address: programId, role: AccountRole.READONLY },
   );
   keys.push(
-    sentinelProgram
-      ? { address: sentinelProgram, role: AccountRole.READONLY }
+    hookProgram
+      ? { address: hookProgram, role: AccountRole.READONLY }
       : { address: programId, role: AccountRole.READONLY },
   );
   keys.push(
@@ -242,16 +241,14 @@ export async function createInitializeLaunchInstruction(
     ...args,
     allowBuy: args.allowBuy ? 1 : 0,
     allowSell: args.allowSell ? 1 : 0,
-    sentinelProgram:
-      args.sentinelProgram ?? sentinelProgram ?? SYSTEM_PROGRAM_ADDRESS,
-    sentinelCreateRemainingAccountsLen:
-      args.sentinelCreateRemainingAccountsLen ??
-      sentinelCreateRemainingAccounts.length,
+    hookProgram: args.hookProgram ?? hookProgram ?? SYSTEM_PROGRAM_ADDRESS,
+    hookCreateRemainingAccountsLen:
+      args.hookCreateRemainingAccountsLen ?? hookCreateRemainingAccounts.length,
     migratorProgram: migratorProgram ?? SYSTEM_PROGRAM_ADDRESS,
-    sentinelCreateRemainingAccountsHash:
-      args.sentinelCreateRemainingAccountsHash ??
+    hookCreateRemainingAccountsHash:
+      args.hookCreateRemainingAccountsHash ??
       (createHooksEnabled
-        ? computeRemainingAccountsHash(sentinelCreateRemainingAccountAddresses)
+        ? computeRemainingAccountsHash(hookCreateRemainingAccountAddresses)
         : new Uint8Array(32)),
   };
 
@@ -260,7 +257,7 @@ export async function createInitializeLaunchInstruction(
   );
 
   keys.push(
-    ...sentinelCreateRemainingAccounts.map((account) =>
+    ...hookCreateRemainingAccounts.map((account) =>
       createAccountMeta(
         account,
         isTransactionSigner(account)
@@ -272,15 +269,15 @@ export async function createInitializeLaunchInstruction(
 
   // When using the CPMM migrator, append the module-specific accounts required
   // by register_launch:
-  //   [state, cpmm_config]
+  //   [cpmm_migration_state, cpmm_config]
   if (migratorProgram === CPMM_MIGRATOR_PROGRAM_ID) {
     if (!accounts.cpmmConfig) {
       throw new Error(
         'cpmmConfig is required when migratorProgram is CPMM_MIGRATOR_PROGRAM_ID',
       );
     }
-    const [cpmmMigratorState] = await getCpmmMigratorStateAddress(launch);
-    keys.push({ address: cpmmMigratorState, role: AccountRole.WRITABLE });
+    const [cpmmMigrationState] = await getCpmmMigratorStateAddress(launch);
+    keys.push({ address: cpmmMigrationState, role: AccountRole.WRITABLE });
     keys.push({ address: accounts.cpmmConfig, role: AccountRole.READONLY });
   }
 

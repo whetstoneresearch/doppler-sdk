@@ -16,6 +16,7 @@ import {
   setTransactionMessageLifetimeUsingBlockhash,
   signTransactionMessageWithSigners,
   address,
+  generateKeyPairSigner,
   type Instruction,
   type TransactionMessage,
   type TransactionMessageWithFeePayer,
@@ -205,11 +206,12 @@ export async function createLookupTableForInstruction({
   instruction: Instruction;
   label?: string;
 }) {
-  const recentSlot = await rpc.getSlot({ commitment: 'confirmed' }).send();
+  const recentSlot = await rpc.getSlot({ commitment: 'finalized' }).send();
   const addresses = initializer.getInstructionLookupTableAddresses(instruction);
+  const authority = await generateKeyPairSigner();
   const lookupTable =
     await initializer.buildAddressLookupTableSetupInstructions({
-      authority: payer,
+      authority,
       payer,
       recentSlot,
       addresses,

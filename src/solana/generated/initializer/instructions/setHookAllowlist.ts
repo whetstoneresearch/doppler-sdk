@@ -42,17 +42,17 @@ import {
 } from '@solana/program-client-core';
 import { INITIALIZER_PROGRAM_ADDRESS } from '../programs';
 
-export const SET_SENTINEL_ALLOWLIST_DISCRIMINATOR = new Uint8Array([
-  233, 72, 180, 246, 171, 117, 21, 50,
+export const SET_HOOK_ALLOWLIST_DISCRIMINATOR = new Uint8Array([
+  232, 28, 40, 143, 121, 182, 77, 103,
 ]);
 
-export function getSetSentinelAllowlistDiscriminatorBytes() {
+export function getSetHookAllowlistDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    SET_SENTINEL_ALLOWLIST_DISCRIMINATOR,
+    SET_HOOK_ALLOWLIST_DISCRIMINATOR,
   );
 }
 
-export type SetSentinelAllowlistInstruction<
+export type SetHookAllowlistInstruction<
   TProgram extends string = typeof INITIALIZER_PROGRAM_ADDRESS,
   TAccountAdmin extends string | AccountMeta<string> = string,
   TAccountConfig extends string | AccountMeta<string> = string,
@@ -72,67 +72,58 @@ export type SetSentinelAllowlistInstruction<
     ]
   >;
 
-export type SetSentinelAllowlistInstructionData = {
+export type SetHookAllowlistInstructionData = {
   discriminator: ReadonlyUint8Array;
   allowlist: Array<Address>;
 };
 
-export type SetSentinelAllowlistInstructionDataArgs = {
-  allowlist: Array<Address>;
-};
+export type SetHookAllowlistInstructionDataArgs = { allowlist: Array<Address> };
 
-export function getSetSentinelAllowlistInstructionDataEncoder(): Encoder<SetSentinelAllowlistInstructionDataArgs> {
+export function getSetHookAllowlistInstructionDataEncoder(): Encoder<SetHookAllowlistInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       ['allowlist', getArrayEncoder(getAddressEncoder())],
     ]),
-    (value) => ({
-      ...value,
-      discriminator: SET_SENTINEL_ALLOWLIST_DISCRIMINATOR,
-    }),
+    (value) => ({ ...value, discriminator: SET_HOOK_ALLOWLIST_DISCRIMINATOR }),
   );
 }
 
-export function getSetSentinelAllowlistInstructionDataDecoder(): Decoder<SetSentinelAllowlistInstructionData> {
+export function getSetHookAllowlistInstructionDataDecoder(): Decoder<SetHookAllowlistInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['allowlist', getArrayDecoder(getAddressDecoder())],
   ]);
 }
 
-export function getSetSentinelAllowlistInstructionDataCodec(): Codec<
-  SetSentinelAllowlistInstructionDataArgs,
-  SetSentinelAllowlistInstructionData
+export function getSetHookAllowlistInstructionDataCodec(): Codec<
+  SetHookAllowlistInstructionDataArgs,
+  SetHookAllowlistInstructionData
 > {
   return combineCodec(
-    getSetSentinelAllowlistInstructionDataEncoder(),
-    getSetSentinelAllowlistInstructionDataDecoder(),
+    getSetHookAllowlistInstructionDataEncoder(),
+    getSetHookAllowlistInstructionDataDecoder(),
   );
 }
 
-export type SetSentinelAllowlistAsyncInput<
+export type SetHookAllowlistAsyncInput<
   TAccountAdmin extends string = string,
   TAccountConfig extends string = string,
 > = {
   admin: TransactionSigner<TAccountAdmin>;
   config?: Address<TAccountConfig>;
-  allowlist: SetSentinelAllowlistInstructionDataArgs['allowlist'];
+  allowlist: SetHookAllowlistInstructionDataArgs['allowlist'];
 };
 
-export async function getSetSentinelAllowlistInstructionAsync<
+export async function getSetHookAllowlistInstructionAsync<
   TAccountAdmin extends string,
   TAccountConfig extends string,
   TProgramAddress extends Address = typeof INITIALIZER_PROGRAM_ADDRESS,
 >(
-  input: SetSentinelAllowlistAsyncInput<TAccountAdmin, TAccountConfig>,
+  input: SetHookAllowlistAsyncInput<TAccountAdmin, TAccountConfig>,
   config?: { programAddress?: TProgramAddress },
 ): Promise<
-  SetSentinelAllowlistInstruction<
-    TProgramAddress,
-    TAccountAdmin,
-    TAccountConfig
-  >
+  SetHookAllowlistInstruction<TProgramAddress, TAccountAdmin, TAccountConfig>
 > {
   // Program address.
   const programAddress = config?.programAddress ?? INITIALIZER_PROGRAM_ADDRESS;
@@ -166,38 +157,34 @@ export async function getSetSentinelAllowlistInstructionAsync<
       getAccountMeta('admin', accounts.admin),
       getAccountMeta('config', accounts.config),
     ],
-    data: getSetSentinelAllowlistInstructionDataEncoder().encode(
-      args as SetSentinelAllowlistInstructionDataArgs,
+    data: getSetHookAllowlistInstructionDataEncoder().encode(
+      args as SetHookAllowlistInstructionDataArgs,
     ),
     programAddress,
-  } as SetSentinelAllowlistInstruction<
+  } as SetHookAllowlistInstruction<
     TProgramAddress,
     TAccountAdmin,
     TAccountConfig
   >);
 }
 
-export type SetSentinelAllowlistInput<
+export type SetHookAllowlistInput<
   TAccountAdmin extends string = string,
   TAccountConfig extends string = string,
 > = {
   admin: TransactionSigner<TAccountAdmin>;
   config: Address<TAccountConfig>;
-  allowlist: SetSentinelAllowlistInstructionDataArgs['allowlist'];
+  allowlist: SetHookAllowlistInstructionDataArgs['allowlist'];
 };
 
-export function getSetSentinelAllowlistInstruction<
+export function getSetHookAllowlistInstruction<
   TAccountAdmin extends string,
   TAccountConfig extends string,
   TProgramAddress extends Address = typeof INITIALIZER_PROGRAM_ADDRESS,
 >(
-  input: SetSentinelAllowlistInput<TAccountAdmin, TAccountConfig>,
+  input: SetHookAllowlistInput<TAccountAdmin, TAccountConfig>,
   config?: { programAddress?: TProgramAddress },
-): SetSentinelAllowlistInstruction<
-  TProgramAddress,
-  TAccountAdmin,
-  TAccountConfig
-> {
+): SetHookAllowlistInstruction<TProgramAddress, TAccountAdmin, TAccountConfig> {
   // Program address.
   const programAddress = config?.programAddress ?? INITIALIZER_PROGRAM_ADDRESS;
 
@@ -220,18 +207,18 @@ export function getSetSentinelAllowlistInstruction<
       getAccountMeta('admin', accounts.admin),
       getAccountMeta('config', accounts.config),
     ],
-    data: getSetSentinelAllowlistInstructionDataEncoder().encode(
-      args as SetSentinelAllowlistInstructionDataArgs,
+    data: getSetHookAllowlistInstructionDataEncoder().encode(
+      args as SetHookAllowlistInstructionDataArgs,
     ),
     programAddress,
-  } as SetSentinelAllowlistInstruction<
+  } as SetHookAllowlistInstruction<
     TProgramAddress,
     TAccountAdmin,
     TAccountConfig
   >);
 }
 
-export type ParsedSetSentinelAllowlistInstruction<
+export type ParsedSetHookAllowlistInstruction<
   TProgram extends string = typeof INITIALIZER_PROGRAM_ADDRESS,
   TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
@@ -240,17 +227,17 @@ export type ParsedSetSentinelAllowlistInstruction<
     admin: TAccountMetas[0];
     config: TAccountMetas[1];
   };
-  data: SetSentinelAllowlistInstructionData;
+  data: SetHookAllowlistInstructionData;
 };
 
-export function parseSetSentinelAllowlistInstruction<
+export function parseSetHookAllowlistInstruction<
   TProgram extends string,
   TAccountMetas extends readonly AccountMeta[],
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
-): ParsedSetSentinelAllowlistInstruction<TProgram, TAccountMetas> {
+): ParsedSetHookAllowlistInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 2) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
@@ -269,8 +256,6 @@ export function parseSetSentinelAllowlistInstruction<
   return {
     programAddress: instruction.programAddress,
     accounts: { admin: getNextAccount(), config: getNextAccount() },
-    data: getSetSentinelAllowlistInstructionDataDecoder().decode(
-      instruction.data,
-    ),
+    data: getSetHookAllowlistInstructionDataDecoder().decode(instruction.data),
   };
 }

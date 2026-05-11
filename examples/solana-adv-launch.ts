@@ -55,7 +55,7 @@ const WSOL_MINT: Address =
 async function main() {
   const payer = await loadKeypairSignerFromEnv();
   const { rpc, rpcSubscriptions, network } = createSolanaClientsFromEnv();
-  assertSolanaExampleNetwork(network);
+  assertSolanaExampleNetwork(network, ['devnet', 'custom']);
 
   // ── Token supply and allocation ─────────────────────────────────────────
   const BASE_DECIMALS = 6;
@@ -139,20 +139,20 @@ async function main() {
       recipientAtas: [payerBaseAta, payerBaseAta],
     });
   const cpmmConfig = migrationAccounts.cpmmConfig;
-  const cpmmMigratorState = migrationAccounts.cpmmMigratorState;
+  const cpmmMigrationState = migrationAccounts.cpmmMigrationState;
 
   console.log('Derived addresses:');
   console.log('  Launch:          ', launch);
   console.log('  Launch authority:', launchAuthority);
   console.log('  Initializer config:', initializerConfig);
   console.log('  CPMM config:     ', cpmmConfig);
-  console.log('  CPMM migrator state:', cpmmMigratorState);
+  console.log('  CPMM migrator state:', cpmmMigrationState);
   console.log('');
 
-  // ── Encode migrator calldatas ────────────────────────────────────────────
-  // migratorInitCalldata registers graduation params; migratorMigrateCalldata
+  // ── Encode migrator payloads ────────────────────────────────────────────
+  // migratorInitPayload registers graduation params; migratorMigratePayload
   // is forwarded at migration. minRaiseQuote is the graduation threshold.
-  const migratorInitCalldata = cpmmMigrator.encodeRegisterLaunchCalldata({
+  const migratorInitPayload = cpmmMigrator.encodeRegisterLaunchPayload({
     cpmmConfig: cpmmConfig,
     initialSwapFeeBps: CPMM_SWAP_FEE_BPS,
     initialFeeSplitBps: CPMM_SWAP_FEE_SPLIT_BPS,
@@ -164,7 +164,7 @@ async function main() {
     minMigrationPriceQ64Opt,
   });
 
-  const migratorMigrateCalldata = cpmmMigrator.encodeMigrateCalldata({
+  const migratorMigratePayload = cpmmMigrator.encodeMigratePayload({
     baseForDistribution: BASE_FOR_DISTRIBUTION,
     baseForLiquidity: BASE_FOR_LIQUIDITY,
   });
@@ -211,16 +211,15 @@ async function main() {
         curveParams: new Uint8Array([initializer.CURVE_PARAMS_FORMAT_XYK_V0]),
         allowBuy: true,
         allowSell: true,
-        sentinelProgram: initializer.CPMM_SENTINEL_PROGRAM_ID,
-        sentinelFlags: initializer.SF_BEFORE_SWAP,
-        sentinelCalldata: new Uint8Array(),
-        migratorInitCalldata,
-        migratorMigrateCalldata,
-        sentinelRemainingAccountsHash:
-          initializer.EMPTY_REMAINING_ACCOUNTS_HASH,
+        hookProgram: initializer.CPMM_HOOK_PROGRAM_ID,
+        hookFlags: initializer.HF_BEFORE_SWAP,
+        hookPayload: new Uint8Array(),
+        migratorInitPayload,
+        migratorMigratePayload,
+        hookRemainingAccountsHash: initializer.EMPTY_REMAINING_ACCOUNTS_HASH,
         migratorInitRemainingAccountsHash:
           initializer.computeRemainingAccountsHash([
-            cpmmMigratorState,
+            cpmmMigrationState,
             cpmmConfig,
           ]),
         migratorRemainingAccountsHash: migrationAccounts.hash,

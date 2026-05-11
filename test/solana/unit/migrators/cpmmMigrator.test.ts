@@ -10,10 +10,10 @@ const MIGRATE_DISCRIMINATOR = CPMM_MIGRATOR_INSTRUCTION_DISCRIMINATORS.migrate;
 const TEST_CONFIG = address('E45nSdnfANtYhCy6qZXo2a7qAWCU6pYjpqsby1bbkaiL');
 const TEST_WALLET = address('11111111111111111111111111111111');
 
-describe('cpmmMigrator calldata encoders', () => {
-  describe('encodeRegisterLaunchCalldata', () => {
+describe('cpmmMigrator payload encoders', () => {
+  describe('encodeRegisterLaunchPayload', () => {
     it('prefixes output with the registerLaunch discriminator', () => {
-      const result = cpmmMigrator.encodeRegisterLaunchCalldata({
+      const result = cpmmMigrator.encodeRegisterLaunchPayload({
         cpmmConfig: TEST_CONFIG,
         initialSwapFeeBps: 30,
         initialFeeSplitBps: 5000,
@@ -29,7 +29,7 @@ describe('cpmmMigrator calldata encoders', () => {
     });
 
     it('encodes initialSwapFeeBps correctly', () => {
-      const result = cpmmMigrator.encodeRegisterLaunchCalldata({
+      const result = cpmmMigrator.encodeRegisterLaunchPayload({
         cpmmConfig: TEST_CONFIG,
         initialSwapFeeBps: 42,
         initialFeeSplitBps: 5000,
@@ -48,9 +48,9 @@ describe('cpmmMigrator calldata encoders', () => {
     });
   });
 
-  describe('encodeMigrateCalldata', () => {
+  describe('encodeMigratePayload', () => {
     it('prefixes output with the migrate discriminator', () => {
-      const result = cpmmMigrator.encodeMigrateCalldata({
+      const result = cpmmMigrator.encodeMigratePayload({
         baseForDistribution: 700_000n,
         baseForLiquidity: 300_000n,
       });
@@ -59,7 +59,7 @@ describe('cpmmMigrator calldata encoders', () => {
     });
 
     it('encodes baseForDistribution and baseForLiquidity as u64s', () => {
-      const result = cpmmMigrator.encodeMigrateCalldata({
+      const result = cpmmMigrator.encodeMigratePayload({
         baseForDistribution: 700_000n,
         baseForLiquidity: 300_000n,
       });
@@ -116,7 +116,7 @@ describe('cpmmMigrator remaining accounts', () => {
       poolInit.authority[0],
       poolInit.vault0[0],
       poolInit.vault1[0],
-      poolInit.protocolPosition[0],
+      poolInit.protocolFeePosition[0],
       expectedLpPosition,
       cpmm.CPMM_PROGRAM_ID,
       expectedMigrationAuthority,

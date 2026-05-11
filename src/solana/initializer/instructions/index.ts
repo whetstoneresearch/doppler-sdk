@@ -9,9 +9,9 @@ export {
 } from './setMigratorAllowlist.js';
 
 export {
-  createSetSentinelAllowlistInstruction,
-  type SetSentinelAllowlistAccounts,
-} from './setSentinelAllowlist.js';
+  createSetHookAllowlistInstruction,
+  type SetHookAllowlistAccounts,
+} from './setHookAllowlist.js';
 
 export {
   createInitializeLaunchInstruction,

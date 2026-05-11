@@ -25,7 +25,7 @@ import {
 export type Swap = {
   pool: Address;
   user: Address;
-  direction: number;
+  tradeDirection: number;
   amountIn: bigint;
   amountOut: bigint;
   feeTotal: bigint;
@@ -35,7 +35,7 @@ export type Swap = {
 export type SwapArgs = {
   pool: Address;
   user: Address;
-  direction: number;
+  tradeDirection: number;
   amountIn: number | bigint;
   amountOut: number | bigint;
   feeTotal: number | bigint;
@@ -46,7 +46,7 @@ export function getSwapEncoder(): FixedSizeEncoder<SwapArgs> {
   return getStructEncoder([
     ['pool', getAddressEncoder()],
     ['user', getAddressEncoder()],
-    ['direction', getU8Encoder()],
+    ['tradeDirection', getU8Encoder()],
     ['amountIn', getU64Encoder()],
     ['amountOut', getU64Encoder()],
     ['feeTotal', getU64Encoder()],
@@ -58,7 +58,7 @@ export function getSwapDecoder(): FixedSizeDecoder<Swap> {
   return getStructDecoder([
     ['pool', getAddressDecoder()],
     ['user', getAddressDecoder()],
-    ['direction', getU8Decoder()],
+    ['tradeDirection', getU8Decoder()],
     ['amountIn', getU64Decoder()],
     ['amountOut', getU64Decoder()],
     ['feeTotal', getU64Decoder()],

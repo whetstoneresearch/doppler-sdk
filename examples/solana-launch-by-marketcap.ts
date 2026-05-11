@@ -45,7 +45,7 @@ const WSOL_MINT: Address =
 async function main() {
   const payer = await loadKeypairSignerFromEnv();
   const { rpc, rpcSubscriptions, network } = createSolanaClientsFromEnv();
-  assertSolanaExampleNetwork(network);
+  assertSolanaExampleNetwork(network, ['devnet', 'custom']);
 
   // ── Token supply parameters ────────────────────────────────────────────────
   // This example puts the entire supply on the bonding curve (no creator
@@ -138,20 +138,20 @@ async function main() {
       recipientAtas: [],
     });
   const cpmmConfig = migrationAccounts.cpmmConfig;
-  const cpmmMigratorState = migrationAccounts.cpmmMigratorState;
+  const cpmmMigrationState = migrationAccounts.cpmmMigrationState;
 
   console.log('Derived addresses:');
   console.log('  Launch:          ', launch);
   console.log('  Launch authority:', launchAuthority);
   console.log('  Initializer config:', initializerConfig);
   console.log('  CPMM config:     ', cpmmConfig);
-  console.log('  CPMM migrator state:', cpmmMigratorState);
+  console.log('  CPMM migrator state:', cpmmMigrationState);
   console.log('');
 
-  // ── Encode CPMM migrator calldata ──────────────────────────────────────────
-  // migratorInitCalldata registers graduation params; migratorMigrateCalldata
+  // ── Encode CPMM migrator payload ──────────────────────────────────────────
+  // migratorInitPayload registers graduation params; migratorMigratePayload
   // is forwarded at migration. minRaiseQuote is the graduation threshold.
-  const migratorInitCalldata = cpmmMigrator.encodeRegisterLaunchCalldata({
+  const migratorInitPayload = cpmmMigrator.encodeRegisterLaunchPayload({
     cpmmConfig: cpmmConfig,
     initialSwapFeeBps: 100, // 1% swap fee on the graduated CPMM pool
     initialFeeSplitBps: 5000, // 50% of CPMM swap fees claimable by LP holders; remaining 50% compounds into the pool
@@ -160,13 +160,13 @@ async function main() {
     minMigrationPriceQ64Opt: null, // no minimum graduation price floor
   });
 
-  const migratorMigrateCalldata = cpmmMigrator.encodeMigrateCalldata({
+  const migratorMigratePayload = cpmmMigrator.encodeMigratePayload({
     baseForDistribution: 0n,
     baseForLiquidity: 0n,
   });
 
   // ── Build, sign, and send ────────────────────────────────────────────────
-  // The CPMM migrator register_launch CPI consumes both the cpmmMigratorState
+  // The CPMM migrator register_launch CPI consumes both the cpmmMigrationState
   // PDA and cpmmConfig as remaining accounts.
   console.log('Building launch instruction...');
   try {
@@ -210,16 +210,15 @@ async function main() {
         curveParams: new Uint8Array([initializer.CURVE_PARAMS_FORMAT_XYK_V0]),
         allowBuy: true,
         allowSell: true,
-        sentinelProgram: initializer.CPMM_SENTINEL_PROGRAM_ID,
-        sentinelFlags: initializer.SF_BEFORE_SWAP,
-        sentinelCalldata: new Uint8Array(),
-        migratorInitCalldata,
-        migratorMigrateCalldata,
-        sentinelRemainingAccountsHash:
-          initializer.EMPTY_REMAINING_ACCOUNTS_HASH,
+        hookProgram: initializer.CPMM_HOOK_PROGRAM_ID,
+        hookFlags: initializer.HF_BEFORE_SWAP,
+        hookPayload: new Uint8Array(),
+        migratorInitPayload,
+        migratorMigratePayload,
+        hookRemainingAccountsHash: initializer.EMPTY_REMAINING_ACCOUNTS_HASH,
         migratorInitRemainingAccountsHash:
           initializer.computeRemainingAccountsHash([
-            cpmmMigratorState,
+            cpmmMigrationState,
             cpmmConfig,
           ]),
         migratorRemainingAccountsHash: migrationAccounts.hash,

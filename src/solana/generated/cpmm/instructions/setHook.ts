@@ -42,17 +42,15 @@ import {
 } from '@solana/program-client-core';
 import { CPMM_PROGRAM_ADDRESS } from '../programs';
 
-export const SET_SENTINEL_DISCRIMINATOR = new Uint8Array([
-  94, 200, 82, 129, 53, 149, 232, 113,
+export const SET_HOOK_DISCRIMINATOR = new Uint8Array([
+  175, 16, 187, 252, 19, 54, 111, 221,
 ]);
 
-export function getSetSentinelDiscriminatorBytes() {
-  return fixEncoderSize(getBytesEncoder(), 8).encode(
-    SET_SENTINEL_DISCRIMINATOR,
-  );
+export function getSetHookDiscriminatorBytes() {
+  return fixEncoderSize(getBytesEncoder(), 8).encode(SET_HOOK_DISCRIMINATOR);
 }
 
-export type SetSentinelInstruction<
+export type SetHookInstruction<
   TProgram extends string = typeof CPMM_PROGRAM_ADDRESS,
   TAccountConfig extends string | AccountMeta<string> = string,
   TAccountPool extends string | AccountMeta<string> = string,
@@ -76,47 +74,47 @@ export type SetSentinelInstruction<
     ]
   >;
 
-export type SetSentinelInstructionData = {
+export type SetHookInstructionData = {
   discriminator: ReadonlyUint8Array;
-  sentinelProgram: Address;
-  sentinelFlags: number;
+  hookProgram: Address;
+  hookFlags: number;
 };
 
-export type SetSentinelInstructionDataArgs = {
-  sentinelProgram: Address;
-  sentinelFlags: number;
+export type SetHookInstructionDataArgs = {
+  hookProgram: Address;
+  hookFlags: number;
 };
 
-export function getSetSentinelInstructionDataEncoder(): FixedSizeEncoder<SetSentinelInstructionDataArgs> {
+export function getSetHookInstructionDataEncoder(): FixedSizeEncoder<SetHookInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['sentinelProgram', getAddressEncoder()],
-      ['sentinelFlags', getU32Encoder()],
+      ['hookProgram', getAddressEncoder()],
+      ['hookFlags', getU32Encoder()],
     ]),
-    (value) => ({ ...value, discriminator: SET_SENTINEL_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: SET_HOOK_DISCRIMINATOR }),
   );
 }
 
-export function getSetSentinelInstructionDataDecoder(): FixedSizeDecoder<SetSentinelInstructionData> {
+export function getSetHookInstructionDataDecoder(): FixedSizeDecoder<SetHookInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['sentinelProgram', getAddressDecoder()],
-    ['sentinelFlags', getU32Decoder()],
+    ['hookProgram', getAddressDecoder()],
+    ['hookFlags', getU32Decoder()],
   ]);
 }
 
-export function getSetSentinelInstructionDataCodec(): FixedSizeCodec<
-  SetSentinelInstructionDataArgs,
-  SetSentinelInstructionData
+export function getSetHookInstructionDataCodec(): FixedSizeCodec<
+  SetHookInstructionDataArgs,
+  SetHookInstructionData
 > {
   return combineCodec(
-    getSetSentinelInstructionDataEncoder(),
-    getSetSentinelInstructionDataDecoder(),
+    getSetHookInstructionDataEncoder(),
+    getSetHookInstructionDataDecoder(),
   );
 }
 
-export type SetSentinelInput<
+export type SetHookInput<
   TAccountConfig extends string = string,
   TAccountPool extends string = string,
   TAccountAdmin extends string = string,
@@ -124,19 +122,19 @@ export type SetSentinelInput<
   config: Address<TAccountConfig>;
   pool: Address<TAccountPool>;
   admin: TransactionSigner<TAccountAdmin>;
-  sentinelProgram: SetSentinelInstructionDataArgs['sentinelProgram'];
-  sentinelFlags: SetSentinelInstructionDataArgs['sentinelFlags'];
+  hookProgram: SetHookInstructionDataArgs['hookProgram'];
+  hookFlags: SetHookInstructionDataArgs['hookFlags'];
 };
 
-export function getSetSentinelInstruction<
+export function getSetHookInstruction<
   TAccountConfig extends string,
   TAccountPool extends string,
   TAccountAdmin extends string,
   TProgramAddress extends Address = typeof CPMM_PROGRAM_ADDRESS,
 >(
-  input: SetSentinelInput<TAccountConfig, TAccountPool, TAccountAdmin>,
+  input: SetHookInput<TAccountConfig, TAccountPool, TAccountAdmin>,
   config?: { programAddress?: TProgramAddress },
-): SetSentinelInstruction<
+): SetHookInstruction<
   TProgramAddress,
   TAccountConfig,
   TAccountPool,
@@ -166,11 +164,11 @@ export function getSetSentinelInstruction<
       getAccountMeta('pool', accounts.pool),
       getAccountMeta('admin', accounts.admin),
     ],
-    data: getSetSentinelInstructionDataEncoder().encode(
-      args as SetSentinelInstructionDataArgs,
+    data: getSetHookInstructionDataEncoder().encode(
+      args as SetHookInstructionDataArgs,
     ),
     programAddress,
-  } as SetSentinelInstruction<
+  } as SetHookInstruction<
     TProgramAddress,
     TAccountConfig,
     TAccountPool,
@@ -178,7 +176,7 @@ export function getSetSentinelInstruction<
   >);
 }
 
-export type ParsedSetSentinelInstruction<
+export type ParsedSetHookInstruction<
   TProgram extends string = typeof CPMM_PROGRAM_ADDRESS,
   TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
@@ -188,17 +186,17 @@ export type ParsedSetSentinelInstruction<
     pool: TAccountMetas[1];
     admin: TAccountMetas[2];
   };
-  data: SetSentinelInstructionData;
+  data: SetHookInstructionData;
 };
 
-export function parseSetSentinelInstruction<
+export function parseSetHookInstruction<
   TProgram extends string,
   TAccountMetas extends readonly AccountMeta[],
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
-): ParsedSetSentinelInstruction<TProgram, TAccountMetas> {
+): ParsedSetHookInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 3) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
@@ -221,6 +219,6 @@ export function parseSetSentinelInstruction<
       pool: getNextAccount(),
       admin: getNextAccount(),
     },
-    data: getSetSentinelInstructionDataDecoder().decode(instruction.data),
+    data: getSetHookInstructionDataDecoder().decode(instruction.data),
   };
 }

@@ -31,7 +31,7 @@ export type InitializePoolArgs = {
   mintB: Address;
   initialSwapFeeBps: number;
   initialFeeSplitBps: number;
-  liquidityMeasureSide: number;
+  liquidityMeasureTokenIndex: number;
   numeraireMintOverride: Option<Address>;
 };
 
@@ -40,7 +40,7 @@ export type InitializePoolArgsArgs = {
   mintB: Address;
   initialSwapFeeBps: number;
   initialFeeSplitBps: number;
-  liquidityMeasureSide: number;
+  liquidityMeasureTokenIndex: number;
   numeraireMintOverride: OptionOrNullable<Address>;
 };
 
@@ -50,7 +50,7 @@ export function getInitializePoolArgsEncoder(): Encoder<InitializePoolArgsArgs> 
     ['mintB', getAddressEncoder()],
     ['initialSwapFeeBps', getU16Encoder()],
     ['initialFeeSplitBps', getU16Encoder()],
-    ['liquidityMeasureSide', getU8Encoder()],
+    ['liquidityMeasureTokenIndex', getU8Encoder()],
     ['numeraireMintOverride', getOptionEncoder(getAddressEncoder())],
   ]);
 }
@@ -61,7 +61,7 @@ export function getInitializePoolArgsDecoder(): Decoder<InitializePoolArgs> {
     ['mintB', getAddressDecoder()],
     ['initialSwapFeeBps', getU16Decoder()],
     ['initialFeeSplitBps', getU16Decoder()],
-    ['liquidityMeasureSide', getU8Decoder()],
+    ['liquidityMeasureTokenIndex', getU8Decoder()],
     ['numeraireMintOverride', getOptionDecoder(getAddressDecoder())],
   ]);
 }

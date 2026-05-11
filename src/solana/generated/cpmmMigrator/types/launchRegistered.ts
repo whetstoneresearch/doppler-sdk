@@ -22,14 +22,14 @@ import {
 
 export type LaunchRegistered = {
   launch: Address;
-  state: Address;
+  cpmmMigrationState: Address;
   cpmmConfig: Address;
   minRaiseQuote: bigint;
 };
 
 export type LaunchRegisteredArgs = {
   launch: Address;
-  state: Address;
+  cpmmMigrationState: Address;
   cpmmConfig: Address;
   minRaiseQuote: number | bigint;
 };
@@ -37,7 +37,7 @@ export type LaunchRegisteredArgs = {
 export function getLaunchRegisteredEncoder(): FixedSizeEncoder<LaunchRegisteredArgs> {
   return getStructEncoder([
     ['launch', getAddressEncoder()],
-    ['state', getAddressEncoder()],
+    ['cpmmMigrationState', getAddressEncoder()],
     ['cpmmConfig', getAddressEncoder()],
     ['minRaiseQuote', getU64Encoder()],
   ]);
@@ -46,7 +46,7 @@ export function getLaunchRegisteredEncoder(): FixedSizeEncoder<LaunchRegisteredA
 export function getLaunchRegisteredDecoder(): FixedSizeDecoder<LaunchRegistered> {
   return getStructDecoder([
     ['launch', getAddressDecoder()],
-    ['state', getAddressDecoder()],
+    ['cpmmMigrationState', getAddressDecoder()],
     ['cpmmConfig', getAddressDecoder()],
     ['minRaiseQuote', getU64Decoder()],
   ]);

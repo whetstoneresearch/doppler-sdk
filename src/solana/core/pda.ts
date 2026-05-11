@@ -13,7 +13,7 @@ import {
   SEED_VAULT1,
   SEED_POSITION,
   SEED_ORACLE,
-  SEED_PROTOCOL_POSITION,
+  SEED_PROTOCOL_FEE_POSITION,
 } from './constants.js';
 
 const addressCodec = getAddressCodec();
@@ -183,17 +183,17 @@ export async function getOracleAddress(
 }
 
 /**
- * Derive the Protocol Position PDA address
+ * Derive the protocol fee position PDA address
  * Seeds: ['protocol_position', pool]
  */
-export async function getProtocolPositionAddress(
+export async function getProtocolFeePositionAddress(
   pool: Address,
   programId: Address = CPMM_PROGRAM_ID,
 ): Promise<ProgramDerivedAddress> {
   return getProgramDerivedAddress({
     programAddress: programId,
     seeds: [
-      textEncoder.encode(SEED_PROTOCOL_POSITION),
+      textEncoder.encode(SEED_PROTOCOL_FEE_POSITION),
       addressCodec.encode(pool),
     ],
   });
@@ -218,18 +218,18 @@ export async function getPoolInitAddresses(
   vault0: ProgramDerivedAddress;
   vault1: ProgramDerivedAddress;
   config: ProgramDerivedAddress;
-  protocolPosition: ProgramDerivedAddress;
+  protocolFeePosition: ProgramDerivedAddress;
 }> {
   const [token0, token1] = sortMints(mint0, mint1);
   const [config, pool] = await Promise.all([
     getConfigAddress(programId),
     getPoolAddress(token0, token1, programId),
   ]);
-  const [authority, vault0, vault1, protocolPosition] = await Promise.all([
+  const [authority, vault0, vault1, protocolFeePosition] = await Promise.all([
     getPoolAuthorityAddress(pool[0], programId),
     getPoolVault0Address(pool[0], programId),
     getPoolVault1Address(pool[0], programId),
-    getProtocolPositionAddress(pool[0], programId),
+    getProtocolFeePositionAddress(pool[0], programId),
   ]);
 
   return {
@@ -240,7 +240,7 @@ export async function getPoolInitAddresses(
     vault0,
     vault1,
     config,
-    protocolPosition,
+    protocolFeePosition,
   };
 }
 
@@ -276,17 +276,17 @@ export async function getLiquidityAddresses(
   config: ProgramDerivedAddress;
   authority: ProgramDerivedAddress;
   position: ProgramDerivedAddress;
-  protocolPosition: ProgramDerivedAddress;
+  protocolFeePosition: ProgramDerivedAddress;
   oracle: ProgramDerivedAddress;
 }> {
-  const [config, authority, position, protocolPosition, oracle] =
+  const [config, authority, position, protocolFeePosition, oracle] =
     await Promise.all([
       getConfigAddress(programId),
       getPoolAuthorityAddress(pool, programId),
       getPositionAddress(pool, owner, positionId, programId),
-      getProtocolPositionAddress(pool, programId),
+      getProtocolFeePositionAddress(pool, programId),
       getOracleAddress(pool, programId),
     ]);
 
-  return { config, authority, position, protocolPosition, oracle };
+  return { config, authority, position, protocolFeePosition, oracle };
 }

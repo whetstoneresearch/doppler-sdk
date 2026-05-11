@@ -48,10 +48,10 @@ import {
   getMigratorInitInstructionAsync,
   getPreviewMigrationInstruction,
   getPreviewSwapExactInInstruction,
+  getSetHookAllowlistInstructionAsync,
   getSetMigratorAllowlistInstructionAsync,
-  getSetSentinelAllowlistInstructionAsync,
   getTransferAdminInstructionAsync,
-  getUpdateLaunchCalldataInstructionAsync,
+  getUpdateLaunchPayloadInstructionAsync,
   getUpdateTradingFlagsInstructionAsync,
   parseCurveSwapExactInInstruction,
   parseInitializeConfigInstruction,
@@ -60,10 +60,10 @@ import {
   parseMigratorInitInstruction,
   parsePreviewMigrationInstruction,
   parsePreviewSwapExactInInstruction,
+  parseSetHookAllowlistInstruction,
   parseSetMigratorAllowlistInstruction,
-  parseSetSentinelAllowlistInstruction,
   parseTransferAdminInstruction,
-  parseUpdateLaunchCalldataInstruction,
+  parseUpdateLaunchPayloadInstruction,
   parseUpdateTradingFlagsInstruction,
   type CurveSwapExactInAsyncInput,
   type InitializeConfigAsyncInput,
@@ -77,17 +77,17 @@ import {
   type ParsedMigratorInitInstruction,
   type ParsedPreviewMigrationInstruction,
   type ParsedPreviewSwapExactInInstruction,
+  type ParsedSetHookAllowlistInstruction,
   type ParsedSetMigratorAllowlistInstruction,
-  type ParsedSetSentinelAllowlistInstruction,
   type ParsedTransferAdminInstruction,
-  type ParsedUpdateLaunchCalldataInstruction,
+  type ParsedUpdateLaunchPayloadInstruction,
   type ParsedUpdateTradingFlagsInstruction,
   type PreviewMigrationInput,
   type PreviewSwapExactInInput,
+  type SetHookAllowlistAsyncInput,
   type SetMigratorAllowlistAsyncInput,
-  type SetSentinelAllowlistAsyncInput,
   type TransferAdminAsyncInput,
-  type UpdateLaunchCalldataAsyncInput,
+  type UpdateLaunchPayloadAsyncInput,
   type UpdateTradingFlagsAsyncInput,
 } from '../instructions';
 
@@ -139,10 +139,10 @@ export enum InitializerInstruction {
   MigratorInit,
   PreviewMigration,
   PreviewSwapExactIn,
+  SetHookAllowlist,
   SetMigratorAllowlist,
-  SetSentinelAllowlist,
   TransferAdmin,
-  UpdateLaunchCalldata,
+  UpdateLaunchPayload,
   UpdateTradingFlags,
 }
 
@@ -231,23 +231,23 @@ export function identifyInitializerInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([232, 28, 40, 143, 121, 182, 77, 103]),
+      ),
+      0,
+    )
+  ) {
+    return InitializerInstruction.SetHookAllowlist;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([209, 90, 181, 104, 99, 108, 233, 168]),
       ),
       0,
     )
   ) {
     return InitializerInstruction.SetMigratorAllowlist;
-  }
-  if (
-    containsBytes(
-      data,
-      fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([233, 72, 180, 246, 171, 117, 21, 50]),
-      ),
-      0,
-    )
-  ) {
-    return InitializerInstruction.SetSentinelAllowlist;
   }
   if (
     containsBytes(
@@ -264,12 +264,12 @@ export function identifyInitializerInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([26, 225, 184, 23, 167, 221, 87, 92]),
+        new Uint8Array([58, 183, 166, 177, 122, 162, 250, 205]),
       ),
       0,
     )
   ) {
-    return InitializerInstruction.UpdateLaunchCalldata;
+    return InitializerInstruction.UpdateLaunchPayload;
   }
   if (
     containsBytes(
@@ -313,17 +313,17 @@ export type ParsedInitializerInstruction<
       instructionType: InitializerInstruction.PreviewSwapExactIn;
     } & ParsedPreviewSwapExactInInstruction<TProgram>)
   | ({
+      instructionType: InitializerInstruction.SetHookAllowlist;
+    } & ParsedSetHookAllowlistInstruction<TProgram>)
+  | ({
       instructionType: InitializerInstruction.SetMigratorAllowlist;
     } & ParsedSetMigratorAllowlistInstruction<TProgram>)
-  | ({
-      instructionType: InitializerInstruction.SetSentinelAllowlist;
-    } & ParsedSetSentinelAllowlistInstruction<TProgram>)
   | ({
       instructionType: InitializerInstruction.TransferAdmin;
     } & ParsedTransferAdminInstruction<TProgram>)
   | ({
-      instructionType: InitializerInstruction.UpdateLaunchCalldata;
-    } & ParsedUpdateLaunchCalldataInstruction<TProgram>)
+      instructionType: InitializerInstruction.UpdateLaunchPayload;
+    } & ParsedUpdateLaunchPayloadInstruction<TProgram>)
   | ({
       instructionType: InitializerInstruction.UpdateTradingFlags;
     } & ParsedUpdateTradingFlagsInstruction<TProgram>);
@@ -382,18 +382,18 @@ export function parseInitializerInstruction<TProgram extends string>(
         ...parsePreviewSwapExactInInstruction(instruction),
       };
     }
+    case InitializerInstruction.SetHookAllowlist: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: InitializerInstruction.SetHookAllowlist,
+        ...parseSetHookAllowlistInstruction(instruction),
+      };
+    }
     case InitializerInstruction.SetMigratorAllowlist: {
       assertIsInstructionWithAccounts(instruction);
       return {
         instructionType: InitializerInstruction.SetMigratorAllowlist,
         ...parseSetMigratorAllowlistInstruction(instruction),
-      };
-    }
-    case InitializerInstruction.SetSentinelAllowlist: {
-      assertIsInstructionWithAccounts(instruction);
-      return {
-        instructionType: InitializerInstruction.SetSentinelAllowlist,
-        ...parseSetSentinelAllowlistInstruction(instruction),
       };
     }
     case InitializerInstruction.TransferAdmin: {
@@ -403,11 +403,11 @@ export function parseInitializerInstruction<TProgram extends string>(
         ...parseTransferAdminInstruction(instruction),
       };
     }
-    case InitializerInstruction.UpdateLaunchCalldata: {
+    case InitializerInstruction.UpdateLaunchPayload: {
       assertIsInstructionWithAccounts(instruction);
       return {
-        instructionType: InitializerInstruction.UpdateLaunchCalldata,
-        ...parseUpdateLaunchCalldataInstruction(instruction),
+        instructionType: InitializerInstruction.UpdateLaunchPayload,
+        ...parseUpdateLaunchPayloadInstruction(instruction),
       };
     }
     case InitializerInstruction.UpdateTradingFlags: {
@@ -469,21 +469,21 @@ export type InitializerPluginInstructions = {
     input: PreviewSwapExactInInput,
   ) => ReturnType<typeof getPreviewSwapExactInInstruction> &
     SelfPlanAndSendFunctions;
+  setHookAllowlist: (
+    input: SetHookAllowlistAsyncInput,
+  ) => ReturnType<typeof getSetHookAllowlistInstructionAsync> &
+    SelfPlanAndSendFunctions;
   setMigratorAllowlist: (
     input: SetMigratorAllowlistAsyncInput,
   ) => ReturnType<typeof getSetMigratorAllowlistInstructionAsync> &
-    SelfPlanAndSendFunctions;
-  setSentinelAllowlist: (
-    input: SetSentinelAllowlistAsyncInput,
-  ) => ReturnType<typeof getSetSentinelAllowlistInstructionAsync> &
     SelfPlanAndSendFunctions;
   transferAdmin: (
     input: TransferAdminAsyncInput,
   ) => ReturnType<typeof getTransferAdminInstructionAsync> &
     SelfPlanAndSendFunctions;
-  updateLaunchCalldata: (
-    input: UpdateLaunchCalldataAsyncInput,
-  ) => ReturnType<typeof getUpdateLaunchCalldataInstructionAsync> &
+  updateLaunchPayload: (
+    input: UpdateLaunchPayloadAsyncInput,
+  ) => ReturnType<typeof getUpdateLaunchPayloadInstructionAsync> &
     SelfPlanAndSendFunctions;
   updateTradingFlags: (
     input: UpdateTradingFlagsAsyncInput,
@@ -552,25 +552,25 @@ export function initializerProgram() {
               client,
               getPreviewSwapExactInInstruction(input),
             ),
+          setHookAllowlist: (input) =>
+            addSelfPlanAndSendFunctions(
+              client,
+              getSetHookAllowlistInstructionAsync(input),
+            ),
           setMigratorAllowlist: (input) =>
             addSelfPlanAndSendFunctions(
               client,
               getSetMigratorAllowlistInstructionAsync(input),
-            ),
-          setSentinelAllowlist: (input) =>
-            addSelfPlanAndSendFunctions(
-              client,
-              getSetSentinelAllowlistInstructionAsync(input),
             ),
           transferAdmin: (input) =>
             addSelfPlanAndSendFunctions(
               client,
               getTransferAdminInstructionAsync(input),
             ),
-          updateLaunchCalldata: (input) =>
+          updateLaunchPayload: (input) =>
             addSelfPlanAndSendFunctions(
               client,
-              getUpdateLaunchCalldataInstructionAsync(input),
+              getUpdateLaunchPayloadInstructionAsync(input),
             ),
           updateTradingFlags: (input) =>
             addSelfPlanAndSendFunctions(

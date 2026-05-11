@@ -25,7 +25,7 @@ import {
 
 export type QuoteToNumeraireArgs = {
   amount: bigint;
-  side: number;
+  inputTokenIndex: number;
   maxHops: number;
   useTwap: boolean;
   windowSeconds: number;
@@ -33,7 +33,7 @@ export type QuoteToNumeraireArgs = {
 
 export type QuoteToNumeraireArgsArgs = {
   amount: number | bigint;
-  side: number;
+  inputTokenIndex: number;
   maxHops: number;
   useTwap: boolean;
   windowSeconds: number;
@@ -42,7 +42,7 @@ export type QuoteToNumeraireArgsArgs = {
 export function getQuoteToNumeraireArgsEncoder(): FixedSizeEncoder<QuoteToNumeraireArgsArgs> {
   return getStructEncoder([
     ['amount', getU128Encoder()],
-    ['side', getU8Encoder()],
+    ['inputTokenIndex', getU8Encoder()],
     ['maxHops', getU8Encoder()],
     ['useTwap', getBooleanEncoder()],
     ['windowSeconds', getU32Encoder()],
@@ -52,7 +52,7 @@ export function getQuoteToNumeraireArgsEncoder(): FixedSizeEncoder<QuoteToNumera
 export function getQuoteToNumeraireArgsDecoder(): FixedSizeDecoder<QuoteToNumeraireArgs> {
   return getStructDecoder([
     ['amount', getU128Decoder()],
-    ['side', getU8Decoder()],
+    ['inputTokenIndex', getU8Decoder()],
     ['maxHops', getU8Decoder()],
     ['useTwap', getBooleanDecoder()],
     ['windowSeconds', getU32Decoder()],

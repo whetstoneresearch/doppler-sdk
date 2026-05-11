@@ -40,8 +40,8 @@ export const ACCOUNT_VERSION = 1;
 // Array Size Constants
 // ============================================================================
 
-/** Maximum number of programs in sentinel allowlist */
-export const MAX_SENTINEL_ALLOWLIST = 32;
+/** Maximum number of programs in hook allowlist */
+export const MAX_HOOK_ALLOWLIST = 32;
 
 /** Maximum number of oracle observations (TWAP buffer size) */
 export const MAX_ORACLE_OBSERVATIONS = 64;
@@ -71,39 +71,39 @@ export const SEED_POSITION = 'position';
 /** Seed prefix for OracleState PDA: ['oracle', pool] */
 export const SEED_ORACLE = 'oracle';
 
-/** Seed prefix for protocol position PDA: ['protocol_position', pool] */
-export const SEED_PROTOCOL_POSITION = 'protocol_position';
+/** Seed prefix for protocol fee position PDA: ['protocol_position', pool] */
+export const SEED_PROTOCOL_FEE_POSITION = 'protocol_position';
 
 // ============================================================================
-// Sentinel Flags
+// Hook Flags
 // ============================================================================
 
-/** Sentinel hook: called before swap */
-export const SF_BEFORE_SWAP = 1 << 0;
+/** Hook: called before swap */
+export const HF_BEFORE_SWAP = 1 << 0;
 
-/** Sentinel hook: called after swap */
-export const SF_AFTER_SWAP = 1 << 1;
+/** Hook: called after swap */
+export const HF_AFTER_SWAP = 1 << 1;
 
-/** Sentinel hook: called before add liquidity */
-export const SF_BEFORE_ADD_LIQ = 1 << 2;
+/** Hook: called before add liquidity */
+export const HF_BEFORE_ADD_LIQ = 1 << 2;
 
-/** Sentinel hook: called after add liquidity */
-export const SF_AFTER_ADD_LIQ = 1 << 3;
+/** Hook: called after add liquidity */
+export const HF_AFTER_ADD_LIQ = 1 << 3;
 
-/** Sentinel hook: called before remove liquidity */
-export const SF_BEFORE_REMOVE_LIQ = 1 << 4;
+/** Hook: called before remove liquidity */
+export const HF_BEFORE_REMOVE_LIQ = 1 << 4;
 
-/** Sentinel hook: called after remove liquidity */
-export const SF_AFTER_REMOVE_LIQ = 1 << 5;
+/** Hook: called after remove liquidity */
+export const HF_AFTER_REMOVE_LIQ = 1 << 5;
 
-/** Require an oracle account when invoking sentinel hooks */
-export const SF_REQUIRE_ORACLE = 1 << 6;
+/** Require an oracle account when invoking hooks */
+export const HF_REQUIRE_ORACLE = 1 << 6;
 
-/** Preserve readonly signer metas when forwarding remaining accounts to sentinels */
-export const SF_FORWARD_READONLY_SIGNERS = 1 << 7;
+/** Preserve readonly signer metas when forwarding remaining accounts to hooks */
+export const HF_FORWARD_READONLY_SIGNERS = 1 << 7;
 
-/** Sentinel return value indicating "no change" to fee parameter */
-export const SENTINEL_NO_CHANGE = 0xffff;
+/** Hook return value indicating "no change" to fee parameter */
+export const HOOK_NO_CHANGE = 0xffff;
 
 // ============================================================================
 // Instruction Discriminators (Anchor 8-byte hashes)
@@ -162,8 +162,8 @@ export const INSTRUCTION_DISCRIMINATORS = {
   quoteToNumeraire: new Uint8Array([
     0x04, 0x8e, 0xf9, 0xf0, 0x81, 0x0f, 0x8f, 0x39,
   ]),
-  // SHA256("global:set_sentinel")[0:8]
-  setSentinel: new Uint8Array([0x5e, 0xc8, 0x52, 0x81, 0x35, 0x95, 0xe8, 0x71]),
+  // SHA256("global:set_hook")[0:8]
+  setHook: new Uint8Array([0xaf, 0x10, 0xbb, 0xfc, 0x13, 0x36, 0x6f, 0xdd]),
   // SHA256("global:set_fees")[0:8]
   setFees: new Uint8Array([0x89, 0xb2, 0x31, 0x3a, 0x00, 0xf5, 0xf2, 0xbe]),
   // SHA256("global:set_route")[0:8]
@@ -176,8 +176,10 @@ export const INSTRUCTION_DISCRIMINATORS = {
   pause: new Uint8Array([0xd3, 0x16, 0xdd, 0xfb, 0x4a, 0x79, 0xc1, 0x2f]),
   // SHA256("global:unpause")[0:8]
   unpause: new Uint8Array([0xa9, 0x90, 0x04, 0x26, 0x0a, 0x8d, 0xbc, 0xff]),
-  // SHA256("global:skim")[0:8]
-  skim: new Uint8Array([0xee, 0x78, 0xdd, 0x8a, 0x52, 0x3c, 0x64, 0xda]),
+  // SHA256("global:withdraw_vault_excess")[0:8]
+  withdrawVaultExcess: new Uint8Array([
+    0xeb, 0xc5, 0xf7, 0xb1, 0x89, 0x48, 0x87, 0x71,
+  ]),
 } as const;
 
 // ============================================================================

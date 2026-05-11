@@ -14,22 +14,22 @@ export const BPF_LOADER_UPGRADEABLE_PROGRAM_ID: Address = address(
 );
 
 /**
- * Sentinel program for CPMM-migrated launches.
+ * Hook program for CPMM-migrated launches.
  * Invoked during bonding curve swaps and previews as a pre/post-swap hook.
  *
- * Source of truth: programs/cpmm_sentinel/src/lib.rs
+ * Source of truth: programs/cpmm_hook/src/lib.rs
  */
-export const CPMM_SENTINEL_PROGRAM_ID: Address = address(
+export const CPMM_HOOK_PROGRAM_ID: Address = address(
   '2vJ1c62knEwZbxp3XdHB4RSmCfz55pA6tRkCho63gW7u',
 );
 
 /**
- * Sentinel program for prediction market launches.
+ * Hook program for prediction market launches.
  * Invoked during bonding curve swaps and previews as a pre/post-swap hook.
  *
- * Source of truth: programs/prediction_sentinel/src/lib.rs
+ * Source of truth: programs/prediction_hook/src/lib.rs
  */
-export const PREDICTION_SENTINEL_PROGRAM_ID: Address = address(
+export const PREDICTION_HOOK_PROGRAM_ID: Address = address(
   '7QcQDANJVC17Jgc6KjjeagSkm2zAphgHVPK5agJzyihB',
 );
 
@@ -47,7 +47,7 @@ export const SEED_LAUNCH_AUTHORITY = 'launch_authority';
 
 /**
  * Commitment hash for an empty remaining-accounts list — keccak256 of [0,0,0,0].
- * Pass this for sentinelRemainingAccountsHash and migratorRemainingAccountsHash
+ * Pass this for hookRemainingAccountsHash and migratorRemainingAccountsHash
  * when no extra accounts are needed at that hook's invocation time.
  */
 export const EMPTY_REMAINING_ACCOUNTS_HASH = new Uint8Array([
@@ -60,8 +60,8 @@ export const EMPTY_REMAINING_ACCOUNTS_HASH = new Uint8Array([
 // ============================================================================
 
 export const MAX_MIGRATOR_ALLOWLIST = 32;
-export const MAX_SENTINEL_ALLOWLIST = 32;
-export const MAX_CALLDATA = 256;
+export const MAX_HOOK_ALLOWLIST = 32;
+export const MAX_PAYLOAD = 256;
 
 // ============================================================================
 // Phases / Directions / Flags (must match programs/initializer/src/constants.rs)
@@ -71,21 +71,21 @@ export const PHASE_TRADING = 0;
 export const PHASE_MIGRATED = 1;
 export const PHASE_ABORTED = 2;
 
-export const DIRECTION_BUY = 0;
-export const DIRECTION_SELL = 1;
+export const TRADE_DIRECTION_BUY = 0;
+export const TRADE_DIRECTION_SELL = 1;
 
 export const CURVE_KIND_XYK = 0;
 
 export const CURVE_PARAMS_FORMAT_XYK_V0 = 0x00;
 
-export const SF_BEFORE_SWAP = 1 << 0;
-export const SF_AFTER_SWAP = 1 << 1;
-export const SF_BEFORE_CREATE = 1 << 2;
-export const SF_AFTER_CREATE = 1 << 3;
-export const SF_BEFORE_MIGRATE = 1 << 4;
-export const SF_AFTER_MIGRATE = 1 << 5;
+export const HF_BEFORE_SWAP = 1 << 0;
+export const HF_AFTER_SWAP = 1 << 1;
+export const HF_BEFORE_CREATE = 1 << 2;
+export const HF_AFTER_CREATE = 1 << 3;
+export const HF_BEFORE_MIGRATE = 1 << 4;
+export const HF_AFTER_MIGRATE = 1 << 5;
 
-export const SENTINEL_NO_CHANGE = 0xffff;
+export const HOOK_NO_CHANGE = 0xffff;
 
 // ============================================================================
 // Instruction Discriminators (Anchor 8-byte hashes)
@@ -100,9 +100,9 @@ export const INITIALIZER_INSTRUCTION_DISCRIMINATORS = {
   setMigratorAllowlist: new Uint8Array([
     0xd1, 0x5a, 0xb5, 0x68, 0x63, 0x6c, 0xe9, 0xa8,
   ]),
-  // SHA256("global:set_sentinel_allowlist")[0:8]
-  setSentinelAllowlist: new Uint8Array([
-    0xe9, 0x48, 0xb4, 0xf6, 0xab, 0x75, 0x15, 0x32,
+  // SHA256("global:set_hook_allowlist")[0:8]
+  setHookAllowlist: new Uint8Array([
+    0xe8, 0x1c, 0x28, 0x8f, 0x79, 0xb6, 0x4d, 0x67,
   ]),
   // SHA256("global:initialize_launch")[0:8]
   initializeLaunch: new Uint8Array([

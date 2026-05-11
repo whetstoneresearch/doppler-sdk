@@ -9,7 +9,7 @@ import { AccountRole, createNoopSigner } from '@solana/kit';
 import { CPMM_PROGRAM_ADDRESS } from '../generated/cpmm/programs/index.js';
 import { getSwapExactInInstruction } from '../generated/cpmm/instructions/index.js';
 import { TOKEN_PROGRAM_ADDRESS } from '../core/constants.js';
-import type { SwapDirection } from '../core/types.js';
+import type { TradeDirection } from '../core/types.js';
 
 type RemainingAccount =
   | Address
@@ -60,7 +60,7 @@ export function createSwapInstruction(params: {
   user: Address | TransactionSigner;
   amountIn: bigint;
   minAmountOut: bigint;
-  direction: SwapDirection;
+  tradeDirection: TradeDirection;
   oracle?: Address;
   remainingAccounts?: RemainingAccount[];
   updateOracle?: boolean;
@@ -82,7 +82,7 @@ export function createSwapInstruction(params: {
     user,
     amountIn,
     minAmountOut,
-    direction,
+    tradeDirection,
     oracle,
     remainingAccounts = [],
     updateOracle = false,
@@ -93,11 +93,11 @@ export function createSwapInstruction(params: {
   } = params;
   const trader = typeof user === 'string' ? createNoopSigner(user) : user;
 
-  // Determine vaults and user accounts based on direction
+  // Determine vaults and user accounts based on trade direction
   const [vaultIn, vaultOut] =
-    direction === 0 ? [vault0, vault1] : [vault1, vault0];
+    tradeDirection === 0 ? [vault0, vault1] : [vault1, vault0];
   const [userIn, userOut] =
-    direction === 0 ? [userToken0, userToken1] : [userToken1, userToken0];
+    tradeDirection === 0 ? [userToken0, userToken1] : [userToken1, userToken0];
 
   const instruction = getSwapExactInInstruction(
     {
@@ -116,7 +116,7 @@ export function createSwapInstruction(params: {
       oracle,
       amountIn,
       minAmountOut,
-      direction,
+      tradeDirection,
       updateOracle,
     },
     { programAddress: programId },

@@ -6,7 +6,7 @@
 
 import { useState, useCallback, useMemo } from 'react';
 import type { Address } from '@solana/kit';
-import type { Pool, SwapQuote, SwapDirection } from '../../core/types.js';
+import type { Pool, SwapQuote, TradeDirection } from '../../core/types.js';
 import {
   getSwapQuote,
   getSwapQuoteExactOut,
@@ -41,8 +41,8 @@ export interface SwapQuoteResult extends SwapQuote {
   minAmountOut: bigint;
   /** Maximum input amount (after slippage, for exact output) */
   maxAmountIn: bigint;
-  /** Swap direction (0 = token0->token1, 1 = token1->token0) */
-  direction: SwapDirection;
+  /** Trade direction (0 = token0->token1, 1 = token1->token0) */
+  tradeDirection: TradeDirection;
   /** Whether the quote is valid */
   isValid: boolean;
   /** Error message if invalid */
@@ -150,8 +150,8 @@ export function useSwap(options: UseSwapOptions): UseSwapResult {
 
   const [quoting] = useState(false);
 
-  // Calculate swap direction
-  const direction = useMemo<SwapDirection | null>(() => {
+  // Calculate trade direction
+  const tradeDirection = useMemo<TradeDirection | null>(() => {
     if (!token0Mint || !token1Mint || !state.inputToken) return null;
     if (state.inputToken === token0Mint) return 0;
     if (state.inputToken === token1Mint) return 1;
@@ -160,7 +160,7 @@ export function useSwap(options: UseSwapOptions): UseSwapResult {
 
   // Calculate quote
   const quote = useMemo<SwapQuoteResult | null>(() => {
-    if (!pool || direction === null) {
+    if (!pool || tradeDirection === null) {
       return null;
     }
 
@@ -175,14 +175,14 @@ export function useSwap(options: UseSwapOptions): UseSwapResult {
           executionPrice: 0,
           minAmountOut: 0n,
           maxAmountIn: 0n,
-          direction,
+          tradeDirection,
           isValid: false,
           error: null,
         };
       }
 
       try {
-        const swapQuote = getSwapQuote(pool, state.inputAmount, direction);
+        const swapQuote = getSwapQuote(pool, state.inputAmount, tradeDirection);
 
         // Calculate min output with slippage
         const slippageFactor = BPS_DENOM - BigInt(state.slippageBps);
@@ -192,7 +192,7 @@ export function useSwap(options: UseSwapOptions): UseSwapResult {
           ...swapQuote,
           minAmountOut,
           maxAmountIn: state.inputAmount,
-          direction,
+          tradeDirection,
           isValid: swapQuote.amountOut > 0n,
           error: null,
         };
@@ -206,7 +206,7 @@ export function useSwap(options: UseSwapOptions): UseSwapResult {
           executionPrice: 0,
           minAmountOut: 0n,
           maxAmountIn: 0n,
-          direction,
+          tradeDirection,
           isValid: false,
           error:
             err instanceof Error ? err.message : 'Failed to calculate quote',
@@ -224,7 +224,7 @@ export function useSwap(options: UseSwapOptions): UseSwapResult {
           executionPrice: 0,
           minAmountOut: 0n,
           maxAmountIn: 0n,
-          direction,
+          tradeDirection,
           isValid: false,
           error: null,
         };
@@ -234,7 +234,7 @@ export function useSwap(options: UseSwapOptions): UseSwapResult {
         const { amountIn, feeTotal } = getSwapQuoteExactOut(
           pool,
           state.outputAmount,
-          direction,
+          tradeDirection,
         );
 
         // Calculate max input with slippage
@@ -242,7 +242,7 @@ export function useSwap(options: UseSwapOptions): UseSwapResult {
         const maxAmountIn = (amountIn * slippageFactor) / BPS_DENOM;
 
         // Get price impact from forward quote
-        const forwardQuote = getSwapQuote(pool, amountIn, direction);
+        const forwardQuote = getSwapQuote(pool, amountIn, tradeDirection);
 
         return {
           amountOut: state.outputAmount,
@@ -253,7 +253,7 @@ export function useSwap(options: UseSwapOptions): UseSwapResult {
           executionPrice: ratioToNumber(state.outputAmount, amountIn),
           minAmountOut: state.outputAmount,
           maxAmountIn,
-          direction,
+          tradeDirection,
           isValid: amountIn > 0n,
           error: null,
         };
@@ -267,7 +267,7 @@ export function useSwap(options: UseSwapOptions): UseSwapResult {
           executionPrice: 0,
           minAmountOut: 0n,
           maxAmountIn: 0n,
-          direction,
+          tradeDirection,
           isValid: false,
           error:
             err instanceof Error ? err.message : 'Failed to calculate quote',
@@ -276,7 +276,7 @@ export function useSwap(options: UseSwapOptions): UseSwapResult {
     }
   }, [
     pool,
-    direction,
+    tradeDirection,
     state.inputAmount,
     state.outputAmount,
     state.exactInput,

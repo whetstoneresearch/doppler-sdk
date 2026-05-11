@@ -49,23 +49,23 @@ export type InitializeLaunchArgs = {
   curveParams: ReadonlyUint8Array;
   allowBuy: number;
   allowSell: number;
-  sentinelProgram: Address;
-  sentinelFlags: number;
-  sentinelCalldata: ReadonlyUint8Array;
-  sentinelCreateRemainingAccountsLen: number;
+  hookProgram: Address;
+  hookFlags: number;
+  hookPayload: ReadonlyUint8Array;
+  hookCreateRemainingAccountsLen: number;
   migratorProgram: Address;
-  migratorInitCalldata: ReadonlyUint8Array;
-  migratorMigrateCalldata: ReadonlyUint8Array;
+  migratorInitPayload: ReadonlyUint8Array;
+  migratorMigratePayload: ReadonlyUint8Array;
   /**
-   * Commitment hash for initialize_launch sentinel remaining accounts.
+   * Commitment hash for initialize_launch hook remaining accounts.
    * Computed as hash(u32_len || pubkey_0 || ... || pubkey_n).
    */
-  sentinelCreateRemainingAccountsHash: ReadonlyUint8Array;
+  hookCreateRemainingAccountsHash: ReadonlyUint8Array;
   /**
-   * Commitment hash for swap/preview sentinel remaining accounts.
+   * Commitment hash for swap/preview hook remaining accounts.
    * Computed as hash(u32_len || pubkey_0 || ... || pubkey_n).
    */
-  sentinelRemainingAccountsHash: ReadonlyUint8Array;
+  hookRemainingAccountsHash: ReadonlyUint8Array;
   /**
    * Commitment hash for migrator-init remaining accounts.
    * Computed as hash(u32_len || pubkey_0 || ... || pubkey_n).
@@ -98,23 +98,23 @@ export type InitializeLaunchArgsArgs = {
   curveParams: ReadonlyUint8Array;
   allowBuy: number;
   allowSell: number;
-  sentinelProgram: Address;
-  sentinelFlags: number;
-  sentinelCalldata: ReadonlyUint8Array;
-  sentinelCreateRemainingAccountsLen: number;
+  hookProgram: Address;
+  hookFlags: number;
+  hookPayload: ReadonlyUint8Array;
+  hookCreateRemainingAccountsLen: number;
   migratorProgram: Address;
-  migratorInitCalldata: ReadonlyUint8Array;
-  migratorMigrateCalldata: ReadonlyUint8Array;
+  migratorInitPayload: ReadonlyUint8Array;
+  migratorMigratePayload: ReadonlyUint8Array;
   /**
-   * Commitment hash for initialize_launch sentinel remaining accounts.
+   * Commitment hash for initialize_launch hook remaining accounts.
    * Computed as hash(u32_len || pubkey_0 || ... || pubkey_n).
    */
-  sentinelCreateRemainingAccountsHash: ReadonlyUint8Array;
+  hookCreateRemainingAccountsHash: ReadonlyUint8Array;
   /**
-   * Commitment hash for swap/preview sentinel remaining accounts.
+   * Commitment hash for swap/preview hook remaining accounts.
    * Computed as hash(u32_len || pubkey_0 || ... || pubkey_n).
    */
-  sentinelRemainingAccountsHash: ReadonlyUint8Array;
+  hookRemainingAccountsHash: ReadonlyUint8Array;
   /**
    * Commitment hash for migrator-init remaining accounts.
    * Computed as hash(u32_len || pubkey_0 || ... || pubkey_n).
@@ -148,27 +148,21 @@ export function getInitializeLaunchArgsEncoder(): Encoder<InitializeLaunchArgsAr
     ['curveParams', addEncoderSizePrefix(getBytesEncoder(), getU32Encoder())],
     ['allowBuy', getU8Encoder()],
     ['allowSell', getU8Encoder()],
-    ['sentinelProgram', getAddressEncoder()],
-    ['sentinelFlags', getU32Encoder()],
-    [
-      'sentinelCalldata',
-      addEncoderSizePrefix(getBytesEncoder(), getU32Encoder()),
-    ],
-    ['sentinelCreateRemainingAccountsLen', getU32Encoder()],
+    ['hookProgram', getAddressEncoder()],
+    ['hookFlags', getU32Encoder()],
+    ['hookPayload', addEncoderSizePrefix(getBytesEncoder(), getU32Encoder())],
+    ['hookCreateRemainingAccountsLen', getU32Encoder()],
     ['migratorProgram', getAddressEncoder()],
     [
-      'migratorInitCalldata',
+      'migratorInitPayload',
       addEncoderSizePrefix(getBytesEncoder(), getU32Encoder()),
     ],
     [
-      'migratorMigrateCalldata',
+      'migratorMigratePayload',
       addEncoderSizePrefix(getBytesEncoder(), getU32Encoder()),
     ],
-    [
-      'sentinelCreateRemainingAccountsHash',
-      fixEncoderSize(getBytesEncoder(), 32),
-    ],
-    ['sentinelRemainingAccountsHash', fixEncoderSize(getBytesEncoder(), 32)],
+    ['hookCreateRemainingAccountsHash', fixEncoderSize(getBytesEncoder(), 32)],
+    ['hookRemainingAccountsHash', fixEncoderSize(getBytesEncoder(), 32)],
     [
       'migratorInitRemainingAccountsHash',
       fixEncoderSize(getBytesEncoder(), 32),
@@ -195,27 +189,21 @@ export function getInitializeLaunchArgsDecoder(): Decoder<InitializeLaunchArgs> 
     ['curveParams', addDecoderSizePrefix(getBytesDecoder(), getU32Decoder())],
     ['allowBuy', getU8Decoder()],
     ['allowSell', getU8Decoder()],
-    ['sentinelProgram', getAddressDecoder()],
-    ['sentinelFlags', getU32Decoder()],
-    [
-      'sentinelCalldata',
-      addDecoderSizePrefix(getBytesDecoder(), getU32Decoder()),
-    ],
-    ['sentinelCreateRemainingAccountsLen', getU32Decoder()],
+    ['hookProgram', getAddressDecoder()],
+    ['hookFlags', getU32Decoder()],
+    ['hookPayload', addDecoderSizePrefix(getBytesDecoder(), getU32Decoder())],
+    ['hookCreateRemainingAccountsLen', getU32Decoder()],
     ['migratorProgram', getAddressDecoder()],
     [
-      'migratorInitCalldata',
+      'migratorInitPayload',
       addDecoderSizePrefix(getBytesDecoder(), getU32Decoder()),
     ],
     [
-      'migratorMigrateCalldata',
+      'migratorMigratePayload',
       addDecoderSizePrefix(getBytesDecoder(), getU32Decoder()),
     ],
-    [
-      'sentinelCreateRemainingAccountsHash',
-      fixDecoderSize(getBytesDecoder(), 32),
-    ],
-    ['sentinelRemainingAccountsHash', fixDecoderSize(getBytesDecoder(), 32)],
+    ['hookCreateRemainingAccountsHash', fixDecoderSize(getBytesDecoder(), 32)],
+    ['hookRemainingAccountsHash', fixDecoderSize(getBytesDecoder(), 32)],
     [
       'migratorInitRemainingAccountsHash',
       fixDecoderSize(getBytesDecoder(), 32),

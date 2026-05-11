@@ -49,7 +49,8 @@
     "prepublishOnly": "npm run build",
     "generate:addresses": "node ./scripts/generate-addresses.mjs --source ../doppler/Deployments.json --out src/evm/deployments.generated.ts",
     "generate-snapshot": "tsx ./scripts/snapshot-addresses.ts",
-    "generate:codecs": "tsx scripts/codegen.ts && oxfmt --write src/solana/generated/"
+    "generate:codecs": "tsx scripts/codegen.ts && oxfmt --write src/solana/generated/",
+    "test:solana:local:setup": "tsx scripts/setup-solana-local-test-validator.ts"
   },
   "prettier": {
     "printWidth": 80,

@@ -1015,33 +1015,6 @@
       }
     },
     {
-      "name": "CalldataBuf",
-      "docs": [
-        "Variable-length calldata buffer."
-      ],
-      "repr": {
-        "kind": "c"
-      },
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "len",
-            "type": "u16"
-          },
-          {
-            "name": "bytes",
-            "type": {
-              "array": [
-                "u8",
-                256
-              ]
-            }
-          }
-        ]
-      }
-    },
-    {
       "name": "ClaimReceipt",
       "docs": [
         "ClaimReceipt PDA: tracks a user's claim state for a market.",
@@ -1415,11 +1388,11 @@
             }
           },
           {
-            "name": "sentinel_program",
+            "name": "hook_program",
             "type": "pubkey"
           },
           {
-            "name": "sentinel_flags",
+            "name": "hook_flags",
             "type": "u32"
           },
           {
@@ -1432,10 +1405,10 @@
             }
           },
           {
-            "name": "sentinel_calldata",
+            "name": "hook_payload",
             "type": {
               "defined": {
-                "name": "CalldataBuf"
+                "name": "PayloadBuf"
               }
             }
           },
@@ -1444,18 +1417,18 @@
             "type": "pubkey"
           },
           {
-            "name": "migrator_init_calldata",
+            "name": "migrator_init_payload",
             "type": {
               "defined": {
-                "name": "CalldataBuf"
+                "name": "PayloadBuf"
               }
             }
           },
           {
-            "name": "migrator_migrate_calldata",
+            "name": "migrator_migrate_payload",
             "type": {
               "defined": {
-                "name": "CalldataBuf"
+                "name": "PayloadBuf"
               }
             }
           },
@@ -1480,7 +1453,7 @@
             "name": "curve_params",
             "type": {
               "defined": {
-                "name": "CalldataBuf"
+                "name": "PayloadBuf"
               }
             }
           },
@@ -1654,7 +1627,7 @@
       "name": "MigrateEntryArgs",
       "docs": [
         "Arguments for migrate_entry instruction.",
-        "This is decoded from migrator_migrate_calldata passed by initializer."
+        "This is decoded from migrator_migrate_payload passed by initializer."
       ],
       "type": {
         "kind": "struct",
@@ -1739,6 +1712,33 @@
       }
     },
     {
+      "name": "PayloadBuf",
+      "docs": [
+        "Variable-length payload buffer."
+      ],
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "len",
+            "type": "u16"
+          },
+          {
+            "name": "bytes",
+            "type": {
+              "array": [
+                "u8",
+                256
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "PreviewPayoutIfWinnerArgs",
       "type": {
         "kind": "struct",
@@ -1758,7 +1758,7 @@
       "name": "RegisterEntryArgs",
       "docs": [
         "Arguments for register_entry instruction.",
-        "This is decoded from migrator_init_calldata passed by initializer."
+        "This is decoded from migrator_init_payload passed by initializer."
       ],
       "type": {
         "kind": "struct",

@@ -28,7 +28,7 @@ import {
 } from '@solana/kit';
 import {
   MAX_ORACLE_OBSERVATIONS,
-  MAX_SENTINEL_ALLOWLIST,
+  MAX_HOOK_ALLOWLIST,
   ACCOUNT_DISCRIMINATORS,
 } from './constants.js';
 import type {
@@ -46,7 +46,7 @@ import type {
   InitializeConfigArgs,
   InitializePoolArgs,
   InitializeOracleArgs,
-  SetSentinelArgs,
+  SetHookArgs,
   SetFeesArgs,
   SetRouteArgs,
   TransferAdminArgs,
@@ -107,11 +107,8 @@ export const ammConfigDataCodec: Codec<AmmConfig> = getStructCodec([
   ['admin', addressCodec],
   ['paused', boolCodec],
   ['numeraireMint', addressCodec],
-  ['sentinelAllowlistLen', u8Codec],
-  [
-    'sentinelAllowlist',
-    getArrayCodec(addressCodec, { size: MAX_SENTINEL_ALLOWLIST }),
-  ],
+  ['hookAllowlistLen', u8Codec],
+  ['hookAllowlist', getArrayCodec(addressCodec, { size: MAX_HOOK_ALLOWLIST })],
   ['maxSwapFeeBps', u16Codec],
   ['maxFeeSplitBps', u16Codec],
   ['maxRouteHops', u8Codec],
@@ -138,14 +135,14 @@ export const poolDataCodec: Codec<Pool> = getStructCodec([
   ['feeGrowthGlobal1Q64', u128Codec],
   ['feesUnclaimed0', u64Codec],
   ['feesUnclaimed1', u64Codec],
-  ['sentinelProgram', addressCodec],
-  ['sentinelFlags', u32Codec],
+  ['hookProgram', addressCodec],
+  ['hookFlags', u32Codec],
   ['numeraireMint', addressCodec],
-  ['liquidityMeasureSide', u8Codec],
+  ['liquidityMeasureTokenIndex', u8Codec],
   ['routeNextPool', addressCodec],
   ['routeBridgeMint', addressCodec],
   ['kLast', u128Codec],
-  ['protocolPosition', addressCodec],
+  ['protocolFeePosition', addressCodec],
   ['locked', u8Codec],
   ['version', u8Codec],
   ['reserved', reservedBytesCodec],
@@ -264,7 +261,7 @@ const optionAddressCodec: Codec<Address | null> = transformCodec(
 export const swapExactInArgsCodec = getStructCodec([
   ['amountIn', u64Codec],
   ['minAmountOut', u64Codec],
-  ['direction', u8Codec],
+  ['tradeDirection', u8Codec],
   ['updateOracle', boolCodec],
 ]) as Codec<SwapExactInArgs>;
 
@@ -318,7 +315,7 @@ export const initializeConfigArgsCodec: Codec<InitializeConfigArgs> =
     ['maxRouteHops', u8Codec],
     ['protocolFeeEnabled', boolCodec],
     ['protocolFeeBps', u16Codec],
-    ['sentinelAllowlist', getArrayCodec(addressCodec, { size: u32Codec })],
+    ['hookAllowlist', getArrayCodec(addressCodec, { size: u32Codec })],
   ]);
 
 export const initializePoolArgsCodec: Codec<InitializePoolArgs> =
@@ -327,7 +324,7 @@ export const initializePoolArgsCodec: Codec<InitializePoolArgs> =
     ['mintB', addressCodec],
     ['initialSwapFeeBps', u16Codec],
     ['initialFeeSplitBps', u16Codec],
-    ['liquidityMeasureSide', u8Codec],
+    ['liquidityMeasureTokenIndex', u8Codec],
     ['numeraireMintOverride', optionAddressCodec],
   ]);
 
@@ -338,9 +335,9 @@ export const initializeOracleArgsCodec: Codec<InitializeOracleArgs> =
     ['numObservations', u16Codec],
   ]);
 
-export const setSentinelArgsCodec: Codec<SetSentinelArgs> = getStructCodec([
-  ['sentinelProgram', addressCodec],
-  ['sentinelFlags', u32Codec],
+export const setHookArgsCodec: Codec<SetHookArgs> = getStructCodec([
+  ['hookProgram', addressCodec],
+  ['hookFlags', u32Codec],
 ]);
 
 export const setFeesArgsCodec: Codec<SetFeesArgs> = getStructCodec([
@@ -364,7 +361,7 @@ export const oracleConsultArgsCodec: Codec<OracleConsultArgs> = getStructCodec([
 export const quoteToNumeraireArgsCodec: Codec<QuoteToNumeraireArgs> =
   getStructCodec([
     ['amount', u128Codec],
-    ['side', u8Codec],
+    ['inputTokenIndex', u8Codec],
     ['maxHops', u8Codec],
     ['useTwap', boolCodec],
     ['windowSeconds', u32Codec],
@@ -425,9 +422,9 @@ export function encodeInitializeOracleArgs(
   return new Uint8Array(initializeOracleArgsCodec.encode(args));
 }
 
-/** Encode SetSentinel args */
-export function encodeSetSentinelArgs(args: SetSentinelArgs): Uint8Array {
-  return new Uint8Array(setSentinelArgsCodec.encode(args));
+/** Encode SetHook args */
+export function encodeSetHookArgs(args: SetHookArgs): Uint8Array {
+  return new Uint8Array(setHookArgsCodec.encode(args));
 }
 
 /** Encode SetFees args */

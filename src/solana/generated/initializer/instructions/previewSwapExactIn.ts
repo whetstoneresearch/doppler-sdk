@@ -53,7 +53,7 @@ export type PreviewSwapExactInInstruction<
   TAccountLaunch extends string | AccountMeta<string> = string,
   TAccountBaseVault extends string | AccountMeta<string> = string,
   TAccountQuoteVault extends string | AccountMeta<string> = string,
-  TAccountSentinelProgram extends string | AccountMeta<string> = string,
+  TAccountHookProgram extends string | AccountMeta<string> = string,
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -68,9 +68,9 @@ export type PreviewSwapExactInInstruction<
       TAccountQuoteVault extends string
         ? ReadonlyAccount<TAccountQuoteVault>
         : TAccountQuoteVault,
-      TAccountSentinelProgram extends string
-        ? ReadonlyAccount<TAccountSentinelProgram>
-        : TAccountSentinelProgram,
+      TAccountHookProgram extends string
+        ? ReadonlyAccount<TAccountHookProgram>
+        : TAccountHookProgram,
       ...TRemainingAccounts,
     ]
   >;
@@ -78,12 +78,12 @@ export type PreviewSwapExactInInstruction<
 export type PreviewSwapExactInInstructionData = {
   discriminator: ReadonlyUint8Array;
   amountIn: bigint;
-  direction: number;
+  tradeDirection: number;
 };
 
 export type PreviewSwapExactInInstructionDataArgs = {
   amountIn: number | bigint;
-  direction: number;
+  tradeDirection: number;
 };
 
 export function getPreviewSwapExactInInstructionDataEncoder(): FixedSizeEncoder<PreviewSwapExactInInstructionDataArgs> {
@@ -91,7 +91,7 @@ export function getPreviewSwapExactInInstructionDataEncoder(): FixedSizeEncoder<
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       ['amountIn', getU64Encoder()],
-      ['direction', getU8Encoder()],
+      ['tradeDirection', getU8Encoder()],
     ]),
     (value) => ({
       ...value,
@@ -104,7 +104,7 @@ export function getPreviewSwapExactInInstructionDataDecoder(): FixedSizeDecoder<
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['amountIn', getU64Decoder()],
-    ['direction', getU8Decoder()],
+    ['tradeDirection', getU8Decoder()],
   ]);
 }
 
@@ -122,29 +122,29 @@ export type PreviewSwapExactInInput<
   TAccountLaunch extends string = string,
   TAccountBaseVault extends string = string,
   TAccountQuoteVault extends string = string,
-  TAccountSentinelProgram extends string = string,
+  TAccountHookProgram extends string = string,
 > = {
   launch: Address<TAccountLaunch>;
   baseVault: Address<TAccountBaseVault>;
   quoteVault: Address<TAccountQuoteVault>;
-  /** Optional sentinel program (must match launch.sentinel_program if set) */
-  sentinelProgram?: Address<TAccountSentinelProgram>;
+  /** Optional hook program (must match launch.hook_program if set) */
+  hookProgram?: Address<TAccountHookProgram>;
   amountIn: PreviewSwapExactInInstructionDataArgs['amountIn'];
-  direction: PreviewSwapExactInInstructionDataArgs['direction'];
+  tradeDirection: PreviewSwapExactInInstructionDataArgs['tradeDirection'];
 };
 
 export function getPreviewSwapExactInInstruction<
   TAccountLaunch extends string,
   TAccountBaseVault extends string,
   TAccountQuoteVault extends string,
-  TAccountSentinelProgram extends string,
+  TAccountHookProgram extends string,
   TProgramAddress extends Address = typeof INITIALIZER_PROGRAM_ADDRESS,
 >(
   input: PreviewSwapExactInInput<
     TAccountLaunch,
     TAccountBaseVault,
     TAccountQuoteVault,
-    TAccountSentinelProgram
+    TAccountHookProgram
   >,
   config?: { programAddress?: TProgramAddress },
 ): PreviewSwapExactInInstruction<
@@ -152,7 +152,7 @@ export function getPreviewSwapExactInInstruction<
   TAccountLaunch,
   TAccountBaseVault,
   TAccountQuoteVault,
-  TAccountSentinelProgram
+  TAccountHookProgram
 > {
   // Program address.
   const programAddress = config?.programAddress ?? INITIALIZER_PROGRAM_ADDRESS;
@@ -162,10 +162,7 @@ export function getPreviewSwapExactInInstruction<
     launch: { value: input.launch ?? null, isWritable: false },
     baseVault: { value: input.baseVault ?? null, isWritable: false },
     quoteVault: { value: input.quoteVault ?? null, isWritable: false },
-    sentinelProgram: {
-      value: input.sentinelProgram ?? null,
-      isWritable: false,
-    },
+    hookProgram: { value: input.hookProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -181,7 +178,7 @@ export function getPreviewSwapExactInInstruction<
       getAccountMeta('launch', accounts.launch),
       getAccountMeta('baseVault', accounts.baseVault),
       getAccountMeta('quoteVault', accounts.quoteVault),
-      getAccountMeta('sentinelProgram', accounts.sentinelProgram),
+      getAccountMeta('hookProgram', accounts.hookProgram),
     ],
     data: getPreviewSwapExactInInstructionDataEncoder().encode(
       args as PreviewSwapExactInInstructionDataArgs,
@@ -192,7 +189,7 @@ export function getPreviewSwapExactInInstruction<
     TAccountLaunch,
     TAccountBaseVault,
     TAccountQuoteVault,
-    TAccountSentinelProgram
+    TAccountHookProgram
   >);
 }
 
@@ -205,8 +202,8 @@ export type ParsedPreviewSwapExactInInstruction<
     launch: TAccountMetas[0];
     baseVault: TAccountMetas[1];
     quoteVault: TAccountMetas[2];
-    /** Optional sentinel program (must match launch.sentinel_program if set) */
-    sentinelProgram?: TAccountMetas[3] | undefined;
+    /** Optional hook program (must match launch.hook_program if set) */
+    hookProgram?: TAccountMetas[3] | undefined;
   };
   data: PreviewSwapExactInInstructionData;
 };
@@ -246,7 +243,7 @@ export function parsePreviewSwapExactInInstruction<
       launch: getNextAccount(),
       baseVault: getNextAccount(),
       quoteVault: getNextAccount(),
-      sentinelProgram: getNextOptionalAccount(),
+      hookProgram: getNextOptionalAccount(),
     },
     data: getPreviewSwapExactInInstructionDataDecoder().decode(
       instruction.data,

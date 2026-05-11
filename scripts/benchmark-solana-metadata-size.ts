@@ -49,11 +49,11 @@ interface BenchmarkContext {
   launchAuthority: Address;
   initializerConfig: Address;
   cpmmConfig: Address;
-  cpmmMigratorState: Address;
+  cpmmMigrationState: Address;
   migrationHash: Uint8Array;
   metadataAccount: Address;
-  migratorInitCalldata: Uint8Array;
-  migratorMigrateCalldata: Uint8Array;
+  migratorInitPayload: Uint8Array;
+  migratorMigratePayload: Uint8Array;
 }
 
 function metadataBytes(metadata: {
@@ -116,7 +116,7 @@ async function setupContext(shape: Shape): Promise<BenchmarkContext> {
   const creatorShare = (baseForDistribution * 70n) / 100n;
   const teamShare = baseForDistribution - creatorShare;
 
-  const migratorInitCalldata = cpmmMigrator.encodeRegisterLaunchCalldata({
+  const migratorInitPayload = cpmmMigrator.encodeRegisterLaunchPayload({
     cpmmConfig: migrationAccounts.cpmmConfig,
     initialSwapFeeBps: 100,
     initialFeeSplitBps: 5000,
@@ -131,7 +131,7 @@ async function setupContext(shape: Shape): Promise<BenchmarkContext> {
     minMigrationPriceQ64Opt: null,
   });
 
-  const migratorMigrateCalldata = cpmmMigrator.encodeMigrateCalldata({
+  const migratorMigratePayload = cpmmMigrator.encodeMigratePayload({
     baseForDistribution,
     baseForLiquidity,
   });
@@ -146,11 +146,11 @@ async function setupContext(shape: Shape): Promise<BenchmarkContext> {
     launchAuthority,
     initializerConfig,
     cpmmConfig: migrationAccounts.cpmmConfig,
-    cpmmMigratorState: migrationAccounts.cpmmMigratorState,
+    cpmmMigrationState: migrationAccounts.cpmmMigrationState,
     migrationHash: migrationAccounts.hash,
     metadataAccount,
-    migratorInitCalldata,
-    migratorMigrateCalldata,
+    migratorInitPayload,
+    migratorMigratePayload,
   };
 }
 
@@ -209,15 +209,15 @@ async function buildMessage(
       curveParams: new Uint8Array([initializer.CURVE_PARAMS_FORMAT_XYK_V0]),
       allowBuy: true,
       allowSell: true,
-      sentinelProgram: initializer.CPMM_SENTINEL_PROGRAM_ID,
-      sentinelFlags: initializer.SF_BEFORE_SWAP,
-      sentinelCalldata: new Uint8Array(),
-      migratorInitCalldata: context.migratorInitCalldata,
-      migratorMigrateCalldata: context.migratorMigrateCalldata,
-      sentinelRemainingAccountsHash: initializer.EMPTY_REMAINING_ACCOUNTS_HASH,
+      hookProgram: initializer.CPMM_HOOK_PROGRAM_ID,
+      hookFlags: initializer.HF_BEFORE_SWAP,
+      hookPayload: new Uint8Array(),
+      migratorInitPayload: context.migratorInitPayload,
+      migratorMigratePayload: context.migratorMigratePayload,
+      hookRemainingAccountsHash: initializer.EMPTY_REMAINING_ACCOUNTS_HASH,
       migratorInitRemainingAccountsHash:
         initializer.computeRemainingAccountsHash([
-          context.cpmmMigratorState,
+          context.cpmmMigrationState,
           context.cpmmConfig,
         ]),
       migratorRemainingAccountsHash: context.migrationHash,
@@ -346,16 +346,16 @@ async function buildPredictionMessage(metadata: {
       curveParams: new Uint8Array([initializer.CURVE_PARAMS_FORMAT_XYK_V0]),
       allowBuy: true,
       allowSell: true,
-      sentinelProgram: initializer.PREDICTION_SENTINEL_PROGRAM_ID,
-      sentinelFlags: initializer.SF_BEFORE_SWAP,
-      sentinelCalldata: new Uint8Array(),
-      migratorInitCalldata: predictionMigrator
+      hookProgram: initializer.PREDICTION_HOOK_PROGRAM_ID,
+      hookFlags: initializer.HF_BEFORE_SWAP,
+      hookPayload: new Uint8Array(),
+      migratorInitPayload: predictionMigrator
         .getRegisterEntryInstructionDataEncoder()
         .encode({ entryId }),
-      migratorMigrateCalldata: predictionMigrator
+      migratorMigratePayload: predictionMigrator
         .getMigrateEntryInstructionDataEncoder()
         .encode({ entryId }),
-      sentinelRemainingAccountsHash: initializer.computeRemainingAccountsHash([
+      hookRemainingAccountsHash: initializer.computeRemainingAccountsHash([
         oracleStateAddress,
       ]),
       migratorInitRemainingAccountsHash:

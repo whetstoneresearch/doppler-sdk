@@ -13,8 +13,8 @@ export enum CpmmErrorCode {
   InvalidFee = 6002,
   /** Invalid fee split value (exceeds max or invalid range) */
   InvalidFeeSplit = 6003,
-  /** Invalid swap direction (must be 0 or 1) */
-  InvalidDirection = 6004,
+  /** Invalid trade direction (must be 0 or 1) */
+  InvalidTradeDirection = 6004,
   /** Insufficient liquidity for operation */
   InsufficientLiquidity = 6005,
   /** Output amount less than minimum (slippage exceeded) */
@@ -39,20 +39,20 @@ export enum CpmmErrorCode {
   OracleNotInitialized = 6015,
   /** Zero shares out */
   ZeroSharesOut = 6016,
-  /** Sentinel program rejected the operation */
-  SentinelRejected = 6017,
-  /** Sentinel CPI call failed */
-  SentinelCpiFailed = 6018,
-  /** Sentinel program account not provided */
-  SentinelProgramNotProvided = 6019,
-  /** Sentinel program account is not executable */
-  SentinelProgramNotExecutable = 6020,
-  /** Sentinel return data missing or wrong program id */
-  SentinelReturnDataMissing = 6021,
-  /** Sentinel return data invalid length or could not deserialize */
-  SentinelReturnDataInvalid = 6022,
-  /** Sentinel program not in allowlist */
-  SentinelNotAllowlisted = 6023,
+  /** Hook rejected the operation */
+  HookRejected = 6017,
+  /** Hook CPI call failed */
+  HookCpiFailed = 6018,
+  /** Hook program account not provided */
+  HookProgramNotProvided = 6019,
+  /** Hook program account is not executable */
+  HookProgramNotExecutable = 6020,
+  /** Hook return data missing or wrong program id */
+  HookReturnDataMissing = 6021,
+  /** Hook return data invalid length or could not deserialize */
+  HookReturnDataInvalid = 6022,
+  /** Hook program not in allowlist */
+  HookNotAllowlisted = 6023,
   /** Pool has zero shares (no liquidity) */
   TotalSharesZero = 6024,
   /** Amount cannot be zero */
@@ -67,6 +67,10 @@ export enum CpmmErrorCode {
   InvalidInput = 6029,
   /** Reentrancy detected */
   Reentrancy = 6030,
+  /** CPI calls into this program are forbidden */
+  CpiForbidden = 6031,
+  /** Protocol fee position must be claimed via collect_protocol_fees */
+  UseCollectProtocolFees = 6032,
 }
 
 /**
@@ -80,7 +84,8 @@ export const CPMM_ERROR_MESSAGES: Record<CpmmErrorCode, string> = {
     'Invalid fee value (exceeds max or invalid range)',
   [CpmmErrorCode.InvalidFeeSplit]:
     'Invalid fee split value (exceeds max or invalid range)',
-  [CpmmErrorCode.InvalidDirection]: 'Invalid swap direction (must be 0 or 1)',
+  [CpmmErrorCode.InvalidTradeDirection]:
+    'Invalid trade direction (must be 0 or 1)',
   [CpmmErrorCode.InsufficientLiquidity]:
     'Insufficient liquidity for this operation',
   [CpmmErrorCode.SlippageExceeded]:
@@ -97,17 +102,16 @@ export const CPMM_ERROR_MESSAGES: Record<CpmmErrorCode, string> = {
   [CpmmErrorCode.NotSupportedInV0_1]: 'Not supported in v0.1',
   [CpmmErrorCode.OracleNotInitialized]: 'Oracle not initialized for this pool',
   [CpmmErrorCode.ZeroSharesOut]: 'Zero shares out',
-  [CpmmErrorCode.SentinelRejected]: 'Sentinel program rejected the operation',
-  [CpmmErrorCode.SentinelCpiFailed]: 'Sentinel CPI call failed',
-  [CpmmErrorCode.SentinelProgramNotProvided]:
-    'Sentinel program account not provided',
-  [CpmmErrorCode.SentinelProgramNotExecutable]:
-    'Sentinel program account is not executable',
-  [CpmmErrorCode.SentinelReturnDataMissing]:
-    'Sentinel return data missing or wrong program id',
-  [CpmmErrorCode.SentinelReturnDataInvalid]:
-    'Sentinel return data invalid length or could not deserialize',
-  [CpmmErrorCode.SentinelNotAllowlisted]: 'Sentinel program not in allowlist',
+  [CpmmErrorCode.HookRejected]: 'Hook rejected',
+  [CpmmErrorCode.HookCpiFailed]: 'Hook CPI failed',
+  [CpmmErrorCode.HookProgramNotProvided]: 'Hook program account not provided',
+  [CpmmErrorCode.HookProgramNotExecutable]:
+    'Hook program account is not executable',
+  [CpmmErrorCode.HookReturnDataMissing]:
+    'Hook return data missing or wrong program id',
+  [CpmmErrorCode.HookReturnDataInvalid]:
+    'Hook return data invalid length or could not deserialize',
+  [CpmmErrorCode.HookNotAllowlisted]: 'Hook not allowlisted',
   [CpmmErrorCode.TotalSharesZero]: 'Pool has zero shares (no liquidity)',
   [CpmmErrorCode.AmountZero]: 'Amount cannot be zero',
   [CpmmErrorCode.Paused]: 'Pool is paused by admin',
@@ -115,6 +119,9 @@ export const CPMM_ERROR_MESSAGES: Record<CpmmErrorCode, string> = {
   [CpmmErrorCode.InvalidMint]: 'Invalid mint address',
   [CpmmErrorCode.InvalidInput]: 'Invalid input parameter',
   [CpmmErrorCode.Reentrancy]: 'Reentrancy detected',
+  [CpmmErrorCode.CpiForbidden]: 'CPI calls into this program are forbidden',
+  [CpmmErrorCode.UseCollectProtocolFees]:
+    'Protocol fee position must be claimed via collect_protocol_fees',
 };
 
 /**
@@ -150,7 +157,7 @@ export function parseErrorFromLogs(logs: string[]): CpmmError | null {
     );
     if (anchorMatch) {
       const errorNumber = parseInt(anchorMatch[2], 10);
-      if (errorNumber >= 6000 && errorNumber <= 6030) {
+      if (errorNumber >= 6000 && errorNumber <= 6032) {
         return new CpmmError(errorNumber as CpmmErrorCode, logs);
       }
     }
@@ -159,7 +166,7 @@ export function parseErrorFromLogs(logs: string[]): CpmmError | null {
     const hexMatch = log.match(/Error Number:\s*0x([0-9a-fA-F]+)/);
     if (hexMatch) {
       const errorNumber = parseInt(hexMatch[1], 16);
-      if (errorNumber >= 6000 && errorNumber <= 6030) {
+      if (errorNumber >= 6000 && errorNumber <= 6032) {
         return new CpmmError(errorNumber as CpmmErrorCode, logs);
       }
     }
@@ -187,7 +194,7 @@ export function parseErrorFromLogs(logs: string[]): CpmmError | null {
  * Check if an error code is a CPMM error
  */
 export function isCpmmError(code: number): code is CpmmErrorCode {
-  return code >= 6000 && code <= 6030;
+  return code >= 6000 && code <= 6032;
 }
 
 /**

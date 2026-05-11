@@ -57,7 +57,7 @@ export type CollectProtocolFeesInstruction<
   TProgram extends string = typeof CPMM_PROGRAM_ADDRESS,
   TAccountConfig extends string | AccountMeta<string> = string,
   TAccountPool extends string | AccountMeta<string> = string,
-  TAccountProtocolPosition extends string | AccountMeta<string> = string,
+  TAccountProtocolFeePosition extends string | AccountMeta<string> = string,
   TAccountAdmin extends string | AccountMeta<string> = string,
   TAccountAuthority extends string | AccountMeta<string> = string,
   TAccountVault0 extends string | AccountMeta<string> = string,
@@ -79,9 +79,9 @@ export type CollectProtocolFeesInstruction<
       TAccountPool extends string
         ? WritableAccount<TAccountPool>
         : TAccountPool,
-      TAccountProtocolPosition extends string
-        ? WritableAccount<TAccountProtocolPosition>
-        : TAccountProtocolPosition,
+      TAccountProtocolFeePosition extends string
+        ? WritableAccount<TAccountProtocolFeePosition>
+        : TAccountProtocolFeePosition,
       TAccountAdmin extends string
         ? ReadonlySignerAccount<TAccountAdmin> &
             AccountSignerMeta<TAccountAdmin>
@@ -163,7 +163,7 @@ export function getCollectProtocolFeesInstructionDataCodec(): FixedSizeCodec<
 export type CollectProtocolFeesAsyncInput<
   TAccountConfig extends string = string,
   TAccountPool extends string = string,
-  TAccountProtocolPosition extends string = string,
+  TAccountProtocolFeePosition extends string = string,
   TAccountAdmin extends string = string,
   TAccountAuthority extends string = string,
   TAccountVault0 extends string = string,
@@ -177,7 +177,7 @@ export type CollectProtocolFeesAsyncInput<
 > = {
   config: Address<TAccountConfig>;
   pool: Address<TAccountPool>;
-  protocolPosition: Address<TAccountProtocolPosition>;
+  protocolFeePosition: Address<TAccountProtocolFeePosition>;
   admin: TransactionSigner<TAccountAdmin>;
   authority?: Address<TAccountAuthority>;
   vault0: Address<TAccountVault0>;
@@ -195,7 +195,7 @@ export type CollectProtocolFeesAsyncInput<
 export async function getCollectProtocolFeesInstructionAsync<
   TAccountConfig extends string,
   TAccountPool extends string,
-  TAccountProtocolPosition extends string,
+  TAccountProtocolFeePosition extends string,
   TAccountAdmin extends string,
   TAccountAuthority extends string,
   TAccountVault0 extends string,
@@ -211,7 +211,7 @@ export async function getCollectProtocolFeesInstructionAsync<
   input: CollectProtocolFeesAsyncInput<
     TAccountConfig,
     TAccountPool,
-    TAccountProtocolPosition,
+    TAccountProtocolFeePosition,
     TAccountAdmin,
     TAccountAuthority,
     TAccountVault0,
@@ -229,7 +229,7 @@ export async function getCollectProtocolFeesInstructionAsync<
     TProgramAddress,
     TAccountConfig,
     TAccountPool,
-    TAccountProtocolPosition,
+    TAccountProtocolFeePosition,
     TAccountAdmin,
     TAccountAuthority,
     TAccountVault0,
@@ -249,8 +249,8 @@ export async function getCollectProtocolFeesInstructionAsync<
   const originalAccounts = {
     config: { value: input.config ?? null, isWritable: false },
     pool: { value: input.pool ?? null, isWritable: true },
-    protocolPosition: {
-      value: input.protocolPosition ?? null,
+    protocolFeePosition: {
+      value: input.protocolFeePosition ?? null,
       isWritable: true,
     },
     admin: { value: input.admin ?? null, isWritable: false },
@@ -292,7 +292,7 @@ export async function getCollectProtocolFeesInstructionAsync<
     accounts: [
       getAccountMeta('config', accounts.config),
       getAccountMeta('pool', accounts.pool),
-      getAccountMeta('protocolPosition', accounts.protocolPosition),
+      getAccountMeta('protocolFeePosition', accounts.protocolFeePosition),
       getAccountMeta('admin', accounts.admin),
       getAccountMeta('authority', accounts.authority),
       getAccountMeta('vault0', accounts.vault0),
@@ -312,7 +312,7 @@ export async function getCollectProtocolFeesInstructionAsync<
     TProgramAddress,
     TAccountConfig,
     TAccountPool,
-    TAccountProtocolPosition,
+    TAccountProtocolFeePosition,
     TAccountAdmin,
     TAccountAuthority,
     TAccountVault0,
@@ -329,7 +329,7 @@ export async function getCollectProtocolFeesInstructionAsync<
 export type CollectProtocolFeesInput<
   TAccountConfig extends string = string,
   TAccountPool extends string = string,
-  TAccountProtocolPosition extends string = string,
+  TAccountProtocolFeePosition extends string = string,
   TAccountAdmin extends string = string,
   TAccountAuthority extends string = string,
   TAccountVault0 extends string = string,
@@ -343,7 +343,7 @@ export type CollectProtocolFeesInput<
 > = {
   config: Address<TAccountConfig>;
   pool: Address<TAccountPool>;
-  protocolPosition: Address<TAccountProtocolPosition>;
+  protocolFeePosition: Address<TAccountProtocolFeePosition>;
   admin: TransactionSigner<TAccountAdmin>;
   authority: Address<TAccountAuthority>;
   vault0: Address<TAccountVault0>;
@@ -361,7 +361,7 @@ export type CollectProtocolFeesInput<
 export function getCollectProtocolFeesInstruction<
   TAccountConfig extends string,
   TAccountPool extends string,
-  TAccountProtocolPosition extends string,
+  TAccountProtocolFeePosition extends string,
   TAccountAdmin extends string,
   TAccountAuthority extends string,
   TAccountVault0 extends string,
@@ -377,7 +377,7 @@ export function getCollectProtocolFeesInstruction<
   input: CollectProtocolFeesInput<
     TAccountConfig,
     TAccountPool,
-    TAccountProtocolPosition,
+    TAccountProtocolFeePosition,
     TAccountAdmin,
     TAccountAuthority,
     TAccountVault0,
@@ -394,7 +394,7 @@ export function getCollectProtocolFeesInstruction<
   TProgramAddress,
   TAccountConfig,
   TAccountPool,
-  TAccountProtocolPosition,
+  TAccountProtocolFeePosition,
   TAccountAdmin,
   TAccountAuthority,
   TAccountVault0,
@@ -413,8 +413,8 @@ export function getCollectProtocolFeesInstruction<
   const originalAccounts = {
     config: { value: input.config ?? null, isWritable: false },
     pool: { value: input.pool ?? null, isWritable: true },
-    protocolPosition: {
-      value: input.protocolPosition ?? null,
+    protocolFeePosition: {
+      value: input.protocolFeePosition ?? null,
       isWritable: true,
     },
     admin: { value: input.admin ?? null, isWritable: false },
@@ -441,7 +441,7 @@ export function getCollectProtocolFeesInstruction<
     accounts: [
       getAccountMeta('config', accounts.config),
       getAccountMeta('pool', accounts.pool),
-      getAccountMeta('protocolPosition', accounts.protocolPosition),
+      getAccountMeta('protocolFeePosition', accounts.protocolFeePosition),
       getAccountMeta('admin', accounts.admin),
       getAccountMeta('authority', accounts.authority),
       getAccountMeta('vault0', accounts.vault0),
@@ -461,7 +461,7 @@ export function getCollectProtocolFeesInstruction<
     TProgramAddress,
     TAccountConfig,
     TAccountPool,
-    TAccountProtocolPosition,
+    TAccountProtocolFeePosition,
     TAccountAdmin,
     TAccountAuthority,
     TAccountVault0,
@@ -483,7 +483,7 @@ export type ParsedCollectProtocolFeesInstruction<
   accounts: {
     config: TAccountMetas[0];
     pool: TAccountMetas[1];
-    protocolPosition: TAccountMetas[2];
+    protocolFeePosition: TAccountMetas[2];
     admin: TAccountMetas[3];
     authority: TAccountMetas[4];
     vault0: TAccountMetas[5];
@@ -526,7 +526,7 @@ export function parseCollectProtocolFeesInstruction<
     accounts: {
       config: getNextAccount(),
       pool: getNextAccount(),
-      protocolPosition: getNextAccount(),
+      protocolFeePosition: getNextAccount(),
       admin: getNextAccount(),
       authority: getNextAccount(),
       vault0: getNextAccount(),

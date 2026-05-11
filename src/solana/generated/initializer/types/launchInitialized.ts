@@ -36,7 +36,7 @@ export type LaunchInitialized = {
   baseTotalSupply: bigint;
   curveKind: number;
   migratorProgram: Address;
-  sentinelProgram: Address;
+  hookProgram: Address;
 };
 
 export type LaunchInitializedArgs = {
@@ -48,7 +48,7 @@ export type LaunchInitializedArgs = {
   baseTotalSupply: number | bigint;
   curveKind: number;
   migratorProgram: Address;
-  sentinelProgram: Address;
+  hookProgram: Address;
 };
 
 export function getLaunchInitializedEncoder(): FixedSizeEncoder<LaunchInitializedArgs> {
@@ -61,7 +61,7 @@ export function getLaunchInitializedEncoder(): FixedSizeEncoder<LaunchInitialize
     ['baseTotalSupply', getU64Encoder()],
     ['curveKind', getU8Encoder()],
     ['migratorProgram', getAddressEncoder()],
-    ['sentinelProgram', getAddressEncoder()],
+    ['hookProgram', getAddressEncoder()],
   ]);
 }
 
@@ -75,7 +75,7 @@ export function getLaunchInitializedDecoder(): FixedSizeDecoder<LaunchInitialize
     ['baseTotalSupply', getU64Decoder()],
     ['curveKind', getU8Decoder()],
     ['migratorProgram', getAddressDecoder()],
-    ['sentinelProgram', getAddressDecoder()],
+    ['hookProgram', getAddressDecoder()],
   ]);
 }
 

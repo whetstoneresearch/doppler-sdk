@@ -74,7 +74,7 @@ export type QuoteToNumeraireInstruction<
 export type QuoteToNumeraireInstructionData = {
   discriminator: ReadonlyUint8Array;
   amount: bigint;
-  side: number;
+  inputTokenIndex: number;
   maxHops: number;
   useTwap: boolean;
   windowSeconds: number;
@@ -82,7 +82,7 @@ export type QuoteToNumeraireInstructionData = {
 
 export type QuoteToNumeraireInstructionDataArgs = {
   amount: number | bigint;
-  side: number;
+  inputTokenIndex: number;
   maxHops: number;
   useTwap: boolean;
   windowSeconds: number;
@@ -93,7 +93,7 @@ export function getQuoteToNumeraireInstructionDataEncoder(): FixedSizeEncoder<Qu
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       ['amount', getU128Encoder()],
-      ['side', getU8Encoder()],
+      ['inputTokenIndex', getU8Encoder()],
       ['maxHops', getU8Encoder()],
       ['useTwap', getBooleanEncoder()],
       ['windowSeconds', getU32Encoder()],
@@ -106,7 +106,7 @@ export function getQuoteToNumeraireInstructionDataDecoder(): FixedSizeDecoder<Qu
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['amount', getU128Decoder()],
-    ['side', getU8Decoder()],
+    ['inputTokenIndex', getU8Decoder()],
     ['maxHops', getU8Decoder()],
     ['useTwap', getBooleanDecoder()],
     ['windowSeconds', getU32Decoder()],
@@ -130,7 +130,7 @@ export type QuoteToNumeraireInput<
   config: Address<TAccountConfig>;
   startPool: Address<TAccountStartPool>;
   amount: QuoteToNumeraireInstructionDataArgs['amount'];
-  side: QuoteToNumeraireInstructionDataArgs['side'];
+  inputTokenIndex: QuoteToNumeraireInstructionDataArgs['inputTokenIndex'];
   maxHops: QuoteToNumeraireInstructionDataArgs['maxHops'];
   useTwap: QuoteToNumeraireInstructionDataArgs['useTwap'];
   windowSeconds: QuoteToNumeraireInstructionDataArgs['windowSeconds'];

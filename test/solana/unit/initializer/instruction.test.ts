@@ -22,7 +22,7 @@ describe('initializer instructions', () => {
       },
       {
         migratorAllowlist: [],
-        sentinelAllowlist: [],
+        hookAllowlist: [],
       },
     );
 
@@ -51,7 +51,7 @@ describe('initializer instructions', () => {
     const [launch] = await initializer.getLaunchAddress(namespace, launchId);
     const [launchAuthority] = await initializer.getLaunchAuthorityAddress(launch);
 
-    const migratorInitCalldata = cpmmMigrator.encodeRegisterLaunchCalldata({
+    const migratorInitPayload = cpmmMigrator.encodeRegisterLaunchPayload({
       cpmmConfig,
       initialSwapFeeBps: 30,
       initialFeeSplitBps: 5000,
@@ -60,7 +60,7 @@ describe('initializer instructions', () => {
       minMigrationPriceQ64Opt: null,
     });
 
-    const migratorMigrateCalldata = cpmmMigrator.encodeMigrateCalldata({
+    const migratorMigratePayload = cpmmMigrator.encodeMigratePayload({
       baseForDistribution: 700_000n,
       baseForLiquidity: 300_000n,
     });
@@ -97,12 +97,12 @@ describe('initializer instructions', () => {
         curveParams: new Uint8Array([0]),
         allowBuy: true,
         allowSell: true,
-        sentinelProgram: SYSTEM_PROGRAM_ADDRESS,
-        sentinelFlags: 0,
-        sentinelCalldata: new Uint8Array(),
-        migratorInitCalldata,
-        migratorMigrateCalldata,
-        sentinelRemainingAccountsHash: new Uint8Array(32),
+        hookProgram: SYSTEM_PROGRAM_ADDRESS,
+        hookFlags: 0,
+        hookPayload: new Uint8Array(),
+        migratorInitPayload,
+        migratorMigratePayload,
+        hookRemainingAccountsHash: new Uint8Array(32),
         migratorInitRemainingAccountsHash: new Uint8Array(32),
         migratorRemainingAccountsHash: new Uint8Array(32),
         metadataName: '',
@@ -112,15 +112,15 @@ describe('initializer instructions', () => {
     );
 
     expect(ix.programAddress).toBe(initializer.INITIALIZER_PROGRAM_ID);
-    // 14 required/static accounts + sentinel and metadata placeholders +
+    // 14 required/static accounts + hook and metadata placeholders +
     // 2 auto-appended CPMM migrator remaining accounts:
-    // cpmmMigratorState and cpmmConfig.
+    // cpmmMigrationState and cpmmConfig.
     expect(ix.accounts).toHaveLength(19);
 
     // Account ordering: config, launch, launchAuthority, baseMint, quoteMint, baseVault, quoteVault, payer,
-    // then optional authority, optional sentinelProgram, optional migratorProgram,
+    // then optional authority, optional hookProgram, optional migratorProgram,
     // then base/quote token, system/rent, optional metadata placeholders, then auto-appended
-    // cpmmMigratorState and cpmmConfig.
+    // cpmmMigrationState and cpmmConfig.
     expect(ix.accounts![0].address).toBe(config);
     expect(ix.accounts![1].address).toBe(launch);
     expect(ix.accounts![2].address).toBe(launchAuthority);
@@ -195,12 +195,12 @@ describe('initializer instructions', () => {
           curveParams: new Uint8Array([initializer.CURVE_PARAMS_FORMAT_XYK_V0]),
           allowBuy: true,
           allowSell: true,
-          sentinelProgram: SYSTEM_PROGRAM_ADDRESS,
-          sentinelFlags: 0,
-          sentinelCalldata: new Uint8Array(),
-          migratorInitCalldata: new Uint8Array(),
-          migratorMigrateCalldata: new Uint8Array(),
-          sentinelRemainingAccountsHash: new Uint8Array(32),
+          hookProgram: SYSTEM_PROGRAM_ADDRESS,
+          hookFlags: 0,
+          hookPayload: new Uint8Array(),
+          migratorInitPayload: new Uint8Array(),
+          migratorMigratePayload: new Uint8Array(),
+          hookRemainingAccountsHash: new Uint8Array(32),
           migratorInitRemainingAccountsHash: new Uint8Array(32),
           migratorRemainingAccountsHash: new Uint8Array(32),
           metadataName: '',

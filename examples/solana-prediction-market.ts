@@ -55,7 +55,7 @@ const WSOL_MINT: Address =
 async function main() {
   const payer = await loadKeypairSignerFromEnv();
   const { rpc, rpcSubscriptions, network } = createSolanaClientsFromEnv();
-  assertSolanaExampleNetwork(network);
+  assertSolanaExampleNetwork(network, ['devnet', 'custom']);
 
   // ── Token supply parameters ─────────────────────────────────────────────
   //
@@ -186,13 +186,13 @@ async function main() {
             baseMint.address,
           );
 
-        // ── Encode migrator calldatas ────────────────────────────────────────
-        // Init calldata → registerEntry; migrate calldata → migrateEntry.
-        const migratorInitCalldata = predictionMigrator
+        // ── Encode migrator payloads ────────────────────────────────────────
+        // Init payload → registerEntry; migrate payload → migrateEntry.
+        const migratorInitPayload = predictionMigrator
           .getRegisterEntryInstructionDataEncoder()
           .encode({ entryId });
 
-        const migratorMigrateCalldata = predictionMigrator
+        const migratorMigratePayload = predictionMigrator
           .getMigrateEntryInstructionDataEncoder()
           .encode({ entryId });
 
@@ -234,14 +234,15 @@ async function main() {
             ]),
             allowBuy: true,
             allowSell: true,
-            sentinelProgram: initializer.PREDICTION_SENTINEL_PROGRAM_ID,
-            sentinelFlags: initializer.SF_BEFORE_SWAP,
-            sentinelCalldata: new Uint8Array(),
-            migratorInitCalldata,
-            migratorMigrateCalldata,
-            // Prediction sentinel reads oracle_state to check is_finalized.
-            sentinelRemainingAccountsHash:
-              initializer.computeRemainingAccountsHash([oracleStateAddress]),
+            hookProgram: initializer.PREDICTION_HOOK_PROGRAM_ID,
+            hookFlags: initializer.HF_BEFORE_SWAP,
+            hookPayload: new Uint8Array(),
+            migratorInitPayload,
+            migratorMigratePayload,
+            // Prediction hook reads oracle_state to check is_finalized.
+            hookRemainingAccountsHash: initializer.computeRemainingAccountsHash(
+              [oracleStateAddress],
+            ),
             migratorInitRemainingAccountsHash:
               initializer.computeRemainingAccountsHash([
                 oracleStateAddress,

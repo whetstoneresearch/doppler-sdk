@@ -20,15 +20,19 @@ import {
   type FixedSizeEncoder,
 } from '@solana/kit';
 
-export type Skimmed = { pool: Address; amount0: bigint; amount1: bigint };
+export type VaultExcessWithdrawn = {
+  pool: Address;
+  amount0: bigint;
+  amount1: bigint;
+};
 
-export type SkimmedArgs = {
+export type VaultExcessWithdrawnArgs = {
   pool: Address;
   amount0: number | bigint;
   amount1: number | bigint;
 };
 
-export function getSkimmedEncoder(): FixedSizeEncoder<SkimmedArgs> {
+export function getVaultExcessWithdrawnEncoder(): FixedSizeEncoder<VaultExcessWithdrawnArgs> {
   return getStructEncoder([
     ['pool', getAddressEncoder()],
     ['amount0', getU64Encoder()],
@@ -36,7 +40,7 @@ export function getSkimmedEncoder(): FixedSizeEncoder<SkimmedArgs> {
   ]);
 }
 
-export function getSkimmedDecoder(): FixedSizeDecoder<Skimmed> {
+export function getVaultExcessWithdrawnDecoder(): FixedSizeDecoder<VaultExcessWithdrawn> {
   return getStructDecoder([
     ['pool', getAddressDecoder()],
     ['amount0', getU64Decoder()],
@@ -44,6 +48,12 @@ export function getSkimmedDecoder(): FixedSizeDecoder<Skimmed> {
   ]);
 }
 
-export function getSkimmedCodec(): FixedSizeCodec<SkimmedArgs, Skimmed> {
-  return combineCodec(getSkimmedEncoder(), getSkimmedDecoder());
+export function getVaultExcessWithdrawnCodec(): FixedSizeCodec<
+  VaultExcessWithdrawnArgs,
+  VaultExcessWithdrawn
+> {
+  return combineCodec(
+    getVaultExcessWithdrawnEncoder(),
+    getVaultExcessWithdrawnDecoder(),
+  );
 }

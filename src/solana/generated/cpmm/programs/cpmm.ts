@@ -62,13 +62,13 @@ import {
   getQuoteToNumeraireInstruction,
   getRemoveLiquidityInstructionAsync,
   getSetFeesInstruction,
+  getSetHookInstruction,
   getSetRouteInstruction,
-  getSetSentinelInstruction,
-  getSkimInstructionAsync,
   getSwapExactInInstructionAsync,
   getTransferAdminInstruction,
   getUnpauseInstruction,
   getUpdateConfigInstruction,
+  getWithdrawVaultExcessInstructionAsync,
   parseAddLiquidityInstruction,
   parseClosePositionInstruction,
   parseCollectFeesInstruction,
@@ -84,13 +84,13 @@ import {
   parseQuoteToNumeraireInstruction,
   parseRemoveLiquidityInstruction,
   parseSetFeesInstruction,
+  parseSetHookInstruction,
   parseSetRouteInstruction,
-  parseSetSentinelInstruction,
-  parseSkimInstruction,
   parseSwapExactInInstruction,
   parseTransferAdminInstruction,
   parseUnpauseInstruction,
   parseUpdateConfigInstruction,
+  parseWithdrawVaultExcessInstruction,
   type AddLiquidityAsyncInput,
   type ClosePositionInput,
   type CollectFeesAsyncInput,
@@ -116,25 +116,25 @@ import {
   type ParsedQuoteToNumeraireInstruction,
   type ParsedRemoveLiquidityInstruction,
   type ParsedSetFeesInstruction,
+  type ParsedSetHookInstruction,
   type ParsedSetRouteInstruction,
-  type ParsedSetSentinelInstruction,
-  type ParsedSkimInstruction,
   type ParsedSwapExactInInstruction,
   type ParsedTransferAdminInstruction,
   type ParsedUnpauseInstruction,
   type ParsedUpdateConfigInstruction,
+  type ParsedWithdrawVaultExcessInstruction,
   type PauseInput,
   type PreviewSwapExactInInput,
   type QuoteToNumeraireInput,
   type RemoveLiquidityAsyncInput,
   type SetFeesInput,
+  type SetHookInput,
   type SetRouteInput,
-  type SetSentinelInput,
-  type SkimAsyncInput,
   type SwapExactInAsyncInput,
   type TransferAdminInput,
   type UnpauseInput,
   type UpdateConfigInput,
+  type WithdrawVaultExcessAsyncInput,
 } from '../instructions';
 
 export const CPMM_PROGRAM_ADDRESS =
@@ -217,13 +217,13 @@ export enum CpmmInstruction {
   QuoteToNumeraire,
   RemoveLiquidity,
   SetFees,
+  SetHook,
   SetRoute,
-  SetSentinel,
-  Skim,
   SwapExactIn,
   TransferAdmin,
   Unpause,
   UpdateConfig,
+  WithdrawVaultExcess,
 }
 
 export function identifyCpmmInstruction(
@@ -399,34 +399,23 @@ export function identifyCpmmInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([175, 16, 187, 252, 19, 54, 111, 221]),
+      ),
+      0,
+    )
+  ) {
+    return CpmmInstruction.SetHook;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([244, 231, 3, 84, 233, 61, 146, 149]),
       ),
       0,
     )
   ) {
     return CpmmInstruction.SetRoute;
-  }
-  if (
-    containsBytes(
-      data,
-      fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([94, 200, 82, 129, 53, 149, 232, 113]),
-      ),
-      0,
-    )
-  ) {
-    return CpmmInstruction.SetSentinel;
-  }
-  if (
-    containsBytes(
-      data,
-      fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([238, 120, 221, 138, 82, 60, 100, 218]),
-      ),
-      0,
-    )
-  ) {
-    return CpmmInstruction.Skim;
   }
   if (
     containsBytes(
@@ -471,6 +460,17 @@ export function identifyCpmmInstruction(
     )
   ) {
     return CpmmInstruction.UpdateConfig;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([235, 197, 247, 177, 137, 72, 135, 113]),
+      ),
+      0,
+    )
+  ) {
+    return CpmmInstruction.WithdrawVaultExcess;
   }
   throw new SolanaError(
     SOLANA_ERROR__PROGRAM_CLIENTS__FAILED_TO_IDENTIFY_INSTRUCTION,
@@ -527,14 +527,11 @@ export type ParsedCpmmInstruction<
       instructionType: CpmmInstruction.SetFees;
     } & ParsedSetFeesInstruction<TProgram>)
   | ({
+      instructionType: CpmmInstruction.SetHook;
+    } & ParsedSetHookInstruction<TProgram>)
+  | ({
       instructionType: CpmmInstruction.SetRoute;
     } & ParsedSetRouteInstruction<TProgram>)
-  | ({
-      instructionType: CpmmInstruction.SetSentinel;
-    } & ParsedSetSentinelInstruction<TProgram>)
-  | ({
-      instructionType: CpmmInstruction.Skim;
-    } & ParsedSkimInstruction<TProgram>)
   | ({
       instructionType: CpmmInstruction.SwapExactIn;
     } & ParsedSwapExactInInstruction<TProgram>)
@@ -546,7 +543,10 @@ export type ParsedCpmmInstruction<
     } & ParsedUnpauseInstruction<TProgram>)
   | ({
       instructionType: CpmmInstruction.UpdateConfig;
-    } & ParsedUpdateConfigInstruction<TProgram>);
+    } & ParsedUpdateConfigInstruction<TProgram>)
+  | ({
+      instructionType: CpmmInstruction.WithdrawVaultExcess;
+    } & ParsedWithdrawVaultExcessInstruction<TProgram>);
 
 export function parseCpmmInstruction<TProgram extends string>(
   instruction: Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array>,
@@ -658,25 +658,18 @@ export function parseCpmmInstruction<TProgram extends string>(
         ...parseSetFeesInstruction(instruction),
       };
     }
+    case CpmmInstruction.SetHook: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: CpmmInstruction.SetHook,
+        ...parseSetHookInstruction(instruction),
+      };
+    }
     case CpmmInstruction.SetRoute: {
       assertIsInstructionWithAccounts(instruction);
       return {
         instructionType: CpmmInstruction.SetRoute,
         ...parseSetRouteInstruction(instruction),
-      };
-    }
-    case CpmmInstruction.SetSentinel: {
-      assertIsInstructionWithAccounts(instruction);
-      return {
-        instructionType: CpmmInstruction.SetSentinel,
-        ...parseSetSentinelInstruction(instruction),
-      };
-    }
-    case CpmmInstruction.Skim: {
-      assertIsInstructionWithAccounts(instruction);
-      return {
-        instructionType: CpmmInstruction.Skim,
-        ...parseSkimInstruction(instruction),
       };
     }
     case CpmmInstruction.SwapExactIn: {
@@ -705,6 +698,13 @@ export function parseCpmmInstruction<TProgram extends string>(
       return {
         instructionType: CpmmInstruction.UpdateConfig,
         ...parseUpdateConfigInstruction(instruction),
+      };
+    }
+    case CpmmInstruction.WithdrawVaultExcess: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: CpmmInstruction.WithdrawVaultExcess,
+        ...parseWithdrawVaultExcessInstruction(instruction),
       };
     }
     default:
@@ -789,15 +789,12 @@ export type CpmmPluginInstructions = {
   setFees: (
     input: SetFeesInput,
   ) => ReturnType<typeof getSetFeesInstruction> & SelfPlanAndSendFunctions;
+  setHook: (
+    input: SetHookInput,
+  ) => ReturnType<typeof getSetHookInstruction> & SelfPlanAndSendFunctions;
   setRoute: (
     input: SetRouteInput,
   ) => ReturnType<typeof getSetRouteInstruction> & SelfPlanAndSendFunctions;
-  setSentinel: (
-    input: SetSentinelInput,
-  ) => ReturnType<typeof getSetSentinelInstruction> & SelfPlanAndSendFunctions;
-  skim: (
-    input: SkimAsyncInput,
-  ) => ReturnType<typeof getSkimInstructionAsync> & SelfPlanAndSendFunctions;
   swapExactIn: (
     input: SwapExactInAsyncInput,
   ) => ReturnType<typeof getSwapExactInInstructionAsync> &
@@ -812,6 +809,10 @@ export type CpmmPluginInstructions = {
   updateConfig: (
     input: UpdateConfigInput,
   ) => ReturnType<typeof getUpdateConfigInstruction> & SelfPlanAndSendFunctions;
+  withdrawVaultExcess: (
+    input: WithdrawVaultExcessAsyncInput,
+  ) => ReturnType<typeof getWithdrawVaultExcessInstructionAsync> &
+    SelfPlanAndSendFunctions;
 };
 
 export type CpmmPluginRequirements = ClientWithRpc<
@@ -914,15 +915,10 @@ export function cpmmProgram() {
             ),
           setFees: (input) =>
             addSelfPlanAndSendFunctions(client, getSetFeesInstruction(input)),
+          setHook: (input) =>
+            addSelfPlanAndSendFunctions(client, getSetHookInstruction(input)),
           setRoute: (input) =>
             addSelfPlanAndSendFunctions(client, getSetRouteInstruction(input)),
-          setSentinel: (input) =>
-            addSelfPlanAndSendFunctions(
-              client,
-              getSetSentinelInstruction(input),
-            ),
-          skim: (input) =>
-            addSelfPlanAndSendFunctions(client, getSkimInstructionAsync(input)),
           swapExactIn: (input) =>
             addSelfPlanAndSendFunctions(
               client,
@@ -939,6 +935,11 @@ export function cpmmProgram() {
             addSelfPlanAndSendFunctions(
               client,
               getUpdateConfigInstruction(input),
+            ),
+          withdrawVaultExcess: (input) =>
+            addSelfPlanAndSendFunctions(
+              client,
+              getWithdrawVaultExcessInstructionAsync(input),
             ),
         },
       },

@@ -97,7 +97,7 @@ export type InitializeConfigInstructionData = {
   maxRouteHops: number;
   protocolFeeEnabled: boolean;
   protocolFeeBps: number;
-  sentinelAllowlist: Array<Address>;
+  hookAllowlist: Array<Address>;
 };
 
 export type InitializeConfigInstructionDataArgs = {
@@ -108,7 +108,7 @@ export type InitializeConfigInstructionDataArgs = {
   maxRouteHops: number;
   protocolFeeEnabled: boolean;
   protocolFeeBps: number;
-  sentinelAllowlist: Array<Address>;
+  hookAllowlist: Array<Address>;
 };
 
 export function getInitializeConfigInstructionDataEncoder(): Encoder<InitializeConfigInstructionDataArgs> {
@@ -122,7 +122,7 @@ export function getInitializeConfigInstructionDataEncoder(): Encoder<InitializeC
       ['maxRouteHops', getU8Encoder()],
       ['protocolFeeEnabled', getBooleanEncoder()],
       ['protocolFeeBps', getU16Encoder()],
-      ['sentinelAllowlist', getArrayEncoder(getAddressEncoder())],
+      ['hookAllowlist', getArrayEncoder(getAddressEncoder())],
     ]),
     (value) => ({ ...value, discriminator: INITIALIZE_CONFIG_DISCRIMINATOR }),
   );
@@ -138,7 +138,7 @@ export function getInitializeConfigInstructionDataDecoder(): Decoder<InitializeC
     ['maxRouteHops', getU8Decoder()],
     ['protocolFeeEnabled', getBooleanDecoder()],
     ['protocolFeeBps', getU16Decoder()],
-    ['sentinelAllowlist', getArrayDecoder(getAddressDecoder())],
+    ['hookAllowlist', getArrayDecoder(getAddressDecoder())],
   ]);
 }
 
@@ -169,7 +169,7 @@ export type InitializeConfigAsyncInput<
   maxRouteHops: InitializeConfigInstructionDataArgs['maxRouteHops'];
   protocolFeeEnabled: InitializeConfigInstructionDataArgs['protocolFeeEnabled'];
   protocolFeeBps: InitializeConfigInstructionDataArgs['protocolFeeBps'];
-  sentinelAllowlist: InitializeConfigInstructionDataArgs['sentinelAllowlist'];
+  hookAllowlist: InitializeConfigInstructionDataArgs['hookAllowlist'];
 };
 
 export async function getInitializeConfigInstructionAsync<
@@ -265,7 +265,7 @@ export type InitializeConfigInput<
   maxRouteHops: InitializeConfigInstructionDataArgs['maxRouteHops'];
   protocolFeeEnabled: InitializeConfigInstructionDataArgs['protocolFeeEnabled'];
   protocolFeeBps: InitializeConfigInstructionDataArgs['protocolFeeBps'];
-  sentinelAllowlist: InitializeConfigInstructionDataArgs['sentinelAllowlist'];
+  hookAllowlist: InitializeConfigInstructionDataArgs['hookAllowlist'];
 };
 
 export function getInitializeConfigInstruction<

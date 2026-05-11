@@ -2,7 +2,7 @@
  * Example: Cosigned CPMM Swap E2E (Solana)
  *
  * Full lifecycle from launch creation to a graduated CPMM pool, then a
- * post-migration swap that forwards a readonly cosigner to the pool sentinel:
+ * post-migration swap that forwards a readonly cosigner to the pool hook:
  *
  *   1. Create XYK launch with CPMM migrator
  *   2. List all launches owned by this wallet (indexer-style enumeration)
@@ -12,10 +12,10 @@
  *   6. Verify final launch state
  *   7. Read migrator state to confirm recipients and CPMM config
  *   8. Discover the graduated CPMM pool and read spot price
- *   9. Configure CPMM sentinel signer forwarding
+ *   9. Configure CPMM hook signer forwarding
  *  10. Execute a CPMM swap cosigned by a readonly signer
  *
- * Note: the deployed cpmm_sentinel only requires a signer if one remaining
+ * Note: the deployed cpmm_hook only requires a signer if one remaining
  * account has exactly one byte of data equal to 0xA5. If you have such a marker
  * account, pass it via COSIGNER_MARKER_ACCOUNT to exercise strict enforcement.
  */
@@ -86,7 +86,7 @@ const WSOL_MINT: Address =
 async function main() {
   const payer = await loadKeypairSignerFromEnv();
   const { rpc, rpcSubscriptions, network } = createSolanaClientsFromEnv();
-  assertSolanaExampleNetwork(network);
+  assertSolanaExampleNetwork(network, ['devnet', 'custom']);
 
   // ── Token supply ─────────────────────────────────────────────────────────
   const BASE_DECIMALS = 6;
@@ -164,17 +164,17 @@ async function main() {
       recipientAtas: [payerBaseAta, payerBaseAta],
     });
   const cpmmConfig = migrationAccounts.cpmmConfig;
-  const cpmmMigratorState = migrationAccounts.cpmmMigratorState;
+  const cpmmMigrationState = migrationAccounts.cpmmMigrationState;
 
   console.log('Derived addresses:');
   console.log('  Launch:          ', launch);
   console.log('  Launch authority:', launchAuthority);
   console.log('  Initializer config:', initializerConfig);
   console.log('  CPMM config:     ', cpmmConfig);
-  console.log('  CPMM migrator state:', cpmmMigratorState);
+  console.log('  CPMM migrator state:', cpmmMigrationState);
   console.log('');
 
-  const migratorInitCalldata = cpmmMigrator.encodeRegisterLaunchCalldata({
+  const migratorInitPayload = cpmmMigrator.encodeRegisterLaunchPayload({
     cpmmConfig: cpmmConfig,
     initialSwapFeeBps: CPMM_SWAP_FEE_BPS,
     initialFeeSplitBps: CPMM_SWAP_FEE_SPLIT_BPS,
@@ -186,7 +186,7 @@ async function main() {
     minMigrationPriceQ64Opt: null,
   });
 
-  const migratorMigrateCalldata = cpmmMigrator.encodeMigrateCalldata({
+  const migratorMigratePayload = cpmmMigrator.encodeMigratePayload({
     baseForDistribution: BASE_FOR_DISTRIBUTION,
     baseForLiquidity: BASE_FOR_LIQUIDITY,
   });
@@ -233,16 +233,15 @@ async function main() {
         curveParams: new Uint8Array([initializer.CURVE_PARAMS_FORMAT_XYK_V0]),
         allowBuy: true,
         allowSell: true,
-        sentinelProgram: initializer.CPMM_SENTINEL_PROGRAM_ID,
-        sentinelFlags: initializer.SF_BEFORE_SWAP,
-        sentinelCalldata: new Uint8Array(),
-        migratorInitCalldata,
-        migratorMigrateCalldata,
-        sentinelRemainingAccountsHash:
-          initializer.EMPTY_REMAINING_ACCOUNTS_HASH,
+        hookProgram: initializer.CPMM_HOOK_PROGRAM_ID,
+        hookFlags: initializer.HF_BEFORE_SWAP,
+        hookPayload: new Uint8Array(),
+        migratorInitPayload,
+        migratorMigratePayload,
+        hookRemainingAccountsHash: initializer.EMPTY_REMAINING_ACCOUNTS_HASH,
         migratorInitRemainingAccountsHash:
           initializer.computeRemainingAccountsHash([
-            cpmmMigratorState,
+            cpmmMigrationState,
             cpmmConfig,
           ]),
         migratorRemainingAccountsHash: migrationAccounts.hash,
@@ -320,7 +319,10 @@ async function main() {
 
     const previewIx = initializer.createPreviewSwapExactInInstruction(
       { launch, baseVault: baseVault.address, quoteVault: quoteVault.address },
-      { amountIn: BUY_AMOUNT_IN, direction: initializer.DIRECTION_BUY },
+      {
+        amountIn: BUY_AMOUNT_IN,
+        tradeDirection: initializer.TRADE_DIRECTION_BUY,
+      },
     );
 
     // simulateTransaction is the idiomatic way to run a read-only instruction.
@@ -416,14 +418,14 @@ async function main() {
         baseMint: baseMint.address,
         quoteMint: WSOL_MINT,
         user: payer,
-        sentinelProgram: initializer.CPMM_SENTINEL_PROGRAM_ID,
+        hookProgram: initializer.CPMM_HOOK_PROGRAM_ID,
         baseTokenProgram: TOKEN_PROGRAM_ADDRESS,
         quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
       },
       {
         amountIn: BUY_AMOUNT_IN,
         minAmountOut: 1n, // accept any amount for the example; use preview.amountOut in prod
-        direction: initializer.DIRECTION_BUY,
+        tradeDirection: initializer.TRADE_DIRECTION_BUY,
       },
     );
 
@@ -548,7 +550,7 @@ async function main() {
       console.log('Step 7: Reading CPMM migrator state...');
       const migratorState = await cpmmMigrator.fetchCpmmMigratorState(
         rpc,
-        cpmmMigratorState,
+        cpmmMigrationState,
       );
 
       if (migratorState) {
@@ -584,18 +586,18 @@ async function main() {
         console.log('  Spot price0:  ', price0.toFixed(8), '(base/WSOL)');
         console.log('  Spot price1:  ', price1.toFixed(8), '(WSOL/base)');
 
-        // ── Step 9: Enable sentinel signer forwarding on the graduated pool ─
+        // ── Step 9: Enable hook signer forwarding on the graduated pool ─
         //
-        // set_sentinel is a CPMM admin action. On the Doppler devnet
+        // set_hook is a CPMM admin action. On the Doppler devnet
         // deployment, run this example with the devnet admin keypair so the
         // payer matches cpmmConfig.admin.
-        console.log('Step 9: Enabling CPMM sentinel signer forwarding...');
-        const setSentinelIx = cpmm.createSetSentinelInstruction({
+        console.log('Step 9: Enabling CPMM hook signer forwarding...');
+        const setHookIx = cpmm.createSetHookInstruction({
           config: cpmmConfig,
           pool: poolAddress,
           admin: payer,
-          sentinelProgram: initializer.CPMM_SENTINEL_PROGRAM_ID,
-          sentinelFlags: cpmm.SF_BEFORE_SWAP | cpmm.SF_FORWARD_READONLY_SIGNERS,
+          hookProgram: initializer.CPMM_HOOK_PROGRAM_ID,
+          hookFlags: cpmm.HF_BEFORE_SWAP | cpmm.HF_FORWARD_READONLY_SIGNERS,
         });
 
         {
@@ -608,7 +610,7 @@ async function main() {
             (tx) => setTransactionMessageFeePayerSigner(payer, tx),
             (tx) =>
               setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
-            (tx) => appendTransactionMessageInstructions([setSentinelIx], tx),
+            (tx) => appendTransactionMessageInstructions([setHookIx], tx),
           );
 
           const signedTransaction =
@@ -624,7 +626,7 @@ async function main() {
           );
 
           console.log(
-            '  Sentinel update confirmed:',
+            '  Hook update confirmed:',
             getSignatureFromTransaction(signedTransaction),
           );
         }
@@ -637,12 +639,12 @@ async function main() {
           ? address(process.env.COSIGNER_MARKER_ACCOUNT)
           : undefined;
 
-        const direction = pool.token0Mint === baseMint.address ? 0 : 1;
+        const tradeDirection = pool.token0Mint === baseMint.address ? 0 : 1;
         const COSIGNED_SWAP_AMOUNT_IN = 1_000_000n; // 1 base token atom unit at 6 decimals
         const quote = cpmm.getSwapQuote(
           pool,
           COSIGNED_SWAP_AMOUNT_IN,
-          direction,
+          tradeDirection,
         );
         const minAmountOut = (quote.amountOut * 9_500n) / 10_000n; // 5% example slippage
 
@@ -651,7 +653,7 @@ async function main() {
         const userToken1 =
           pool.token1Mint === baseMint.address ? userBaseAta : userQuoteAta;
         const remainingAccounts = [
-          initializer.CPMM_SENTINEL_PROGRAM_ID,
+          initializer.CPMM_HOOK_PROGRAM_ID,
           ...(markerAccount ? [markerAccount] : []),
           cosigner,
         ];
@@ -669,7 +671,7 @@ async function main() {
           user: payer,
           amountIn: COSIGNED_SWAP_AMOUNT_IN,
           minAmountOut,
-          direction,
+          tradeDirection,
           remainingAccounts,
         });
 
@@ -711,7 +713,7 @@ async function main() {
             console.log('  Marker account:', markerAccount);
           } else {
             console.log(
-              '  No marker account provided; signer was forwarded but not required by cpmm_sentinel.',
+              '  No marker account provided; signer was forwarded but not required by cpmm_hook.',
             );
           }
         }

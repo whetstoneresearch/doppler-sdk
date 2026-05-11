@@ -43,10 +43,10 @@ import {
   type ReadonlyUint8Array,
 } from '@solana/kit';
 import {
-  getCalldataBufDecoder,
-  getCalldataBufEncoder,
-  type CalldataBuf,
-  type CalldataBufArgs,
+  getPayloadBufDecoder,
+  getPayloadBufEncoder,
+  type PayloadBuf,
+  type PayloadBufArgs,
 } from '../types';
 
 export const LAUNCH_DISCRIMINATOR = new Uint8Array([
@@ -81,17 +81,17 @@ export type Launch = {
   allowBuy: number;
   allowSell: number;
   pad2: ReadonlyUint8Array;
-  sentinelProgram: Address;
-  sentinelFlags: number;
+  hookProgram: Address;
+  hookFlags: number;
   pad3: ReadonlyUint8Array;
-  sentinelCalldata: CalldataBuf;
+  hookPayload: PayloadBuf;
   migratorProgram: Address;
-  migratorInitCalldata: CalldataBuf;
-  migratorMigrateCalldata: CalldataBuf;
+  migratorInitPayload: PayloadBuf;
+  migratorMigratePayload: PayloadBuf;
   curveKind: number;
   swapLock: number;
   pad4: ReadonlyUint8Array;
-  curveParams: CalldataBuf;
+  curveParams: PayloadBuf;
   quoteDeposited: bigint;
   reserved: ReadonlyUint8Array;
 };
@@ -119,17 +119,17 @@ export type LaunchArgs = {
   allowBuy: number;
   allowSell: number;
   pad2: ReadonlyUint8Array;
-  sentinelProgram: Address;
-  sentinelFlags: number;
+  hookProgram: Address;
+  hookFlags: number;
   pad3: ReadonlyUint8Array;
-  sentinelCalldata: CalldataBufArgs;
+  hookPayload: PayloadBufArgs;
   migratorProgram: Address;
-  migratorInitCalldata: CalldataBufArgs;
-  migratorMigrateCalldata: CalldataBufArgs;
+  migratorInitPayload: PayloadBufArgs;
+  migratorMigratePayload: PayloadBufArgs;
   curveKind: number;
   swapLock: number;
   pad4: ReadonlyUint8Array;
-  curveParams: CalldataBufArgs;
+  curveParams: PayloadBufArgs;
   quoteDeposited: number | bigint;
   reserved: ReadonlyUint8Array;
 };
@@ -161,17 +161,17 @@ export function getLaunchEncoder(): FixedSizeEncoder<LaunchArgs> {
       ['allowBuy', getU8Encoder()],
       ['allowSell', getU8Encoder()],
       ['pad2', fixEncoderSize(getBytesEncoder(), 6)],
-      ['sentinelProgram', getAddressEncoder()],
-      ['sentinelFlags', getU32Encoder()],
+      ['hookProgram', getAddressEncoder()],
+      ['hookFlags', getU32Encoder()],
       ['pad3', fixEncoderSize(getBytesEncoder(), 4)],
-      ['sentinelCalldata', getCalldataBufEncoder()],
+      ['hookPayload', getPayloadBufEncoder()],
       ['migratorProgram', getAddressEncoder()],
-      ['migratorInitCalldata', getCalldataBufEncoder()],
-      ['migratorMigrateCalldata', getCalldataBufEncoder()],
+      ['migratorInitPayload', getPayloadBufEncoder()],
+      ['migratorMigratePayload', getPayloadBufEncoder()],
       ['curveKind', getU8Encoder()],
       ['swapLock', getU8Encoder()],
       ['pad4', fixEncoderSize(getBytesEncoder(), 6)],
-      ['curveParams', getCalldataBufEncoder()],
+      ['curveParams', getPayloadBufEncoder()],
       ['quoteDeposited', getU64Encoder()],
       ['reserved', fixEncoderSize(getBytesEncoder(), 64)],
     ]),
@@ -205,17 +205,17 @@ export function getLaunchDecoder(): FixedSizeDecoder<Launch> {
     ['allowBuy', getU8Decoder()],
     ['allowSell', getU8Decoder()],
     ['pad2', fixDecoderSize(getBytesDecoder(), 6)],
-    ['sentinelProgram', getAddressDecoder()],
-    ['sentinelFlags', getU32Decoder()],
+    ['hookProgram', getAddressDecoder()],
+    ['hookFlags', getU32Decoder()],
     ['pad3', fixDecoderSize(getBytesDecoder(), 4)],
-    ['sentinelCalldata', getCalldataBufDecoder()],
+    ['hookPayload', getPayloadBufDecoder()],
     ['migratorProgram', getAddressDecoder()],
-    ['migratorInitCalldata', getCalldataBufDecoder()],
-    ['migratorMigrateCalldata', getCalldataBufDecoder()],
+    ['migratorInitPayload', getPayloadBufDecoder()],
+    ['migratorMigratePayload', getPayloadBufDecoder()],
     ['curveKind', getU8Decoder()],
     ['swapLock', getU8Decoder()],
     ['pad4', fixDecoderSize(getBytesDecoder(), 6)],
-    ['curveParams', getCalldataBufDecoder()],
+    ['curveParams', getPayloadBufDecoder()],
     ['quoteDeposited', getU64Decoder()],
     ['reserved', fixDecoderSize(getBytesDecoder(), 64)],
   ]);

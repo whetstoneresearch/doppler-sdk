@@ -5,7 +5,7 @@ import type {
   SwapQuoteExactOut,
   AddLiquidityQuote,
   RemoveLiquidityQuote,
-  SwapDirection,
+  TradeDirection,
 } from './types.js';
 
 // ============================================================================
@@ -136,7 +136,7 @@ export function ratioToNumber(numerator: bigint, denominator: bigint): number {
 export function getSwapQuote(
   pool: Pool,
   amountIn: bigint,
-  direction: SwapDirection,
+  tradeDirection: TradeDirection,
 ): SwapQuote {
   if (amountIn === 0n) {
     return {
@@ -149,9 +149,9 @@ export function getSwapQuote(
     };
   }
 
-  // Get reserves based on direction
+  // Get reserves based on trade direction
   const [reserveIn, reserveOut] =
-    direction === 0
+    tradeDirection === 0
       ? [pool.reserve0, pool.reserve1]
       : [pool.reserve1, pool.reserve0];
 
@@ -190,11 +190,11 @@ export function getSwapQuote(
 export function getSwapQuoteExactOut(
   pool: Pool,
   amountOut: bigint,
-  direction: SwapDirection,
+  tradeDirection: TradeDirection,
 ): SwapQuoteExactOut {
-  // Get reserves based on direction
+  // Get reserves based on trade direction
   const [reserveIn, reserveOut] =
-    direction === 0
+    tradeDirection === 0
       ? [pool.reserve0, pool.reserve1]
       : [pool.reserve1, pool.reserve0];
 
@@ -387,7 +387,7 @@ export function getK(pool: Pool): bigint {
  * @param pool Pool data
  * @param side 0 = denominate in token0, 1 = denominate in token1
  */
-export function getTvl(pool: Pool, side: SwapDirection = 0): bigint {
+export function getTvl(pool: Pool, side: TradeDirection = 0): bigint {
   if (side === 0) {
     // TVL in token0: reserve0 + (reserve1 * price1)
     // where price1 = reserve0/reserve1 (price of 1 in terms of 0)

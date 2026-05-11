@@ -22,7 +22,7 @@ import {
 
 /**
  * Arguments for register_entry instruction.
- * This is decoded from migrator_init_calldata passed by initializer.
+ * This is decoded from migrator_init_payload passed by initializer.
  */
 export type RegisterEntryArgs = { entryId: ReadonlyUint8Array };
 

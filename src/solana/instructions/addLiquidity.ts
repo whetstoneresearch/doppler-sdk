@@ -45,7 +45,7 @@ export interface AddLiquidityAccounts {
   /** User's position account (writable) */
   position: Address;
   /** Protocol position for protocol fees (writable) */
-  protocolPosition: Address;
+  protocolFeePosition: Address;
   /** Position owner (signer) */
   owner: Address;
   /** Pool authority PDA (read-only) */
@@ -66,7 +66,7 @@ export interface AddLiquidityAccounts {
   tokenProgram?: Address;
   /** Oracle account (optional, required if updateOracle is true) */
   oracle?: Address;
-  /** Optional remaining accounts (sentinel program/state, route/oracle data) */
+  /** Optional remaining accounts (hook program/state, route/oracle data) */
   remainingAccounts?: Address[];
 }
 
@@ -89,7 +89,7 @@ export interface AddLiquidityAccounts {
  *     config: configAddress,
  *     pool: poolAddress,
  *     position: positionAddress,
- *     protocolPosition: protocolPositionAddress,
+ *     protocolFeePosition: protocolFeePositionAddress,
  *     owner: userPublicKey,
  *     authority: authorityPda,
  *     vault0: vault0Address,
@@ -117,7 +117,7 @@ export function createAddLiquidityInstruction(
     config,
     pool,
     position,
-    protocolPosition,
+    protocolFeePosition,
     owner,
     authority,
     vault0,
@@ -138,7 +138,7 @@ export function createAddLiquidityInstruction(
     { address: config, role: AccountRole.READONLY },
     { address: pool, role: AccountRole.WRITABLE },
     { address: position, role: AccountRole.WRITABLE },
-    { address: protocolPosition, role: AccountRole.WRITABLE },
+    { address: protocolFeePosition, role: AccountRole.WRITABLE },
     { address: owner, role: AccountRole.READONLY_SIGNER },
     { address: authority, role: AccountRole.READONLY },
     { address: vault0, role: AccountRole.WRITABLE },
