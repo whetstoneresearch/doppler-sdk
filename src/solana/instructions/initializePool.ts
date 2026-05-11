@@ -57,7 +57,7 @@ export interface InitializePoolAccounts {
   /** Pool account to initialize (writable, PDA: ['pool', token0_mint, token1_mint]) */
   pool: Address;
   /** Protocol position account (writable, PDA: ['protocol_position', pool]) */
-  protocolPosition: Address;
+  protocolFeePosition: Address;
   /** Pool authority PDA (read-only, PDA: ['authority', pool]) */
   authority: Address;
   /** Vault PDA for token0 (writable, PDA: ['vault0', pool]) */
@@ -91,7 +91,7 @@ export interface InitializePoolAccounts {
  * (token0 < token1 by bytes). Use sortMints() to ensure proper ordering.
  *
  * @param accounts - Required accounts for pool initialization
- * @param args - Instruction arguments (mintA, mintB, fees, liquidityMeasureSide, numeraire override)
+ * @param args - Instruction arguments (mintA, mintB, fees, liquidityMeasureTokenIndex, numeraire override)
  * @param programId - Program ID (defaults to CPMM program)
  * @returns Instruction to initialize the pool
  *
@@ -102,7 +102,7 @@ export interface InitializePoolAccounts {
  *   {
  *     config: addresses.config[0],
  *     pool: addresses.pool[0],
- *     protocolPosition: addresses.protocolPosition[0],
+ *     protocolFeePosition: addresses.protocolFeePosition[0],
  *     authority: addresses.authority[0],
  *     vault0: addresses.vault0[0],
  *     vault1: addresses.vault1[0],
@@ -117,7 +117,7 @@ export interface InitializePoolAccounts {
  *     mintB: mintB,
  *     initialSwapFeeBps: 30,
  *     initialFeeSplitBps: 5000,
- *     liquidityMeasureSide: 0,
+ *     liquidityMeasureTokenIndex: 0,
  *     numeraireMintOverride: null,
  *   }
  * );
@@ -131,7 +131,7 @@ export function createInitializePoolInstruction(
   const {
     config,
     pool,
-    protocolPosition,
+    protocolFeePosition,
     authority,
     vault0,
     vault1,
@@ -152,7 +152,7 @@ export function createInitializePoolInstruction(
   const keys: (AccountMeta | AccountSignerMeta)[] = [
     { address: config, role: AccountRole.READONLY },
     { address: pool, role: AccountRole.WRITABLE },
-    { address: protocolPosition, role: AccountRole.WRITABLE },
+    { address: protocolFeePosition, role: AccountRole.WRITABLE },
     { address: authority, role: AccountRole.READONLY },
     { address: vault0, role: AccountRole.WRITABLE },
     { address: vault1, role: AccountRole.WRITABLE },

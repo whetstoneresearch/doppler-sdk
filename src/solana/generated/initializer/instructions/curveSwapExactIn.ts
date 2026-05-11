@@ -65,7 +65,7 @@ export type CurveSwapExactInInstruction<
   TAccountBaseMint extends string | AccountMeta<string> = string,
   TAccountQuoteMint extends string | AccountMeta<string> = string,
   TAccountUser extends string | AccountMeta<string> = string,
-  TAccountSentinelProgram extends string | AccountMeta<string> = string,
+  TAccountHookProgram extends string | AccountMeta<string> = string,
   TAccountBaseTokenProgram extends string | AccountMeta<string> = string,
   TAccountQuoteTokenProgram extends string | AccountMeta<string> = string,
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
@@ -103,9 +103,9 @@ export type CurveSwapExactInInstruction<
       TAccountUser extends string
         ? ReadonlySignerAccount<TAccountUser> & AccountSignerMeta<TAccountUser>
         : TAccountUser,
-      TAccountSentinelProgram extends string
-        ? ReadonlyAccount<TAccountSentinelProgram>
-        : TAccountSentinelProgram,
+      TAccountHookProgram extends string
+        ? ReadonlyAccount<TAccountHookProgram>
+        : TAccountHookProgram,
       TAccountBaseTokenProgram extends string
         ? ReadonlyAccount<TAccountBaseTokenProgram>
         : TAccountBaseTokenProgram,
@@ -120,13 +120,13 @@ export type CurveSwapExactInInstructionData = {
   discriminator: ReadonlyUint8Array;
   amountIn: bigint;
   minAmountOut: bigint;
-  direction: number;
+  tradeDirection: number;
 };
 
 export type CurveSwapExactInInstructionDataArgs = {
   amountIn: number | bigint;
   minAmountOut: number | bigint;
-  direction: number;
+  tradeDirection: number;
 };
 
 export function getCurveSwapExactInInstructionDataEncoder(): FixedSizeEncoder<CurveSwapExactInInstructionDataArgs> {
@@ -135,7 +135,7 @@ export function getCurveSwapExactInInstructionDataEncoder(): FixedSizeEncoder<Cu
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       ['amountIn', getU64Encoder()],
       ['minAmountOut', getU64Encoder()],
-      ['direction', getU8Encoder()],
+      ['tradeDirection', getU8Encoder()],
     ]),
     (value) => ({ ...value, discriminator: CURVE_SWAP_EXACT_IN_DISCRIMINATOR }),
   );
@@ -146,7 +146,7 @@ export function getCurveSwapExactInInstructionDataDecoder(): FixedSizeDecoder<Cu
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['amountIn', getU64Decoder()],
     ['minAmountOut', getU64Decoder()],
-    ['direction', getU8Decoder()],
+    ['tradeDirection', getU8Decoder()],
   ]);
 }
 
@@ -171,7 +171,7 @@ export type CurveSwapExactInAsyncInput<
   TAccountBaseMint extends string = string,
   TAccountQuoteMint extends string = string,
   TAccountUser extends string = string,
-  TAccountSentinelProgram extends string = string,
+  TAccountHookProgram extends string = string,
   TAccountBaseTokenProgram extends string = string,
   TAccountQuoteTokenProgram extends string = string,
 > = {
@@ -185,13 +185,13 @@ export type CurveSwapExactInAsyncInput<
   baseMint: Address<TAccountBaseMint>;
   quoteMint: Address<TAccountQuoteMint>;
   user: TransactionSigner<TAccountUser>;
-  /** Optional sentinel program (must match launch.sentinel_program if set) */
-  sentinelProgram?: Address<TAccountSentinelProgram>;
+  /** Optional hook program (must match launch.hook_program if set) */
+  hookProgram?: Address<TAccountHookProgram>;
   baseTokenProgram: Address<TAccountBaseTokenProgram>;
   quoteTokenProgram: Address<TAccountQuoteTokenProgram>;
   amountIn: CurveSwapExactInInstructionDataArgs['amountIn'];
   minAmountOut: CurveSwapExactInInstructionDataArgs['minAmountOut'];
-  direction: CurveSwapExactInInstructionDataArgs['direction'];
+  tradeDirection: CurveSwapExactInInstructionDataArgs['tradeDirection'];
 };
 
 export async function getCurveSwapExactInInstructionAsync<
@@ -205,7 +205,7 @@ export async function getCurveSwapExactInInstructionAsync<
   TAccountBaseMint extends string,
   TAccountQuoteMint extends string,
   TAccountUser extends string,
-  TAccountSentinelProgram extends string,
+  TAccountHookProgram extends string,
   TAccountBaseTokenProgram extends string,
   TAccountQuoteTokenProgram extends string,
   TProgramAddress extends Address = typeof INITIALIZER_PROGRAM_ADDRESS,
@@ -221,7 +221,7 @@ export async function getCurveSwapExactInInstructionAsync<
     TAccountBaseMint,
     TAccountQuoteMint,
     TAccountUser,
-    TAccountSentinelProgram,
+    TAccountHookProgram,
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram
   >,
@@ -239,7 +239,7 @@ export async function getCurveSwapExactInInstructionAsync<
     TAccountBaseMint,
     TAccountQuoteMint,
     TAccountUser,
-    TAccountSentinelProgram,
+    TAccountHookProgram,
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram
   >
@@ -265,10 +265,7 @@ export async function getCurveSwapExactInInstructionAsync<
     baseMint: { value: input.baseMint ?? null, isWritable: false },
     quoteMint: { value: input.quoteMint ?? null, isWritable: false },
     user: { value: input.user ?? null, isWritable: false },
-    sentinelProgram: {
-      value: input.sentinelProgram ?? null,
-      isWritable: false,
-    },
+    hookProgram: { value: input.hookProgram ?? null, isWritable: false },
     baseTokenProgram: {
       value: input.baseTokenProgram ?? null,
       isWritable: false,
@@ -309,7 +306,7 @@ export async function getCurveSwapExactInInstructionAsync<
       getAccountMeta('baseMint', accounts.baseMint),
       getAccountMeta('quoteMint', accounts.quoteMint),
       getAccountMeta('user', accounts.user),
-      getAccountMeta('sentinelProgram', accounts.sentinelProgram),
+      getAccountMeta('hookProgram', accounts.hookProgram),
       getAccountMeta('baseTokenProgram', accounts.baseTokenProgram),
       getAccountMeta('quoteTokenProgram', accounts.quoteTokenProgram),
     ],
@@ -329,7 +326,7 @@ export async function getCurveSwapExactInInstructionAsync<
     TAccountBaseMint,
     TAccountQuoteMint,
     TAccountUser,
-    TAccountSentinelProgram,
+    TAccountHookProgram,
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram
   >);
@@ -346,7 +343,7 @@ export type CurveSwapExactInInput<
   TAccountBaseMint extends string = string,
   TAccountQuoteMint extends string = string,
   TAccountUser extends string = string,
-  TAccountSentinelProgram extends string = string,
+  TAccountHookProgram extends string = string,
   TAccountBaseTokenProgram extends string = string,
   TAccountQuoteTokenProgram extends string = string,
 > = {
@@ -360,13 +357,13 @@ export type CurveSwapExactInInput<
   baseMint: Address<TAccountBaseMint>;
   quoteMint: Address<TAccountQuoteMint>;
   user: TransactionSigner<TAccountUser>;
-  /** Optional sentinel program (must match launch.sentinel_program if set) */
-  sentinelProgram?: Address<TAccountSentinelProgram>;
+  /** Optional hook program (must match launch.hook_program if set) */
+  hookProgram?: Address<TAccountHookProgram>;
   baseTokenProgram: Address<TAccountBaseTokenProgram>;
   quoteTokenProgram: Address<TAccountQuoteTokenProgram>;
   amountIn: CurveSwapExactInInstructionDataArgs['amountIn'];
   minAmountOut: CurveSwapExactInInstructionDataArgs['minAmountOut'];
-  direction: CurveSwapExactInInstructionDataArgs['direction'];
+  tradeDirection: CurveSwapExactInInstructionDataArgs['tradeDirection'];
 };
 
 export function getCurveSwapExactInInstruction<
@@ -380,7 +377,7 @@ export function getCurveSwapExactInInstruction<
   TAccountBaseMint extends string,
   TAccountQuoteMint extends string,
   TAccountUser extends string,
-  TAccountSentinelProgram extends string,
+  TAccountHookProgram extends string,
   TAccountBaseTokenProgram extends string,
   TAccountQuoteTokenProgram extends string,
   TProgramAddress extends Address = typeof INITIALIZER_PROGRAM_ADDRESS,
@@ -396,7 +393,7 @@ export function getCurveSwapExactInInstruction<
     TAccountBaseMint,
     TAccountQuoteMint,
     TAccountUser,
-    TAccountSentinelProgram,
+    TAccountHookProgram,
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram
   >,
@@ -413,7 +410,7 @@ export function getCurveSwapExactInInstruction<
   TAccountBaseMint,
   TAccountQuoteMint,
   TAccountUser,
-  TAccountSentinelProgram,
+  TAccountHookProgram,
   TAccountBaseTokenProgram,
   TAccountQuoteTokenProgram
 > {
@@ -438,10 +435,7 @@ export function getCurveSwapExactInInstruction<
     baseMint: { value: input.baseMint ?? null, isWritable: false },
     quoteMint: { value: input.quoteMint ?? null, isWritable: false },
     user: { value: input.user ?? null, isWritable: false },
-    sentinelProgram: {
-      value: input.sentinelProgram ?? null,
-      isWritable: false,
-    },
+    hookProgram: { value: input.hookProgram ?? null, isWritable: false },
     baseTokenProgram: {
       value: input.baseTokenProgram ?? null,
       isWritable: false,
@@ -472,7 +466,7 @@ export function getCurveSwapExactInInstruction<
       getAccountMeta('baseMint', accounts.baseMint),
       getAccountMeta('quoteMint', accounts.quoteMint),
       getAccountMeta('user', accounts.user),
-      getAccountMeta('sentinelProgram', accounts.sentinelProgram),
+      getAccountMeta('hookProgram', accounts.hookProgram),
       getAccountMeta('baseTokenProgram', accounts.baseTokenProgram),
       getAccountMeta('quoteTokenProgram', accounts.quoteTokenProgram),
     ],
@@ -492,7 +486,7 @@ export function getCurveSwapExactInInstruction<
     TAccountBaseMint,
     TAccountQuoteMint,
     TAccountUser,
-    TAccountSentinelProgram,
+    TAccountHookProgram,
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram
   >);
@@ -514,8 +508,8 @@ export type ParsedCurveSwapExactInInstruction<
     baseMint: TAccountMetas[7];
     quoteMint: TAccountMetas[8];
     user: TAccountMetas[9];
-    /** Optional sentinel program (must match launch.sentinel_program if set) */
-    sentinelProgram?: TAccountMetas[10] | undefined;
+    /** Optional hook program (must match launch.hook_program if set) */
+    hookProgram?: TAccountMetas[10] | undefined;
     baseTokenProgram: TAccountMetas[11];
     quoteTokenProgram: TAccountMetas[12];
   };
@@ -564,7 +558,7 @@ export function parseCurveSwapExactInInstruction<
       baseMint: getNextAccount(),
       quoteMint: getNextAccount(),
       user: getNextAccount(),
-      sentinelProgram: getNextOptionalAccount(),
+      hookProgram: getNextOptionalAccount(),
       baseTokenProgram: getNextAccount(),
       quoteTokenProgram: getNextAccount(),
     },

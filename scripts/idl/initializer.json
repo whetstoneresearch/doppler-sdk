@@ -4,7 +4,7 @@
     "name": "initializer",
     "version": "1.0.0",
     "spec": "0.1.0",
-    "description": "Initializer program with bonding-curve launch, sentinel hooks, and programmable migration"
+    "description": "Initializer program with bonding-curve launch, hooks, and programmable migration"
   },
   "instructions": [
     {
@@ -72,9 +72,9 @@
           "signer": true
         },
         {
-          "name": "sentinel_program",
+          "name": "hook_program",
           "docs": [
-            "Optional sentinel program (must match launch.sentinel_program if set)"
+            "Optional hook program (must match launch.hook_program if set)"
           ],
           "optional": true
         },
@@ -95,7 +95,7 @@
           "type": "u64"
         },
         {
-          "name": "direction",
+          "name": "trade_direction",
           "type": "u8"
         }
       ]
@@ -255,9 +255,9 @@
           "optional": true
         },
         {
-          "name": "sentinel_program",
+          "name": "hook_program",
           "docs": [
-            "Optional sentinel program for create hooks"
+            "Optional hook program for create hooks"
           ],
           "optional": true
         },
@@ -514,9 +514,9 @@
           "name": "quote_vault"
         },
         {
-          "name": "sentinel_program",
+          "name": "hook_program",
           "docs": [
-            "Optional sentinel program (must match launch.sentinel_program if set)"
+            "Optional hook program (must match launch.hook_program if set)"
           ],
           "optional": true
         }
@@ -527,22 +527,22 @@
           "type": "u64"
         },
         {
-          "name": "direction",
+          "name": "trade_direction",
           "type": "u8"
         }
       ]
     },
     {
-      "name": "set_migrator_allowlist",
+      "name": "set_hook_allowlist",
       "discriminator": [
-        209,
-        90,
-        181,
-        104,
-        99,
-        108,
-        233,
-        168
+        232,
+        28,
+        40,
+        143,
+        121,
+        182,
+        77,
+        103
       ],
       "accounts": [
         {
@@ -579,16 +579,16 @@
       ]
     },
     {
-      "name": "set_sentinel_allowlist",
+      "name": "set_migrator_allowlist",
       "discriminator": [
+        209,
+        90,
+        181,
+        104,
+        99,
+        108,
         233,
-        72,
-        180,
-        246,
-        171,
-        117,
-        21,
-        50
+        168
       ],
       "accounts": [
         {
@@ -669,16 +669,16 @@
       ]
     },
     {
-      "name": "update_launch_calldata",
+      "name": "update_launch_payload",
       "discriminator": [
-        26,
-        225,
-        184,
-        23,
-        167,
-        221,
-        87,
-        92
+        58,
+        183,
+        166,
+        177,
+        122,
+        162,
+        250,
+        205
       ],
       "accounts": [
         {
@@ -716,7 +716,7 @@
           "name": "args",
           "type": {
             "defined": {
-              "name": "UpdateLaunchCalldataArgs"
+              "name": "UpdateLaunchPayloadArgs"
             }
           }
         }
@@ -846,16 +846,16 @@
       ]
     },
     {
-      "name": "LaunchCalldataUpdated",
+      "name": "HookAllowlistUpdated",
       "discriminator": [
-        238,
-        209,
-        255,
-        37,
-        174,
-        34,
-        136,
-        106
+        122,
+        246,
+        214,
+        53,
+        41,
+        164,
+        241,
+        135
       ]
     },
     {
@@ -885,6 +885,19 @@
       ]
     },
     {
+      "name": "LaunchPayloadUpdated",
+      "discriminator": [
+        34,
+        8,
+        82,
+        125,
+        19,
+        46,
+        190,
+        170
+      ]
+    },
+    {
       "name": "MigratorAllowlistUpdated",
       "discriminator": [
         34,
@@ -895,19 +908,6 @@
         87,
         165,
         251
-      ]
-    },
-    {
-      "name": "SentinelAllowlistUpdated",
-      "discriminator": [
-        95,
-        249,
-        152,
-        167,
-        206,
-        254,
-        158,
-        235
       ]
     },
     {
@@ -972,8 +972,8 @@
     },
     {
       "code": 6009,
-      "name": "CalldataTooLarge",
-      "msg": "Calldata too large"
+      "name": "PayloadTooLarge",
+      "msg": "Payload too large"
     },
     {
       "code": 6010,
@@ -982,8 +982,8 @@
     },
     {
       "code": 6011,
-      "name": "SentinelNotAllowlisted",
-      "msg": "Sentinel not allowlisted"
+      "name": "HookNotAllowlisted",
+      "msg": "Hook not allowlisted"
     },
     {
       "code": 6012,
@@ -992,8 +992,8 @@
     },
     {
       "code": 6013,
-      "name": "WrongSentinel",
-      "msg": "Wrong sentinel program"
+      "name": "WrongHook",
+      "msg": "Wrong hook program"
     },
     {
       "code": 6014,
@@ -1002,13 +1002,13 @@
     },
     {
       "code": 6015,
-      "name": "SentinelCpiFailed",
-      "msg": "Sentinel CPI failed"
+      "name": "HookCpiFailed",
+      "msg": "Hook CPI failed"
     },
     {
       "code": 6016,
-      "name": "SentinelRejected",
-      "msg": "Sentinel rejected"
+      "name": "HookRejected",
+      "msg": "Hook rejected"
     },
     {
       "code": 6017,
@@ -1027,8 +1027,8 @@
     },
     {
       "code": 6020,
-      "name": "InvalidDirection",
-      "msg": "Invalid direction"
+      "name": "InvalidTradeDirection",
+      "msg": "Invalid trade direction"
     },
     {
       "code": 6021,
@@ -1148,30 +1148,6 @@
       }
     },
     {
-      "name": "CalldataBuf",
-      "repr": {
-        "kind": "c"
-      },
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "len",
-            "type": "u16"
-          },
-          {
-            "name": "bytes",
-            "type": {
-              "array": [
-                "u8",
-                256
-              ]
-            }
-          }
-        ]
-      }
-    },
-    {
       "name": "ConfigInitialized",
       "type": {
         "kind": "struct",
@@ -1185,7 +1161,7 @@
             "type": "u8"
           },
           {
-            "name": "sentinel_allowlist_len",
+            "name": "hook_allowlist_len",
             "type": "u8"
           }
         ]
@@ -1205,7 +1181,7 @@
             "type": "pubkey"
           },
           {
-            "name": "direction",
+            "name": "trade_direction",
             "type": "u8"
           },
           {
@@ -1227,6 +1203,22 @@
           {
             "name": "post_quote_reserve",
             "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "HookAllowlistUpdated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "config",
+            "type": "pubkey"
+          },
+          {
+            "name": "new_len",
+            "type": "u8"
           }
         ]
       }
@@ -1258,11 +1250,11 @@
             }
           },
           {
-            "name": "sentinel_allowlist_len",
+            "name": "hook_allowlist_len",
             "type": "u8"
           },
           {
-            "name": "sentinel_allowlist",
+            "name": "hook_allowlist",
             "type": {
               "array": [
                 "pubkey",
@@ -1302,7 +1294,7 @@
             }
           },
           {
-            "name": "sentinel_allowlist",
+            "name": "hook_allowlist",
             "type": {
               "vec": "pubkey"
             }
@@ -1373,19 +1365,19 @@
             "type": "u8"
           },
           {
-            "name": "sentinel_program",
+            "name": "hook_program",
             "type": "pubkey"
           },
           {
-            "name": "sentinel_flags",
+            "name": "hook_flags",
             "type": "u32"
           },
           {
-            "name": "sentinel_calldata",
+            "name": "hook_payload",
             "type": "bytes"
           },
           {
-            "name": "sentinel_create_remaining_accounts_len",
+            "name": "hook_create_remaining_accounts_len",
             "type": "u32"
           },
           {
@@ -1393,17 +1385,17 @@
             "type": "pubkey"
           },
           {
-            "name": "migrator_init_calldata",
+            "name": "migrator_init_payload",
             "type": "bytes"
           },
           {
-            "name": "migrator_migrate_calldata",
+            "name": "migrator_migrate_payload",
             "type": "bytes"
           },
           {
-            "name": "sentinel_create_remaining_accounts_hash",
+            "name": "hook_create_remaining_accounts_hash",
             "docs": [
-              "Commitment hash for initialize_launch sentinel remaining accounts.",
+              "Commitment hash for initialize_launch hook remaining accounts.",
               "Computed as hash(u32_len || pubkey_0 || ... || pubkey_n)."
             ],
             "type": {
@@ -1414,9 +1406,9 @@
             }
           },
           {
-            "name": "sentinel_remaining_accounts_hash",
+            "name": "hook_remaining_accounts_hash",
             "docs": [
-              "Commitment hash for swap/preview sentinel remaining accounts.",
+              "Commitment hash for swap/preview hook remaining accounts.",
               "Computed as hash(u32_len || pubkey_0 || ... || pubkey_n)."
             ],
             "type": {
@@ -1594,11 +1586,11 @@
             }
           },
           {
-            "name": "sentinel_program",
+            "name": "hook_program",
             "type": "pubkey"
           },
           {
-            "name": "sentinel_flags",
+            "name": "hook_flags",
             "type": "u32"
           },
           {
@@ -1611,10 +1603,10 @@
             }
           },
           {
-            "name": "sentinel_calldata",
+            "name": "hook_payload",
             "type": {
               "defined": {
-                "name": "CalldataBuf"
+                "name": "PayloadBuf"
               }
             }
           },
@@ -1623,18 +1615,18 @@
             "type": "pubkey"
           },
           {
-            "name": "migrator_init_calldata",
+            "name": "migrator_init_payload",
             "type": {
               "defined": {
-                "name": "CalldataBuf"
+                "name": "PayloadBuf"
               }
             }
           },
           {
-            "name": "migrator_migrate_calldata",
+            "name": "migrator_migrate_payload",
             "type": {
               "defined": {
-                "name": "CalldataBuf"
+                "name": "PayloadBuf"
               }
             }
           },
@@ -1659,7 +1651,7 @@
             "name": "curve_params",
             "type": {
               "defined": {
-                "name": "CalldataBuf"
+                "name": "PayloadBuf"
               }
             }
           },
@@ -1675,18 +1667,6 @@
                 64
               ]
             }
-          }
-        ]
-      }
-    },
-    {
-      "name": "LaunchCalldataUpdated",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "launch",
-            "type": "pubkey"
           }
         ]
       }
@@ -1734,7 +1714,7 @@
             "type": "pubkey"
           },
           {
-            "name": "sentinel_program",
+            "name": "hook_program",
             "type": "pubkey"
           }
         ]
@@ -1765,6 +1745,18 @@
       }
     },
     {
+      "name": "LaunchPayloadUpdated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "launch",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
       "name": "MigratorAllowlistUpdated",
       "type": {
         "kind": "struct",
@@ -1781,17 +1773,25 @@
       }
     },
     {
-      "name": "SentinelAllowlistUpdated",
+      "name": "PayloadBuf",
+      "repr": {
+        "kind": "c"
+      },
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "config",
-            "type": "pubkey"
+            "name": "len",
+            "type": "u16"
           },
           {
-            "name": "new_len",
-            "type": "u8"
+            "name": "bytes",
+            "type": {
+              "array": [
+                "u8",
+                256
+              ]
+            }
           }
         ]
       }
@@ -1817,24 +1817,24 @@
       }
     },
     {
-      "name": "UpdateLaunchCalldataArgs",
+      "name": "UpdateLaunchPayloadArgs",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "sentinel_calldata",
+            "name": "hook_payload",
             "type": {
               "option": "bytes"
             }
           },
           {
-            "name": "migrator_migrate_calldata",
+            "name": "migrator_migrate_payload",
             "type": {
               "option": "bytes"
             }
           },
           {
-            "name": "sentinel_remaining_accounts_hash",
+            "name": "hook_remaining_accounts_hash",
             "type": {
               "option": {
                 "array": [

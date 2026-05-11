@@ -52,8 +52,8 @@ export type InitConfig = {
   admin: Address;
   migratorAllowlistLen: number;
   migratorAllowlist: Array<Address>;
-  sentinelAllowlistLen: number;
-  sentinelAllowlist: Array<Address>;
+  hookAllowlistLen: number;
+  hookAllowlist: Array<Address>;
   bump: number;
   version: number;
   reserved: ReadonlyUint8Array;
@@ -63,8 +63,8 @@ export type InitConfigArgs = {
   admin: Address;
   migratorAllowlistLen: number;
   migratorAllowlist: Array<Address>;
-  sentinelAllowlistLen: number;
-  sentinelAllowlist: Array<Address>;
+  hookAllowlistLen: number;
+  hookAllowlist: Array<Address>;
   bump: number;
   version: number;
   reserved: ReadonlyUint8Array;
@@ -78,8 +78,8 @@ export function getInitConfigEncoder(): FixedSizeEncoder<InitConfigArgs> {
       ['admin', getAddressEncoder()],
       ['migratorAllowlistLen', getU8Encoder()],
       ['migratorAllowlist', getArrayEncoder(getAddressEncoder(), { size: 32 })],
-      ['sentinelAllowlistLen', getU8Encoder()],
-      ['sentinelAllowlist', getArrayEncoder(getAddressEncoder(), { size: 32 })],
+      ['hookAllowlistLen', getU8Encoder()],
+      ['hookAllowlist', getArrayEncoder(getAddressEncoder(), { size: 32 })],
       ['bump', getU8Encoder()],
       ['version', getU8Encoder()],
       ['reserved', fixEncoderSize(getBytesEncoder(), 31)],
@@ -95,8 +95,8 @@ export function getInitConfigDecoder(): FixedSizeDecoder<InitConfig> {
     ['admin', getAddressDecoder()],
     ['migratorAllowlistLen', getU8Decoder()],
     ['migratorAllowlist', getArrayDecoder(getAddressDecoder(), { size: 32 })],
-    ['sentinelAllowlistLen', getU8Decoder()],
-    ['sentinelAllowlist', getArrayDecoder(getAddressDecoder(), { size: 32 })],
+    ['hookAllowlistLen', getU8Decoder()],
+    ['hookAllowlist', getArrayDecoder(getAddressDecoder(), { size: 32 })],
     ['bump', getU8Decoder()],
     ['version', getU8Decoder()],
     ['reserved', fixDecoderSize(getBytesDecoder(), 31)],

@@ -34,7 +34,7 @@ export type InitializeConfigArgs = {
   maxRouteHops: number;
   protocolFeeEnabled: boolean;
   protocolFeeBps: number;
-  sentinelAllowlist: Array<Address>;
+  hookAllowlist: Array<Address>;
 };
 
 export type InitializeConfigArgsArgs = InitializeConfigArgs;
@@ -48,7 +48,7 @@ export function getInitializeConfigArgsEncoder(): Encoder<InitializeConfigArgsAr
     ['maxRouteHops', getU8Encoder()],
     ['protocolFeeEnabled', getBooleanEncoder()],
     ['protocolFeeBps', getU16Encoder()],
-    ['sentinelAllowlist', getArrayEncoder(getAddressEncoder())],
+    ['hookAllowlist', getArrayEncoder(getAddressEncoder())],
   ]);
 }
 
@@ -61,7 +61,7 @@ export function getInitializeConfigArgsDecoder(): Decoder<InitializeConfigArgs> 
     ['maxRouteHops', getU8Decoder()],
     ['protocolFeeEnabled', getBooleanDecoder()],
     ['protocolFeeBps', getU16Decoder()],
-    ['sentinelAllowlist', getArrayDecoder(getAddressDecoder())],
+    ['hookAllowlist', getArrayDecoder(getAddressDecoder())],
   ]);
 }
 

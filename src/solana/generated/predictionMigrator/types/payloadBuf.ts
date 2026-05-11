@@ -22,28 +22,28 @@ import {
   type ReadonlyUint8Array,
 } from '@solana/kit';
 
-/** Variable-length calldata buffer. */
-export type CalldataBuf = { len: number; bytes: ReadonlyUint8Array };
+/** Variable-length payload buffer. */
+export type PayloadBuf = { len: number; bytes: ReadonlyUint8Array };
 
-export type CalldataBufArgs = CalldataBuf;
+export type PayloadBufArgs = PayloadBuf;
 
-export function getCalldataBufEncoder(): FixedSizeEncoder<CalldataBufArgs> {
+export function getPayloadBufEncoder(): FixedSizeEncoder<PayloadBufArgs> {
   return getStructEncoder([
     ['len', getU16Encoder()],
     ['bytes', fixEncoderSize(getBytesEncoder(), 256)],
   ]);
 }
 
-export function getCalldataBufDecoder(): FixedSizeDecoder<CalldataBuf> {
+export function getPayloadBufDecoder(): FixedSizeDecoder<PayloadBuf> {
   return getStructDecoder([
     ['len', getU16Decoder()],
     ['bytes', fixDecoderSize(getBytesDecoder(), 256)],
   ]);
 }
 
-export function getCalldataBufCodec(): FixedSizeCodec<
-  CalldataBufArgs,
-  CalldataBuf
+export function getPayloadBufCodec(): FixedSizeCodec<
+  PayloadBufArgs,
+  PayloadBuf
 > {
-  return combineCodec(getCalldataBufEncoder(), getCalldataBufDecoder());
+  return combineCodec(getPayloadBufEncoder(), getPayloadBufDecoder());
 }

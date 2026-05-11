@@ -49,7 +49,14 @@ export {
 
 export { fetchCpmmMigratorState } from './client.js';
 
-export function encodeRegisterLaunchCalldata(
+export {
+  buildCpmmMigrationRemainingAccounts,
+  buildCpmmMigrationRemainingAccountsHash,
+  type CpmmMigrationRemainingAccounts,
+  type CpmmMigrationRemainingAccountsInput,
+} from './remainingAccounts.js';
+
+export function encodeRegisterLaunchPayload(
   args: RegisterLaunchArgsArgs,
 ): Uint8Array {
   const encoded = new Uint8Array(getRegisterLaunchArgsEncoder().encode(args));
@@ -59,7 +66,7 @@ export function encodeRegisterLaunchCalldata(
   ]);
 }
 
-export function encodeMigrateCalldata(args: MigrateArgsArgs): Uint8Array {
+export function encodeMigratePayload(args: MigrateArgsArgs): Uint8Array {
   const encoded = new Uint8Array(getMigrateArgsEncoder().encode(args));
   return mergeBytes([
     CPMM_MIGRATOR_INSTRUCTION_DISCRIMINATORS.migrate,

@@ -125,14 +125,14 @@ export type SwapExactInInstructionData = {
   discriminator: ReadonlyUint8Array;
   amountIn: bigint;
   minAmountOut: bigint;
-  direction: number;
+  tradeDirection: number;
   updateOracle: boolean;
 };
 
 export type SwapExactInInstructionDataArgs = {
   amountIn: number | bigint;
   minAmountOut: number | bigint;
-  direction: number;
+  tradeDirection: number;
   updateOracle: boolean;
 };
 
@@ -142,7 +142,7 @@ export function getSwapExactInInstructionDataEncoder(): FixedSizeEncoder<SwapExa
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       ['amountIn', getU64Encoder()],
       ['minAmountOut', getU64Encoder()],
-      ['direction', getU8Encoder()],
+      ['tradeDirection', getU8Encoder()],
       ['updateOracle', getBooleanEncoder()],
     ]),
     (value) => ({ ...value, discriminator: SWAP_EXACT_IN_DISCRIMINATOR }),
@@ -154,7 +154,7 @@ export function getSwapExactInInstructionDataDecoder(): FixedSizeDecoder<SwapExa
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['amountIn', getU64Decoder()],
     ['minAmountOut', getU64Decoder()],
-    ['direction', getU8Decoder()],
+    ['tradeDirection', getU8Decoder()],
     ['updateOracle', getBooleanDecoder()],
   ]);
 }
@@ -199,7 +199,7 @@ export type SwapExactInAsyncInput<
   oracle?: Address<TAccountOracle>;
   amountIn: SwapExactInInstructionDataArgs['amountIn'];
   minAmountOut: SwapExactInInstructionDataArgs['minAmountOut'];
-  direction: SwapExactInInstructionDataArgs['direction'];
+  tradeDirection: SwapExactInInstructionDataArgs['tradeDirection'];
   updateOracle: SwapExactInInstructionDataArgs['updateOracle'];
 };
 
@@ -364,7 +364,7 @@ export type SwapExactInInput<
   oracle?: Address<TAccountOracle>;
   amountIn: SwapExactInInstructionDataArgs['amountIn'];
   minAmountOut: SwapExactInInstructionDataArgs['minAmountOut'];
-  direction: SwapExactInInstructionDataArgs['direction'];
+  tradeDirection: SwapExactInInstructionDataArgs['tradeDirection'];
   updateOracle: SwapExactInInstructionDataArgs['updateOracle'];
 };
 

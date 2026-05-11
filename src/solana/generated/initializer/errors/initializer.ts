@@ -32,30 +32,30 @@ export const INITIALIZER_ERROR__INVALID_CURVE_PARAMS = 0x1776; // 6006
 export const INITIALIZER_ERROR__SLIPPAGE_EXCEEDED = 0x1777; // 6007
 /** CurveLiquidityInsufficient: Curve liquidity insufficient */
 export const INITIALIZER_ERROR__CURVE_LIQUIDITY_INSUFFICIENT = 0x1778; // 6008
-/** CalldataTooLarge: Calldata too large */
-export const INITIALIZER_ERROR__CALLDATA_TOO_LARGE = 0x1779; // 6009
+/** PayloadTooLarge: Payload too large */
+export const INITIALIZER_ERROR__PAYLOAD_TOO_LARGE = 0x1779; // 6009
 /** MigratorNotAllowlisted: Migrator not allowlisted */
 export const INITIALIZER_ERROR__MIGRATOR_NOT_ALLOWLISTED = 0x177a; // 6010
-/** SentinelNotAllowlisted: Sentinel not allowlisted */
-export const INITIALIZER_ERROR__SENTINEL_NOT_ALLOWLISTED = 0x177b; // 6011
+/** HookNotAllowlisted: Hook not allowlisted */
+export const INITIALIZER_ERROR__HOOK_NOT_ALLOWLISTED = 0x177b; // 6011
 /** WrongMigrator: Wrong migrator program */
 export const INITIALIZER_ERROR__WRONG_MIGRATOR = 0x177c; // 6012
-/** WrongSentinel: Wrong sentinel program */
-export const INITIALIZER_ERROR__WRONG_SENTINEL = 0x177d; // 6013
+/** WrongHook: Wrong hook program */
+export const INITIALIZER_ERROR__WRONG_HOOK = 0x177d; // 6013
 /** MigratorCpiFailed: Migrator CPI failed */
 export const INITIALIZER_ERROR__MIGRATOR_CPI_FAILED = 0x177e; // 6014
-/** SentinelCpiFailed: Sentinel CPI failed */
-export const INITIALIZER_ERROR__SENTINEL_CPI_FAILED = 0x177f; // 6015
-/** SentinelRejected: Sentinel rejected */
-export const INITIALIZER_ERROR__SENTINEL_REJECTED = 0x1780; // 6016
+/** HookCpiFailed: Hook CPI failed */
+export const INITIALIZER_ERROR__HOOK_CPI_FAILED = 0x177f; // 6015
+/** HookRejected: Hook rejected */
+export const INITIALIZER_ERROR__HOOK_REJECTED = 0x1780; // 6016
 /** BuyNotAllowed: Buy not allowed */
 export const INITIALIZER_ERROR__BUY_NOT_ALLOWED = 0x1781; // 6017
 /** SellNotAllowed: Sell not allowed */
 export const INITIALIZER_ERROR__SELL_NOT_ALLOWED = 0x1782; // 6018
 /** SellDisableNotAllowed: Sell disable not allowed once enabled */
 export const INITIALIZER_ERROR__SELL_DISABLE_NOT_ALLOWED = 0x1783; // 6019
-/** InvalidDirection: Invalid direction */
-export const INITIALIZER_ERROR__INVALID_DIRECTION = 0x1784; // 6020
+/** InvalidTradeDirection: Invalid trade direction */
+export const INITIALIZER_ERROR__INVALID_TRADE_DIRECTION = 0x1784; // 6020
 /** AllowlistFull: Allowlist full */
 export const INITIALIZER_ERROR__ALLOWLIST_FULL = 0x1785; // 6021
 /** InvalidInput: Invalid input */
@@ -99,20 +99,22 @@ export type InitializerError =
   | typeof INITIALIZER_ERROR__ALLOWLIST_FULL
   | typeof INITIALIZER_ERROR__ALREADY_MIGRATED
   | typeof INITIALIZER_ERROR__BUY_NOT_ALLOWED
-  | typeof INITIALIZER_ERROR__CALLDATA_TOO_LARGE
   | typeof INITIALIZER_ERROR__CPI_FORBIDDEN
   | typeof INITIALIZER_ERROR__CURVE_LIQUIDITY_INSUFFICIENT
   | typeof INITIALIZER_ERROR__CURVE_PARAMS_INVALID
+  | typeof INITIALIZER_ERROR__HOOK_CPI_FAILED
+  | typeof INITIALIZER_ERROR__HOOK_NOT_ALLOWLISTED
+  | typeof INITIALIZER_ERROR__HOOK_REJECTED
   | typeof INITIALIZER_ERROR__INVALID_AMOUNT
   | typeof INITIALIZER_ERROR__INVALID_CURVE_KIND
   | typeof INITIALIZER_ERROR__INVALID_CURVE_PARAMS
-  | typeof INITIALIZER_ERROR__INVALID_DIRECTION
   | typeof INITIALIZER_ERROR__INVALID_INPUT
   | typeof INITIALIZER_ERROR__INVALID_METADATA_ACCOUNT
   | typeof INITIALIZER_ERROR__INVALID_METADATA_PROGRAM
   | typeof INITIALIZER_ERROR__INVALID_MINT
   | typeof INITIALIZER_ERROR__INVALID_ORACLE
   | typeof INITIALIZER_ERROR__INVALID_PHASE
+  | typeof INITIALIZER_ERROR__INVALID_TRADE_DIRECTION
   | typeof INITIALIZER_ERROR__INVALID_VAULT
   | typeof INITIALIZER_ERROR__LAUNCH_LOCKED
   | typeof INITIALIZER_ERROR__MATH_OVERFLOW
@@ -122,6 +124,7 @@ export type InitializerError =
   | typeof INITIALIZER_ERROR__MIGRATOR_NOT_ALLOWLISTED
   | typeof INITIALIZER_ERROR__MISSING_METADATA_ACCOUNTS
   | typeof INITIALIZER_ERROR__MISSING_REMAINING_ACCOUNTS_COMMITMENT
+  | typeof INITIALIZER_ERROR__PAYLOAD_TOO_LARGE
   | typeof INITIALIZER_ERROR__QUOTE_VAULT_NOT_EMPTY
   | typeof INITIALIZER_ERROR__REMAINING_ACCOUNT_OVERLAP
   | typeof INITIALIZER_ERROR__REMAINING_ACCOUNTS_COMMITMENT_MISMATCH
@@ -129,13 +132,10 @@ export type InitializerError =
   | typeof INITIALIZER_ERROR__REMAINING_ACCOUNT_WRITABLE
   | typeof INITIALIZER_ERROR__SELL_DISABLE_NOT_ALLOWED
   | typeof INITIALIZER_ERROR__SELL_NOT_ALLOWED
-  | typeof INITIALIZER_ERROR__SENTINEL_CPI_FAILED
-  | typeof INITIALIZER_ERROR__SENTINEL_NOT_ALLOWLISTED
-  | typeof INITIALIZER_ERROR__SENTINEL_REJECTED
   | typeof INITIALIZER_ERROR__SLIPPAGE_EXCEEDED
   | typeof INITIALIZER_ERROR__UNAUTHORIZED
-  | typeof INITIALIZER_ERROR__WRONG_MIGRATOR
-  | typeof INITIALIZER_ERROR__WRONG_SENTINEL;
+  | typeof INITIALIZER_ERROR__WRONG_HOOK
+  | typeof INITIALIZER_ERROR__WRONG_MIGRATOR;
 
 let initializerErrorMessages: Record<InitializerError, string> | undefined;
 if (process.env.NODE_ENV !== 'production') {
@@ -143,20 +143,22 @@ if (process.env.NODE_ENV !== 'production') {
     [INITIALIZER_ERROR__ALLOWLIST_FULL]: `Allowlist full`,
     [INITIALIZER_ERROR__ALREADY_MIGRATED]: `Already migrated`,
     [INITIALIZER_ERROR__BUY_NOT_ALLOWED]: `Buy not allowed`,
-    [INITIALIZER_ERROR__CALLDATA_TOO_LARGE]: `Calldata too large`,
     [INITIALIZER_ERROR__CPI_FORBIDDEN]: `CPI not allowed`,
     [INITIALIZER_ERROR__CURVE_LIQUIDITY_INSUFFICIENT]: `Curve liquidity insufficient`,
     [INITIALIZER_ERROR__CURVE_PARAMS_INVALID]: `Curve params invalid`,
+    [INITIALIZER_ERROR__HOOK_CPI_FAILED]: `Hook CPI failed`,
+    [INITIALIZER_ERROR__HOOK_NOT_ALLOWLISTED]: `Hook not allowlisted`,
+    [INITIALIZER_ERROR__HOOK_REJECTED]: `Hook rejected`,
     [INITIALIZER_ERROR__INVALID_AMOUNT]: `Invalid amount`,
     [INITIALIZER_ERROR__INVALID_CURVE_KIND]: `Invalid curve kind`,
     [INITIALIZER_ERROR__INVALID_CURVE_PARAMS]: `Invalid curve params`,
-    [INITIALIZER_ERROR__INVALID_DIRECTION]: `Invalid direction`,
     [INITIALIZER_ERROR__INVALID_INPUT]: `Invalid input`,
     [INITIALIZER_ERROR__INVALID_METADATA_ACCOUNT]: `Invalid metadata account`,
     [INITIALIZER_ERROR__INVALID_METADATA_PROGRAM]: `Invalid metadata program`,
     [INITIALIZER_ERROR__INVALID_MINT]: `Invalid mint`,
     [INITIALIZER_ERROR__INVALID_ORACLE]: `Invalid oracle account`,
     [INITIALIZER_ERROR__INVALID_PHASE]: `Invalid phase`,
+    [INITIALIZER_ERROR__INVALID_TRADE_DIRECTION]: `Invalid trade direction`,
     [INITIALIZER_ERROR__INVALID_VAULT]: `Invalid vault`,
     [INITIALIZER_ERROR__LAUNCH_LOCKED]: `Launch locked`,
     [INITIALIZER_ERROR__MATH_OVERFLOW]: `Math overflow`,
@@ -166,6 +168,7 @@ if (process.env.NODE_ENV !== 'production') {
     [INITIALIZER_ERROR__MIGRATOR_NOT_ALLOWLISTED]: `Migrator not allowlisted`,
     [INITIALIZER_ERROR__MISSING_METADATA_ACCOUNTS]: `Missing metadata accounts`,
     [INITIALIZER_ERROR__MISSING_REMAINING_ACCOUNTS_COMMITMENT]: `Missing remaining accounts commitment`,
+    [INITIALIZER_ERROR__PAYLOAD_TOO_LARGE]: `Payload too large`,
     [INITIALIZER_ERROR__QUOTE_VAULT_NOT_EMPTY]: `Quote vault not empty`,
     [INITIALIZER_ERROR__REMAINING_ACCOUNT_OVERLAP]: `Remaining account overlaps with protocol account`,
     [INITIALIZER_ERROR__REMAINING_ACCOUNTS_COMMITMENT_MISMATCH]: `Remaining accounts commitment mismatch`,
@@ -173,13 +176,10 @@ if (process.env.NODE_ENV !== 'production') {
     [INITIALIZER_ERROR__REMAINING_ACCOUNT_WRITABLE]: `Remaining accounts must be readonly`,
     [INITIALIZER_ERROR__SELL_DISABLE_NOT_ALLOWED]: `Sell disable not allowed once enabled`,
     [INITIALIZER_ERROR__SELL_NOT_ALLOWED]: `Sell not allowed`,
-    [INITIALIZER_ERROR__SENTINEL_CPI_FAILED]: `Sentinel CPI failed`,
-    [INITIALIZER_ERROR__SENTINEL_NOT_ALLOWLISTED]: `Sentinel not allowlisted`,
-    [INITIALIZER_ERROR__SENTINEL_REJECTED]: `Sentinel rejected`,
     [INITIALIZER_ERROR__SLIPPAGE_EXCEEDED]: `Slippage exceeded`,
     [INITIALIZER_ERROR__UNAUTHORIZED]: `Unauthorized`,
+    [INITIALIZER_ERROR__WRONG_HOOK]: `Wrong hook program`,
     [INITIALIZER_ERROR__WRONG_MIGRATOR]: `Wrong migrator program`,
-    [INITIALIZER_ERROR__WRONG_SENTINEL]: `Wrong sentinel program`,
   };
 }
 

@@ -118,6 +118,40 @@ Build ETH and ERC20 top-up calldata by default, simulate with explicit asset and
 
 Minimal builder examples for `uniswapV2Split` / `uniswapV4Split` migrations and launchpad governance.
 
+## Solana Examples
+
+The Solana examples use `@whetstone-research/doppler-sdk/solana`. Set `SOLANA_NETWORK` deliberately: use `devnet` for the checked-in Doppler Solana deployment examples, `mainnet-beta` only with matching deployed program/config addresses, or `custom` with explicit RPC URLs.
+
+- [`solana-launch-by-marketcap.ts`](./solana-launch-by-marketcap.ts): simple XYK launch with CPMM migration configured.
+- [`solana-adv-launch.ts`](./solana-adv-launch.ts): launch with custom allocations, recipients, fees, and migration price floor.
+- [`solana-adv-e2e-launch.ts`](./solana-adv-e2e-launch.ts): create, buy, migrate, and inspect the graduated CPMM pool.
+- [`solana-swap.ts`](./solana-swap.ts): quote and submit an exact-in CPMM swap.
+- [`solana-cosigned-cpmm-swap.ts`](./solana-cosigned-cpmm-swap.ts): E2E launch and post-migration swap with readonly signer forwarding.
+
+Quick run:
+
+```bash
+export SOLANA_KEYPAIR_PATH=~/.config/solana/id.json
+export SOLANA_NETWORK=devnet
+export SOLANA_RPC_URL=https://api.devnet.solana.com
+export SOLANA_WS_URL=wss://api.devnet.solana.com
+pnpm tsx examples/solana-launch-by-marketcap.ts
+```
+
+The launch examples use ALTs where possible. ALTs reduce account-key bytes, but they do not compress instruction data, so long `metadataName`, `metadataSymbol`, or `metadataUri` values can still exceed Solana's 1232-byte transaction limit.
+
+For larger CPMM launch metadata, use a launch-specific ALT:
+
+1. Build the `initialize_launch` instruction.
+2. Collect non-signer lookup addresses with `initializer.getInstructionLookupTableAddresses(ix)`.
+3. Build and send setup instructions with `initializer.buildAddressLookupTableSetupInstructions(...)`.
+4. Wait for the ALT to be usable in a later slot.
+5. Rebuild the transaction and call `initializer.compressTransactionMessageWithLookupTable(...)`.
+
+The advanced examples demonstrate this flow and call `assertTransactionFits` before signing so metadata and account-pressure failures surface before broadcast.
+
+`SOL_PRICE_USD` can be set to bypass the CoinGecko price lookup in launch examples. `SOLANA_KEYPAIR_PATH` is preferred for local development; `SOLANA_KEYPAIR` also works with a 64-byte JSON secret key array.
+
 ## Prerequisites
 
 Before running these examples, ensure you have:

@@ -10,8 +10,8 @@ import { PHASE_TRADING, PHASE_MIGRATED, PHASE_ABORTED } from './constants.js';
  * This matches compute_remaining_accounts_hash in
  * programs/initializer/src/instructions/launch_common.rs.
  *
- * Commit the result as sentinelRemainingAccountsHash or migratorRemainingAccountsHash
- * when calling initializeLaunch. At migrate_launch (or sentinel invoke) time, pass the
+ * Commit the result as hookRemainingAccountsHash or migratorRemainingAccountsHash
+ * when calling initializeLaunch. At migrate_launch (or hook invoke) time, pass the
  * same accounts in the same order as remaining accounts — the program verifies they match.
  *
  * For an empty account list use EMPTY_REMAINING_ACCOUNTS_HASH instead.

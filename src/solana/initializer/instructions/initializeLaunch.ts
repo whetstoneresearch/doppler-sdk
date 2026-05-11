@@ -2,7 +2,6 @@ import type {
   Address,
   Instruction,
   AccountMeta,
-  AccountLookupMeta,
   TransactionSigner,
   AccountSignerMeta,
   ReadonlyUint8Array,
@@ -21,8 +20,8 @@ import {
   CURVE_KIND_XYK,
   CURVE_PARAMS_FORMAT_XYK_V0,
   INITIALIZER_PROGRAM_ID,
-  SF_AFTER_CREATE,
-  SF_BEFORE_CREATE,
+  HF_AFTER_CREATE,
+  HF_BEFORE_CREATE,
 } from '../constants.js';
 import { computeRemainingAccountsHash } from '../helpers.js';
 import { CPMM_MIGRATOR_PROGRAM_ID } from '../../migrators/cpmmMigrator/constants.js';
@@ -48,16 +47,16 @@ export type InitializeLaunchParams = Omit<
   InitializeLaunchArgsArgs,
   | 'allowBuy'
   | 'allowSell'
-  | 'sentinelProgram'
+  | 'hookProgram'
   | 'migratorProgram'
-  | 'sentinelCreateRemainingAccountsLen'
-  | 'sentinelCreateRemainingAccountsHash'
+  | 'hookCreateRemainingAccountsLen'
+  | 'hookCreateRemainingAccountsHash'
 > & {
   allowBuy: boolean;
   allowSell: boolean;
-  sentinelProgram?: Address;
-  sentinelCreateRemainingAccountsLen?: number;
-  sentinelCreateRemainingAccountsHash?: ReadonlyUint8Array;
+  hookProgram?: Address;
+  hookCreateRemainingAccountsLen?: number;
+  hookCreateRemainingAccountsHash?: ReadonlyUint8Array;
 };
 
 type AddressOrSigner = Address | TransactionSigner;
@@ -108,22 +107,6 @@ export async function getTokenMetadataAddress(mint: Address): Promise<Address> {
   return metadataAddress;
 }
 
-/**
- * Known index of each static account in the Doppler devnet ALT
- * (7r5rdLkGMzTq5Q2kBhkePw4ZTeZEooHgTXktYoamNmVq).
- */
-const ALT_INDEX: Record<string, number> = {
-  [TOKEN_PROGRAM_ADDRESS]: 0,
-  [SYSTEM_PROGRAM_ADDRESS]: 1,
-  SysvarRent111111111111111111111111111111111: 2,
-  [INITIALIZER_PROGRAM_ID]: 3,
-  [TOKEN_METADATA_PROGRAM_ID]: 4,
-  [CPMM_MIGRATOR_PROGRAM_ID]: 5,
-  So11111111111111111111111111111111111111112: 6,
-  [PREDICTION_MIGRATOR_PROGRAM_ADDRESS]: 8,
-  A9DojSvj32PMTTGctEcWZu9GSKuQVEhPkBXxDxmYu34o: 10,
-};
-
 export interface InitializeLaunchAccounts {
   config: Address;
   launch: Address;
@@ -134,7 +117,7 @@ export interface InitializeLaunchAccounts {
   quoteVault: AddressOrSigner;
   payer: AddressOrSigner;
   authority?: AddressOrSigner;
-  sentinelProgram?: Address;
+  hookProgram?: Address;
   migratorProgram?: Address;
   baseTokenProgram?: Address;
   quoteTokenProgram?: Address;
@@ -150,17 +133,7 @@ export interface InitializeLaunchAccounts {
    * These are forwarded as readonly metas; TransactionSigner values are
    * forwarded as readonly signers.
    */
-  sentinelCreateRemainingAccounts?: ReadonlyArray<ReadonlyRemainingAccount>;
-  /**
-   * Optional Address Lookup Table to reference for static accounts.
-   * When provided, constant non-signer accounts (base/quote token program,
-   * systemProgram, rent, migratorProgram, quoteMint when WSOL, metadataProgram)
-   * are encoded as ALT lookup metas instead of 32-byte static keys, reducing
-   * transaction size while keeping versioned config PDAs explicit.
-   *
-   * Use DOPPLER_DEVNET_ALT for devnet.
-   */
-  addressLookupTable?: Address;
+  hookCreateRemainingAccounts?: ReadonlyArray<ReadonlyRemainingAccount>;
 }
 
 function validateInitializeLaunchCurveParams(
@@ -196,7 +169,7 @@ export async function createInitializeLaunchInstruction(
     quoteVault,
     payer,
     authority,
-    sentinelProgram,
+    hookProgram,
     migratorProgram,
     baseTokenProgram = TOKEN_PROGRAM_ADDRESS,
     quoteTokenProgram = TOKEN_PROGRAM_ADDRESS,
@@ -204,8 +177,7 @@ export async function createInitializeLaunchInstruction(
     rent,
     metadataAccount,
     metadataProgram = TOKEN_METADATA_PROGRAM_ID,
-    sentinelCreateRemainingAccounts = [],
-    addressLookupTable: alt,
+    hookCreateRemainingAccounts = [],
   } = accounts;
 
   const withMetadata = Boolean(
@@ -220,35 +192,17 @@ export async function createInitializeLaunchInstruction(
   }
 
   const createHooksEnabled =
-    (args.sentinelFlags & (SF_BEFORE_CREATE | SF_AFTER_CREATE)) !== 0;
-  const sentinelCreateRemainingAccountAddresses =
-    sentinelCreateRemainingAccounts.map((account) =>
-      isTransactionSigner(account) ? account.address : account,
-    );
+    (args.hookFlags & (HF_BEFORE_CREATE | HF_AFTER_CREATE)) !== 0;
+  const hookCreateRemainingAccountAddresses = hookCreateRemainingAccounts.map(
+    (account) => (isTransactionSigner(account) ? account.address : account),
+  );
 
-  const altIndexMap: Record<string, number> = alt ? ALT_INDEX : {};
-
-  function staticOrLookup(
-    addr: Address,
-    role: AccountRole.READONLY | AccountRole.WRITABLE,
-  ): AccountMeta | AccountLookupMeta {
-    if (alt && altIndexMap[addr] !== undefined) {
-      return {
-        address: addr,
-        role,
-        lookupTableAddress: alt,
-        addressIndex: altIndexMap[addr]!,
-      };
-    }
-    return { address: addr, role };
-  }
-
-  const keys: (AccountMeta | AccountSignerMeta | AccountLookupMeta)[] = [
-    staticOrLookup(config, AccountRole.READONLY),
+  const keys: (AccountMeta | AccountSignerMeta)[] = [
+    { address: config, role: AccountRole.READONLY },
     { address: launch, role: AccountRole.WRITABLE },
     { address: launchAuthority, role: AccountRole.READONLY },
     createAccountMeta(baseMint, AccountRole.WRITABLE_SIGNER),
-    staticOrLookup(quoteMint, AccountRole.READONLY),
+    { address: quoteMint, role: AccountRole.READONLY },
     createAccountMeta(baseVault, AccountRole.WRITABLE_SIGNER),
     createAccountMeta(quoteVault, AccountRole.WRITABLE_SIGNER),
     createAccountMeta(payer, AccountRole.WRITABLE_SIGNER),
@@ -257,46 +211,44 @@ export async function createInitializeLaunchInstruction(
   keys.push(
     authority
       ? createAccountMeta(authority, AccountRole.READONLY_SIGNER)
-      : staticOrLookup(programId, AccountRole.READONLY),
+      : { address: programId, role: AccountRole.READONLY },
   );
   keys.push(
-    sentinelProgram
-      ? staticOrLookup(sentinelProgram, AccountRole.READONLY)
-      : staticOrLookup(programId, AccountRole.READONLY),
+    hookProgram
+      ? { address: hookProgram, role: AccountRole.READONLY }
+      : { address: programId, role: AccountRole.READONLY },
   );
   keys.push(
     migratorProgram
-      ? staticOrLookup(migratorProgram, AccountRole.READONLY)
-      : staticOrLookup(programId, AccountRole.READONLY),
+      ? { address: migratorProgram, role: AccountRole.READONLY }
+      : { address: programId, role: AccountRole.READONLY },
   );
 
-  keys.push(staticOrLookup(baseTokenProgram, AccountRole.READONLY));
-  keys.push(staticOrLookup(quoteTokenProgram, AccountRole.READONLY));
-  keys.push(staticOrLookup(systemProgram, AccountRole.READONLY));
-  keys.push(staticOrLookup(rent, AccountRole.READONLY));
+  keys.push({ address: baseTokenProgram, role: AccountRole.READONLY });
+  keys.push({ address: quoteTokenProgram, role: AccountRole.READONLY });
+  keys.push({ address: systemProgram, role: AccountRole.READONLY });
+  keys.push({ address: rent, role: AccountRole.READONLY });
 
   if (withMetadata) {
     keys.push({ address: metadataAccount!, role: AccountRole.WRITABLE });
-    keys.push(staticOrLookup(metadataProgram, AccountRole.READONLY));
+    keys.push({ address: metadataProgram, role: AccountRole.READONLY });
   } else {
-    keys.push(staticOrLookup(programId, AccountRole.READONLY));
-    keys.push(staticOrLookup(programId, AccountRole.READONLY));
+    keys.push({ address: programId, role: AccountRole.READONLY });
+    keys.push({ address: programId, role: AccountRole.READONLY });
   }
 
   const encoderArgs: InitializeLaunchArgsArgs = {
     ...args,
     allowBuy: args.allowBuy ? 1 : 0,
     allowSell: args.allowSell ? 1 : 0,
-    sentinelProgram:
-      args.sentinelProgram ?? sentinelProgram ?? SYSTEM_PROGRAM_ADDRESS,
-    sentinelCreateRemainingAccountsLen:
-      args.sentinelCreateRemainingAccountsLen ??
-      sentinelCreateRemainingAccounts.length,
+    hookProgram: args.hookProgram ?? hookProgram ?? SYSTEM_PROGRAM_ADDRESS,
+    hookCreateRemainingAccountsLen:
+      args.hookCreateRemainingAccountsLen ?? hookCreateRemainingAccounts.length,
     migratorProgram: migratorProgram ?? SYSTEM_PROGRAM_ADDRESS,
-    sentinelCreateRemainingAccountsHash:
-      args.sentinelCreateRemainingAccountsHash ??
+    hookCreateRemainingAccountsHash:
+      args.hookCreateRemainingAccountsHash ??
       (createHooksEnabled
-        ? computeRemainingAccountsHash(sentinelCreateRemainingAccountAddresses)
+        ? computeRemainingAccountsHash(hookCreateRemainingAccountAddresses)
         : new Uint8Array(32)),
   };
 
@@ -305,7 +257,7 @@ export async function createInitializeLaunchInstruction(
   );
 
   keys.push(
-    ...sentinelCreateRemainingAccounts.map((account) =>
+    ...hookCreateRemainingAccounts.map((account) =>
       createAccountMeta(
         account,
         isTransactionSigner(account)
@@ -317,15 +269,15 @@ export async function createInitializeLaunchInstruction(
 
   // When using the CPMM migrator, append the module-specific accounts required
   // by register_launch:
-  //   [state, cpmm_config]
+  //   [cpmm_migration_state, cpmm_config]
   if (migratorProgram === CPMM_MIGRATOR_PROGRAM_ID) {
     if (!accounts.cpmmConfig) {
       throw new Error(
         'cpmmConfig is required when migratorProgram is CPMM_MIGRATOR_PROGRAM_ID',
       );
     }
-    const [cpmmMigratorState] = await getCpmmMigratorStateAddress(launch);
-    keys.push({ address: cpmmMigratorState, role: AccountRole.WRITABLE });
+    const [cpmmMigrationState] = await getCpmmMigratorStateAddress(launch);
+    keys.push({ address: cpmmMigrationState, role: AccountRole.WRITABLE });
     keys.push({ address: accounts.cpmmConfig, role: AccountRole.READONLY });
   }
 

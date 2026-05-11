@@ -22,7 +22,7 @@ import {
 
 export type InitializeConfigArgs = {
   migratorAllowlist: Array<Address>;
-  sentinelAllowlist: Array<Address>;
+  hookAllowlist: Array<Address>;
 };
 
 export type InitializeConfigArgsArgs = InitializeConfigArgs;
@@ -30,14 +30,14 @@ export type InitializeConfigArgsArgs = InitializeConfigArgs;
 export function getInitializeConfigArgsEncoder(): Encoder<InitializeConfigArgsArgs> {
   return getStructEncoder([
     ['migratorAllowlist', getArrayEncoder(getAddressEncoder())],
-    ['sentinelAllowlist', getArrayEncoder(getAddressEncoder())],
+    ['hookAllowlist', getArrayEncoder(getAddressEncoder())],
   ]);
 }
 
 export function getInitializeConfigArgsDecoder(): Decoder<InitializeConfigArgs> {
   return getStructDecoder([
     ['migratorAllowlist', getArrayDecoder(getAddressDecoder())],
-    ['sentinelAllowlist', getArrayDecoder(getAddressDecoder())],
+    ['hookAllowlist', getArrayDecoder(getAddressDecoder())],
   ]);
 }
 

@@ -62,7 +62,7 @@ export type AddLiquidityInstruction<
   TAccountConfig extends string | AccountMeta<string> = string,
   TAccountPool extends string | AccountMeta<string> = string,
   TAccountPosition extends string | AccountMeta<string> = string,
-  TAccountProtocolPosition extends string | AccountMeta<string> = string,
+  TAccountProtocolFeePosition extends string | AccountMeta<string> = string,
   TAccountOwner extends string | AccountMeta<string> = string,
   TAccountAuthority extends string | AccountMeta<string> = string,
   TAccountVault0 extends string | AccountMeta<string> = string,
@@ -88,9 +88,9 @@ export type AddLiquidityInstruction<
       TAccountPosition extends string
         ? WritableAccount<TAccountPosition>
         : TAccountPosition,
-      TAccountProtocolPosition extends string
-        ? WritableAccount<TAccountProtocolPosition>
-        : TAccountProtocolPosition,
+      TAccountProtocolFeePosition extends string
+        ? WritableAccount<TAccountProtocolFeePosition>
+        : TAccountProtocolFeePosition,
       TAccountOwner extends string
         ? ReadonlySignerAccount<TAccountOwner> &
             AccountSignerMeta<TAccountOwner>
@@ -181,7 +181,7 @@ export type AddLiquidityAsyncInput<
   TAccountConfig extends string = string,
   TAccountPool extends string = string,
   TAccountPosition extends string = string,
-  TAccountProtocolPosition extends string = string,
+  TAccountProtocolFeePosition extends string = string,
   TAccountOwner extends string = string,
   TAccountAuthority extends string = string,
   TAccountVault0 extends string = string,
@@ -197,7 +197,7 @@ export type AddLiquidityAsyncInput<
   config: Address<TAccountConfig>;
   pool: Address<TAccountPool>;
   position: Address<TAccountPosition>;
-  protocolPosition: Address<TAccountProtocolPosition>;
+  protocolFeePosition: Address<TAccountProtocolFeePosition>;
   owner: TransactionSigner<TAccountOwner>;
   authority?: Address<TAccountAuthority>;
   vault0: Address<TAccountVault0>;
@@ -219,7 +219,7 @@ export async function getAddLiquidityInstructionAsync<
   TAccountConfig extends string,
   TAccountPool extends string,
   TAccountPosition extends string,
-  TAccountProtocolPosition extends string,
+  TAccountProtocolFeePosition extends string,
   TAccountOwner extends string,
   TAccountAuthority extends string,
   TAccountVault0 extends string,
@@ -237,7 +237,7 @@ export async function getAddLiquidityInstructionAsync<
     TAccountConfig,
     TAccountPool,
     TAccountPosition,
-    TAccountProtocolPosition,
+    TAccountProtocolFeePosition,
     TAccountOwner,
     TAccountAuthority,
     TAccountVault0,
@@ -257,7 +257,7 @@ export async function getAddLiquidityInstructionAsync<
     TAccountConfig,
     TAccountPool,
     TAccountPosition,
-    TAccountProtocolPosition,
+    TAccountProtocolFeePosition,
     TAccountOwner,
     TAccountAuthority,
     TAccountVault0,
@@ -279,8 +279,8 @@ export async function getAddLiquidityInstructionAsync<
     config: { value: input.config ?? null, isWritable: false },
     pool: { value: input.pool ?? null, isWritable: true },
     position: { value: input.position ?? null, isWritable: true },
-    protocolPosition: {
-      value: input.protocolPosition ?? null,
+    protocolFeePosition: {
+      value: input.protocolFeePosition ?? null,
       isWritable: true,
     },
     owner: { value: input.owner ?? null, isWritable: false },
@@ -324,7 +324,7 @@ export async function getAddLiquidityInstructionAsync<
       getAccountMeta('config', accounts.config),
       getAccountMeta('pool', accounts.pool),
       getAccountMeta('position', accounts.position),
-      getAccountMeta('protocolPosition', accounts.protocolPosition),
+      getAccountMeta('protocolFeePosition', accounts.protocolFeePosition),
       getAccountMeta('owner', accounts.owner),
       getAccountMeta('authority', accounts.authority),
       getAccountMeta('vault0', accounts.vault0),
@@ -346,7 +346,7 @@ export async function getAddLiquidityInstructionAsync<
     TAccountConfig,
     TAccountPool,
     TAccountPosition,
-    TAccountProtocolPosition,
+    TAccountProtocolFeePosition,
     TAccountOwner,
     TAccountAuthority,
     TAccountVault0,
@@ -365,7 +365,7 @@ export type AddLiquidityInput<
   TAccountConfig extends string = string,
   TAccountPool extends string = string,
   TAccountPosition extends string = string,
-  TAccountProtocolPosition extends string = string,
+  TAccountProtocolFeePosition extends string = string,
   TAccountOwner extends string = string,
   TAccountAuthority extends string = string,
   TAccountVault0 extends string = string,
@@ -381,7 +381,7 @@ export type AddLiquidityInput<
   config: Address<TAccountConfig>;
   pool: Address<TAccountPool>;
   position: Address<TAccountPosition>;
-  protocolPosition: Address<TAccountProtocolPosition>;
+  protocolFeePosition: Address<TAccountProtocolFeePosition>;
   owner: TransactionSigner<TAccountOwner>;
   authority: Address<TAccountAuthority>;
   vault0: Address<TAccountVault0>;
@@ -403,7 +403,7 @@ export function getAddLiquidityInstruction<
   TAccountConfig extends string,
   TAccountPool extends string,
   TAccountPosition extends string,
-  TAccountProtocolPosition extends string,
+  TAccountProtocolFeePosition extends string,
   TAccountOwner extends string,
   TAccountAuthority extends string,
   TAccountVault0 extends string,
@@ -421,7 +421,7 @@ export function getAddLiquidityInstruction<
     TAccountConfig,
     TAccountPool,
     TAccountPosition,
-    TAccountProtocolPosition,
+    TAccountProtocolFeePosition,
     TAccountOwner,
     TAccountAuthority,
     TAccountVault0,
@@ -440,7 +440,7 @@ export function getAddLiquidityInstruction<
   TAccountConfig,
   TAccountPool,
   TAccountPosition,
-  TAccountProtocolPosition,
+  TAccountProtocolFeePosition,
   TAccountOwner,
   TAccountAuthority,
   TAccountVault0,
@@ -461,8 +461,8 @@ export function getAddLiquidityInstruction<
     config: { value: input.config ?? null, isWritable: false },
     pool: { value: input.pool ?? null, isWritable: true },
     position: { value: input.position ?? null, isWritable: true },
-    protocolPosition: {
-      value: input.protocolPosition ?? null,
+    protocolFeePosition: {
+      value: input.protocolFeePosition ?? null,
       isWritable: true,
     },
     owner: { value: input.owner ?? null, isWritable: false },
@@ -491,7 +491,7 @@ export function getAddLiquidityInstruction<
       getAccountMeta('config', accounts.config),
       getAccountMeta('pool', accounts.pool),
       getAccountMeta('position', accounts.position),
-      getAccountMeta('protocolPosition', accounts.protocolPosition),
+      getAccountMeta('protocolFeePosition', accounts.protocolFeePosition),
       getAccountMeta('owner', accounts.owner),
       getAccountMeta('authority', accounts.authority),
       getAccountMeta('vault0', accounts.vault0),
@@ -513,7 +513,7 @@ export function getAddLiquidityInstruction<
     TAccountConfig,
     TAccountPool,
     TAccountPosition,
-    TAccountProtocolPosition,
+    TAccountProtocolFeePosition,
     TAccountOwner,
     TAccountAuthority,
     TAccountVault0,
@@ -537,7 +537,7 @@ export type ParsedAddLiquidityInstruction<
     config: TAccountMetas[0];
     pool: TAccountMetas[1];
     position: TAccountMetas[2];
-    protocolPosition: TAccountMetas[3];
+    protocolFeePosition: TAccountMetas[3];
     owner: TAccountMetas[4];
     authority: TAccountMetas[5];
     vault0: TAccountMetas[6];
@@ -588,7 +588,7 @@ export function parseAddLiquidityInstruction<
       config: getNextAccount(),
       pool: getNextAccount(),
       position: getNextAccount(),
-      protocolPosition: getNextAccount(),
+      protocolFeePosition: getNextAccount(),
       owner: getNextAccount(),
       authority: getNextAccount(),
       vault0: getNextAccount(),

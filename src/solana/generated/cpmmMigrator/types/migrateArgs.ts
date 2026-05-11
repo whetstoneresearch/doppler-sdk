@@ -19,7 +19,7 @@ import {
 
 /**
  * Arguments for migrate instruction.
- * These are deserialized from the migrator_migrate_calldata passed by initializer.
+ * These are deserialized from the migrator_migrate_payload passed by initializer.
  */
 export type MigrateArgs = {
   /** Base tokens reserved for distribution to recipients */

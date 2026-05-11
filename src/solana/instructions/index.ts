@@ -17,12 +17,12 @@ export {
   getQuoteToNumeraireInstruction as createQuoteToNumeraireInstruction,
   getRemoveLiquidityInstruction as createRemoveLiquidityInstruction,
   getSetFeesInstruction as createSetFeesInstruction,
+  getSetHookInstruction as createSetHookInstruction,
   getSetRouteInstruction as createSetRouteInstruction,
-  getSetSentinelInstruction as createSetSentinelInstruction,
-  getSkimInstruction as createSkimInstruction,
   getSwapExactInInstruction as createSwapExactInInstruction,
   getTransferAdminInstruction as createTransferAdminInstruction,
   getUnpauseInstruction as createUnpauseInstruction,
+  getWithdrawVaultExcessInstruction as createWithdrawVaultExcessInstruction,
 } from '../generated/cpmm/instructions/index.js';
 
 export { createSwapInstruction, MAX_FEE_AMOUNT } from './swapExactIn.js';

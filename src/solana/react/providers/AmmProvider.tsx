@@ -44,7 +44,7 @@ export interface AmmProviderProps {
   children: ReactNode;
   /** Solana RPC endpoint URL */
   endpoint: string;
-  /** Custom CPMM program ID (defaults to mainnet program) */
+  /** Custom CPMM program ID (defaults to SDK CPMM_PROGRAM_ID) */
   programId?: Address;
   /** Default commitment level (defaults to 'confirmed') */
   commitment?: Commitment;

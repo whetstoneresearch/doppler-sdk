@@ -20,7 +20,7 @@ export interface CollectProtocolFeesAccounts {
   /** Pool account (writable) */
   pool: Address;
   /** Protocol position account (writable) */
-  protocolPosition: Address;
+  protocolFeePosition: Address;
   /** Admin authority (signer) */
   admin: Address;
   /** Pool authority PDA (read-only) */
@@ -58,7 +58,7 @@ export interface CollectProtocolFeesAccounts {
  *   {
  *     config: configAddress,
  *     pool: poolAddress,
- *     protocolPosition: protocolPositionAddress,
+ *     protocolFeePosition: protocolFeePositionAddress,
  *     admin: adminPublicKey,
  *     authority: authorityPda,
  *     vault0: vault0Address,
@@ -83,7 +83,7 @@ export function createCollectProtocolFeesInstruction(
   const {
     config,
     pool,
-    protocolPosition,
+    protocolFeePosition,
     admin,
     authority,
     vault0,
@@ -99,7 +99,7 @@ export function createCollectProtocolFeesInstruction(
   const keys: AccountMeta[] = [
     { address: config, role: AccountRole.READONLY },
     { address: pool, role: AccountRole.WRITABLE },
-    { address: protocolPosition, role: AccountRole.WRITABLE },
+    { address: protocolFeePosition, role: AccountRole.WRITABLE },
     { address: admin, role: AccountRole.READONLY_SIGNER },
     { address: authority, role: AccountRole.READONLY },
     { address: vault0, role: AccountRole.WRITABLE },

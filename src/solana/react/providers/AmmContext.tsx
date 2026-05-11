@@ -15,7 +15,7 @@ import { CPMM_PROGRAM_ID } from '../../core/constants.js';
 export interface AmmConfig {
   /** Solana RPC client */
   rpc: Rpc<SolanaRpcApi>;
-  /** CPMM Program ID (defaults to mainnet program) */
+  /** CPMM Program ID */
   programId?: Address;
   /** Default commitment level for queries */
   commitment?: 'processed' | 'confirmed' | 'finalized';

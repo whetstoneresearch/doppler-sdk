@@ -47,17 +47,17 @@ import {
 } from '@solana/program-client-core';
 import { INITIALIZER_PROGRAM_ADDRESS } from '../programs';
 
-export const UPDATE_LAUNCH_CALLDATA_DISCRIMINATOR = new Uint8Array([
-  26, 225, 184, 23, 167, 221, 87, 92,
+export const UPDATE_LAUNCH_PAYLOAD_DISCRIMINATOR = new Uint8Array([
+  58, 183, 166, 177, 122, 162, 250, 205,
 ]);
 
-export function getUpdateLaunchCalldataDiscriminatorBytes() {
+export function getUpdateLaunchPayloadDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    UPDATE_LAUNCH_CALLDATA_DISCRIMINATOR,
+    UPDATE_LAUNCH_PAYLOAD_DISCRIMINATOR,
   );
 }
 
-export type UpdateLaunchCalldataInstruction<
+export type UpdateLaunchPayloadInstruction<
   TProgram extends string = typeof INITIALIZER_PROGRAM_ADDRESS,
   TAccountConfig extends string | AccountMeta<string> = string,
   TAccountLaunch extends string | AccountMeta<string> = string,
@@ -81,41 +81,41 @@ export type UpdateLaunchCalldataInstruction<
     ]
   >;
 
-export type UpdateLaunchCalldataInstructionData = {
+export type UpdateLaunchPayloadInstructionData = {
   discriminator: ReadonlyUint8Array;
-  sentinelCalldata: Option<ReadonlyUint8Array>;
-  migratorMigrateCalldata: Option<ReadonlyUint8Array>;
-  sentinelRemainingAccountsHash: Option<ReadonlyUint8Array>;
+  hookPayload: Option<ReadonlyUint8Array>;
+  migratorMigratePayload: Option<ReadonlyUint8Array>;
+  hookRemainingAccountsHash: Option<ReadonlyUint8Array>;
   migratorInitRemainingAccountsHash: Option<ReadonlyUint8Array>;
   migratorRemainingAccountsHash: Option<ReadonlyUint8Array>;
 };
 
-export type UpdateLaunchCalldataInstructionDataArgs = {
-  sentinelCalldata: OptionOrNullable<ReadonlyUint8Array>;
-  migratorMigrateCalldata: OptionOrNullable<ReadonlyUint8Array>;
-  sentinelRemainingAccountsHash: OptionOrNullable<ReadonlyUint8Array>;
+export type UpdateLaunchPayloadInstructionDataArgs = {
+  hookPayload: OptionOrNullable<ReadonlyUint8Array>;
+  migratorMigratePayload: OptionOrNullable<ReadonlyUint8Array>;
+  hookRemainingAccountsHash: OptionOrNullable<ReadonlyUint8Array>;
   migratorInitRemainingAccountsHash: OptionOrNullable<ReadonlyUint8Array>;
   migratorRemainingAccountsHash: OptionOrNullable<ReadonlyUint8Array>;
 };
 
-export function getUpdateLaunchCalldataInstructionDataEncoder(): Encoder<UpdateLaunchCalldataInstructionDataArgs> {
+export function getUpdateLaunchPayloadInstructionDataEncoder(): Encoder<UpdateLaunchPayloadInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       [
-        'sentinelCalldata',
+        'hookPayload',
         getOptionEncoder(
           addEncoderSizePrefix(getBytesEncoder(), getU32Encoder()),
         ),
       ],
       [
-        'migratorMigrateCalldata',
+        'migratorMigratePayload',
         getOptionEncoder(
           addEncoderSizePrefix(getBytesEncoder(), getU32Encoder()),
         ),
       ],
       [
-        'sentinelRemainingAccountsHash',
+        'hookRemainingAccountsHash',
         getOptionEncoder(fixEncoderSize(getBytesEncoder(), 32)),
       ],
       [
@@ -129,28 +129,28 @@ export function getUpdateLaunchCalldataInstructionDataEncoder(): Encoder<UpdateL
     ]),
     (value) => ({
       ...value,
-      discriminator: UPDATE_LAUNCH_CALLDATA_DISCRIMINATOR,
+      discriminator: UPDATE_LAUNCH_PAYLOAD_DISCRIMINATOR,
     }),
   );
 }
 
-export function getUpdateLaunchCalldataInstructionDataDecoder(): Decoder<UpdateLaunchCalldataInstructionData> {
+export function getUpdateLaunchPayloadInstructionDataDecoder(): Decoder<UpdateLaunchPayloadInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     [
-      'sentinelCalldata',
+      'hookPayload',
       getOptionDecoder(
         addDecoderSizePrefix(getBytesDecoder(), getU32Decoder()),
       ),
     ],
     [
-      'migratorMigrateCalldata',
+      'migratorMigratePayload',
       getOptionDecoder(
         addDecoderSizePrefix(getBytesDecoder(), getU32Decoder()),
       ),
     ],
     [
-      'sentinelRemainingAccountsHash',
+      'hookRemainingAccountsHash',
       getOptionDecoder(fixDecoderSize(getBytesDecoder(), 32)),
     ],
     [
@@ -164,17 +164,17 @@ export function getUpdateLaunchCalldataInstructionDataDecoder(): Decoder<UpdateL
   ]);
 }
 
-export function getUpdateLaunchCalldataInstructionDataCodec(): Codec<
-  UpdateLaunchCalldataInstructionDataArgs,
-  UpdateLaunchCalldataInstructionData
+export function getUpdateLaunchPayloadInstructionDataCodec(): Codec<
+  UpdateLaunchPayloadInstructionDataArgs,
+  UpdateLaunchPayloadInstructionData
 > {
   return combineCodec(
-    getUpdateLaunchCalldataInstructionDataEncoder(),
-    getUpdateLaunchCalldataInstructionDataDecoder(),
+    getUpdateLaunchPayloadInstructionDataEncoder(),
+    getUpdateLaunchPayloadInstructionDataDecoder(),
   );
 }
 
-export type UpdateLaunchCalldataAsyncInput<
+export type UpdateLaunchPayloadAsyncInput<
   TAccountConfig extends string = string,
   TAccountLaunch extends string = string,
   TAccountAuthority extends string = string,
@@ -183,27 +183,27 @@ export type UpdateLaunchCalldataAsyncInput<
   launch: Address<TAccountLaunch>;
   /** Authority of the launch (must match launch.authority or config.admin) */
   authority: TransactionSigner<TAccountAuthority>;
-  sentinelCalldata: UpdateLaunchCalldataInstructionDataArgs['sentinelCalldata'];
-  migratorMigrateCalldata: UpdateLaunchCalldataInstructionDataArgs['migratorMigrateCalldata'];
-  sentinelRemainingAccountsHash: UpdateLaunchCalldataInstructionDataArgs['sentinelRemainingAccountsHash'];
-  migratorInitRemainingAccountsHash: UpdateLaunchCalldataInstructionDataArgs['migratorInitRemainingAccountsHash'];
-  migratorRemainingAccountsHash: UpdateLaunchCalldataInstructionDataArgs['migratorRemainingAccountsHash'];
+  hookPayload: UpdateLaunchPayloadInstructionDataArgs['hookPayload'];
+  migratorMigratePayload: UpdateLaunchPayloadInstructionDataArgs['migratorMigratePayload'];
+  hookRemainingAccountsHash: UpdateLaunchPayloadInstructionDataArgs['hookRemainingAccountsHash'];
+  migratorInitRemainingAccountsHash: UpdateLaunchPayloadInstructionDataArgs['migratorInitRemainingAccountsHash'];
+  migratorRemainingAccountsHash: UpdateLaunchPayloadInstructionDataArgs['migratorRemainingAccountsHash'];
 };
 
-export async function getUpdateLaunchCalldataInstructionAsync<
+export async function getUpdateLaunchPayloadInstructionAsync<
   TAccountConfig extends string,
   TAccountLaunch extends string,
   TAccountAuthority extends string,
   TProgramAddress extends Address = typeof INITIALIZER_PROGRAM_ADDRESS,
 >(
-  input: UpdateLaunchCalldataAsyncInput<
+  input: UpdateLaunchPayloadAsyncInput<
     TAccountConfig,
     TAccountLaunch,
     TAccountAuthority
   >,
   config?: { programAddress?: TProgramAddress },
 ): Promise<
-  UpdateLaunchCalldataInstruction<
+  UpdateLaunchPayloadInstruction<
     TProgramAddress,
     TAccountConfig,
     TAccountLaunch,
@@ -244,11 +244,11 @@ export async function getUpdateLaunchCalldataInstructionAsync<
       getAccountMeta('launch', accounts.launch),
       getAccountMeta('authority', accounts.authority),
     ],
-    data: getUpdateLaunchCalldataInstructionDataEncoder().encode(
-      args as UpdateLaunchCalldataInstructionDataArgs,
+    data: getUpdateLaunchPayloadInstructionDataEncoder().encode(
+      args as UpdateLaunchPayloadInstructionDataArgs,
     ),
     programAddress,
-  } as UpdateLaunchCalldataInstruction<
+  } as UpdateLaunchPayloadInstruction<
     TProgramAddress,
     TAccountConfig,
     TAccountLaunch,
@@ -256,7 +256,7 @@ export async function getUpdateLaunchCalldataInstructionAsync<
   >);
 }
 
-export type UpdateLaunchCalldataInput<
+export type UpdateLaunchPayloadInput<
   TAccountConfig extends string = string,
   TAccountLaunch extends string = string,
   TAccountAuthority extends string = string,
@@ -265,26 +265,26 @@ export type UpdateLaunchCalldataInput<
   launch: Address<TAccountLaunch>;
   /** Authority of the launch (must match launch.authority or config.admin) */
   authority: TransactionSigner<TAccountAuthority>;
-  sentinelCalldata: UpdateLaunchCalldataInstructionDataArgs['sentinelCalldata'];
-  migratorMigrateCalldata: UpdateLaunchCalldataInstructionDataArgs['migratorMigrateCalldata'];
-  sentinelRemainingAccountsHash: UpdateLaunchCalldataInstructionDataArgs['sentinelRemainingAccountsHash'];
-  migratorInitRemainingAccountsHash: UpdateLaunchCalldataInstructionDataArgs['migratorInitRemainingAccountsHash'];
-  migratorRemainingAccountsHash: UpdateLaunchCalldataInstructionDataArgs['migratorRemainingAccountsHash'];
+  hookPayload: UpdateLaunchPayloadInstructionDataArgs['hookPayload'];
+  migratorMigratePayload: UpdateLaunchPayloadInstructionDataArgs['migratorMigratePayload'];
+  hookRemainingAccountsHash: UpdateLaunchPayloadInstructionDataArgs['hookRemainingAccountsHash'];
+  migratorInitRemainingAccountsHash: UpdateLaunchPayloadInstructionDataArgs['migratorInitRemainingAccountsHash'];
+  migratorRemainingAccountsHash: UpdateLaunchPayloadInstructionDataArgs['migratorRemainingAccountsHash'];
 };
 
-export function getUpdateLaunchCalldataInstruction<
+export function getUpdateLaunchPayloadInstruction<
   TAccountConfig extends string,
   TAccountLaunch extends string,
   TAccountAuthority extends string,
   TProgramAddress extends Address = typeof INITIALIZER_PROGRAM_ADDRESS,
 >(
-  input: UpdateLaunchCalldataInput<
+  input: UpdateLaunchPayloadInput<
     TAccountConfig,
     TAccountLaunch,
     TAccountAuthority
   >,
   config?: { programAddress?: TProgramAddress },
-): UpdateLaunchCalldataInstruction<
+): UpdateLaunchPayloadInstruction<
   TProgramAddress,
   TAccountConfig,
   TAccountLaunch,
@@ -314,11 +314,11 @@ export function getUpdateLaunchCalldataInstruction<
       getAccountMeta('launch', accounts.launch),
       getAccountMeta('authority', accounts.authority),
     ],
-    data: getUpdateLaunchCalldataInstructionDataEncoder().encode(
-      args as UpdateLaunchCalldataInstructionDataArgs,
+    data: getUpdateLaunchPayloadInstructionDataEncoder().encode(
+      args as UpdateLaunchPayloadInstructionDataArgs,
     ),
     programAddress,
-  } as UpdateLaunchCalldataInstruction<
+  } as UpdateLaunchPayloadInstruction<
     TProgramAddress,
     TAccountConfig,
     TAccountLaunch,
@@ -326,7 +326,7 @@ export function getUpdateLaunchCalldataInstruction<
   >);
 }
 
-export type ParsedUpdateLaunchCalldataInstruction<
+export type ParsedUpdateLaunchPayloadInstruction<
   TProgram extends string = typeof INITIALIZER_PROGRAM_ADDRESS,
   TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
@@ -337,17 +337,17 @@ export type ParsedUpdateLaunchCalldataInstruction<
     /** Authority of the launch (must match launch.authority or config.admin) */
     authority: TAccountMetas[2];
   };
-  data: UpdateLaunchCalldataInstructionData;
+  data: UpdateLaunchPayloadInstructionData;
 };
 
-export function parseUpdateLaunchCalldataInstruction<
+export function parseUpdateLaunchPayloadInstruction<
   TProgram extends string,
   TAccountMetas extends readonly AccountMeta[],
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
-): ParsedUpdateLaunchCalldataInstruction<TProgram, TAccountMetas> {
+): ParsedUpdateLaunchPayloadInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 3) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
@@ -370,7 +370,7 @@ export function parseUpdateLaunchCalldataInstruction<
       launch: getNextAccount(),
       authority: getNextAccount(),
     },
-    data: getUpdateLaunchCalldataInstructionDataDecoder().decode(
+    data: getUpdateLaunchPayloadInstructionDataDecoder().decode(
       instruction.data,
     ),
   };

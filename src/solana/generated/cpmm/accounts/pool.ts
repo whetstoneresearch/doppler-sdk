@@ -71,14 +71,14 @@ export type Pool = {
   feeGrowthGlobal1Q64: bigint;
   feesUnclaimed0: bigint;
   feesUnclaimed1: bigint;
-  sentinelProgram: Address;
-  sentinelFlags: number;
+  hookProgram: Address;
+  hookFlags: number;
   numeraireMint: Address;
-  liquidityMeasureSide: number;
+  liquidityMeasureTokenIndex: number;
   routeNextPool: Address;
   routeBridgeMint: Address;
   kLast: bigint;
-  protocolPosition: Address;
+  protocolFeePosition: Address;
   locked: number;
   version: number;
   reserved: ReadonlyUint8Array;
@@ -101,14 +101,14 @@ export type PoolArgs = {
   feeGrowthGlobal1Q64: number | bigint;
   feesUnclaimed0: number | bigint;
   feesUnclaimed1: number | bigint;
-  sentinelProgram: Address;
-  sentinelFlags: number;
+  hookProgram: Address;
+  hookFlags: number;
   numeraireMint: Address;
-  liquidityMeasureSide: number;
+  liquidityMeasureTokenIndex: number;
   routeNextPool: Address;
   routeBridgeMint: Address;
   kLast: number | bigint;
-  protocolPosition: Address;
+  protocolFeePosition: Address;
   locked: number;
   version: number;
   reserved: ReadonlyUint8Array;
@@ -135,14 +135,14 @@ export function getPoolEncoder(): FixedSizeEncoder<PoolArgs> {
       ['feeGrowthGlobal1Q64', getU128Encoder()],
       ['feesUnclaimed0', getU64Encoder()],
       ['feesUnclaimed1', getU64Encoder()],
-      ['sentinelProgram', getAddressEncoder()],
-      ['sentinelFlags', getU32Encoder()],
+      ['hookProgram', getAddressEncoder()],
+      ['hookFlags', getU32Encoder()],
       ['numeraireMint', getAddressEncoder()],
-      ['liquidityMeasureSide', getU8Encoder()],
+      ['liquidityMeasureTokenIndex', getU8Encoder()],
       ['routeNextPool', getAddressEncoder()],
       ['routeBridgeMint', getAddressEncoder()],
       ['kLast', getU128Encoder()],
-      ['protocolPosition', getAddressEncoder()],
+      ['protocolFeePosition', getAddressEncoder()],
       ['locked', getU8Encoder()],
       ['version', getU8Encoder()],
       ['reserved', fixEncoderSize(getBytesEncoder(), 7)],
@@ -171,14 +171,14 @@ export function getPoolDecoder(): FixedSizeDecoder<Pool> {
     ['feeGrowthGlobal1Q64', getU128Decoder()],
     ['feesUnclaimed0', getU64Decoder()],
     ['feesUnclaimed1', getU64Decoder()],
-    ['sentinelProgram', getAddressDecoder()],
-    ['sentinelFlags', getU32Decoder()],
+    ['hookProgram', getAddressDecoder()],
+    ['hookFlags', getU32Decoder()],
     ['numeraireMint', getAddressDecoder()],
-    ['liquidityMeasureSide', getU8Decoder()],
+    ['liquidityMeasureTokenIndex', getU8Decoder()],
     ['routeNextPool', getAddressDecoder()],
     ['routeBridgeMint', getAddressDecoder()],
     ['kLast', getU128Decoder()],
-    ['protocolPosition', getAddressDecoder()],
+    ['protocolFeePosition', getAddressDecoder()],
     ['locked', getU8Decoder()],
     ['version', getU8Decoder()],
     ['reserved', fixDecoderSize(getBytesDecoder(), 7)],

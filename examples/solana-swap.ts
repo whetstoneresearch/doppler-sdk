@@ -9,9 +9,6 @@ import './env.js';
 
 import {
   address,
-  createKeyPairSignerFromBytes,
-  createSolanaRpc,
-  createSolanaRpcSubscriptions,
   pipe,
   createTransactionMessage,
   setTransactionMessageFeePayerSigner,
@@ -26,21 +23,16 @@ import {
 import {
   TOKEN_PROGRAM_ADDRESS,
   findAssociatedTokenPda,
+  getCreateAssociatedTokenIdempotentInstruction,
 } from '@solana-program/token';
 
 import { cpmm } from '../src/solana/index.js';
+import {
+  assertSolanaExampleNetwork,
+  createSolanaClientsFromEnv,
+  loadKeypairSignerFromEnv,
+} from './solanaExampleHelpers.js';
 
-// ============================================================================
-// Environment
-// ============================================================================
-
-const keypairJson = process.env.SOLANA_KEYPAIR;
-const rpcUrl = process.env.SOLANA_RPC_URL ?? 'https://api.devnet.solana.com';
-const wsUrl = process.env.SOLANA_WS_URL ?? 'wss://api.devnet.solana.com';
-
-if (!keypairJson) {
-  throw new Error('SOLANA_KEYPAIR must be set (JSON array of 64 bytes)');
-}
 if (!process.env.MINT_0 || !process.env.MINT_1) {
   throw new Error(
     'MINT_0 and MINT_1 must be set to the two token mints of the pool',
@@ -56,12 +48,9 @@ const MINT_1: Address = address(process.env.MINT_1);
 // ============================================================================
 
 async function main() {
-  const payer = await createKeyPairSignerFromBytes(
-    new Uint8Array(JSON.parse(keypairJson as string)),
-  );
-
-  const rpc = createSolanaRpc(rpcUrl);
-  const rpcSubscriptions = createSolanaRpcSubscriptions(wsUrl);
+  const payer = await loadKeypairSignerFromEnv();
+  const { rpc, rpcSubscriptions, network } = createSolanaClientsFromEnv();
+  assertSolanaExampleNetwork(network, ['devnet', 'custom']);
 
   // ── Fetch pool state ─────────────────────────────────────────────────────
   console.log('Fetching pool state...');
@@ -82,39 +71,47 @@ async function main() {
   console.log('');
 
   // ── Quote the swap ───────────────────────────────────────────────────────
-  // direction 0 = token0→token1, direction 1 = token1→token0.
-  const direction = 0 as const; // token0 → token1
-  const AMOUNT_IN = 1_000_000n; // 1 token (assuming 6 decimals)
+  // tradeDirection 0 = token0→token1, tradeDirection 1 = token1→token0.
+  const tradeDirection = (process.env.SWAP_DIRECTION === '1' ? 1 : 0) as 0 | 1;
+  const AMOUNT_IN = BigInt(process.env.AMOUNT_IN ?? '1000000');
 
-  const quote = cpmm.getSwapQuote(pool, AMOUNT_IN, direction);
+  const quote = cpmm.getSwapQuote(pool, AMOUNT_IN, tradeDirection);
 
   const SLIPPAGE_BPS = 50n; // 0.5%
   const minAmountOut = (quote.amountOut * (10_000n - SLIPPAGE_BPS)) / 10_000n;
 
-  console.log('Swap quote (token0 → token1):');
-  console.log('  Amount in:     ', AMOUNT_IN.toString(), '(token0 atoms)');
+  console.log(
+    `Swap quote (${tradeDirection === 0 ? 'token0 → token1' : 'token1 → token0'}):`,
+  );
+  console.log('  Amount in:     ', AMOUNT_IN.toString(), '(input token atoms)');
   console.log(
     '  Amount out:    ',
     quote.amountOut.toString(),
-    '(token1 atoms, estimated)',
+    '(output token atoms, estimated)',
   );
-  console.log('  Fee:           ', quote.feeTotal.toString(), '(token0 atoms)');
+  console.log(
+    '  Fee:           ',
+    quote.feeTotal.toString(),
+    '(input token atoms)',
+  );
   console.log('  Price impact:  ', (quote.priceImpact * 100).toFixed(4), '%');
   console.log('  Min out (0.5%):', minAmountOut.toString());
   console.log('');
 
   // ── Derive PDAs and user token accounts ─────────────────────────────────
   const [config] = await cpmm.getConfigAddress();
-  const [userIn] = await findAssociatedTokenPda({
+  const [userToken0] = await findAssociatedTokenPda({
     owner: payer.address,
     mint: pool.token0Mint,
     tokenProgram: TOKEN_PROGRAM_ADDRESS,
   });
-  const [userOut] = await findAssociatedTokenPda({
+  const [userToken1] = await findAssociatedTokenPda({
     owner: payer.address,
     mint: pool.token1Mint,
     tokenProgram: TOKEN_PROGRAM_ADDRESS,
   });
+  const userIn = tradeDirection === 0 ? userToken0 : userToken1;
+  const userOut = tradeDirection === 0 ? userToken1 : userToken0;
 
   console.log('  Config:   ', config);
   console.log('  User ATA (in): ', userIn);
@@ -133,12 +130,24 @@ async function main() {
       vault1: pool.vault1,
       token0Mint: pool.token0Mint,
       token1Mint: pool.token1Mint,
-      userToken0: userIn,
-      userToken1: userOut,
+      userToken0,
+      userToken1,
       user: payer,
       amountIn: AMOUNT_IN,
       minAmountOut,
-      direction,
+      tradeDirection,
+    });
+    const createUserInAtaIx = getCreateAssociatedTokenIdempotentInstruction({
+      payer,
+      ata: userToken0,
+      owner: payer.address,
+      mint: pool.token0Mint,
+    });
+    const createUserOutAtaIx = getCreateAssociatedTokenIdempotentInstruction({
+      payer,
+      ata: userToken1,
+      owner: payer.address,
+      mint: pool.token1Mint,
     });
 
     const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
@@ -147,7 +156,11 @@ async function main() {
       createTransactionMessage({ version: 0 }),
       (tx) => setTransactionMessageFeePayerSigner(payer, tx),
       (tx) => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
-      (tx) => appendTransactionMessageInstructions([ix], tx),
+      (tx) =>
+        appendTransactionMessageInstructions(
+          [createUserInAtaIx, createUserOutAtaIx, ix],
+          tx,
+        ),
     );
 
     const signedTransaction =
@@ -170,8 +183,12 @@ async function main() {
       '  Transaction:',
       getSignatureFromTransaction(signedTransaction),
     );
-    console.log('  Sent:       ', AMOUNT_IN.toString(), 'token0 atoms');
-    console.log('  Received:   ~', quote.amountOut.toString(), 'token1 atoms');
+    console.log('  Sent:       ', AMOUNT_IN.toString(), 'input token atoms');
+    console.log(
+      '  Received:   ~',
+      quote.amountOut.toString(),
+      'output token atoms',
+    );
   } catch (error) {
     console.error('Error executing swap:', error);
     process.exit(1);

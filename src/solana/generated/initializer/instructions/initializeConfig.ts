@@ -85,12 +85,12 @@ export type InitializeConfigInstruction<
 export type InitializeConfigInstructionData = {
   discriminator: ReadonlyUint8Array;
   migratorAllowlist: Array<Address>;
-  sentinelAllowlist: Array<Address>;
+  hookAllowlist: Array<Address>;
 };
 
 export type InitializeConfigInstructionDataArgs = {
   migratorAllowlist: Array<Address>;
-  sentinelAllowlist: Array<Address>;
+  hookAllowlist: Array<Address>;
 };
 
 export function getInitializeConfigInstructionDataEncoder(): Encoder<InitializeConfigInstructionDataArgs> {
@@ -98,7 +98,7 @@ export function getInitializeConfigInstructionDataEncoder(): Encoder<InitializeC
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       ['migratorAllowlist', getArrayEncoder(getAddressEncoder())],
-      ['sentinelAllowlist', getArrayEncoder(getAddressEncoder())],
+      ['hookAllowlist', getArrayEncoder(getAddressEncoder())],
     ]),
     (value) => ({ ...value, discriminator: INITIALIZE_CONFIG_DISCRIMINATOR }),
   );
@@ -108,7 +108,7 @@ export function getInitializeConfigInstructionDataDecoder(): Decoder<InitializeC
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['migratorAllowlist', getArrayDecoder(getAddressDecoder())],
-    ['sentinelAllowlist', getArrayDecoder(getAddressDecoder())],
+    ['hookAllowlist', getArrayDecoder(getAddressDecoder())],
   ]);
 }
 
@@ -133,7 +133,7 @@ export type InitializeConfigAsyncInput<
   programData: Address<TAccountProgramData>;
   systemProgram?: Address<TAccountSystemProgram>;
   migratorAllowlist: InitializeConfigInstructionDataArgs['migratorAllowlist'];
-  sentinelAllowlist: InitializeConfigInstructionDataArgs['sentinelAllowlist'];
+  hookAllowlist: InitializeConfigInstructionDataArgs['hookAllowlist'];
 };
 
 export async function getInitializeConfigInstructionAsync<
@@ -223,7 +223,7 @@ export type InitializeConfigInput<
   programData: Address<TAccountProgramData>;
   systemProgram?: Address<TAccountSystemProgram>;
   migratorAllowlist: InitializeConfigInstructionDataArgs['migratorAllowlist'];
-  sentinelAllowlist: InitializeConfigInstructionDataArgs['sentinelAllowlist'];
+  hookAllowlist: InitializeConfigInstructionDataArgs['hookAllowlist'];
 };
 
 export function getInitializeConfigInstruction<

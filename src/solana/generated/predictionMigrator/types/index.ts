@@ -7,12 +7,12 @@
  */
 
 export * from './accumulatorUpdated';
-export * from './calldataBuf';
 export * from './entryMigrated';
 export * from './entryRegistered';
 export * from './marketCreated';
 export * from './marketResolved';
 export * from './migrateEntryArgs';
+export * from './payloadBuf';
 export * from './previewPayoutIfWinnerArgs';
 export * from './registerEntryArgs';
 export * from './rewardsClaimed';

@@ -28,38 +28,38 @@ import {
   type ReadonlyUint8Array,
 } from '@solana/kit';
 
-export type UpdateLaunchCalldataArgs = {
-  sentinelCalldata: Option<ReadonlyUint8Array>;
-  migratorMigrateCalldata: Option<ReadonlyUint8Array>;
-  sentinelRemainingAccountsHash: Option<ReadonlyUint8Array>;
+export type UpdateLaunchPayloadArgs = {
+  hookPayload: Option<ReadonlyUint8Array>;
+  migratorMigratePayload: Option<ReadonlyUint8Array>;
+  hookRemainingAccountsHash: Option<ReadonlyUint8Array>;
   migratorInitRemainingAccountsHash: Option<ReadonlyUint8Array>;
   migratorRemainingAccountsHash: Option<ReadonlyUint8Array>;
 };
 
-export type UpdateLaunchCalldataArgsArgs = {
-  sentinelCalldata: OptionOrNullable<ReadonlyUint8Array>;
-  migratorMigrateCalldata: OptionOrNullable<ReadonlyUint8Array>;
-  sentinelRemainingAccountsHash: OptionOrNullable<ReadonlyUint8Array>;
+export type UpdateLaunchPayloadArgsArgs = {
+  hookPayload: OptionOrNullable<ReadonlyUint8Array>;
+  migratorMigratePayload: OptionOrNullable<ReadonlyUint8Array>;
+  hookRemainingAccountsHash: OptionOrNullable<ReadonlyUint8Array>;
   migratorInitRemainingAccountsHash: OptionOrNullable<ReadonlyUint8Array>;
   migratorRemainingAccountsHash: OptionOrNullable<ReadonlyUint8Array>;
 };
 
-export function getUpdateLaunchCalldataArgsEncoder(): Encoder<UpdateLaunchCalldataArgsArgs> {
+export function getUpdateLaunchPayloadArgsEncoder(): Encoder<UpdateLaunchPayloadArgsArgs> {
   return getStructEncoder([
     [
-      'sentinelCalldata',
+      'hookPayload',
       getOptionEncoder(
         addEncoderSizePrefix(getBytesEncoder(), getU32Encoder()),
       ),
     ],
     [
-      'migratorMigrateCalldata',
+      'migratorMigratePayload',
       getOptionEncoder(
         addEncoderSizePrefix(getBytesEncoder(), getU32Encoder()),
       ),
     ],
     [
-      'sentinelRemainingAccountsHash',
+      'hookRemainingAccountsHash',
       getOptionEncoder(fixEncoderSize(getBytesEncoder(), 32)),
     ],
     [
@@ -73,22 +73,22 @@ export function getUpdateLaunchCalldataArgsEncoder(): Encoder<UpdateLaunchCallda
   ]);
 }
 
-export function getUpdateLaunchCalldataArgsDecoder(): Decoder<UpdateLaunchCalldataArgs> {
+export function getUpdateLaunchPayloadArgsDecoder(): Decoder<UpdateLaunchPayloadArgs> {
   return getStructDecoder([
     [
-      'sentinelCalldata',
+      'hookPayload',
       getOptionDecoder(
         addDecoderSizePrefix(getBytesDecoder(), getU32Decoder()),
       ),
     ],
     [
-      'migratorMigrateCalldata',
+      'migratorMigratePayload',
       getOptionDecoder(
         addDecoderSizePrefix(getBytesDecoder(), getU32Decoder()),
       ),
     ],
     [
-      'sentinelRemainingAccountsHash',
+      'hookRemainingAccountsHash',
       getOptionDecoder(fixDecoderSize(getBytesDecoder(), 32)),
     ],
     [
@@ -102,12 +102,12 @@ export function getUpdateLaunchCalldataArgsDecoder(): Decoder<UpdateLaunchCallda
   ]);
 }
 
-export function getUpdateLaunchCalldataArgsCodec(): Codec<
-  UpdateLaunchCalldataArgsArgs,
-  UpdateLaunchCalldataArgs
+export function getUpdateLaunchPayloadArgsCodec(): Codec<
+  UpdateLaunchPayloadArgsArgs,
+  UpdateLaunchPayloadArgs
 > {
   return combineCodec(
-    getUpdateLaunchCalldataArgsEncoder(),
-    getUpdateLaunchCalldataArgsDecoder(),
+    getUpdateLaunchPayloadArgsEncoder(),
+    getUpdateLaunchPayloadArgsDecoder(),
   );
 }

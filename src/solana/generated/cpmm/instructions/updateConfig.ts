@@ -85,7 +85,7 @@ export type UpdateConfigInstructionData = {
   maxRouteHops: number;
   protocolFeeEnabled: boolean;
   protocolFeeBps: number;
-  sentinelAllowlist: Array<Address>;
+  hookAllowlist: Array<Address>;
 };
 
 export type UpdateConfigInstructionDataArgs = {
@@ -95,7 +95,7 @@ export type UpdateConfigInstructionDataArgs = {
   maxRouteHops: number;
   protocolFeeEnabled: boolean;
   protocolFeeBps: number;
-  sentinelAllowlist: Array<Address>;
+  hookAllowlist: Array<Address>;
 };
 
 export function getUpdateConfigInstructionDataEncoder(): Encoder<UpdateConfigInstructionDataArgs> {
@@ -108,7 +108,7 @@ export function getUpdateConfigInstructionDataEncoder(): Encoder<UpdateConfigIns
       ['maxRouteHops', getU8Encoder()],
       ['protocolFeeEnabled', getBooleanEncoder()],
       ['protocolFeeBps', getU16Encoder()],
-      ['sentinelAllowlist', getArrayEncoder(getAddressEncoder())],
+      ['hookAllowlist', getArrayEncoder(getAddressEncoder())],
     ]),
     (value) => ({ ...value, discriminator: UPDATE_CONFIG_DISCRIMINATOR }),
   );
@@ -123,7 +123,7 @@ export function getUpdateConfigInstructionDataDecoder(): Decoder<UpdateConfigIns
     ['maxRouteHops', getU8Decoder()],
     ['protocolFeeEnabled', getBooleanDecoder()],
     ['protocolFeeBps', getU16Decoder()],
-    ['sentinelAllowlist', getArrayDecoder(getAddressDecoder())],
+    ['hookAllowlist', getArrayDecoder(getAddressDecoder())],
   ]);
 }
 
@@ -149,7 +149,7 @@ export type UpdateConfigInput<
   maxRouteHops: UpdateConfigInstructionDataArgs['maxRouteHops'];
   protocolFeeEnabled: UpdateConfigInstructionDataArgs['protocolFeeEnabled'];
   protocolFeeBps: UpdateConfigInstructionDataArgs['protocolFeeBps'];
-  sentinelAllowlist: UpdateConfigInstructionDataArgs['sentinelAllowlist'];
+  hookAllowlist: UpdateConfigInstructionDataArgs['hookAllowlist'];
 };
 
 export function getUpdateConfigInstruction<

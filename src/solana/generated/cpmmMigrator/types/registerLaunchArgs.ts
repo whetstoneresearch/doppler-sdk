@@ -38,7 +38,7 @@ import {
 
 /**
  * Arguments for register_launch instruction.
- * These are deserialized from the migrator_init_calldata passed by initializer.
+ * These are deserialized from the migrator_init_payload passed by initializer.
  */
 export type RegisterLaunchArgs = {
   cpmmConfig: Address;

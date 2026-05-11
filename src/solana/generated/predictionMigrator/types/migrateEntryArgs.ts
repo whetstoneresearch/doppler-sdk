@@ -22,7 +22,7 @@ import {
 
 /**
  * Arguments for migrate_entry instruction.
- * This is decoded from migrator_migrate_calldata passed by initializer.
+ * This is decoded from migrator_migrate_payload passed by initializer.
  */
 export type MigrateEntryArgs = { entryId: ReadonlyUint8Array };
 

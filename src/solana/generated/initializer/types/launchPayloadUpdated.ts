@@ -18,24 +18,24 @@ import {
   type FixedSizeEncoder,
 } from '@solana/kit';
 
-export type LaunchCalldataUpdated = { launch: Address };
+export type LaunchPayloadUpdated = { launch: Address };
 
-export type LaunchCalldataUpdatedArgs = LaunchCalldataUpdated;
+export type LaunchPayloadUpdatedArgs = LaunchPayloadUpdated;
 
-export function getLaunchCalldataUpdatedEncoder(): FixedSizeEncoder<LaunchCalldataUpdatedArgs> {
+export function getLaunchPayloadUpdatedEncoder(): FixedSizeEncoder<LaunchPayloadUpdatedArgs> {
   return getStructEncoder([['launch', getAddressEncoder()]]);
 }
 
-export function getLaunchCalldataUpdatedDecoder(): FixedSizeDecoder<LaunchCalldataUpdated> {
+export function getLaunchPayloadUpdatedDecoder(): FixedSizeDecoder<LaunchPayloadUpdated> {
   return getStructDecoder([['launch', getAddressDecoder()]]);
 }
 
-export function getLaunchCalldataUpdatedCodec(): FixedSizeCodec<
-  LaunchCalldataUpdatedArgs,
-  LaunchCalldataUpdated
+export function getLaunchPayloadUpdatedCodec(): FixedSizeCodec<
+  LaunchPayloadUpdatedArgs,
+  LaunchPayloadUpdated
 > {
   return combineCodec(
-    getLaunchCalldataUpdatedEncoder(),
-    getLaunchCalldataUpdatedDecoder(),
+    getLaunchPayloadUpdatedEncoder(),
+    getLaunchPayloadUpdatedDecoder(),
   );
 }

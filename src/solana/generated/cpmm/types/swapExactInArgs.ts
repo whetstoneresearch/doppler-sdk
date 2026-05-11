@@ -24,14 +24,14 @@ import {
 export type SwapExactInArgs = {
   amountIn: bigint;
   minAmountOut: bigint;
-  direction: number;
+  tradeDirection: number;
   updateOracle: boolean;
 };
 
 export type SwapExactInArgsArgs = {
   amountIn: number | bigint;
   minAmountOut: number | bigint;
-  direction: number;
+  tradeDirection: number;
   updateOracle: boolean;
 };
 
@@ -39,7 +39,7 @@ export function getSwapExactInArgsEncoder(): FixedSizeEncoder<SwapExactInArgsArg
   return getStructEncoder([
     ['amountIn', getU64Encoder()],
     ['minAmountOut', getU64Encoder()],
-    ['direction', getU8Encoder()],
+    ['tradeDirection', getU8Encoder()],
     ['updateOracle', getBooleanEncoder()],
   ]);
 }
@@ -48,7 +48,7 @@ export function getSwapExactInArgsDecoder(): FixedSizeDecoder<SwapExactInArgs> {
   return getStructDecoder([
     ['amountIn', getU64Decoder()],
     ['minAmountOut', getU64Decoder()],
-    ['direction', getU8Decoder()],
+    ['tradeDirection', getU8Decoder()],
     ['updateOracle', getBooleanDecoder()],
   ]);
 }

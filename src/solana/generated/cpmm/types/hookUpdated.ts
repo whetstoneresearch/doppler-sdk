@@ -20,36 +20,36 @@ import {
   type FixedSizeEncoder,
 } from '@solana/kit';
 
-export type SentinelUpdated = {
+export type HookUpdated = {
   pool: Address;
-  sentinelProgram: Address;
-  sentinelFlags: number;
+  hookProgram: Address;
+  hookFlags: number;
   admin: Address;
 };
 
-export type SentinelUpdatedArgs = SentinelUpdated;
+export type HookUpdatedArgs = HookUpdated;
 
-export function getSentinelUpdatedEncoder(): FixedSizeEncoder<SentinelUpdatedArgs> {
+export function getHookUpdatedEncoder(): FixedSizeEncoder<HookUpdatedArgs> {
   return getStructEncoder([
     ['pool', getAddressEncoder()],
-    ['sentinelProgram', getAddressEncoder()],
-    ['sentinelFlags', getU32Encoder()],
+    ['hookProgram', getAddressEncoder()],
+    ['hookFlags', getU32Encoder()],
     ['admin', getAddressEncoder()],
   ]);
 }
 
-export function getSentinelUpdatedDecoder(): FixedSizeDecoder<SentinelUpdated> {
+export function getHookUpdatedDecoder(): FixedSizeDecoder<HookUpdated> {
   return getStructDecoder([
     ['pool', getAddressDecoder()],
-    ['sentinelProgram', getAddressDecoder()],
-    ['sentinelFlags', getU32Decoder()],
+    ['hookProgram', getAddressDecoder()],
+    ['hookFlags', getU32Decoder()],
     ['admin', getAddressDecoder()],
   ]);
 }
 
-export function getSentinelUpdatedCodec(): FixedSizeCodec<
-  SentinelUpdatedArgs,
-  SentinelUpdated
+export function getHookUpdatedCodec(): FixedSizeCodec<
+  HookUpdatedArgs,
+  HookUpdated
 > {
-  return combineCodec(getSentinelUpdatedEncoder(), getSentinelUpdatedDecoder());
+  return combineCodec(getHookUpdatedEncoder(), getHookUpdatedDecoder());
 }

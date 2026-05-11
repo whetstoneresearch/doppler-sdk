@@ -25,7 +25,7 @@ import {
 export type CurveSwap = {
   launch: Address;
   user: Address;
-  direction: number;
+  tradeDirection: number;
   amountIn: bigint;
   amountOut: bigint;
   feePaid: bigint;
@@ -36,7 +36,7 @@ export type CurveSwap = {
 export type CurveSwapArgs = {
   launch: Address;
   user: Address;
-  direction: number;
+  tradeDirection: number;
   amountIn: number | bigint;
   amountOut: number | bigint;
   feePaid: number | bigint;
@@ -48,7 +48,7 @@ export function getCurveSwapEncoder(): FixedSizeEncoder<CurveSwapArgs> {
   return getStructEncoder([
     ['launch', getAddressEncoder()],
     ['user', getAddressEncoder()],
-    ['direction', getU8Encoder()],
+    ['tradeDirection', getU8Encoder()],
     ['amountIn', getU64Encoder()],
     ['amountOut', getU64Encoder()],
     ['feePaid', getU64Encoder()],
@@ -61,7 +61,7 @@ export function getCurveSwapDecoder(): FixedSizeDecoder<CurveSwap> {
   return getStructDecoder([
     ['launch', getAddressDecoder()],
     ['user', getAddressDecoder()],
-    ['direction', getU8Decoder()],
+    ['tradeDirection', getU8Decoder()],
     ['amountIn', getU64Decoder()],
     ['amountOut', getU64Decoder()],
     ['feePaid', getU64Decoder()],

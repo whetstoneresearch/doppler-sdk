@@ -23,7 +23,7 @@ import {
 export type ConfigInitialized = {
   admin: Address;
   migratorAllowlistLen: number;
-  sentinelAllowlistLen: number;
+  hookAllowlistLen: number;
 };
 
 export type ConfigInitializedArgs = ConfigInitialized;
@@ -32,7 +32,7 @@ export function getConfigInitializedEncoder(): FixedSizeEncoder<ConfigInitialize
   return getStructEncoder([
     ['admin', getAddressEncoder()],
     ['migratorAllowlistLen', getU8Encoder()],
-    ['sentinelAllowlistLen', getU8Encoder()],
+    ['hookAllowlistLen', getU8Encoder()],
   ]);
 }
 
@@ -40,7 +40,7 @@ export function getConfigInitializedDecoder(): FixedSizeDecoder<ConfigInitialize
   return getStructDecoder([
     ['admin', getAddressDecoder()],
     ['migratorAllowlistLen', getU8Decoder()],
-    ['sentinelAllowlistLen', getU8Decoder()],
+    ['hookAllowlistLen', getU8Decoder()],
   ]);
 }
 

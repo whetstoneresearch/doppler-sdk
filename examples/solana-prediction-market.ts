@@ -19,9 +19,6 @@ import './env.js';
 import { TOKEN_PROGRAM_ADDRESS } from '@solana-program/token';
 import { SYSTEM_PROGRAM_ADDRESS } from '@solana-program/system';
 import {
-  createKeyPairSignerFromBytes,
-  createSolanaRpc,
-  createSolanaRpcSubscriptions,
   generateKeyPairSigner,
   pipe,
   createTransactionMessage,
@@ -40,18 +37,12 @@ import {
   predictionMigrator,
   trustedOracle,
 } from '../src/solana/index.js';
-
-// ============================================================================
-// Environment
-// ============================================================================
-
-const keypairJson = process.env.SOLANA_KEYPAIR;
-const rpcUrl = process.env.SOLANA_RPC_URL ?? 'https://api.devnet.solana.com';
-const wsUrl = process.env.SOLANA_WS_URL ?? 'wss://api.devnet.solana.com';
-
-if (!keypairJson) {
-  throw new Error('SOLANA_KEYPAIR must be set (JSON array of 64 bytes)');
-}
+import {
+  assertSolanaExampleNetwork,
+  createLookupTableForInstruction,
+  createSolanaClientsFromEnv,
+  loadKeypairSignerFromEnv,
+} from './solanaExampleHelpers.js';
 
 // WSOL mint — the quote token (SOL wrapped as SPL token so it can live in vaults).
 const WSOL_MINT: Address =
@@ -62,12 +53,9 @@ const WSOL_MINT: Address =
 // ============================================================================
 
 async function main() {
-  const payer = await createKeyPairSignerFromBytes(
-    new Uint8Array(JSON.parse(keypairJson as string)),
-  );
-
-  const rpc = createSolanaRpc(rpcUrl);
-  const rpcSubscriptions = createSolanaRpcSubscriptions(wsUrl);
+  const payer = await loadKeypairSignerFromEnv();
+  const { rpc, rpcSubscriptions, network } = createSolanaClientsFromEnv();
+  assertSolanaExampleNetwork(network, ['devnet', 'custom']);
 
   // ── Token supply parameters ─────────────────────────────────────────────
   //
@@ -198,21 +186,17 @@ async function main() {
             baseMint.address,
           );
 
-        // ── Encode migrator calldatas ────────────────────────────────────────
-        // Init calldata → registerEntry; migrate calldata → migrateEntry.
-        const migratorInitCalldata = predictionMigrator
+        // ── Encode migrator payloads ────────────────────────────────────────
+        // Init payload → registerEntry; migrate payload → migrateEntry.
+        const migratorInitPayload = predictionMigrator
           .getRegisterEntryInstructionDataEncoder()
           .encode({ entryId });
 
-        const migratorMigrateCalldata = predictionMigrator
+        const migratorMigratePayload = predictionMigrator
           .getMigrateEntryInstructionDataEncoder()
           .encode({ entryId });
 
         // ── Build the initializeLaunch instruction ───────────────────────────
-        // The ALT covers the shared static accounts used by initializeLaunch,
-        // including the token program, system program, rent, config, WSOL_MINT,
-        // and the prediction migrator program, keeping the transaction within
-        // the 1232-byte limit despite the 6 register_entry remaining accounts.
         // The instruction builder automatically appends the 6 register_entry
         // remaining accounts for the prediction migrator.
         const ix = await initializer.createInitializeLaunchInstruction(
@@ -233,7 +217,6 @@ async function main() {
             systemProgram: SYSTEM_PROGRAM_ADDRESS,
             rent: SYSVAR_RENT_ADDRESS,
             metadataAccount,
-            addressLookupTable: initializer.DOPPLER_DEVNET_ALT,
           },
           {
             namespace,
@@ -251,14 +234,15 @@ async function main() {
             ]),
             allowBuy: true,
             allowSell: true,
-            sentinelProgram: initializer.PREDICTION_SENTINEL_PROGRAM_ID,
-            sentinelFlags: initializer.SF_BEFORE_SWAP,
-            sentinelCalldata: new Uint8Array(),
-            migratorInitCalldata,
-            migratorMigrateCalldata,
-            // Prediction sentinel reads oracle_state to check is_finalized.
-            sentinelRemainingAccountsHash:
-              initializer.computeRemainingAccountsHash([oracleStateAddress]),
+            hookProgram: initializer.PREDICTION_HOOK_PROGRAM_ID,
+            hookFlags: initializer.HF_BEFORE_SWAP,
+            hookPayload: new Uint8Array(),
+            migratorInitPayload,
+            migratorMigratePayload,
+            // Prediction hook reads oracle_state to check is_finalized.
+            hookRemainingAccountsHash: initializer.computeRemainingAccountsHash(
+              [oracleStateAddress],
+            ),
             migratorInitRemainingAccountsHash:
               initializer.computeRemainingAccountsHash([
                 oracleStateAddress,
@@ -277,22 +261,38 @@ async function main() {
                 entryAddress,
                 entryByMint,
               ]),
-            metadataName: '',
-            metadataSymbol: '',
-            metadataUri: '',
+            // ALTs compress account keys but not instruction data; keep
+            // metadata strings short enough to fit the 1232-byte tx limit.
+            metadataName: `${outcome.label} Token`,
+            metadataSymbol: outcome.label,
+            metadataUri: `https://example.com/${outcome.label.toLowerCase()}.json`,
           },
         );
+        const lookupTable = await createLookupTableForInstruction({
+          rpc,
+          rpcSubscriptions,
+          payer,
+          instruction: ix,
+          label: `${outcome.label} initialize_launch lookup table`,
+        });
 
         const { value: latestBlockhash } = await rpc
           .getLatestBlockhash()
           .send();
-        const transactionMessage = pipe(
-          createTransactionMessage({ version: 0 }),
-          (tx) => setTransactionMessageFeePayerSigner(payer, tx),
-          (tx) =>
-            setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
-          (tx) => appendTransactionMessageInstructions([ix], tx),
-        );
+        const transactionMessage =
+          initializer.compressTransactionMessageWithLookupTable(
+            pipe(
+              createTransactionMessage({ version: 0 }),
+              (tx) => setTransactionMessageFeePayerSigner(payer, tx),
+              (tx) =>
+                setTransactionMessageLifetimeUsingBlockhash(
+                  latestBlockhash,
+                  tx,
+                ),
+              (tx) => appendTransactionMessageInstructions([ix], tx),
+            ),
+            lookupTable,
+          );
         const signedTransaction =
           await signTransactionMessageWithSigners(transactionMessage);
         await sendAndConfirmTransaction(

@@ -1,15 +1,15 @@
 import type { Address } from '@solana/kit';
 
 // ============================================================================
-// Swap Direction
+// Trade Direction
 // ============================================================================
 
 /**
- * Direction of a swap operation
+ * Trade direction of a swap operation
  * - 0: token0 -> token1 (sell token0 for token1)
  * - 1: token1 -> token0 (sell token1 for token0)
  */
-export type SwapDirection = 0 | 1;
+export type TradeDirection = 0 | 1;
 
 // ============================================================================
 // Account Types
@@ -26,10 +26,10 @@ export interface AmmConfig {
   paused: boolean;
   /** Default numeraire mint for pricing */
   numeraireMint: Address;
-  /** Number of programs in sentinel allowlist */
-  sentinelAllowlistLen: number;
-  /** Allowlist of sentinel programs (fixed size: 32) */
-  sentinelAllowlist: Address[];
+  /** Number of programs in hook allowlist */
+  hookAllowlistLen: number;
+  /** Allowlist of hook programs (fixed size: 32) */
+  hookAllowlist: Address[];
   /** Maximum allowed swap fee in basis points */
   maxSwapFeeBps: number;
   /** Maximum allowed fee split in basis points */
@@ -83,22 +83,22 @@ export interface Pool {
   feesUnclaimed0: bigint;
   /** Unclaimed distributable fees in token1 */
   feesUnclaimed1: bigint;
-  /** Sentinel program for hooks (default = disabled) */
-  sentinelProgram: Address;
-  /** Bitflags for enabled sentinel hooks */
-  sentinelFlags: number;
+  /** Hook program (default = disabled) */
+  hookProgram: Address;
+  /** Bitflags for enabled hooks */
+  hookFlags: number;
   /** Override numeraire mint for this pool */
   numeraireMint: Address;
   /** Which token to use for liquidity measure (0 or 1) */
-  liquidityMeasureSide: number;
+  liquidityMeasureTokenIndex: number;
   /** Next pool in routing chain (default = none) */
   routeNextPool: Address;
   /** Bridge mint for routing (must be token0 or token1) */
   routeBridgeMint: Address;
   /** Last k value for protocol fee calculation (u128) */
   kLast: bigint;
-  /** Protocol position for protocol fee shares */
-  protocolPosition: Address;
+  /** Protocol fee position for protocol fee shares */
+  protocolFeePosition: Address;
   /** Reentrancy lock (0 = unlocked, 1 = locked) */
   locked: number;
   /** Account version for migrations */
@@ -199,7 +199,7 @@ export interface InitializeConfigArgs {
   maxRouteHops: number;
   protocolFeeEnabled: boolean;
   protocolFeeBps: number;
-  sentinelAllowlist: Address[];
+  hookAllowlist: Address[];
 }
 
 export interface InitializePoolArgs {
@@ -207,7 +207,7 @@ export interface InitializePoolArgs {
   mintB: Address;
   initialSwapFeeBps: number;
   initialFeeSplitBps: number;
-  liquidityMeasureSide: number;
+  liquidityMeasureTokenIndex: number;
   numeraireMintOverride: Address | null;
 }
 
@@ -238,7 +238,7 @@ export interface RemoveLiquidityArgs {
 export interface SwapExactInArgs {
   amountIn: bigint;
   minAmountOut: bigint;
-  direction: SwapDirection;
+  tradeDirection: TradeDirection;
   updateOracle: boolean;
 }
 
@@ -252,9 +252,9 @@ export interface CollectProtocolFeesArgs {
   max1: bigint;
 }
 
-export interface SetSentinelArgs {
-  sentinelProgram: Address;
-  sentinelFlags: number;
+export interface SetHookArgs {
+  hookProgram: Address;
+  hookFlags: number;
 }
 
 export interface SetFeesArgs {
@@ -277,7 +277,7 @@ export interface OracleConsultArgs {
 
 export interface QuoteToNumeraireArgs {
   amount: bigint;
-  side: number;
+  inputTokenIndex: number;
   maxHops: number;
   /** Must be false in v0.1 (spot-only) */
   useTwap: boolean;
@@ -347,7 +347,7 @@ export interface TwapResult {
 export interface SwapEvent {
   pool: Address;
   user: Address;
-  direction: SwapDirection;
+  tradeDirection: TradeDirection;
   amountIn: bigint;
   amountOut: bigint;
   feeTotal: bigint;
@@ -406,7 +406,7 @@ export interface PositionClosedEvent {
   position: Address;
 }
 
-export interface SentinelInvokedEvent {
+export interface HookInvokedEvent {
   pool: Address;
   action: number;
   allow: number;
@@ -414,16 +414,16 @@ export interface SentinelInvokedEvent {
   newSplitBps: number;
 }
 
-export interface SentinelErrorEvent {
+export interface HookErrorEvent {
   pool: Address;
   action: number;
   errorCode: bigint;
 }
 
-export interface SentinelUpdatedEvent {
+export interface HookUpdatedEvent {
   pool: Address;
-  sentinelProgram: Address;
-  sentinelFlags: number;
+  hookProgram: Address;
+  hookFlags: number;
   admin: Address;
 }
 
@@ -468,7 +468,7 @@ export interface PausedEvent {}
 
 export interface UnpausedEvent {}
 
-export interface SkimmedEvent {
+export interface VaultExcessWithdrawnEvent {
   pool: Address;
   amount0: bigint;
   amount1: bigint;

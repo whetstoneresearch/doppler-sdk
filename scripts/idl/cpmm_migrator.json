@@ -85,9 +85,9 @@
           "address": "SysvarRent111111111111111111111111111111111"
         },
         {
-          "name": "state",
+          "name": "cpmm_migration_state",
           "docs": [
-            "The CpmmMigratorState PDA"
+            "The CpmmMigratorState PDA."
           ],
           "writable": true,
           "pda": {
@@ -134,7 +134,7 @@
           "writable": true
         },
         {
-          "name": "protocol_position",
+          "name": "protocol_fee_position",
           "writable": true
         },
         {
@@ -284,9 +284,9 @@
           "address": "SysvarRent111111111111111111111111111111111"
         },
         {
-          "name": "state",
+          "name": "cpmm_migration_state",
           "docs": [
-            "The CpmmMigratorState PDA to create"
+            "The CpmmMigratorState PDA to create."
           ],
           "writable": true,
           "pda": {
@@ -542,11 +542,11 @@
             "type": "pubkey"
           },
           {
-            "name": "sentinel_allowlist_len",
+            "name": "hook_allowlist_len",
             "type": "u8"
           },
           {
-            "name": "sentinel_allowlist",
+            "name": "hook_allowlist",
             "type": {
               "array": [
                 "pubkey",
@@ -584,33 +584,6 @@
               "array": [
                 "u8",
                 7
-              ]
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "CalldataBuf",
-      "docs": [
-        "Variable-length calldata buffer."
-      ],
-      "repr": {
-        "kind": "c"
-      },
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "len",
-            "type": "u16"
-          },
-          {
-            "name": "bytes",
-            "type": {
-              "array": [
-                "u8",
-                256
               ]
             }
           }
@@ -764,11 +737,11 @@
             }
           },
           {
-            "name": "sentinel_allowlist_len",
+            "name": "hook_allowlist_len",
             "type": "u8"
           },
           {
-            "name": "sentinel_allowlist",
+            "name": "hook_allowlist",
             "type": {
               "array": [
                 "pubkey",
@@ -917,11 +890,11 @@
             }
           },
           {
-            "name": "sentinel_program",
+            "name": "hook_program",
             "type": "pubkey"
           },
           {
-            "name": "sentinel_flags",
+            "name": "hook_flags",
             "type": "u32"
           },
           {
@@ -934,10 +907,10 @@
             }
           },
           {
-            "name": "sentinel_calldata",
+            "name": "hook_payload",
             "type": {
               "defined": {
-                "name": "CalldataBuf"
+                "name": "PayloadBuf"
               }
             }
           },
@@ -946,18 +919,18 @@
             "type": "pubkey"
           },
           {
-            "name": "migrator_init_calldata",
+            "name": "migrator_init_payload",
             "type": {
               "defined": {
-                "name": "CalldataBuf"
+                "name": "PayloadBuf"
               }
             }
           },
           {
-            "name": "migrator_migrate_calldata",
+            "name": "migrator_migrate_payload",
             "type": {
               "defined": {
-                "name": "CalldataBuf"
+                "name": "PayloadBuf"
               }
             }
           },
@@ -982,7 +955,7 @@
             "name": "curve_params",
             "type": {
               "defined": {
-                "name": "CalldataBuf"
+                "name": "PayloadBuf"
               }
             }
           },
@@ -1036,7 +1009,7 @@
             "type": "pubkey"
           },
           {
-            "name": "state",
+            "name": "cpmm_migration_state",
             "type": "pubkey"
           },
           {
@@ -1054,7 +1027,7 @@
       "name": "MigrateArgs",
       "docs": [
         "Arguments for migrate instruction.",
-        "These are deserialized from the migrator_migrate_calldata passed by initializer."
+        "These are deserialized from the migrator_migrate_payload passed by initializer."
       ],
       "type": {
         "kind": "struct",
@@ -1072,6 +1045,33 @@
               "Base tokens reserved for CPMM liquidity"
             ],
             "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PayloadBuf",
+      "docs": [
+        "Variable-length payload buffer."
+      ],
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "len",
+            "type": "u16"
+          },
+          {
+            "name": "bytes",
+            "type": {
+              "array": [
+                "u8",
+                256
+              ]
+            }
           }
         ]
       }
@@ -1096,7 +1096,7 @@
       "name": "RegisterLaunchArgs",
       "docs": [
         "Arguments for register_launch instruction.",
-        "These are deserialized from the migrator_init_calldata passed by initializer."
+        "These are deserialized from the migrator_init_payload passed by initializer."
       ],
       "type": {
         "kind": "struct",

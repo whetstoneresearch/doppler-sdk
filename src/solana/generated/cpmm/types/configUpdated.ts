@@ -28,7 +28,7 @@ export type ConfigUpdated = {
   config: Address;
   admin: Address;
   numeraireMint: Address;
-  sentinelAllowlistLen: number;
+  hookAllowlistLen: number;
   maxSwapFeeBps: number;
   maxFeeSplitBps: number;
   maxRouteHops: number;
@@ -43,7 +43,7 @@ export function getConfigUpdatedEncoder(): FixedSizeEncoder<ConfigUpdatedArgs> {
     ['config', getAddressEncoder()],
     ['admin', getAddressEncoder()],
     ['numeraireMint', getAddressEncoder()],
-    ['sentinelAllowlistLen', getU8Encoder()],
+    ['hookAllowlistLen', getU8Encoder()],
     ['maxSwapFeeBps', getU16Encoder()],
     ['maxFeeSplitBps', getU16Encoder()],
     ['maxRouteHops', getU8Encoder()],
@@ -57,7 +57,7 @@ export function getConfigUpdatedDecoder(): FixedSizeDecoder<ConfigUpdated> {
     ['config', getAddressDecoder()],
     ['admin', getAddressDecoder()],
     ['numeraireMint', getAddressDecoder()],
-    ['sentinelAllowlistLen', getU8Decoder()],
+    ['hookAllowlistLen', getU8Decoder()],
     ['maxSwapFeeBps', getU16Decoder()],
     ['maxFeeSplitBps', getU16Decoder()],
     ['maxRouteHops', getU8Decoder()],

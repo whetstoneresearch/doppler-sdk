@@ -41,15 +41,17 @@ import {
 } from '@solana/program-client-core';
 import { CPMM_PROGRAM_ADDRESS } from '../programs';
 
-export const SKIM_DISCRIMINATOR = new Uint8Array([
-  238, 120, 221, 138, 82, 60, 100, 218,
+export const WITHDRAW_VAULT_EXCESS_DISCRIMINATOR = new Uint8Array([
+  235, 197, 247, 177, 137, 72, 135, 113,
 ]);
 
-export function getSkimDiscriminatorBytes() {
-  return fixEncoderSize(getBytesEncoder(), 8).encode(SKIM_DISCRIMINATOR);
+export function getWithdrawVaultExcessDiscriminatorBytes() {
+  return fixEncoderSize(getBytesEncoder(), 8).encode(
+    WITHDRAW_VAULT_EXCESS_DISCRIMINATOR,
+  );
 }
 
-export type SkimInstruction<
+export type WithdrawVaultExcessInstruction<
   TProgram extends string = typeof CPMM_PROGRAM_ADDRESS,
   TAccountConfig extends string | AccountMeta<string> = string,
   TAccountPool extends string | AccountMeta<string> = string,
@@ -109,34 +111,39 @@ export type SkimInstruction<
     ]
   >;
 
-export type SkimInstructionData = { discriminator: ReadonlyUint8Array };
+export type WithdrawVaultExcessInstructionData = {
+  discriminator: ReadonlyUint8Array;
+};
 
-export type SkimInstructionDataArgs = {};
+export type WithdrawVaultExcessInstructionDataArgs = {};
 
-export function getSkimInstructionDataEncoder(): FixedSizeEncoder<SkimInstructionDataArgs> {
+export function getWithdrawVaultExcessInstructionDataEncoder(): FixedSizeEncoder<WithdrawVaultExcessInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
-    (value) => ({ ...value, discriminator: SKIM_DISCRIMINATOR }),
+    (value) => ({
+      ...value,
+      discriminator: WITHDRAW_VAULT_EXCESS_DISCRIMINATOR,
+    }),
   );
 }
 
-export function getSkimInstructionDataDecoder(): FixedSizeDecoder<SkimInstructionData> {
+export function getWithdrawVaultExcessInstructionDataDecoder(): FixedSizeDecoder<WithdrawVaultExcessInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
   ]);
 }
 
-export function getSkimInstructionDataCodec(): FixedSizeCodec<
-  SkimInstructionDataArgs,
-  SkimInstructionData
+export function getWithdrawVaultExcessInstructionDataCodec(): FixedSizeCodec<
+  WithdrawVaultExcessInstructionDataArgs,
+  WithdrawVaultExcessInstructionData
 > {
   return combineCodec(
-    getSkimInstructionDataEncoder(),
-    getSkimInstructionDataDecoder(),
+    getWithdrawVaultExcessInstructionDataEncoder(),
+    getWithdrawVaultExcessInstructionDataDecoder(),
   );
 }
 
-export type SkimAsyncInput<
+export type WithdrawVaultExcessAsyncInput<
   TAccountConfig extends string = string,
   TAccountPool extends string = string,
   TAccountAdmin extends string = string,
@@ -164,7 +171,7 @@ export type SkimAsyncInput<
   token1Program: Address<TAccountToken1Program>;
 };
 
-export async function getSkimInstructionAsync<
+export async function getWithdrawVaultExcessInstructionAsync<
   TAccountConfig extends string,
   TAccountPool extends string,
   TAccountAdmin extends string,
@@ -179,7 +186,7 @@ export async function getSkimInstructionAsync<
   TAccountToken1Program extends string,
   TProgramAddress extends Address = typeof CPMM_PROGRAM_ADDRESS,
 >(
-  input: SkimAsyncInput<
+  input: WithdrawVaultExcessAsyncInput<
     TAccountConfig,
     TAccountPool,
     TAccountAdmin,
@@ -195,7 +202,7 @@ export async function getSkimInstructionAsync<
   >,
   config?: { programAddress?: TProgramAddress },
 ): Promise<
-  SkimInstruction<
+  WithdrawVaultExcessInstruction<
     TProgramAddress,
     TAccountConfig,
     TAccountPool,
@@ -317,9 +324,9 @@ export async function getSkimInstructionAsync<
       getAccountMeta('token0Program', accounts.token0Program),
       getAccountMeta('token1Program', accounts.token1Program),
     ],
-    data: getSkimInstructionDataEncoder().encode({}),
+    data: getWithdrawVaultExcessInstructionDataEncoder().encode({}),
     programAddress,
-  } as SkimInstruction<
+  } as WithdrawVaultExcessInstruction<
     TProgramAddress,
     TAccountConfig,
     TAccountPool,
@@ -336,7 +343,7 @@ export async function getSkimInstructionAsync<
   >);
 }
 
-export type SkimInput<
+export type WithdrawVaultExcessInput<
   TAccountConfig extends string = string,
   TAccountPool extends string = string,
   TAccountAdmin extends string = string,
@@ -364,7 +371,7 @@ export type SkimInput<
   token1Program: Address<TAccountToken1Program>;
 };
 
-export function getSkimInstruction<
+export function getWithdrawVaultExcessInstruction<
   TAccountConfig extends string,
   TAccountPool extends string,
   TAccountAdmin extends string,
@@ -379,7 +386,7 @@ export function getSkimInstruction<
   TAccountToken1Program extends string,
   TProgramAddress extends Address = typeof CPMM_PROGRAM_ADDRESS,
 >(
-  input: SkimInput<
+  input: WithdrawVaultExcessInput<
     TAccountConfig,
     TAccountPool,
     TAccountAdmin,
@@ -394,7 +401,7 @@ export function getSkimInstruction<
     TAccountToken1Program
   >,
   config?: { programAddress?: TProgramAddress },
-): SkimInstruction<
+): WithdrawVaultExcessInstruction<
   TProgramAddress,
   TAccountConfig,
   TAccountPool,
@@ -448,9 +455,9 @@ export function getSkimInstruction<
       getAccountMeta('token0Program', accounts.token0Program),
       getAccountMeta('token1Program', accounts.token1Program),
     ],
-    data: getSkimInstructionDataEncoder().encode({}),
+    data: getWithdrawVaultExcessInstructionDataEncoder().encode({}),
     programAddress,
-  } as SkimInstruction<
+  } as WithdrawVaultExcessInstruction<
     TProgramAddress,
     TAccountConfig,
     TAccountPool,
@@ -467,7 +474,7 @@ export function getSkimInstruction<
   >);
 }
 
-export type ParsedSkimInstruction<
+export type ParsedWithdrawVaultExcessInstruction<
   TProgram extends string = typeof CPMM_PROGRAM_ADDRESS,
   TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
@@ -486,17 +493,17 @@ export type ParsedSkimInstruction<
     token0Program: TAccountMetas[10];
     token1Program: TAccountMetas[11];
   };
-  data: SkimInstructionData;
+  data: WithdrawVaultExcessInstructionData;
 };
 
-export function parseSkimInstruction<
+export function parseWithdrawVaultExcessInstruction<
   TProgram extends string,
   TAccountMetas extends readonly AccountMeta[],
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
-): ParsedSkimInstruction<TProgram, TAccountMetas> {
+): ParsedWithdrawVaultExcessInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 12) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
@@ -528,6 +535,8 @@ export function parseSkimInstruction<
       token0Program: getNextAccount(),
       token1Program: getNextAccount(),
     },
-    data: getSkimInstructionDataDecoder().decode(instruction.data),
+    data: getWithdrawVaultExcessInstructionDataDecoder().decode(
+      instruction.data,
+    ),
   };
 }

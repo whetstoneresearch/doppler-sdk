@@ -14,9 +14,6 @@ import {
 } from '@solana-program/token';
 import { SYSTEM_PROGRAM_ADDRESS } from '@solana-program/system';
 import {
-  createKeyPairSignerFromBytes,
-  createSolanaRpc,
-  createSolanaRpcSubscriptions,
   generateKeyPairSigner,
   pipe,
   createTransactionMessage,
@@ -31,48 +28,24 @@ import {
 import { SYSVAR_RENT_ADDRESS } from '@solana/sysvars';
 
 import { cpmm, initializer, cpmmMigrator } from '../src/solana/index.js';
-
-// ============================================================================
-// Environment
-// ============================================================================
-
-const keypairJson = process.env.SOLANA_KEYPAIR;
-const rpcUrl = process.env.SOLANA_RPC_URL ?? 'https://api.devnet.solana.com';
-const wsUrl = process.env.SOLANA_WS_URL ?? 'wss://api.devnet.solana.com';
-
-if (!keypairJson) {
-  throw new Error(
-    'SOLANA_KEYPAIR must be set (JSON array of 64 bytes, e.g. from `solana-keygen new --outfile key.json`)',
-  );
-}
+import {
+  assertTransactionFits,
+  assertSolanaExampleNetwork,
+  createLookupTableForInstruction,
+  createSolanaClientsFromEnv,
+  getMetadataByteLength,
+  getSolPriceUsd,
+  loadKeypairSignerFromEnv,
+} from './solanaExampleHelpers.js';
 
 // WSOL mint — pools use the wrapped SPL mint since native SOL can't live in token vaults.
 const WSOL_MINT: Address =
   'So11111111111111111111111111111111111111112' as Address;
 
-// ============================================================================
-// Price feed
-// ============================================================================
-
-async function getSolPriceUsd(): Promise<number> {
-  const response = await fetch(
-    'https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd',
-  );
-  const data = await response.json();
-  return data.solana.usd;
-}
-
-// ============================================================================
-// Main
-// ============================================================================
-
 async function main() {
-  const payer = await createKeyPairSignerFromBytes(
-    new Uint8Array(JSON.parse(keypairJson as string)),
-  );
-
-  const rpc = createSolanaRpc(rpcUrl);
-  const rpcSubscriptions = createSolanaRpcSubscriptions(wsUrl);
+  const payer = await loadKeypairSignerFromEnv();
+  const { rpc, rpcSubscriptions, network } = createSolanaClientsFromEnv();
+  assertSolanaExampleNetwork(network, ['devnet', 'custom']);
 
   // ── Token supply parameters ────────────────────────────────────────────────
   // This example puts the entire supply on the bonding curve (no creator
@@ -142,35 +115,6 @@ async function main() {
   const [launch] = await initializer.getLaunchAddress(namespace, launchId);
   const [launchAuthority] = await initializer.getLaunchAuthorityAddress(launch);
   const [initializerConfig] = await initializer.getConfigAddress();
-  const [cpmmConfig] = await cpmm.getConfigAddress();
-  const [cpmmMigratorState] =
-    await cpmmMigrator.getCpmmMigratorStateAddress(launch);
-
-  console.log('Derived addresses:');
-  console.log('  Launch:          ', launch);
-  console.log('  Launch authority:', launchAuthority);
-  console.log('  Initializer config:', initializerConfig);
-  console.log('  CPMM config:     ', cpmmConfig);
-  console.log('  CPMM migrator state:', cpmmMigratorState);
-  console.log('');
-
-  // ── CPMM migration remaining accounts ────────────────────────────────────
-  // Migrations commit the canonical preinitialized CPMM graph: pool, authority,
-  // vault PDAs, protocol position, launch LP position, program, and payout ATAs.
-  const poolInit = await cpmm.getPoolInitAddresses(baseMint.address, WSOL_MINT);
-  const pool = poolInit.pool[0];
-  const poolAuthority = poolInit.authority[0];
-  const protocolPosition = poolInit.protocolPosition[0];
-  const poolVault0 = poolInit.vault0[0];
-  const poolVault1 = poolInit.vault1[0];
-  const [migrationAuthority] =
-    await cpmmMigrator.getCpmmMigrationAuthorityAddress();
-  const [launchLpPosition] = await cpmm.getPositionAddress(
-    pool,
-    launchAuthority,
-    0n,
-  );
-
   // Admin ATAs receive unsold curve tokens and residual migration dust.
   const [payerBaseAta] = await findAssociatedTokenPda({
     owner: payer.address,
@@ -183,10 +127,31 @@ async function main() {
     tokenProgram: TOKEN_PROGRAM_ADDRESS,
   });
 
-  // ── Encode CPMM migrator calldata ──────────────────────────────────────────
-  // migratorInitCalldata registers graduation params; migratorMigrateCalldata
+  const migrationAccounts =
+    await cpmmMigrator.buildCpmmMigrationRemainingAccounts({
+      launch,
+      baseMint: baseMint.address,
+      quoteMint: WSOL_MINT,
+      launchAuthority,
+      adminBaseAta: payerBaseAta,
+      adminQuoteAta: payerQuoteAta,
+      recipientAtas: [],
+    });
+  const cpmmConfig = migrationAccounts.cpmmConfig;
+  const cpmmMigrationState = migrationAccounts.cpmmMigrationState;
+
+  console.log('Derived addresses:');
+  console.log('  Launch:          ', launch);
+  console.log('  Launch authority:', launchAuthority);
+  console.log('  Initializer config:', initializerConfig);
+  console.log('  CPMM config:     ', cpmmConfig);
+  console.log('  CPMM migrator state:', cpmmMigrationState);
+  console.log('');
+
+  // ── Encode CPMM migrator payload ──────────────────────────────────────────
+  // migratorInitPayload registers graduation params; migratorMigratePayload
   // is forwarded at migration. minRaiseQuote is the graduation threshold.
-  const migratorInitCalldata = cpmmMigrator.encodeRegisterLaunchCalldata({
+  const migratorInitPayload = cpmmMigrator.encodeRegisterLaunchPayload({
     cpmmConfig: cpmmConfig,
     initialSwapFeeBps: 100, // 1% swap fee on the graduated CPMM pool
     initialFeeSplitBps: 5000, // 50% of CPMM swap fees claimable by LP holders; remaining 50% compounds into the pool
@@ -195,22 +160,22 @@ async function main() {
     minMigrationPriceQ64Opt: null, // no minimum graduation price floor
   });
 
-  const migratorMigrateCalldata = cpmmMigrator.encodeMigrateCalldata({
+  const migratorMigratePayload = cpmmMigrator.encodeMigratePayload({
     baseForDistribution: 0n,
     baseForLiquidity: 0n,
   });
 
   // ── Build, sign, and send ────────────────────────────────────────────────
-  // addressLookupTable compresses the static non-signer accounts
-  // (base/quote token program, systemProgram, rent, migratorProgram,
-  // quoteMint, metadataProgram, config) to ALT indices where available,
-  // keeping the transaction within the 1232-byte limit even with V4
-  // on-chain metadata.
-  //
-  // The CPMM migrator register_launch CPI now consumes both the
-  // cpmmMigratorState PDA and cpmmConfig as remaining accounts.
+  // The CPMM migrator register_launch CPI consumes both the cpmmMigrationState
+  // PDA and cpmmConfig as remaining accounts.
   console.log('Building launch instruction...');
   try {
+    const metadata = {
+      metadataName: 'TEST',
+      metadataSymbol: 'TEST',
+      metadataUri: 'https://example.com/metadata/test-token.json',
+    };
+
     const ix = await initializer.createInitializeLaunchInstruction(
       {
         config: initializerConfig,
@@ -229,7 +194,6 @@ async function main() {
         systemProgram: SYSTEM_PROGRAM_ADDRESS,
         rent: SYSVAR_RENT_ADDRESS,
         metadataAccount,
-        addressLookupTable: initializer.DOPPLER_DEVNET_ALT,
       },
       {
         namespace,
@@ -246,52 +210,46 @@ async function main() {
         curveParams: new Uint8Array([initializer.CURVE_PARAMS_FORMAT_XYK_V0]),
         allowBuy: true,
         allowSell: true,
-        sentinelProgram: initializer.CPMM_SENTINEL_PROGRAM_ID,
-        sentinelFlags: initializer.SF_BEFORE_SWAP,
-        sentinelCalldata: new Uint8Array(),
-        migratorInitCalldata,
-        migratorMigrateCalldata,
-        sentinelRemainingAccountsHash:
-          initializer.EMPTY_REMAINING_ACCOUNTS_HASH,
+        hookProgram: initializer.CPMM_HOOK_PROGRAM_ID,
+        hookFlags: initializer.HF_BEFORE_SWAP,
+        hookPayload: new Uint8Array(),
+        migratorInitPayload,
+        migratorMigratePayload,
+        hookRemainingAccountsHash: initializer.EMPTY_REMAINING_ACCOUNTS_HASH,
         migratorInitRemainingAccountsHash:
           initializer.computeRemainingAccountsHash([
-            cpmmMigratorState,
+            cpmmMigrationState,
             cpmmConfig,
           ]),
-        // Commits the accounts that must be passed as remaining accounts to
-        // migrate_launch in this order: state, cpmm_config, pool, pool_authority,
-        // pool_vault0, pool_vault1, protocol_position, launch_lp_position,
-        // cpmm_program, migration_authority, admin_base_ata, admin_quote_ata
-        migratorRemainingAccountsHash: initializer.computeRemainingAccountsHash(
-          [
-            cpmmMigratorState,
-            cpmmConfig,
-            pool,
-            poolAuthority,
-            poolVault0,
-            poolVault1,
-            protocolPosition,
-            launchLpPosition,
-            cpmm.CPMM_PROGRAM_ID,
-            migrationAuthority,
-            payerBaseAta, // admin_base_ata (receives any unsold curve tokens)
-            payerQuoteAta, // admin_quote_ata (receives residual quote dust)
-          ],
-        ),
-        metadataName: 'TEST',
-        metadataSymbol: 'TEST',
-        metadataUri: 'https://example.com/sample.json',
+        migratorRemainingAccountsHash: migrationAccounts.hash,
+        ...metadata,
       },
     );
+    const lookupTable = await createLookupTableForInstruction({
+      rpc,
+      rpcSubscriptions,
+      payer,
+      instruction: ix,
+      label: 'initialize_launch lookup table',
+    });
 
     const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
 
-    const transactionMessage = pipe(
-      createTransactionMessage({ version: 0 }),
-      (tx) => setTransactionMessageFeePayerSigner(payer, tx),
-      (tx) => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
-      (tx) => appendTransactionMessageInstructions([ix], tx),
-    );
+    const transactionMessage =
+      initializer.compressTransactionMessageWithLookupTable(
+        pipe(
+          createTransactionMessage({ version: 0 }),
+          (tx) => setTransactionMessageFeePayerSigner(payer, tx),
+          (tx) =>
+            setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
+          (tx) => appendTransactionMessageInstructions([ix], tx),
+        ),
+        lookupTable,
+      );
+    assertTransactionFits(transactionMessage, {
+      label: 'initialize_launch',
+      metadataBytes: getMetadataByteLength(metadata),
+    });
 
     const signedTransaction =
       await signTransactionMessageWithSigners(transactionMessage);

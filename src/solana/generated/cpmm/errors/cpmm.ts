@@ -22,8 +22,8 @@ export const CPMM_ERROR__POOL_LOCKED = 0x1771; // 6001
 export const CPMM_ERROR__INVALID_FEE = 0x1772; // 6002
 /** InvalidFeeSplit: Invalid fee split */
 export const CPMM_ERROR__INVALID_FEE_SPLIT = 0x1773; // 6003
-/** InvalidDirection: Invalid direction */
-export const CPMM_ERROR__INVALID_DIRECTION = 0x1774; // 6004
+/** InvalidTradeDirection: Invalid trade direction */
+export const CPMM_ERROR__INVALID_TRADE_DIRECTION = 0x1774; // 6004
 /** InsufficientLiquidity: Insufficient liquidity */
 export const CPMM_ERROR__INSUFFICIENT_LIQUIDITY = 0x1775; // 6005
 /** SlippageExceeded: Slippage exceeded */
@@ -48,20 +48,20 @@ export const CPMM_ERROR__NOT_SUPPORTED_IN_V01 = 0x177e; // 6014
 export const CPMM_ERROR__ORACLE_NOT_INITIALIZED = 0x177f; // 6015
 /** ZeroSharesOut: Zero shares out */
 export const CPMM_ERROR__ZERO_SHARES_OUT = 0x1780; // 6016
-/** SentinelRejected: Sentinel rejected */
-export const CPMM_ERROR__SENTINEL_REJECTED = 0x1781; // 6017
-/** SentinelCpiFailed: Sentinel CPI failed */
-export const CPMM_ERROR__SENTINEL_CPI_FAILED = 0x1782; // 6018
-/** SentinelProgramNotProvided: Sentinel program account not provided */
-export const CPMM_ERROR__SENTINEL_PROGRAM_NOT_PROVIDED = 0x1783; // 6019
-/** SentinelProgramNotExecutable: Sentinel program account is not executable */
-export const CPMM_ERROR__SENTINEL_PROGRAM_NOT_EXECUTABLE = 0x1784; // 6020
-/** SentinelReturnDataMissing: Sentinel return data missing or wrong program id */
-export const CPMM_ERROR__SENTINEL_RETURN_DATA_MISSING = 0x1785; // 6021
-/** SentinelReturnDataInvalid: Sentinel return data invalid length or could not deserialize */
-export const CPMM_ERROR__SENTINEL_RETURN_DATA_INVALID = 0x1786; // 6022
-/** SentinelNotAllowlisted: Sentinel not allowlisted */
-export const CPMM_ERROR__SENTINEL_NOT_ALLOWLISTED = 0x1787; // 6023
+/** HookRejected: Hook rejected */
+export const CPMM_ERROR__HOOK_REJECTED = 0x1781; // 6017
+/** HookCpiFailed: Hook CPI failed */
+export const CPMM_ERROR__HOOK_CPI_FAILED = 0x1782; // 6018
+/** HookProgramNotProvided: Hook program account not provided */
+export const CPMM_ERROR__HOOK_PROGRAM_NOT_PROVIDED = 0x1783; // 6019
+/** HookProgramNotExecutable: Hook program account is not executable */
+export const CPMM_ERROR__HOOK_PROGRAM_NOT_EXECUTABLE = 0x1784; // 6020
+/** HookReturnDataMissing: Hook return data missing or wrong program id */
+export const CPMM_ERROR__HOOK_RETURN_DATA_MISSING = 0x1785; // 6021
+/** HookReturnDataInvalid: Hook return data invalid length or could not deserialize */
+export const CPMM_ERROR__HOOK_RETURN_DATA_INVALID = 0x1786; // 6022
+/** HookNotAllowlisted: Hook not allowlisted */
+export const CPMM_ERROR__HOOK_NOT_ALLOWLISTED = 0x1787; // 6023
 /** TotalSharesZero: Total shares zero */
 export const CPMM_ERROR__TOTAL_SHARES_ZERO = 0x1788; // 6024
 /** AmountZero: Amount zero */
@@ -78,14 +78,20 @@ export const CPMM_ERROR__INVALID_INPUT = 0x178d; // 6029
 export const CPMM_ERROR__REENTRANCY = 0x178e; // 6030
 /** CpiForbidden: CPI calls into this program are forbidden */
 export const CPMM_ERROR__CPI_FORBIDDEN = 0x178f; // 6031
-/** UseCollectProtocolFees: Protocol position must be claimed via collect_protocol_fees */
+/** UseCollectProtocolFees: Protocol fee position must be claimed via collect_protocol_fees */
 export const CPMM_ERROR__USE_COLLECT_PROTOCOL_FEES = 0x1790; // 6032
 
 export type CpmmError =
   | typeof CPMM_ERROR__AMOUNT_ZERO
   | typeof CPMM_ERROR__CPI_FORBIDDEN
+  | typeof CPMM_ERROR__HOOK_CPI_FAILED
+  | typeof CPMM_ERROR__HOOK_NOT_ALLOWLISTED
+  | typeof CPMM_ERROR__HOOK_PROGRAM_NOT_EXECUTABLE
+  | typeof CPMM_ERROR__HOOK_PROGRAM_NOT_PROVIDED
+  | typeof CPMM_ERROR__HOOK_REJECTED
+  | typeof CPMM_ERROR__HOOK_RETURN_DATA_INVALID
+  | typeof CPMM_ERROR__HOOK_RETURN_DATA_MISSING
   | typeof CPMM_ERROR__INSUFFICIENT_LIQUIDITY
-  | typeof CPMM_ERROR__INVALID_DIRECTION
   | typeof CPMM_ERROR__INVALID_FEE
   | typeof CPMM_ERROR__INVALID_FEE_SPLIT
   | typeof CPMM_ERROR__INVALID_INPUT
@@ -93,6 +99,7 @@ export type CpmmError =
   | typeof CPMM_ERROR__INVALID_MINT_ORDER
   | typeof CPMM_ERROR__INVALID_POSITION
   | typeof CPMM_ERROR__INVALID_ROUTE
+  | typeof CPMM_ERROR__INVALID_TRADE_DIRECTION
   | typeof CPMM_ERROR__INVALID_VAULT
   | typeof CPMM_ERROR__INVARIANT_VIOLATION
   | typeof CPMM_ERROR__MATH_OVERFLOW
@@ -103,13 +110,6 @@ export type CpmmError =
   | typeof CPMM_ERROR__POSITION_NOT_EMPTY
   | typeof CPMM_ERROR__REENTRANCY
   | typeof CPMM_ERROR__SAME_MINT_PAIR
-  | typeof CPMM_ERROR__SENTINEL_CPI_FAILED
-  | typeof CPMM_ERROR__SENTINEL_NOT_ALLOWLISTED
-  | typeof CPMM_ERROR__SENTINEL_PROGRAM_NOT_EXECUTABLE
-  | typeof CPMM_ERROR__SENTINEL_PROGRAM_NOT_PROVIDED
-  | typeof CPMM_ERROR__SENTINEL_REJECTED
-  | typeof CPMM_ERROR__SENTINEL_RETURN_DATA_INVALID
-  | typeof CPMM_ERROR__SENTINEL_RETURN_DATA_MISSING
   | typeof CPMM_ERROR__SLIPPAGE_EXCEEDED
   | typeof CPMM_ERROR__TOTAL_SHARES_ZERO
   | typeof CPMM_ERROR__UNAUTHORIZED
@@ -121,8 +121,14 @@ if (process.env.NODE_ENV !== 'production') {
   cpmmErrorMessages = {
     [CPMM_ERROR__AMOUNT_ZERO]: `Amount zero`,
     [CPMM_ERROR__CPI_FORBIDDEN]: `CPI calls into this program are forbidden`,
+    [CPMM_ERROR__HOOK_CPI_FAILED]: `Hook CPI failed`,
+    [CPMM_ERROR__HOOK_NOT_ALLOWLISTED]: `Hook not allowlisted`,
+    [CPMM_ERROR__HOOK_PROGRAM_NOT_EXECUTABLE]: `Hook program account is not executable`,
+    [CPMM_ERROR__HOOK_PROGRAM_NOT_PROVIDED]: `Hook program account not provided`,
+    [CPMM_ERROR__HOOK_REJECTED]: `Hook rejected`,
+    [CPMM_ERROR__HOOK_RETURN_DATA_INVALID]: `Hook return data invalid length or could not deserialize`,
+    [CPMM_ERROR__HOOK_RETURN_DATA_MISSING]: `Hook return data missing or wrong program id`,
     [CPMM_ERROR__INSUFFICIENT_LIQUIDITY]: `Insufficient liquidity`,
-    [CPMM_ERROR__INVALID_DIRECTION]: `Invalid direction`,
     [CPMM_ERROR__INVALID_FEE]: `Invalid fee`,
     [CPMM_ERROR__INVALID_FEE_SPLIT]: `Invalid fee split`,
     [CPMM_ERROR__INVALID_INPUT]: `Invalid input`,
@@ -130,6 +136,7 @@ if (process.env.NODE_ENV !== 'production') {
     [CPMM_ERROR__INVALID_MINT_ORDER]: `Invalid mint order`,
     [CPMM_ERROR__INVALID_POSITION]: `Invalid position`,
     [CPMM_ERROR__INVALID_ROUTE]: `Invalid route`,
+    [CPMM_ERROR__INVALID_TRADE_DIRECTION]: `Invalid trade direction`,
     [CPMM_ERROR__INVALID_VAULT]: `Invalid vault`,
     [CPMM_ERROR__INVARIANT_VIOLATION]: `Invariant violation`,
     [CPMM_ERROR__MATH_OVERFLOW]: `Math overflow`,
@@ -140,17 +147,10 @@ if (process.env.NODE_ENV !== 'production') {
     [CPMM_ERROR__POSITION_NOT_EMPTY]: `Position not empty`,
     [CPMM_ERROR__REENTRANCY]: `Reentrancy`,
     [CPMM_ERROR__SAME_MINT_PAIR]: `Cannot create pool with same token for both sides`,
-    [CPMM_ERROR__SENTINEL_CPI_FAILED]: `Sentinel CPI failed`,
-    [CPMM_ERROR__SENTINEL_NOT_ALLOWLISTED]: `Sentinel not allowlisted`,
-    [CPMM_ERROR__SENTINEL_PROGRAM_NOT_EXECUTABLE]: `Sentinel program account is not executable`,
-    [CPMM_ERROR__SENTINEL_PROGRAM_NOT_PROVIDED]: `Sentinel program account not provided`,
-    [CPMM_ERROR__SENTINEL_REJECTED]: `Sentinel rejected`,
-    [CPMM_ERROR__SENTINEL_RETURN_DATA_INVALID]: `Sentinel return data invalid length or could not deserialize`,
-    [CPMM_ERROR__SENTINEL_RETURN_DATA_MISSING]: `Sentinel return data missing or wrong program id`,
     [CPMM_ERROR__SLIPPAGE_EXCEEDED]: `Slippage exceeded`,
     [CPMM_ERROR__TOTAL_SHARES_ZERO]: `Total shares zero`,
     [CPMM_ERROR__UNAUTHORIZED]: `Unauthorized`,
-    [CPMM_ERROR__USE_COLLECT_PROTOCOL_FEES]: `Protocol position must be claimed via collect_protocol_fees`,
+    [CPMM_ERROR__USE_COLLECT_PROTOCOL_FEES]: `Protocol fee position must be claimed via collect_protocol_fees`,
     [CPMM_ERROR__ZERO_SHARES_OUT]: `Zero shares out`,
   };
 }

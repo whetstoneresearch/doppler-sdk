@@ -14,7 +14,15 @@ import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, '..');
+const existingEnv = new Map(
+  Object.entries(process.env).filter((entry): entry is [string, string] => {
+    return entry[1] !== undefined;
+  }),
+);
 
-// Load .env first, then .env.local (override: true allows overwriting)
+// Load .env first, then .env.local, while preserving explicit shell env vars.
 config({ path: resolve(root, '.env') });
 config({ path: resolve(root, '.env.local'), override: true });
+for (const [key, value] of existingEnv) {
+  process.env[key] = value;
+}

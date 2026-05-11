@@ -68,13 +68,13 @@ export type MigrateInstruction<
     '11111111111111111111111111111111',
   TAccountRent extends string | AccountMeta<string> =
     'SysvarRent111111111111111111111111111111111',
-  TAccountState extends string | AccountMeta<string> = string,
+  TAccountCpmmMigrationState extends string | AccountMeta<string> = string,
   TAccountCpmmConfig extends string | AccountMeta<string> = string,
   TAccountPool extends string | AccountMeta<string> = string,
   TAccountPoolAuthority extends string | AccountMeta<string> = string,
   TAccountPoolVault0 extends string | AccountMeta<string> = string,
   TAccountPoolVault1 extends string | AccountMeta<string> = string,
-  TAccountProtocolPosition extends string | AccountMeta<string> = string,
+  TAccountProtocolFeePosition extends string | AccountMeta<string> = string,
   TAccountLaunchLpPosition extends string | AccountMeta<string> = string,
   TAccountCpmmProgram extends string | AccountMeta<string> =
     '9PSxVPoPfnbZ8Q1uQhgS6ZxvBjFboZtebNsu34umxkgQ',
@@ -124,9 +124,9 @@ export type MigrateInstruction<
       TAccountRent extends string
         ? ReadonlyAccount<TAccountRent>
         : TAccountRent,
-      TAccountState extends string
-        ? WritableAccount<TAccountState>
-        : TAccountState,
+      TAccountCpmmMigrationState extends string
+        ? WritableAccount<TAccountCpmmMigrationState>
+        : TAccountCpmmMigrationState,
       TAccountCpmmConfig extends string
         ? ReadonlyAccount<TAccountCpmmConfig>
         : TAccountCpmmConfig,
@@ -142,9 +142,9 @@ export type MigrateInstruction<
       TAccountPoolVault1 extends string
         ? WritableAccount<TAccountPoolVault1>
         : TAccountPoolVault1,
-      TAccountProtocolPosition extends string
-        ? WritableAccount<TAccountProtocolPosition>
-        : TAccountProtocolPosition,
+      TAccountProtocolFeePosition extends string
+        ? WritableAccount<TAccountProtocolFeePosition>
+        : TAccountProtocolFeePosition,
       TAccountLaunchLpPosition extends string
         ? WritableAccount<TAccountLaunchLpPosition>
         : TAccountLaunchLpPosition,
@@ -221,13 +221,13 @@ export type MigrateAsyncInput<
   TAccountQuoteTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
   TAccountRent extends string = string,
-  TAccountState extends string = string,
+  TAccountCpmmMigrationState extends string = string,
   TAccountCpmmConfig extends string = string,
   TAccountPool extends string = string,
   TAccountPoolAuthority extends string = string,
   TAccountPoolVault0 extends string = string,
   TAccountPoolVault1 extends string = string,
-  TAccountProtocolPosition extends string = string,
+  TAccountProtocolFeePosition extends string = string,
   TAccountLaunchLpPosition extends string = string,
   TAccountCpmmProgram extends string = string,
   TAccountMigrationAuthority extends string = string,
@@ -255,8 +255,8 @@ export type MigrateAsyncInput<
   quoteTokenProgram: Address<TAccountQuoteTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
   rent?: Address<TAccountRent>;
-  /** The CpmmMigratorState PDA */
-  state?: Address<TAccountState>;
+  /** The CpmmMigratorState PDA. */
+  cpmmMigrationState?: Address<TAccountCpmmMigrationState>;
   cpmmConfig: Address<TAccountCpmmConfig>;
   pool: Address<TAccountPool>;
   poolAuthority: Address<TAccountPoolAuthority>;
@@ -264,7 +264,7 @@ export type MigrateAsyncInput<
   poolVault0: Address<TAccountPoolVault0>;
   /** `initialize_pool`, and is constrained again by the CPMM CPI. */
   poolVault1: Address<TAccountPoolVault1>;
-  protocolPosition: Address<TAccountProtocolPosition>;
+  protocolFeePosition: Address<TAccountProtocolFeePosition>;
   launchLpPosition: Address<TAccountLaunchLpPosition>;
   cpmmProgram?: Address<TAccountCpmmProgram>;
   /**
@@ -301,13 +301,13 @@ export async function getMigrateInstructionAsync<
   TAccountQuoteTokenProgram extends string,
   TAccountSystemProgram extends string,
   TAccountRent extends string,
-  TAccountState extends string,
+  TAccountCpmmMigrationState extends string,
   TAccountCpmmConfig extends string,
   TAccountPool extends string,
   TAccountPoolAuthority extends string,
   TAccountPoolVault0 extends string,
   TAccountPoolVault1 extends string,
-  TAccountProtocolPosition extends string,
+  TAccountProtocolFeePosition extends string,
   TAccountLaunchLpPosition extends string,
   TAccountCpmmProgram extends string,
   TAccountMigrationAuthority extends string,
@@ -328,13 +328,13 @@ export async function getMigrateInstructionAsync<
     TAccountQuoteTokenProgram,
     TAccountSystemProgram,
     TAccountRent,
-    TAccountState,
+    TAccountCpmmMigrationState,
     TAccountCpmmConfig,
     TAccountPool,
     TAccountPoolAuthority,
     TAccountPoolVault0,
     TAccountPoolVault1,
-    TAccountProtocolPosition,
+    TAccountProtocolFeePosition,
     TAccountLaunchLpPosition,
     TAccountCpmmProgram,
     TAccountMigrationAuthority,
@@ -357,13 +357,13 @@ export async function getMigrateInstructionAsync<
     TAccountQuoteTokenProgram,
     TAccountSystemProgram,
     TAccountRent,
-    TAccountState,
+    TAccountCpmmMigrationState,
     TAccountCpmmConfig,
     TAccountPool,
     TAccountPoolAuthority,
     TAccountPoolVault0,
     TAccountPoolVault1,
-    TAccountProtocolPosition,
+    TAccountProtocolFeePosition,
     TAccountLaunchLpPosition,
     TAccountCpmmProgram,
     TAccountMigrationAuthority,
@@ -401,14 +401,17 @@ export async function getMigrateInstructionAsync<
     },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
     rent: { value: input.rent ?? null, isWritable: false },
-    state: { value: input.state ?? null, isWritable: true },
+    cpmmMigrationState: {
+      value: input.cpmmMigrationState ?? null,
+      isWritable: true,
+    },
     cpmmConfig: { value: input.cpmmConfig ?? null, isWritable: false },
     pool: { value: input.pool ?? null, isWritable: true },
     poolAuthority: { value: input.poolAuthority ?? null, isWritable: false },
     poolVault0: { value: input.poolVault0 ?? null, isWritable: true },
     poolVault1: { value: input.poolVault1 ?? null, isWritable: true },
-    protocolPosition: {
-      value: input.protocolPosition ?? null,
+    protocolFeePosition: {
+      value: input.protocolFeePosition ?? null,
       isWritable: true,
     },
     launchLpPosition: {
@@ -440,8 +443,8 @@ export async function getMigrateInstructionAsync<
     accounts.rent.value =
       'SysvarRent111111111111111111111111111111111' as Address<'SysvarRent111111111111111111111111111111111'>;
   }
-  if (!accounts.state.value) {
-    accounts.state.value = await getProgramDerivedAddress({
+  if (!accounts.cpmmMigrationState.value) {
+    accounts.cpmmMigrationState.value = await getProgramDerivedAddress({
       programAddress,
       seeds: [
         getBytesEncoder().encode(new Uint8Array([115, 116, 97, 116, 101])),
@@ -487,13 +490,13 @@ export async function getMigrateInstructionAsync<
       getAccountMeta('quoteTokenProgram', accounts.quoteTokenProgram),
       getAccountMeta('systemProgram', accounts.systemProgram),
       getAccountMeta('rent', accounts.rent),
-      getAccountMeta('state', accounts.state),
+      getAccountMeta('cpmmMigrationState', accounts.cpmmMigrationState),
       getAccountMeta('cpmmConfig', accounts.cpmmConfig),
       getAccountMeta('pool', accounts.pool),
       getAccountMeta('poolAuthority', accounts.poolAuthority),
       getAccountMeta('poolVault0', accounts.poolVault0),
       getAccountMeta('poolVault1', accounts.poolVault1),
-      getAccountMeta('protocolPosition', accounts.protocolPosition),
+      getAccountMeta('protocolFeePosition', accounts.protocolFeePosition),
       getAccountMeta('launchLpPosition', accounts.launchLpPosition),
       getAccountMeta('cpmmProgram', accounts.cpmmProgram),
       getAccountMeta('migrationAuthority', accounts.migrationAuthority),
@@ -518,13 +521,13 @@ export async function getMigrateInstructionAsync<
     TAccountQuoteTokenProgram,
     TAccountSystemProgram,
     TAccountRent,
-    TAccountState,
+    TAccountCpmmMigrationState,
     TAccountCpmmConfig,
     TAccountPool,
     TAccountPoolAuthority,
     TAccountPoolVault0,
     TAccountPoolVault1,
-    TAccountProtocolPosition,
+    TAccountProtocolFeePosition,
     TAccountLaunchLpPosition,
     TAccountCpmmProgram,
     TAccountMigrationAuthority,
@@ -546,13 +549,13 @@ export type MigrateInput<
   TAccountQuoteTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
   TAccountRent extends string = string,
-  TAccountState extends string = string,
+  TAccountCpmmMigrationState extends string = string,
   TAccountCpmmConfig extends string = string,
   TAccountPool extends string = string,
   TAccountPoolAuthority extends string = string,
   TAccountPoolVault0 extends string = string,
   TAccountPoolVault1 extends string = string,
-  TAccountProtocolPosition extends string = string,
+  TAccountProtocolFeePosition extends string = string,
   TAccountLaunchLpPosition extends string = string,
   TAccountCpmmProgram extends string = string,
   TAccountMigrationAuthority extends string = string,
@@ -580,8 +583,8 @@ export type MigrateInput<
   quoteTokenProgram: Address<TAccountQuoteTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
   rent?: Address<TAccountRent>;
-  /** The CpmmMigratorState PDA */
-  state: Address<TAccountState>;
+  /** The CpmmMigratorState PDA. */
+  cpmmMigrationState: Address<TAccountCpmmMigrationState>;
   cpmmConfig: Address<TAccountCpmmConfig>;
   pool: Address<TAccountPool>;
   poolAuthority: Address<TAccountPoolAuthority>;
@@ -589,7 +592,7 @@ export type MigrateInput<
   poolVault0: Address<TAccountPoolVault0>;
   /** `initialize_pool`, and is constrained again by the CPMM CPI. */
   poolVault1: Address<TAccountPoolVault1>;
-  protocolPosition: Address<TAccountProtocolPosition>;
+  protocolFeePosition: Address<TAccountProtocolFeePosition>;
   launchLpPosition: Address<TAccountLaunchLpPosition>;
   cpmmProgram?: Address<TAccountCpmmProgram>;
   /**
@@ -626,13 +629,13 @@ export function getMigrateInstruction<
   TAccountQuoteTokenProgram extends string,
   TAccountSystemProgram extends string,
   TAccountRent extends string,
-  TAccountState extends string,
+  TAccountCpmmMigrationState extends string,
   TAccountCpmmConfig extends string,
   TAccountPool extends string,
   TAccountPoolAuthority extends string,
   TAccountPoolVault0 extends string,
   TAccountPoolVault1 extends string,
-  TAccountProtocolPosition extends string,
+  TAccountProtocolFeePosition extends string,
   TAccountLaunchLpPosition extends string,
   TAccountCpmmProgram extends string,
   TAccountMigrationAuthority extends string,
@@ -653,13 +656,13 @@ export function getMigrateInstruction<
     TAccountQuoteTokenProgram,
     TAccountSystemProgram,
     TAccountRent,
-    TAccountState,
+    TAccountCpmmMigrationState,
     TAccountCpmmConfig,
     TAccountPool,
     TAccountPoolAuthority,
     TAccountPoolVault0,
     TAccountPoolVault1,
-    TAccountProtocolPosition,
+    TAccountProtocolFeePosition,
     TAccountLaunchLpPosition,
     TAccountCpmmProgram,
     TAccountMigrationAuthority,
@@ -681,13 +684,13 @@ export function getMigrateInstruction<
   TAccountQuoteTokenProgram,
   TAccountSystemProgram,
   TAccountRent,
-  TAccountState,
+  TAccountCpmmMigrationState,
   TAccountCpmmConfig,
   TAccountPool,
   TAccountPoolAuthority,
   TAccountPoolVault0,
   TAccountPoolVault1,
-  TAccountProtocolPosition,
+  TAccountProtocolFeePosition,
   TAccountLaunchLpPosition,
   TAccountCpmmProgram,
   TAccountMigrationAuthority,
@@ -724,14 +727,17 @@ export function getMigrateInstruction<
     },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
     rent: { value: input.rent ?? null, isWritable: false },
-    state: { value: input.state ?? null, isWritable: true },
+    cpmmMigrationState: {
+      value: input.cpmmMigrationState ?? null,
+      isWritable: true,
+    },
     cpmmConfig: { value: input.cpmmConfig ?? null, isWritable: false },
     pool: { value: input.pool ?? null, isWritable: true },
     poolAuthority: { value: input.poolAuthority ?? null, isWritable: false },
     poolVault0: { value: input.poolVault0 ?? null, isWritable: true },
     poolVault1: { value: input.poolVault1 ?? null, isWritable: true },
-    protocolPosition: {
-      value: input.protocolPosition ?? null,
+    protocolFeePosition: {
+      value: input.protocolFeePosition ?? null,
       isWritable: true,
     },
     launchLpPosition: {
@@ -783,13 +789,13 @@ export function getMigrateInstruction<
       getAccountMeta('quoteTokenProgram', accounts.quoteTokenProgram),
       getAccountMeta('systemProgram', accounts.systemProgram),
       getAccountMeta('rent', accounts.rent),
-      getAccountMeta('state', accounts.state),
+      getAccountMeta('cpmmMigrationState', accounts.cpmmMigrationState),
       getAccountMeta('cpmmConfig', accounts.cpmmConfig),
       getAccountMeta('pool', accounts.pool),
       getAccountMeta('poolAuthority', accounts.poolAuthority),
       getAccountMeta('poolVault0', accounts.poolVault0),
       getAccountMeta('poolVault1', accounts.poolVault1),
-      getAccountMeta('protocolPosition', accounts.protocolPosition),
+      getAccountMeta('protocolFeePosition', accounts.protocolFeePosition),
       getAccountMeta('launchLpPosition', accounts.launchLpPosition),
       getAccountMeta('cpmmProgram', accounts.cpmmProgram),
       getAccountMeta('migrationAuthority', accounts.migrationAuthority),
@@ -814,13 +820,13 @@ export function getMigrateInstruction<
     TAccountQuoteTokenProgram,
     TAccountSystemProgram,
     TAccountRent,
-    TAccountState,
+    TAccountCpmmMigrationState,
     TAccountCpmmConfig,
     TAccountPool,
     TAccountPoolAuthority,
     TAccountPoolVault0,
     TAccountPoolVault1,
-    TAccountProtocolPosition,
+    TAccountProtocolFeePosition,
     TAccountLaunchLpPosition,
     TAccountCpmmProgram,
     TAccountMigrationAuthority,
@@ -856,8 +862,8 @@ export type ParsedMigrateInstruction<
     quoteTokenProgram: TAccountMetas[9];
     systemProgram: TAccountMetas[10];
     rent: TAccountMetas[11];
-    /** The CpmmMigratorState PDA */
-    state: TAccountMetas[12];
+    /** The CpmmMigratorState PDA. */
+    cpmmMigrationState: TAccountMetas[12];
     cpmmConfig: TAccountMetas[13];
     pool: TAccountMetas[14];
     poolAuthority: TAccountMetas[15];
@@ -865,7 +871,7 @@ export type ParsedMigrateInstruction<
     poolVault0: TAccountMetas[16];
     /** `initialize_pool`, and is constrained again by the CPMM CPI. */
     poolVault1: TAccountMetas[17];
-    protocolPosition: TAccountMetas[18];
+    protocolFeePosition: TAccountMetas[18];
     launchLpPosition: TAccountMetas[19];
     cpmmProgram: TAccountMetas[20];
     /**
@@ -927,13 +933,13 @@ export function parseMigrateInstruction<
       quoteTokenProgram: getNextAccount(),
       systemProgram: getNextAccount(),
       rent: getNextAccount(),
-      state: getNextAccount(),
+      cpmmMigrationState: getNextAccount(),
       cpmmConfig: getNextAccount(),
       pool: getNextAccount(),
       poolAuthority: getNextAccount(),
       poolVault0: getNextAccount(),
       poolVault1: getNextAccount(),
-      protocolPosition: getNextAccount(),
+      protocolFeePosition: getNextAccount(),
       launchLpPosition: getNextAccount(),
       cpmmProgram: getNextAccount(),
       migrationAuthority: getNextAccount(),

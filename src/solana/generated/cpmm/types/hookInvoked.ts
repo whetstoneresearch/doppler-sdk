@@ -12,8 +12,8 @@ import {
   getAddressEncoder,
   getStructDecoder,
   getStructEncoder,
-  getU64Decoder,
-  getU64Encoder,
+  getU16Decoder,
+  getU16Encoder,
   getU8Decoder,
   getU8Encoder,
   type Address,
@@ -22,37 +22,39 @@ import {
   type FixedSizeEncoder,
 } from '@solana/kit';
 
-export type SentinelError = {
+export type HookInvoked = {
   pool: Address;
   action: number;
-  errorCode: bigint;
+  allow: number;
+  newFeeBps: number;
+  newSplitBps: number;
 };
 
-export type SentinelErrorArgs = {
-  pool: Address;
-  action: number;
-  errorCode: number | bigint;
-};
+export type HookInvokedArgs = HookInvoked;
 
-export function getSentinelErrorEncoder(): FixedSizeEncoder<SentinelErrorArgs> {
+export function getHookInvokedEncoder(): FixedSizeEncoder<HookInvokedArgs> {
   return getStructEncoder([
     ['pool', getAddressEncoder()],
     ['action', getU8Encoder()],
-    ['errorCode', getU64Encoder()],
+    ['allow', getU8Encoder()],
+    ['newFeeBps', getU16Encoder()],
+    ['newSplitBps', getU16Encoder()],
   ]);
 }
 
-export function getSentinelErrorDecoder(): FixedSizeDecoder<SentinelError> {
+export function getHookInvokedDecoder(): FixedSizeDecoder<HookInvoked> {
   return getStructDecoder([
     ['pool', getAddressDecoder()],
     ['action', getU8Decoder()],
-    ['errorCode', getU64Decoder()],
+    ['allow', getU8Decoder()],
+    ['newFeeBps', getU16Decoder()],
+    ['newSplitBps', getU16Decoder()],
   ]);
 }
 
-export function getSentinelErrorCodec(): FixedSizeCodec<
-  SentinelErrorArgs,
-  SentinelError
+export function getHookInvokedCodec(): FixedSizeCodec<
+  HookInvokedArgs,
+  HookInvoked
 > {
-  return combineCodec(getSentinelErrorEncoder(), getSentinelErrorDecoder());
+  return combineCodec(getHookInvokedEncoder(), getHookInvokedDecoder());
 }

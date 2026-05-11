@@ -70,12 +70,12 @@ export type PreviewSwapExactInInstruction<
 export type PreviewSwapExactInInstructionData = {
   discriminator: ReadonlyUint8Array;
   amountIn: bigint;
-  direction: number;
+  tradeDirection: number;
 };
 
 export type PreviewSwapExactInInstructionDataArgs = {
   amountIn: number | bigint;
-  direction: number;
+  tradeDirection: number;
 };
 
 export function getPreviewSwapExactInInstructionDataEncoder(): FixedSizeEncoder<PreviewSwapExactInInstructionDataArgs> {
@@ -83,7 +83,7 @@ export function getPreviewSwapExactInInstructionDataEncoder(): FixedSizeEncoder<
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       ['amountIn', getU64Encoder()],
-      ['direction', getU8Encoder()],
+      ['tradeDirection', getU8Encoder()],
     ]),
     (value) => ({
       ...value,
@@ -96,7 +96,7 @@ export function getPreviewSwapExactInInstructionDataDecoder(): FixedSizeDecoder<
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['amountIn', getU64Decoder()],
-    ['direction', getU8Decoder()],
+    ['tradeDirection', getU8Decoder()],
   ]);
 }
 
@@ -117,7 +117,7 @@ export type PreviewSwapExactInInput<
   config: Address<TAccountConfig>;
   pool: Address<TAccountPool>;
   amountIn: PreviewSwapExactInInstructionDataArgs['amountIn'];
-  direction: PreviewSwapExactInInstructionDataArgs['direction'];
+  tradeDirection: PreviewSwapExactInInstructionDataArgs['tradeDirection'];
 };
 
 export function getPreviewSwapExactInInstruction<
