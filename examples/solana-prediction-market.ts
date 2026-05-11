@@ -261,8 +261,8 @@ async function main() {
                 entryAddress,
                 entryByMint,
               ]),
-            // @todo Prediction launch metadata needs a custom ALT; this shape
-            // currently exceeds Solana's transaction size limit.
+            // ALTs compress account keys but not instruction data; keep
+            // metadata strings short enough to fit the 1232-byte tx limit.
             metadataName: `${outcome.label} Token`,
             metadataSymbol: outcome.label,
             metadataUri: `https://example.com/${outcome.label.toLowerCase()}.json`,

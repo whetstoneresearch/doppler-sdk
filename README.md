@@ -10,7 +10,7 @@ The Doppler SDK exposes network-specific entrypoints for creating, managing, and
 
 - **EVM Auctions**: Static auctions, dynamic auctions, and multicurve launches across Uniswap V3/V4 paths
 - **EVM Migration Paths**: Support for V2, V2 split, V4, V4 split, DopplerHook, and no-op migration
-- **Solana Launches**: Initializer, CPMM, migrator, sentinel, oracle, and Token-2022-compatible instruction helpers
+- **Solana Launches**: Initializer, CPMM, migrator, hook, oracle, and Token-2022-compatible instruction helpers
 - **Solana Clients and React**: Read clients, PDA helpers, generated codecs, and optional React bindings
 - **Token Management**: Built-in EVM support for DERC20 tokens with vesting
 - **Type Safety**: Full TypeScript support across EVM and Solana entrypoints
