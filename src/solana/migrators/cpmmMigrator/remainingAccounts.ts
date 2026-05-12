@@ -10,6 +10,7 @@ import {
   getCpmmMigrationAuthorityAddress,
   getCpmmMigratorStateAddress,
 } from './pda.js';
+import { CPMM_MIGRATOR_PROGRAM_ID } from './constants.js';
 
 export interface CpmmMigrationRemainingAccountsInput {
   launch: Address;
@@ -20,6 +21,7 @@ export interface CpmmMigrationRemainingAccountsInput {
   adminQuoteAta: Address;
   recipientAtas: Address[];
   cpmmProgram?: Address;
+  cpmmMigratorProgram?: Address;
 }
 
 export interface CpmmMigrationRemainingAccounts {
@@ -46,9 +48,14 @@ export async function buildCpmmMigrationRemainingAccounts({
   adminQuoteAta,
   recipientAtas,
   cpmmProgram = CPMM_PROGRAM_ID,
+  cpmmMigratorProgram = CPMM_MIGRATOR_PROGRAM_ID,
 }: CpmmMigrationRemainingAccountsInput): Promise<CpmmMigrationRemainingAccounts> {
-  const [cpmmMigrationState] = await getCpmmMigratorStateAddress(launch);
-  const [migrationAuthority] = await getCpmmMigrationAuthorityAddress();
+  const [cpmmMigrationState] = await getCpmmMigratorStateAddress(
+    launch,
+    cpmmMigratorProgram,
+  );
+  const [migrationAuthority] =
+    await getCpmmMigrationAuthorityAddress(cpmmMigratorProgram);
   const poolInit = await getPoolInitAddresses(baseMint, quoteMint, cpmmProgram);
   const pool = poolInit.pool[0];
   const [launchLpPosition] = await getPositionAddress(
