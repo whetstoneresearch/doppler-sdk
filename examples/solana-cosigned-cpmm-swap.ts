@@ -54,6 +54,7 @@ import {
   createSolanaClientsFromEnv,
   getMetadataByteLength,
   getSolPriceUsd,
+  getSolanaCpmmDeploymentFromEnv,
   getTokenAccountRentLamports,
   loadKeypairSignerFromEnv,
 } from './solanaExampleHelpers.js';
@@ -85,6 +86,7 @@ async function main() {
   const payer = await loadKeypairSignerFromEnv();
   const { rpc, rpcSubscriptions, network } = createSolanaClientsFromEnv();
   assertSolanaExampleNetwork(network, ['devnet', 'custom']);
+  const deployment = await getSolanaCpmmDeploymentFromEnv(network);
 
   // ── Token supply ─────────────────────────────────────────────────────────
   const BASE_DECIMALS = 6;
@@ -140,9 +142,16 @@ async function main() {
   const namespace = payer.address;
   const launchId = initializer.launchIdFromU64(BigInt(Date.now()));
 
-  const [launch] = await initializer.getLaunchAddress(namespace, launchId);
-  const [launchAuthority] = await initializer.getLaunchAuthorityAddress(launch);
-  const [initializerConfig] = await initializer.getConfigAddress();
+  const [launch] = await initializer.getLaunchAddress(
+    namespace,
+    launchId,
+    deployment.initializerProgram,
+  );
+  const [launchAuthority] = await initializer.getLaunchAuthorityAddress(
+    launch,
+    deployment.initializerProgram,
+  );
+  const initializerConfig = deployment.initializerConfig;
   const [payerBaseAta] = await findAssociatedTokenPda({
     owner: payer.address,
     mint: baseMint.address,
@@ -163,6 +172,8 @@ async function main() {
       adminBaseAta: payerBaseAta,
       adminQuoteAta: payerQuoteAta,
       recipientAtas: [payerBaseAta, payerBaseAta],
+      cpmmProgram: deployment.cpmmProgram,
+      cpmmMigratorProgram: deployment.cpmmMigratorProgram,
     });
   const cpmmConfig = migrationAccounts.cpmmConfig;
   const cpmmMigrationState = migrationAccounts.cpmmMigrationState;
@@ -173,6 +184,10 @@ async function main() {
   console.log('  Initializer config:', initializerConfig);
   console.log('  CPMM config:     ', cpmmConfig);
   console.log('  CPMM migrator state:', cpmmMigrationState);
+  console.log('  Initializer program:', deployment.initializerProgram);
+  console.log('  CPMM program:       ', deployment.cpmmProgram);
+  console.log('  CPMM migrator:      ', deployment.cpmmMigratorProgram);
+  console.log('  CPMM hook:          ', deployment.cpmmHookProgram);
   console.log('');
 
   const migratorInitPayload = cpmmMigrator.encodeRegisterLaunchPayload({
@@ -186,7 +201,7 @@ async function main() {
     minRaiseQuote,
     minMigrationPriceQ64Opt: null,
     migratedPoolHookConfig: {
-      hookProgram: initializer.CPMM_HOOK_PROGRAM_ID,
+      hookProgram: deployment.cpmmHookProgram,
       hookFlags: CPMM_HOOK_FLAGS,
     },
   });
@@ -216,7 +231,8 @@ async function main() {
         quoteVault,
         payer,
         authority: payer,
-        migratorProgram: cpmmMigrator.CPMM_MIGRATOR_PROGRAM_ID,
+        hookProgram: deployment.cpmmHookProgram,
+        migratorProgram: deployment.cpmmMigratorProgram,
         cpmmConfig,
         baseTokenProgram: TOKEN_PROGRAM_ADDRESS,
         quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
@@ -238,7 +254,7 @@ async function main() {
         curveParams: new Uint8Array([initializer.CURVE_PARAMS_FORMAT_XYK_V0]),
         allowBuy: true,
         allowSell: true,
-        hookProgram: initializer.CPMM_HOOK_PROGRAM_ID,
+        hookProgram: deployment.cpmmHookProgram,
         hookFlags: INITIALIZER_HOOK_FLAGS,
         hookPayload: new Uint8Array(),
         migratorInitPayload,
@@ -252,6 +268,7 @@ async function main() {
         migratorRemainingAccountsHash: migrationAccounts.hash,
         ...metadata,
       },
+      deployment.initializerProgram,
     );
     const lookupTable = await createLookupTableForInstruction({
       rpc,
@@ -307,6 +324,7 @@ async function main() {
     const ownedLaunches = await initializer.fetchLaunchesByAuthority(
       rpc,
       payer.address,
+      { programId: deployment.initializerProgram },
     );
     console.log(`  Found ${ownedLaunches.length} launch(es)`);
     for (const { address: addr, account } of ownedLaunches) {
@@ -323,11 +341,17 @@ async function main() {
     const BUY_AMOUNT_IN = 200_000_000n; // 0.2 SOL — exceeds 0.1 SOL graduation threshold
 
     const previewIx = initializer.createPreviewSwapExactInInstruction(
-      { launch, baseVault: baseVault.address, quoteVault: quoteVault.address },
+      {
+        launch,
+        baseVault: baseVault.address,
+        quoteVault: quoteVault.address,
+        hookProgram: deployment.cpmmHookProgram,
+      },
       {
         amountIn: BUY_AMOUNT_IN,
         tradeDirection: initializer.TRADE_DIRECTION_BUY,
       },
+      deployment.initializerProgram,
     );
 
     // simulateTransaction is the idiomatic way to run a read-only instruction.
@@ -423,7 +447,7 @@ async function main() {
         baseMint: baseMint.address,
         quoteMint: WSOL_MINT,
         user: payer,
-        hookProgram: initializer.CPMM_HOOK_PROGRAM_ID,
+        hookProgram: deployment.cpmmHookProgram,
         baseTokenProgram: TOKEN_PROGRAM_ADDRESS,
         quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
       },
@@ -432,6 +456,7 @@ async function main() {
         minAmountOut: 1n, // accept any amount for the example; use preview.amountOut in prod
         tradeDirection: initializer.TRADE_DIRECTION_BUY,
       },
+      deployment.initializerProgram,
     );
 
     {
@@ -480,21 +505,24 @@ async function main() {
     // at launch creation.
     console.log('Step 5: Migrating launch to CPMM pool...');
 
-    const migrateLaunchIxBase = initializer.createMigrateLaunchInstruction({
-      config: initializerConfig,
-      launch,
-      launchAuthority,
-      baseMint: baseMint.address,
-      quoteMint: WSOL_MINT,
-      baseVault: baseVault.address,
-      quoteVault: quoteVault.address,
-      migratorProgram: cpmmMigrator.CPMM_MIGRATOR_PROGRAM_ID,
-      payer,
-      baseTokenProgram: TOKEN_PROGRAM_ADDRESS,
-      quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
-      systemProgram: SYSTEM_PROGRAM_ADDRESS,
-      rent: SYSVAR_RENT_ADDRESS,
-    });
+    const migrateLaunchIxBase = initializer.createMigrateLaunchInstruction(
+      {
+        config: initializerConfig,
+        launch,
+        launchAuthority,
+        baseMint: baseMint.address,
+        quoteMint: WSOL_MINT,
+        baseVault: baseVault.address,
+        quoteVault: quoteVault.address,
+        migratorProgram: deployment.cpmmMigratorProgram,
+        payer,
+        baseTokenProgram: TOKEN_PROGRAM_ADDRESS,
+        quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
+        systemProgram: SYSTEM_PROGRAM_ADDRESS,
+        rent: SYSVAR_RENT_ADDRESS,
+      },
+      deployment.initializerProgram,
+    );
 
     const migrateLaunchIx = {
       ...migrateLaunchIxBase,
@@ -540,6 +568,7 @@ async function main() {
     console.log('Step 6: Verifying final launch phase...');
     const finalLaunch = await initializer.fetchLaunch(rpc, launch, {
       commitment: 'confirmed',
+      programId: deployment.initializerProgram,
     });
 
     if (!finalLaunch) {
@@ -574,7 +603,10 @@ async function main() {
         rpc,
         baseMint.address,
         WSOL_MINT,
-        { commitment: 'confirmed' },
+        {
+          commitment: 'confirmed',
+          programId: deployment.cpmmProgram,
+        },
       );
 
       if (poolResult) {
@@ -590,11 +622,11 @@ async function main() {
         console.log('  Swap fee:     ', pool.swapFeeBps, 'bps');
         console.log('  Hook flags:   ', pool.hookFlags);
         if (
-          pool.hookProgram !== initializer.CPMM_HOOK_PROGRAM_ID ||
+          pool.hookProgram !== deployment.cpmmHookProgram ||
           pool.hookFlags !== CPMM_HOOK_FLAGS
         ) {
           throw new Error(
-            `Migrated pool hook mismatch: got program ${pool.hookProgram} flags ${pool.hookFlags}, expected program ${initializer.CPMM_HOOK_PROGRAM_ID} flags ${CPMM_HOOK_FLAGS}`,
+            `Migrated pool hook mismatch: got program ${pool.hookProgram} flags ${pool.hookFlags}, expected program ${deployment.cpmmHookProgram} flags ${CPMM_HOOK_FLAGS}`,
           );
         }
         console.log('  Spot price0:  ', price0.toFixed(8), '(base/WSOL)');
@@ -617,7 +649,7 @@ async function main() {
           pool.token0Mint === baseMint.address ? userBaseAta : userQuoteAta;
         const userToken1 =
           pool.token1Mint === baseMint.address ? userBaseAta : userQuoteAta;
-        const remainingAccounts = [initializer.CPMM_HOOK_PROGRAM_ID, cosigner];
+        const remainingAccounts = [deployment.cpmmHookProgram, cosigner];
 
         const cosignedSwapIx = cpmm.createSwapInstruction({
           config: cpmmConfig,
@@ -634,6 +666,7 @@ async function main() {
           minAmountOut,
           tradeDirection,
           remainingAccounts,
+          programId: deployment.cpmmProgram,
         });
 
         {

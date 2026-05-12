@@ -41,6 +41,7 @@ import {
   assertSolanaExampleNetwork,
   createLookupTableForInstruction,
   createSolanaClientsFromEnv,
+  getSolanaCpmmDeploymentFromEnv,
   loadKeypairSignerFromEnv,
 } from './solanaExampleHelpers.js';
 
@@ -56,6 +57,7 @@ async function main() {
   const payer = await loadKeypairSignerFromEnv();
   const { rpc, rpcSubscriptions, network } = createSolanaClientsFromEnv();
   assertSolanaExampleNetwork(network, ['devnet', 'custom']);
+  const deployment = await getSolanaCpmmDeploymentFromEnv(network);
 
   // ── Token supply parameters ─────────────────────────────────────────────
   //
@@ -93,7 +95,7 @@ async function main() {
   // namespace must equal oracleStateAddress (validated by register_entry:
   // require_keys_eq!(launch.namespace, oracle.key()))
   const namespace = oracleStateAddress;
-  const [config] = await initializer.getConfigAddress();
+  const config = deployment.initializerConfig;
 
   console.log('Creating trusted oracle...');
   console.log('  Oracle state:', oracleStateAddress);
@@ -151,9 +153,12 @@ async function main() {
         const [launch] = await initializer.getLaunchAddress(
           namespace,
           launchId,
+          deployment.initializerProgram,
         );
-        const [launchAuthority] =
-          await initializer.getLaunchAuthorityAddress(launch);
+        const [launchAuthority] = await initializer.getLaunchAuthorityAddress(
+          launch,
+          deployment.initializerProgram,
+        );
 
         const baseMint = await generateKeyPairSigner();
         const baseVault = await generateKeyPairSigner();
@@ -210,6 +215,7 @@ async function main() {
             quoteVault,
             payer,
             authority: payer,
+            hookProgram: initializer.PREDICTION_HOOK_PROGRAM_ID,
             migratorProgram:
               predictionMigrator.PREDICTION_MIGRATOR_PROGRAM_ADDRESS,
             baseTokenProgram: TOKEN_PROGRAM_ADDRESS,
@@ -267,6 +273,7 @@ async function main() {
             metadataSymbol: outcome.label,
             metadataUri: `https://example.com/${outcome.label.toLowerCase()}.json`,
           },
+          deployment.initializerProgram,
         );
         const lookupTable = await createLookupTableForInstruction({
           rpc,
@@ -309,7 +316,9 @@ async function main() {
         );
 
         // Verify launch state
-        const launchAccount = await initializer.fetchLaunch(rpc, launch);
+        const launchAccount = await initializer.fetchLaunch(rpc, launch, {
+          programId: deployment.initializerProgram,
+        });
         if (launchAccount) {
           console.log(
             '  Phase:              ',

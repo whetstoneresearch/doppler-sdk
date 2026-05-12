@@ -120,7 +120,7 @@ Minimal builder examples for `uniswapV2Split` / `uniswapV4Split` migrations and 
 
 ## Solana Examples
 
-The Solana examples use `@whetstone-research/doppler-sdk/solana`. Set `SOLANA_NETWORK` deliberately: use `devnet` for the checked-in Doppler Solana deployment examples, `mainnet-beta` only with matching deployed program/config addresses, or `custom` with explicit RPC URLs.
+The Solana examples use `@whetstone-research/doppler-sdk/solana`. Set `SOLANA_NETWORK=devnet` for the checked-in Doppler Solana deployment defaults, or `SOLANA_NETWORK=custom` with explicit RPC URLs and deployment program IDs.
 
 - [`solana-launch-by-marketcap.ts`](./solana-launch-by-marketcap.ts): simple XYK launch with CPMM migration configured.
 - [`solana-adv-launch.ts`](./solana-adv-launch.ts): launch with custom allocations, recipients, fees, and migration price floor.
@@ -136,6 +136,15 @@ export SOLANA_NETWORK=devnet
 export SOLANA_RPC_URL=https://api.devnet.solana.com
 export SOLANA_WS_URL=wss://api.devnet.solana.com
 pnpm tsx examples/solana-launch-by-marketcap.ts
+```
+
+For a custom deployment, also set:
+
+```bash
+export SOLANA_CPMM_PROGRAM_ID=...
+export SOLANA_INITIALIZER_PROGRAM_ID=...
+export SOLANA_CPMM_MIGRATOR_PROGRAM_ID=...
+export SOLANA_CPMM_HOOK_PROGRAM_ID=...
 ```
 
 The launch examples use ALTs where possible. ALTs reduce account-key bytes, but they do not compress instruction data, so long `metadataName`, `metadataSymbol`, or `metadataUri` values can still exceed Solana's 1232-byte transaction limit.
