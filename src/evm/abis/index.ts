@@ -4115,6 +4115,16 @@ export const streamableFeesLockerAbi = [
   { type: 'error', name: 'InvalidBeneficiary', inputs: [] },
 ] as const;
 
+export const streamableFeesLockerV2Abi = [
+  {
+    type: 'function',
+    name: 'approvedMigrators',
+    stateMutability: 'view',
+    inputs: [{ name: 'migrator', type: 'address' }],
+    outputs: [{ name: 'approved', type: 'bool' }],
+  },
+] as const;
+
 export const v4MulticurveMigratorAbi = [
   {
     type: 'function',
