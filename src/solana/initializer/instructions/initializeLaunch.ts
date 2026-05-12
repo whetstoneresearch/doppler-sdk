@@ -268,15 +268,24 @@ export async function createInitializeLaunchInstruction(
   );
 
   // When using the CPMM migrator, append the module-specific accounts required
-  // by register_launch:
-  //   [cpmm_migration_state, cpmm_config]
-  if (migratorProgram === CPMM_MIGRATOR_PROGRAM_ID) {
-    if (!accounts.cpmmConfig) {
+  // by register_launch. Custom deployments identify this path by passing
+  // cpmmConfig alongside their custom migrator program ID.
+  const shouldAppendCpmmMigratorAccounts =
+    accounts.cpmmConfig !== undefined ||
+    migratorProgram === CPMM_MIGRATOR_PROGRAM_ID;
+  if (shouldAppendCpmmMigratorAccounts) {
+    if (!migratorProgram) {
       throw new Error(
-        'cpmmConfig is required when migratorProgram is CPMM_MIGRATOR_PROGRAM_ID',
+        'migratorProgram is required when cpmmConfig is provided',
       );
     }
-    const [cpmmMigrationState] = await getCpmmMigratorStateAddress(launch);
+    if (!accounts.cpmmConfig) {
+      throw new Error('cpmmConfig is required when using the CPMM migrator');
+    }
+    const [cpmmMigrationState] = await getCpmmMigratorStateAddress(
+      launch,
+      migratorProgram,
+    );
     keys.push({ address: cpmmMigrationState, role: AccountRole.WRITABLE });
     keys.push({ address: accounts.cpmmConfig, role: AccountRole.READONLY });
   }
