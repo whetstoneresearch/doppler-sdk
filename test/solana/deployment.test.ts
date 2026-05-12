@@ -140,7 +140,10 @@ describe('CPMM migrator custom deployment helpers', () => {
         migratorMigratePayload: new Uint8Array(),
         hookRemainingAccountsHash: initializer.EMPTY_REMAINING_ACCOUNTS_HASH,
         migratorInitRemainingAccountsHash:
-          initializer.EMPTY_REMAINING_ACCOUNTS_HASH,
+          initializer.computeRemainingAccountsHash([
+            cpmmMigrationState,
+            cpmmConfig,
+          ]),
         migratorRemainingAccountsHash:
           initializer.EMPTY_REMAINING_ACCOUNTS_HASH,
         metadataName: '',
