@@ -30,6 +30,7 @@ import { cpmm } from '../src/solana/index.js';
 import {
   assertSolanaExampleNetwork,
   createSolanaClientsFromEnv,
+  getSolanaCpmmDeploymentFromEnv,
   loadKeypairSignerFromEnv,
 } from './solanaExampleHelpers.js';
 
@@ -51,10 +52,13 @@ async function main() {
   const payer = await loadKeypairSignerFromEnv();
   const { rpc, rpcSubscriptions, network } = createSolanaClientsFromEnv();
   assertSolanaExampleNetwork(network, ['devnet', 'custom']);
+  const deployment = await getSolanaCpmmDeploymentFromEnv(network);
 
   // ── Fetch pool state ─────────────────────────────────────────────────────
   console.log('Fetching pool state...');
-  const poolResult = await cpmm.getPoolByMints(rpc, MINT_0, MINT_1);
+  const poolResult = await cpmm.getPoolByMints(rpc, MINT_0, MINT_1, {
+    programId: deployment.cpmmProgram,
+  });
 
   if (!poolResult) {
     throw new Error(`No pool found for ${MINT_0} / ${MINT_1}`);
@@ -99,7 +103,7 @@ async function main() {
   console.log('');
 
   // ── Derive PDAs and user token accounts ─────────────────────────────────
-  const [config] = await cpmm.getConfigAddress();
+  const config = deployment.cpmmConfig;
   const [userToken0] = await findAssociatedTokenPda({
     owner: payer.address,
     mint: pool.token0Mint,
@@ -136,6 +140,7 @@ async function main() {
       amountIn: AMOUNT_IN,
       minAmountOut,
       tradeDirection,
+      programId: deployment.cpmmProgram,
     });
     const createUserInAtaIx = getCreateAssociatedTokenIdempotentInstruction({
       payer,

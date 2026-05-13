@@ -17,22 +17,25 @@ import {
   signTransactionMessageWithSigners,
   address,
   generateKeyPairSigner,
+  type Address,
   type Instruction,
   type TransactionMessage,
   type TransactionMessageWithFeePayer,
   type TransactionSigner,
 } from '@solana/kit';
 
-import { initializer } from '../src/solana/index.js';
+import {
+  DOPPLER_SOLANA_DEVNET_PROGRAM_ADDRESSES,
+  deriveSolanaCpmmDeployment,
+  initializer,
+  type SolanaCpmmDeployment,
+  type SolanaCpmmProgramAddresses,
+} from '../src/solana/index.js';
 
 export const SOLANA_NETWORK_ENDPOINTS = {
   devnet: {
     rpcUrl: 'https://api.devnet.solana.com',
     wsUrl: 'wss://api.devnet.solana.com',
-  },
-  'mainnet-beta': {
-    rpcUrl: 'https://api.mainnet-beta.solana.com',
-    wsUrl: 'wss://api.mainnet-beta.solana.com',
   },
 } as const;
 export type SolanaExampleNetwork =
@@ -86,13 +89,53 @@ export function assertSolanaExampleNetwork(
 }
 
 function parseSolanaNetwork(value: string): SolanaExampleNetwork {
-  if (value === 'devnet' || value === 'mainnet-beta' || value === 'custom') {
+  if (value === 'devnet' || value === 'custom') {
     return value;
   }
 
-  throw new Error(
-    `Unsupported SOLANA_NETWORK=${value}. Use devnet, mainnet-beta, or custom.`,
-  );
+  throw new Error(`Unsupported SOLANA_NETWORK=${value}. Use devnet or custom.`);
+}
+
+const CUSTOM_CPMM_PROGRAM_ENV = {
+  cpmmProgram: 'SOLANA_CPMM_PROGRAM_ID',
+  initializerProgram: 'SOLANA_INITIALIZER_PROGRAM_ID',
+  cpmmMigratorProgram: 'SOLANA_CPMM_MIGRATOR_PROGRAM_ID',
+  cpmmHookProgram: 'SOLANA_CPMM_HOOK_PROGRAM_ID',
+} as const satisfies Record<keyof SolanaCpmmProgramAddresses, string>;
+
+function requiredAddressFromEnv(name: string): Address {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`${name} is required when SOLANA_NETWORK=custom`);
+  }
+  return address(value);
+}
+
+export function getSolanaCpmmProgramAddressesFromEnv(): SolanaCpmmProgramAddresses {
+  return {
+    cpmmProgram: requiredAddressFromEnv(CUSTOM_CPMM_PROGRAM_ENV.cpmmProgram),
+    initializerProgram: requiredAddressFromEnv(
+      CUSTOM_CPMM_PROGRAM_ENV.initializerProgram,
+    ),
+    cpmmMigratorProgram: requiredAddressFromEnv(
+      CUSTOM_CPMM_PROGRAM_ENV.cpmmMigratorProgram,
+    ),
+    cpmmHookProgram: requiredAddressFromEnv(
+      CUSTOM_CPMM_PROGRAM_ENV.cpmmHookProgram,
+    ),
+  };
+}
+
+export async function getSolanaCpmmDeploymentFromEnv(
+  network: SolanaExampleNetwork = parseSolanaNetwork(
+    process.env.SOLANA_NETWORK ?? DEFAULT_SOLANA_EXAMPLE_NETWORK,
+  ),
+): Promise<SolanaCpmmDeployment> {
+  const programs =
+    network === 'custom'
+      ? getSolanaCpmmProgramAddressesFromEnv()
+      : DOPPLER_SOLANA_DEVNET_PROGRAM_ADDRESSES;
+  return deriveSolanaCpmmDeployment(programs);
 }
 
 export async function loadKeypairSignerFromEnv({

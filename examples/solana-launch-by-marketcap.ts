@@ -35,6 +35,7 @@ import {
   createSolanaClientsFromEnv,
   getMetadataByteLength,
   getSolPriceUsd,
+  getSolanaCpmmDeploymentFromEnv,
   loadKeypairSignerFromEnv,
 } from './solanaExampleHelpers.js';
 
@@ -46,6 +47,7 @@ async function main() {
   const payer = await loadKeypairSignerFromEnv();
   const { rpc, rpcSubscriptions, network } = createSolanaClientsFromEnv();
   assertSolanaExampleNetwork(network, ['devnet', 'custom']);
+  const deployment = await getSolanaCpmmDeploymentFromEnv(network);
 
   // ── Token supply parameters ────────────────────────────────────────────────
   // This example puts the entire supply on the bonding curve (no creator
@@ -112,9 +114,16 @@ async function main() {
   const namespace = payer.address;
   const launchId = initializer.launchIdFromU64(BigInt(Date.now()));
 
-  const [launch] = await initializer.getLaunchAddress(namespace, launchId);
-  const [launchAuthority] = await initializer.getLaunchAuthorityAddress(launch);
-  const [initializerConfig] = await initializer.getConfigAddress();
+  const [launch] = await initializer.getLaunchAddress(
+    namespace,
+    launchId,
+    deployment.initializerProgram,
+  );
+  const [launchAuthority] = await initializer.getLaunchAuthorityAddress(
+    launch,
+    deployment.initializerProgram,
+  );
+  const initializerConfig = deployment.initializerConfig;
   // Admin ATAs receive unsold curve tokens and residual migration dust.
   const [payerBaseAta] = await findAssociatedTokenPda({
     owner: payer.address,
@@ -136,6 +145,8 @@ async function main() {
       adminBaseAta: payerBaseAta,
       adminQuoteAta: payerQuoteAta,
       recipientAtas: [],
+      cpmmProgram: deployment.cpmmProgram,
+      cpmmMigratorProgram: deployment.cpmmMigratorProgram,
     });
   const cpmmConfig = migrationAccounts.cpmmConfig;
   const cpmmMigrationState = migrationAccounts.cpmmMigrationState;
@@ -188,7 +199,8 @@ async function main() {
         quoteVault,
         payer,
         authority: payer,
-        migratorProgram: cpmmMigrator.CPMM_MIGRATOR_PROGRAM_ID,
+        hookProgram: deployment.cpmmHookProgram,
+        migratorProgram: deployment.cpmmMigratorProgram,
         cpmmConfig,
         baseTokenProgram: TOKEN_PROGRAM_ADDRESS,
         quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
@@ -211,7 +223,7 @@ async function main() {
         curveParams: new Uint8Array([initializer.CURVE_PARAMS_FORMAT_XYK_V0]),
         allowBuy: true,
         allowSell: true,
-        hookProgram: initializer.CPMM_HOOK_PROGRAM_ID,
+        hookProgram: deployment.cpmmHookProgram,
         hookFlags: initializer.HF_BEFORE_SWAP,
         hookPayload: new Uint8Array(),
         migratorInitPayload,
@@ -225,6 +237,7 @@ async function main() {
         migratorRemainingAccountsHash: migrationAccounts.hash,
         ...metadata,
       },
+      deployment.initializerProgram,
     );
     const lookupTable = await createLookupTableForInstruction({
       rpc,
@@ -276,7 +289,9 @@ async function main() {
     );
 
     // ── Verify launch state ──────────────────────────────────────
-    const launchAccount = await initializer.fetchLaunch(rpc, launch);
+    const launchAccount = await initializer.fetchLaunch(rpc, launch, {
+      programId: deployment.initializerProgram,
+    });
     if (launchAccount) {
       console.log('');
       console.log('Launch account verified:');
