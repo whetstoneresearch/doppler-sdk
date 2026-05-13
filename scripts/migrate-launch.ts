@@ -50,6 +50,17 @@ const RPC_URL = process.env.SOLANA_RPC_URL ?? DEVNET_RPC_URL;
 const COMPUTE_BUDGET_PROGRAM_ID = address(
   'ComputeBudget111111111111111111111111111111',
 );
+const CPMM_PROGRAM_ID = address(
+  process.env.SOLANA_CPMM_PROGRAM_ID ?? cpmm.CPMM_PROGRAM_ID.toString(),
+);
+const INITIALIZER_PROGRAM_ID = address(
+  process.env.SOLANA_INITIALIZER_PROGRAM_ID ??
+    initializer.INITIALIZER_PROGRAM_ID.toString(),
+);
+const CPMM_MIGRATOR_PROGRAM_ID = address(
+  process.env.SOLANA_CPMM_MIGRATOR_PROGRAM_ID ??
+    cpmmMigrator.CPMM_MIGRATOR_PROGRAM_ID.toString(),
+);
 const MIGRATION_COMPUTE_UNIT_LIMIT = Number(
   process.env.SOLANA_MIGRATE_COMPUTE_UNIT_LIMIT ?? 400_000,
 );
@@ -189,42 +200,60 @@ async function main() {
   }
 
   if (
-    launch.migratorProgram.toString() !==
-    cpmmMigrator.CPMM_MIGRATOR_PROGRAM_ID.toString()
+    launch.migratorProgram.toString() !== CPMM_MIGRATOR_PROGRAM_ID.toString()
   ) {
     throw new Error(
-      `Launch migrator_program is not cpmm_migrator: ${launch.migratorProgram}`,
+      `Launch migrator_program is not expected cpmm_migrator ${CPMM_MIGRATOR_PROGRAM_ID}: ${launch.migratorProgram}`,
     );
   }
 
   const [stateAddress] = await cpmmMigrator.getCpmmMigratorStateAddress(
     launchAddress,
-    launch.migratorProgram,
+    CPMM_MIGRATOR_PROGRAM_ID,
   );
   const state = await cpmmMigrator.fetchCpmmMigratorState(rpc, stateAddress);
   if (!state) {
     throw new Error(`Missing cpmm_migrator state: ${stateAddress}`);
   }
 
-  const [initializerConfig] = await initializer.getConfigAddress();
-  const [launchAuthority] =
-    await initializer.getLaunchAuthorityAddress(launchAddress);
+  const [initializerConfig] = await initializer.getConfigAddress(
+    INITIALIZER_PROGRAM_ID,
+  );
+  const [launchAuthority] = await initializer.getLaunchAuthorityAddress(
+    launchAddress,
+    INITIALIZER_PROGRAM_ID,
+  );
   const [poolAddress] = await cpmm.getPoolAddress(
     launch.baseMint,
     launch.quoteMint,
+    CPMM_PROGRAM_ID,
   );
-  const [poolAuthority] = await cpmm.getPoolAuthorityAddress(poolAddress);
-  const [poolVault0] = await cpmm.getPoolVault0Address(poolAddress);
-  const [poolVault1] = await cpmm.getPoolVault1Address(poolAddress);
-  const [protocolPosition] =
-    await cpmm.getProtocolFeePositionAddress(poolAddress);
+  const [poolAuthority] = await cpmm.getPoolAuthorityAddress(
+    poolAddress,
+    CPMM_PROGRAM_ID,
+  );
+  const [poolVault0] = await cpmm.getPoolVault0Address(
+    poolAddress,
+    CPMM_PROGRAM_ID,
+  );
+  const [poolVault1] = await cpmm.getPoolVault1Address(
+    poolAddress,
+    CPMM_PROGRAM_ID,
+  );
+  const [protocolPosition] = await cpmm.getProtocolFeePositionAddress(
+    poolAddress,
+    CPMM_PROGRAM_ID,
+  );
   const [launchLpPosition] = await cpmm.getPositionAddress(
     poolAddress,
     launchAuthority,
     0n,
+    CPMM_PROGRAM_ID,
   );
   const [migrationAuthority] =
-    await cpmmMigrator.getCpmmMigrationAuthorityAddress(launch.migratorProgram);
+    await cpmmMigrator.getCpmmMigrationAuthorityAddress(
+      CPMM_MIGRATOR_PROGRAM_ID,
+    );
 
   const ataInstructions: Instruction[] = [];
   const adminBaseAta = await getAta(launch.baseMint, state.admin);
@@ -262,21 +291,24 @@ async function main() {
     if (recipientAtaIx) ataInstructions.push(recipientAtaIx);
   }
 
-  const migrateIxBase = initializer.createMigrateLaunchInstruction({
-    config: initializerConfig,
-    launch: launchAddress,
-    launchAuthority,
-    baseMint: launch.baseMint,
-    quoteMint: launch.quoteMint,
-    baseVault: launch.baseVault,
-    quoteVault: launch.quoteVault,
-    migratorProgram: launch.migratorProgram,
-    payer: caller,
-    baseTokenProgram: TOKEN_PROGRAM_ADDRESS,
-    quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
-    systemProgram: SYSTEM_PROGRAM_ADDRESS,
-    rent: SYSVAR_RENT_ADDRESS,
-  });
+  const migrateIxBase = initializer.createMigrateLaunchInstruction(
+    {
+      config: initializerConfig,
+      launch: launchAddress,
+      launchAuthority,
+      baseMint: launch.baseMint,
+      quoteMint: launch.quoteMint,
+      baseVault: launch.baseVault,
+      quoteVault: launch.quoteVault,
+      migratorProgram: CPMM_MIGRATOR_PROGRAM_ID,
+      payer: caller,
+      baseTokenProgram: TOKEN_PROGRAM_ADDRESS,
+      quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
+      systemProgram: SYSTEM_PROGRAM_ADDRESS,
+      rent: SYSVAR_RENT_ADDRESS,
+    },
+    INITIALIZER_PROGRAM_ID,
+  );
 
   const migrateIx = {
     ...migrateIxBase,
@@ -290,7 +322,7 @@ async function main() {
       { address: poolVault1, role: AccountRole.WRITABLE },
       { address: protocolPosition, role: AccountRole.WRITABLE },
       { address: launchLpPosition, role: AccountRole.WRITABLE },
-      { address: cpmm.CPMM_PROGRAM_ID, role: AccountRole.READONLY },
+      { address: CPMM_PROGRAM_ID, role: AccountRole.READONLY },
       { address: migrationAuthority, role: AccountRole.READONLY },
       { address: adminBaseAta, role: AccountRole.WRITABLE },
       { address: adminQuoteAta, role: AccountRole.WRITABLE },
