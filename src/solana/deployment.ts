@@ -42,6 +42,7 @@ export const DOPPLER_SOLANA_MAINNET_PROGRAM_ADDRESSES: SolanaCpmmProgramAddresse
       'H71WD4tsiCCipro4urykWHySH1ryvLTmqEdNbHTGwb3o',
     ),
     cpmmHookProgram: address('4pU2NUiPd3WFCw8vTbvyF3RSARhjMqoUejWi7eMJWp3U'),
+    cosignerHookProgram: COSIGNER_HOOK_PROGRAM_ID,
   };
 
 export async function deriveSolanaCpmmDeployment(

@@ -7,6 +7,7 @@
  *
  * Environment:
  *   SOLANA_RPC_URL       defaults to https://api.devnet.solana.com
+ *   SOLANA_CLUSTER       devnet (default) or mainnet; selects program IDs
  *   SOLANA_KEYPAIR       optional JSON array of 64 bytes
  *   SOLANA_KEYPAIR_PATH  optional path to a JSON keypair file
  *                        defaults to ~/.config/solana/id.json
@@ -40,30 +41,52 @@ import {
   type Rpc,
   type SolanaRpcApi,
   type TransactionSigner,
+  type TransactionSignature,
 } from '@solana/kit';
-import { SYSVAR_RENT_ADDRESS } from '@solana/sysvars';
+import {
+  SYSVAR_RENT_ADDRESS,
+  SYSVAR_INSTRUCTIONS_ADDRESS,
+} from '../src/solana/core/constants.js';
 
-import { cpmm, initializer, cpmmMigrator } from '../src/solana/index.js';
+import {
+  cpmm,
+  initializer,
+  cpmmMigrator,
+  DOPPLER_SOLANA_DEVNET_PROGRAM_ADDRESSES,
+  DOPPLER_SOLANA_MAINNET_PROGRAM_ADDRESSES,
+} from '../src/solana/index.js';
 
 const DEVNET_RPC_URL = 'https://api.devnet.solana.com';
 const RPC_URL = process.env.SOLANA_RPC_URL ?? DEVNET_RPC_URL;
+const SOLANA_CLUSTER = process.env.SOLANA_CLUSTER ?? 'devnet';
+const DEFAULT_PROGRAMS = (() => {
+  if (SOLANA_CLUSTER === 'devnet')
+    return DOPPLER_SOLANA_DEVNET_PROGRAM_ADDRESSES;
+  if (SOLANA_CLUSTER === 'mainnet')
+    return DOPPLER_SOLANA_MAINNET_PROGRAM_ADDRESSES;
+  throw new Error('SOLANA_CLUSTER must be either devnet or mainnet');
+})();
 const COMPUTE_BUDGET_PROGRAM_ID = address(
   'ComputeBudget111111111111111111111111111111',
 );
 const CPMM_PROGRAM_ID = address(
-  process.env.SOLANA_CPMM_PROGRAM_ID ?? cpmm.CPMM_PROGRAM_ID.toString(),
+  process.env.SOLANA_CPMM_PROGRAM_ID ?? DEFAULT_PROGRAMS.cpmmProgram.toString(),
 );
 const INITIALIZER_PROGRAM_ID = address(
   process.env.SOLANA_INITIALIZER_PROGRAM_ID ??
-    initializer.INITIALIZER_PROGRAM_ID.toString(),
+    DEFAULT_PROGRAMS.initializerProgram.toString(),
 );
 const CPMM_MIGRATOR_PROGRAM_ID = address(
   process.env.SOLANA_CPMM_MIGRATOR_PROGRAM_ID ??
-    cpmmMigrator.CPMM_MIGRATOR_PROGRAM_ID.toString(),
+    DEFAULT_PROGRAMS.cpmmMigratorProgram.toString(),
 );
 const MIGRATION_COMPUTE_UNIT_LIMIT = Number(
   process.env.SOLANA_MIGRATE_COMPUTE_UNIT_LIMIT ?? 400_000,
 );
+const MIGRATION_COMPUTE_UNIT_PRICE_MICROLAMPORTS =
+  process.env.SOLANA_MIGRATE_COMPUTE_UNIT_PRICE_MICROLAMPORTS === undefined
+    ? undefined
+    : BigInt(process.env.SOLANA_MIGRATE_COMPUTE_UNIT_PRICE_MICROLAMPORTS);
 
 type SolanaRpc = Rpc<SolanaRpcApi>;
 
@@ -121,6 +144,60 @@ function createSetComputeUnitLimitInstruction(units: number): Instruction {
     accounts: [],
     data,
   };
+}
+
+function createSetComputeUnitPriceInstruction(
+  microLamports: bigint,
+): Instruction {
+  const data = new Uint8Array(9);
+  data[0] = 3;
+  new DataView(data.buffer).setBigUint64(1, microLamports, true);
+  return {
+    programAddress: COMPUTE_BUDGET_PROGRAM_ID,
+    accounts: [],
+    data,
+  };
+}
+
+async function sleep(ms: number): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function waitForSignature(
+  rpc: SolanaRpc,
+  signature: TransactionSignature,
+  latestBlockhash: { lastValidBlockHeight: bigint },
+): Promise<void> {
+  const commitmentRank = { processed: 0, confirmed: 1, finalized: 2 };
+
+  for (;;) {
+    const [statusResponse, blockHeight] = await Promise.all([
+      rpc
+        .getSignatureStatuses([signature], { searchTransactionHistory: true })
+        .send(),
+      rpc.getBlockHeight({ commitment: 'confirmed' }).send(),
+    ]);
+    const status = statusResponse.value[0];
+
+    if (status?.err) {
+      throw new Error(
+        `Migration transaction failed: ${JSON.stringify(status.err)}`,
+      );
+    }
+    if (
+      status?.confirmationStatus &&
+      commitmentRank[status.confirmationStatus] >= commitmentRank.confirmed
+    ) {
+      return;
+    }
+    if (blockHeight > latestBlockhash.lastValidBlockHeight) {
+      throw new Error(
+        `Migration transaction expired before confirmation: ${signature}`,
+      );
+    }
+
+    await sleep(500);
+  }
 }
 
 async function simulateWireTransaction(wireTransaction: string) {
@@ -306,6 +383,7 @@ async function main() {
       quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
       systemProgram: SYSTEM_PROGRAM_ADDRESS,
       rent: SYSVAR_RENT_ADDRESS,
+      instructionsSysvar: SYSVAR_INSTRUCTIONS_ADDRESS,
     },
     INITIALIZER_PROGRAM_ID,
   );
@@ -344,6 +422,13 @@ async function main() {
       appendTransactionMessageInstructions(
         [
           createSetComputeUnitLimitInstruction(MIGRATION_COMPUTE_UNIT_LIMIT),
+          ...(MIGRATION_COMPUTE_UNIT_PRICE_MICROLAMPORTS === undefined
+            ? []
+            : [
+                createSetComputeUnitPriceInstruction(
+                  MIGRATION_COMPUTE_UNIT_PRICE_MICROLAMPORTS,
+                ),
+              ]),
           ...ataInstructions,
           migrateIx,
         ],
@@ -362,8 +447,15 @@ async function main() {
     console.log(`  Launch:         ${launchAddress}`);
     console.log(`  Pool:           ${poolAddress}`);
     console.log(`  State:          ${stateAddress}`);
-    console.log(`  Instructions:   ${ataInstructions.length + 2}`);
+    console.log(
+      `  Instructions:   ${ataInstructions.length + (MIGRATION_COMPUTE_UNIT_PRICE_MICROLAMPORTS === undefined ? 2 : 3)}`,
+    );
     console.log(`  Compute limit:  ${MIGRATION_COMPUTE_UNIT_LIMIT}`);
+    if (MIGRATION_COMPUTE_UNIT_PRICE_MICROLAMPORTS !== undefined) {
+      console.log(
+        `  Compute price:  ${MIGRATION_COMPUTE_UNIT_PRICE_MICROLAMPORTS} microlamports`,
+      );
+    }
     console.log(`  Units consumed: ${result.unitsConsumed ?? 'n/a'}`);
     if (result.logs?.length) {
       console.log('  Logs:');
@@ -378,6 +470,17 @@ async function main() {
     return;
   }
 
+  const simulation = await simulateWireTransaction(wireTransaction);
+  if (simulation.err) {
+    console.error(
+      `Simulation failed before send: ${JSON.stringify(simulation.err)}`,
+    );
+    if (simulation.logs?.length) {
+      for (const line of simulation.logs) console.error(`  ${line}`);
+    }
+    process.exit(2);
+  }
+
   const signature = await rpc
     .sendTransaction(wireTransaction, {
       encoding: 'base64',
@@ -385,6 +488,7 @@ async function main() {
       preflightCommitment: 'confirmed',
     })
     .send();
+  await waitForSignature(rpc, signature, latestBlockhash);
 
   console.log('='.repeat(60));
   console.log('Launch migrated');

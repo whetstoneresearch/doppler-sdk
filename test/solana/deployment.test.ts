@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { address } from '@solana/kit';
+import { AccountRole, address } from '@solana/kit';
 
+import { SYSVAR_INSTRUCTIONS_ADDRESS } from '../../src/solana/core/constants.js';
 import {
   cpmm,
+  cosignerHook,
   cpmmMigrator,
   DOPPLER_SOLANA_DEVNET_PROGRAM_ADDRESSES,
   DOPPLER_SOLANA_MAINNET_PROGRAM_ADDRESSES,
@@ -16,6 +18,7 @@ const CUSTOM_PROGRAMS: SolanaCpmmProgramAddresses = {
   initializerProgram: address('BPFLoaderUpgradeab1e11111111111111111111111'),
   cpmmMigratorProgram: address('AddressLookupTab1e1111111111111111111111111'),
   cpmmHookProgram: address('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr'),
+  cosignerHookProgram: address('SysvarS1otHashes111111111111111111111111111'),
 };
 
 describe('Solana deployment helpers', () => {
@@ -51,6 +54,27 @@ describe('Solana deployment helpers', () => {
         'H71WD4tsiCCipro4urykWHySH1ryvLTmqEdNbHTGwb3o',
       ),
       cpmmHookProgram: address('4pU2NUiPd3WFCw8vTbvyF3RSARhjMqoUejWi7eMJWp3U'),
+      cosignerHookProgram: cosignerHook.COSIGNER_HOOK_PROGRAM_ID,
+    });
+  });
+
+  it('includes the instructions sysvar in migrate-launch accounts', () => {
+    const ix = initializer.createMigrateLaunchInstruction({
+      config: address('ComputeBudget111111111111111111111111111111'),
+      launch: address('SysvarC1ock11111111111111111111111111111111'),
+      launchAuthority: address('Sysvar1nstructions1111111111111111111111111'),
+      baseMint: address('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'),
+      quoteMint: address('So11111111111111111111111111111111111111112'),
+      baseVault: address('SysvarRecentB1ockHashes11111111111111111111'),
+      quoteVault: address('SysvarS1otHashes111111111111111111111111111'),
+      migratorProgram: CUSTOM_PROGRAMS.cpmmMigratorProgram,
+      payer: address('AddressLookupTab1e1111111111111111111111111'),
+      rent: address('SysvarRent111111111111111111111111111111111'),
+    });
+
+    expect(ix.accounts?.[13]).toEqual({
+      address: SYSVAR_INSTRUCTIONS_ADDRESS,
+      role: AccountRole.READONLY,
     });
   });
 });
@@ -167,8 +191,10 @@ describe('CPMM migrator custom deployment helpers', () => {
       CUSTOM_PROGRAMS.initializerProgram,
     );
 
-    expect(ix.accounts?.at(-2)?.address).toBe(cpmmMigrationState);
-    expect(ix.accounts?.at(-1)?.address).toBe(cpmmConfig);
+    expect(ix.accounts?.[ix.accounts.length - 2]?.address).toBe(
+      cpmmMigrationState,
+    );
+    expect(ix.accounts?.[ix.accounts.length - 1]?.address).toBe(cpmmConfig);
     expect(ix.programAddress).toBe(CUSTOM_PROGRAMS.initializerProgram);
   });
 });

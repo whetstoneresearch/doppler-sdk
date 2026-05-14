@@ -9,6 +9,7 @@ import { AccountRole } from '@solana/kit';
 import {
   SYSTEM_PROGRAM_ADDRESS,
   TOKEN_PROGRAM_ADDRESS,
+  SYSVAR_INSTRUCTIONS_ADDRESS,
 } from '../../core/constants.js';
 import {
   INITIALIZER_INSTRUCTION_DISCRIMINATORS,
@@ -53,6 +54,7 @@ export interface MigrateLaunchAccounts {
   quoteTokenProgram?: Address;
   systemProgram?: Address;
   rent: Address;
+  instructionsSysvar?: Address;
 }
 
 export function createMigrateLaunchInstruction(
@@ -73,6 +75,7 @@ export function createMigrateLaunchInstruction(
     quoteTokenProgram = TOKEN_PROGRAM_ADDRESS,
     systemProgram = SYSTEM_PROGRAM_ADDRESS,
     rent,
+    instructionsSysvar = SYSVAR_INSTRUCTIONS_ADDRESS,
   } = accounts;
 
   const keys: (AccountMeta | AccountSignerMeta)[] = [
@@ -89,6 +92,7 @@ export function createMigrateLaunchInstruction(
     { address: quoteTokenProgram, role: AccountRole.READONLY },
     { address: systemProgram, role: AccountRole.READONLY },
     { address: rent, role: AccountRole.READONLY },
+    { address: instructionsSysvar, role: AccountRole.READONLY },
   ];
 
   const data = encodeInstructionData(
