@@ -9,6 +9,7 @@ import {
   INITIALIZER_PROGRAM_ID,
   getConfigAddress as getInitializerConfigAddress,
 } from './initializer/index.js';
+import { COSIGNER_HOOK_PROGRAM_ID } from './cosignerHook/index.js';
 import { CPMM_MIGRATOR_PROGRAM_ID } from './migrators/cpmmMigrator/index.js';
 
 export interface SolanaCpmmProgramAddresses {
@@ -16,6 +17,7 @@ export interface SolanaCpmmProgramAddresses {
   initializerProgram: Address;
   cpmmMigratorProgram: Address;
   cpmmHookProgram: Address;
+  cosignerHookProgram: Address;
 }
 
 export interface SolanaCpmmDeployment extends SolanaCpmmProgramAddresses {
@@ -29,6 +31,7 @@ export const DOPPLER_SOLANA_DEVNET_PROGRAM_ADDRESSES: SolanaCpmmProgramAddresses
     initializerProgram: INITIALIZER_PROGRAM_ID,
     cpmmMigratorProgram: CPMM_MIGRATOR_PROGRAM_ID,
     cpmmHookProgram: CPMM_HOOK_PROGRAM_ID,
+    cosignerHookProgram: COSIGNER_HOOK_PROGRAM_ID,
   };
 
 export async function deriveSolanaCpmmDeployment(

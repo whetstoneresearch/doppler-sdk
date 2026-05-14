@@ -1,7 +1,44 @@
-import type { Address, Instruction } from '@solana/kit';
+import type {
+  AccountMeta,
+  AccountSignerMeta,
+  Address,
+  Instruction,
+  TransactionSigner,
+} from '@solana/kit';
 import { getStructCodec, getU64Codec, AccountRole } from '@solana/kit';
 import { INITIALIZER_PROGRAM_ID } from '../constants.js';
 import { getPreviewSwapExactInInstructionDataEncoder } from '../../generated/initializer/index.js';
+
+type RemainingAccount =
+  | Address
+  | AccountMeta
+  | AccountSignerMeta
+  | TransactionSigner;
+
+function isTransactionSigner(value: unknown): value is TransactionSigner {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'address' in value &&
+    'signTransactions' in value
+  );
+}
+
+function createRemainingAccountMeta(
+  value: RemainingAccount,
+): AccountMeta | AccountSignerMeta {
+  if (typeof value === 'string') {
+    return { address: value, role: AccountRole.READONLY };
+  }
+  if (isTransactionSigner(value)) {
+    return {
+      address: value.address,
+      role: AccountRole.READONLY_SIGNER,
+      signer: value,
+    };
+  }
+  return value;
+}
 
 export interface PreviewSwapExactInResult {
   amountOut: bigint;
@@ -18,6 +55,7 @@ export interface PreviewSwapExactInAccounts {
   baseVault: Address;
   quoteVault: Address;
   hookProgram?: Address;
+  remainingAccounts?: RemainingAccount[];
 }
 
 export function createPreviewSwapExactInInstruction(
@@ -25,7 +63,13 @@ export function createPreviewSwapExactInInstruction(
   args: { amountIn: bigint; tradeDirection: number },
   programId: Address = INITIALIZER_PROGRAM_ID,
 ): Instruction {
-  const { launch, baseVault, quoteVault, hookProgram } = accounts;
+  const {
+    launch,
+    baseVault,
+    quoteVault,
+    hookProgram,
+    remainingAccounts = [],
+  } = accounts;
 
   const keys = [
     { address: launch, role: AccountRole.READONLY },
@@ -37,11 +81,16 @@ export function createPreviewSwapExactInInstruction(
     ? [...keys, { address: hookProgram, role: AccountRole.READONLY }]
     : keys;
 
+  const accountsWithRemaining = [
+    ...accountsList,
+    ...remainingAccounts.map(createRemainingAccountMeta),
+  ];
+
   const data = new Uint8Array(
     getPreviewSwapExactInInstructionDataEncoder().encode(args),
   );
 
-  return { programAddress: programId, accounts: accountsList, data };
+  return { programAddress: programId, accounts: accountsWithRemaining, data };
 }
 
 export function decodePreviewSwapExactInResult(

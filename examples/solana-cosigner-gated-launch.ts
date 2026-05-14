@@ -1,22 +1,20 @@
 /**
- * Example: Cosigned CPMM Swap E2E (Solana)
+ * Example: Cosigner-Gated Initializer Swap E2E (Solana)
  *
- * Full lifecycle from launch creation to a graduated CPMM pool, then a
- * post-migration swap that forwards a readonly cosigner to the pool hook:
+ * Full lifecycle from launch creation through migration, where the bonding
+ * curve is gated by a readonly cosigner and the graduated CPMM pool is not:
  *
  *   1. Create XYK launch with CPMM migrator
- *   2. List all launches owned by this wallet (indexer-style enumeration)
- *   3. Preview a bonding curve buy without executing it
- *   4. Execute the buy on the bonding curve
- *   5. Migrate launch to CPMM pool
- *   6. Verify final launch state
- *   7. Read migrator state to confirm recipients and CPMM config
- *   8. Discover the graduated CPMM pool and read spot price
- *   9. Execute a CPMM swap cosigned by a readonly signer
+ *   2. Preview a bonding curve buy without executing it
+ *   3. Prove an unsigned bonding-curve buy fails, then execute it with the cosigner
+ *   4. Migrate launch to CPMM pool
+ *   5. Verify final launch state
+ *   6. Read migrator state to confirm recipients and CPMM config
+ *   7. Discover the graduated CPMM pool and read spot price
+ *   8. Execute a CPMM swap without a cosigner
  *
- * Note: the default cpmm_hook ignores forwarded cosigners. This example verifies
- * that readonly signer forwarding is configured for migrated CPMM pools so
- * custom integrator hooks can enforce their own cosigner policy.
+ * Uses the cosigner_hook deployment to reject pre-migration swaps unless a
+ * configured readonly cosigner signs the transaction.
  */
 import './env.js';
 
@@ -31,10 +29,9 @@ import {
   getTransferSolInstruction,
 } from '@solana-program/system';
 import {
-  generateKeyPairSigner,
-  getBase64EncodedWireTransaction,
   pipe,
   createTransactionMessage,
+  generateKeyPairSigner,
   setTransactionMessageFeePayerSigner,
   setTransactionMessageLifetimeUsingBlockhash,
   appendTransactionMessageInstructions,
@@ -42,13 +39,20 @@ import {
   sendAndConfirmTransactionFactory,
   getSignatureFromTransaction,
   type Address,
+  type TransactionSigner,
 } from '@solana/kit';
 import { SYSVAR_RENT_ADDRESS } from '@solana/sysvars';
 
-import { cpmm, initializer, cpmmMigrator } from '../src/solana/index.js';
+import {
+  cosignerHook,
+  cpmm,
+  initializer,
+  cpmmMigrator,
+} from '../src/solana/index.js';
 import {
   assertTransactionFits,
   assertSolanaExampleNetwork,
+  assertSimulationRejected,
   createLookupTableForInstruction,
   createSetComputeUnitLimitInstruction,
   createSolanaClientsFromEnv,
@@ -57,21 +61,65 @@ import {
   getSolanaCpmmDeploymentFromEnv,
   getTokenAccountRentLamports,
   loadKeypairSignerFromEnv,
+  sendInstructions,
+  simulateInstructions,
 } from './solanaExampleHelpers.js';
 
-async function loadCosigner() {
+async function loadCosigner(): Promise<TransactionSigner> {
   if (!process.env.COSIGNER_KEYPAIR_PATH && !process.env.COSIGNER_KEYPAIR) {
-    console.warn(
-      'COSIGNER_KEYPAIR(_PATH) not set; generating an ephemeral cosigner for this example.',
+    throw new Error(
+      'COSIGNER_KEYPAIR_PATH or COSIGNER_KEYPAIR is required to sign cosigner-gated swaps.',
     );
-    return generateKeyPairSigner();
   }
 
-  return loadKeypairSignerFromEnv({
+  const cosigner = await loadKeypairSignerFromEnv({
     pathEnv: 'COSIGNER_KEYPAIR_PATH',
     jsonEnv: 'COSIGNER_KEYPAIR',
     label: 'COSIGNER_KEYPAIR',
   });
+  return cosigner;
+}
+
+type SolanaClients = ReturnType<typeof createSolanaClientsFromEnv>;
+
+async function fetchActiveCosigners({
+  rpc,
+  cosignerHookProgram,
+  cosignerConfig,
+}: {
+  rpc: SolanaClients['rpc'];
+  cosignerHookProgram: Address;
+  cosignerConfig: Address;
+}): Promise<Address[]> {
+  const existingConfig = await cosignerHook.fetchMaybeCosignerConfig(
+    rpc,
+    cosignerConfig,
+    { commitment: 'confirmed' },
+  );
+
+  if (!existingConfig.exists) {
+    throw new Error(
+      `Cosigner hook config ${cosignerConfig} does not exist. The integrator/admin must initialize it before running this flow.`,
+    );
+  }
+
+  if (existingConfig.programAddress !== cosignerHookProgram) {
+    throw new Error(
+      `Cosigner hook config ${cosignerConfig} is owned by ${existingConfig.programAddress}, expected ${cosignerHookProgram}`,
+    );
+  }
+
+  const activeCosigners = existingConfig.data.cosigners.slice(
+    0,
+    existingConfig.data.cosignerCount,
+  );
+  if (activeCosigners.length === 0) {
+    throw new Error(
+      `Cosigner hook config ${cosignerConfig} does not include any active cosigners`,
+    );
+  }
+
+  return activeCosigners;
 }
 
 // WSOL mint — pools use the wrapped SPL mint since native SOL can't live in token vaults.
@@ -87,6 +135,24 @@ async function main() {
   const { rpc, rpcSubscriptions, network } = createSolanaClientsFromEnv();
   assertSolanaExampleNetwork(network, ['devnet', 'custom']);
   const deployment = await getSolanaCpmmDeploymentFromEnv(network);
+  const [cosignerConfig] = await cosignerHook.getCosignerHookConfigAddress(
+    deployment.cosignerHookProgram,
+  );
+  const cosigner = await loadCosigner();
+
+  console.log('Checking cosigner hook config...');
+  const activeCosigners = await fetchActiveCosigners({
+    rpc,
+    cosignerHookProgram: deployment.cosignerHookProgram,
+    cosignerConfig,
+  });
+  if (!activeCosigners.includes(cosigner.address)) {
+    throw new Error(
+      `COSIGNER_KEYPAIR resolves to ${cosigner.address}, which is not registered in cosigner hook config ${cosignerConfig}`,
+    );
+  }
+  console.log('  Cosigner hook config verified');
+  console.log('');
 
   // ── Token supply ─────────────────────────────────────────────────────────
   const BASE_DECIMALS = 6;
@@ -108,10 +174,8 @@ async function main() {
   const CURVE_FEE_BPS = 200; // 2% swap fee during the bonding curve phase — stays in the quote vault, compounding into the curve
   const CPMM_SWAP_FEE_BPS = 100; // 1% swap fee on the graduated CPMM pool
   const CPMM_SWAP_FEE_SPLIT_BPS = 5000; // 50% of CPMM swap fees claimable by LP holders; remaining 50% compounds into the pool
-  const INITIALIZER_HOOK_FLAGS = initializer.HF_BEFORE_SWAP;
-  const CPMM_HOOK_FLAGS =
-    cpmm.HF_BEFORE_SWAP | cpmm.HF_FORWARD_READONLY_SIGNERS;
-
+  const INITIALIZER_HOOK_FLAGS =
+    initializer.HF_BEFORE_SWAP | initializer.HF_FORWARD_READONLY_SIGNERS;
   // ── Graduation threshold and price floor ────────────────────────────────
   const MIN_SOL_RAISE = 0.1; // low example threshold
   const minRaiseQuote = BigInt(MIN_SOL_RAISE * 1_000_000_000);
@@ -139,8 +203,21 @@ async function main() {
     baseMint.address,
   );
 
-  const namespace = payer.address;
+  const namespace = SYSTEM_PROGRAM_ADDRESS;
   const launchId = initializer.launchIdFromU64(BigInt(Date.now()));
+  const signedHookRemainingAccounts = [namespace, cosignerConfig, cosigner];
+  // Same keys as the signed path, but the cosigner is only an address here.
+  // The hook should reject it because the runtime will not mark it as signed.
+  const unsignedHookRemainingAccounts = [
+    namespace,
+    cosignerConfig,
+    cosigner.address,
+  ];
+  const hookRemainingAccountsHash = initializer.computeRemainingAccountsHash([
+    namespace,
+    cosignerConfig,
+    cosigner.address,
+  ]);
 
   const [launch] = await initializer.getLaunchAddress(
     namespace,
@@ -187,7 +264,10 @@ async function main() {
   console.log('  Initializer program:', deployment.initializerProgram);
   console.log('  CPMM program:       ', deployment.cpmmProgram);
   console.log('  CPMM migrator:      ', deployment.cpmmMigratorProgram);
-  console.log('  CPMM hook:          ', deployment.cpmmHookProgram);
+  console.log('  Cosigner hook:      ', deployment.cosignerHookProgram);
+  console.log('  Cosigner config:    ', cosignerConfig);
+  console.log('  Active cosigners:   ', activeCosigners.join(', '));
+  console.log('  Signing cosigner:   ', cosigner.address);
   console.log('');
 
   const migratorInitPayload = cpmmMigrator.encodeRegisterLaunchPayload({
@@ -200,10 +280,7 @@ async function main() {
     ],
     minRaiseQuote,
     minMigrationPriceQ64Opt: null,
-    migratedPoolHookConfig: {
-      hookProgram: deployment.cpmmHookProgram,
-      hookFlags: CPMM_HOOK_FLAGS,
-    },
+    migratedPoolHookConfig: null,
   });
 
   const migratorMigratePayload = cpmmMigrator.encodeMigratePayload({
@@ -231,7 +308,7 @@ async function main() {
         quoteVault,
         payer,
         authority: payer,
-        hookProgram: deployment.cpmmHookProgram,
+        hookProgram: deployment.cosignerHookProgram,
         migratorProgram: deployment.cpmmMigratorProgram,
         cpmmConfig,
         baseTokenProgram: TOKEN_PROGRAM_ADDRESS,
@@ -254,12 +331,12 @@ async function main() {
         curveParams: new Uint8Array([initializer.CURVE_PARAMS_FORMAT_XYK_V0]),
         allowBuy: true,
         allowSell: true,
-        hookProgram: deployment.cpmmHookProgram,
+        hookProgram: deployment.cosignerHookProgram,
         hookFlags: INITIALIZER_HOOK_FLAGS,
         hookPayload: new Uint8Array(),
         migratorInitPayload,
         migratorMigratePayload,
-        hookRemainingAccountsHash: initializer.EMPTY_REMAINING_ACCOUNTS_HASH,
+        hookRemainingAccountsHash,
         migratorInitRemainingAccountsHash:
           initializer.computeRemainingAccountsHash([
             cpmmMigrationState,
@@ -319,24 +396,9 @@ async function main() {
       getSignatureFromTransaction(signedTransaction),
     );
 
-    // ── Step 2: Enumerate launches by this wallet (indexer-style) ───────────
-    console.log('Step 2: Listing launches owned by this wallet...');
-    const ownedLaunches = await initializer.fetchLaunchesByAuthority(
-      rpc,
-      payer.address,
-      { programId: deployment.initializerProgram },
-    );
-    console.log(`  Found ${ownedLaunches.length} launch(es)`);
-    for (const { address: addr, account } of ownedLaunches) {
-      console.log(
-        `  ${addr}  phase=${initializer.phaseLabel(account.phase)}  quoteDeposited=${account.quoteDeposited}`,
-      );
-    }
-    console.log('');
-
-    // ── Step 3: Preview a curve buy without executing ────────────────────────
+    // ── Step 2: Preview a curve buy without executing ────────────────────────
     console.log(
-      'Step 3: Previewing bonding curve buy (read-only simulation)...',
+      'Step 2: Previewing bonding curve buy (read-only simulation)...',
     );
     const BUY_AMOUNT_IN = 200_000_000n; // 0.2 SOL — exceeds 0.1 SOL graduation threshold
 
@@ -345,7 +407,8 @@ async function main() {
         launch,
         baseVault: baseVault.address,
         quoteVault: quoteVault.address,
-        hookProgram: deployment.cpmmHookProgram,
+        hookProgram: deployment.cosignerHookProgram,
+        remainingAccounts: signedHookRemainingAccounts,
       },
       {
         amountIn: BUY_AMOUNT_IN,
@@ -354,25 +417,11 @@ async function main() {
       deployment.initializerProgram,
     );
 
-    // simulateTransaction is the idiomatic way to run a read-only instruction.
-    const { value: previewBlockhash } = await rpc.getLatestBlockhash().send();
-
-    const previewMessage = pipe(
-      createTransactionMessage({ version: 0 }),
-      (tx) => setTransactionMessageFeePayerSigner(payer, tx),
-      (tx) => setTransactionMessageLifetimeUsingBlockhash(previewBlockhash, tx),
-      (tx) => appendTransactionMessageInstructions([previewIx], tx),
-    );
-
-    const signedPreview =
-      await signTransactionMessageWithSigners(previewMessage);
-
-    const { value: simulateResult } = await rpc
-      .simulateTransaction(getBase64EncodedWireTransaction(signedPreview), {
-        encoding: 'base64',
-        replaceRecentBlockhash: true,
-      })
-      .send();
+    const simulateResult = await simulateInstructions({
+      rpc,
+      payer,
+      instructions: [previewIx],
+    });
 
     if (simulateResult.returnData?.data) {
       const returnBytes = Uint8Array.from(
@@ -398,11 +447,11 @@ async function main() {
     }
     console.log('');
 
-    // ── Step 4: Execute the curve buy ────────────────────────────────────────
+    // ── Step 3: Execute the curve buy ────────────────────────────────────────
     // ATA creation, WSOL deposit, and the curve buy are batched into a single
     // transaction — instructions execute sequentially so the ATAs exist and are
     // funded before the swap runs.
-    console.log('Step 4: Executing bonding curve buy...');
+    console.log('Step 3: Executing bonding curve buy...');
 
     const [userBaseAta] = await findAssociatedTokenPda({
       owner: payer.address,
@@ -447,9 +496,10 @@ async function main() {
         baseMint: baseMint.address,
         quoteMint: WSOL_MINT,
         user: payer,
-        hookProgram: deployment.cpmmHookProgram,
+        hookProgram: deployment.cosignerHookProgram,
         baseTokenProgram: TOKEN_PROGRAM_ADDRESS,
         quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
+        remainingAccounts: signedHookRemainingAccounts,
       },
       {
         amountIn: BUY_AMOUNT_IN,
@@ -459,51 +509,74 @@ async function main() {
       deployment.initializerProgram,
     );
 
+    const unsignedSwapIx = initializer.createCurveSwapExactInInstruction(
+      {
+        config: initializerConfig,
+        launch,
+        launchAuthority,
+        baseVault: baseVault.address,
+        quoteVault: quoteVault.address,
+        userBaseAccount: userBaseAta,
+        userQuoteAccount: userQuoteAta,
+        baseMint: baseMint.address,
+        quoteMint: WSOL_MINT,
+        user: payer,
+        hookProgram: deployment.cosignerHookProgram,
+        baseTokenProgram: TOKEN_PROGRAM_ADDRESS,
+        quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
+        remainingAccounts: unsignedHookRemainingAccounts,
+      },
+      {
+        amountIn: BUY_AMOUNT_IN,
+        minAmountOut: 1n,
+        tradeDirection: initializer.TRADE_DIRECTION_BUY,
+      },
+      deployment.initializerProgram,
+    );
+
+    // This intentionally omits the cosigner signer account. The initializer
+    // hook is configured to reject this pre-migration swap.
+    const unsignedCurveResult = await simulateInstructions({
+      rpc,
+      payer,
+      instructions: [
+        createBaseAtaIx,
+        createQuoteAtaIx,
+        transferSolIx,
+        syncNativeIx,
+        unsignedSwapIx,
+      ],
+    });
+    assertSimulationRejected(
+      'Unsigned bonding curve buy',
+      unsignedCurveResult.err,
+    );
+
     {
-      const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
+      const signature = await sendInstructions({
+        rpc,
+        rpcSubscriptions,
+        payer,
+        instructions: [
+          createBaseAtaIx,
+          createQuoteAtaIx,
+          transferSolIx,
+          syncNativeIx,
+          swapIx,
+        ],
+      });
 
-      const transactionMessage = pipe(
-        createTransactionMessage({ version: 0 }),
-        (tx) => setTransactionMessageFeePayerSigner(payer, tx),
-        (tx) =>
-          setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
-        (tx) =>
-          appendTransactionMessageInstructions(
-            [
-              createBaseAtaIx,
-              createQuoteAtaIx,
-              transferSolIx,
-              syncNativeIx,
-              swapIx,
-            ],
-            tx,
-          ),
-      );
-
-      const signedTransaction =
-        await signTransactionMessageWithSigners(transactionMessage);
-
-      await sendAndConfirmTransaction(
-        signedTransaction as Parameters<typeof sendAndConfirmTransaction>[0],
-        {
-          commitment: 'confirmed',
-        },
-      );
-
-      console.log(
-        '  Curve buy confirmed:',
-        getSignatureFromTransaction(signedTransaction),
-      );
+      console.log('  Cosigned curve buy confirmed:', signature);
     }
     console.log('');
 
-    // ── Step 5: Migrate launch to CPMM pool ─────────────────────────────────
+    // ── Step 4: Migrate launch to CPMM pool ─────────────────────────────────
     //
     // Anyone can call migrate_launch once quoteDeposited >= minRaiseQuote.
     // The migrator creates the canonical CPMM pool graph inline, then seeds
     // liquidity into it. The remaining accounts must match the hash committed
     // at launch creation.
-    console.log('Step 5: Migrating launch to CPMM pool...');
+    console.log('Step 4: Migrating launch to CPMM pool...');
 
     const migrateLaunchIxBase = initializer.createMigrateLaunchInstruction(
       {
@@ -564,8 +637,8 @@ async function main() {
     }
     console.log('');
 
-    // ── Step 6: Verify final launch state ────────────────────────────────────
-    console.log('Step 6: Verifying final launch phase...');
+    // ── Step 5: Verify final launch state ────────────────────────────────────
+    console.log('Step 5: Verifying final launch phase...');
     const finalLaunch = await initializer.fetchLaunch(rpc, launch, {
       commitment: 'confirmed',
       programId: deployment.initializerProgram,
@@ -580,8 +653,8 @@ async function main() {
     console.log('');
 
     if (finalLaunch.phase === initializer.PHASE_MIGRATED) {
-      // ── Step 7: Read migrator state ────────────────────────────────────────
-      console.log('Step 7: Reading CPMM migrator state...');
+      // ── Step 6: Read migrator state ────────────────────────────────────────
+      console.log('Step 6: Reading CPMM migrator state...');
       const migratorState = await cpmmMigrator.fetchCpmmMigratorState(
         rpc,
         cpmmMigrationState,
@@ -597,8 +670,8 @@ async function main() {
       }
       console.log('');
 
-      // ── Step 8: Discover graduated CPMM pool ──────────────────────────────
-      console.log('Step 8: Looking up graduated CPMM pool...');
+      // ── Step 7: Discover graduated CPMM pool ──────────────────────────────
+      console.log('Step 7: Looking up graduated CPMM pool...');
       const poolResult = await cpmm.getPoolByMints(
         rpc,
         baseMint.address,
@@ -620,27 +693,27 @@ async function main() {
         console.log('  reserve0:     ', pool.reserve0.toString());
         console.log('  reserve1:     ', pool.reserve1.toString());
         console.log('  Swap fee:     ', pool.swapFeeBps, 'bps');
+        console.log('  Hook program: ', pool.hookProgram);
         console.log('  Hook flags:   ', pool.hookFlags);
         if (
-          pool.hookProgram !== deployment.cpmmHookProgram ||
-          pool.hookFlags !== CPMM_HOOK_FLAGS
+          pool.hookProgram !== SYSTEM_PROGRAM_ADDRESS ||
+          pool.hookFlags !== 0
         ) {
           throw new Error(
-            `Migrated pool hook mismatch: got program ${pool.hookProgram} flags ${pool.hookFlags}, expected program ${deployment.cpmmHookProgram} flags ${CPMM_HOOK_FLAGS}`,
+            `Migrated pool hook mismatch: got program ${pool.hookProgram} flags ${pool.hookFlags}, expected no CPMM hook`,
           );
         }
         console.log('  Spot price0:  ', price0.toFixed(8), '(base/WSOL)');
         console.log('  Spot price1:  ', price1.toFixed(8), '(WSOL/base)');
 
-        // ── Step 9: Execute a post-migration CPMM swap with a cosigner ─────
-        console.log('Step 9: Executing cosigned CPMM swap...');
-        const cosigner = await loadCosigner();
+        // ── Step 8: Execute a post-migration CPMM swap without a cosigner ──
+        console.log('Step 8: Executing ungated CPMM swap...');
 
         const tradeDirection = pool.token0Mint === baseMint.address ? 0 : 1;
-        const COSIGNED_SWAP_AMOUNT_IN = 1_000_000n; // 1 base token atom unit at 6 decimals
+        const CPMM_SWAP_AMOUNT_IN = 1_000_000n; // 1 base token at 6 decimals
         const quote = cpmm.getSwapQuote(
           pool,
-          COSIGNED_SWAP_AMOUNT_IN,
+          CPMM_SWAP_AMOUNT_IN,
           tradeDirection,
         );
         const minAmountOut = (quote.amountOut * 9_500n) / 10_000n; // 5% example slippage
@@ -649,9 +722,8 @@ async function main() {
           pool.token0Mint === baseMint.address ? userBaseAta : userQuoteAta;
         const userToken1 =
           pool.token1Mint === baseMint.address ? userBaseAta : userQuoteAta;
-        const remainingAccounts = [deployment.cpmmHookProgram, cosigner];
 
-        const cosignedSwapIx = cpmm.createSwapInstruction({
+        const cpmmSwapIx = cpmm.createSwapInstruction({
           config: cpmmConfig,
           pool: poolAddress,
           authority: pool.authority,
@@ -662,50 +734,24 @@ async function main() {
           userToken0,
           userToken1,
           user: payer,
-          amountIn: COSIGNED_SWAP_AMOUNT_IN,
+          amountIn: CPMM_SWAP_AMOUNT_IN,
           minAmountOut,
           tradeDirection,
-          remainingAccounts,
           programId: deployment.cpmmProgram,
         });
 
         {
-          const { value: latestBlockhash } = await rpc
-            .getLatestBlockhash()
-            .send();
+          const signature = await sendInstructions({
+            rpc,
+            rpcSubscriptions,
+            payer,
+            instructions: [
+              createSetComputeUnitLimitInstruction(400_000),
+              cpmmSwapIx,
+            ],
+          });
 
-          const transactionMessage = pipe(
-            createTransactionMessage({ version: 0 }),
-            (tx) => setTransactionMessageFeePayerSigner(payer, tx),
-            (tx) =>
-              setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
-            (tx) =>
-              appendTransactionMessageInstructions(
-                [createSetComputeUnitLimitInstruction(400_000), cosignedSwapIx],
-                tx,
-              ),
-          );
-
-          const signedTransaction =
-            await signTransactionMessageWithSigners(transactionMessage);
-
-          await sendAndConfirmTransaction(
-            signedTransaction as Parameters<
-              typeof sendAndConfirmTransaction
-            >[0],
-            {
-              commitment: 'confirmed',
-            },
-          );
-
-          console.log(
-            '  Cosigned swap confirmed:',
-            getSignatureFromTransaction(signedTransaction),
-          );
-          console.log('  Cosigner:', cosigner.address);
-          console.log(
-            '  Default cpmm_hook ignores cosigners; custom hooks can enforce them.',
-          );
+          console.log('  Ungated CPMM swap confirmed:', signature);
         }
       } else {
         console.log('  CPMM pool not found — may not be initialized yet');
@@ -717,7 +763,7 @@ async function main() {
     }
 
     console.log('');
-    console.log('Cosigned CPMM swap E2E example complete.');
+    console.log('Cosigner-gated initializer swap E2E example complete.');
   } catch (error) {
     console.error('Error:', error);
     process.exit(1);
