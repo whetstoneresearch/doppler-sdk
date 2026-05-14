@@ -6,6 +6,7 @@ import {
   createSolanaRpcSubscriptions,
   appendTransactionMessageInstructions,
   createTransactionMessage,
+  getBase64EncodedWireTransaction,
   getTransactionMessageSize,
   getMinimumBalanceForRentExemption,
   getSignatureFromTransaction,
@@ -101,6 +102,7 @@ const CUSTOM_CPMM_PROGRAM_ENV = {
   initializerProgram: 'SOLANA_INITIALIZER_PROGRAM_ID',
   cpmmMigratorProgram: 'SOLANA_CPMM_MIGRATOR_PROGRAM_ID',
   cpmmHookProgram: 'SOLANA_CPMM_HOOK_PROGRAM_ID',
+  cosignerHookProgram: 'SOLANA_COSIGNER_HOOK_PROGRAM_ID',
 } as const satisfies Record<keyof SolanaCpmmProgramAddresses, string>;
 
 function requiredAddressFromEnv(name: string): Address {
@@ -122,6 +124,9 @@ export function getSolanaCpmmProgramAddressesFromEnv(): SolanaCpmmProgramAddress
     ),
     cpmmHookProgram: requiredAddressFromEnv(
       CUSTOM_CPMM_PROGRAM_ENV.cpmmHookProgram,
+    ),
+    cosignerHookProgram: requiredAddressFromEnv(
+      CUSTOM_CPMM_PROGRAM_ENV.cosignerHookProgram,
     ),
   };
 }
@@ -219,6 +224,101 @@ export function assertTransactionFits(
 }
 
 type SolanaClients = ReturnType<typeof createSolanaClientsFromEnv>;
+
+export async function signInstructions({
+  rpc,
+  payer,
+  instructions,
+}: {
+  rpc: SolanaClients['rpc'];
+  payer: TransactionSigner;
+  instructions: Instruction[];
+}) {
+  const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
+
+  const transactionMessage = pipe(
+    createTransactionMessage({ version: 0 }),
+    (tx) => setTransactionMessageFeePayerSigner(payer, tx),
+    (tx) => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
+    (tx) => appendTransactionMessageInstructions(instructions, tx),
+  );
+
+  return signTransactionMessageWithSigners(transactionMessage);
+}
+
+export async function sendInstructions({
+  rpc,
+  rpcSubscriptions,
+  payer,
+  instructions,
+}: {
+  rpc: SolanaClients['rpc'];
+  rpcSubscriptions: SolanaClients['rpcSubscriptions'];
+  payer: TransactionSigner;
+  instructions: Instruction[];
+}): Promise<string> {
+  const signedTransaction = await signInstructions({
+    rpc,
+    payer,
+    instructions,
+  });
+  const sendAndConfirmTransaction = sendAndConfirmTransactionFactory({
+    rpc,
+    rpcSubscriptions,
+  });
+
+  await sendAndConfirmTransaction(
+    signedTransaction as Parameters<typeof sendAndConfirmTransaction>[0],
+    {
+      commitment: 'confirmed',
+    },
+  );
+
+  return getSignatureFromTransaction(signedTransaction);
+}
+
+export async function simulateInstructions({
+  rpc,
+  payer,
+  instructions,
+}: {
+  rpc: SolanaClients['rpc'];
+  payer: TransactionSigner;
+  instructions: Instruction[];
+}) {
+  const signedTransaction = await signInstructions({
+    rpc,
+    payer,
+    instructions,
+  });
+
+  const { value } = await rpc
+    .simulateTransaction(getBase64EncodedWireTransaction(signedTransaction), {
+      encoding: 'base64',
+      replaceRecentBlockhash: true,
+    })
+    .send();
+
+  return value;
+}
+
+function formatSimulationError(err: unknown): string {
+  if (typeof err === 'string') {
+    return err;
+  }
+  try {
+    return JSON.stringify(err);
+  } catch {
+    return String(err);
+  }
+}
+
+export function assertSimulationRejected(label: string, err: unknown): void {
+  if (!err) {
+    throw new Error(`${label} unexpectedly simulated successfully`);
+  }
+  console.log(`  ${label} rejected as expected: ${formatSimulationError(err)}`);
+}
 
 async function waitForSlotAfter(
   rpc: SolanaClients['rpc'],

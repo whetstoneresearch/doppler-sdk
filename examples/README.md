@@ -126,7 +126,7 @@ The Solana examples use `@whetstone-research/doppler-sdk/solana`. Set `SOLANA_NE
 - [`solana-adv-launch.ts`](./solana-adv-launch.ts): launch with custom allocations, recipients, fees, and migration price floor.
 - [`solana-adv-e2e-launch.ts`](./solana-adv-e2e-launch.ts): create, buy, migrate, and inspect the graduated CPMM pool.
 - [`solana-swap.ts`](./solana-swap.ts): quote and submit an exact-in CPMM swap.
-- [`solana-cosigned-cpmm-swap.ts`](./solana-cosigned-cpmm-swap.ts): E2E launch and post-migration swap with readonly signer forwarding.
+- [`solana-cosigner-gated-launch.ts`](./solana-cosigner-gated-launch.ts): E2E launch with bonding-curve swaps gated by the configured cosigner hook.
 
 Quick run:
 
@@ -145,7 +145,10 @@ export SOLANA_CPMM_PROGRAM_ID=...
 export SOLANA_INITIALIZER_PROGRAM_ID=...
 export SOLANA_CPMM_MIGRATOR_PROGRAM_ID=...
 export SOLANA_CPMM_HOOK_PROGRAM_ID=...
+export SOLANA_COSIGNER_HOOK_PROGRAM_ID=...
 ```
+
+The cosigner-gated launch example derives the hook config PDA from `SOLANA_COSIGNER_HOOK_PROGRAM_ID`. Provide `COSIGNER_KEYPAIR_PATH` or `COSIGNER_KEYPAIR` for one of the cosigners registered in that config.
 
 The launch examples use ALTs where possible. ALTs reduce account-key bytes, but they do not compress instruction data, so long `metadataName`, `metadataSymbol`, or `metadataUri` values can still exceed Solana's 1232-byte transaction limit.
 

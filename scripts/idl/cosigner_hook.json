@@ -1,0 +1,400 @@
+{
+  "address": "JDwnBoYE2NsmkQjQLHi1btQxeHirtJ9XjU1dM641QZt",
+  "metadata": {
+    "name": "cosigner_hook",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Cosigner hook program for Doppler swaps"
+  },
+  "instructions": [
+    {
+      "name": "add_cosigner",
+      "discriminator": [
+        17,
+        34,
+        183,
+        119,
+        202,
+        255,
+        218,
+        233
+      ],
+      "accounts": [
+        {
+          "name": "admin_authority",
+          "signer": true
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  115,
+                  105,
+                  103,
+                  110,
+                  101,
+                  114,
+                  95,
+                  104,
+                  111,
+                  111,
+                  107,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "CosignerArg"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "initialize_config",
+      "discriminator": [
+        208,
+        127,
+        21,
+        1,
+        194,
+        190,
+        196,
+        70
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "admin_authority",
+          "signer": true
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  115,
+                  105,
+                  103,
+                  110,
+                  101,
+                  114,
+                  95,
+                  104,
+                  111,
+                  111,
+                  107,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program_data"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "InitializeConfigArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "remove_cosigner",
+      "discriminator": [
+        174,
+        11,
+        171,
+        252,
+        179,
+        99,
+        220,
+        27
+      ],
+      "accounts": [
+        {
+          "name": "admin_authority",
+          "signer": true
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  115,
+                  105,
+                  103,
+                  110,
+                  101,
+                  114,
+                  95,
+                  104,
+                  111,
+                  111,
+                  107,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "CosignerArg"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "set_authority",
+      "discriminator": [
+        133,
+        250,
+        37,
+        21,
+        110,
+        163,
+        26,
+        121
+      ],
+      "accounts": [
+        {
+          "name": "admin_authority",
+          "signer": true
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  115,
+                  105,
+                  103,
+                  110,
+                  101,
+                  114,
+                  95,
+                  104,
+                  111,
+                  111,
+                  107,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "SetAuthorityArgs"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "CosignerConfig",
+      "discriminator": [
+        133,
+        227,
+        177,
+        74,
+        145,
+        74,
+        247,
+        183
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "InvalidConfig",
+      "msg": "Invalid cosigner hook config"
+    },
+    {
+      "code": 6001,
+      "name": "InvalidAuthority",
+      "msg": "Invalid cosigner hook authority"
+    },
+    {
+      "code": 6002,
+      "name": "InvalidCosigner",
+      "msg": "Invalid cosigner key"
+    },
+    {
+      "code": 6003,
+      "name": "CosignerAlreadyExists",
+      "msg": "Cosigner already exists"
+    },
+    {
+      "code": 6004,
+      "name": "CosignerNotFound",
+      "msg": "Cosigner not found"
+    },
+    {
+      "code": 6005,
+      "name": "CosignerListFull",
+      "msg": "Cosigner list is full"
+    }
+  ],
+  "types": [
+    {
+      "name": "CosignerArg",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "cosigner",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CosignerConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin_authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "cosigner_count",
+            "type": "u8"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "version",
+            "type": "u8"
+          },
+          {
+            "name": "_reserved",
+            "type": {
+              "array": [
+                "u8",
+                37
+              ]
+            }
+          },
+          {
+            "name": "cosigners",
+            "type": {
+              "array": [
+                "pubkey",
+                32
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "InitializeConfigArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "cosigners",
+            "type": {
+              "vec": "pubkey"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "SetAuthorityArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin_authority",
+            "type": "pubkey"
+          }
+        ]
+      }
+    }
+  ]
+}

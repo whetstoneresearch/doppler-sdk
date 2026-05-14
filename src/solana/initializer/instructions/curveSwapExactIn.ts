@@ -14,10 +14,13 @@ import { INITIALIZER_PROGRAM_ID } from '../constants.js';
 import { getCurveSwapExactInInstructionDataEncoder } from '../../generated/initializer/index.js';
 
 type AddressOrSigner = Address | TransactionSigner;
+type RemainingAccount =
+  | Address
+  | AccountMeta
+  | AccountSignerMeta
+  | TransactionSigner;
 
-function isTransactionSigner(
-  value: AddressOrSigner,
-): value is TransactionSigner {
+function isTransactionSigner(value: unknown): value is TransactionSigner {
   return (
     typeof value === 'object' &&
     value !== null &&
@@ -39,6 +42,22 @@ function createAccountMeta(
   return { address: value, role };
 }
 
+function createRemainingAccountMeta(
+  value: RemainingAccount,
+): AccountMeta | AccountSignerMeta {
+  if (typeof value === 'string') {
+    return { address: value, role: AccountRole.READONLY };
+  }
+  if (isTransactionSigner(value)) {
+    return {
+      address: value.address,
+      role: AccountRole.READONLY_SIGNER,
+      signer: value,
+    };
+  }
+  return value;
+}
+
 export interface CurveSwapExactInAccounts {
   config: Address;
   launch: Address;
@@ -54,6 +73,7 @@ export interface CurveSwapExactInAccounts {
   hookProgram?: Address;
   baseTokenProgram?: Address;
   quoteTokenProgram?: Address;
+  remainingAccounts?: RemainingAccount[];
 }
 
 export function createCurveSwapExactInInstruction(
@@ -75,6 +95,7 @@ export function createCurveSwapExactInInstruction(
     hookProgram = SYSTEM_PROGRAM_ADDRESS,
     baseTokenProgram = TOKEN_PROGRAM_ADDRESS,
     quoteTokenProgram = TOKEN_PROGRAM_ADDRESS,
+    remainingAccounts = [],
   } = accounts;
 
   const keys: (AccountMeta | AccountSignerMeta)[] = [
@@ -94,6 +115,7 @@ export function createCurveSwapExactInInstruction(
     { address: hookProgram, role: AccountRole.READONLY },
     { address: baseTokenProgram, role: AccountRole.READONLY },
     { address: quoteTokenProgram, role: AccountRole.READONLY },
+    ...remainingAccounts.map(createRemainingAccountMeta),
   ];
 
   const data = new Uint8Array(
