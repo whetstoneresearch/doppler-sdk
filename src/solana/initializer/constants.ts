@@ -40,6 +40,7 @@ export const PREDICTION_HOOK_PROGRAM_ID: Address = address(
 export const SEED_CONFIG = 'config';
 export const SEED_LAUNCH = 'launch';
 export const SEED_LAUNCH_AUTHORITY = 'launch_authority';
+export const SEED_FEE_LOCKER = 'fee_locker';
 
 // ============================================================================
 // Remaining Accounts Hash
@@ -62,6 +63,7 @@ export const EMPTY_REMAINING_ACCOUNTS_HASH = new Uint8Array([
 export const MAX_MIGRATOR_ALLOWLIST = 32;
 export const MAX_HOOK_ALLOWLIST = 32;
 export const MAX_PAYLOAD = 256;
+export const MAX_FEE_BENEFICIARIES = 8;
 
 // ============================================================================
 // Phases / Directions / Flags (must match programs/initializer/src/constants.rs)
@@ -113,9 +115,17 @@ export const INITIALIZER_INSTRUCTION_DISCRIMINATORS = {
   curveSwapExactIn: new Uint8Array([
     0xc4, 0xf7, 0xc3, 0x7e, 0xe3, 0x1b, 0xa6, 0x5d,
   ]),
+  // SHA256("global:claim_fee_locker")[0:8]
+  claimFeeLocker: new Uint8Array([
+    0x78, 0xb2, 0x96, 0x75, 0x55, 0x55, 0x96, 0x0f,
+  ]),
   // SHA256("global:migrate_launch")[0:8]
   migrateLaunch: new Uint8Array([
     0x13, 0xc7, 0x77, 0x67, 0x0d, 0x1e, 0x0c, 0xcd,
+  ]),
+  // SHA256("global:distribute_base_allocation")[0:8]
+  distributeBaseAllocation: new Uint8Array([
+    0x8f, 0xc6, 0xfb, 0x7c, 0x05, 0xac, 0xd0, 0xc2,
   ]),
   // SHA256("global:preview_swap_exact_in")[0:8]
   previewSwapExactIn: new Uint8Array([
@@ -136,4 +146,6 @@ export const INITIALIZER_ACCOUNT_DISCRIMINATORS = {
   InitConfig: new Uint8Array([0x61, 0xa6, 0x23, 0x07, 0x14, 0x02, 0xa4, 0x7e]),
   // SHA256("account:Launch")[0:8]
   Launch: new Uint8Array([0x90, 0x33, 0x33, 0xa3, 0xce, 0x55, 0xd5, 0x26]),
+  // SHA256("account:FeeLocker")[0:8]
+  FeeLocker: new Uint8Array([0x91, 0x37, 0x78, 0x85, 0xb8, 0x5c, 0xd6, 0x5e]),
 } as const;

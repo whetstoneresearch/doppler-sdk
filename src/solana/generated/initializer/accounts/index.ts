@@ -6,5 +6,6 @@
  * @see https://github.com/codama-idl/codama
  */
 
+export * from './feeLocker';
 export * from './initConfig';
 export * from './launch';

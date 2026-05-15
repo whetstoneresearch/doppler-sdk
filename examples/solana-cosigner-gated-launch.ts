@@ -228,6 +228,10 @@ async function main() {
     launch,
     deployment.initializerProgram,
   );
+  const [feeLocker] = await initializer.getFeeLockerAddress(
+    launch,
+    deployment.initializerProgram,
+  );
   const initializerConfig = deployment.initializerConfig;
   const [payerBaseAta] = await findAssociatedTokenPda({
     owner: payer.address,
@@ -258,6 +262,7 @@ async function main() {
   console.log('Derived addresses:');
   console.log('  Launch:          ', launch);
   console.log('  Launch authority:', launchAuthority);
+  console.log('  Fee locker:      ', feeLocker);
   console.log('  Initializer config:', initializerConfig);
   console.log('  CPMM config:     ', cpmmConfig);
   console.log('  CPMM migrator state:', cpmmMigrationState);
@@ -306,6 +311,7 @@ async function main() {
         quoteMint: WSOL_MINT,
         baseVault,
         quoteVault,
+        feeLocker,
         payer,
         authority: payer,
         hookProgram: deployment.cosignerHookProgram,
@@ -344,6 +350,7 @@ async function main() {
           ]),
         migratorRemainingAccountsHash: migrationAccounts.hash,
         ...metadata,
+        feeBeneficiaries: [{ wallet: baseMint.address, shareBps: 9500 }],
       },
       deployment.initializerProgram,
     );
@@ -408,6 +415,7 @@ async function main() {
         baseVault: baseVault.address,
         quoteVault: quoteVault.address,
         hookProgram: deployment.cosignerHookProgram,
+        feeLocker,
         remainingAccounts: signedHookRemainingAccounts,
       },
       {
@@ -497,6 +505,7 @@ async function main() {
         quoteMint: WSOL_MINT,
         user: payer,
         hookProgram: deployment.cosignerHookProgram,
+        feeLocker,
         baseTokenProgram: TOKEN_PROGRAM_ADDRESS,
         quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
         remainingAccounts: signedHookRemainingAccounts,
@@ -522,6 +531,7 @@ async function main() {
         quoteMint: WSOL_MINT,
         user: payer,
         hookProgram: deployment.cosignerHookProgram,
+        feeLocker,
         baseTokenProgram: TOKEN_PROGRAM_ADDRESS,
         quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
         remainingAccounts: unsignedHookRemainingAccounts,
@@ -587,6 +597,7 @@ async function main() {
         quoteMint: WSOL_MINT,
         baseVault: baseVault.address,
         quoteVault: quoteVault.address,
+        feeLocker,
         migratorProgram: deployment.cpmmMigratorProgram,
         payer,
         baseTokenProgram: TOKEN_PROGRAM_ADDRESS,

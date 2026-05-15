@@ -8,6 +8,7 @@ import {
   BPF_LOADER_UPGRADEABLE_PROGRAM_ID,
   INITIALIZER_PROGRAM_ID,
   SEED_CONFIG,
+  SEED_FEE_LOCKER,
   SEED_LAUNCH,
   SEED_LAUNCH_AUTHORITY,
 } from './constants.js';
@@ -84,6 +85,16 @@ export async function getLaunchAuthorityAddress(
       textEncoder.encode(SEED_LAUNCH_AUTHORITY),
       addressCodec.encode(launch),
     ],
+  });
+}
+
+export async function getFeeLockerAddress(
+  launch: Address,
+  programId: Address = INITIALIZER_PROGRAM_ID,
+): Promise<ProgramDerivedAddress> {
+  return getProgramDerivedAddress({
+    programAddress: programId,
+    seeds: [textEncoder.encode(SEED_FEE_LOCKER), addressCodec.encode(launch)],
   });
 }
 

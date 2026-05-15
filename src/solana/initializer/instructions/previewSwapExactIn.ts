@@ -6,6 +6,7 @@ import type {
   TransactionSigner,
 } from '@solana/kit';
 import { getStructCodec, getU64Codec, AccountRole } from '@solana/kit';
+import { SYSTEM_PROGRAM_ADDRESS } from '../../core/constants.js';
 import { INITIALIZER_PROGRAM_ID } from '../constants.js';
 import { getPreviewSwapExactInInstructionDataEncoder } from '../../generated/initializer/index.js';
 
@@ -55,6 +56,7 @@ export interface PreviewSwapExactInAccounts {
   baseVault: Address;
   quoteVault: Address;
   hookProgram?: Address;
+  feeLocker: Address;
   remainingAccounts?: RemainingAccount[];
 }
 
@@ -67,7 +69,8 @@ export function createPreviewSwapExactInInstruction(
     launch,
     baseVault,
     quoteVault,
-    hookProgram,
+    hookProgram = SYSTEM_PROGRAM_ADDRESS,
+    feeLocker,
     remainingAccounts = [],
   } = accounts;
 
@@ -77,12 +80,10 @@ export function createPreviewSwapExactInInstruction(
     { address: quoteVault, role: AccountRole.READONLY },
   ] as const;
 
-  const accountsList = hookProgram
-    ? [...keys, { address: hookProgram, role: AccountRole.READONLY }]
-    : keys;
-
   const accountsWithRemaining = [
-    ...accountsList,
+    ...keys,
+    { address: hookProgram, role: AccountRole.READONLY },
+    { address: feeLocker, role: AccountRole.READONLY },
     ...remainingAccounts.map(createRemainingAccountMeta),
   ];
 

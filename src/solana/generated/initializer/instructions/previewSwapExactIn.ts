@@ -10,8 +10,10 @@ import {
   combineCodec,
   fixDecoderSize,
   fixEncoderSize,
+  getAddressEncoder,
   getBytesDecoder,
   getBytesEncoder,
+  getProgramDerivedAddress,
   getStructDecoder,
   getStructEncoder,
   getU64Decoder,
@@ -34,6 +36,7 @@ import {
 } from '@solana/kit';
 import {
   getAccountMetaFactory,
+  getAddressFromResolvedInstructionAccount,
   type ResolvedInstructionAccount,
 } from '@solana/program-client-core';
 import { INITIALIZER_PROGRAM_ADDRESS } from '../programs';
@@ -54,6 +57,7 @@ export type PreviewSwapExactInInstruction<
   TAccountBaseVault extends string | AccountMeta<string> = string,
   TAccountQuoteVault extends string | AccountMeta<string> = string,
   TAccountHookProgram extends string | AccountMeta<string> = string,
+  TAccountFeeLocker extends string | AccountMeta<string> = string,
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -71,6 +75,9 @@ export type PreviewSwapExactInInstruction<
       TAccountHookProgram extends string
         ? ReadonlyAccount<TAccountHookProgram>
         : TAccountHookProgram,
+      TAccountFeeLocker extends string
+        ? ReadonlyAccount<TAccountFeeLocker>
+        : TAccountFeeLocker,
       ...TRemainingAccounts,
     ]
   >;
@@ -118,41 +125,48 @@ export function getPreviewSwapExactInInstructionDataCodec(): FixedSizeCodec<
   );
 }
 
-export type PreviewSwapExactInInput<
+export type PreviewSwapExactInAsyncInput<
   TAccountLaunch extends string = string,
   TAccountBaseVault extends string = string,
   TAccountQuoteVault extends string = string,
   TAccountHookProgram extends string = string,
+  TAccountFeeLocker extends string = string,
 > = {
   launch: Address<TAccountLaunch>;
   baseVault: Address<TAccountBaseVault>;
   quoteVault: Address<TAccountQuoteVault>;
   /** Optional hook program (must match launch.hook_program if set) */
   hookProgram?: Address<TAccountHookProgram>;
+  feeLocker?: Address<TAccountFeeLocker>;
   amountIn: PreviewSwapExactInInstructionDataArgs['amountIn'];
   tradeDirection: PreviewSwapExactInInstructionDataArgs['tradeDirection'];
 };
 
-export function getPreviewSwapExactInInstruction<
+export async function getPreviewSwapExactInInstructionAsync<
   TAccountLaunch extends string,
   TAccountBaseVault extends string,
   TAccountQuoteVault extends string,
   TAccountHookProgram extends string,
+  TAccountFeeLocker extends string,
   TProgramAddress extends Address = typeof INITIALIZER_PROGRAM_ADDRESS,
 >(
-  input: PreviewSwapExactInInput<
+  input: PreviewSwapExactInAsyncInput<
     TAccountLaunch,
     TAccountBaseVault,
     TAccountQuoteVault,
-    TAccountHookProgram
+    TAccountHookProgram,
+    TAccountFeeLocker
   >,
   config?: { programAddress?: TProgramAddress },
-): PreviewSwapExactInInstruction<
-  TProgramAddress,
-  TAccountLaunch,
-  TAccountBaseVault,
-  TAccountQuoteVault,
-  TAccountHookProgram
+): Promise<
+  PreviewSwapExactInInstruction<
+    TProgramAddress,
+    TAccountLaunch,
+    TAccountBaseVault,
+    TAccountQuoteVault,
+    TAccountHookProgram,
+    TAccountFeeLocker
+  >
 > {
   // Program address.
   const programAddress = config?.programAddress ?? INITIALIZER_PROGRAM_ADDRESS;
@@ -163,6 +177,108 @@ export function getPreviewSwapExactInInstruction<
     baseVault: { value: input.baseVault ?? null, isWritable: false },
     quoteVault: { value: input.quoteVault ?? null, isWritable: false },
     hookProgram: { value: input.hookProgram ?? null, isWritable: false },
+    feeLocker: { value: input.feeLocker ?? null, isWritable: false },
+  };
+  const accounts = originalAccounts as Record<
+    keyof typeof originalAccounts,
+    ResolvedInstructionAccount
+  >;
+
+  // Original args.
+  const args = { ...input };
+
+  // Resolve default values.
+  if (!accounts.feeLocker.value) {
+    accounts.feeLocker.value = await getProgramDerivedAddress({
+      programAddress,
+      seeds: [
+        getBytesEncoder().encode(
+          new Uint8Array([102, 101, 101, 95, 108, 111, 99, 107, 101, 114]),
+        ),
+        getAddressEncoder().encode(
+          getAddressFromResolvedInstructionAccount(
+            'launch',
+            accounts.launch.value,
+          ),
+        ),
+      ],
+    });
+  }
+
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+  return Object.freeze({
+    accounts: [
+      getAccountMeta('launch', accounts.launch),
+      getAccountMeta('baseVault', accounts.baseVault),
+      getAccountMeta('quoteVault', accounts.quoteVault),
+      getAccountMeta('hookProgram', accounts.hookProgram),
+      getAccountMeta('feeLocker', accounts.feeLocker),
+    ],
+    data: getPreviewSwapExactInInstructionDataEncoder().encode(
+      args as PreviewSwapExactInInstructionDataArgs,
+    ),
+    programAddress,
+  } as PreviewSwapExactInInstruction<
+    TProgramAddress,
+    TAccountLaunch,
+    TAccountBaseVault,
+    TAccountQuoteVault,
+    TAccountHookProgram,
+    TAccountFeeLocker
+  >);
+}
+
+export type PreviewSwapExactInInput<
+  TAccountLaunch extends string = string,
+  TAccountBaseVault extends string = string,
+  TAccountQuoteVault extends string = string,
+  TAccountHookProgram extends string = string,
+  TAccountFeeLocker extends string = string,
+> = {
+  launch: Address<TAccountLaunch>;
+  baseVault: Address<TAccountBaseVault>;
+  quoteVault: Address<TAccountQuoteVault>;
+  /** Optional hook program (must match launch.hook_program if set) */
+  hookProgram?: Address<TAccountHookProgram>;
+  feeLocker: Address<TAccountFeeLocker>;
+  amountIn: PreviewSwapExactInInstructionDataArgs['amountIn'];
+  tradeDirection: PreviewSwapExactInInstructionDataArgs['tradeDirection'];
+};
+
+export function getPreviewSwapExactInInstruction<
+  TAccountLaunch extends string,
+  TAccountBaseVault extends string,
+  TAccountQuoteVault extends string,
+  TAccountHookProgram extends string,
+  TAccountFeeLocker extends string,
+  TProgramAddress extends Address = typeof INITIALIZER_PROGRAM_ADDRESS,
+>(
+  input: PreviewSwapExactInInput<
+    TAccountLaunch,
+    TAccountBaseVault,
+    TAccountQuoteVault,
+    TAccountHookProgram,
+    TAccountFeeLocker
+  >,
+  config?: { programAddress?: TProgramAddress },
+): PreviewSwapExactInInstruction<
+  TProgramAddress,
+  TAccountLaunch,
+  TAccountBaseVault,
+  TAccountQuoteVault,
+  TAccountHookProgram,
+  TAccountFeeLocker
+> {
+  // Program address.
+  const programAddress = config?.programAddress ?? INITIALIZER_PROGRAM_ADDRESS;
+
+  // Original accounts.
+  const originalAccounts = {
+    launch: { value: input.launch ?? null, isWritable: false },
+    baseVault: { value: input.baseVault ?? null, isWritable: false },
+    quoteVault: { value: input.quoteVault ?? null, isWritable: false },
+    hookProgram: { value: input.hookProgram ?? null, isWritable: false },
+    feeLocker: { value: input.feeLocker ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -179,6 +295,7 @@ export function getPreviewSwapExactInInstruction<
       getAccountMeta('baseVault', accounts.baseVault),
       getAccountMeta('quoteVault', accounts.quoteVault),
       getAccountMeta('hookProgram', accounts.hookProgram),
+      getAccountMeta('feeLocker', accounts.feeLocker),
     ],
     data: getPreviewSwapExactInInstructionDataEncoder().encode(
       args as PreviewSwapExactInInstructionDataArgs,
@@ -189,7 +306,8 @@ export function getPreviewSwapExactInInstruction<
     TAccountLaunch,
     TAccountBaseVault,
     TAccountQuoteVault,
-    TAccountHookProgram
+    TAccountHookProgram,
+    TAccountFeeLocker
   >);
 }
 
@@ -204,6 +322,7 @@ export type ParsedPreviewSwapExactInInstruction<
     quoteVault: TAccountMetas[2];
     /** Optional hook program (must match launch.hook_program if set) */
     hookProgram?: TAccountMetas[3] | undefined;
+    feeLocker: TAccountMetas[4];
   };
   data: PreviewSwapExactInInstructionData;
 };
@@ -216,12 +335,12 @@ export function parsePreviewSwapExactInInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedPreviewSwapExactInInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 4) {
+  if (instruction.accounts.length < 5) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 4,
+        expectedAccountMetas: 5,
       },
     );
   }
@@ -244,6 +363,7 @@ export function parsePreviewSwapExactInInstruction<
       baseVault: getNextAccount(),
       quoteVault: getNextAccount(),
       hookProgram: getNextOptionalAccount(),
+      feeLocker: getNextAccount(),
     },
     data: getPreviewSwapExactInInstructionDataDecoder().decode(
       instruction.data,

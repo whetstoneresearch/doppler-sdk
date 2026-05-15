@@ -6,10 +6,12 @@ import {
 } from '@solana/kit';
 import {
   INITIALIZER_PROGRAM_ID,
+  SEED_FEE_LOCKER,
   SEED_LAUNCH,
   SEED_LAUNCH_AUTHORITY,
 } from '@/solana/initializer/constants.js';
 import {
+  getFeeLockerAddress,
   getLaunchAddress,
   getLaunchAuthorityAddress,
   launchIdFromU64,
@@ -45,5 +47,16 @@ describe('initializer PDA derivation', () => {
 
     const [launchAuthority] = await getLaunchAuthorityAddress(launchAddress, INITIALIZER_PROGRAM_ID);
     expect(launchAuthority).toBe(expectedLaunchAuthority[0]);
+
+    const expectedFeeLocker = await getProgramDerivedAddress({
+      programAddress: INITIALIZER_PROGRAM_ID,
+      seeds: [
+        textEncoder.encode(SEED_FEE_LOCKER),
+        addressCodec.encode(launchAddress),
+      ],
+    });
+
+    const [feeLocker] = await getFeeLockerAddress(launchAddress, INITIALIZER_PROGRAM_ID);
+    expect(feeLocker).toBe(expectedFeeLocker[0]);
   });
 });

@@ -31,6 +31,16 @@ export {
 } from './migrateLaunch.js';
 
 export {
+  createClaimFeeLockerInstruction,
+  type ClaimFeeLockerAccounts,
+} from './claimFeeLocker.js';
+
+export {
+  createDistributeBaseAllocationInstruction,
+  type DistributeBaseAllocationAccounts,
+} from './distributeBaseAllocation.js';
+
+export {
   createPreviewSwapExactInInstruction,
   decodePreviewSwapExactInResult,
   type PreviewSwapExactInAccounts,

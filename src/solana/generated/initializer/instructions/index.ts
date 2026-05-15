@@ -6,7 +6,9 @@
  * @see https://github.com/codama-idl/codama
  */
 
+export * from './claimFeeLocker';
 export * from './curveSwapExactIn';
+export * from './distributeBaseAllocation';
 export * from './initializeConfig';
 export * from './initializeLaunch';
 export * from './migrateLaunch';

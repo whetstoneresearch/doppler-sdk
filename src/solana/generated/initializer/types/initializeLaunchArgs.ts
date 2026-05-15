@@ -14,6 +14,8 @@ import {
   fixEncoderSize,
   getAddressDecoder,
   getAddressEncoder,
+  getArrayDecoder,
+  getArrayEncoder,
   getBytesDecoder,
   getBytesEncoder,
   getStructDecoder,
@@ -34,6 +36,12 @@ import {
   type Encoder,
   type ReadonlyUint8Array,
 } from '@solana/kit';
+import {
+  getFeeBeneficiaryInputDecoder,
+  getFeeBeneficiaryInputEncoder,
+  type FeeBeneficiaryInput,
+  type FeeBeneficiaryInputArgs,
+} from '.';
 
 export type InitializeLaunchArgs = {
   namespace: Address;
@@ -82,6 +90,7 @@ export type InitializeLaunchArgs = {
   metadataSymbol: string;
   /** Metadata JSON URI for on-chain metadata. */
   metadataUri: string;
+  feeBeneficiaries: Array<FeeBeneficiaryInput>;
 };
 
 export type InitializeLaunchArgsArgs = {
@@ -131,6 +140,7 @@ export type InitializeLaunchArgsArgs = {
   metadataSymbol: string;
   /** Metadata JSON URI for on-chain metadata. */
   metadataUri: string;
+  feeBeneficiaries: Array<FeeBeneficiaryInputArgs>;
 };
 
 export function getInitializeLaunchArgsEncoder(): Encoder<InitializeLaunchArgsArgs> {
@@ -171,6 +181,7 @@ export function getInitializeLaunchArgsEncoder(): Encoder<InitializeLaunchArgsAr
     ['metadataName', addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
     ['metadataSymbol', addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
     ['metadataUri', addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
+    ['feeBeneficiaries', getArrayEncoder(getFeeBeneficiaryInputEncoder())],
   ]);
 }
 
@@ -212,6 +223,7 @@ export function getInitializeLaunchArgsDecoder(): Decoder<InitializeLaunchArgs> 
     ['metadataName', addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
     ['metadataSymbol', addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
     ['metadataUri', addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
+    ['feeBeneficiaries', getArrayDecoder(getFeeBeneficiaryInputDecoder())],
   ]);
 }
 

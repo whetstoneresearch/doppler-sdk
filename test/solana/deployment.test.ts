@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { AccountRole, address } from '@solana/kit';
 
-import { SYSVAR_INSTRUCTIONS_ADDRESS } from '../../src/solana/core/constants.js';
 import {
   cpmm,
   cosignerHook,
@@ -58,24 +57,31 @@ describe('Solana deployment helpers', () => {
     });
   });
 
-  it('includes the instructions sysvar in migrate-launch accounts', () => {
+  it('includes fee locker in migrate-launch accounts', async () => {
+    const launch = address('SysvarC1ock11111111111111111111111111111111');
+    const [feeLocker] = await initializer.getFeeLockerAddress(
+      launch,
+      CUSTOM_PROGRAMS.initializerProgram,
+    );
     const ix = initializer.createMigrateLaunchInstruction({
       config: address('ComputeBudget111111111111111111111111111111'),
-      launch: address('SysvarC1ock11111111111111111111111111111111'),
+      launch,
       launchAuthority: address('Sysvar1nstructions1111111111111111111111111'),
       baseMint: address('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'),
       quoteMint: address('So11111111111111111111111111111111111111112'),
       baseVault: address('SysvarRecentB1ockHashes11111111111111111111'),
       quoteVault: address('SysvarS1otHashes111111111111111111111111111'),
+      feeLocker,
       migratorProgram: CUSTOM_PROGRAMS.cpmmMigratorProgram,
       payer: address('AddressLookupTab1e1111111111111111111111111'),
       rent: address('SysvarRent111111111111111111111111111111111'),
     });
 
-    expect(ix.accounts?.[13]).toEqual({
-      address: SYSVAR_INSTRUCTIONS_ADDRESS,
+    expect(ix.accounts?.[7]).toEqual({
+      address: feeLocker,
       role: AccountRole.READONLY,
     });
+    expect(ix.accounts).toHaveLength(14);
   });
 });
 
@@ -133,6 +139,10 @@ describe('CPMM migrator custom deployment helpers', () => {
       launch,
       CUSTOM_PROGRAMS.initializerProgram,
     );
+    const [feeLocker] = await initializer.getFeeLockerAddress(
+      launch,
+      CUSTOM_PROGRAMS.initializerProgram,
+    );
     const [cpmmConfig] = await cpmm.getConfigAddress(
       CUSTOM_PROGRAMS.cpmmProgram,
     );
@@ -150,6 +160,7 @@ describe('CPMM migrator custom deployment helpers', () => {
         quoteMint: address('So11111111111111111111111111111111111111112'),
         baseVault: address('SysvarS1otHashes111111111111111111111111111'),
         quoteVault: address('SysvarRecentB1ockHashes11111111111111111111'),
+        feeLocker,
         payer: address('SysvarFees111111111111111111111111111111111'),
         authority: address('SysvarFees111111111111111111111111111111111'),
         migratorProgram: CUSTOM_PROGRAMS.cpmmMigratorProgram,
@@ -187,6 +198,12 @@ describe('CPMM migrator custom deployment helpers', () => {
         metadataName: '',
         metadataSymbol: '',
         metadataUri: '',
+        feeBeneficiaries: [
+          {
+            wallet: address('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'),
+            shareBps: 9500,
+          },
+        ],
       },
       CUSTOM_PROGRAMS.initializerProgram,
     );

@@ -115,6 +115,7 @@ export interface InitializeLaunchAccounts {
   quoteMint: Address;
   baseVault: AddressOrSigner;
   quoteVault: AddressOrSigner;
+  feeLocker: Address;
   payer: AddressOrSigner;
   authority?: AddressOrSigner;
   hookProgram?: Address;
@@ -167,6 +168,7 @@ export async function createInitializeLaunchInstruction(
     quoteMint,
     baseVault,
     quoteVault,
+    feeLocker,
     payer,
     authority,
     hookProgram,
@@ -205,6 +207,7 @@ export async function createInitializeLaunchInstruction(
     { address: quoteMint, role: AccountRole.READONLY },
     createAccountMeta(baseVault, AccountRole.WRITABLE_SIGNER),
     createAccountMeta(quoteVault, AccountRole.WRITABLE_SIGNER),
+    { address: feeLocker, role: AccountRole.WRITABLE },
     createAccountMeta(payer, AccountRole.WRITABLE_SIGNER),
   ];
 

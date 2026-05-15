@@ -33,27 +33,34 @@ import {
   type SelfPlanAndSendFunctions,
 } from '@solana/program-client-core';
 import {
+  getFeeLockerCodec,
   getInitConfigCodec,
   getLaunchCodec,
+  type FeeLocker,
+  type FeeLockerArgs,
   type InitConfig,
   type InitConfigArgs,
   type Launch,
   type LaunchArgs,
 } from '../accounts';
 import {
+  getClaimFeeLockerInstructionAsync,
   getCurveSwapExactInInstructionAsync,
+  getDistributeBaseAllocationInstructionAsync,
   getInitializeConfigInstructionAsync,
   getInitializeLaunchInstructionAsync,
   getMigrateLaunchInstructionAsync,
   getMigratorInitInstructionAsync,
   getPreviewMigrationInstruction,
-  getPreviewSwapExactInInstruction,
+  getPreviewSwapExactInInstructionAsync,
   getSetHookAllowlistInstructionAsync,
   getSetMigratorAllowlistInstructionAsync,
   getTransferAdminInstructionAsync,
   getUpdateLaunchPayloadInstructionAsync,
   getUpdateTradingFlagsInstructionAsync,
+  parseClaimFeeLockerInstruction,
   parseCurveSwapExactInInstruction,
+  parseDistributeBaseAllocationInstruction,
   parseInitializeConfigInstruction,
   parseInitializeLaunchInstruction,
   parseMigrateLaunchInstruction,
@@ -65,12 +72,16 @@ import {
   parseTransferAdminInstruction,
   parseUpdateLaunchPayloadInstruction,
   parseUpdateTradingFlagsInstruction,
+  type ClaimFeeLockerAsyncInput,
   type CurveSwapExactInAsyncInput,
+  type DistributeBaseAllocationAsyncInput,
   type InitializeConfigAsyncInput,
   type InitializeLaunchAsyncInput,
   type MigrateLaunchAsyncInput,
   type MigratorInitAsyncInput,
+  type ParsedClaimFeeLockerInstruction,
   type ParsedCurveSwapExactInInstruction,
+  type ParsedDistributeBaseAllocationInstruction,
   type ParsedInitializeConfigInstruction,
   type ParsedInitializeLaunchInstruction,
   type ParsedMigrateLaunchInstruction,
@@ -83,7 +94,7 @@ import {
   type ParsedUpdateLaunchPayloadInstruction,
   type ParsedUpdateTradingFlagsInstruction,
   type PreviewMigrationInput,
-  type PreviewSwapExactInInput,
+  type PreviewSwapExactInAsyncInput,
   type SetHookAllowlistAsyncInput,
   type SetMigratorAllowlistAsyncInput,
   type TransferAdminAsyncInput,
@@ -97,6 +108,7 @@ export const INITIALIZER_PROGRAM_ADDRESS =
 export enum InitializerAccount {
   InitConfig,
   Launch,
+  FeeLocker,
 }
 
 export function identifyInitializerAccount(
@@ -125,6 +137,17 @@ export function identifyInitializerAccount(
   ) {
     return InitializerAccount.Launch;
   }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([145, 55, 120, 133, 184, 92, 214, 94]),
+      ),
+      0,
+    )
+  ) {
+    return InitializerAccount.FeeLocker;
+  }
   throw new SolanaError(
     SOLANA_ERROR__PROGRAM_CLIENTS__FAILED_TO_IDENTIFY_ACCOUNT,
     { accountData: data, programName: 'initializer' },
@@ -133,9 +156,11 @@ export function identifyInitializerAccount(
 
 export enum InitializerInstruction {
   CurveSwapExactIn,
+  ClaimFeeLocker,
   InitializeConfig,
   InitializeLaunch,
   MigrateLaunch,
+  DistributeBaseAllocation,
   MigratorInit,
   PreviewMigration,
   PreviewSwapExactIn,
@@ -160,6 +185,17 @@ export function identifyInitializerInstruction(
     )
   ) {
     return InitializerInstruction.CurveSwapExactIn;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([120, 178, 150, 117, 85, 85, 150, 15]),
+      ),
+      0,
+    )
+  ) {
+    return InitializerInstruction.ClaimFeeLocker;
   }
   if (
     containsBytes(
@@ -193,6 +229,17 @@ export function identifyInitializerInstruction(
     )
   ) {
     return InitializerInstruction.MigrateLaunch;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([143, 198, 251, 124, 5, 172, 208, 194]),
+      ),
+      0,
+    )
+  ) {
+    return InitializerInstruction.DistributeBaseAllocation;
   }
   if (
     containsBytes(
@@ -295,6 +342,9 @@ export type ParsedInitializerInstruction<
       instructionType: InitializerInstruction.CurveSwapExactIn;
     } & ParsedCurveSwapExactInInstruction<TProgram>)
   | ({
+      instructionType: InitializerInstruction.ClaimFeeLocker;
+    } & ParsedClaimFeeLockerInstruction<TProgram>)
+  | ({
       instructionType: InitializerInstruction.InitializeConfig;
     } & ParsedInitializeConfigInstruction<TProgram>)
   | ({
@@ -303,6 +353,9 @@ export type ParsedInitializerInstruction<
   | ({
       instructionType: InitializerInstruction.MigrateLaunch;
     } & ParsedMigrateLaunchInstruction<TProgram>)
+  | ({
+      instructionType: InitializerInstruction.DistributeBaseAllocation;
+    } & ParsedDistributeBaseAllocationInstruction<TProgram>)
   | ({
       instructionType: InitializerInstruction.MigratorInit;
     } & ParsedMigratorInitInstruction<TProgram>)
@@ -340,6 +393,13 @@ export function parseInitializerInstruction<TProgram extends string>(
         ...parseCurveSwapExactInInstruction(instruction),
       };
     }
+    case InitializerInstruction.ClaimFeeLocker: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: InitializerInstruction.ClaimFeeLocker,
+        ...parseClaimFeeLockerInstruction(instruction),
+      };
+    }
     case InitializerInstruction.InitializeConfig: {
       assertIsInstructionWithAccounts(instruction);
       return {
@@ -359,6 +419,13 @@ export function parseInitializerInstruction<TProgram extends string>(
       return {
         instructionType: InitializerInstruction.MigrateLaunch,
         ...parseMigrateLaunchInstruction(instruction),
+      };
+    }
+    case InitializerInstruction.DistributeBaseAllocation: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: InitializerInstruction.DistributeBaseAllocation,
+        ...parseDistributeBaseAllocationInstruction(instruction),
       };
     }
     case InitializerInstruction.MigratorInit: {
@@ -438,12 +505,18 @@ export type InitializerPluginAccounts = {
     SelfFetchFunctions<InitConfigArgs, InitConfig>;
   launch: ReturnType<typeof getLaunchCodec> &
     SelfFetchFunctions<LaunchArgs, Launch>;
+  feeLocker: ReturnType<typeof getFeeLockerCodec> &
+    SelfFetchFunctions<FeeLockerArgs, FeeLocker>;
 };
 
 export type InitializerPluginInstructions = {
   curveSwapExactIn: (
     input: CurveSwapExactInAsyncInput,
   ) => ReturnType<typeof getCurveSwapExactInInstructionAsync> &
+    SelfPlanAndSendFunctions;
+  claimFeeLocker: (
+    input: ClaimFeeLockerAsyncInput,
+  ) => ReturnType<typeof getClaimFeeLockerInstructionAsync> &
     SelfPlanAndSendFunctions;
   initializeConfig: (
     input: InitializeConfigAsyncInput,
@@ -457,6 +530,10 @@ export type InitializerPluginInstructions = {
     input: MakeOptional<MigrateLaunchAsyncInput, 'payer'>,
   ) => ReturnType<typeof getMigrateLaunchInstructionAsync> &
     SelfPlanAndSendFunctions;
+  distributeBaseAllocation: (
+    input: DistributeBaseAllocationAsyncInput,
+  ) => ReturnType<typeof getDistributeBaseAllocationInstructionAsync> &
+    SelfPlanAndSendFunctions;
   migratorInit: (
     input: MakeOptional<MigratorInitAsyncInput, 'payer'>,
   ) => ReturnType<typeof getMigratorInitInstructionAsync> &
@@ -466,8 +543,8 @@ export type InitializerPluginInstructions = {
   ) => ReturnType<typeof getPreviewMigrationInstruction> &
     SelfPlanAndSendFunctions;
   previewSwapExactIn: (
-    input: PreviewSwapExactInInput,
-  ) => ReturnType<typeof getPreviewSwapExactInInstruction> &
+    input: PreviewSwapExactInAsyncInput,
+  ) => ReturnType<typeof getPreviewSwapExactInInstructionAsync> &
     SelfPlanAndSendFunctions;
   setHookAllowlist: (
     input: SetHookAllowlistAsyncInput,
@@ -506,12 +583,18 @@ export function initializerProgram() {
         accounts: {
           initConfig: addSelfFetchFunctions(client, getInitConfigCodec()),
           launch: addSelfFetchFunctions(client, getLaunchCodec()),
+          feeLocker: addSelfFetchFunctions(client, getFeeLockerCodec()),
         },
         instructions: {
           curveSwapExactIn: (input) =>
             addSelfPlanAndSendFunctions(
               client,
               getCurveSwapExactInInstructionAsync(input),
+            ),
+          claimFeeLocker: (input) =>
+            addSelfPlanAndSendFunctions(
+              client,
+              getClaimFeeLockerInstructionAsync(input),
             ),
           initializeConfig: (input) =>
             addSelfPlanAndSendFunctions(
@@ -534,6 +617,11 @@ export function initializerProgram() {
                 payer: input.payer ?? client.payer,
               }),
             ),
+          distributeBaseAllocation: (input) =>
+            addSelfPlanAndSendFunctions(
+              client,
+              getDistributeBaseAllocationInstructionAsync(input),
+            ),
           migratorInit: (input) =>
             addSelfPlanAndSendFunctions(
               client,
@@ -550,7 +638,7 @@ export function initializerProgram() {
           previewSwapExactIn: (input) =>
             addSelfPlanAndSendFunctions(
               client,
-              getPreviewSwapExactInInstruction(input),
+              getPreviewSwapExactInInstructionAsync(input),
             ),
           setHookAllowlist: (input) =>
             addSelfPlanAndSendFunctions(

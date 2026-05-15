@@ -127,6 +127,10 @@ async function main() {
     launch,
     deployment.initializerProgram,
   );
+  const [feeLocker] = await initializer.getFeeLockerAddress(
+    launch,
+    deployment.initializerProgram,
+  );
   const initializerConfig = deployment.initializerConfig;
 
   const [payerBaseAta] = await findAssociatedTokenPda({
@@ -158,6 +162,7 @@ async function main() {
   console.log('Derived addresses:');
   console.log('  Launch:          ', launch);
   console.log('  Launch authority:', launchAuthority);
+  console.log('  Fee locker:      ', feeLocker);
   console.log('  Initializer config:', initializerConfig);
   console.log('  CPMM config:     ', cpmmConfig);
   console.log('  CPMM migrator state:', cpmmMigrationState);
@@ -199,6 +204,7 @@ async function main() {
         quoteMint: WSOL_MINT,
         baseVault,
         quoteVault,
+        feeLocker,
         payer,
         authority: payer,
         hookProgram: deployment.cpmmHookProgram,
@@ -237,6 +243,7 @@ async function main() {
           ]),
         migratorRemainingAccountsHash: migrationAccounts.hash,
         ...metadata,
+        feeBeneficiaries: [{ wallet: baseMint.address, shareBps: 9500 }],
       },
       deployment.initializerProgram,
     );
@@ -316,6 +323,7 @@ async function main() {
         baseVault: baseVault.address,
         quoteVault: quoteVault.address,
         hookProgram: deployment.cpmmHookProgram,
+        feeLocker,
       },
       {
         amountIn: BUY_AMOUNT_IN,
@@ -418,6 +426,7 @@ async function main() {
         quoteMint: WSOL_MINT,
         user: payer,
         hookProgram: deployment.cpmmHookProgram,
+        feeLocker,
         baseTokenProgram: TOKEN_PROGRAM_ADDRESS,
         quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
       },
@@ -484,6 +493,7 @@ async function main() {
         quoteMint: WSOL_MINT,
         baseVault: baseVault.address,
         quoteVault: quoteVault.address,
+        feeLocker,
         migratorProgram: deployment.cpmmMigratorProgram,
         payer,
         baseTokenProgram: TOKEN_PROGRAM_ADDRESS,

@@ -14,6 +14,8 @@ import {
   fixEncoderSize,
   getAddressDecoder,
   getAddressEncoder,
+  getArrayDecoder,
+  getArrayEncoder,
   getBytesDecoder,
   getBytesEncoder,
   getProgramDerivedAddress,
@@ -54,6 +56,12 @@ import {
   type ResolvedInstructionAccount,
 } from '@solana/program-client-core';
 import { INITIALIZER_PROGRAM_ADDRESS } from '../programs';
+import {
+  getFeeBeneficiaryInputDecoder,
+  getFeeBeneficiaryInputEncoder,
+  type FeeBeneficiaryInput,
+  type FeeBeneficiaryInputArgs,
+} from '../types';
 
 export const INITIALIZE_LAUNCH_DISCRIMINATOR = new Uint8Array([
   90, 201, 220, 142, 112, 253, 100, 13,
@@ -74,6 +82,7 @@ export type InitializeLaunchInstruction<
   TAccountQuoteMint extends string | AccountMeta<string> = string,
   TAccountBaseVault extends string | AccountMeta<string> = string,
   TAccountQuoteVault extends string | AccountMeta<string> = string,
+  TAccountFeeLocker extends string | AccountMeta<string> = string,
   TAccountPayer extends string | AccountMeta<string> = string,
   TAccountAuthority extends string | AccountMeta<string> = string,
   TAccountHookProgram extends string | AccountMeta<string> = string,
@@ -115,6 +124,9 @@ export type InitializeLaunchInstruction<
         ? WritableSignerAccount<TAccountQuoteVault> &
             AccountSignerMeta<TAccountQuoteVault>
         : TAccountQuoteVault,
+      TAccountFeeLocker extends string
+        ? WritableAccount<TAccountFeeLocker>
+        : TAccountFeeLocker,
       TAccountPayer extends string
         ? WritableSignerAccount<TAccountPayer> &
             AccountSignerMeta<TAccountPayer>
@@ -199,6 +211,7 @@ export type InitializeLaunchInstructionData = {
   metadataSymbol: string;
   /** Metadata JSON URI for on-chain metadata. */
   metadataUri: string;
+  feeBeneficiaries: Array<FeeBeneficiaryInput>;
 };
 
 export type InitializeLaunchInstructionDataArgs = {
@@ -248,6 +261,7 @@ export type InitializeLaunchInstructionDataArgs = {
   metadataSymbol: string;
   /** Metadata JSON URI for on-chain metadata. */
   metadataUri: string;
+  feeBeneficiaries: Array<FeeBeneficiaryInputArgs>;
 };
 
 export function getInitializeLaunchInstructionDataEncoder(): Encoder<InitializeLaunchInstructionDataArgs> {
@@ -296,6 +310,7 @@ export function getInitializeLaunchInstructionDataEncoder(): Encoder<InitializeL
         addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder()),
       ],
       ['metadataUri', addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
+      ['feeBeneficiaries', getArrayEncoder(getFeeBeneficiaryInputEncoder())],
     ]),
     (value) => ({ ...value, discriminator: INITIALIZE_LAUNCH_DISCRIMINATOR }),
   );
@@ -340,6 +355,7 @@ export function getInitializeLaunchInstructionDataDecoder(): Decoder<InitializeL
     ['metadataName', addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
     ['metadataSymbol', addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
     ['metadataUri', addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
+    ['feeBeneficiaries', getArrayDecoder(getFeeBeneficiaryInputDecoder())],
   ]);
 }
 
@@ -361,6 +377,7 @@ export type InitializeLaunchAsyncInput<
   TAccountQuoteMint extends string = string,
   TAccountBaseVault extends string = string,
   TAccountQuoteVault extends string = string,
+  TAccountFeeLocker extends string = string,
   TAccountPayer extends string = string,
   TAccountAuthority extends string = string,
   TAccountHookProgram extends string = string,
@@ -379,6 +396,7 @@ export type InitializeLaunchAsyncInput<
   quoteMint: Address<TAccountQuoteMint>;
   baseVault: TransactionSigner<TAccountBaseVault>;
   quoteVault: TransactionSigner<TAccountQuoteVault>;
+  feeLocker?: Address<TAccountFeeLocker>;
   payer: TransactionSigner<TAccountPayer>;
   /** Optional authority (creator/admin). If not provided, launch is permissionless. */
   authority?: TransactionSigner<TAccountAuthority>;
@@ -421,6 +439,7 @@ export type InitializeLaunchAsyncInput<
   metadataName: InitializeLaunchInstructionDataArgs['metadataName'];
   metadataSymbol: InitializeLaunchInstructionDataArgs['metadataSymbol'];
   metadataUri: InitializeLaunchInstructionDataArgs['metadataUri'];
+  feeBeneficiaries: InitializeLaunchInstructionDataArgs['feeBeneficiaries'];
 };
 
 export async function getInitializeLaunchInstructionAsync<
@@ -431,6 +450,7 @@ export async function getInitializeLaunchInstructionAsync<
   TAccountQuoteMint extends string,
   TAccountBaseVault extends string,
   TAccountQuoteVault extends string,
+  TAccountFeeLocker extends string,
   TAccountPayer extends string,
   TAccountAuthority extends string,
   TAccountHookProgram extends string,
@@ -451,6 +471,7 @@ export async function getInitializeLaunchInstructionAsync<
     TAccountQuoteMint,
     TAccountBaseVault,
     TAccountQuoteVault,
+    TAccountFeeLocker,
     TAccountPayer,
     TAccountAuthority,
     TAccountHookProgram,
@@ -473,6 +494,7 @@ export async function getInitializeLaunchInstructionAsync<
     TAccountQuoteMint,
     TAccountBaseVault,
     TAccountQuoteVault,
+    TAccountFeeLocker,
     TAccountPayer,
     TAccountAuthority,
     TAccountHookProgram,
@@ -500,6 +522,7 @@ export async function getInitializeLaunchInstructionAsync<
     quoteMint: { value: input.quoteMint ?? null, isWritable: false },
     baseVault: { value: input.baseVault ?? null, isWritable: true },
     quoteVault: { value: input.quoteVault ?? null, isWritable: true },
+    feeLocker: { value: input.feeLocker ?? null, isWritable: true },
     payer: { value: input.payer ?? null, isWritable: true },
     authority: { value: input.authority ?? null, isWritable: false },
     hookProgram: { value: input.hookProgram ?? null, isWritable: false },
@@ -563,6 +586,22 @@ export async function getInitializeLaunchInstructionAsync<
       ],
     });
   }
+  if (!accounts.feeLocker.value) {
+    accounts.feeLocker.value = await getProgramDerivedAddress({
+      programAddress,
+      seeds: [
+        getBytesEncoder().encode(
+          new Uint8Array([102, 101, 101, 95, 108, 111, 99, 107, 101, 114]),
+        ),
+        getAddressEncoder().encode(
+          getAddressFromResolvedInstructionAccount(
+            'launch',
+            accounts.launch.value,
+          ),
+        ),
+      ],
+    });
+  }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
@@ -582,6 +621,7 @@ export async function getInitializeLaunchInstructionAsync<
       getAccountMeta('quoteMint', accounts.quoteMint),
       getAccountMeta('baseVault', accounts.baseVault),
       getAccountMeta('quoteVault', accounts.quoteVault),
+      getAccountMeta('feeLocker', accounts.feeLocker),
       getAccountMeta('payer', accounts.payer),
       getAccountMeta('authority', accounts.authority),
       getAccountMeta('hookProgram', accounts.hookProgram),
@@ -606,6 +646,7 @@ export async function getInitializeLaunchInstructionAsync<
     TAccountQuoteMint,
     TAccountBaseVault,
     TAccountQuoteVault,
+    TAccountFeeLocker,
     TAccountPayer,
     TAccountAuthority,
     TAccountHookProgram,
@@ -627,6 +668,7 @@ export type InitializeLaunchInput<
   TAccountQuoteMint extends string = string,
   TAccountBaseVault extends string = string,
   TAccountQuoteVault extends string = string,
+  TAccountFeeLocker extends string = string,
   TAccountPayer extends string = string,
   TAccountAuthority extends string = string,
   TAccountHookProgram extends string = string,
@@ -645,6 +687,7 @@ export type InitializeLaunchInput<
   quoteMint: Address<TAccountQuoteMint>;
   baseVault: TransactionSigner<TAccountBaseVault>;
   quoteVault: TransactionSigner<TAccountQuoteVault>;
+  feeLocker: Address<TAccountFeeLocker>;
   payer: TransactionSigner<TAccountPayer>;
   /** Optional authority (creator/admin). If not provided, launch is permissionless. */
   authority?: TransactionSigner<TAccountAuthority>;
@@ -687,6 +730,7 @@ export type InitializeLaunchInput<
   metadataName: InitializeLaunchInstructionDataArgs['metadataName'];
   metadataSymbol: InitializeLaunchInstructionDataArgs['metadataSymbol'];
   metadataUri: InitializeLaunchInstructionDataArgs['metadataUri'];
+  feeBeneficiaries: InitializeLaunchInstructionDataArgs['feeBeneficiaries'];
 };
 
 export function getInitializeLaunchInstruction<
@@ -697,6 +741,7 @@ export function getInitializeLaunchInstruction<
   TAccountQuoteMint extends string,
   TAccountBaseVault extends string,
   TAccountQuoteVault extends string,
+  TAccountFeeLocker extends string,
   TAccountPayer extends string,
   TAccountAuthority extends string,
   TAccountHookProgram extends string,
@@ -717,6 +762,7 @@ export function getInitializeLaunchInstruction<
     TAccountQuoteMint,
     TAccountBaseVault,
     TAccountQuoteVault,
+    TAccountFeeLocker,
     TAccountPayer,
     TAccountAuthority,
     TAccountHookProgram,
@@ -738,6 +784,7 @@ export function getInitializeLaunchInstruction<
   TAccountQuoteMint,
   TAccountBaseVault,
   TAccountQuoteVault,
+  TAccountFeeLocker,
   TAccountPayer,
   TAccountAuthority,
   TAccountHookProgram,
@@ -764,6 +811,7 @@ export function getInitializeLaunchInstruction<
     quoteMint: { value: input.quoteMint ?? null, isWritable: false },
     baseVault: { value: input.baseVault ?? null, isWritable: true },
     quoteVault: { value: input.quoteVault ?? null, isWritable: true },
+    feeLocker: { value: input.feeLocker ?? null, isWritable: true },
     payer: { value: input.payer ?? null, isWritable: true },
     authority: { value: input.authority ?? null, isWritable: false },
     hookProgram: { value: input.hookProgram ?? null, isWritable: false },
@@ -819,6 +867,7 @@ export function getInitializeLaunchInstruction<
       getAccountMeta('quoteMint', accounts.quoteMint),
       getAccountMeta('baseVault', accounts.baseVault),
       getAccountMeta('quoteVault', accounts.quoteVault),
+      getAccountMeta('feeLocker', accounts.feeLocker),
       getAccountMeta('payer', accounts.payer),
       getAccountMeta('authority', accounts.authority),
       getAccountMeta('hookProgram', accounts.hookProgram),
@@ -843,6 +892,7 @@ export function getInitializeLaunchInstruction<
     TAccountQuoteMint,
     TAccountBaseVault,
     TAccountQuoteVault,
+    TAccountFeeLocker,
     TAccountPayer,
     TAccountAuthority,
     TAccountHookProgram,
@@ -869,21 +919,22 @@ export type ParsedInitializeLaunchInstruction<
     quoteMint: TAccountMetas[4];
     baseVault: TAccountMetas[5];
     quoteVault: TAccountMetas[6];
-    payer: TAccountMetas[7];
+    feeLocker: TAccountMetas[7];
+    payer: TAccountMetas[8];
     /** Optional authority (creator/admin). If not provided, launch is permissionless. */
-    authority?: TAccountMetas[8] | undefined;
+    authority?: TAccountMetas[9] | undefined;
     /** Optional hook program for create hooks */
-    hookProgram?: TAccountMetas[9] | undefined;
+    hookProgram?: TAccountMetas[10] | undefined;
     /** Optional migrator program for init hook */
-    migratorProgram?: TAccountMetas[10] | undefined;
-    baseTokenProgram: TAccountMetas[11];
-    quoteTokenProgram: TAccountMetas[12];
-    systemProgram: TAccountMetas[13];
-    rent: TAccountMetas[14];
+    migratorProgram?: TAccountMetas[11] | undefined;
+    baseTokenProgram: TAccountMetas[12];
+    quoteTokenProgram: TAccountMetas[13];
+    systemProgram: TAccountMetas[14];
+    rent: TAccountMetas[15];
     /** Metadata account (PDA derived from base_mint via Metaplex Token Metadata). */
-    metadataAccount?: TAccountMetas[15] | undefined;
+    metadataAccount?: TAccountMetas[16] | undefined;
     /** Metaplex Token Metadata program. */
-    metadataProgram?: TAccountMetas[16] | undefined;
+    metadataProgram?: TAccountMetas[17] | undefined;
   };
   data: InitializeLaunchInstructionData;
 };
@@ -896,12 +947,12 @@ export function parseInitializeLaunchInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedInitializeLaunchInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 17) {
+  if (instruction.accounts.length < 18) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 17,
+        expectedAccountMetas: 18,
       },
     );
   }
@@ -927,6 +978,7 @@ export function parseInitializeLaunchInstruction<
       quoteMint: getNextAccount(),
       baseVault: getNextAccount(),
       quoteVault: getNextAccount(),
+      feeLocker: getNextAccount(),
       payer: getNextAccount(),
       authority: getNextOptionalAccount(),
       hookProgram: getNextOptionalAccount(),

@@ -159,6 +159,10 @@ async function main() {
           launch,
           deployment.initializerProgram,
         );
+        const [feeLocker] = await initializer.getFeeLockerAddress(
+          launch,
+          deployment.initializerProgram,
+        );
 
         const baseMint = await generateKeyPairSigner();
         const baseVault = await generateKeyPairSigner();
@@ -213,6 +217,7 @@ async function main() {
             quoteMint: WSOL_MINT,
             baseVault,
             quoteVault,
+            feeLocker,
             payer,
             authority: payer,
             hookProgram: initializer.PREDICTION_HOOK_PROGRAM_ID,
@@ -272,6 +277,7 @@ async function main() {
             metadataName: `${outcome.label} Token`,
             metadataSymbol: outcome.label,
             metadataUri: `https://example.com/${outcome.label.toLowerCase()}.json`,
+            feeBeneficiaries: [{ wallet: baseMint.address, shareBps: 9500 }],
           },
           deployment.initializerProgram,
         );

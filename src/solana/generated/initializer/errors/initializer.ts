@@ -94,6 +94,18 @@ export const INITIALIZER_ERROR__REMAINING_ACCOUNT_SIGNER = 0x1795; // 6037
 export const INITIALIZER_ERROR__REMAINING_ACCOUNT_WRITABLE = 0x1796; // 6038
 /** MigrationIncomplete: Migration left vault funds behind */
 export const INITIALIZER_ERROR__MIGRATION_INCOMPLETE = 0x1797; // 6039
+/** InvalidFeeLocker: Invalid fee locker */
+export const INITIALIZER_ERROR__INVALID_FEE_LOCKER = 0x1798; // 6040
+/** InvalidFeeBeneficiary: Invalid fee beneficiary */
+export const INITIALIZER_ERROR__INVALID_FEE_BENEFICIARY = 0x1799; // 6041
+/** InvalidFeeShares: Invalid fee shares */
+export const INITIALIZER_ERROR__INVALID_FEE_SHARES = 0x179a; // 6042
+/** NothingToClaim: Nothing to claim */
+export const INITIALIZER_ERROR__NOTHING_TO_CLAIM = 0x179b; // 6043
+/** UnclaimedFees: Unclaimed fees */
+export const INITIALIZER_ERROR__UNCLAIMED_FEES = 0x179c; // 6044
+/** MigratorDisabled: Migrator disabled */
+export const INITIALIZER_ERROR__MIGRATOR_DISABLED = 0x179d; // 6045
 
 export type InitializerError =
   | typeof INITIALIZER_ERROR__ALLOWLIST_FULL
@@ -108,6 +120,9 @@ export type InitializerError =
   | typeof INITIALIZER_ERROR__INVALID_AMOUNT
   | typeof INITIALIZER_ERROR__INVALID_CURVE_KIND
   | typeof INITIALIZER_ERROR__INVALID_CURVE_PARAMS
+  | typeof INITIALIZER_ERROR__INVALID_FEE_BENEFICIARY
+  | typeof INITIALIZER_ERROR__INVALID_FEE_LOCKER
+  | typeof INITIALIZER_ERROR__INVALID_FEE_SHARES
   | typeof INITIALIZER_ERROR__INVALID_INPUT
   | typeof INITIALIZER_ERROR__INVALID_METADATA_ACCOUNT
   | typeof INITIALIZER_ERROR__INVALID_METADATA_PROGRAM
@@ -121,9 +136,11 @@ export type InitializerError =
   | typeof INITIALIZER_ERROR__METADATA_CPI_FAILED
   | typeof INITIALIZER_ERROR__MIGRATION_INCOMPLETE
   | typeof INITIALIZER_ERROR__MIGRATOR_CPI_FAILED
+  | typeof INITIALIZER_ERROR__MIGRATOR_DISABLED
   | typeof INITIALIZER_ERROR__MIGRATOR_NOT_ALLOWLISTED
   | typeof INITIALIZER_ERROR__MISSING_METADATA_ACCOUNTS
   | typeof INITIALIZER_ERROR__MISSING_REMAINING_ACCOUNTS_COMMITMENT
+  | typeof INITIALIZER_ERROR__NOTHING_TO_CLAIM
   | typeof INITIALIZER_ERROR__PAYLOAD_TOO_LARGE
   | typeof INITIALIZER_ERROR__QUOTE_VAULT_NOT_EMPTY
   | typeof INITIALIZER_ERROR__REMAINING_ACCOUNT_OVERLAP
@@ -134,6 +151,7 @@ export type InitializerError =
   | typeof INITIALIZER_ERROR__SELL_NOT_ALLOWED
   | typeof INITIALIZER_ERROR__SLIPPAGE_EXCEEDED
   | typeof INITIALIZER_ERROR__UNAUTHORIZED
+  | typeof INITIALIZER_ERROR__UNCLAIMED_FEES
   | typeof INITIALIZER_ERROR__WRONG_HOOK
   | typeof INITIALIZER_ERROR__WRONG_MIGRATOR;
 
@@ -152,6 +170,9 @@ if (process.env.NODE_ENV !== 'production') {
     [INITIALIZER_ERROR__INVALID_AMOUNT]: `Invalid amount`,
     [INITIALIZER_ERROR__INVALID_CURVE_KIND]: `Invalid curve kind`,
     [INITIALIZER_ERROR__INVALID_CURVE_PARAMS]: `Invalid curve params`,
+    [INITIALIZER_ERROR__INVALID_FEE_BENEFICIARY]: `Invalid fee beneficiary`,
+    [INITIALIZER_ERROR__INVALID_FEE_LOCKER]: `Invalid fee locker`,
+    [INITIALIZER_ERROR__INVALID_FEE_SHARES]: `Invalid fee shares`,
     [INITIALIZER_ERROR__INVALID_INPUT]: `Invalid input`,
     [INITIALIZER_ERROR__INVALID_METADATA_ACCOUNT]: `Invalid metadata account`,
     [INITIALIZER_ERROR__INVALID_METADATA_PROGRAM]: `Invalid metadata program`,
@@ -165,9 +186,11 @@ if (process.env.NODE_ENV !== 'production') {
     [INITIALIZER_ERROR__METADATA_CPI_FAILED]: `Metadata CPI failed`,
     [INITIALIZER_ERROR__MIGRATION_INCOMPLETE]: `Migration left vault funds behind`,
     [INITIALIZER_ERROR__MIGRATOR_CPI_FAILED]: `Migrator CPI failed`,
+    [INITIALIZER_ERROR__MIGRATOR_DISABLED]: `Migrator disabled`,
     [INITIALIZER_ERROR__MIGRATOR_NOT_ALLOWLISTED]: `Migrator not allowlisted`,
     [INITIALIZER_ERROR__MISSING_METADATA_ACCOUNTS]: `Missing metadata accounts`,
     [INITIALIZER_ERROR__MISSING_REMAINING_ACCOUNTS_COMMITMENT]: `Missing remaining accounts commitment`,
+    [INITIALIZER_ERROR__NOTHING_TO_CLAIM]: `Nothing to claim`,
     [INITIALIZER_ERROR__PAYLOAD_TOO_LARGE]: `Payload too large`,
     [INITIALIZER_ERROR__QUOTE_VAULT_NOT_EMPTY]: `Quote vault not empty`,
     [INITIALIZER_ERROR__REMAINING_ACCOUNT_OVERLAP]: `Remaining account overlaps with protocol account`,
@@ -178,6 +201,7 @@ if (process.env.NODE_ENV !== 'production') {
     [INITIALIZER_ERROR__SELL_NOT_ALLOWED]: `Sell not allowed`,
     [INITIALIZER_ERROR__SLIPPAGE_EXCEEDED]: `Slippage exceeded`,
     [INITIALIZER_ERROR__UNAUTHORIZED]: `Unauthorized`,
+    [INITIALIZER_ERROR__UNCLAIMED_FEES]: `Unclaimed fees`,
     [INITIALIZER_ERROR__WRONG_HOOK]: `Wrong hook program`,
     [INITIALIZER_ERROR__WRONG_MIGRATOR]: `Wrong migrator program`,
   };
