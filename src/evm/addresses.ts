@@ -133,7 +133,7 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       'DopplerERC20V1',
     ),
     v3Initializer: ZERO_ADDRESS,
-    v3Quoter: ZERO_ADDRESS,
+    v3Quoter: '0x61fFE014bA17989E743c5F6cB21bF9697530B21e' as Address,
     lockableV3Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MAINNET]
       .LockableUniswapV3Initializer as Address,
     v4Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MAINNET]
@@ -184,6 +184,7 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     universalRouter: '0x66a9893cc07d91d95644aedd05d03f95e1dba8af' as Address,
     permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3' as Address,
     weth: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' as Address,
+    univ2Router02: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D' as Address,
     uniswapV2Factory: '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f' as Address,
     uniswapV3Factory: '0x1F98431c8aD98523631AE4a59f267346ea31F984' as Address,
     uniswapV4Quoter: '0x52f0e24d1c21c8a0cb1e5a5dd6198556bd9e1203' as Address,
@@ -598,7 +599,7 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       'DopplerERC20V1',
     ),
     v3Initializer: ZERO_ADDRESS,
-    v3Quoter: '0x66266174564170519409d8853898f065c719536b' as Address,
+    v3Quoter: '0x661E93cca42AfacB172121EF892830cA3b70F08d' as Address,
     lockableV3Initializer: GENERATED_DOPPLER_DEPLOYMENTS[
       CHAIN_IDS.MONAD_MAINNET
     ].LockableUniswapV3Initializer as Address,
@@ -645,7 +646,7 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       'StreamableFeesLockerV2',
     ),
     universalRouter: '0x0d97dc33264bfc1c226207428a79b26757fb9dc3' as Address,
-    univ2Router02: ZERO_ADDRESS,
+    univ2Router02: '0x4B2ab38DBF28D31D467aA8993f6c2585981D6804' as Address,
     uniswapV2Factory: '0x182a927119d56008d921126764bf884221b10f59' as Address,
     permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3' as Address,
     bundler: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_MAINNET]
