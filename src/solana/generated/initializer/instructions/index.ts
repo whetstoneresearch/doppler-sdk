@@ -6,13 +6,17 @@
  * @see https://github.com/codama-idl/codama
  */
 
+export * from './claimFees';
 export * from './curveSwapExactIn';
+export * from './harvestMigratedFees';
 export * from './initializeConfig';
 export * from './initializeLaunch';
 export * from './migrateLaunch';
 export * from './migratorInit';
 export * from './previewMigration';
 export * from './previewSwapExactIn';
+export * from './replaceFeeBeneficiary';
+export * from './setFeePolicy';
 export * from './setHookAllowlist';
 export * from './setMigratorAllowlist';
 export * from './transferAdmin';

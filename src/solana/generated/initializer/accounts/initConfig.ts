@@ -23,6 +23,8 @@ import {
   getBytesEncoder,
   getStructDecoder,
   getStructEncoder,
+  getU16Decoder,
+  getU16Encoder,
   getU8Decoder,
   getU8Encoder,
   transformEncoder,
@@ -56,6 +58,9 @@ export type InitConfig = {
   hookAllowlist: Array<Address>;
   bump: number;
   version: number;
+  protocolFeeBps: number;
+  minSwapFeeBps: number;
+  maxSwapFeeBps: number;
   reserved: ReadonlyUint8Array;
 };
 
@@ -67,6 +72,9 @@ export type InitConfigArgs = {
   hookAllowlist: Array<Address>;
   bump: number;
   version: number;
+  protocolFeeBps: number;
+  minSwapFeeBps: number;
+  maxSwapFeeBps: number;
   reserved: ReadonlyUint8Array;
 };
 
@@ -82,7 +90,10 @@ export function getInitConfigEncoder(): FixedSizeEncoder<InitConfigArgs> {
       ['hookAllowlist', getArrayEncoder(getAddressEncoder(), { size: 32 })],
       ['bump', getU8Encoder()],
       ['version', getU8Encoder()],
-      ['reserved', fixEncoderSize(getBytesEncoder(), 31)],
+      ['protocolFeeBps', getU16Encoder()],
+      ['minSwapFeeBps', getU16Encoder()],
+      ['maxSwapFeeBps', getU16Encoder()],
+      ['reserved', fixEncoderSize(getBytesEncoder(), 24)],
     ]),
     (value) => ({ ...value, discriminator: INIT_CONFIG_DISCRIMINATOR }),
   );
@@ -99,7 +110,10 @@ export function getInitConfigDecoder(): FixedSizeDecoder<InitConfig> {
     ['hookAllowlist', getArrayDecoder(getAddressDecoder(), { size: 32 })],
     ['bump', getU8Decoder()],
     ['version', getU8Decoder()],
-    ['reserved', fixDecoderSize(getBytesDecoder(), 31)],
+    ['protocolFeeBps', getU16Decoder()],
+    ['minSwapFeeBps', getU16Decoder()],
+    ['maxSwapFeeBps', getU16Decoder()],
+    ['reserved', fixDecoderSize(getBytesDecoder(), 24)],
   ]);
 }
 

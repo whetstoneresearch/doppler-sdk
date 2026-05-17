@@ -14,6 +14,8 @@ import {
   fixEncoderSize,
   getAddressDecoder,
   getAddressEncoder,
+  getArrayDecoder,
+  getArrayEncoder,
   getBytesDecoder,
   getBytesEncoder,
   getStructDecoder,
@@ -34,6 +36,12 @@ import {
   type Encoder,
   type ReadonlyUint8Array,
 } from '@solana/kit';
+import {
+  getFeeBeneficiaryInputDecoder,
+  getFeeBeneficiaryInputEncoder,
+  type FeeBeneficiaryInput,
+  type FeeBeneficiaryInputArgs,
+} from '.';
 
 export type InitializeLaunchArgs = {
   namespace: Address;
@@ -44,7 +52,7 @@ export type InitializeLaunchArgs = {
   baseForLiquidity: bigint;
   curveVirtualBase: bigint;
   curveVirtualQuote: bigint;
-  curveFeeBps: number;
+  swapFeeBps: number;
   curveKind: number;
   curveParams: ReadonlyUint8Array;
   allowBuy: number;
@@ -82,6 +90,7 @@ export type InitializeLaunchArgs = {
   metadataSymbol: string;
   /** Metadata JSON URI for on-chain metadata. */
   metadataUri: string;
+  feeBeneficiaries: Array<FeeBeneficiaryInput>;
 };
 
 export type InitializeLaunchArgsArgs = {
@@ -93,7 +102,7 @@ export type InitializeLaunchArgsArgs = {
   baseForLiquidity: number | bigint;
   curveVirtualBase: number | bigint;
   curveVirtualQuote: number | bigint;
-  curveFeeBps: number;
+  swapFeeBps: number;
   curveKind: number;
   curveParams: ReadonlyUint8Array;
   allowBuy: number;
@@ -131,6 +140,7 @@ export type InitializeLaunchArgsArgs = {
   metadataSymbol: string;
   /** Metadata JSON URI for on-chain metadata. */
   metadataUri: string;
+  feeBeneficiaries: Array<FeeBeneficiaryInputArgs>;
 };
 
 export function getInitializeLaunchArgsEncoder(): Encoder<InitializeLaunchArgsArgs> {
@@ -143,7 +153,7 @@ export function getInitializeLaunchArgsEncoder(): Encoder<InitializeLaunchArgsAr
     ['baseForLiquidity', getU64Encoder()],
     ['curveVirtualBase', getU64Encoder()],
     ['curveVirtualQuote', getU64Encoder()],
-    ['curveFeeBps', getU16Encoder()],
+    ['swapFeeBps', getU16Encoder()],
     ['curveKind', getU8Encoder()],
     ['curveParams', addEncoderSizePrefix(getBytesEncoder(), getU32Encoder())],
     ['allowBuy', getU8Encoder()],
@@ -171,6 +181,7 @@ export function getInitializeLaunchArgsEncoder(): Encoder<InitializeLaunchArgsAr
     ['metadataName', addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
     ['metadataSymbol', addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
     ['metadataUri', addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
+    ['feeBeneficiaries', getArrayEncoder(getFeeBeneficiaryInputEncoder())],
   ]);
 }
 
@@ -184,7 +195,7 @@ export function getInitializeLaunchArgsDecoder(): Decoder<InitializeLaunchArgs> 
     ['baseForLiquidity', getU64Decoder()],
     ['curveVirtualBase', getU64Decoder()],
     ['curveVirtualQuote', getU64Decoder()],
-    ['curveFeeBps', getU16Decoder()],
+    ['swapFeeBps', getU16Decoder()],
     ['curveKind', getU8Decoder()],
     ['curveParams', addDecoderSizePrefix(getBytesDecoder(), getU32Decoder())],
     ['allowBuy', getU8Decoder()],
@@ -212,6 +223,7 @@ export function getInitializeLaunchArgsDecoder(): Decoder<InitializeLaunchArgs> 
     ['metadataName', addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
     ['metadataSymbol', addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
     ['metadataUri', addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
+    ['feeBeneficiaries', getArrayDecoder(getFeeBeneficiaryInputDecoder())],
   ]);
 }
 

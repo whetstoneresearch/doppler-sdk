@@ -10,6 +10,7 @@ import {
   combineCodec,
   fixDecoderSize,
   fixEncoderSize,
+  getAddressEncoder,
   getBytesDecoder,
   getBytesEncoder,
   getProgramDerivedAddress,
@@ -39,6 +40,7 @@ import {
 } from '@solana/kit';
 import {
   getAccountMetaFactory,
+  getAddressFromResolvedInstructionAccount,
   type ResolvedInstructionAccount,
 } from '@solana/program-client-core';
 import { INITIALIZER_PROGRAM_ADDRESS } from '../programs';
@@ -66,6 +68,7 @@ export type CurveSwapExactInInstruction<
   TAccountQuoteMint extends string | AccountMeta<string> = string,
   TAccountUser extends string | AccountMeta<string> = string,
   TAccountHookProgram extends string | AccountMeta<string> = string,
+  TAccountLaunchFeeState extends string | AccountMeta<string> = string,
   TAccountBaseTokenProgram extends string | AccountMeta<string> = string,
   TAccountQuoteTokenProgram extends string | AccountMeta<string> = string,
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
@@ -106,6 +109,9 @@ export type CurveSwapExactInInstruction<
       TAccountHookProgram extends string
         ? ReadonlyAccount<TAccountHookProgram>
         : TAccountHookProgram,
+      TAccountLaunchFeeState extends string
+        ? WritableAccount<TAccountLaunchFeeState>
+        : TAccountLaunchFeeState,
       TAccountBaseTokenProgram extends string
         ? ReadonlyAccount<TAccountBaseTokenProgram>
         : TAccountBaseTokenProgram,
@@ -172,6 +178,7 @@ export type CurveSwapExactInAsyncInput<
   TAccountQuoteMint extends string = string,
   TAccountUser extends string = string,
   TAccountHookProgram extends string = string,
+  TAccountLaunchFeeState extends string = string,
   TAccountBaseTokenProgram extends string = string,
   TAccountQuoteTokenProgram extends string = string,
 > = {
@@ -187,6 +194,7 @@ export type CurveSwapExactInAsyncInput<
   user: TransactionSigner<TAccountUser>;
   /** Optional hook program (must match launch.hook_program if set) */
   hookProgram?: Address<TAccountHookProgram>;
+  launchFeeState?: Address<TAccountLaunchFeeState>;
   baseTokenProgram: Address<TAccountBaseTokenProgram>;
   quoteTokenProgram: Address<TAccountQuoteTokenProgram>;
   amountIn: CurveSwapExactInInstructionDataArgs['amountIn'];
@@ -206,6 +214,7 @@ export async function getCurveSwapExactInInstructionAsync<
   TAccountQuoteMint extends string,
   TAccountUser extends string,
   TAccountHookProgram extends string,
+  TAccountLaunchFeeState extends string,
   TAccountBaseTokenProgram extends string,
   TAccountQuoteTokenProgram extends string,
   TProgramAddress extends Address = typeof INITIALIZER_PROGRAM_ADDRESS,
@@ -222,6 +231,7 @@ export async function getCurveSwapExactInInstructionAsync<
     TAccountQuoteMint,
     TAccountUser,
     TAccountHookProgram,
+    TAccountLaunchFeeState,
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram
   >,
@@ -240,6 +250,7 @@ export async function getCurveSwapExactInInstructionAsync<
     TAccountQuoteMint,
     TAccountUser,
     TAccountHookProgram,
+    TAccountLaunchFeeState,
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram
   >
@@ -266,6 +277,7 @@ export async function getCurveSwapExactInInstructionAsync<
     quoteMint: { value: input.quoteMint ?? null, isWritable: false },
     user: { value: input.user ?? null, isWritable: false },
     hookProgram: { value: input.hookProgram ?? null, isWritable: false },
+    launchFeeState: { value: input.launchFeeState ?? null, isWritable: true },
     baseTokenProgram: {
       value: input.baseTokenProgram ?? null,
       isWritable: false,
@@ -292,6 +304,25 @@ export async function getCurveSwapExactInInstructionAsync<
       ],
     });
   }
+  if (!accounts.launchFeeState.value) {
+    accounts.launchFeeState.value = await getProgramDerivedAddress({
+      programAddress,
+      seeds: [
+        getBytesEncoder().encode(
+          new Uint8Array([
+            108, 97, 117, 110, 99, 104, 95, 102, 101, 101, 95, 115, 116, 97,
+            116, 101,
+          ]),
+        ),
+        getAddressEncoder().encode(
+          getAddressFromResolvedInstructionAccount(
+            'launch',
+            accounts.launch.value,
+          ),
+        ),
+      ],
+    });
+  }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
@@ -307,6 +338,7 @@ export async function getCurveSwapExactInInstructionAsync<
       getAccountMeta('quoteMint', accounts.quoteMint),
       getAccountMeta('user', accounts.user),
       getAccountMeta('hookProgram', accounts.hookProgram),
+      getAccountMeta('launchFeeState', accounts.launchFeeState),
       getAccountMeta('baseTokenProgram', accounts.baseTokenProgram),
       getAccountMeta('quoteTokenProgram', accounts.quoteTokenProgram),
     ],
@@ -327,6 +359,7 @@ export async function getCurveSwapExactInInstructionAsync<
     TAccountQuoteMint,
     TAccountUser,
     TAccountHookProgram,
+    TAccountLaunchFeeState,
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram
   >);
@@ -344,6 +377,7 @@ export type CurveSwapExactInInput<
   TAccountQuoteMint extends string = string,
   TAccountUser extends string = string,
   TAccountHookProgram extends string = string,
+  TAccountLaunchFeeState extends string = string,
   TAccountBaseTokenProgram extends string = string,
   TAccountQuoteTokenProgram extends string = string,
 > = {
@@ -359,6 +393,7 @@ export type CurveSwapExactInInput<
   user: TransactionSigner<TAccountUser>;
   /** Optional hook program (must match launch.hook_program if set) */
   hookProgram?: Address<TAccountHookProgram>;
+  launchFeeState: Address<TAccountLaunchFeeState>;
   baseTokenProgram: Address<TAccountBaseTokenProgram>;
   quoteTokenProgram: Address<TAccountQuoteTokenProgram>;
   amountIn: CurveSwapExactInInstructionDataArgs['amountIn'];
@@ -378,6 +413,7 @@ export function getCurveSwapExactInInstruction<
   TAccountQuoteMint extends string,
   TAccountUser extends string,
   TAccountHookProgram extends string,
+  TAccountLaunchFeeState extends string,
   TAccountBaseTokenProgram extends string,
   TAccountQuoteTokenProgram extends string,
   TProgramAddress extends Address = typeof INITIALIZER_PROGRAM_ADDRESS,
@@ -394,6 +430,7 @@ export function getCurveSwapExactInInstruction<
     TAccountQuoteMint,
     TAccountUser,
     TAccountHookProgram,
+    TAccountLaunchFeeState,
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram
   >,
@@ -411,6 +448,7 @@ export function getCurveSwapExactInInstruction<
   TAccountQuoteMint,
   TAccountUser,
   TAccountHookProgram,
+  TAccountLaunchFeeState,
   TAccountBaseTokenProgram,
   TAccountQuoteTokenProgram
 > {
@@ -436,6 +474,7 @@ export function getCurveSwapExactInInstruction<
     quoteMint: { value: input.quoteMint ?? null, isWritable: false },
     user: { value: input.user ?? null, isWritable: false },
     hookProgram: { value: input.hookProgram ?? null, isWritable: false },
+    launchFeeState: { value: input.launchFeeState ?? null, isWritable: true },
     baseTokenProgram: {
       value: input.baseTokenProgram ?? null,
       isWritable: false,
@@ -467,6 +506,7 @@ export function getCurveSwapExactInInstruction<
       getAccountMeta('quoteMint', accounts.quoteMint),
       getAccountMeta('user', accounts.user),
       getAccountMeta('hookProgram', accounts.hookProgram),
+      getAccountMeta('launchFeeState', accounts.launchFeeState),
       getAccountMeta('baseTokenProgram', accounts.baseTokenProgram),
       getAccountMeta('quoteTokenProgram', accounts.quoteTokenProgram),
     ],
@@ -487,6 +527,7 @@ export function getCurveSwapExactInInstruction<
     TAccountQuoteMint,
     TAccountUser,
     TAccountHookProgram,
+    TAccountLaunchFeeState,
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram
   >);
@@ -510,8 +551,9 @@ export type ParsedCurveSwapExactInInstruction<
     user: TAccountMetas[9];
     /** Optional hook program (must match launch.hook_program if set) */
     hookProgram?: TAccountMetas[10] | undefined;
-    baseTokenProgram: TAccountMetas[11];
-    quoteTokenProgram: TAccountMetas[12];
+    launchFeeState: TAccountMetas[11];
+    baseTokenProgram: TAccountMetas[12];
+    quoteTokenProgram: TAccountMetas[13];
   };
   data: CurveSwapExactInInstructionData;
 };
@@ -524,12 +566,12 @@ export function parseCurveSwapExactInInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedCurveSwapExactInInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 13) {
+  if (instruction.accounts.length < 14) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 13,
+        expectedAccountMetas: 14,
       },
     );
   }
@@ -559,6 +601,7 @@ export function parseCurveSwapExactInInstruction<
       quoteMint: getNextAccount(),
       user: getNextAccount(),
       hookProgram: getNextOptionalAccount(),
+      launchFeeState: getNextAccount(),
       baseTokenProgram: getNextAccount(),
       quoteTokenProgram: getNextAccount(),
     },

@@ -34,6 +34,7 @@ import {
   getPredictionEntryAddress,
   getPredictionEntryByMintAddress,
 } from '../../migrators/predictionMigrator/pda.js';
+import { getLaunchFeeStateAddress } from '../pda.js';
 import type { InitializeLaunchArgsArgs } from '../../generated/initializer/index.js';
 import { getInitializeLaunchInstructionDataEncoder } from '../../generated/initializer/index.js';
 
@@ -51,9 +52,15 @@ export type InitializeLaunchParams = Omit<
   | 'migratorProgram'
   | 'hookCreateRemainingAccountsLen'
   | 'hookCreateRemainingAccountsHash'
+  | 'swapFeeBps'
+  | 'feeBeneficiaries'
 > & {
   allowBuy: boolean;
   allowSell: boolean;
+  swapFeeBps?: number;
+  /** @deprecated Use swapFeeBps. */
+  curveFeeBps?: number;
+  feeBeneficiaries?: InitializeLaunchArgsArgs['feeBeneficiaries'];
   hookProgram?: Address;
   hookCreateRemainingAccountsLen?: number;
   hookCreateRemainingAccountsHash?: ReadonlyUint8Array;
@@ -115,6 +122,7 @@ export interface InitializeLaunchAccounts {
   quoteMint: Address;
   baseVault: AddressOrSigner;
   quoteVault: AddressOrSigner;
+  launchFeeState?: Address;
   payer: AddressOrSigner;
   authority?: AddressOrSigner;
   hookProgram?: Address;
@@ -167,6 +175,7 @@ export async function createInitializeLaunchInstruction(
     quoteMint,
     baseVault,
     quoteVault,
+    launchFeeState,
     payer,
     authority,
     hookProgram,
@@ -196,6 +205,10 @@ export async function createInitializeLaunchInstruction(
   const hookCreateRemainingAccountAddresses = hookCreateRemainingAccounts.map(
     (account) => (isTransactionSigner(account) ? account.address : account),
   );
+  const swapFeeBps = args.swapFeeBps ?? args.curveFeeBps;
+  if (swapFeeBps === undefined) {
+    throw new Error('swapFeeBps is required');
+  }
 
   const keys: (AccountMeta | AccountSignerMeta)[] = [
     { address: config, role: AccountRole.READONLY },
@@ -205,6 +218,12 @@ export async function createInitializeLaunchInstruction(
     { address: quoteMint, role: AccountRole.READONLY },
     createAccountMeta(baseVault, AccountRole.WRITABLE_SIGNER),
     createAccountMeta(quoteVault, AccountRole.WRITABLE_SIGNER),
+    {
+      address:
+        launchFeeState ??
+        (await getLaunchFeeStateAddress(launch, programId))[0],
+      role: AccountRole.WRITABLE,
+    },
     createAccountMeta(payer, AccountRole.WRITABLE_SIGNER),
   ];
 
@@ -239,6 +258,8 @@ export async function createInitializeLaunchInstruction(
 
   const encoderArgs: InitializeLaunchArgsArgs = {
     ...args,
+    swapFeeBps,
+    feeBeneficiaries: args.feeBeneficiaries ?? [],
     allowBuy: args.allowBuy ? 1 : 0,
     allowSell: args.allowSell ? 1 : 0,
     hookProgram: args.hookProgram ?? hookProgram ?? SYSTEM_PROGRAM_ADDRESS,

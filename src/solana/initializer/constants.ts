@@ -40,6 +40,7 @@ export const PREDICTION_HOOK_PROGRAM_ID: Address = address(
 export const SEED_CONFIG = 'config';
 export const SEED_LAUNCH = 'launch';
 export const SEED_LAUNCH_AUTHORITY = 'launch_authority';
+export const SEED_LAUNCH_FEE_STATE = 'launch_fee_state';
 
 // ============================================================================
 // Remaining Accounts Hash
@@ -136,4 +137,8 @@ export const INITIALIZER_ACCOUNT_DISCRIMINATORS = {
   InitConfig: new Uint8Array([0x61, 0xa6, 0x23, 0x07, 0x14, 0x02, 0xa4, 0x7e]),
   // SHA256("account:Launch")[0:8]
   Launch: new Uint8Array([0x90, 0x33, 0x33, 0xa3, 0xce, 0x55, 0xd5, 0x26]),
+  // SHA256("account:LaunchFeeState")[0:8]
+  LaunchFeeState: new Uint8Array([
+    0x01, 0x6a, 0x37, 0xf1, 0xb3, 0x12, 0xe6, 0xe8,
+  ]),
 } as const;

@@ -2470,6 +2470,14 @@
             "type": {
               "option": "pubkey"
             }
+          },
+          {
+            "name": "hook_program",
+            "type": "pubkey"
+          },
+          {
+            "name": "hook_flags",
+            "type": "u32"
           }
         ]
       }

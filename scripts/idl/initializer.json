@@ -8,6 +8,121 @@
   },
   "instructions": [
     {
+      "name": "claim_fees",
+      "discriminator": [
+        82,
+        251,
+        233,
+        156,
+        12,
+        52,
+        184,
+        202
+      ],
+      "accounts": [
+        {
+          "name": "launch"
+        },
+        {
+          "name": "launch_fee_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  97,
+                  117,
+                  110,
+                  99,
+                  104,
+                  95,
+                  102,
+                  101,
+                  101,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "launch"
+              }
+            ]
+          }
+        },
+        {
+          "name": "launch_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  97,
+                  117,
+                  110,
+                  99,
+                  104,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "launch"
+              }
+            ]
+          }
+        },
+        {
+          "name": "recipient"
+        },
+        {
+          "name": "base_mint"
+        },
+        {
+          "name": "quote_mint"
+        },
+        {
+          "name": "base_vault",
+          "writable": true
+        },
+        {
+          "name": "quote_vault",
+          "writable": true
+        },
+        {
+          "name": "recipient_base_ata",
+          "writable": true
+        },
+        {
+          "name": "recipient_quote_ata",
+          "writable": true
+        },
+        {
+          "name": "base_token_program"
+        },
+        {
+          "name": "quote_token_program"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "curve_swap_exact_in",
       "discriminator": [
         196,
@@ -79,6 +194,39 @@
           "optional": true
         },
         {
+          "name": "launch_fee_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  97,
+                  117,
+                  110,
+                  99,
+                  104,
+                  95,
+                  102,
+                  101,
+                  101,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "launch"
+              }
+            ]
+          }
+        },
+        {
           "name": "base_token_program"
         },
         {
@@ -99,6 +247,139 @@
           "type": "u8"
         }
       ]
+    },
+    {
+      "name": "harvest_migrated_fees",
+      "discriminator": [
+        63,
+        77,
+        73,
+        117,
+        2,
+        43,
+        255,
+        176
+      ],
+      "accounts": [
+        {
+          "name": "launch"
+        },
+        {
+          "name": "launch_fee_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  97,
+                  117,
+                  110,
+                  99,
+                  104,
+                  95,
+                  102,
+                  101,
+                  101,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "launch"
+              }
+            ]
+          }
+        },
+        {
+          "name": "launch_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  97,
+                  117,
+                  110,
+                  99,
+                  104,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "launch"
+              }
+            ]
+          }
+        },
+        {
+          "name": "base_mint"
+        },
+        {
+          "name": "quote_mint"
+        },
+        {
+          "name": "base_vault",
+          "writable": true
+        },
+        {
+          "name": "quote_vault",
+          "writable": true
+        },
+        {
+          "name": "pool",
+          "writable": true
+        },
+        {
+          "name": "launch_lp_position",
+          "writable": true
+        },
+        {
+          "name": "pool_authority"
+        },
+        {
+          "name": "pool_vault0",
+          "writable": true
+        },
+        {
+          "name": "pool_vault1",
+          "writable": true
+        },
+        {
+          "name": "token0_mint"
+        },
+        {
+          "name": "token1_mint"
+        },
+        {
+          "name": "cpmm_program",
+          "address": "9PSxVPoPfnbZ8Q1uQhgS6ZxvBjFboZtebNsu34umxkgQ"
+        },
+        {
+          "name": "base_token_program"
+        },
+        {
+          "name": "quote_token_program"
+        }
+      ],
+      "args": []
     },
     {
       "name": "initialize_config",
@@ -242,6 +523,39 @@
           "signer": true
         },
         {
+          "name": "launch_fee_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  97,
+                  117,
+                  110,
+                  99,
+                  104,
+                  95,
+                  102,
+                  101,
+                  101,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "launch"
+              }
+            ]
+          }
+        },
+        {
           "name": "payer",
           "writable": true,
           "signer": true
@@ -360,6 +674,38 @@
         {
           "name": "quote_vault",
           "writable": true
+        },
+        {
+          "name": "launch_fee_state",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  97,
+                  117,
+                  110,
+                  99,
+                  104,
+                  95,
+                  102,
+                  101,
+                  101,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "launch"
+              }
+            ]
+          }
         },
         {
           "name": "migrator_program"
@@ -508,6 +854,38 @@
           "name": "launch"
         },
         {
+          "name": "launch_fee_state",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  97,
+                  117,
+                  110,
+                  99,
+                  104,
+                  95,
+                  102,
+                  101,
+                  101,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "launch"
+              }
+            ]
+          }
+        },
+        {
           "name": "base_vault"
         },
         {
@@ -529,6 +907,115 @@
         {
           "name": "trade_direction",
           "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "replace_fee_beneficiary",
+      "discriminator": [
+        125,
+        194,
+        227,
+        81,
+        175,
+        100,
+        78,
+        200
+      ],
+      "accounts": [
+        {
+          "name": "launch"
+        },
+        {
+          "name": "launch_fee_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  97,
+                  117,
+                  110,
+                  99,
+                  104,
+                  95,
+                  102,
+                  101,
+                  101,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "launch"
+              }
+            ]
+          }
+        },
+        {
+          "name": "current_beneficiary",
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "new_beneficiary",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "set_fee_policy",
+      "discriminator": [
+        91,
+        32,
+        224,
+        109,
+        147,
+        98,
+        71,
+        132
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "admin",
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "SetFeePolicyArgs"
+            }
+          }
         }
       ]
     },
@@ -803,6 +1290,45 @@
         213,
         38
       ]
+    },
+    {
+      "name": "LaunchFeeState",
+      "discriminator": [
+        1,
+        106,
+        55,
+        241,
+        179,
+        18,
+        230,
+        232
+      ]
+    },
+    {
+      "name": "Pool",
+      "discriminator": [
+        241,
+        154,
+        109,
+        4,
+        17,
+        177,
+        109,
+        188
+      ]
+    },
+    {
+      "name": "Position",
+      "discriminator": [
+        170,
+        188,
+        143,
+        228,
+        122,
+        64,
+        247,
+        208
+      ]
     }
   ],
   "events": [
@@ -843,6 +1369,45 @@
         169,
         133,
         249
+      ]
+    },
+    {
+      "name": "FeeBeneficiaryReplaced",
+      "discriminator": [
+        64,
+        60,
+        240,
+        152,
+        215,
+        82,
+        195,
+        195
+      ]
+    },
+    {
+      "name": "FeePolicyUpdated",
+      "discriminator": [
+        98,
+        89,
+        107,
+        189,
+        161,
+        89,
+        231,
+        243
+      ]
+    },
+    {
+      "name": "FeesClaimed",
+      "discriminator": [
+        22,
+        104,
+        110,
+        222,
+        38,
+        157,
+        14,
+        62
       ]
     },
     {
@@ -895,6 +1460,19 @@
         46,
         190,
         170
+      ]
+    },
+    {
+      "name": "MigratedFeesHarvested",
+      "discriminator": [
+        85,
+        205,
+        104,
+        196,
+        56,
+        92,
+        82,
+        140
       ]
     },
     {
@@ -1124,6 +1702,31 @@
       "code": 6039,
       "name": "MigrationIncomplete",
       "msg": "Migration left vault funds behind"
+    },
+    {
+      "code": 6040,
+      "name": "InvalidFeeBeneficiary",
+      "msg": "Invalid fee beneficiary"
+    },
+    {
+      "code": 6041,
+      "name": "InvalidFeeShares",
+      "msg": "Invalid fee shares"
+    },
+    {
+      "code": 6042,
+      "name": "InvalidSwapFee",
+      "msg": "Invalid swap fee"
+    },
+    {
+      "code": 6043,
+      "name": "InvalidLaunchFeeState",
+      "msg": "Invalid launch fee state"
+    },
+    {
+      "code": 6044,
+      "name": "NoFeesToDistribute",
+      "msg": "No fees to distribute"
     }
   ],
   "types": [
@@ -1163,6 +1766,18 @@
           {
             "name": "hook_allowlist_len",
             "type": "u8"
+          },
+          {
+            "name": "protocol_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "min_swap_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "max_swap_fee_bps",
+            "type": "u16"
           }
         ]
       }
@@ -1202,6 +1817,118 @@
           },
           {
             "name": "post_quote_reserve",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "FeeBeneficiary",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "share_bps",
+            "type": "u16"
+          },
+          {
+            "name": "_pad",
+            "type": {
+              "array": [
+                "u8",
+                6
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "FeeBeneficiaryInput",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "share_bps",
+            "type": "u16"
+          }
+        ]
+      }
+    },
+    {
+      "name": "FeeBeneficiaryReplaced",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "launch",
+            "type": "pubkey"
+          },
+          {
+            "name": "current_wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "new_wallet",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "FeePolicyUpdated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "config",
+            "type": "pubkey"
+          },
+          {
+            "name": "protocol_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "min_swap_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "max_swap_fee_bps",
+            "type": "u16"
+          }
+        ]
+      }
+    },
+    {
+      "name": "FeesClaimed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "launch",
+            "type": "pubkey"
+          },
+          {
+            "name": "recipient",
+            "type": "pubkey"
+          },
+          {
+            "name": "base_amount",
+            "type": "u64"
+          },
+          {
+            "name": "quote_amount",
             "type": "u64"
           }
         ]
@@ -1271,11 +1998,23 @@
             "type": "u8"
           },
           {
+            "name": "protocol_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "min_swap_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "max_swap_fee_bps",
+            "type": "u16"
+          },
+          {
             "name": "_reserved",
             "type": {
               "array": [
                 "u8",
-                31
+                24
               ]
             }
           }
@@ -1298,6 +2037,18 @@
             "type": {
               "vec": "pubkey"
             }
+          },
+          {
+            "name": "protocol_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "min_swap_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "max_swap_fee_bps",
+            "type": "u16"
           }
         ]
       }
@@ -1345,7 +2096,7 @@
             "type": "u64"
           },
           {
-            "name": "curve_fee_bps",
+            "name": "swap_fee_bps",
             "type": "u16"
           },
           {
@@ -1464,6 +2215,16 @@
               "Metadata JSON URI for on-chain metadata."
             ],
             "type": "string"
+          },
+          {
+            "name": "fee_beneficiaries",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "FeeBeneficiaryInput"
+                }
+              }
+            }
           }
         ]
       }
@@ -1556,7 +2317,7 @@
             "type": "u64"
           },
           {
-            "name": "curve_fee_bps",
+            "name": "swap_fee_bps",
             "type": "u16"
           },
           {
@@ -1672,6 +2433,119 @@
       }
     },
     {
+      "name": "LaunchFeeState",
+      "serialization": "bytemuckunsafe",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "launch",
+            "type": "pubkey"
+          },
+          {
+            "name": "protocol_beneficiary",
+            "type": "pubkey"
+          },
+          {
+            "name": "beneficiary_len",
+            "type": "u8"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "protocol_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "swap_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "version",
+            "type": "u8"
+          },
+          {
+            "name": "_pad0",
+            "type": {
+              "array": [
+                "u8",
+                1
+              ]
+            }
+          },
+          {
+            "name": "beneficiaries",
+            "type": {
+              "array": [
+                {
+                  "defined": {
+                    "name": "FeeBeneficiary"
+                  }
+                },
+                8
+              ]
+            }
+          },
+          {
+            "name": "cumulated_base_fees",
+            "type": "u64"
+          },
+          {
+            "name": "cumulated_quote_fees",
+            "type": "u64"
+          },
+          {
+            "name": "distributed_protocol_base_fees",
+            "type": "u64"
+          },
+          {
+            "name": "distributed_protocol_quote_fees",
+            "type": "u64"
+          },
+          {
+            "name": "distributed_base_by_beneficiary",
+            "type": {
+              "array": [
+                "u64",
+                8
+              ]
+            }
+          },
+          {
+            "name": "distributed_quote_by_beneficiary",
+            "type": {
+              "array": [
+                "u64",
+                8
+              ]
+            }
+          },
+          {
+            "name": "migrated_pool",
+            "type": "pubkey"
+          },
+          {
+            "name": "migrated_position",
+            "type": "pubkey"
+          },
+          {
+            "name": "_reserved",
+            "type": {
+              "array": [
+                "u8",
+                64
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "LaunchInitialized",
       "type": {
         "kind": "struct",
@@ -1757,6 +2631,30 @@
       }
     },
     {
+      "name": "MigratedFeesHarvested",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "launch",
+            "type": "pubkey"
+          },
+          {
+            "name": "pool",
+            "type": "pubkey"
+          },
+          {
+            "name": "base_amount",
+            "type": "u64"
+          },
+          {
+            "name": "quote_amount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
       "name": "MigratorAllowlistUpdated",
       "type": {
         "kind": "struct",
@@ -1792,6 +2690,200 @@
                 256
               ]
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Pool",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "config",
+            "type": "pubkey"
+          },
+          {
+            "name": "token0_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "token1_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "vault0",
+            "type": "pubkey"
+          },
+          {
+            "name": "vault1",
+            "type": "pubkey"
+          },
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "reserve0",
+            "type": "u64"
+          },
+          {
+            "name": "reserve1",
+            "type": "u64"
+          },
+          {
+            "name": "total_shares",
+            "type": "u128"
+          },
+          {
+            "name": "swap_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "fee_split_bps",
+            "type": "u16"
+          },
+          {
+            "name": "fee_growth_global0_q64",
+            "type": "u128"
+          },
+          {
+            "name": "fee_growth_global1_q64",
+            "type": "u128"
+          },
+          {
+            "name": "fees_unclaimed0",
+            "type": "u64"
+          },
+          {
+            "name": "fees_unclaimed1",
+            "type": "u64"
+          },
+          {
+            "name": "hook_program",
+            "type": "pubkey"
+          },
+          {
+            "name": "hook_flags",
+            "type": "u32"
+          },
+          {
+            "name": "numeraire_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "liquidity_measure_token_index",
+            "type": "u8"
+          },
+          {
+            "name": "route_next_pool",
+            "type": "pubkey"
+          },
+          {
+            "name": "route_bridge_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "k_last",
+            "type": "u128"
+          },
+          {
+            "name": "protocol_fee_position",
+            "type": "pubkey"
+          },
+          {
+            "name": "locked",
+            "type": "u8"
+          },
+          {
+            "name": "version",
+            "type": "u8"
+          },
+          {
+            "name": "_reserved",
+            "type": {
+              "array": [
+                "u8",
+                7
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Position",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "pool",
+            "type": "pubkey"
+          },
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "position_id",
+            "type": "u64"
+          },
+          {
+            "name": "shares",
+            "type": "u128"
+          },
+          {
+            "name": "fee_growth_last0_q64",
+            "type": "u128"
+          },
+          {
+            "name": "fee_growth_last1_q64",
+            "type": "u128"
+          },
+          {
+            "name": "fee_owed0",
+            "type": "u64"
+          },
+          {
+            "name": "fee_owed1",
+            "type": "u64"
+          },
+          {
+            "name": "version",
+            "type": "u8"
+          },
+          {
+            "name": "_reserved",
+            "type": {
+              "array": [
+                "u8",
+                7
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "SetFeePolicyArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "protocol_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "min_swap_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "max_swap_fee_bps",
+            "type": "u16"
           }
         ]
       }

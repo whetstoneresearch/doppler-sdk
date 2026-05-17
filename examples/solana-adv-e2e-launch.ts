@@ -84,9 +84,9 @@ async function main() {
   const END_MARKET_CAP_USD = 10_000_000;
 
   // ── Fee configuration ───────────────────────────────────────────────────
-  const CURVE_FEE_BPS = 200; // 2% swap fee during the bonding curve phase — stays in the quote vault, compounding into the curve
-  const CPMM_SWAP_FEE_BPS = 100; // 1% swap fee on the graduated CPMM pool
-  const CPMM_SWAP_FEE_SPLIT_BPS = 5000; // 50% of CPMM swap fees claimable by LP holders; remaining 50% compounds into the pool
+  const SWAP_FEE_BPS = 200; // 2%; must fit this deployment's configured fee bounds
+  const CPMM_SWAP_FEE_BPS = SWAP_FEE_BPS;
+  const CPMM_SWAP_FEE_SPLIT_BPS = 10_000; // migrated launch fees route through LaunchFeeState
 
   // ── Graduation threshold and price floor ────────────────────────────────
   const MIN_SOL_RAISE = 0.1; // low example threshold
@@ -124,6 +124,10 @@ async function main() {
     deployment.initializerProgram,
   );
   const [launchAuthority] = await initializer.getLaunchAuthorityAddress(
+    launch,
+    deployment.initializerProgram,
+  );
+  const [launchFeeState] = await initializer.getLaunchFeeStateAddress(
     launch,
     deployment.initializerProgram,
   );
@@ -199,6 +203,7 @@ async function main() {
         quoteMint: WSOL_MINT,
         baseVault,
         quoteVault,
+        launchFeeState,
         payer,
         authority: payer,
         hookProgram: deployment.cpmmHookProgram,
@@ -219,7 +224,7 @@ async function main() {
         baseForLiquidity: BASE_FOR_LIQUIDITY,
         curveVirtualBase: start.curveVirtualBase,
         curveVirtualQuote: start.curveVirtualQuote,
-        curveFeeBps: CURVE_FEE_BPS,
+        swapFeeBps: SWAP_FEE_BPS,
         curveKind: initializer.CURVE_KIND_XYK,
         curveParams: new Uint8Array([initializer.CURVE_PARAMS_FORMAT_XYK_V0]),
         allowBuy: true,
@@ -236,6 +241,7 @@ async function main() {
             cpmmConfig,
           ]),
         migratorRemainingAccountsHash: migrationAccounts.hash,
+        feeBeneficiaries: [{ wallet: payer.address, shareBps: 10_000 }],
         ...metadata,
       },
       deployment.initializerProgram,
@@ -313,6 +319,7 @@ async function main() {
     const previewIx = initializer.createPreviewSwapExactInInstruction(
       {
         launch,
+        launchFeeState,
         baseVault: baseVault.address,
         quoteVault: quoteVault.address,
         hookProgram: deployment.cpmmHookProgram,
@@ -412,6 +419,7 @@ async function main() {
         launchAuthority,
         baseVault: baseVault.address,
         quoteVault: quoteVault.address,
+        launchFeeState,
         userBaseAccount: userBaseAta,
         userQuoteAccount: userQuoteAta,
         baseMint: baseMint.address,
@@ -484,6 +492,7 @@ async function main() {
         quoteMint: WSOL_MINT,
         baseVault: baseVault.address,
         quoteVault: quoteVault.address,
+        launchFeeState,
         migratorProgram: deployment.cpmmMigratorProgram,
         payer,
         baseTokenProgram: TOKEN_PROGRAM_ADDRESS,

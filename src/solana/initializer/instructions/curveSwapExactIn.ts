@@ -71,6 +71,7 @@ export interface CurveSwapExactInAccounts {
   user: AddressOrSigner;
   /** Pass the actual hook program address, or omit to use System Program as a no-op placeholder. */
   hookProgram?: Address;
+  launchFeeState: Address;
   baseTokenProgram?: Address;
   quoteTokenProgram?: Address;
   remainingAccounts?: RemainingAccount[];
@@ -93,6 +94,7 @@ export function createCurveSwapExactInInstruction(
     quoteMint,
     user,
     hookProgram = SYSTEM_PROGRAM_ADDRESS,
+    launchFeeState,
     baseTokenProgram = TOKEN_PROGRAM_ADDRESS,
     quoteTokenProgram = TOKEN_PROGRAM_ADDRESS,
     remainingAccounts = [],
@@ -113,6 +115,7 @@ export function createCurveSwapExactInInstruction(
     // slot (token_program follows it).  Always emit it — use SYSTEM_PROGRAM_ADDRESS as the
     // no-op placeholder when no real hook is configured.
     { address: hookProgram, role: AccountRole.READONLY },
+    { address: launchFeeState, role: AccountRole.WRITABLE },
     { address: baseTokenProgram, role: AccountRole.READONLY },
     { address: quoteTokenProgram, role: AccountRole.READONLY },
     ...remainingAccounts.map(createRemainingAccountMeta),

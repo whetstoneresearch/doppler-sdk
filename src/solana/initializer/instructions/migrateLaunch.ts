@@ -47,6 +47,7 @@ export interface MigrateLaunchAccounts {
   quoteMint: Address;
   baseVault: Address;
   quoteVault: Address;
+  launchFeeState: Address;
   migratorProgram: Address;
   payer: AddressOrSigner;
   baseTokenProgram?: Address;
@@ -67,6 +68,7 @@ export function createMigrateLaunchInstruction(
     quoteMint,
     baseVault,
     quoteVault,
+    launchFeeState,
     migratorProgram,
     payer,
     baseTokenProgram = TOKEN_PROGRAM_ADDRESS,
@@ -83,6 +85,7 @@ export function createMigrateLaunchInstruction(
     { address: quoteMint, role: AccountRole.READONLY },
     { address: baseVault, role: AccountRole.WRITABLE },
     { address: quoteVault, role: AccountRole.WRITABLE },
+    { address: launchFeeState, role: AccountRole.READONLY },
     { address: migratorProgram, role: AccountRole.READONLY },
     createSignerAccountMeta(payer, AccountRole.WRITABLE_SIGNER),
     { address: baseTokenProgram, role: AccountRole.READONLY },

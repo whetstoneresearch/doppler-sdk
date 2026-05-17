@@ -16,6 +16,8 @@ import {
   getStructEncoder,
   getU16Decoder,
   getU16Encoder,
+  getU32Decoder,
+  getU32Encoder,
   getU8Decoder,
   getU8Encoder,
   type Address,
@@ -33,6 +35,8 @@ export type InitializePoolArgs = {
   initialFeeSplitBps: number;
   liquidityMeasureTokenIndex: number;
   numeraireMintOverride: Option<Address>;
+  hookProgram: Address;
+  hookFlags: number;
 };
 
 export type InitializePoolArgsArgs = {
@@ -42,6 +46,8 @@ export type InitializePoolArgsArgs = {
   initialFeeSplitBps: number;
   liquidityMeasureTokenIndex: number;
   numeraireMintOverride: OptionOrNullable<Address>;
+  hookProgram: Address;
+  hookFlags: number;
 };
 
 export function getInitializePoolArgsEncoder(): Encoder<InitializePoolArgsArgs> {
@@ -52,6 +58,8 @@ export function getInitializePoolArgsEncoder(): Encoder<InitializePoolArgsArgs> 
     ['initialFeeSplitBps', getU16Encoder()],
     ['liquidityMeasureTokenIndex', getU8Encoder()],
     ['numeraireMintOverride', getOptionEncoder(getAddressEncoder())],
+    ['hookProgram', getAddressEncoder()],
+    ['hookFlags', getU32Encoder()],
   ]);
 }
 
@@ -63,6 +71,8 @@ export function getInitializePoolArgsDecoder(): Decoder<InitializePoolArgs> {
     ['initialFeeSplitBps', getU16Decoder()],
     ['liquidityMeasureTokenIndex', getU8Decoder()],
     ['numeraireMintOverride', getOptionDecoder(getAddressDecoder())],
+    ['hookProgram', getAddressDecoder()],
+    ['hookFlags', getU32Decoder()],
   ]);
 }
 
