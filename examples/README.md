@@ -127,6 +127,7 @@ The Solana examples use `@whetstone-research/doppler-sdk/solana`. Set `SOLANA_NE
 - [`solana-adv-e2e-launch.ts`](./solana-adv-e2e-launch.ts): create, buy, migrate, and inspect the graduated CPMM pool.
 - [`solana-swap.ts`](./solana-swap.ts): quote and submit an exact-in CPMM swap.
 - [`solana-cosigner-gated-launch.ts`](./solana-cosigner-gated-launch.ts): E2E launch with bonding-curve swaps gated by the configured cosigner hook.
+- [`solana-cosigner-gated-buy.ts`](./solana-cosigner-gated-buy.ts): create a cosigner-gated launch with three env-configured beneficiaries, then execute one cosigned bonding-curve buy without migrating.
 
 Quick run:
 
