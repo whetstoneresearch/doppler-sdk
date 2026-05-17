@@ -2,8 +2,8 @@
  * Example: Cosigner-Gated Bonding Curve Buy (Solana)
  *
  * Creates a CPMM-migratable launch with the cosigner hook enabled for
- * pre-migration swaps, then proves an unsigned buy fails and executes one
- * cosigned bonding-curve buy. This example intentionally does not migrate.
+ * pre-migration swaps, proves an unsigned buy fails, executes one cosigned
+ * bonding-curve buy, migrates, then performs an ungated CPMM swap.
  *
  * Configure three launch beneficiaries with:
  *   SOLANA_FEE_BENEFICIARY_1_WALLET / _BASE_AMOUNT / _SHARE_BPS
@@ -21,7 +21,10 @@ import {
   getCreateAssociatedTokenIdempotentInstruction,
   getSyncNativeInstruction,
 } from '@solana-program/token';
-import { getTransferSolInstruction } from '@solana-program/system';
+import {
+  SYSTEM_PROGRAM_ADDRESS,
+  getTransferSolInstruction,
+} from '@solana-program/system';
 import {
   pipe,
   createTransactionMessage,
@@ -49,6 +52,7 @@ import {
   assertSolanaExampleNetwork,
   assertSimulationRejected,
   createLookupTableForInstruction,
+  createSetComputeUnitLimitInstruction,
   createSolanaClientsFromEnv,
   getMetadataByteLength,
   getSolPriceUsd,
@@ -233,11 +237,14 @@ async function main() {
   const QUOTE_DECIMALS = 9;
   const SWAP_FEE_BPS = 200;
   const CPMM_SWAP_FEE_SPLIT_BPS = 10_000;
-  const MIN_SOL_RAISE = 0.1;
   const BUY_AMOUNT_IN = parseDecimalTokenAmount(
     'SOLANA_COSIGNER_BUY_AMOUNT_SOL',
     QUOTE_DECIMALS,
   );
+  if (BUY_AMOUNT_IN === 0n) {
+    throw new Error('SOLANA_COSIGNER_BUY_AMOUNT_SOL must be greater than zero');
+  }
+  const minRaiseQuote = BUY_AMOUNT_IN > 1_000n ? BUY_AMOUNT_IN / 2n : 1n;
   const launchBeneficiaries = loadLaunchBeneficiaries({
     baseDecimals: BASE_DECIMALS,
     expectedDistributionAmount: BASE_FOR_DISTRIBUTION,
@@ -329,6 +336,7 @@ async function main() {
   console.log('  Cosigner config:   ', cosignerConfig);
   console.log('  Signing cosigner:  ', cosigner.address);
   console.log('  Buy amount atoms:  ', BUY_AMOUNT_IN.toString());
+  console.log('  Migration threshold atoms:', minRaiseQuote.toString());
   console.log('  Fee beneficiaries: ');
   for (const [
     index,
@@ -344,7 +352,7 @@ async function main() {
     initialSwapFeeBps: SWAP_FEE_BPS,
     initialFeeSplitBps: CPMM_SWAP_FEE_SPLIT_BPS,
     recipients: launchBeneficiaries.recipients,
-    minRaiseQuote: BigInt(MIN_SOL_RAISE * 1_000_000_000),
+    minRaiseQuote,
     minMigrationPriceQ64Opt: null,
     migratedPoolHookConfig: null,
   });
@@ -534,10 +542,122 @@ async function main() {
     initializer.phaseLabel(launchAccount.phase),
   );
   console.log('  Quote deposited:   ', launchAccount.quoteDeposited.toString());
+  if (launchAccount.quoteDeposited < minRaiseQuote) {
+    throw new Error(
+      `Launch quoteDeposited ${launchAccount.quoteDeposited} is below migration threshold ${minRaiseQuote}`,
+    );
+  }
   console.log('');
-  console.log(
-    'Cosigner-gated buy example complete. Migration was not invoked.',
+
+  const createRecipientAtaIxs = recipientAtas.map((ata, index) =>
+    getCreateAssociatedTokenIdempotentInstruction({
+      payer,
+      ata,
+      owner: launchBeneficiaries.recipients[index].wallet,
+      mint: baseMint.address,
+    }),
   );
+
+  const migrateLaunchIxBase = initializer.createMigrateLaunchInstruction(
+    {
+      config: deployment.initializerConfig,
+      launch,
+      launchAuthority,
+      baseMint: baseMint.address,
+      quoteMint: WSOL_MINT,
+      baseVault: baseVault.address,
+      quoteVault: quoteVault.address,
+      launchFeeState,
+      migratorProgram: deployment.cpmmMigratorProgram,
+      payer,
+      baseTokenProgram: TOKEN_PROGRAM_ADDRESS,
+      quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
+      systemProgram: SYSTEM_PROGRAM_ADDRESS,
+      rent: SYSVAR_RENT_ADDRESS,
+    },
+    deployment.initializerProgram,
+  );
+  const migrateLaunchIx = {
+    ...migrateLaunchIxBase,
+    accounts: [
+      ...(migrateLaunchIxBase.accounts ?? []),
+      ...migrationAccounts.metas,
+    ],
+  };
+  const migrationSignature = await sendInstructions({
+    rpc,
+    rpcSubscriptions,
+    payer,
+    instructions: [
+      createSetComputeUnitLimitInstruction(800_000),
+      ...createRecipientAtaIxs,
+      migrateLaunchIx,
+    ],
+  });
+  console.log('  Migration tx:      ', migrationSignature);
+
+  const migratedLaunch = await initializer.fetchLaunch(rpc, launch, {
+    commitment: 'confirmed',
+    programId: deployment.initializerProgram,
+  });
+  console.log(
+    '  Migrated phase:    ',
+    initializer.phaseLabel(migratedLaunch.phase),
+  );
+
+  const poolResult = await cpmm.getPoolByMints(
+    rpc,
+    baseMint.address,
+    WSOL_MINT,
+    {
+      commitment: 'confirmed',
+      programId: deployment.cpmmProgram,
+    },
+  );
+  if (!poolResult) {
+    throw new Error('CPMM pool was not found after migration');
+  }
+
+  const { address: poolAddress, account: pool } = poolResult;
+  if (pool.hookProgram !== SYSTEM_PROGRAM_ADDRESS || pool.hookFlags !== 0) {
+    throw new Error(
+      `Migrated pool hook mismatch: got program ${pool.hookProgram} flags ${pool.hookFlags}, expected no CPMM hook`,
+    );
+  }
+
+  const tradeDirection = pool.token0Mint === baseMint.address ? 0 : 1;
+  const CPMM_SWAP_AMOUNT_IN = 1_000_000n;
+  const quote = cpmm.getSwapQuote(pool, CPMM_SWAP_AMOUNT_IN, tradeDirection);
+  const minAmountOut = (quote.amountOut * 9_500n) / 10_000n;
+  const userToken0 =
+    pool.token0Mint === baseMint.address ? userBaseAta : userQuoteAta;
+  const userToken1 =
+    pool.token1Mint === baseMint.address ? userBaseAta : userQuoteAta;
+  const cpmmSwapIx = cpmm.createSwapInstruction({
+    config: migrationAccounts.cpmmConfig,
+    pool: poolAddress,
+    authority: pool.authority,
+    vault0: pool.vault0,
+    vault1: pool.vault1,
+    token0Mint: pool.token0Mint,
+    token1Mint: pool.token1Mint,
+    userToken0,
+    userToken1,
+    user: payer,
+    amountIn: CPMM_SWAP_AMOUNT_IN,
+    minAmountOut,
+    tradeDirection,
+    programId: deployment.cpmmProgram,
+  });
+  const cpmmSwapSignature = await sendInstructions({
+    rpc,
+    rpcSubscriptions,
+    payer,
+    instructions: [createSetComputeUnitLimitInstruction(400_000), cpmmSwapIx],
+  });
+  console.log('  Ungated CPMM swap tx:', cpmmSwapSignature);
+  console.log('');
+  console.log('Cosigner-gated buy and ungated CPMM migration flow complete.');
 }
 
 main().catch((error) => {
