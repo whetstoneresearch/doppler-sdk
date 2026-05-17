@@ -203,7 +203,7 @@ async function main() {
     baseMint.address,
   );
 
-  const namespace = SYSTEM_PROGRAM_ADDRESS;
+  const namespace = payer.address;
   const launchId = initializer.launchIdFromU64(BigInt(Date.now()));
   const signedHookRemainingAccounts = [namespace, cosignerConfig, cosigner];
   // Same keys as the signed path, but the cosigner is only an address here.
