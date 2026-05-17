@@ -209,6 +209,8 @@ export interface InitializePoolArgs {
   initialFeeSplitBps: number;
   liquidityMeasureTokenIndex: number;
   numeraireMintOverride: Address | null;
+  hookProgram: Address;
+  hookFlags: number;
 }
 
 export interface InitializeOracleArgs {

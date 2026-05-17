@@ -10,11 +10,16 @@ export const SYSVAR_INSTRUCTIONS_ADDRESS: Address = address(
 );
 
 /**
- * CPMM AMM program ID for the currently published Solana deployment.
+ * CPMM AMM program ID for the default devnet deployment.
  */
-export const CPMM_PROGRAM_ID: Address = address(
+export const DEVNET_CPMM_PROGRAM_ID: Address = address(
   '9PSxVPoPfnbZ8Q1uQhgS6ZxvBjFboZtebNsu34umxkgQ',
 );
+
+/**
+ * @deprecated Use DEVNET_CPMM_PROGRAM_ID or pass an explicit deployment.
+ */
+export const CPMM_PROGRAM_ID = DEVNET_CPMM_PROGRAM_ID;
 
 /**
  * Metaplex Token Metadata Program ID

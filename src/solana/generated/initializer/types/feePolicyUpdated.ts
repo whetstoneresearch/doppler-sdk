@@ -14,53 +14,45 @@ import {
   getStructEncoder,
   getU16Decoder,
   getU16Encoder,
-  getU8Decoder,
-  getU8Encoder,
   type Address,
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
 } from '@solana/kit';
 
-export type ConfigInitialized = {
-  admin: Address;
-  migratorAllowlistLen: number;
-  hookAllowlistLen: number;
+export type FeePolicyUpdated = {
+  config: Address;
   protocolFeeBps: number;
   minSwapFeeBps: number;
   maxSwapFeeBps: number;
 };
 
-export type ConfigInitializedArgs = ConfigInitialized;
+export type FeePolicyUpdatedArgs = FeePolicyUpdated;
 
-export function getConfigInitializedEncoder(): FixedSizeEncoder<ConfigInitializedArgs> {
+export function getFeePolicyUpdatedEncoder(): FixedSizeEncoder<FeePolicyUpdatedArgs> {
   return getStructEncoder([
-    ['admin', getAddressEncoder()],
-    ['migratorAllowlistLen', getU8Encoder()],
-    ['hookAllowlistLen', getU8Encoder()],
+    ['config', getAddressEncoder()],
     ['protocolFeeBps', getU16Encoder()],
     ['minSwapFeeBps', getU16Encoder()],
     ['maxSwapFeeBps', getU16Encoder()],
   ]);
 }
 
-export function getConfigInitializedDecoder(): FixedSizeDecoder<ConfigInitialized> {
+export function getFeePolicyUpdatedDecoder(): FixedSizeDecoder<FeePolicyUpdated> {
   return getStructDecoder([
-    ['admin', getAddressDecoder()],
-    ['migratorAllowlistLen', getU8Decoder()],
-    ['hookAllowlistLen', getU8Decoder()],
+    ['config', getAddressDecoder()],
     ['protocolFeeBps', getU16Decoder()],
     ['minSwapFeeBps', getU16Decoder()],
     ['maxSwapFeeBps', getU16Decoder()],
   ]);
 }
 
-export function getConfigInitializedCodec(): FixedSizeCodec<
-  ConfigInitializedArgs,
-  ConfigInitialized
+export function getFeePolicyUpdatedCodec(): FixedSizeCodec<
+  FeePolicyUpdatedArgs,
+  FeePolicyUpdated
 > {
   return combineCodec(
-    getConfigInitializedEncoder(),
-    getConfigInitializedDecoder(),
+    getFeePolicyUpdatedEncoder(),
+    getFeePolicyUpdatedDecoder(),
   );
 }

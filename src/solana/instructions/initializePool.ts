@@ -20,6 +20,11 @@ import {
 
 /** Type that can be either an Address or a TransactionSigner */
 type AddressOrSigner = Address | TransactionSigner;
+type InitializePoolParams = Omit<
+  InitializePoolArgs,
+  'hookProgram' | 'hookFlags'
+> &
+  Partial<Pick<InitializePoolArgs, 'hookProgram' | 'hookFlags'>>;
 
 /** Check if value is a TransactionSigner (duck typing) */
 function isTransactionSigner(
@@ -119,13 +124,15 @@ export interface InitializePoolAccounts {
  *     initialFeeSplitBps: 5000,
  *     liquidityMeasureTokenIndex: 0,
  *     numeraireMintOverride: null,
+ *     hookProgram: SYSTEM_PROGRAM_ADDRESS,
+ *     hookFlags: 0,
  *   }
  * );
  * ```
  */
 export function createInitializePoolInstruction(
   accounts: InitializePoolAccounts,
-  args: InitializePoolArgs,
+  args: InitializePoolParams,
   programId: Address = CPMM_PROGRAM_ID,
 ): Instruction {
   const {
@@ -169,7 +176,11 @@ export function createInitializePoolInstruction(
   const data = encodeInstructionData(
     INSTRUCTION_DISCRIMINATORS.initializePool,
     initializePoolArgsCodec,
-    args,
+    {
+      ...args,
+      hookProgram: args.hookProgram ?? SYSTEM_PROGRAM_ADDRESS,
+      hookFlags: args.hookFlags ?? 0,
+    },
   );
 
   return {

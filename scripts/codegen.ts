@@ -113,4 +113,24 @@ for (const { file, type, fns } of CONFLICTING_EVENTS) {
 fs.writeFileSync(cpmm_types_index_path, cpmm_types_index);
 console.log('  ✓ patched cpmm/types/index.ts (resolved AddLiquidityArgs / CollectFeesArgs naming collision)');
 
+// Anchor's IDL sizing does not include the trailing repr(C) padding byte on the
+// initializer InitConfig zero-copy account. Keep the public size helper aligned
+// with the on-chain account space used by the program.
+const initializer_config_path = path.join(
+  GENERATED_DIR,
+  'initializer',
+  'accounts',
+  'initConfig.ts',
+);
+let initializer_config = fs.readFileSync(initializer_config_path, 'utf-8');
+initializer_config = initializer_config.replace(
+  /export function getInitConfigSize\(\): number {\n  return \d+;\n}/,
+  'export function getInitConfigSize(): number {\n  return 2123;\n}',
+);
+if (!initializer_config.includes('return 2123;')) {
+  throw new Error('Failed to patch initializer InitConfig account size');
+}
+fs.writeFileSync(initializer_config_path, initializer_config);
+console.log('  ✓ patched initializer/accounts/initConfig.ts (preserved on-chain InitConfig size)');
+
 console.log('\nCodegen complete.');

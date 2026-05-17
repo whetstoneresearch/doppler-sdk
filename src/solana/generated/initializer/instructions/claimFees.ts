@@ -20,7 +20,6 @@ import {
   SolanaError,
   transformEncoder,
   type AccountMeta,
-  type AccountSignerMeta,
   type Address,
   type FixedSizeCodec,
   type FixedSizeDecoder,
@@ -30,9 +29,7 @@ import {
   type InstructionWithData,
   type ReadonlyAccount,
   type ReadonlyUint8Array,
-  type TransactionSigner,
   type WritableAccount,
-  type WritableSignerAccount,
 } from '@solana/kit';
 import {
   getAccountMetaFactory,
@@ -41,48 +38,45 @@ import {
 } from '@solana/program-client-core';
 import { INITIALIZER_PROGRAM_ADDRESS } from '../programs';
 
-export const MIGRATE_LAUNCH_DISCRIMINATOR = new Uint8Array([
-  19, 199, 119, 103, 13, 30, 12, 205,
+export const CLAIM_FEES_DISCRIMINATOR = new Uint8Array([
+  82, 251, 233, 156, 12, 52, 184, 202,
 ]);
 
-export function getMigrateLaunchDiscriminatorBytes() {
-  return fixEncoderSize(getBytesEncoder(), 8).encode(
-    MIGRATE_LAUNCH_DISCRIMINATOR,
-  );
+export function getClaimFeesDiscriminatorBytes() {
+  return fixEncoderSize(getBytesEncoder(), 8).encode(CLAIM_FEES_DISCRIMINATOR);
 }
 
-export type MigrateLaunchInstruction<
+export type ClaimFeesInstruction<
   TProgram extends string = typeof INITIALIZER_PROGRAM_ADDRESS,
-  TAccountConfig extends string | AccountMeta<string> = string,
   TAccountLaunch extends string | AccountMeta<string> = string,
+  TAccountLaunchFeeState extends string | AccountMeta<string> = string,
   TAccountLaunchAuthority extends string | AccountMeta<string> = string,
+  TAccountRecipient extends string | AccountMeta<string> = string,
   TAccountBaseMint extends string | AccountMeta<string> = string,
   TAccountQuoteMint extends string | AccountMeta<string> = string,
   TAccountBaseVault extends string | AccountMeta<string> = string,
   TAccountQuoteVault extends string | AccountMeta<string> = string,
-  TAccountLaunchFeeState extends string | AccountMeta<string> = string,
-  TAccountMigratorProgram extends string | AccountMeta<string> = string,
-  TAccountPayer extends string | AccountMeta<string> = string,
+  TAccountRecipientBaseAta extends string | AccountMeta<string> = string,
+  TAccountRecipientQuoteAta extends string | AccountMeta<string> = string,
   TAccountBaseTokenProgram extends string | AccountMeta<string> = string,
   TAccountQuoteTokenProgram extends string | AccountMeta<string> = string,
-  TAccountSystemProgram extends string | AccountMeta<string> =
-    '11111111111111111111111111111111',
-  TAccountRent extends string | AccountMeta<string> =
-    'SysvarRent111111111111111111111111111111111',
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
   InstructionWithAccounts<
     [
-      TAccountConfig extends string
-        ? ReadonlyAccount<TAccountConfig>
-        : TAccountConfig,
       TAccountLaunch extends string
-        ? WritableAccount<TAccountLaunch>
+        ? ReadonlyAccount<TAccountLaunch>
         : TAccountLaunch,
+      TAccountLaunchFeeState extends string
+        ? WritableAccount<TAccountLaunchFeeState>
+        : TAccountLaunchFeeState,
       TAccountLaunchAuthority extends string
         ? ReadonlyAccount<TAccountLaunchAuthority>
         : TAccountLaunchAuthority,
+      TAccountRecipient extends string
+        ? ReadonlyAccount<TAccountRecipient>
+        : TAccountRecipient,
       TAccountBaseMint extends string
         ? ReadonlyAccount<TAccountBaseMint>
         : TAccountBaseMint,
@@ -95,144 +89,122 @@ export type MigrateLaunchInstruction<
       TAccountQuoteVault extends string
         ? WritableAccount<TAccountQuoteVault>
         : TAccountQuoteVault,
-      TAccountLaunchFeeState extends string
-        ? ReadonlyAccount<TAccountLaunchFeeState>
-        : TAccountLaunchFeeState,
-      TAccountMigratorProgram extends string
-        ? ReadonlyAccount<TAccountMigratorProgram>
-        : TAccountMigratorProgram,
-      TAccountPayer extends string
-        ? WritableSignerAccount<TAccountPayer> &
-            AccountSignerMeta<TAccountPayer>
-        : TAccountPayer,
+      TAccountRecipientBaseAta extends string
+        ? WritableAccount<TAccountRecipientBaseAta>
+        : TAccountRecipientBaseAta,
+      TAccountRecipientQuoteAta extends string
+        ? WritableAccount<TAccountRecipientQuoteAta>
+        : TAccountRecipientQuoteAta,
       TAccountBaseTokenProgram extends string
         ? ReadonlyAccount<TAccountBaseTokenProgram>
         : TAccountBaseTokenProgram,
       TAccountQuoteTokenProgram extends string
         ? ReadonlyAccount<TAccountQuoteTokenProgram>
         : TAccountQuoteTokenProgram,
-      TAccountSystemProgram extends string
-        ? ReadonlyAccount<TAccountSystemProgram>
-        : TAccountSystemProgram,
-      TAccountRent extends string
-        ? ReadonlyAccount<TAccountRent>
-        : TAccountRent,
       ...TRemainingAccounts,
     ]
   >;
 
-export type MigrateLaunchInstructionData = {
-  discriminator: ReadonlyUint8Array;
-};
+export type ClaimFeesInstructionData = { discriminator: ReadonlyUint8Array };
 
-export type MigrateLaunchInstructionDataArgs = {};
+export type ClaimFeesInstructionDataArgs = {};
 
-export function getMigrateLaunchInstructionDataEncoder(): FixedSizeEncoder<MigrateLaunchInstructionDataArgs> {
+export function getClaimFeesInstructionDataEncoder(): FixedSizeEncoder<ClaimFeesInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
-    (value) => ({ ...value, discriminator: MIGRATE_LAUNCH_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: CLAIM_FEES_DISCRIMINATOR }),
   );
 }
 
-export function getMigrateLaunchInstructionDataDecoder(): FixedSizeDecoder<MigrateLaunchInstructionData> {
+export function getClaimFeesInstructionDataDecoder(): FixedSizeDecoder<ClaimFeesInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
   ]);
 }
 
-export function getMigrateLaunchInstructionDataCodec(): FixedSizeCodec<
-  MigrateLaunchInstructionDataArgs,
-  MigrateLaunchInstructionData
+export function getClaimFeesInstructionDataCodec(): FixedSizeCodec<
+  ClaimFeesInstructionDataArgs,
+  ClaimFeesInstructionData
 > {
   return combineCodec(
-    getMigrateLaunchInstructionDataEncoder(),
-    getMigrateLaunchInstructionDataDecoder(),
+    getClaimFeesInstructionDataEncoder(),
+    getClaimFeesInstructionDataDecoder(),
   );
 }
 
-export type MigrateLaunchAsyncInput<
-  TAccountConfig extends string = string,
+export type ClaimFeesAsyncInput<
   TAccountLaunch extends string = string,
+  TAccountLaunchFeeState extends string = string,
   TAccountLaunchAuthority extends string = string,
+  TAccountRecipient extends string = string,
   TAccountBaseMint extends string = string,
   TAccountQuoteMint extends string = string,
   TAccountBaseVault extends string = string,
   TAccountQuoteVault extends string = string,
-  TAccountLaunchFeeState extends string = string,
-  TAccountMigratorProgram extends string = string,
-  TAccountPayer extends string = string,
+  TAccountRecipientBaseAta extends string = string,
+  TAccountRecipientQuoteAta extends string = string,
   TAccountBaseTokenProgram extends string = string,
   TAccountQuoteTokenProgram extends string = string,
-  TAccountSystemProgram extends string = string,
-  TAccountRent extends string = string,
 > = {
-  config?: Address<TAccountConfig>;
   launch: Address<TAccountLaunch>;
-  launchAuthority: Address<TAccountLaunchAuthority>;
+  launchFeeState?: Address<TAccountLaunchFeeState>;
+  launchAuthority?: Address<TAccountLaunchAuthority>;
+  recipient: Address<TAccountRecipient>;
   baseMint: Address<TAccountBaseMint>;
   quoteMint: Address<TAccountQuoteMint>;
   baseVault: Address<TAccountBaseVault>;
   quoteVault: Address<TAccountQuoteVault>;
-  launchFeeState?: Address<TAccountLaunchFeeState>;
-  migratorProgram: Address<TAccountMigratorProgram>;
-  payer: TransactionSigner<TAccountPayer>;
+  recipientBaseAta: Address<TAccountRecipientBaseAta>;
+  recipientQuoteAta: Address<TAccountRecipientQuoteAta>;
   baseTokenProgram: Address<TAccountBaseTokenProgram>;
   quoteTokenProgram: Address<TAccountQuoteTokenProgram>;
-  systemProgram?: Address<TAccountSystemProgram>;
-  rent?: Address<TAccountRent>;
 };
 
-export async function getMigrateLaunchInstructionAsync<
-  TAccountConfig extends string,
+export async function getClaimFeesInstructionAsync<
   TAccountLaunch extends string,
+  TAccountLaunchFeeState extends string,
   TAccountLaunchAuthority extends string,
+  TAccountRecipient extends string,
   TAccountBaseMint extends string,
   TAccountQuoteMint extends string,
   TAccountBaseVault extends string,
   TAccountQuoteVault extends string,
-  TAccountLaunchFeeState extends string,
-  TAccountMigratorProgram extends string,
-  TAccountPayer extends string,
+  TAccountRecipientBaseAta extends string,
+  TAccountRecipientQuoteAta extends string,
   TAccountBaseTokenProgram extends string,
   TAccountQuoteTokenProgram extends string,
-  TAccountSystemProgram extends string,
-  TAccountRent extends string,
   TProgramAddress extends Address = typeof INITIALIZER_PROGRAM_ADDRESS,
 >(
-  input: MigrateLaunchAsyncInput<
-    TAccountConfig,
+  input: ClaimFeesAsyncInput<
     TAccountLaunch,
+    TAccountLaunchFeeState,
     TAccountLaunchAuthority,
+    TAccountRecipient,
     TAccountBaseMint,
     TAccountQuoteMint,
     TAccountBaseVault,
     TAccountQuoteVault,
-    TAccountLaunchFeeState,
-    TAccountMigratorProgram,
-    TAccountPayer,
+    TAccountRecipientBaseAta,
+    TAccountRecipientQuoteAta,
     TAccountBaseTokenProgram,
-    TAccountQuoteTokenProgram,
-    TAccountSystemProgram,
-    TAccountRent
+    TAccountQuoteTokenProgram
   >,
   config?: { programAddress?: TProgramAddress },
 ): Promise<
-  MigrateLaunchInstruction<
+  ClaimFeesInstruction<
     TProgramAddress,
-    TAccountConfig,
     TAccountLaunch,
+    TAccountLaunchFeeState,
     TAccountLaunchAuthority,
+    TAccountRecipient,
     TAccountBaseMint,
     TAccountQuoteMint,
     TAccountBaseVault,
     TAccountQuoteVault,
-    TAccountLaunchFeeState,
-    TAccountMigratorProgram,
-    TAccountPayer,
+    TAccountRecipientBaseAta,
+    TAccountRecipientQuoteAta,
     TAccountBaseTokenProgram,
-    TAccountQuoteTokenProgram,
-    TAccountSystemProgram,
-    TAccountRent
+    TAccountQuoteTokenProgram
   >
 > {
   // Program address.
@@ -240,22 +212,25 @@ export async function getMigrateLaunchInstructionAsync<
 
   // Original accounts.
   const originalAccounts = {
-    config: { value: input.config ?? null, isWritable: false },
-    launch: { value: input.launch ?? null, isWritable: true },
+    launch: { value: input.launch ?? null, isWritable: false },
+    launchFeeState: { value: input.launchFeeState ?? null, isWritable: true },
     launchAuthority: {
       value: input.launchAuthority ?? null,
       isWritable: false,
     },
+    recipient: { value: input.recipient ?? null, isWritable: false },
     baseMint: { value: input.baseMint ?? null, isWritable: false },
     quoteMint: { value: input.quoteMint ?? null, isWritable: false },
     baseVault: { value: input.baseVault ?? null, isWritable: true },
     quoteVault: { value: input.quoteVault ?? null, isWritable: true },
-    launchFeeState: { value: input.launchFeeState ?? null, isWritable: false },
-    migratorProgram: {
-      value: input.migratorProgram ?? null,
-      isWritable: false,
+    recipientBaseAta: {
+      value: input.recipientBaseAta ?? null,
+      isWritable: true,
     },
-    payer: { value: input.payer ?? null, isWritable: true },
+    recipientQuoteAta: {
+      value: input.recipientQuoteAta ?? null,
+      isWritable: true,
+    },
     baseTokenProgram: {
       value: input.baseTokenProgram ?? null,
       isWritable: false,
@@ -264,8 +239,6 @@ export async function getMigrateLaunchInstructionAsync<
       value: input.quoteTokenProgram ?? null,
       isWritable: false,
     },
-    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
-    rent: { value: input.rent ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -273,14 +246,6 @@ export async function getMigrateLaunchInstructionAsync<
   >;
 
   // Resolve default values.
-  if (!accounts.config.value) {
-    accounts.config.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(new Uint8Array([99, 111, 110, 102, 105, 103])),
-      ],
-    });
-  }
   if (!accounts.launchFeeState.value) {
     accounts.launchFeeState.value = await getProgramDerivedAddress({
       programAddress,
@@ -300,158 +265,158 @@ export async function getMigrateLaunchInstructionAsync<
       ],
     });
   }
-  if (!accounts.systemProgram.value) {
-    accounts.systemProgram.value =
-      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
-  }
-  if (!accounts.rent.value) {
-    accounts.rent.value =
-      'SysvarRent111111111111111111111111111111111' as Address<'SysvarRent111111111111111111111111111111111'>;
+  if (!accounts.launchAuthority.value) {
+    accounts.launchAuthority.value = await getProgramDerivedAddress({
+      programAddress,
+      seeds: [
+        getBytesEncoder().encode(
+          new Uint8Array([
+            108, 97, 117, 110, 99, 104, 95, 97, 117, 116, 104, 111, 114, 105,
+            116, 121,
+          ]),
+        ),
+        getAddressEncoder().encode(
+          getAddressFromResolvedInstructionAccount(
+            'launch',
+            accounts.launch.value,
+          ),
+        ),
+      ],
+    });
   }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta('config', accounts.config),
       getAccountMeta('launch', accounts.launch),
+      getAccountMeta('launchFeeState', accounts.launchFeeState),
       getAccountMeta('launchAuthority', accounts.launchAuthority),
+      getAccountMeta('recipient', accounts.recipient),
       getAccountMeta('baseMint', accounts.baseMint),
       getAccountMeta('quoteMint', accounts.quoteMint),
       getAccountMeta('baseVault', accounts.baseVault),
       getAccountMeta('quoteVault', accounts.quoteVault),
-      getAccountMeta('launchFeeState', accounts.launchFeeState),
-      getAccountMeta('migratorProgram', accounts.migratorProgram),
-      getAccountMeta('payer', accounts.payer),
+      getAccountMeta('recipientBaseAta', accounts.recipientBaseAta),
+      getAccountMeta('recipientQuoteAta', accounts.recipientQuoteAta),
       getAccountMeta('baseTokenProgram', accounts.baseTokenProgram),
       getAccountMeta('quoteTokenProgram', accounts.quoteTokenProgram),
-      getAccountMeta('systemProgram', accounts.systemProgram),
-      getAccountMeta('rent', accounts.rent),
     ],
-    data: getMigrateLaunchInstructionDataEncoder().encode({}),
+    data: getClaimFeesInstructionDataEncoder().encode({}),
     programAddress,
-  } as MigrateLaunchInstruction<
+  } as ClaimFeesInstruction<
     TProgramAddress,
-    TAccountConfig,
     TAccountLaunch,
+    TAccountLaunchFeeState,
     TAccountLaunchAuthority,
+    TAccountRecipient,
     TAccountBaseMint,
     TAccountQuoteMint,
     TAccountBaseVault,
     TAccountQuoteVault,
-    TAccountLaunchFeeState,
-    TAccountMigratorProgram,
-    TAccountPayer,
+    TAccountRecipientBaseAta,
+    TAccountRecipientQuoteAta,
     TAccountBaseTokenProgram,
-    TAccountQuoteTokenProgram,
-    TAccountSystemProgram,
-    TAccountRent
+    TAccountQuoteTokenProgram
   >);
 }
 
-export type MigrateLaunchInput<
-  TAccountConfig extends string = string,
+export type ClaimFeesInput<
   TAccountLaunch extends string = string,
+  TAccountLaunchFeeState extends string = string,
   TAccountLaunchAuthority extends string = string,
+  TAccountRecipient extends string = string,
   TAccountBaseMint extends string = string,
   TAccountQuoteMint extends string = string,
   TAccountBaseVault extends string = string,
   TAccountQuoteVault extends string = string,
-  TAccountLaunchFeeState extends string = string,
-  TAccountMigratorProgram extends string = string,
-  TAccountPayer extends string = string,
+  TAccountRecipientBaseAta extends string = string,
+  TAccountRecipientQuoteAta extends string = string,
   TAccountBaseTokenProgram extends string = string,
   TAccountQuoteTokenProgram extends string = string,
-  TAccountSystemProgram extends string = string,
-  TAccountRent extends string = string,
 > = {
-  config: Address<TAccountConfig>;
   launch: Address<TAccountLaunch>;
+  launchFeeState: Address<TAccountLaunchFeeState>;
   launchAuthority: Address<TAccountLaunchAuthority>;
+  recipient: Address<TAccountRecipient>;
   baseMint: Address<TAccountBaseMint>;
   quoteMint: Address<TAccountQuoteMint>;
   baseVault: Address<TAccountBaseVault>;
   quoteVault: Address<TAccountQuoteVault>;
-  launchFeeState: Address<TAccountLaunchFeeState>;
-  migratorProgram: Address<TAccountMigratorProgram>;
-  payer: TransactionSigner<TAccountPayer>;
+  recipientBaseAta: Address<TAccountRecipientBaseAta>;
+  recipientQuoteAta: Address<TAccountRecipientQuoteAta>;
   baseTokenProgram: Address<TAccountBaseTokenProgram>;
   quoteTokenProgram: Address<TAccountQuoteTokenProgram>;
-  systemProgram?: Address<TAccountSystemProgram>;
-  rent?: Address<TAccountRent>;
 };
 
-export function getMigrateLaunchInstruction<
-  TAccountConfig extends string,
+export function getClaimFeesInstruction<
   TAccountLaunch extends string,
+  TAccountLaunchFeeState extends string,
   TAccountLaunchAuthority extends string,
+  TAccountRecipient extends string,
   TAccountBaseMint extends string,
   TAccountQuoteMint extends string,
   TAccountBaseVault extends string,
   TAccountQuoteVault extends string,
-  TAccountLaunchFeeState extends string,
-  TAccountMigratorProgram extends string,
-  TAccountPayer extends string,
+  TAccountRecipientBaseAta extends string,
+  TAccountRecipientQuoteAta extends string,
   TAccountBaseTokenProgram extends string,
   TAccountQuoteTokenProgram extends string,
-  TAccountSystemProgram extends string,
-  TAccountRent extends string,
   TProgramAddress extends Address = typeof INITIALIZER_PROGRAM_ADDRESS,
 >(
-  input: MigrateLaunchInput<
-    TAccountConfig,
+  input: ClaimFeesInput<
     TAccountLaunch,
+    TAccountLaunchFeeState,
     TAccountLaunchAuthority,
+    TAccountRecipient,
     TAccountBaseMint,
     TAccountQuoteMint,
     TAccountBaseVault,
     TAccountQuoteVault,
-    TAccountLaunchFeeState,
-    TAccountMigratorProgram,
-    TAccountPayer,
+    TAccountRecipientBaseAta,
+    TAccountRecipientQuoteAta,
     TAccountBaseTokenProgram,
-    TAccountQuoteTokenProgram,
-    TAccountSystemProgram,
-    TAccountRent
+    TAccountQuoteTokenProgram
   >,
   config?: { programAddress?: TProgramAddress },
-): MigrateLaunchInstruction<
+): ClaimFeesInstruction<
   TProgramAddress,
-  TAccountConfig,
   TAccountLaunch,
+  TAccountLaunchFeeState,
   TAccountLaunchAuthority,
+  TAccountRecipient,
   TAccountBaseMint,
   TAccountQuoteMint,
   TAccountBaseVault,
   TAccountQuoteVault,
-  TAccountLaunchFeeState,
-  TAccountMigratorProgram,
-  TAccountPayer,
+  TAccountRecipientBaseAta,
+  TAccountRecipientQuoteAta,
   TAccountBaseTokenProgram,
-  TAccountQuoteTokenProgram,
-  TAccountSystemProgram,
-  TAccountRent
+  TAccountQuoteTokenProgram
 > {
   // Program address.
   const programAddress = config?.programAddress ?? INITIALIZER_PROGRAM_ADDRESS;
 
   // Original accounts.
   const originalAccounts = {
-    config: { value: input.config ?? null, isWritable: false },
-    launch: { value: input.launch ?? null, isWritable: true },
+    launch: { value: input.launch ?? null, isWritable: false },
+    launchFeeState: { value: input.launchFeeState ?? null, isWritable: true },
     launchAuthority: {
       value: input.launchAuthority ?? null,
       isWritable: false,
     },
+    recipient: { value: input.recipient ?? null, isWritable: false },
     baseMint: { value: input.baseMint ?? null, isWritable: false },
     quoteMint: { value: input.quoteMint ?? null, isWritable: false },
     baseVault: { value: input.baseVault ?? null, isWritable: true },
     quoteVault: { value: input.quoteVault ?? null, isWritable: true },
-    launchFeeState: { value: input.launchFeeState ?? null, isWritable: false },
-    migratorProgram: {
-      value: input.migratorProgram ?? null,
-      isWritable: false,
+    recipientBaseAta: {
+      value: input.recipientBaseAta ?? null,
+      isWritable: true,
     },
-    payer: { value: input.payer ?? null, isWritable: true },
+    recipientQuoteAta: {
+      value: input.recipientQuoteAta ?? null,
+      isWritable: true,
+    },
     baseTokenProgram: {
       value: input.baseTokenProgram ?? null,
       isWritable: false,
@@ -460,101 +425,83 @@ export function getMigrateLaunchInstruction<
       value: input.quoteTokenProgram ?? null,
       isWritable: false,
     },
-    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
-    rent: { value: input.rent ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
     ResolvedInstructionAccount
   >;
 
-  // Resolve default values.
-  if (!accounts.systemProgram.value) {
-    accounts.systemProgram.value =
-      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
-  }
-  if (!accounts.rent.value) {
-    accounts.rent.value =
-      'SysvarRent111111111111111111111111111111111' as Address<'SysvarRent111111111111111111111111111111111'>;
-  }
-
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta('config', accounts.config),
       getAccountMeta('launch', accounts.launch),
+      getAccountMeta('launchFeeState', accounts.launchFeeState),
       getAccountMeta('launchAuthority', accounts.launchAuthority),
+      getAccountMeta('recipient', accounts.recipient),
       getAccountMeta('baseMint', accounts.baseMint),
       getAccountMeta('quoteMint', accounts.quoteMint),
       getAccountMeta('baseVault', accounts.baseVault),
       getAccountMeta('quoteVault', accounts.quoteVault),
-      getAccountMeta('launchFeeState', accounts.launchFeeState),
-      getAccountMeta('migratorProgram', accounts.migratorProgram),
-      getAccountMeta('payer', accounts.payer),
+      getAccountMeta('recipientBaseAta', accounts.recipientBaseAta),
+      getAccountMeta('recipientQuoteAta', accounts.recipientQuoteAta),
       getAccountMeta('baseTokenProgram', accounts.baseTokenProgram),
       getAccountMeta('quoteTokenProgram', accounts.quoteTokenProgram),
-      getAccountMeta('systemProgram', accounts.systemProgram),
-      getAccountMeta('rent', accounts.rent),
     ],
-    data: getMigrateLaunchInstructionDataEncoder().encode({}),
+    data: getClaimFeesInstructionDataEncoder().encode({}),
     programAddress,
-  } as MigrateLaunchInstruction<
+  } as ClaimFeesInstruction<
     TProgramAddress,
-    TAccountConfig,
     TAccountLaunch,
+    TAccountLaunchFeeState,
     TAccountLaunchAuthority,
+    TAccountRecipient,
     TAccountBaseMint,
     TAccountQuoteMint,
     TAccountBaseVault,
     TAccountQuoteVault,
-    TAccountLaunchFeeState,
-    TAccountMigratorProgram,
-    TAccountPayer,
+    TAccountRecipientBaseAta,
+    TAccountRecipientQuoteAta,
     TAccountBaseTokenProgram,
-    TAccountQuoteTokenProgram,
-    TAccountSystemProgram,
-    TAccountRent
+    TAccountQuoteTokenProgram
   >);
 }
 
-export type ParsedMigrateLaunchInstruction<
+export type ParsedClaimFeesInstruction<
   TProgram extends string = typeof INITIALIZER_PROGRAM_ADDRESS,
   TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
   programAddress: Address<TProgram>;
   accounts: {
-    config: TAccountMetas[0];
-    launch: TAccountMetas[1];
+    launch: TAccountMetas[0];
+    launchFeeState: TAccountMetas[1];
     launchAuthority: TAccountMetas[2];
-    baseMint: TAccountMetas[3];
-    quoteMint: TAccountMetas[4];
-    baseVault: TAccountMetas[5];
-    quoteVault: TAccountMetas[6];
-    launchFeeState: TAccountMetas[7];
-    migratorProgram: TAccountMetas[8];
-    payer: TAccountMetas[9];
+    recipient: TAccountMetas[3];
+    baseMint: TAccountMetas[4];
+    quoteMint: TAccountMetas[5];
+    baseVault: TAccountMetas[6];
+    quoteVault: TAccountMetas[7];
+    recipientBaseAta: TAccountMetas[8];
+    recipientQuoteAta: TAccountMetas[9];
     baseTokenProgram: TAccountMetas[10];
     quoteTokenProgram: TAccountMetas[11];
-    systemProgram: TAccountMetas[12];
-    rent: TAccountMetas[13];
   };
-  data: MigrateLaunchInstructionData;
+  data: ClaimFeesInstructionData;
 };
 
-export function parseMigrateLaunchInstruction<
+export function parseClaimFeesInstruction<
   TProgram extends string,
   TAccountMetas extends readonly AccountMeta[],
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
-): ParsedMigrateLaunchInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 14) {
+): ParsedClaimFeesInstruction<TProgram, TAccountMetas> {
+  if (instruction.accounts.length < 12) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 14,
+        expectedAccountMetas: 12,
       },
     );
   }
@@ -567,21 +514,19 @@ export function parseMigrateLaunchInstruction<
   return {
     programAddress: instruction.programAddress,
     accounts: {
-      config: getNextAccount(),
       launch: getNextAccount(),
+      launchFeeState: getNextAccount(),
       launchAuthority: getNextAccount(),
+      recipient: getNextAccount(),
       baseMint: getNextAccount(),
       quoteMint: getNextAccount(),
       baseVault: getNextAccount(),
       quoteVault: getNextAccount(),
-      launchFeeState: getNextAccount(),
-      migratorProgram: getNextAccount(),
-      payer: getNextAccount(),
+      recipientBaseAta: getNextAccount(),
+      recipientQuoteAta: getNextAccount(),
       baseTokenProgram: getNextAccount(),
       quoteTokenProgram: getNextAccount(),
-      systemProgram: getNextAccount(),
-      rent: getNextAccount(),
     },
-    data: getMigrateLaunchInstructionDataDecoder().decode(instruction.data),
+    data: getClaimFeesInstructionDataDecoder().decode(instruction.data),
   };
 }

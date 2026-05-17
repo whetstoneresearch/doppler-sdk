@@ -19,6 +19,8 @@ import {
   getProgramDerivedAddress,
   getStructDecoder,
   getStructEncoder,
+  getU16Decoder,
+  getU16Encoder,
   SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
   SolanaError,
   transformEncoder,
@@ -86,11 +88,17 @@ export type InitializeConfigInstructionData = {
   discriminator: ReadonlyUint8Array;
   migratorAllowlist: Array<Address>;
   hookAllowlist: Array<Address>;
+  protocolFeeBps: number;
+  minSwapFeeBps: number;
+  maxSwapFeeBps: number;
 };
 
 export type InitializeConfigInstructionDataArgs = {
   migratorAllowlist: Array<Address>;
   hookAllowlist: Array<Address>;
+  protocolFeeBps: number;
+  minSwapFeeBps: number;
+  maxSwapFeeBps: number;
 };
 
 export function getInitializeConfigInstructionDataEncoder(): Encoder<InitializeConfigInstructionDataArgs> {
@@ -99,6 +107,9 @@ export function getInitializeConfigInstructionDataEncoder(): Encoder<InitializeC
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       ['migratorAllowlist', getArrayEncoder(getAddressEncoder())],
       ['hookAllowlist', getArrayEncoder(getAddressEncoder())],
+      ['protocolFeeBps', getU16Encoder()],
+      ['minSwapFeeBps', getU16Encoder()],
+      ['maxSwapFeeBps', getU16Encoder()],
     ]),
     (value) => ({ ...value, discriminator: INITIALIZE_CONFIG_DISCRIMINATOR }),
   );
@@ -109,6 +120,9 @@ export function getInitializeConfigInstructionDataDecoder(): Decoder<InitializeC
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['migratorAllowlist', getArrayDecoder(getAddressDecoder())],
     ['hookAllowlist', getArrayDecoder(getAddressDecoder())],
+    ['protocolFeeBps', getU16Decoder()],
+    ['minSwapFeeBps', getU16Decoder()],
+    ['maxSwapFeeBps', getU16Decoder()],
   ]);
 }
 
@@ -134,6 +148,9 @@ export type InitializeConfigAsyncInput<
   systemProgram?: Address<TAccountSystemProgram>;
   migratorAllowlist: InitializeConfigInstructionDataArgs['migratorAllowlist'];
   hookAllowlist: InitializeConfigInstructionDataArgs['hookAllowlist'];
+  protocolFeeBps: InitializeConfigInstructionDataArgs['protocolFeeBps'];
+  minSwapFeeBps: InitializeConfigInstructionDataArgs['minSwapFeeBps'];
+  maxSwapFeeBps: InitializeConfigInstructionDataArgs['maxSwapFeeBps'];
 };
 
 export async function getInitializeConfigInstructionAsync<
@@ -224,6 +241,9 @@ export type InitializeConfigInput<
   systemProgram?: Address<TAccountSystemProgram>;
   migratorAllowlist: InitializeConfigInstructionDataArgs['migratorAllowlist'];
   hookAllowlist: InitializeConfigInstructionDataArgs['hookAllowlist'];
+  protocolFeeBps: InitializeConfigInstructionDataArgs['protocolFeeBps'];
+  minSwapFeeBps: InitializeConfigInstructionDataArgs['minSwapFeeBps'];
+  maxSwapFeeBps: InitializeConfigInstructionDataArgs['maxSwapFeeBps'];
 };
 
 export function getInitializeConfigInstruction<

@@ -159,6 +159,10 @@ async function main() {
           launch,
           deployment.initializerProgram,
         );
+        const [launchFeeState] = await initializer.getLaunchFeeStateAddress(
+          launch,
+          deployment.initializerProgram,
+        );
 
         const baseMint = await generateKeyPairSigner();
         const baseVault = await generateKeyPairSigner();
@@ -213,6 +217,7 @@ async function main() {
             quoteMint: WSOL_MINT,
             baseVault,
             quoteVault,
+            launchFeeState,
             payer,
             authority: payer,
             hookProgram: initializer.PREDICTION_HOOK_PROGRAM_ID,
@@ -233,7 +238,7 @@ async function main() {
             baseForLiquidity: BASE_FOR_LIQUIDITY,
             curveVirtualBase: CURVE_VIRTUAL_BASE,
             curveVirtualQuote: CURVE_VIRTUAL_QUOTE,
-            curveFeeBps: 100, // 1% swap fee
+            swapFeeBps: 100, // 1% swap fee
             curveKind: initializer.CURVE_KIND_XYK,
             curveParams: new Uint8Array([
               initializer.CURVE_PARAMS_FORMAT_XYK_V0,
@@ -272,6 +277,7 @@ async function main() {
             metadataName: `${outcome.label} Token`,
             metadataSymbol: outcome.label,
             metadataUri: `https://example.com/${outcome.label.toLowerCase()}.json`,
+            feeBeneficiaries: [{ wallet: payer.address, shareBps: 10_000 }],
           },
           deployment.initializerProgram,
         );

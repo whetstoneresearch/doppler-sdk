@@ -10,20 +10,18 @@ import {
   combineCodec,
   fixDecoderSize,
   fixEncoderSize,
+  getAddressDecoder,
   getAddressEncoder,
   getBytesDecoder,
   getBytesEncoder,
   getProgramDerivedAddress,
   getStructDecoder,
   getStructEncoder,
-  getU64Decoder,
-  getU64Encoder,
-  getU8Decoder,
-  getU8Encoder,
   SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
   SolanaError,
   transformEncoder,
   type AccountMeta,
+  type AccountSignerMeta,
   type Address,
   type FixedSizeCodec,
   type FixedSizeDecoder,
@@ -32,7 +30,10 @@ import {
   type InstructionWithAccounts,
   type InstructionWithData,
   type ReadonlyAccount,
+  type ReadonlySignerAccount,
   type ReadonlyUint8Array,
+  type TransactionSigner,
+  type WritableAccount,
 } from '@solana/kit';
 import {
   getAccountMetaFactory,
@@ -41,23 +42,21 @@ import {
 } from '@solana/program-client-core';
 import { INITIALIZER_PROGRAM_ADDRESS } from '../programs';
 
-export const PREVIEW_SWAP_EXACT_IN_DISCRIMINATOR = new Uint8Array([
-  50, 130, 31, 69, 147, 58, 222, 178,
+export const REPLACE_FEE_BENEFICIARY_DISCRIMINATOR = new Uint8Array([
+  125, 194, 227, 81, 175, 100, 78, 200,
 ]);
 
-export function getPreviewSwapExactInDiscriminatorBytes() {
+export function getReplaceFeeBeneficiaryDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    PREVIEW_SWAP_EXACT_IN_DISCRIMINATOR,
+    REPLACE_FEE_BENEFICIARY_DISCRIMINATOR,
   );
 }
 
-export type PreviewSwapExactInInstruction<
+export type ReplaceFeeBeneficiaryInstruction<
   TProgram extends string = typeof INITIALIZER_PROGRAM_ADDRESS,
   TAccountLaunch extends string | AccountMeta<string> = string,
   TAccountLaunchFeeState extends string | AccountMeta<string> = string,
-  TAccountBaseVault extends string | AccountMeta<string> = string,
-  TAccountQuoteVault extends string | AccountMeta<string> = string,
-  TAccountHookProgram extends string | AccountMeta<string> = string,
+  TAccountCurrentBeneficiary extends string | AccountMeta<string> = string,
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -67,105 +66,84 @@ export type PreviewSwapExactInInstruction<
         ? ReadonlyAccount<TAccountLaunch>
         : TAccountLaunch,
       TAccountLaunchFeeState extends string
-        ? ReadonlyAccount<TAccountLaunchFeeState>
+        ? WritableAccount<TAccountLaunchFeeState>
         : TAccountLaunchFeeState,
-      TAccountBaseVault extends string
-        ? ReadonlyAccount<TAccountBaseVault>
-        : TAccountBaseVault,
-      TAccountQuoteVault extends string
-        ? ReadonlyAccount<TAccountQuoteVault>
-        : TAccountQuoteVault,
-      TAccountHookProgram extends string
-        ? ReadonlyAccount<TAccountHookProgram>
-        : TAccountHookProgram,
+      TAccountCurrentBeneficiary extends string
+        ? ReadonlySignerAccount<TAccountCurrentBeneficiary> &
+            AccountSignerMeta<TAccountCurrentBeneficiary>
+        : TAccountCurrentBeneficiary,
       ...TRemainingAccounts,
     ]
   >;
 
-export type PreviewSwapExactInInstructionData = {
+export type ReplaceFeeBeneficiaryInstructionData = {
   discriminator: ReadonlyUint8Array;
-  amountIn: bigint;
-  tradeDirection: number;
+  newBeneficiary: Address;
 };
 
-export type PreviewSwapExactInInstructionDataArgs = {
-  amountIn: number | bigint;
-  tradeDirection: number;
+export type ReplaceFeeBeneficiaryInstructionDataArgs = {
+  newBeneficiary: Address;
 };
 
-export function getPreviewSwapExactInInstructionDataEncoder(): FixedSizeEncoder<PreviewSwapExactInInstructionDataArgs> {
+export function getReplaceFeeBeneficiaryInstructionDataEncoder(): FixedSizeEncoder<ReplaceFeeBeneficiaryInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['amountIn', getU64Encoder()],
-      ['tradeDirection', getU8Encoder()],
+      ['newBeneficiary', getAddressEncoder()],
     ]),
     (value) => ({
       ...value,
-      discriminator: PREVIEW_SWAP_EXACT_IN_DISCRIMINATOR,
+      discriminator: REPLACE_FEE_BENEFICIARY_DISCRIMINATOR,
     }),
   );
 }
 
-export function getPreviewSwapExactInInstructionDataDecoder(): FixedSizeDecoder<PreviewSwapExactInInstructionData> {
+export function getReplaceFeeBeneficiaryInstructionDataDecoder(): FixedSizeDecoder<ReplaceFeeBeneficiaryInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['amountIn', getU64Decoder()],
-    ['tradeDirection', getU8Decoder()],
+    ['newBeneficiary', getAddressDecoder()],
   ]);
 }
 
-export function getPreviewSwapExactInInstructionDataCodec(): FixedSizeCodec<
-  PreviewSwapExactInInstructionDataArgs,
-  PreviewSwapExactInInstructionData
+export function getReplaceFeeBeneficiaryInstructionDataCodec(): FixedSizeCodec<
+  ReplaceFeeBeneficiaryInstructionDataArgs,
+  ReplaceFeeBeneficiaryInstructionData
 > {
   return combineCodec(
-    getPreviewSwapExactInInstructionDataEncoder(),
-    getPreviewSwapExactInInstructionDataDecoder(),
+    getReplaceFeeBeneficiaryInstructionDataEncoder(),
+    getReplaceFeeBeneficiaryInstructionDataDecoder(),
   );
 }
 
-export type PreviewSwapExactInAsyncInput<
+export type ReplaceFeeBeneficiaryAsyncInput<
   TAccountLaunch extends string = string,
   TAccountLaunchFeeState extends string = string,
-  TAccountBaseVault extends string = string,
-  TAccountQuoteVault extends string = string,
-  TAccountHookProgram extends string = string,
+  TAccountCurrentBeneficiary extends string = string,
 > = {
   launch: Address<TAccountLaunch>;
   launchFeeState?: Address<TAccountLaunchFeeState>;
-  baseVault: Address<TAccountBaseVault>;
-  quoteVault: Address<TAccountQuoteVault>;
-  /** Optional hook program (must match launch.hook_program if set) */
-  hookProgram?: Address<TAccountHookProgram>;
-  amountIn: PreviewSwapExactInInstructionDataArgs['amountIn'];
-  tradeDirection: PreviewSwapExactInInstructionDataArgs['tradeDirection'];
+  currentBeneficiary: TransactionSigner<TAccountCurrentBeneficiary>;
+  newBeneficiary: ReplaceFeeBeneficiaryInstructionDataArgs['newBeneficiary'];
 };
 
-export async function getPreviewSwapExactInInstructionAsync<
+export async function getReplaceFeeBeneficiaryInstructionAsync<
   TAccountLaunch extends string,
   TAccountLaunchFeeState extends string,
-  TAccountBaseVault extends string,
-  TAccountQuoteVault extends string,
-  TAccountHookProgram extends string,
+  TAccountCurrentBeneficiary extends string,
   TProgramAddress extends Address = typeof INITIALIZER_PROGRAM_ADDRESS,
 >(
-  input: PreviewSwapExactInAsyncInput<
+  input: ReplaceFeeBeneficiaryAsyncInput<
     TAccountLaunch,
     TAccountLaunchFeeState,
-    TAccountBaseVault,
-    TAccountQuoteVault,
-    TAccountHookProgram
+    TAccountCurrentBeneficiary
   >,
   config?: { programAddress?: TProgramAddress },
 ): Promise<
-  PreviewSwapExactInInstruction<
+  ReplaceFeeBeneficiaryInstruction<
     TProgramAddress,
     TAccountLaunch,
     TAccountLaunchFeeState,
-    TAccountBaseVault,
-    TAccountQuoteVault,
-    TAccountHookProgram
+    TAccountCurrentBeneficiary
   >
 > {
   // Program address.
@@ -174,10 +152,11 @@ export async function getPreviewSwapExactInInstructionAsync<
   // Original accounts.
   const originalAccounts = {
     launch: { value: input.launch ?? null, isWritable: false },
-    launchFeeState: { value: input.launchFeeState ?? null, isWritable: false },
-    baseVault: { value: input.baseVault ?? null, isWritable: false },
-    quoteVault: { value: input.quoteVault ?? null, isWritable: false },
-    hookProgram: { value: input.hookProgram ?? null, isWritable: false },
+    launchFeeState: { value: input.launchFeeState ?? null, isWritable: true },
+    currentBeneficiary: {
+      value: input.currentBeneficiary ?? null,
+      isWritable: false,
+    },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -213,64 +192,48 @@ export async function getPreviewSwapExactInInstructionAsync<
     accounts: [
       getAccountMeta('launch', accounts.launch),
       getAccountMeta('launchFeeState', accounts.launchFeeState),
-      getAccountMeta('baseVault', accounts.baseVault),
-      getAccountMeta('quoteVault', accounts.quoteVault),
-      getAccountMeta('hookProgram', accounts.hookProgram),
+      getAccountMeta('currentBeneficiary', accounts.currentBeneficiary),
     ],
-    data: getPreviewSwapExactInInstructionDataEncoder().encode(
-      args as PreviewSwapExactInInstructionDataArgs,
+    data: getReplaceFeeBeneficiaryInstructionDataEncoder().encode(
+      args as ReplaceFeeBeneficiaryInstructionDataArgs,
     ),
     programAddress,
-  } as PreviewSwapExactInInstruction<
+  } as ReplaceFeeBeneficiaryInstruction<
     TProgramAddress,
     TAccountLaunch,
     TAccountLaunchFeeState,
-    TAccountBaseVault,
-    TAccountQuoteVault,
-    TAccountHookProgram
+    TAccountCurrentBeneficiary
   >);
 }
 
-export type PreviewSwapExactInInput<
+export type ReplaceFeeBeneficiaryInput<
   TAccountLaunch extends string = string,
   TAccountLaunchFeeState extends string = string,
-  TAccountBaseVault extends string = string,
-  TAccountQuoteVault extends string = string,
-  TAccountHookProgram extends string = string,
+  TAccountCurrentBeneficiary extends string = string,
 > = {
   launch: Address<TAccountLaunch>;
   launchFeeState: Address<TAccountLaunchFeeState>;
-  baseVault: Address<TAccountBaseVault>;
-  quoteVault: Address<TAccountQuoteVault>;
-  /** Optional hook program (must match launch.hook_program if set) */
-  hookProgram?: Address<TAccountHookProgram>;
-  amountIn: PreviewSwapExactInInstructionDataArgs['amountIn'];
-  tradeDirection: PreviewSwapExactInInstructionDataArgs['tradeDirection'];
+  currentBeneficiary: TransactionSigner<TAccountCurrentBeneficiary>;
+  newBeneficiary: ReplaceFeeBeneficiaryInstructionDataArgs['newBeneficiary'];
 };
 
-export function getPreviewSwapExactInInstruction<
+export function getReplaceFeeBeneficiaryInstruction<
   TAccountLaunch extends string,
   TAccountLaunchFeeState extends string,
-  TAccountBaseVault extends string,
-  TAccountQuoteVault extends string,
-  TAccountHookProgram extends string,
+  TAccountCurrentBeneficiary extends string,
   TProgramAddress extends Address = typeof INITIALIZER_PROGRAM_ADDRESS,
 >(
-  input: PreviewSwapExactInInput<
+  input: ReplaceFeeBeneficiaryInput<
     TAccountLaunch,
     TAccountLaunchFeeState,
-    TAccountBaseVault,
-    TAccountQuoteVault,
-    TAccountHookProgram
+    TAccountCurrentBeneficiary
   >,
   config?: { programAddress?: TProgramAddress },
-): PreviewSwapExactInInstruction<
+): ReplaceFeeBeneficiaryInstruction<
   TProgramAddress,
   TAccountLaunch,
   TAccountLaunchFeeState,
-  TAccountBaseVault,
-  TAccountQuoteVault,
-  TAccountHookProgram
+  TAccountCurrentBeneficiary
 > {
   // Program address.
   const programAddress = config?.programAddress ?? INITIALIZER_PROGRAM_ADDRESS;
@@ -278,10 +241,11 @@ export function getPreviewSwapExactInInstruction<
   // Original accounts.
   const originalAccounts = {
     launch: { value: input.launch ?? null, isWritable: false },
-    launchFeeState: { value: input.launchFeeState ?? null, isWritable: false },
-    baseVault: { value: input.baseVault ?? null, isWritable: false },
-    quoteVault: { value: input.quoteVault ?? null, isWritable: false },
-    hookProgram: { value: input.hookProgram ?? null, isWritable: false },
+    launchFeeState: { value: input.launchFeeState ?? null, isWritable: true },
+    currentBeneficiary: {
+      value: input.currentBeneficiary ?? null,
+      isWritable: false,
+    },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -296,25 +260,21 @@ export function getPreviewSwapExactInInstruction<
     accounts: [
       getAccountMeta('launch', accounts.launch),
       getAccountMeta('launchFeeState', accounts.launchFeeState),
-      getAccountMeta('baseVault', accounts.baseVault),
-      getAccountMeta('quoteVault', accounts.quoteVault),
-      getAccountMeta('hookProgram', accounts.hookProgram),
+      getAccountMeta('currentBeneficiary', accounts.currentBeneficiary),
     ],
-    data: getPreviewSwapExactInInstructionDataEncoder().encode(
-      args as PreviewSwapExactInInstructionDataArgs,
+    data: getReplaceFeeBeneficiaryInstructionDataEncoder().encode(
+      args as ReplaceFeeBeneficiaryInstructionDataArgs,
     ),
     programAddress,
-  } as PreviewSwapExactInInstruction<
+  } as ReplaceFeeBeneficiaryInstruction<
     TProgramAddress,
     TAccountLaunch,
     TAccountLaunchFeeState,
-    TAccountBaseVault,
-    TAccountQuoteVault,
-    TAccountHookProgram
+    TAccountCurrentBeneficiary
   >);
 }
 
-export type ParsedPreviewSwapExactInInstruction<
+export type ParsedReplaceFeeBeneficiaryInstruction<
   TProgram extends string = typeof INITIALIZER_PROGRAM_ADDRESS,
   TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
@@ -322,28 +282,25 @@ export type ParsedPreviewSwapExactInInstruction<
   accounts: {
     launch: TAccountMetas[0];
     launchFeeState: TAccountMetas[1];
-    baseVault: TAccountMetas[2];
-    quoteVault: TAccountMetas[3];
-    /** Optional hook program (must match launch.hook_program if set) */
-    hookProgram?: TAccountMetas[4] | undefined;
+    currentBeneficiary: TAccountMetas[2];
   };
-  data: PreviewSwapExactInInstructionData;
+  data: ReplaceFeeBeneficiaryInstructionData;
 };
 
-export function parsePreviewSwapExactInInstruction<
+export function parseReplaceFeeBeneficiaryInstruction<
   TProgram extends string,
   TAccountMetas extends readonly AccountMeta[],
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
-): ParsedPreviewSwapExactInInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 5) {
+): ParsedReplaceFeeBeneficiaryInstruction<TProgram, TAccountMetas> {
+  if (instruction.accounts.length < 3) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 5,
+        expectedAccountMetas: 3,
       },
     );
   }
@@ -353,22 +310,14 @@ export function parsePreviewSwapExactInInstruction<
     accountIndex += 1;
     return accountMeta;
   };
-  const getNextOptionalAccount = () => {
-    const accountMeta = getNextAccount();
-    return accountMeta.address === INITIALIZER_PROGRAM_ADDRESS
-      ? undefined
-      : accountMeta;
-  };
   return {
     programAddress: instruction.programAddress,
     accounts: {
       launch: getNextAccount(),
       launchFeeState: getNextAccount(),
-      baseVault: getNextAccount(),
-      quoteVault: getNextAccount(),
-      hookProgram: getNextOptionalAccount(),
+      currentBeneficiary: getNextAccount(),
     },
-    data: getPreviewSwapExactInInstructionDataDecoder().decode(
+    data: getReplaceFeeBeneficiaryInstructionDataDecoder().decode(
       instruction.data,
     ),
   };

@@ -326,6 +326,8 @@ export const initializePoolArgsCodec: Codec<InitializePoolArgs> =
     ['initialFeeSplitBps', u16Codec],
     ['liquidityMeasureTokenIndex', u8Codec],
     ['numeraireMintOverride', optionAddressCodec],
+    ['hookProgram', addressCodec],
+    ['hookFlags', u32Codec],
   ]);
 
 export const initializeOracleArgsCodec: Codec<InitializeOracleArgs> =

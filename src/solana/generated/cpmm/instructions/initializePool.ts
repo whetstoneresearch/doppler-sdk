@@ -21,6 +21,8 @@ import {
   getStructEncoder,
   getU16Decoder,
   getU16Encoder,
+  getU32Decoder,
+  getU32Encoder,
   getU8Decoder,
   getU8Encoder,
   SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
@@ -140,6 +142,8 @@ export type InitializePoolInstructionData = {
   initialFeeSplitBps: number;
   liquidityMeasureTokenIndex: number;
   numeraireMintOverride: Option<Address>;
+  hookProgram: Address;
+  hookFlags: number;
 };
 
 export type InitializePoolInstructionDataArgs = {
@@ -149,6 +153,8 @@ export type InitializePoolInstructionDataArgs = {
   initialFeeSplitBps: number;
   liquidityMeasureTokenIndex: number;
   numeraireMintOverride: OptionOrNullable<Address>;
+  hookProgram: Address;
+  hookFlags: number;
 };
 
 export function getInitializePoolInstructionDataEncoder(): Encoder<InitializePoolInstructionDataArgs> {
@@ -161,6 +167,8 @@ export function getInitializePoolInstructionDataEncoder(): Encoder<InitializePoo
       ['initialFeeSplitBps', getU16Encoder()],
       ['liquidityMeasureTokenIndex', getU8Encoder()],
       ['numeraireMintOverride', getOptionEncoder(getAddressEncoder())],
+      ['hookProgram', getAddressEncoder()],
+      ['hookFlags', getU32Encoder()],
     ]),
     (value) => ({ ...value, discriminator: INITIALIZE_POOL_DISCRIMINATOR }),
   );
@@ -175,6 +183,8 @@ export function getInitializePoolInstructionDataDecoder(): Decoder<InitializePoo
     ['initialFeeSplitBps', getU16Decoder()],
     ['liquidityMeasureTokenIndex', getU8Decoder()],
     ['numeraireMintOverride', getOptionDecoder(getAddressDecoder())],
+    ['hookProgram', getAddressDecoder()],
+    ['hookFlags', getU32Decoder()],
   ]);
 }
 
@@ -229,6 +239,8 @@ export type InitializePoolAsyncInput<
   initialFeeSplitBps: InitializePoolInstructionDataArgs['initialFeeSplitBps'];
   liquidityMeasureTokenIndex: InitializePoolInstructionDataArgs['liquidityMeasureTokenIndex'];
   numeraireMintOverride: InitializePoolInstructionDataArgs['numeraireMintOverride'];
+  hookProgram: InitializePoolInstructionDataArgs['hookProgram'];
+  hookFlags: InitializePoolInstructionDataArgs['hookFlags'];
 };
 
 export async function getInitializePoolInstructionAsync<
@@ -481,6 +493,8 @@ export type InitializePoolInput<
   initialFeeSplitBps: InitializePoolInstructionDataArgs['initialFeeSplitBps'];
   liquidityMeasureTokenIndex: InitializePoolInstructionDataArgs['liquidityMeasureTokenIndex'];
   numeraireMintOverride: InitializePoolInstructionDataArgs['numeraireMintOverride'];
+  hookProgram: InitializePoolInstructionDataArgs['hookProgram'];
+  hookFlags: InitializePoolInstructionDataArgs['hookFlags'];
 };
 
 export function getInitializePoolInstruction<

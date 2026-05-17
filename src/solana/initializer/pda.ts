@@ -10,6 +10,7 @@ import {
   SEED_CONFIG,
   SEED_LAUNCH,
   SEED_LAUNCH_AUTHORITY,
+  SEED_LAUNCH_FEE_STATE,
 } from './constants.js';
 
 const addressCodec = getAddressCodec();
@@ -82,6 +83,23 @@ export async function getLaunchAuthorityAddress(
     programAddress: programId,
     seeds: [
       textEncoder.encode(SEED_LAUNCH_AUTHORITY),
+      addressCodec.encode(launch),
+    ],
+  });
+}
+
+/**
+ * Derive the LaunchFeeState PDA address.
+ * Seeds: ['launch_fee_state', launch]
+ */
+export async function getLaunchFeeStateAddress(
+  launch: Address,
+  programId: Address = INITIALIZER_PROGRAM_ID,
+): Promise<ProgramDerivedAddress> {
+  return getProgramDerivedAddress({
+    programAddress: programId,
+    seeds: [
+      textEncoder.encode(SEED_LAUNCH_FEE_STATE),
       addressCodec.encode(launch),
     ],
   });

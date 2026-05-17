@@ -59,6 +59,8 @@ async function main() {
   const QUOTE_DECIMALS = 9; // WSOL
   const START_MARKET_CAP_USD = 100_000;
   const END_MARKET_CAP_USD = 10_000_000;
+  const SWAP_FEE_BPS = 200; // 2%; must fit this deployment's configured fee bounds
+  const CPMM_FEE_SPLIT_BPS = 10_000; // migrated launch fees route through LaunchFeeState
 
   // ── Graduation threshold and price floor ────────────────────────────────
   const MIN_SOL_RAISE = 50;
@@ -123,6 +125,10 @@ async function main() {
     launch,
     deployment.initializerProgram,
   );
+  const [launchFeeState] = await initializer.getLaunchFeeStateAddress(
+    launch,
+    deployment.initializerProgram,
+  );
   const initializerConfig = deployment.initializerConfig;
   // Admin ATAs receive unsold curve tokens and residual migration dust.
   const [payerBaseAta] = await findAssociatedTokenPda({
@@ -164,8 +170,8 @@ async function main() {
   // is forwarded at migration. minRaiseQuote is the graduation threshold.
   const migratorInitPayload = cpmmMigrator.encodeRegisterLaunchPayload({
     cpmmConfig: cpmmConfig,
-    initialSwapFeeBps: 100, // 1% swap fee on the graduated CPMM pool
-    initialFeeSplitBps: 5000, // 50% of CPMM swap fees claimable by LP holders; remaining 50% compounds into the pool
+    initialSwapFeeBps: SWAP_FEE_BPS,
+    initialFeeSplitBps: CPMM_FEE_SPLIT_BPS,
     recipients: [],
     minRaiseQuote,
     minMigrationPriceQ64Opt: null, // no minimum graduation price floor
@@ -197,6 +203,7 @@ async function main() {
         quoteMint: WSOL_MINT,
         baseVault,
         quoteVault,
+        launchFeeState,
         payer,
         authority: payer,
         hookProgram: deployment.cpmmHookProgram,
@@ -218,7 +225,7 @@ async function main() {
         // Opening price: virtualQuote / (baseForCurve + virtualBase)
         curveVirtualBase: start.curveVirtualBase,
         curveVirtualQuote: start.curveVirtualQuote,
-        curveFeeBps: 200, // 2% swap fee during the bonding curve phase — stays in the quote vault, compounding into the curve
+        swapFeeBps: SWAP_FEE_BPS,
         curveKind: initializer.CURVE_KIND_XYK,
         curveParams: new Uint8Array([initializer.CURVE_PARAMS_FORMAT_XYK_V0]),
         allowBuy: true,
@@ -235,6 +242,7 @@ async function main() {
             cpmmConfig,
           ]),
         migratorRemainingAccountsHash: migrationAccounts.hash,
+        feeBeneficiaries: [{ wallet: payer.address, shareBps: 10_000 }],
         ...metadata,
       },
       deployment.initializerProgram,

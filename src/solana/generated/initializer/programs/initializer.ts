@@ -35,55 +35,80 @@ import {
 import {
   getInitConfigCodec,
   getLaunchCodec,
+  getLaunchFeeStateCodec,
+  getPoolCodec,
+  getPositionCodec,
   type InitConfig,
   type InitConfigArgs,
   type Launch,
   type LaunchArgs,
+  type LaunchFeeState,
+  type LaunchFeeStateArgs,
+  type Pool,
+  type PoolArgs,
+  type Position,
+  type PositionArgs,
 } from '../accounts';
 import {
+  getClaimFeesInstructionAsync,
   getCurveSwapExactInInstructionAsync,
+  getHarvestMigratedFeesInstructionAsync,
   getInitializeConfigInstructionAsync,
   getInitializeLaunchInstructionAsync,
   getMigrateLaunchInstructionAsync,
   getMigratorInitInstructionAsync,
   getPreviewMigrationInstruction,
-  getPreviewSwapExactInInstruction,
+  getPreviewSwapExactInInstructionAsync,
+  getReplaceFeeBeneficiaryInstructionAsync,
+  getSetFeePolicyInstructionAsync,
   getSetHookAllowlistInstructionAsync,
   getSetMigratorAllowlistInstructionAsync,
   getTransferAdminInstructionAsync,
   getUpdateLaunchPayloadInstructionAsync,
   getUpdateTradingFlagsInstructionAsync,
+  parseClaimFeesInstruction,
   parseCurveSwapExactInInstruction,
+  parseHarvestMigratedFeesInstruction,
   parseInitializeConfigInstruction,
   parseInitializeLaunchInstruction,
   parseMigrateLaunchInstruction,
   parseMigratorInitInstruction,
   parsePreviewMigrationInstruction,
   parsePreviewSwapExactInInstruction,
+  parseReplaceFeeBeneficiaryInstruction,
+  parseSetFeePolicyInstruction,
   parseSetHookAllowlistInstruction,
   parseSetMigratorAllowlistInstruction,
   parseTransferAdminInstruction,
   parseUpdateLaunchPayloadInstruction,
   parseUpdateTradingFlagsInstruction,
+  type ClaimFeesAsyncInput,
   type CurveSwapExactInAsyncInput,
+  type HarvestMigratedFeesAsyncInput,
   type InitializeConfigAsyncInput,
   type InitializeLaunchAsyncInput,
   type MigrateLaunchAsyncInput,
   type MigratorInitAsyncInput,
+  type ParsedClaimFeesInstruction,
   type ParsedCurveSwapExactInInstruction,
+  type ParsedHarvestMigratedFeesInstruction,
   type ParsedInitializeConfigInstruction,
   type ParsedInitializeLaunchInstruction,
   type ParsedMigrateLaunchInstruction,
   type ParsedMigratorInitInstruction,
   type ParsedPreviewMigrationInstruction,
   type ParsedPreviewSwapExactInInstruction,
+  type ParsedReplaceFeeBeneficiaryInstruction,
+  type ParsedSetFeePolicyInstruction,
   type ParsedSetHookAllowlistInstruction,
   type ParsedSetMigratorAllowlistInstruction,
   type ParsedTransferAdminInstruction,
   type ParsedUpdateLaunchPayloadInstruction,
   type ParsedUpdateTradingFlagsInstruction,
   type PreviewMigrationInput,
-  type PreviewSwapExactInInput,
+  type PreviewSwapExactInAsyncInput,
+  type ReplaceFeeBeneficiaryAsyncInput,
+  type SetFeePolicyAsyncInput,
   type SetHookAllowlistAsyncInput,
   type SetMigratorAllowlistAsyncInput,
   type TransferAdminAsyncInput,
@@ -97,6 +122,9 @@ export const INITIALIZER_PROGRAM_ADDRESS =
 export enum InitializerAccount {
   InitConfig,
   Launch,
+  LaunchFeeState,
+  Pool,
+  Position,
 }
 
 export function identifyInitializerAccount(
@@ -125,6 +153,39 @@ export function identifyInitializerAccount(
   ) {
     return InitializerAccount.Launch;
   }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([1, 106, 55, 241, 179, 18, 230, 232]),
+      ),
+      0,
+    )
+  ) {
+    return InitializerAccount.LaunchFeeState;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([241, 154, 109, 4, 17, 177, 109, 188]),
+      ),
+      0,
+    )
+  ) {
+    return InitializerAccount.Pool;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([170, 188, 143, 228, 122, 64, 247, 208]),
+      ),
+      0,
+    )
+  ) {
+    return InitializerAccount.Position;
+  }
   throw new SolanaError(
     SOLANA_ERROR__PROGRAM_CLIENTS__FAILED_TO_IDENTIFY_ACCOUNT,
     { accountData: data, programName: 'initializer' },
@@ -132,13 +193,17 @@ export function identifyInitializerAccount(
 }
 
 export enum InitializerInstruction {
+  ClaimFees,
   CurveSwapExactIn,
+  HarvestMigratedFees,
   InitializeConfig,
   InitializeLaunch,
   MigrateLaunch,
   MigratorInit,
   PreviewMigration,
   PreviewSwapExactIn,
+  ReplaceFeeBeneficiary,
+  SetFeePolicy,
   SetHookAllowlist,
   SetMigratorAllowlist,
   TransferAdmin,
@@ -154,12 +219,34 @@ export function identifyInitializerInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([82, 251, 233, 156, 12, 52, 184, 202]),
+      ),
+      0,
+    )
+  ) {
+    return InitializerInstruction.ClaimFees;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([196, 247, 195, 126, 227, 27, 166, 93]),
       ),
       0,
     )
   ) {
     return InitializerInstruction.CurveSwapExactIn;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([63, 77, 73, 117, 2, 43, 255, 176]),
+      ),
+      0,
+    )
+  ) {
+    return InitializerInstruction.HarvestMigratedFees;
   }
   if (
     containsBytes(
@@ -231,6 +318,28 @@ export function identifyInitializerInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([125, 194, 227, 81, 175, 100, 78, 200]),
+      ),
+      0,
+    )
+  ) {
+    return InitializerInstruction.ReplaceFeeBeneficiary;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([91, 32, 224, 109, 147, 98, 71, 132]),
+      ),
+      0,
+    )
+  ) {
+    return InitializerInstruction.SetFeePolicy;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([232, 28, 40, 143, 121, 182, 77, 103]),
       ),
       0,
@@ -292,8 +401,14 @@ export type ParsedInitializerInstruction<
   TProgram extends string = '4h3Dqyo5qmteJoMxXt3tdtfXELDB6pdRTPU9mWruiKp1',
 > =
   | ({
+      instructionType: InitializerInstruction.ClaimFees;
+    } & ParsedClaimFeesInstruction<TProgram>)
+  | ({
       instructionType: InitializerInstruction.CurveSwapExactIn;
     } & ParsedCurveSwapExactInInstruction<TProgram>)
+  | ({
+      instructionType: InitializerInstruction.HarvestMigratedFees;
+    } & ParsedHarvestMigratedFeesInstruction<TProgram>)
   | ({
       instructionType: InitializerInstruction.InitializeConfig;
     } & ParsedInitializeConfigInstruction<TProgram>)
@@ -312,6 +427,12 @@ export type ParsedInitializerInstruction<
   | ({
       instructionType: InitializerInstruction.PreviewSwapExactIn;
     } & ParsedPreviewSwapExactInInstruction<TProgram>)
+  | ({
+      instructionType: InitializerInstruction.ReplaceFeeBeneficiary;
+    } & ParsedReplaceFeeBeneficiaryInstruction<TProgram>)
+  | ({
+      instructionType: InitializerInstruction.SetFeePolicy;
+    } & ParsedSetFeePolicyInstruction<TProgram>)
   | ({
       instructionType: InitializerInstruction.SetHookAllowlist;
     } & ParsedSetHookAllowlistInstruction<TProgram>)
@@ -333,11 +454,25 @@ export function parseInitializerInstruction<TProgram extends string>(
 ): ParsedInitializerInstruction<TProgram> {
   const instructionType = identifyInitializerInstruction(instruction);
   switch (instructionType) {
+    case InitializerInstruction.ClaimFees: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: InitializerInstruction.ClaimFees,
+        ...parseClaimFeesInstruction(instruction),
+      };
+    }
     case InitializerInstruction.CurveSwapExactIn: {
       assertIsInstructionWithAccounts(instruction);
       return {
         instructionType: InitializerInstruction.CurveSwapExactIn,
         ...parseCurveSwapExactInInstruction(instruction),
+      };
+    }
+    case InitializerInstruction.HarvestMigratedFees: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: InitializerInstruction.HarvestMigratedFees,
+        ...parseHarvestMigratedFeesInstruction(instruction),
       };
     }
     case InitializerInstruction.InitializeConfig: {
@@ -380,6 +515,20 @@ export function parseInitializerInstruction<TProgram extends string>(
       return {
         instructionType: InitializerInstruction.PreviewSwapExactIn,
         ...parsePreviewSwapExactInInstruction(instruction),
+      };
+    }
+    case InitializerInstruction.ReplaceFeeBeneficiary: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: InitializerInstruction.ReplaceFeeBeneficiary,
+        ...parseReplaceFeeBeneficiaryInstruction(instruction),
+      };
+    }
+    case InitializerInstruction.SetFeePolicy: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: InitializerInstruction.SetFeePolicy,
+        ...parseSetFeePolicyInstruction(instruction),
       };
     }
     case InitializerInstruction.SetHookAllowlist: {
@@ -438,12 +587,25 @@ export type InitializerPluginAccounts = {
     SelfFetchFunctions<InitConfigArgs, InitConfig>;
   launch: ReturnType<typeof getLaunchCodec> &
     SelfFetchFunctions<LaunchArgs, Launch>;
+  launchFeeState: ReturnType<typeof getLaunchFeeStateCodec> &
+    SelfFetchFunctions<LaunchFeeStateArgs, LaunchFeeState>;
+  pool: ReturnType<typeof getPoolCodec> & SelfFetchFunctions<PoolArgs, Pool>;
+  position: ReturnType<typeof getPositionCodec> &
+    SelfFetchFunctions<PositionArgs, Position>;
 };
 
 export type InitializerPluginInstructions = {
+  claimFees: (
+    input: ClaimFeesAsyncInput,
+  ) => ReturnType<typeof getClaimFeesInstructionAsync> &
+    SelfPlanAndSendFunctions;
   curveSwapExactIn: (
     input: CurveSwapExactInAsyncInput,
   ) => ReturnType<typeof getCurveSwapExactInInstructionAsync> &
+    SelfPlanAndSendFunctions;
+  harvestMigratedFees: (
+    input: HarvestMigratedFeesAsyncInput,
+  ) => ReturnType<typeof getHarvestMigratedFeesInstructionAsync> &
     SelfPlanAndSendFunctions;
   initializeConfig: (
     input: InitializeConfigAsyncInput,
@@ -466,8 +628,16 @@ export type InitializerPluginInstructions = {
   ) => ReturnType<typeof getPreviewMigrationInstruction> &
     SelfPlanAndSendFunctions;
   previewSwapExactIn: (
-    input: PreviewSwapExactInInput,
-  ) => ReturnType<typeof getPreviewSwapExactInInstruction> &
+    input: PreviewSwapExactInAsyncInput,
+  ) => ReturnType<typeof getPreviewSwapExactInInstructionAsync> &
+    SelfPlanAndSendFunctions;
+  replaceFeeBeneficiary: (
+    input: ReplaceFeeBeneficiaryAsyncInput,
+  ) => ReturnType<typeof getReplaceFeeBeneficiaryInstructionAsync> &
+    SelfPlanAndSendFunctions;
+  setFeePolicy: (
+    input: SetFeePolicyAsyncInput,
+  ) => ReturnType<typeof getSetFeePolicyInstructionAsync> &
     SelfPlanAndSendFunctions;
   setHookAllowlist: (
     input: SetHookAllowlistAsyncInput,
@@ -506,12 +676,28 @@ export function initializerProgram() {
         accounts: {
           initConfig: addSelfFetchFunctions(client, getInitConfigCodec()),
           launch: addSelfFetchFunctions(client, getLaunchCodec()),
+          launchFeeState: addSelfFetchFunctions(
+            client,
+            getLaunchFeeStateCodec(),
+          ),
+          pool: addSelfFetchFunctions(client, getPoolCodec()),
+          position: addSelfFetchFunctions(client, getPositionCodec()),
         },
         instructions: {
+          claimFees: (input) =>
+            addSelfPlanAndSendFunctions(
+              client,
+              getClaimFeesInstructionAsync(input),
+            ),
           curveSwapExactIn: (input) =>
             addSelfPlanAndSendFunctions(
               client,
               getCurveSwapExactInInstructionAsync(input),
+            ),
+          harvestMigratedFees: (input) =>
+            addSelfPlanAndSendFunctions(
+              client,
+              getHarvestMigratedFeesInstructionAsync(input),
             ),
           initializeConfig: (input) =>
             addSelfPlanAndSendFunctions(
@@ -550,7 +736,17 @@ export function initializerProgram() {
           previewSwapExactIn: (input) =>
             addSelfPlanAndSendFunctions(
               client,
-              getPreviewSwapExactInInstruction(input),
+              getPreviewSwapExactInInstructionAsync(input),
+            ),
+          replaceFeeBeneficiary: (input) =>
+            addSelfPlanAndSendFunctions(
+              client,
+              getReplaceFeeBeneficiaryInstructionAsync(input),
+            ),
+          setFeePolicy: (input) =>
+            addSelfPlanAndSendFunctions(
+              client,
+              getSetFeePolicyInstructionAsync(input),
             ),
           setHookAllowlist: (input) =>
             addSelfPlanAndSendFunctions(

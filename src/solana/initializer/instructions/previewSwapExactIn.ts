@@ -52,6 +52,7 @@ const previewSwapExactInResultCodec = getStructCodec([
 
 export interface PreviewSwapExactInAccounts {
   launch: Address;
+  launchFeeState: Address;
   baseVault: Address;
   quoteVault: Address;
   hookProgram?: Address;
@@ -65,6 +66,7 @@ export function createPreviewSwapExactInInstruction(
 ): Instruction {
   const {
     launch,
+    launchFeeState,
     baseVault,
     quoteVault,
     hookProgram,
@@ -73,6 +75,7 @@ export function createPreviewSwapExactInInstruction(
 
   const keys = [
     { address: launch, role: AccountRole.READONLY },
+    { address: launchFeeState, role: AccountRole.READONLY },
     { address: baseVault, role: AccountRole.READONLY },
     { address: quoteVault, role: AccountRole.READONLY },
   ] as const;

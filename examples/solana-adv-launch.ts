@@ -9,9 +9,9 @@
  *   •  5% → seeded as initial CPMM liquidity at graduation (BASE_FOR_LIQUIDITY)
  *
  * Fee configuration:
- *   • curveFeeBps        — swap fee during the bonding curve phase
- *   • initialSwapFeeBps  — swap fee on the graduated CPMM pool
- *   • initialFeeSplitBps — fraction of CPMM fees distributed to LP holders
+ *   • swapFeeBps         — swap fee used by the launch and graduated pool
+ *   • initialSwapFeeBps  — migrated CPMM swap fee; must match swapFeeBps
+ *   • initialFeeSplitBps — CPMM fee split routed through launch fee state
  *
  * Also demonstrates minMigrationPriceQ64Opt: an optional Q64.64 price floor
  * that prevents graduation if the market cap is too low at migration time.
@@ -76,9 +76,9 @@ async function main() {
   const TEAM_SHARE = BASE_FOR_DISTRIBUTION - CREATOR_SHARE;
 
   // ── Fee configuration ───────────────────────────────────────────────────
-  const CURVE_FEE_BPS = 200; // 2% swap fee on the bonding curve — stays in the quote vault, compounding into the curve
-  const CPMM_SWAP_FEE_BPS = 100; // 1% swap fee on the graduated CPMM pool
-  const CPMM_SWAP_FEE_SPLIT_BPS = 5000; // 50% of CPMM swap fees claimable by LP holders; remaining 50% compounds into the pool
+  const SWAP_FEE_BPS = 200; // 2%; must fit this deployment's configured fee bounds
+  const CPMM_SWAP_FEE_BPS = SWAP_FEE_BPS;
+  const CPMM_SWAP_FEE_SPLIT_BPS = 10_000; // migrated launch fees route through LaunchFeeState
 
   // ── Graduation threshold and price floor ────────────────────────────────
   const MIN_SOL_RAISE = 50;
@@ -120,6 +120,10 @@ async function main() {
     deployment.initializerProgram,
   );
   const [launchAuthority] = await initializer.getLaunchAuthorityAddress(
+    launch,
+    deployment.initializerProgram,
+  );
+  const [launchFeeState] = await initializer.getLaunchFeeStateAddress(
     launch,
     deployment.initializerProgram,
   );
@@ -199,6 +203,7 @@ async function main() {
         quoteMint: WSOL_MINT,
         baseVault,
         quoteVault,
+        launchFeeState,
         payer,
         authority: payer,
         hookProgram: deployment.cpmmHookProgram,
@@ -219,7 +224,7 @@ async function main() {
         baseForLiquidity: BASE_FOR_LIQUIDITY,
         curveVirtualBase: start.curveVirtualBase,
         curveVirtualQuote: start.curveVirtualQuote,
-        curveFeeBps: CURVE_FEE_BPS,
+        swapFeeBps: SWAP_FEE_BPS,
         curveKind: initializer.CURVE_KIND_XYK,
         curveParams: new Uint8Array([initializer.CURVE_PARAMS_FORMAT_XYK_V0]),
         allowBuy: true,
@@ -236,6 +241,7 @@ async function main() {
             cpmmConfig,
           ]),
         migratorRemainingAccountsHash: migrationAccounts.hash,
+        feeBeneficiaries: [{ wallet: payer.address, shareBps: 10_000 }],
         ...metadata,
       },
       deployment.initializerProgram,
@@ -334,7 +340,7 @@ async function main() {
         launchAccount.curveVirtualQuote.toString(),
       );
       // Fees
-      console.log('  Curve fee:          ', launchAccount.curveFeeBps, 'bps');
+      console.log('  Swap fee:           ', launchAccount.swapFeeBps, 'bps');
     }
   } catch (error) {
     console.error('Error creating launch:', error);

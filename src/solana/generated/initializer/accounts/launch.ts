@@ -76,7 +76,7 @@ export type Launch = {
   baseForCurve: bigint;
   curveVirtualBase: bigint;
   curveVirtualQuote: bigint;
-  curveFeeBps: number;
+  swapFeeBps: number;
   pad1: ReadonlyUint8Array;
   allowBuy: number;
   allowSell: number;
@@ -114,7 +114,7 @@ export type LaunchArgs = {
   baseForCurve: number | bigint;
   curveVirtualBase: number | bigint;
   curveVirtualQuote: number | bigint;
-  curveFeeBps: number;
+  swapFeeBps: number;
   pad1: ReadonlyUint8Array;
   allowBuy: number;
   allowSell: number;
@@ -156,7 +156,7 @@ export function getLaunchEncoder(): FixedSizeEncoder<LaunchArgs> {
       ['baseForCurve', getU64Encoder()],
       ['curveVirtualBase', getU64Encoder()],
       ['curveVirtualQuote', getU64Encoder()],
-      ['curveFeeBps', getU16Encoder()],
+      ['swapFeeBps', getU16Encoder()],
       ['pad1', fixEncoderSize(getBytesEncoder(), 6)],
       ['allowBuy', getU8Encoder()],
       ['allowSell', getU8Encoder()],
@@ -200,7 +200,7 @@ export function getLaunchDecoder(): FixedSizeDecoder<Launch> {
     ['baseForCurve', getU64Decoder()],
     ['curveVirtualBase', getU64Decoder()],
     ['curveVirtualQuote', getU64Decoder()],
-    ['curveFeeBps', getU16Decoder()],
+    ['swapFeeBps', getU16Decoder()],
     ['pad1', fixDecoderSize(getBytesDecoder(), 6)],
     ['allowBuy', getU8Decoder()],
     ['allowSell', getU8Decoder()],

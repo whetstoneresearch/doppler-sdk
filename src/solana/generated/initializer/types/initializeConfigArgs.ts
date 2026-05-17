@@ -14,6 +14,8 @@ import {
   getArrayEncoder,
   getStructDecoder,
   getStructEncoder,
+  getU16Decoder,
+  getU16Encoder,
   type Address,
   type Codec,
   type Decoder,
@@ -23,6 +25,9 @@ import {
 export type InitializeConfigArgs = {
   migratorAllowlist: Array<Address>;
   hookAllowlist: Array<Address>;
+  protocolFeeBps: number;
+  minSwapFeeBps: number;
+  maxSwapFeeBps: number;
 };
 
 export type InitializeConfigArgsArgs = InitializeConfigArgs;
@@ -31,6 +36,9 @@ export function getInitializeConfigArgsEncoder(): Encoder<InitializeConfigArgsAr
   return getStructEncoder([
     ['migratorAllowlist', getArrayEncoder(getAddressEncoder())],
     ['hookAllowlist', getArrayEncoder(getAddressEncoder())],
+    ['protocolFeeBps', getU16Encoder()],
+    ['minSwapFeeBps', getU16Encoder()],
+    ['maxSwapFeeBps', getU16Encoder()],
   ]);
 }
 
@@ -38,6 +46,9 @@ export function getInitializeConfigArgsDecoder(): Decoder<InitializeConfigArgs> 
   return getStructDecoder([
     ['migratorAllowlist', getArrayDecoder(getAddressDecoder())],
     ['hookAllowlist', getArrayDecoder(getAddressDecoder())],
+    ['protocolFeeBps', getU16Decoder()],
+    ['minSwapFeeBps', getU16Decoder()],
+    ['maxSwapFeeBps', getU16Decoder()],
   ]);
 }
 

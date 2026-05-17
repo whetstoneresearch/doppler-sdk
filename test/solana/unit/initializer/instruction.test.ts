@@ -50,6 +50,7 @@ describe('initializer instructions', () => {
     const [config] = await initializer.getConfigAddress();
     const [launch] = await initializer.getLaunchAddress(namespace, launchId);
     const [launchAuthority] = await initializer.getLaunchAuthorityAddress(launch);
+    const [launchFeeState] = await initializer.getLaunchFeeStateAddress(launch);
 
     const migratorInitPayload = cpmmMigrator.encodeRegisterLaunchPayload({
       cpmmConfig,
@@ -113,12 +114,12 @@ describe('initializer instructions', () => {
     );
 
     expect(ix.programAddress).toBe(initializer.INITIALIZER_PROGRAM_ID);
-    // 14 required/static accounts + hook and metadata placeholders +
+    // 15 required/static accounts + hook and metadata placeholders +
     // 2 auto-appended CPMM migrator remaining accounts:
     // cpmmMigrationState and cpmmConfig.
-    expect(ix.accounts).toHaveLength(19);
+    expect(ix.accounts).toHaveLength(20);
 
-    // Account ordering: config, launch, launchAuthority, baseMint, quoteMint, baseVault, quoteVault, payer,
+    // Account ordering: config, launch, launchAuthority, baseMint, quoteMint, baseVault, quoteVault, launchFeeState, payer,
     // then optional authority, optional hookProgram, optional migratorProgram,
     // then base/quote token, system/rent, optional metadata placeholders, then auto-appended
     // cpmmMigrationState and cpmmConfig.
@@ -129,22 +130,23 @@ describe('initializer instructions', () => {
     expect(ix.accounts![4].address).toBe(quoteMint);
     expect(ix.accounts![5].address).toBe(baseVault.address);
     expect(ix.accounts![6].address).toBe(quoteVault.address);
-    expect(ix.accounts![7].address).toBe(admin.address);
+    expect(ix.accounts![7].address).toBe(launchFeeState);
     expect(ix.accounts![8].address).toBe(admin.address);
-    expect(ix.accounts![9].address).toBe(initializer.INITIALIZER_PROGRAM_ID);
-    expect(ix.accounts![10].address).toBe(migratorProgram);
-    expect(ix.accounts![11].address).toBe(TOKEN_PROGRAM_ADDRESS);
+    expect(ix.accounts![9].address).toBe(admin.address);
+    expect(ix.accounts![10].address).toBe(initializer.INITIALIZER_PROGRAM_ID);
+    expect(ix.accounts![11].address).toBe(migratorProgram);
     expect(ix.accounts![12].address).toBe(TOKEN_PROGRAM_ADDRESS);
-    expect(ix.accounts![13].address).toBe(SYSTEM_PROGRAM_ADDRESS);
-    expect(ix.accounts![14].address).toBe(SYSVAR_RENT_PUBKEY);
-    expect(ix.accounts![15].address).toBe(initializer.INITIALIZER_PROGRAM_ID);
+    expect(ix.accounts![13].address).toBe(TOKEN_PROGRAM_ADDRESS);
+    expect(ix.accounts![14].address).toBe(SYSTEM_PROGRAM_ADDRESS);
+    expect(ix.accounts![15].address).toBe(SYSVAR_RENT_PUBKEY);
     expect(ix.accounts![16].address).toBe(initializer.INITIALIZER_PROGRAM_ID);
+    expect(ix.accounts![17].address).toBe(initializer.INITIALIZER_PROGRAM_ID);
     const [expectedCpmmMigratorState] = await cpmmMigrator.getCpmmMigratorStateAddress(launch);
-    expect(ix.accounts![17].address).toBe(expectedCpmmMigratorState);
-    expect(ix.accounts![18].address).toBe(cpmmConfig);
+    expect(ix.accounts![18].address).toBe(expectedCpmmMigratorState);
+    expect(ix.accounts![19].address).toBe(cpmmConfig);
 
     // Ensure signer metas were attached for the signer accounts.
-    for (const idx of [3, 5, 6, 7]) {
+    for (const idx of [3, 5, 6, 8]) {
       const meta = ix.accounts![idx] as { signer?: unknown };
       expect(meta.signer).toBeDefined();
     }
