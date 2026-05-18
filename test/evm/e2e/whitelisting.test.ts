@@ -9,6 +9,7 @@ import {
   CHAIN_IDS,
   getAddresses,
   airlockAbi,
+  streamableFeesLockerV2Abi,
   type SupportedChainId,
 } from '../../../src/evm';
 import { delay } from '../utils/rpc';
@@ -104,6 +105,13 @@ type DopplerHookCase = {
   module: string;
   hookAddress?: Address;
   parentAddress?: Address;
+};
+
+type StreamableFeesLockerCase = {
+  title: string;
+  module: string;
+  lockerAddress?: Address;
+  migratorAddress?: Address;
 };
 
 const SKIPPED_AIRLOCK_MODULES_BY_CHAIN: Partial<
@@ -308,6 +316,49 @@ describe('Airlock Module Whitelisting', () => {
         }
       }
 
+      async function testStreamableFeesLockerApprovedMigrator(
+        moduleName: string,
+        lockerAddress: Address,
+        migratorAddress: Address,
+      ) {
+        const result: TestResult = {
+          chain: chainName,
+          chainId,
+          module: moduleName,
+          address: lockerAddress,
+          status: 'PASS',
+          expected: 'Approved (true)',
+        };
+
+        try {
+          const approved = await publicClient.readContract({
+            address: lockerAddress,
+            abi: streamableFeesLockerV2Abi,
+            functionName: 'approvedMigrators',
+            args: [migratorAddress],
+          });
+
+          result.actual = approved ? 'Approved (true)' : 'Approved (false)';
+
+          if (!approved) {
+            result.status = 'FAIL';
+            recordTestResult(result);
+            throw new Error(
+              `approvedMigrators=${approved} for migrator=${migratorAddress} locker=${lockerAddress}`,
+            );
+          }
+
+          recordTestResult(result);
+        } catch (err) {
+          if (result.status !== 'FAIL') {
+            result.status = 'RPC_ERROR';
+            result.error = err instanceof Error ? err.message : String(err);
+            recordTestResult(result);
+          }
+          throw err;
+        }
+      }
+
       const airlockModuleCases: AirlockModuleCase[] = [
         {
           title: `TokenFactory (${addresses.tokenFactory}) whitelisted`,
@@ -446,6 +497,15 @@ describe('Airlock Module Whitelisting', () => {
         },
       ];
 
+      const streamableFeesLockerCases: StreamableFeesLockerCase[] = [
+        {
+          title: `DopplerHookMigrator (${addresses.dopplerHookMigrator}) approved on StreamableFeesLockerV2 (${addresses.streamableFeesLockerV2})`,
+          module: 'DopplerHookMigrator on StreamableFeesLockerV2',
+          lockerAddress: addresses.streamableFeesLockerV2,
+          migratorAddress: addresses.dopplerHookMigrator,
+        },
+      ];
+
       for (const moduleCase of airlockModuleCases) {
         const shouldRun =
           isConfiguredAddress(moduleCase.address) &&
@@ -470,6 +530,20 @@ describe('Airlock Module Whitelisting', () => {
             hookCase.module,
             hookCase.hookAddress as Address,
             hookCase.parentAddress as Address,
+          ),
+        );
+      }
+
+      for (const lockerCase of streamableFeesLockerCases) {
+        const shouldRun =
+          isConfiguredAddress(lockerCase.lockerAddress) &&
+          isConfiguredAddress(lockerCase.migratorAddress);
+        const testFn = shouldRun ? it : it.skip;
+        testFn(lockerCase.title, () =>
+          testStreamableFeesLockerApprovedMigrator(
+            lockerCase.module,
+            lockerCase.lockerAddress as Address,
+            lockerCase.migratorAddress as Address,
           ),
         );
       }
