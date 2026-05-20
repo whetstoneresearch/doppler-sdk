@@ -64,6 +64,10 @@ Create a multicurve auction whose vesting beneficiaries use different cliff and 
 
 Create a `dopplerERC20V1` token selected automatically from template-specific balance-limit fields, enumerate vesting schedules, release a partial vested amount by schedule or across schedules, and read max-balance-limit state. The default DopplerERC20V1 integration adds protocol balance-limit exclusions; custom `withTokenFactory(address)` paths must provide any required exclusions explicitly. This implementation does not configure or expose yearly mint inflation.
 
+### 12c. [Multicurve DopplerERC20V1 Multi-Schedule Vesting + Governance](./multicurve-derc20v1-multi-vesting-governance.ts)
+
+Build a Base multicurve configuration using the `dopplerERC20V1` token template, standard governance, and per-allocation vesting schedules. Includes multiple unique vesting schedules and one recipient with two vesting allocations on different schedules.
+
 ### 13. [Multicurve Vanity Launch (Market Cap)](./multicurve-vanity-by-marketcap.ts)
 
 Create a multicurve pool and mine a salt so the deployed token address ends with a chosen hex suffix (identifier). Launches on-chain (requires RPC + PRIVATE_KEY).
