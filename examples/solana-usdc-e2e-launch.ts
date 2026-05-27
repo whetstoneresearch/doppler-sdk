@@ -534,15 +534,30 @@ async function main() {
     const protocolQuoteFees =
       (expectedQuoteFee * BigInt(feeState.protocolFeeBps)) / 10_000n;
     const beneficiaryQuoteFees = expectedQuoteFee - protocolQuoteFees;
+    const quoteVaultBalance = await rpc
+      .getTokenAccountBalance(quoteVault.address, { commitment: 'confirmed' })
+      .send();
+    const quoteVaultAmount = BigInt(quoteVaultBalance.value.amount);
+    const pendingQuoteFees = feeState.cumulatedQuoteFees;
+    const migrationQuoteAmount = quoteVaultAmount - pendingQuoteFees;
+
     console.log('  Fee arithmetic verified:');
     console.log('    cumulated quote fees:', expectedQuoteFee.toString());
     console.log('    protocol quote fees: ', protocolQuoteFees.toString());
     console.log('    beneficiary fees:    ', beneficiaryQuoteFees.toString());
+    console.log('    quote vault amount:  ', quoteVaultAmount.toString());
+    console.log('    migration quote:     ', migrationQuoteAmount.toString());
+    if (migrationQuoteAmount < minRaiseQuote) {
+      throw new Error(
+        `Migration quote amount ${migrationQuoteAmount} is below threshold ${minRaiseQuote}`,
+      );
+    }
     console.log('');
 
     // ── Step 5: Migrate launch to CPMM pool ─────────────────────────────────
     //
-    // Anyone can call migrate_launch once quoteDeposited >= minRaiseQuote.
+    // Anyone can call migrate_launch once quote_vault_amount - pending_quote_fees
+    // is at least minRaiseQuote.
     // The migrator creates the canonical CPMM pool graph inline, then seeds
     // liquidity into it. The remaining accounts must match the hash committed
     // at launch creation.
