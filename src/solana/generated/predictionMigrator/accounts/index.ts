@@ -9,6 +9,7 @@
 export * from './claimReceipt';
 export * from './entry';
 export * from './entryByMint';
+export * from './initConfig';
 export * from './launch';
 export * from './market';
 export * from './oracleState';

@@ -76,8 +76,6 @@ export type LaunchFeeState = {
   distributedProtocolQuoteFees: bigint;
   distributedBaseByBeneficiary: Array<bigint>;
   distributedQuoteByBeneficiary: Array<bigint>;
-  migratedPool: Address;
-  migratedPosition: Address;
   reserved: ReadonlyUint8Array;
 };
 
@@ -97,8 +95,6 @@ export type LaunchFeeStateArgs = {
   distributedProtocolQuoteFees: number | bigint;
   distributedBaseByBeneficiary: Array<number | bigint>;
   distributedQuoteByBeneficiary: Array<number | bigint>;
-  migratedPool: Address;
-  migratedPosition: Address;
   reserved: ReadonlyUint8Array;
 };
 
@@ -131,9 +127,7 @@ export function getLaunchFeeStateEncoder(): FixedSizeEncoder<LaunchFeeStateArgs>
         'distributedQuoteByBeneficiary',
         getArrayEncoder(getU64Encoder(), { size: 8 }),
       ],
-      ['migratedPool', getAddressEncoder()],
-      ['migratedPosition', getAddressEncoder()],
-      ['reserved', fixEncoderSize(getBytesEncoder(), 64)],
+      ['reserved', fixEncoderSize(getBytesEncoder(), 128)],
     ]),
     (value) => ({ ...value, discriminator: LAUNCH_FEE_STATE_DISCRIMINATOR }),
   );
@@ -164,9 +158,7 @@ export function getLaunchFeeStateDecoder(): FixedSizeDecoder<LaunchFeeState> {
       'distributedQuoteByBeneficiary',
       getArrayDecoder(getU64Decoder(), { size: 8 }),
     ],
-    ['migratedPool', getAddressDecoder()],
-    ['migratedPosition', getAddressDecoder()],
-    ['reserved', fixDecoderSize(getBytesDecoder(), 64)],
+    ['reserved', fixDecoderSize(getBytesDecoder(), 128)],
   ]);
 }
 

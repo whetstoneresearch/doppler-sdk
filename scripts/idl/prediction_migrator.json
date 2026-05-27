@@ -249,7 +249,10 @@
       ],
       "accounts": [
         {
-          "name": "initializer_config"
+          "name": "initializer_config",
+          "docs": [
+            "Standard initializer module-call prefix account."
+          ]
         },
         {
           "name": "launch",
@@ -356,6 +359,9 @@
         },
         {
           "name": "market_authority",
+          "docs": [
+            "Market authority PDA used as the pot vault owner."
+          ],
           "pda": {
             "seeds": [
               {
@@ -768,6 +774,19 @@
         68,
         82,
         181,
+        126
+      ]
+    },
+    {
+      "name": "InitConfig",
+      "discriminator": [
+        97,
+        166,
+        35,
+        7,
+        20,
+        2,
+        164,
         126
       ]
     },
@@ -1263,6 +1282,80 @@
           {
             "name": "base_mint",
             "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "InitConfig",
+      "docs": [
+        "Initializer configuration account."
+      ],
+      "serialization": "bytemuckunsafe",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "migrator_allowlist_len",
+            "type": "u8"
+          },
+          {
+            "name": "migrator_allowlist",
+            "type": {
+              "array": [
+                "pubkey",
+                32
+              ]
+            }
+          },
+          {
+            "name": "hook_allowlist_len",
+            "type": "u8"
+          },
+          {
+            "name": "hook_allowlist",
+            "type": {
+              "array": [
+                "pubkey",
+                32
+              ]
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "version",
+            "type": "u8"
+          },
+          {
+            "name": "protocol_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "min_swap_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "max_swap_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "_reserved",
+            "type": {
+              "array": [
+                "u8",
+                24
+              ]
+            }
           }
         ]
       }

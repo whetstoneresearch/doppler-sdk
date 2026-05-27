@@ -2526,19 +2526,11 @@
             }
           },
           {
-            "name": "migrated_pool",
-            "type": "pubkey"
-          },
-          {
-            "name": "migrated_position",
-            "type": "pubkey"
-          },
-          {
             "name": "_reserved",
             "type": {
               "array": [
                 "u8",
-                64
+                128
               ]
             }
           }
