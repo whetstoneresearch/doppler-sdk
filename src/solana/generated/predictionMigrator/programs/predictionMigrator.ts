@@ -36,6 +36,7 @@ import {
   getClaimReceiptCodec,
   getEntryByMintCodec,
   getEntryCodec,
+  getInitConfigCodec,
   getLaunchCodec,
   getMarketCodec,
   getOracleStateCodec,
@@ -45,6 +46,8 @@ import {
   type EntryArgs,
   type EntryByMint,
   type EntryByMintArgs,
+  type InitConfig,
+  type InitConfigArgs,
   type Launch,
   type LaunchArgs,
   type Market,
@@ -78,6 +81,7 @@ export enum PredictionMigratorAccount {
   ClaimReceipt,
   Entry,
   EntryByMint,
+  InitConfig,
   Launch,
   Market,
   OracleState,
@@ -119,6 +123,17 @@ export function identifyPredictionMigratorAccount(
     )
   ) {
     return PredictionMigratorAccount.EntryByMint;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([97, 166, 35, 7, 20, 2, 164, 126]),
+      ),
+      0,
+    )
+  ) {
+    return PredictionMigratorAccount.InitConfig;
   }
   if (
     containsBytes(
@@ -292,6 +307,8 @@ export type PredictionMigratorPluginAccounts = {
     SelfFetchFunctions<EntryArgs, Entry>;
   entryByMint: ReturnType<typeof getEntryByMintCodec> &
     SelfFetchFunctions<EntryByMintArgs, EntryByMint>;
+  initConfig: ReturnType<typeof getInitConfigCodec> &
+    SelfFetchFunctions<InitConfigArgs, InitConfig>;
   launch: ReturnType<typeof getLaunchCodec> &
     SelfFetchFunctions<LaunchArgs, Launch>;
   market: ReturnType<typeof getMarketCodec> &
@@ -334,6 +351,7 @@ export function predictionMigratorProgram() {
           claimReceipt: addSelfFetchFunctions(client, getClaimReceiptCodec()),
           entry: addSelfFetchFunctions(client, getEntryCodec()),
           entryByMint: addSelfFetchFunctions(client, getEntryByMintCodec()),
+          initConfig: addSelfFetchFunctions(client, getInitConfigCodec()),
           launch: addSelfFetchFunctions(client, getLaunchCodec()),
           market: addSelfFetchFunctions(client, getMarketCodec()),
           oracleState: addSelfFetchFunctions(client, getOracleStateCodec()),

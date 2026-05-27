@@ -1,9 +1,9 @@
 /**
- * Example: Cosigner-Gated Bonding Curve Buy (Solana)
+ * Example: USDC Cosigner-Gated Bonding Curve Buy (Solana)
  *
  * Creates a CPMM-migratable launch with the cosigner hook enabled for
  * pre-migration swaps, proves an unsigned buy fails, executes one cosigned
- * bonding-curve buy, migrates, then performs an ungated CPMM swap.
+ * bonding-curve buy with devnet USDC, migrates, then performs an ungated CPMM swap.
  *
  * Configure two launch beneficiaries with:
  *   SOLANA_FEE_BENEFICIARY_1_WALLET / _BASE_AMOUNT / _SHARE_BPS
@@ -17,12 +17,8 @@ import {
   TOKEN_PROGRAM_ADDRESS,
   findAssociatedTokenPda,
   getCreateAssociatedTokenIdempotentInstruction,
-  getSyncNativeInstruction,
 } from '@solana-program/token';
-import {
-  SYSTEM_PROGRAM_ADDRESS,
-  getTransferSolInstruction,
-} from '@solana-program/system';
+import { SYSTEM_PROGRAM_ADDRESS } from '@solana-program/system';
 import {
   pipe,
   createTransactionMessage,
@@ -53,9 +49,7 @@ import {
   createSetComputeUnitLimitInstruction,
   createSolanaClientsFromEnv,
   getMetadataByteLength,
-  getSolPriceUsd,
   getSolanaCpmmDeploymentFromEnv,
-  getTokenAccountRentLamports,
   loadKeypairSignerFromEnv,
   sendInstructions,
   simulateInstructions,
@@ -67,8 +61,59 @@ type LaunchBeneficiaryConfig = {
   feeBeneficiaries: { wallet: Address; shareBps: number }[];
 };
 
-const WSOL_MINT: Address =
-  'So11111111111111111111111111111111111111112' as Address;
+async function fetchOwnedTokenAmount({
+  rpc,
+  owner,
+  mint,
+  tokenAccount,
+}: {
+  rpc: SolanaClients['rpc'];
+  owner: Address;
+  mint: Address;
+  tokenAccount: Address;
+}): Promise<bigint | null> {
+  const result = await rpc
+    .getTokenAccountsByOwner(
+      owner,
+      { mint },
+      { encoding: 'jsonParsed', commitment: 'confirmed' },
+    )
+    .send();
+  const account = result.value.find(({ pubkey }) => pubkey === tokenAccount);
+  return account
+    ? BigInt(account.account.data.parsed.info.tokenAmount.amount)
+    : null;
+}
+
+async function assertTokenBalance({
+  rpc,
+  owner,
+  mint,
+  tokenAccount,
+  amount,
+}: {
+  rpc: SolanaClients['rpc'];
+  owner: Address;
+  mint: Address;
+  tokenAccount: Address;
+  amount: bigint;
+}): Promise<void> {
+  const balance = await fetchOwnedTokenAmount({
+    rpc,
+    owner,
+    mint,
+    tokenAccount,
+  });
+  if (balance === null || balance < amount) {
+    throw new Error(
+      `USDC token account ${tokenAccount} needs at least ${amount} atoms; current balance is ${balance ?? 0n}`,
+    );
+  }
+}
+
+// Standard devnet USDC mint.
+const USDC_MINT: Address =
+  '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU' as Address;
 
 async function loadCosigner(): Promise<TransactionSigner> {
   if (!process.env.COSIGNER_KEYPAIR_PATH && !process.env.COSIGNER_KEYPAIR) {
@@ -232,15 +277,17 @@ async function main() {
   const BASE_FOR_LIQUIDITY = 50_000_000n * 10n ** BigInt(BASE_DECIMALS);
   const BASE_FOR_CURVE =
     BASE_TOTAL_SUPPLY - BASE_FOR_DISTRIBUTION - BASE_FOR_LIQUIDITY;
-  const QUOTE_DECIMALS = 9;
+  const QUOTE_DECIMALS = 6;
   const SWAP_FEE_BPS = 200;
   const CPMM_SWAP_FEE_SPLIT_BPS = 10_000;
   const BUY_AMOUNT_IN = parseDecimalTokenAmount(
-    'SOLANA_COSIGNER_BUY_AMOUNT_SOL',
+    'SOLANA_COSIGNER_BUY_AMOUNT_USDC',
     QUOTE_DECIMALS,
   );
   if (BUY_AMOUNT_IN === 0n) {
-    throw new Error('SOLANA_COSIGNER_BUY_AMOUNT_SOL must be greater than zero');
+    throw new Error(
+      'SOLANA_COSIGNER_BUY_AMOUNT_USDC must be greater than zero',
+    );
   }
   const minRaiseQuote = BUY_AMOUNT_IN > 1_000n ? BUY_AMOUNT_IN / 2n : 1n;
   const launchBeneficiaries = loadLaunchBeneficiaries({
@@ -248,7 +295,7 @@ async function main() {
     expectedDistributionAmount: BASE_FOR_DISTRIBUTION,
   });
 
-  const solPriceUsd = await getSolPriceUsd();
+  const numerairePriceUsd = 1;
   const { start } = cpmm.marketCapToCurveParams({
     startMarketCapUSD: 100_000,
     endMarketCapUSD: 10_000_000,
@@ -256,7 +303,7 @@ async function main() {
     baseForCurve: BASE_FOR_CURVE,
     baseDecimals: BASE_DECIMALS,
     quoteDecimals: QUOTE_DECIMALS,
-    numerairePriceUSD: solPriceUsd,
+    numerairePriceUSD: numerairePriceUsd,
   });
 
   const baseMint = await generateKeyPairSigner();
@@ -288,8 +335,15 @@ async function main() {
   });
   const [payerQuoteAta] = await findAssociatedTokenPda({
     owner: payer.address,
-    mint: WSOL_MINT,
+    mint: USDC_MINT,
     tokenProgram: TOKEN_PROGRAM_ADDRESS,
+  });
+  await assertTokenBalance({
+    rpc,
+    owner: payer.address,
+    mint: USDC_MINT,
+    tokenAccount: payerQuoteAta,
+    amount: BUY_AMOUNT_IN,
   });
   const recipientAtas = await Promise.all(
     launchBeneficiaries.recipients.map(async ({ wallet }) => {
@@ -306,7 +360,7 @@ async function main() {
     await cpmmMigrator.buildCpmmMigrationRemainingAccounts({
       launch,
       baseMint: baseMint.address,
-      quoteMint: WSOL_MINT,
+      quoteMint: USDC_MINT,
       launchAuthority,
       adminBaseAta: payerBaseAta,
       adminQuoteAta: payerQuoteAta,
@@ -366,7 +420,7 @@ async function main() {
         launch,
         launchAuthority,
         baseMint,
-        quoteMint: WSOL_MINT,
+        quoteMint: USDC_MINT,
         baseVault,
         quoteVault,
         launchFeeState,
@@ -453,7 +507,7 @@ async function main() {
   });
   const [userQuoteAta] = await findAssociatedTokenPda({
     owner: payer.address,
-    mint: WSOL_MINT,
+    mint: USDC_MINT,
     tokenProgram: TOKEN_PROGRAM_ADDRESS,
   });
   const setupAndFund = [
@@ -467,14 +521,8 @@ async function main() {
       payer,
       ata: userQuoteAta,
       owner: payer.address,
-      mint: WSOL_MINT,
+      mint: USDC_MINT,
     }),
-    getTransferSolInstruction({
-      source: payer,
-      destination: userQuoteAta,
-      amount: BUY_AMOUNT_IN + getTokenAccountRentLamports(),
-    }),
-    getSyncNativeInstruction({ account: userQuoteAta }),
   ];
   const swapAccounts = {
     config: deployment.initializerConfig,
@@ -486,7 +534,7 @@ async function main() {
     userBaseAccount: userBaseAta,
     userQuoteAccount: userQuoteAta,
     baseMint: baseMint.address,
-    quoteMint: WSOL_MINT,
+    quoteMint: USDC_MINT,
     user: payer,
     hookProgram: deployment.cosignerHookProgram,
     baseTokenProgram: TOKEN_PROGRAM_ADDRESS,
@@ -566,7 +614,7 @@ async function main() {
       launch,
       launchAuthority,
       baseMint: baseMint.address,
-      quoteMint: WSOL_MINT,
+      quoteMint: USDC_MINT,
       baseVault: baseVault.address,
       quoteVault: quoteVault.address,
       launchFeeState,
@@ -610,7 +658,7 @@ async function main() {
   const poolResult = await cpmm.getPoolByMints(
     rpc,
     baseMint.address,
-    WSOL_MINT,
+    USDC_MINT,
     {
       commitment: 'confirmed',
       programId: deployment.cpmmProgram,

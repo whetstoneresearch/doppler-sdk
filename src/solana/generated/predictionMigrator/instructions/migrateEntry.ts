@@ -193,6 +193,7 @@ export type MigrateEntryAsyncInput<
   TAccountEntry extends string = string,
   TAccountEntryByMint extends string = string,
 > = {
+  /** Standard initializer module-call prefix account. */
   initializerConfig: Address<TAccountInitializerConfig>;
   /** Launch account from initializer */
   launch: Address<TAccountLaunch>;
@@ -220,6 +221,7 @@ export type MigrateEntryAsyncInput<
   market?: Address<TAccountMarket>;
   /** Pot vault for holding quote tokens */
   potVault: Address<TAccountPotVault>;
+  /** Market authority PDA used as the pot vault owner. */
   marketAuthority?: Address<TAccountMarketAuthority>;
   /** Entry PDA */
   entry: Address<TAccountEntry>;
@@ -483,6 +485,7 @@ export type MigrateEntryInput<
   TAccountEntry extends string = string,
   TAccountEntryByMint extends string = string,
 > = {
+  /** Standard initializer module-call prefix account. */
   initializerConfig: Address<TAccountInitializerConfig>;
   /** Launch account from initializer */
   launch: Address<TAccountLaunch>;
@@ -510,6 +513,7 @@ export type MigrateEntryInput<
   market: Address<TAccountMarket>;
   /** Pot vault for holding quote tokens */
   potVault: Address<TAccountPotVault>;
+  /** Market authority PDA used as the pot vault owner. */
   marketAuthority: Address<TAccountMarketAuthority>;
   /** Entry PDA */
   entry: Address<TAccountEntry>;
@@ -694,6 +698,7 @@ export type ParsedMigrateEntryInstruction<
 > = {
   programAddress: Address<TProgram>;
   accounts: {
+    /** Standard initializer module-call prefix account. */
     initializerConfig: TAccountMetas[0];
     /** Launch account from initializer */
     launch: TAccountMetas[1];
@@ -721,6 +726,7 @@ export type ParsedMigrateEntryInstruction<
     market: TAccountMetas[13];
     /** Pot vault for holding quote tokens */
     potVault: TAccountMetas[14];
+    /** Market authority PDA used as the pot vault owner. */
     marketAuthority: TAccountMetas[15];
     /** Entry PDA */
     entry: TAccountMetas[16];

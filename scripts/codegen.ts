@@ -21,12 +21,12 @@ const IDL_DIR = path.join(PACKAGE_ROOT, 'scripts', 'idl');
 const GENERATED_DIR = path.join(PACKAGE_ROOT, 'src', 'solana', 'generated');
 
 const PROGRAMS = [
-  { idl_name: 'cpmm',                out_dir: 'cpmm' },
-  { idl_name: 'cpmm_migrator',       out_dir: 'cpmmMigrator' },
-  { idl_name: 'cosigner_hook',       out_dir: 'cosignerHook' },
-  { idl_name: 'initializer',         out_dir: 'initializer' },
+  { idl_name: 'cpmm', out_dir: 'cpmm' },
+  { idl_name: 'cpmm_migrator', out_dir: 'cpmmMigrator' },
+  { idl_name: 'cosigner_hook', out_dir: 'cosignerHook' },
+  { idl_name: 'initializer', out_dir: 'initializer' },
   { idl_name: 'prediction_migrator', out_dir: 'predictionMigrator' },
-  { idl_name: 'trusted_oracle',      out_dir: 'trustedOracle' },
+  { idl_name: 'trusted_oracle', out_dir: 'trustedOracle' },
 ] as const;
 
 fs.mkdirSync(IDL_DIR, { recursive: true });
@@ -79,13 +79,17 @@ for (const program of PROGRAMS) {
   const idl = flattenIdlInstructionArgs(raw_idl);
 
   const codama = createFromRoot(rootNodeFromAnchor(idl));
-  await codama.accept(renderVisitor(output_dir, {
-    deleteFolderBeforeRendering: true,
-    generatedFolder: '.',
-    syncPackageJson: false,
-  }));
+  await codama.accept(
+    renderVisitor(output_dir, {
+      deleteFolderBeforeRendering: true,
+      generatedFolder: '.',
+      syncPackageJson: false,
+    }),
+  );
 
-  console.log(`  ✓ ${program.idl_name} → src/solana/generated/${program.out_dir}/`);
+  console.log(
+    `  ✓ ${program.idl_name} → src/solana/generated/${program.out_dir}/`,
+  );
 }
 
 // Fix TS2308: Codama generates event types (e.g. AddLiquidity) in their own
@@ -95,13 +99,51 @@ for (const program of PROGRAMS) {
 // Patch the cpmm types index to use explicit exports for the event files,
 // dropping the conflicting *Args encoder-input type (the instruction-args
 // version takes precedence as it is what SDK consumers actually use).
-const cpmm_types_index_path = path.join(GENERATED_DIR, 'cpmm', 'types', 'index.ts');
-const CONFLICTING_EVENTS: Array<{ file: string; type: string; fns: string[] }> = [
-  { file: 'addLiquidity',       type: 'AddLiquidity',       fns: ['getAddLiquidityEncoder',       'getAddLiquidityDecoder',       'getAddLiquidityCodec']       },
-  { file: 'collectFees',        type: 'CollectFees',        fns: ['getCollectFeesEncoder',        'getCollectFeesDecoder',        'getCollectFeesCodec']        },
-  { file: 'collectProtocolFees',type: 'CollectProtocolFees',fns: ['getCollectProtocolFeesEncoder','getCollectProtocolFeesDecoder','getCollectProtocolFeesCodec'] },
-  { file: 'removeLiquidity',    type: 'RemoveLiquidity',    fns: ['getRemoveLiquidityEncoder',    'getRemoveLiquidityDecoder',    'getRemoveLiquidityCodec']    },
-];
+const cpmm_types_index_path = path.join(
+  GENERATED_DIR,
+  'cpmm',
+  'types',
+  'index.ts',
+);
+const CONFLICTING_EVENTS: Array<{ file: string; type: string; fns: string[] }> =
+  [
+    {
+      file: 'addLiquidity',
+      type: 'AddLiquidity',
+      fns: [
+        'getAddLiquidityEncoder',
+        'getAddLiquidityDecoder',
+        'getAddLiquidityCodec',
+      ],
+    },
+    {
+      file: 'collectFees',
+      type: 'CollectFees',
+      fns: [
+        'getCollectFeesEncoder',
+        'getCollectFeesDecoder',
+        'getCollectFeesCodec',
+      ],
+    },
+    {
+      file: 'collectProtocolFees',
+      type: 'CollectProtocolFees',
+      fns: [
+        'getCollectProtocolFeesEncoder',
+        'getCollectProtocolFeesDecoder',
+        'getCollectProtocolFeesCodec',
+      ],
+    },
+    {
+      file: 'removeLiquidity',
+      type: 'RemoveLiquidity',
+      fns: [
+        'getRemoveLiquidityEncoder',
+        'getRemoveLiquidityDecoder',
+        'getRemoveLiquidityCodec',
+      ],
+    },
+  ];
 let cpmm_types_index = fs.readFileSync(cpmm_types_index_path, 'utf-8');
 for (const { file, type, fns } of CONFLICTING_EVENTS) {
   const explicit_exports = [`type ${type}`, ...fns].join(', ');
@@ -111,26 +153,33 @@ for (const { file, type, fns } of CONFLICTING_EVENTS) {
   );
 }
 fs.writeFileSync(cpmm_types_index_path, cpmm_types_index);
-console.log('  ✓ patched cpmm/types/index.ts (resolved AddLiquidityArgs / CollectFeesArgs naming collision)');
+console.log(
+  '  ✓ patched cpmm/types/index.ts (resolved AddLiquidityArgs / CollectFeesArgs naming collision)',
+);
 
 // Anchor's IDL sizing does not include the trailing repr(C) padding byte on the
 // initializer InitConfig zero-copy account. Keep the public size helper aligned
 // with the on-chain account space used by the program.
-const initializer_config_path = path.join(
-  GENERATED_DIR,
-  'initializer',
-  'accounts',
-  'initConfig.ts',
-);
-let initializer_config = fs.readFileSync(initializer_config_path, 'utf-8');
-initializer_config = initializer_config.replace(
-  /export function getInitConfigSize\(\): number {\n  return \d+;\n}/,
-  'export function getInitConfigSize(): number {\n  return 2123;\n}',
-);
-if (!initializer_config.includes('return 2123;')) {
-  throw new Error('Failed to patch initializer InitConfig account size');
+const init_config_paths = [
+  path.join(GENERATED_DIR, 'initializer', 'accounts', 'initConfig.ts'),
+  path.join(GENERATED_DIR, 'cpmmMigrator', 'accounts', 'initConfig.ts'),
+  path.join(GENERATED_DIR, 'predictionMigrator', 'accounts', 'initConfig.ts'),
+];
+for (const init_config_path of init_config_paths) {
+  let init_config = fs.readFileSync(init_config_path, 'utf-8');
+  init_config = init_config.replace(
+    /export function getInitConfigSize\(\): number {\n  return \d+;\n}/,
+    'export function getInitConfigSize(): number {\n  return 2123;\n}',
+  );
+  if (!init_config.includes('return 2123;')) {
+    throw new Error(
+      `Failed to patch InitConfig account size in ${init_config_path}`,
+    );
+  }
+  fs.writeFileSync(init_config_path, init_config);
 }
-fs.writeFileSync(initializer_config_path, initializer_config);
-console.log('  ✓ patched initializer/accounts/initConfig.ts (preserved on-chain InitConfig size)');
+console.log(
+  '  ✓ patched InitConfig account sizes (preserved on-chain zero-copy size)',
+);
 
 console.log('\nCodegen complete.');
