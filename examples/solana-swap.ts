@@ -8,30 +8,11 @@
 import './env.js';
 
 import {
-  address,
-  pipe,
-  createTransactionMessage,
-  setTransactionMessageFeePayerSigner,
-  setTransactionMessageLifetimeUsingBlockhash,
-  appendTransactionMessageInstructions,
-  signTransactionMessageWithSigners,
-  sendAndConfirmTransactionFactory,
-  getSignatureFromTransaction,
-  type Address,
-} from '@solana/kit';
-
-import {
-  TOKEN_PROGRAM_ADDRESS,
-  findAssociatedTokenPda,
-  getCreateAssociatedTokenIdempotentInstruction,
-} from '@solana-program/token';
-
-import { cpmm } from '../src/solana/index.js';
-import {
   assertSolanaExampleNetwork,
   createSolanaClientsFromEnv,
   getSolanaCpmmDeploymentFromEnv,
   loadKeypairSignerFromEnv,
+  sendInstructions,
 } from './solanaExampleHelpers.js';
 
 if (!process.env.MINT_0 || !process.env.MINT_1) {
@@ -155,39 +136,16 @@ async function main() {
       mint: pool.token1Mint,
     });
 
-    const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
-
-    const transactionMessage = pipe(
-      createTransactionMessage({ version: 0 }),
-      (tx) => setTransactionMessageFeePayerSigner(payer, tx),
-      (tx) => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
-      (tx) =>
-        appendTransactionMessageInstructions(
-          [createUserInAtaIx, createUserOutAtaIx, ix],
-          tx,
-        ),
-    );
-
-    const signedTransaction =
-      await signTransactionMessageWithSigners(transactionMessage);
-
-    const sendAndConfirmTransaction = sendAndConfirmTransactionFactory({
+    const signature = await sendInstructions({
       rpc,
       rpcSubscriptions,
+      payer,
+      instructions: [createUserInAtaIx, createUserOutAtaIx, ix],
     });
-    await sendAndConfirmTransaction(
-      signedTransaction as Parameters<typeof sendAndConfirmTransaction>[0],
-      {
-        commitment: 'confirmed',
-      },
-    );
 
     console.log('');
     console.log('Swap confirmed!');
-    console.log(
-      '  Transaction:',
-      getSignatureFromTransaction(signedTransaction),
-    );
+    console.log('  Transaction:', signature);
     console.log('  Sent:       ', AMOUNT_IN.toString(), 'input token atoms');
     console.log(
       '  Received:   ~',

@@ -16,38 +16,15 @@
  */
 import './env.js';
 
-import { TOKEN_PROGRAM_ADDRESS } from '@solana-program/token';
-import { SYSTEM_PROGRAM_ADDRESS } from '@solana-program/system';
 import {
-  generateKeyPairSigner,
-  pipe,
-  createTransactionMessage,
-  setTransactionMessageFeePayerSigner,
-  setTransactionMessageLifetimeUsingBlockhash,
-  appendTransactionMessageInstructions,
-  signTransactionMessageWithSigners,
-  sendAndConfirmTransactionFactory,
-  getSignatureFromTransaction,
-  type Address,
-} from '@solana/kit';
-import { SYSVAR_RENT_ADDRESS } from '@solana/sysvars';
-
-import {
-  initializer,
-  predictionMigrator,
-  trustedOracle,
-} from '../src/solana/index.js';
-import {
+  WSOL_MINT,
   assertSolanaExampleNetwork,
-  createLookupTableForInstruction,
   createSolanaClientsFromEnv,
   getSolanaCpmmDeploymentFromEnv,
   loadKeypairSignerFromEnv,
+  sendInitializeLaunchWithLookupTable,
+  sendInstructions,
 } from './solanaExampleHelpers.js';
-
-// WSOL mint — the quote token (SOL wrapped as SPL token so it can live in vaults).
-const WSOL_MINT: Address =
-  'So11111111111111111111111111111111111111112' as Address;
 
 // ============================================================================
 // Main
@@ -108,33 +85,13 @@ async function main() {
       quoteMint: WSOL_MINT,
     });
 
-    const sendAndConfirmTransaction = sendAndConfirmTransactionFactory({
+    const oracleSignature = await sendInstructions({
       rpc,
       rpcSubscriptions,
+      payer,
+      instructions: [initOracleIx],
     });
-
-    {
-      const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
-      const transactionMessage = pipe(
-        createTransactionMessage({ version: 0 }),
-        (tx) => setTransactionMessageFeePayerSigner(payer, tx),
-        (tx) =>
-          setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
-        (tx) => appendTransactionMessageInstructions([initOracleIx], tx),
-      );
-      const signedTransaction =
-        await signTransactionMessageWithSigners(transactionMessage);
-      await sendAndConfirmTransaction(
-        signedTransaction as Parameters<typeof sendAndConfirmTransaction>[0],
-        {
-          commitment: 'confirmed',
-        },
-      );
-      console.log(
-        '  Oracle created:',
-        getSignatureFromTransaction(signedTransaction),
-      );
-    }
+    console.log('  Oracle created:', oracleSignature);
 
     // ── Step 2: Create per-outcome launches ───────────────────────────────
     // YES and NO launches are independent of each other and sent in parallel.
@@ -208,6 +165,12 @@ async function main() {
         // ── Build the initializeLaunch instruction ───────────────────────────
         // The instruction builder automatically appends the 6 register_entry
         // remaining accounts for the prediction migrator.
+        const metadata = {
+          metadataName: `${outcome.label} Token`,
+          metadataSymbol: outcome.label,
+          metadataUri: `https://example.com/${outcome.label.toLowerCase()}.json`,
+        };
+
         const ix = await initializer.createInitializeLaunchInstruction(
           {
             config,
@@ -271,54 +234,22 @@ async function main() {
                 entryAddress,
                 entryByMint,
               ]),
-            // ALTs compress account keys but not instruction data; keep
-            // metadata strings short enough to fit the 1232-byte tx limit.
-            metadataName: `${outcome.label} Token`,
-            metadataSymbol: outcome.label,
-            metadataUri: `https://example.com/${outcome.label.toLowerCase()}.json`,
+            ...metadata,
             feeBeneficiaries: [{ wallet: payer.address, shareBps: 10_000 }],
           },
           deployment.initializerProgram,
         );
-        const lookupTable = await createLookupTableForInstruction({
+        const launchSignature = await sendInitializeLaunchWithLookupTable({
           rpc,
           rpcSubscriptions,
           payer,
           instruction: ix,
-          label: `${outcome.label} initialize_launch lookup table`,
+          metadata,
+          label: `${outcome.label} initialize_launch`,
         });
 
-        const { value: latestBlockhash } = await rpc
-          .getLatestBlockhash()
-          .send();
-        const transactionMessage =
-          initializer.compressTransactionMessageWithLookupTable(
-            pipe(
-              createTransactionMessage({ version: 0 }),
-              (tx) => setTransactionMessageFeePayerSigner(payer, tx),
-              (tx) =>
-                setTransactionMessageLifetimeUsingBlockhash(
-                  latestBlockhash,
-                  tx,
-                ),
-              (tx) => appendTransactionMessageInstructions([ix], tx),
-            ),
-            lookupTable,
-          );
-        const signedTransaction =
-          await signTransactionMessageWithSigners(transactionMessage);
-        await sendAndConfirmTransaction(
-          signedTransaction as Parameters<typeof sendAndConfirmTransaction>[0],
-          {
-            commitment: 'confirmed',
-          },
-        );
-
-        console.log(`  ${outcome.label} launch created!`);
-        console.log(
-          '  Transaction:',
-          getSignatureFromTransaction(signedTransaction),
-        );
+        console.log(`${outcome.label} launch created!`);
+        console.log('  Transaction:', launchSignature);
 
         // Verify launch state
         const launchAccount = await initializer.fetchLaunch(rpc, launch, {

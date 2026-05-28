@@ -130,12 +130,15 @@ Minimal builder examples for `uniswapV2Split` / `uniswapV4Split` migrations and 
 
 The Solana examples use `@whetstone-research/doppler-sdk/solana`. Set `SOLANA_NETWORK=devnet` for the checked-in Doppler Solana deployment defaults, or `SOLANA_NETWORK=custom` with explicit RPC URLs and deployment program IDs.
 
-- [`solana-launch-by-marketcap.ts`](./solana-launch-by-marketcap.ts): simple XYK launch with CPMM migration configured.
-- [`solana-adv-launch.ts`](./solana-adv-launch.ts): launch with custom allocations, recipients, fees, and migration price floor.
-- [`solana-adv-e2e-launch.ts`](./solana-adv-e2e-launch.ts): create, buy, migrate, and inspect the graduated CPMM pool.
-- [`solana-swap.ts`](./solana-swap.ts): quote and submit an exact-in CPMM swap.
+- [`solana-launch-by-marketcap.ts`](./solana-launch-by-marketcap.ts): simple WSOL XYK launch with CPMM migration configured.
+- [`solana-adv-launch.ts`](./solana-adv-launch.ts): WSOL launch with custom allocations, recipients, fees, and migration price floor.
+- [`solana-adv-e2e-launch.ts`](./solana-adv-e2e-launch.ts): create, buy, migrate, and inspect a graduated WSOL CPMM pool.
+- [`solana-usdc-e2e-launch.ts`](./solana-usdc-e2e-launch.ts): same lifecycle with devnet USDC and fee arithmetic checks.
 - [`solana-cosigner-gated-launch.ts`](./solana-cosigner-gated-launch.ts): E2E launch with bonding-curve swaps gated by the configured cosigner hook.
-- [`solana-cosigner-gated-buy.ts`](./solana-cosigner-gated-buy.ts): create a cosigner-gated launch with three env-configured beneficiaries, execute one cosigned bonding-curve buy, migrate, then execute an ungated CPMM swap.
+- [`solana-cosigner-gated-buy.ts`](./solana-cosigner-gated-buy.ts): cosigner-gated WSOL buy flow with env-configured fee beneficiaries.
+- [`solana-usdc-cosigner-gated-buy.ts`](./solana-usdc-cosigner-gated-buy.ts): cosigner-gated devnet USDC buy flow.
+- [`solana-prediction-market.ts`](./solana-prediction-market.ts): create a two-outcome prediction market with trusted oracle and prediction migrator.
+- [`solana-swap.ts`](./solana-swap.ts): quote and submit an exact-in CPMM swap.
 
 Quick run:
 
@@ -169,7 +172,7 @@ For larger CPMM launch metadata, use a launch-specific ALT:
 4. Wait for the ALT to be usable in a later slot.
 5. Rebuild the transaction and call `initializer.compressTransactionMessageWithLookupTable(...)`.
 
-The advanced examples demonstrate this flow and call `assertTransactionFits` before signing so metadata and account-pressure failures surface before broadcast.
+The shared example helper performs this flow and checks transaction size before signing so metadata and account-pressure failures surface before broadcast.
 
 `SOL_PRICE_USD` can be set to bypass the CoinGecko price lookup in launch examples. `SOLANA_KEYPAIR_PATH` is preferred for local development; `SOLANA_KEYPAIR` also works with a 64-byte JSON secret key array.
 
