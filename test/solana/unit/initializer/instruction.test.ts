@@ -1,11 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import { address } from '@solana/addresses';
 import { generateKeyPairSigner } from '@solana/signers';
+import { AccountRole } from '@solana/kit';
 import { SYSTEM_PROGRAM_ADDRESS } from '@solana-program/system';
 import { TOKEN_PROGRAM_ADDRESS } from '@solana-program/token';
 import { initializer, cpmmMigrator } from '@/solana/index.js';
+import {
+  SYSVAR_INSTRUCTIONS_ADDRESS,
+  TOKEN_2022_PROGRAM_ADDRESS,
+  TOKEN_METADATA_PROGRAM_ID,
+} from '@/solana/core/constants.js';
 
-const SYSVAR_RENT_PUBKEY = address('SysvarRent111111111111111111111111111111111');
+const SYSVAR_RENT_PUBKEY = address(
+  'SysvarRent111111111111111111111111111111111',
+);
 
 describe('initializer instructions', () => {
   it('builds initializeConfig with programData account in the correct position', async () => {
@@ -49,14 +57,18 @@ describe('initializer instructions', () => {
 
     const [config] = await initializer.getConfigAddress();
     const [launch] = await initializer.getLaunchAddress(namespace, launchId);
-    const [launchAuthority] = await initializer.getLaunchAuthorityAddress(launch);
+    const [launchAuthority] =
+      await initializer.getLaunchAuthorityAddress(launch);
     const [launchFeeState] = await initializer.getLaunchFeeStateAddress(launch);
 
     const migratorInitPayload = cpmmMigrator.encodeRegisterLaunchPayload({
       cpmmConfig,
       initialSwapFeeBps: 30,
       initialFeeSplitBps: 5000,
-      recipients: [{ wallet: admin.address, amount: 700_000n }, { wallet: admin.address, amount: 0n }],
+      recipients: [
+        { wallet: admin.address, amount: 700_000n },
+        { wallet: admin.address, amount: 0n },
+      ],
       minRaiseQuote: 500_000n,
       minMigrationPriceQ64Opt: null,
       migratedPoolHookConfig: null,
@@ -141,7 +153,8 @@ describe('initializer instructions', () => {
     expect(ix.accounts![15].address).toBe(SYSVAR_RENT_PUBKEY);
     expect(ix.accounts![16].address).toBe(initializer.INITIALIZER_PROGRAM_ID);
     expect(ix.accounts![17].address).toBe(initializer.INITIALIZER_PROGRAM_ID);
-    const [expectedCpmmMigratorState] = await cpmmMigrator.getCpmmMigratorStateAddress(launch);
+    const [expectedCpmmMigratorState] =
+      await cpmmMigrator.getCpmmMigratorStateAddress(launch);
     expect(ix.accounts![18].address).toBe(expectedCpmmMigratorState);
     expect(ix.accounts![19].address).toBe(cpmmConfig);
 
@@ -150,9 +163,97 @@ describe('initializer instructions', () => {
       const meta = ix.accounts![idx] as { signer?: unknown };
       expect(meta.signer).toBeDefined();
     }
-
   });
 
+  it('prepends the instructions sysvar for Token-2022 metadata without changing routed accounts', async () => {
+    const baseMint = await generateKeyPairSigner();
+    const baseVault = await generateKeyPairSigner();
+    const quoteVault = await generateKeyPairSigner();
+    const admin = await generateKeyPairSigner();
+
+    const quoteMint = address('DtCGbAhmf5R6Fjuo3zJqCS9Ep5wePTmxHzK8ri8E5nhb');
+    const metadataAccount = await initializer.getTokenMetadataAddress(
+      baseMint.address,
+    );
+    const namespace = admin.address;
+    const launchId = initializer.launchIdFromU64(3n);
+    const migratorProgram = cpmmMigrator.CPMM_MIGRATOR_PROGRAM_ID;
+    const cpmmConfig = address('E45nSdnfANtYhCy6qZXo2a7qAWCU6pYjpqsby1bbkaiL');
+
+    const [config] = await initializer.getConfigAddress();
+    const [launch] = await initializer.getLaunchAddress(namespace, launchId);
+    const [launchAuthority] =
+      await initializer.getLaunchAuthorityAddress(launch);
+    const [launchFeeState] = await initializer.getLaunchFeeStateAddress(launch);
+    const [expectedCpmmMigratorState] =
+      await cpmmMigrator.getCpmmMigratorStateAddress(launch);
+
+    const ix = await initializer.createInitializeLaunchInstruction(
+      {
+        config,
+        launch,
+        launchAuthority,
+        baseMint,
+        quoteMint,
+        baseVault,
+        quoteVault,
+        payer: admin,
+        authority: admin,
+        migratorProgram,
+        cpmmConfig,
+        baseTokenProgram: TOKEN_2022_PROGRAM_ADDRESS,
+        quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
+        systemProgram: SYSTEM_PROGRAM_ADDRESS,
+        rent: SYSVAR_RENT_PUBKEY,
+        metadataAccount,
+      },
+      {
+        namespace,
+        launchId,
+        baseDecimals: 6,
+        baseTotalSupply: 1_000_000n,
+        baseForDistribution: 700_000n,
+        baseForLiquidity: 300_000n,
+        curveVirtualBase: 200_000n,
+        curveVirtualQuote: 200_000n,
+        curveFeeBps: 100,
+        curveKind: 0,
+        curveParams: new Uint8Array([0]),
+        allowBuy: true,
+        allowSell: true,
+        hookProgram: SYSTEM_PROGRAM_ADDRESS,
+        hookFlags: 0,
+        hookPayload: new Uint8Array(),
+        migratorInitPayload: cpmmMigrator.encodeRegisterLaunchPayload({
+          cpmmConfig,
+          initialSwapFeeBps: 30,
+          initialFeeSplitBps: 5000,
+          recipients: [],
+          minRaiseQuote: 500_000n,
+          minMigrationPriceQ64Opt: null,
+          migratedPoolHookConfig: null,
+        }),
+        migratorMigratePayload: cpmmMigrator.encodeMigratePayload({
+          baseForDistribution: 700_000n,
+          baseForLiquidity: 300_000n,
+        }),
+        hookRemainingAccountsHash: new Uint8Array(32),
+        migratorInitRemainingAccountsHash: new Uint8Array(32),
+        migratorRemainingAccountsHash: new Uint8Array(32),
+        metadataName: 'Token',
+        metadataSymbol: 'TKN',
+        metadataUri: 'https://example.com/token.json',
+      },
+    );
+
+    expect(ix.accounts).toHaveLength(21);
+    expect(ix.accounts![16].address).toBe(metadataAccount);
+    expect(ix.accounts![17].address).toBe(TOKEN_METADATA_PROGRAM_ID);
+    expect(ix.accounts![18].address).toBe(SYSVAR_INSTRUCTIONS_ADDRESS);
+    expect(ix.accounts![18].role).toBe(AccountRole.READONLY);
+    expect(ix.accounts![19].address).toBe(expectedCpmmMigratorState);
+    expect(ix.accounts![20].address).toBe(cpmmConfig);
+  });
   it('rejects initializeLaunch when curve kind is not currently enabled', async () => {
     const baseMint = await generateKeyPairSigner();
     const baseVault = await generateKeyPairSigner();
@@ -165,7 +266,8 @@ describe('initializer instructions', () => {
 
     const [config] = await initializer.getConfigAddress();
     const [launch] = await initializer.getLaunchAddress(namespace, launchId);
-    const [launchAuthority] = await initializer.getLaunchAuthorityAddress(launch);
+    const [launchAuthority] =
+      await initializer.getLaunchAuthorityAddress(launch);
 
     await expect(
       initializer.createInitializeLaunchInstruction(
