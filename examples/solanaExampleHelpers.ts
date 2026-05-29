@@ -535,19 +535,29 @@ export async function fetchActiveCosigners({
   cosignerHookProgram: Address;
   cosignerConfig: Address;
 }): Promise<Set<string>> {
-  const configAccount = await cosignerHook.accounts.fetchMaybeCosignerConfig(
+  const configAccount = await cosignerHook.fetchMaybeCosignerConfig(
     rpc,
     cosignerConfig,
-    cosignerHookProgram,
+    { commitment: 'confirmed' },
   );
   if (!configAccount.exists) {
     throw new Error('Cosigner config does not exist: ' + cosignerConfig);
   }
+  if (configAccount.programAddress !== cosignerHookProgram) {
+    throw new Error(
+      'Cosigner config ' +
+        cosignerConfig +
+        ' is owned by ' +
+        configAccount.programAddress +
+        ', expected ' +
+        cosignerHookProgram,
+    );
+  }
 
   return new Set(
     configAccount.data.cosigners
-      .filter((entry) => entry.isActive)
-      .map((entry) => entry.authority.toString()),
+      .slice(0, configAccount.data.cosignerCount)
+      .map((authority) => authority.toString()),
   );
 }
 

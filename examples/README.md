@@ -136,6 +136,7 @@ The Solana examples use `@whetstone-research/doppler-sdk/solana`. Set `SOLANA_NE
 - [`solana-usdc-e2e-launch.ts`](./solana-usdc-e2e-launch.ts): same lifecycle with devnet USDC and fee arithmetic checks.
 - [`solana-cosigner-gated-launch.ts`](./solana-cosigner-gated-launch.ts): E2E launch with bonding-curve swaps gated by the configured cosigner hook.
 - [`solana-cosigner-gated-buy.ts`](./solana-cosigner-gated-buy.ts): cosigner-gated WSOL buy flow with env-configured fee beneficiaries.
+- [`solana-cosigner-gated-buy-token-2022.ts`](./solana-cosigner-gated-buy-token-2022.ts): same cosigner-gated WSOL flow with a Token-2022 base mint and Metaplex metadata.
 - [`solana-usdc-cosigner-gated-buy.ts`](./solana-usdc-cosigner-gated-buy.ts): cosigner-gated devnet USDC buy flow.
 - [`solana-prediction-market.ts`](./solana-prediction-market.ts): create a two-outcome prediction market with trusted oracle and prediction migrator.
 - [`solana-swap.ts`](./solana-swap.ts): quote and submit an exact-in CPMM swap.
