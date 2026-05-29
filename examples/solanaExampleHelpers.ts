@@ -734,8 +734,10 @@ export async function getMigrationQuoteProgress({
   quoteVault: Address;
   pendingQuoteFees: bigint;
 }) {
-  const vaultBalance = await rpc.getBalance(quoteVault).send();
-  const quoteVaultAmount = vaultBalance.value;
+  const vaultBalance = await rpc
+    .getTokenAccountBalance(quoteVault, { commitment: 'confirmed' })
+    .send();
+  const quoteVaultAmount = BigInt(vaultBalance.value.amount);
   const migrationQuoteAmount = quoteVaultAmount - pendingQuoteFees;
 
   return {

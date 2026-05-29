@@ -349,6 +349,9 @@ async function main() {
     commitment: 'confirmed',
     programId: deployment.initializerProgram,
   });
+  if (!launchAccount) {
+    throw new Error('Launch account was not found after buy');
+  }
   console.log(
     '  Launch phase:      ',
     initializer.phaseLabel(launchAccount.phase),
@@ -416,6 +419,9 @@ async function main() {
     commitment: 'confirmed',
     programId: deployment.initializerProgram,
   });
+  if (!migratedLaunch) {
+    throw new Error('Launch account was not found after migration');
+  }
   console.log(
     '  Migrated phase:    ',
     initializer.phaseLabel(migratedLaunch.phase),
