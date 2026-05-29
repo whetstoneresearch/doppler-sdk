@@ -5,6 +5,10 @@ export {
 } from '@solana-program/token';
 export { SYSTEM_PROGRAM_ADDRESS } from '@solana-program/system';
 export { SYSVAR_RENT_ADDRESS } from '@solana/sysvars';
+
+export const TOKEN_2022_PROGRAM_ADDRESS: Address = address(
+  'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb',
+);
 export const SYSVAR_INSTRUCTIONS_ADDRESS: Address = address(
   'Sysvar1nstructions1111111111111111111111111',
 );

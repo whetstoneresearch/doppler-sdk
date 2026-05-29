@@ -17,6 +17,7 @@ export * from './feesClaimed';
 export * from './hookAllowlistUpdated';
 export * from './initializeConfigArgs';
 export * from './initializeLaunchArgs';
+export * from './launchBaseAllocationDistributed';
 export * from './launchInitialized';
 export * from './launchMigrated';
 export * from './launchPayloadUpdated';
