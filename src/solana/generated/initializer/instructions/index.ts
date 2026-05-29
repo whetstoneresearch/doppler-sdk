@@ -8,6 +8,7 @@
 
 export * from './claimFees';
 export * from './curveSwapExactIn';
+export * from './distributeBaseAllocationNoMigration';
 export * from './harvestMigratedFees';
 export * from './initializeConfig';
 export * from './initializeLaunch';

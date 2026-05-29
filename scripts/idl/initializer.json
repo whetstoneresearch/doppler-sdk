@@ -249,6 +249,68 @@
       ]
     },
     {
+      "name": "distribute_base_allocation_no_migration",
+      "discriminator": [
+        107,
+        200,
+        114,
+        3,
+        143,
+        2,
+        169,
+        56
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "launch",
+          "writable": true
+        },
+        {
+          "name": "launch_authority"
+        },
+        {
+          "name": "base_mint"
+        },
+        {
+          "name": "base_vault",
+          "writable": true
+        },
+        {
+          "name": "recipient_base_account",
+          "writable": true
+        },
+        {
+          "name": "authority",
+          "docs": [
+            "Launch authority or config admin."
+          ],
+          "signer": true
+        },
+        {
+          "name": "base_token_program"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "harvest_migrated_fees",
       "discriminator": [
         63,
@@ -1424,6 +1486,19 @@
       ]
     },
     {
+      "name": "LaunchBaseAllocationDistributed",
+      "discriminator": [
+        125,
+        126,
+        160,
+        211,
+        254,
+        37,
+        252,
+        216
+      ]
+    },
+    {
       "name": "LaunchInitialized",
       "discriminator": [
         60,
@@ -2428,6 +2503,26 @@
                 64
               ]
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "LaunchBaseAllocationDistributed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "launch",
+            "type": "pubkey"
+          },
+          {
+            "name": "recipient",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
           }
         ]
       }
