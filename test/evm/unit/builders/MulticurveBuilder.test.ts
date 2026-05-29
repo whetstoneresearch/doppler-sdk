@@ -79,6 +79,31 @@ describe('MulticurveBuilder', () => {
     ]);
   });
 
+  it('rejects duplicate beneficiary addresses', () => {
+    // The pool contract requires strictly ascending beneficiary addresses and
+    // reverts with UnorderedBeneficiaries() on duplicates. The builder should
+    // surface this as a readable error before the transaction is broadcast.
+    const duplicateAddress =
+      '0x0000000000000000000000000000000000000001' as Address;
+    const beneficiaries = [
+      { beneficiary: duplicateAddress, shares: WAD / 2n },
+      { beneficiary: duplicateAddress, shares: WAD / 2n },
+    ];
+
+    const builder = MulticurveBuilder.forChain(CHAIN_IDS.BASE);
+
+    expect(() =>
+      builder.poolConfig({
+        fee: 3000,
+        tickSpacing: 60,
+        curves: [
+          { tickLower: 1000, tickUpper: 2000, numPositions: 2, shares: WAD },
+        ],
+        beneficiaries,
+      }),
+    ).toThrow(/Duplicate beneficiary address/);
+  });
+
   it('configures curves from market cap presets using defaults', () => {
     const expectedTickSpacing = (TICK_SPACINGS as Record<number, number>)[
       FEE_TIERS.LOW

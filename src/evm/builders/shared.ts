@@ -10,6 +10,7 @@ import {
 } from '../constants';
 import { MAX_TICK, MIN_TICK } from '../utils';
 import type {
+  BeneficiaryData,
   Doppler404TokenConfig,
   DopplerERC20V1TokenConfig,
   PriceRange,
@@ -380,4 +381,40 @@ export function buildCurvesFromPresets(params: {
   }
 
   return { fee, tickSpacing, curves };
+}
+
+/**
+ * Sort beneficiaries by address (ascending) as required by the pool contract,
+ * rejecting duplicate addresses up-front.
+ *
+ * The contract enforces strictly ascending beneficiary addresses and reverts
+ * with `UnorderedBeneficiaries()` when two entries share an address. Catching
+ * the duplicate here surfaces a readable error before the transaction is
+ * broadcast, instead of an opaque on-chain revert that costs gas.
+ */
+export function sortBeneficiaries(
+  beneficiaries: BeneficiaryData[],
+): BeneficiaryData[] {
+  const sorted = [...beneficiaries].sort((a, b) => {
+    const aAddr = a.beneficiary.toLowerCase();
+    const bAddr = b.beneficiary.toLowerCase();
+    return aAddr < bAddr ? -1 : aAddr > bAddr ? 1 : 0;
+  });
+
+  for (let i = 1; i < sorted.length; i++) {
+    if (
+      sorted[i].beneficiary.toLowerCase() ===
+      sorted[i - 1].beneficiary.toLowerCase()
+    ) {
+      throw new Error(
+        `Duplicate beneficiary address: ${sorted[i].beneficiary}. ` +
+          'Each beneficiary address must be unique — the pool contract ' +
+          'requires strictly ascending addresses and reverts with ' +
+          'UnorderedBeneficiaries() otherwise. Merge the entries into a ' +
+          'single beneficiary with the combined shares.',
+      );
+    }
+  }
+
+  return sorted;
 }

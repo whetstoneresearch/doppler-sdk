@@ -32,6 +32,7 @@ import {
   computeTicks,
   normalizeBuilderTokenConfig,
   normalizeBuilderVestingSchedule,
+  sortBeneficiaries,
   type BaseAuctionBuilder,
   type BuilderVestingInput,
 } from './shared';
@@ -266,12 +267,9 @@ export class StaticAuctionBuilder<
   withBeneficiaries(
     beneficiaries: { beneficiary: Address; shares: bigint }[],
   ): this {
-    // Sort beneficiaries by address (ascending) as required by the contract
-    this.beneficiaries = [...beneficiaries].sort((a, b) => {
-      const aAddr = a.beneficiary.toLowerCase();
-      const bAddr = b.beneficiary.toLowerCase();
-      return aAddr < bAddr ? -1 : aAddr > bAddr ? 1 : 0;
-    });
+    // Sort by address (ascending) as required by the contract, and reject
+    // duplicate addresses up-front (contract reverts with UnorderedBeneficiaries).
+    this.beneficiaries = sortBeneficiaries(beneficiaries);
     return this;
   }
 

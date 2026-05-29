@@ -37,6 +37,7 @@ import {
   buildCurvesFromPresets,
   normalizeBuilderTokenConfig,
   normalizeBuilderVestingSchedule,
+  sortBeneficiaries,
 } from './shared';
 
 export class MulticurveBuilder<
@@ -128,11 +129,7 @@ export class MulticurveBuilder<
     }
 
     const sortedBeneficiaries = params.beneficiaries
-      ? [...params.beneficiaries].sort((a, b) => {
-          const aAddr = a.beneficiary.toLowerCase();
-          const bAddr = b.beneficiary.toLowerCase();
-          return aAddr < bAddr ? -1 : aAddr > bAddr ? 1 : 0;
-        })
+      ? sortBeneficiaries(params.beneficiaries)
       : undefined;
 
     this.pool = {
@@ -928,11 +925,7 @@ export class MulticurveBuilder<
 
       // Sort beneficiaries by address if provided
       const sortedBeneficiaries = config.beneficiaries
-        ? [...config.beneficiaries].sort((a, b) => {
-            const aAddr = a.beneficiary.toLowerCase();
-            const bAddr = b.beneficiary.toLowerCase();
-            return aAddr < bAddr ? -1 : aAddr > bAddr ? 1 : 0;
-          })
+        ? sortBeneficiaries(config.beneficiaries)
         : undefined;
 
       // Set pool config
