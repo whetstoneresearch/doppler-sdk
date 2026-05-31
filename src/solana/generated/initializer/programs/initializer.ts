@@ -52,6 +52,7 @@ import {
 import {
   getClaimFeesInstructionAsync,
   getCurveSwapExactInInstructionAsync,
+  getDistributeBaseAllocationNoMigrationInstructionAsync,
   getHarvestMigratedFeesInstructionAsync,
   getInitializeConfigInstructionAsync,
   getInitializeLaunchInstructionAsync,
@@ -68,6 +69,7 @@ import {
   getUpdateTradingFlagsInstructionAsync,
   parseClaimFeesInstruction,
   parseCurveSwapExactInInstruction,
+  parseDistributeBaseAllocationNoMigrationInstruction,
   parseHarvestMigratedFeesInstruction,
   parseInitializeConfigInstruction,
   parseInitializeLaunchInstruction,
@@ -84,6 +86,7 @@ import {
   parseUpdateTradingFlagsInstruction,
   type ClaimFeesAsyncInput,
   type CurveSwapExactInAsyncInput,
+  type DistributeBaseAllocationNoMigrationAsyncInput,
   type HarvestMigratedFeesAsyncInput,
   type InitializeConfigAsyncInput,
   type InitializeLaunchAsyncInput,
@@ -91,6 +94,7 @@ import {
   type MigratorInitAsyncInput,
   type ParsedClaimFeesInstruction,
   type ParsedCurveSwapExactInInstruction,
+  type ParsedDistributeBaseAllocationNoMigrationInstruction,
   type ParsedHarvestMigratedFeesInstruction,
   type ParsedInitializeConfigInstruction,
   type ParsedInitializeLaunchInstruction,
@@ -195,6 +199,7 @@ export function identifyInitializerAccount(
 export enum InitializerInstruction {
   ClaimFees,
   CurveSwapExactIn,
+  DistributeBaseAllocationNoMigration,
   HarvestMigratedFees,
   InitializeConfig,
   InitializeLaunch,
@@ -236,6 +241,17 @@ export function identifyInitializerInstruction(
     )
   ) {
     return InitializerInstruction.CurveSwapExactIn;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([107, 200, 114, 3, 143, 2, 169, 56]),
+      ),
+      0,
+    )
+  ) {
+    return InitializerInstruction.DistributeBaseAllocationNoMigration;
   }
   if (
     containsBytes(
@@ -407,6 +423,9 @@ export type ParsedInitializerInstruction<
       instructionType: InitializerInstruction.CurveSwapExactIn;
     } & ParsedCurveSwapExactInInstruction<TProgram>)
   | ({
+      instructionType: InitializerInstruction.DistributeBaseAllocationNoMigration;
+    } & ParsedDistributeBaseAllocationNoMigrationInstruction<TProgram>)
+  | ({
       instructionType: InitializerInstruction.HarvestMigratedFees;
     } & ParsedHarvestMigratedFeesInstruction<TProgram>)
   | ({
@@ -466,6 +485,14 @@ export function parseInitializerInstruction<TProgram extends string>(
       return {
         instructionType: InitializerInstruction.CurveSwapExactIn,
         ...parseCurveSwapExactInInstruction(instruction),
+      };
+    }
+    case InitializerInstruction.DistributeBaseAllocationNoMigration: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType:
+          InitializerInstruction.DistributeBaseAllocationNoMigration,
+        ...parseDistributeBaseAllocationNoMigrationInstruction(instruction),
       };
     }
     case InitializerInstruction.HarvestMigratedFees: {
@@ -603,6 +630,12 @@ export type InitializerPluginInstructions = {
     input: CurveSwapExactInAsyncInput,
   ) => ReturnType<typeof getCurveSwapExactInInstructionAsync> &
     SelfPlanAndSendFunctions;
+  distributeBaseAllocationNoMigration: (
+    input: DistributeBaseAllocationNoMigrationAsyncInput,
+  ) => ReturnType<
+    typeof getDistributeBaseAllocationNoMigrationInstructionAsync
+  > &
+    SelfPlanAndSendFunctions;
   harvestMigratedFees: (
     input: HarvestMigratedFeesAsyncInput,
   ) => ReturnType<typeof getHarvestMigratedFeesInstructionAsync> &
@@ -693,6 +726,11 @@ export function initializerProgram() {
             addSelfPlanAndSendFunctions(
               client,
               getCurveSwapExactInInstructionAsync(input),
+            ),
+          distributeBaseAllocationNoMigration: (input) =>
+            addSelfPlanAndSendFunctions(
+              client,
+              getDistributeBaseAllocationNoMigrationInstructionAsync(input),
             ),
           harvestMigratedFees: (input) =>
             addSelfPlanAndSendFunctions(

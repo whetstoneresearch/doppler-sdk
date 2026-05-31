@@ -9,39 +9,17 @@
 import './env.js';
 
 import {
-  TOKEN_PROGRAM_ADDRESS,
-  findAssociatedTokenPda,
-} from '@solana-program/token';
-import { SYSTEM_PROGRAM_ADDRESS } from '@solana-program/system';
-import {
-  generateKeyPairSigner,
-  pipe,
-  createTransactionMessage,
-  setTransactionMessageFeePayerSigner,
-  setTransactionMessageLifetimeUsingBlockhash,
-  appendTransactionMessageInstructions,
-  signTransactionMessageWithSigners,
-  sendAndConfirmTransactionFactory,
-  getSignatureFromTransaction,
-  type Address,
-} from '@solana/kit';
-import { SYSVAR_RENT_ADDRESS } from '@solana/sysvars';
-
-import { cpmm, initializer, cpmmMigrator } from '../src/solana/index.js';
-import {
-  assertTransactionFits,
+  DEFAULT_CPMM_FEE_SPLIT_BPS,
+  DEFAULT_SWAP_FEE_BPS,
+  DEFAULT_TEST_METADATA,
+  WSOL_MINT,
   assertSolanaExampleNetwork,
-  createLookupTableForInstruction,
   createSolanaClientsFromEnv,
-  getMetadataByteLength,
   getSolPriceUsd,
   getSolanaCpmmDeploymentFromEnv,
   loadKeypairSignerFromEnv,
+  sendInitializeLaunchWithLookupTable,
 } from './solanaExampleHelpers.js';
-
-// WSOL mint — pools use the wrapped SPL mint since native SOL can't live in token vaults.
-const WSOL_MINT: Address =
-  'So11111111111111111111111111111111111111112' as Address;
 
 async function main() {
   const payer = await loadKeypairSignerFromEnv();
@@ -59,8 +37,8 @@ async function main() {
   const QUOTE_DECIMALS = 9; // WSOL
   const START_MARKET_CAP_USD = 100_000;
   const END_MARKET_CAP_USD = 10_000_000;
-  const SWAP_FEE_BPS = 200; // 2%; must fit this deployment's configured fee bounds
-  const CPMM_FEE_SPLIT_BPS = 10_000; // migrated launch fees route through LaunchFeeState
+  const SWAP_FEE_BPS = DEFAULT_SWAP_FEE_BPS;
+  const CPMM_FEE_SPLIT_BPS = DEFAULT_CPMM_FEE_SPLIT_BPS; // migrated launch fees route through LaunchFeeState
 
   // ── Graduation threshold and price floor ────────────────────────────────
   const MIN_SOL_RAISE = 50;
@@ -188,11 +166,7 @@ async function main() {
   // PDA and cpmmConfig as remaining accounts.
   console.log('Building launch instruction...');
   try {
-    const metadata = {
-      metadataName: 'TEST',
-      metadataSymbol: 'TEST',
-      metadataUri: 'https://example.com/metadata/test-token.json',
-    };
+    const metadata = DEFAULT_TEST_METADATA;
 
     const ix = await initializer.createInitializeLaunchInstruction(
       {
@@ -247,54 +221,19 @@ async function main() {
       },
       deployment.initializerProgram,
     );
-    const lookupTable = await createLookupTableForInstruction({
+    const launchSignature = await sendInitializeLaunchWithLookupTable({
       rpc,
       rpcSubscriptions,
       payer,
       instruction: ix,
-      label: 'initialize_launch lookup table',
+      metadata,
     });
-
-    const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
-
-    const transactionMessage =
-      initializer.compressTransactionMessageWithLookupTable(
-        pipe(
-          createTransactionMessage({ version: 0 }),
-          (tx) => setTransactionMessageFeePayerSigner(payer, tx),
-          (tx) =>
-            setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
-          (tx) => appendTransactionMessageInstructions([ix], tx),
-        ),
-        lookupTable,
-      );
-    assertTransactionFits(transactionMessage, {
-      label: 'initialize_launch',
-      metadataBytes: getMetadataByteLength(metadata),
-    });
-
-    const signedTransaction =
-      await signTransactionMessageWithSigners(transactionMessage);
-
-    const sendAndConfirmTransaction = sendAndConfirmTransactionFactory({
-      rpc,
-      rpcSubscriptions,
-    });
-    await sendAndConfirmTransaction(
-      signedTransaction as Parameters<typeof sendAndConfirmTransaction>[0],
-      {
-        commitment: 'confirmed',
-      },
-    );
 
     console.log('');
     console.log('Token launch created successfully!');
     console.log('  Launch address:', launch);
     console.log('  Base mint:     ', baseMint.address);
-    console.log(
-      '  Transaction:   ',
-      getSignatureFromTransaction(signedTransaction),
-    );
+    console.log('  Transaction:   ', launchSignature);
 
     // ── Verify launch state ──────────────────────────────────────
     const launchAccount = await initializer.fetchLaunch(rpc, launch, {

@@ -13,6 +13,8 @@ import {
 } from '@solana/kit';
 import {
   SYSTEM_PROGRAM_ADDRESS,
+  SYSVAR_INSTRUCTIONS_ADDRESS,
+  TOKEN_2022_PROGRAM_ADDRESS,
   TOKEN_PROGRAM_ADDRESS,
   TOKEN_METADATA_PROGRAM_ID,
 } from '../../core/constants.js';
@@ -192,6 +194,8 @@ export async function createInitializeLaunchInstruction(
   const withMetadata = Boolean(
     args.metadataName && args.metadataName.length > 0,
   );
+  const withToken2022Metadata =
+    withMetadata && baseTokenProgram === TOKEN_2022_PROGRAM_ADDRESS;
 
   if (withMetadata && !metadataAccount) {
     throw new Error(
@@ -276,6 +280,13 @@ export async function createInitializeLaunchInstruction(
   const data = new Uint8Array(
     getInitializeLaunchInstructionDataEncoder().encode(encoderArgs),
   );
+
+  if (withToken2022Metadata) {
+    keys.push({
+      address: SYSVAR_INSTRUCTIONS_ADDRESS,
+      role: AccountRole.READONLY,
+    });
+  }
 
   keys.push(
     ...hookCreateRemainingAccounts.map((account) =>

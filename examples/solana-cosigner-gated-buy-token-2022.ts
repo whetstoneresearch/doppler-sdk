@@ -1,7 +1,7 @@
 /**
- * Example: Cosigner-Gated Bonding Curve Buy (Solana)
+ * Example: Cosigner-Gated Bonding Curve Buy With Token-2022 Base (Solana)
  *
- * Creates a CPMM-migratable launch with the cosigner hook enabled for
+ * Creates a CPMM-migratable Token-2022 base launch with the cosigner hook enabled for
  * pre-migration swaps, proves an unsigned buy fails, executes one cosigned
  * bonding-curve buy, migrates, then performs an ungated CPMM swap.
  *
@@ -32,6 +32,7 @@ import {
   initializer,
   cpmmMigrator,
 } from '../src/solana/index.js';
+import { TOKEN_2022_PROGRAM_ADDRESS } from '../src/solana/core/constants.js';
 
 import {
   DEFAULT_CPMM_FEE_SPLIT_BPS,
@@ -134,7 +135,7 @@ async function main() {
   const [payerBaseAta] = await findAssociatedTokenPda({
     owner: payer.address,
     mint: baseMint.address,
-    tokenProgram: TOKEN_PROGRAM_ADDRESS,
+    tokenProgram: TOKEN_2022_PROGRAM_ADDRESS,
   });
   const [payerQuoteAta] = await findAssociatedTokenPda({
     owner: payer.address,
@@ -146,7 +147,7 @@ async function main() {
       const [ata] = await findAssociatedTokenPda({
         owner: wallet,
         mint: baseMint.address,
-        tokenProgram: TOKEN_PROGRAM_ADDRESS,
+        tokenProgram: TOKEN_2022_PROGRAM_ADDRESS,
       });
       return ata;
     }),
@@ -171,7 +172,7 @@ async function main() {
     hookRemainingAccountsHash,
   } = getCosignerHookRemainingAccounts({ namespace, cosigner });
 
-  console.log('Creating cosigner-gated launch...');
+  console.log('Creating Token-2022 cosigner-gated launch...');
   console.log('  Launch:            ', launch);
   console.log('  Base mint:         ', baseMint.address);
   console.log('  Cosigner hook:     ', deployment.cosignerHookProgram);
@@ -220,7 +221,7 @@ async function main() {
         hookProgram: deployment.cosignerHookProgram,
         migratorProgram: deployment.cpmmMigratorProgram,
         cpmmConfig: migrationAccounts.cpmmConfig,
-        baseTokenProgram: TOKEN_PROGRAM_ADDRESS,
+        baseTokenProgram: TOKEN_2022_PROGRAM_ADDRESS,
         quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
         rent: SYSVAR_RENT_ADDRESS,
         metadataAccount,
@@ -270,7 +271,7 @@ async function main() {
   const [userBaseAta] = await findAssociatedTokenPda({
     owner: payer.address,
     mint: baseMint.address,
-    tokenProgram: TOKEN_PROGRAM_ADDRESS,
+    tokenProgram: TOKEN_2022_PROGRAM_ADDRESS,
   });
   const [userQuoteAta] = await findAssociatedTokenPda({
     owner: payer.address,
@@ -283,6 +284,7 @@ async function main() {
       ata: userBaseAta,
       owner: payer.address,
       mint: baseMint.address,
+      tokenProgram: TOKEN_2022_PROGRAM_ADDRESS,
     }),
     getCreateAssociatedTokenIdempotentInstruction({
       payer,
@@ -310,7 +312,7 @@ async function main() {
     quoteMint: WSOL_MINT,
     user: payer,
     hookProgram: deployment.cosignerHookProgram,
-    baseTokenProgram: TOKEN_PROGRAM_ADDRESS,
+    baseTokenProgram: TOKEN_2022_PROGRAM_ADDRESS,
     quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
   };
 
@@ -376,6 +378,7 @@ async function main() {
       ata,
       owner: launchBeneficiaries.recipients[index].wallet,
       mint: baseMint.address,
+      tokenProgram: TOKEN_2022_PROGRAM_ADDRESS,
     }),
   );
 
@@ -391,7 +394,7 @@ async function main() {
       launchFeeState,
       migratorProgram: deployment.cpmmMigratorProgram,
       payer,
-      baseTokenProgram: TOKEN_PROGRAM_ADDRESS,
+      baseTokenProgram: TOKEN_2022_PROGRAM_ADDRESS,
       quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
       systemProgram: SYSTEM_PROGRAM_ADDRESS,
       rent: SYSVAR_RENT_ADDRESS,
@@ -471,6 +474,14 @@ async function main() {
     amountIn: CPMM_SWAP_AMOUNT_IN,
     minAmountOut,
     tradeDirection,
+    token0Program:
+      pool.token0Mint === baseMint.address
+        ? TOKEN_2022_PROGRAM_ADDRESS
+        : TOKEN_PROGRAM_ADDRESS,
+    token1Program:
+      pool.token1Mint === baseMint.address
+        ? TOKEN_2022_PROGRAM_ADDRESS
+        : TOKEN_PROGRAM_ADDRESS,
     programId: deployment.cpmmProgram,
   });
   const cpmmSwapSignature = await sendInstructions({
@@ -481,7 +492,9 @@ async function main() {
   });
   console.log('  Ungated CPMM swap tx:', cpmmSwapSignature);
   console.log('');
-  console.log('Cosigner-gated buy and ungated CPMM migration flow complete.');
+  console.log(
+    'Token-2022 cosigner-gated buy and ungated CPMM migration flow complete.',
+  );
 }
 
 main().catch((error) => {
