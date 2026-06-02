@@ -135,6 +135,15 @@ const CONFLICTING_EVENTS: Array<{ file: string; type: string; fns: string[] }> =
       ],
     },
     {
+      file: 'redeemProtocolShares',
+      type: 'RedeemProtocolShares',
+      fns: [
+        'getRedeemProtocolSharesEncoder',
+        'getRedeemProtocolSharesDecoder',
+        'getRedeemProtocolSharesCodec',
+      ],
+    },
+    {
       file: 'removeLiquidity',
       type: 'RemoveLiquidity',
       fns: [
@@ -154,7 +163,7 @@ for (const { file, type, fns } of CONFLICTING_EVENTS) {
 }
 fs.writeFileSync(cpmm_types_index_path, cpmm_types_index);
 console.log(
-  '  ✓ patched cpmm/types/index.ts (resolved AddLiquidityArgs / CollectFeesArgs naming collision)',
+  '  ✓ patched cpmm/types/index.ts (resolved CPMM event/args naming collisions)',
 );
 
 // Anchor's IDL sizing does not include the trailing repr(C) padding byte on the

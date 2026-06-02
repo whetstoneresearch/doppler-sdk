@@ -8,12 +8,11 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { Address } from '@solana/kit';
 import type { Position, Pool } from '../../core/types.js';
 import { getPendingFees } from '../../core/math.js';
+import { TOKEN_PROGRAM_ADDRESS } from '../../core/constants.js';
 import { fetchPosition } from '../../client/position.js';
 import { fetchPool } from '../../client/pool.js';
-import {
-  createCollectFeesInstruction,
-  MAX_FEE_AMOUNT,
-} from '../../instructions/collectFees.js';
+import { MAX_FEE_AMOUNT } from '../../instructions/collectFees.js';
+import { getCollectFeesInstruction } from '../../generated/cpmm/instructions/collectFees.js';
 import {
   appendTransactionMessageInstruction,
   createTransactionMessage,
@@ -58,6 +57,12 @@ export interface CollectFeesOptions {
   max0?: bigint;
   /** Maximum amount of token1 to collect (default: all) */
   max1?: bigint;
+  /** Token0 program; defaults to tokenProgram or classic SPL Token */
+  token0Program?: Address;
+  /** Token1 program; defaults to tokenProgram or classic SPL Token */
+  token1Program?: Address;
+  /** Shared SPL Token program fallback */
+  tokenProgram?: Address;
   /** User's token0 account */
   userToken0: Address;
   /** User's token1 account */
@@ -287,16 +292,19 @@ export function useFees(
         const {
           max0 = MAX_FEE_AMOUNT,
           max1 = MAX_FEE_AMOUNT,
+          token0Program,
+          token1Program,
+          tokenProgram,
           userToken0,
           userToken1,
         } = collectOptions;
 
         // Build the collect fees instruction
-        const ix = createCollectFeesInstruction(
+        const ix = getCollectFeesInstruction(
           {
             pool: poolAddress,
             position: positionAddress,
-            owner: wallet.address,
+            owner: wallet.signer,
             authority: pool.authority,
             vault0: pool.vault0,
             vault1: pool.vault1,
@@ -304,9 +312,14 @@ export function useFees(
             token1Mint: pool.token1Mint,
             user0: userToken0,
             user1: userToken1,
+            token0Program:
+              token0Program ?? tokenProgram ?? TOKEN_PROGRAM_ADDRESS,
+            token1Program:
+              token1Program ?? tokenProgram ?? TOKEN_PROGRAM_ADDRESS,
+            max0,
+            max1,
           },
-          { max0, max1 },
-          programId,
+          { programAddress: programId },
         );
 
         const { value: latestBlockhash } = await rpc

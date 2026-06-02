@@ -60,10 +60,6 @@ export const INITIALIZER_ERROR__INVALID_TRADE_DIRECTION = 0x1784; // 6020
 export const INITIALIZER_ERROR__ALLOWLIST_FULL = 0x1785; // 6021
 /** InvalidInput: Invalid input */
 export const INITIALIZER_ERROR__INVALID_INPUT = 0x1786; // 6022
-/** AlreadyMigrated: Already migrated */
-export const INITIALIZER_ERROR__ALREADY_MIGRATED = 0x1787; // 6023
-/** QuoteVaultNotEmpty: Quote vault not empty */
-export const INITIALIZER_ERROR__QUOTE_VAULT_NOT_EMPTY = 0x1788; // 6024
 /** LaunchLocked: Launch locked */
 export const INITIALIZER_ERROR__LAUNCH_LOCKED = 0x1789; // 6025
 /** InvalidCurveKind: Invalid curve kind */
@@ -86,8 +82,6 @@ export const INITIALIZER_ERROR__INVALID_METADATA_PROGRAM = 0x1791; // 6033
 export const INITIALIZER_ERROR__INVALID_METADATA_ACCOUNT = 0x1792; // 6034
 /** MetadataCpiFailed: Metadata CPI failed */
 export const INITIALIZER_ERROR__METADATA_CPI_FAILED = 0x1793; // 6035
-/** CpiForbidden: CPI not allowed */
-export const INITIALIZER_ERROR__CPI_FORBIDDEN = 0x1794; // 6036
 /** RemainingAccountSigner: Remaining accounts must not be signers */
 export const INITIALIZER_ERROR__REMAINING_ACCOUNT_SIGNER = 0x1795; // 6037
 /** RemainingAccountWritable: Remaining accounts must be readonly */
@@ -107,9 +101,7 @@ export const INITIALIZER_ERROR__NO_FEES_TO_DISTRIBUTE = 0x179c; // 6044
 
 export type InitializerError =
   | typeof INITIALIZER_ERROR__ALLOWLIST_FULL
-  | typeof INITIALIZER_ERROR__ALREADY_MIGRATED
   | typeof INITIALIZER_ERROR__BUY_NOT_ALLOWED
-  | typeof INITIALIZER_ERROR__CPI_FORBIDDEN
   | typeof INITIALIZER_ERROR__CURVE_LIQUIDITY_INSUFFICIENT
   | typeof INITIALIZER_ERROR__CURVE_PARAMS_INVALID
   | typeof INITIALIZER_ERROR__HOOK_CPI_FAILED
@@ -140,7 +132,6 @@ export type InitializerError =
   | typeof INITIALIZER_ERROR__MISSING_REMAINING_ACCOUNTS_COMMITMENT
   | typeof INITIALIZER_ERROR__NO_FEES_TO_DISTRIBUTE
   | typeof INITIALIZER_ERROR__PAYLOAD_TOO_LARGE
-  | typeof INITIALIZER_ERROR__QUOTE_VAULT_NOT_EMPTY
   | typeof INITIALIZER_ERROR__REMAINING_ACCOUNT_OVERLAP
   | typeof INITIALIZER_ERROR__REMAINING_ACCOUNTS_COMMITMENT_MISMATCH
   | typeof INITIALIZER_ERROR__REMAINING_ACCOUNT_SIGNER
@@ -156,9 +147,7 @@ let initializerErrorMessages: Record<InitializerError, string> | undefined;
 if (process.env.NODE_ENV !== 'production') {
   initializerErrorMessages = {
     [INITIALIZER_ERROR__ALLOWLIST_FULL]: `Allowlist full`,
-    [INITIALIZER_ERROR__ALREADY_MIGRATED]: `Already migrated`,
     [INITIALIZER_ERROR__BUY_NOT_ALLOWED]: `Buy not allowed`,
-    [INITIALIZER_ERROR__CPI_FORBIDDEN]: `CPI not allowed`,
     [INITIALIZER_ERROR__CURVE_LIQUIDITY_INSUFFICIENT]: `Curve liquidity insufficient`,
     [INITIALIZER_ERROR__CURVE_PARAMS_INVALID]: `Curve params invalid`,
     [INITIALIZER_ERROR__HOOK_CPI_FAILED]: `Hook CPI failed`,
@@ -189,7 +178,6 @@ if (process.env.NODE_ENV !== 'production') {
     [INITIALIZER_ERROR__MISSING_REMAINING_ACCOUNTS_COMMITMENT]: `Missing remaining accounts commitment`,
     [INITIALIZER_ERROR__NO_FEES_TO_DISTRIBUTE]: `No fees to distribute`,
     [INITIALIZER_ERROR__PAYLOAD_TOO_LARGE]: `Payload too large`,
-    [INITIALIZER_ERROR__QUOTE_VAULT_NOT_EMPTY]: `Quote vault not empty`,
     [INITIALIZER_ERROR__REMAINING_ACCOUNT_OVERLAP]: `Remaining account overlaps with protocol account`,
     [INITIALIZER_ERROR__REMAINING_ACCOUNTS_COMMITMENT_MISMATCH]: `Remaining accounts commitment mismatch`,
     [INITIALIZER_ERROR__REMAINING_ACCOUNT_SIGNER]: `Remaining accounts must not be signers`,

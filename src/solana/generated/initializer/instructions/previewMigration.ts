@@ -10,8 +10,10 @@ import {
   combineCodec,
   fixDecoderSize,
   fixEncoderSize,
+  getAddressEncoder,
   getBytesDecoder,
   getBytesEncoder,
+  getProgramDerivedAddress,
   getStructDecoder,
   getStructEncoder,
   SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
@@ -30,6 +32,7 @@ import {
 } from '@solana/kit';
 import {
   getAccountMetaFactory,
+  getAddressFromResolvedInstructionAccount,
   type ResolvedInstructionAccount,
 } from '@solana/program-client-core';
 import { INITIALIZER_PROGRAM_ADDRESS } from '../programs';
@@ -47,6 +50,7 @@ export function getPreviewMigrationDiscriminatorBytes() {
 export type PreviewMigrationInstruction<
   TProgram extends string = typeof INITIALIZER_PROGRAM_ADDRESS,
   TAccountLaunch extends string | AccountMeta<string> = string,
+  TAccountLaunchFeeState extends string | AccountMeta<string> = string,
   TAccountBaseMint extends string | AccountMeta<string> = string,
   TAccountBaseVault extends string | AccountMeta<string> = string,
   TAccountQuoteVault extends string | AccountMeta<string> = string,
@@ -58,6 +62,9 @@ export type PreviewMigrationInstruction<
       TAccountLaunch extends string
         ? ReadonlyAccount<TAccountLaunch>
         : TAccountLaunch,
+      TAccountLaunchFeeState extends string
+        ? ReadonlyAccount<TAccountLaunchFeeState>
+        : TAccountLaunchFeeState,
       TAccountBaseMint extends string
         ? ReadonlyAccount<TAccountBaseMint>
         : TAccountBaseMint,
@@ -100,13 +107,113 @@ export function getPreviewMigrationInstructionDataCodec(): FixedSizeCodec<
   );
 }
 
-export type PreviewMigrationInput<
+export type PreviewMigrationAsyncInput<
   TAccountLaunch extends string = string,
+  TAccountLaunchFeeState extends string = string,
   TAccountBaseMint extends string = string,
   TAccountBaseVault extends string = string,
   TAccountQuoteVault extends string = string,
 > = {
   launch: Address<TAccountLaunch>;
+  launchFeeState?: Address<TAccountLaunchFeeState>;
+  baseMint: Address<TAccountBaseMint>;
+  baseVault: Address<TAccountBaseVault>;
+  quoteVault: Address<TAccountQuoteVault>;
+};
+
+export async function getPreviewMigrationInstructionAsync<
+  TAccountLaunch extends string,
+  TAccountLaunchFeeState extends string,
+  TAccountBaseMint extends string,
+  TAccountBaseVault extends string,
+  TAccountQuoteVault extends string,
+  TProgramAddress extends Address = typeof INITIALIZER_PROGRAM_ADDRESS,
+>(
+  input: PreviewMigrationAsyncInput<
+    TAccountLaunch,
+    TAccountLaunchFeeState,
+    TAccountBaseMint,
+    TAccountBaseVault,
+    TAccountQuoteVault
+  >,
+  config?: { programAddress?: TProgramAddress },
+): Promise<
+  PreviewMigrationInstruction<
+    TProgramAddress,
+    TAccountLaunch,
+    TAccountLaunchFeeState,
+    TAccountBaseMint,
+    TAccountBaseVault,
+    TAccountQuoteVault
+  >
+> {
+  // Program address.
+  const programAddress = config?.programAddress ?? INITIALIZER_PROGRAM_ADDRESS;
+
+  // Original accounts.
+  const originalAccounts = {
+    launch: { value: input.launch ?? null, isWritable: false },
+    launchFeeState: { value: input.launchFeeState ?? null, isWritable: false },
+    baseMint: { value: input.baseMint ?? null, isWritable: false },
+    baseVault: { value: input.baseVault ?? null, isWritable: false },
+    quoteVault: { value: input.quoteVault ?? null, isWritable: false },
+  };
+  const accounts = originalAccounts as Record<
+    keyof typeof originalAccounts,
+    ResolvedInstructionAccount
+  >;
+
+  // Resolve default values.
+  if (!accounts.launchFeeState.value) {
+    accounts.launchFeeState.value = await getProgramDerivedAddress({
+      programAddress,
+      seeds: [
+        getBytesEncoder().encode(
+          new Uint8Array([
+            108, 97, 117, 110, 99, 104, 95, 102, 101, 101, 95, 115, 116, 97,
+            116, 101,
+          ]),
+        ),
+        getAddressEncoder().encode(
+          getAddressFromResolvedInstructionAccount(
+            'launch',
+            accounts.launch.value,
+          ),
+        ),
+      ],
+    });
+  }
+
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+  return Object.freeze({
+    accounts: [
+      getAccountMeta('launch', accounts.launch),
+      getAccountMeta('launchFeeState', accounts.launchFeeState),
+      getAccountMeta('baseMint', accounts.baseMint),
+      getAccountMeta('baseVault', accounts.baseVault),
+      getAccountMeta('quoteVault', accounts.quoteVault),
+    ],
+    data: getPreviewMigrationInstructionDataEncoder().encode({}),
+    programAddress,
+  } as PreviewMigrationInstruction<
+    TProgramAddress,
+    TAccountLaunch,
+    TAccountLaunchFeeState,
+    TAccountBaseMint,
+    TAccountBaseVault,
+    TAccountQuoteVault
+  >);
+}
+
+export type PreviewMigrationInput<
+  TAccountLaunch extends string = string,
+  TAccountLaunchFeeState extends string = string,
+  TAccountBaseMint extends string = string,
+  TAccountBaseVault extends string = string,
+  TAccountQuoteVault extends string = string,
+> = {
+  launch: Address<TAccountLaunch>;
+  launchFeeState: Address<TAccountLaunchFeeState>;
   baseMint: Address<TAccountBaseMint>;
   baseVault: Address<TAccountBaseVault>;
   quoteVault: Address<TAccountQuoteVault>;
@@ -114,6 +221,7 @@ export type PreviewMigrationInput<
 
 export function getPreviewMigrationInstruction<
   TAccountLaunch extends string,
+  TAccountLaunchFeeState extends string,
   TAccountBaseMint extends string,
   TAccountBaseVault extends string,
   TAccountQuoteVault extends string,
@@ -121,6 +229,7 @@ export function getPreviewMigrationInstruction<
 >(
   input: PreviewMigrationInput<
     TAccountLaunch,
+    TAccountLaunchFeeState,
     TAccountBaseMint,
     TAccountBaseVault,
     TAccountQuoteVault
@@ -129,6 +238,7 @@ export function getPreviewMigrationInstruction<
 ): PreviewMigrationInstruction<
   TProgramAddress,
   TAccountLaunch,
+  TAccountLaunchFeeState,
   TAccountBaseMint,
   TAccountBaseVault,
   TAccountQuoteVault
@@ -139,6 +249,7 @@ export function getPreviewMigrationInstruction<
   // Original accounts.
   const originalAccounts = {
     launch: { value: input.launch ?? null, isWritable: false },
+    launchFeeState: { value: input.launchFeeState ?? null, isWritable: false },
     baseMint: { value: input.baseMint ?? null, isWritable: false },
     baseVault: { value: input.baseVault ?? null, isWritable: false },
     quoteVault: { value: input.quoteVault ?? null, isWritable: false },
@@ -152,6 +263,7 @@ export function getPreviewMigrationInstruction<
   return Object.freeze({
     accounts: [
       getAccountMeta('launch', accounts.launch),
+      getAccountMeta('launchFeeState', accounts.launchFeeState),
       getAccountMeta('baseMint', accounts.baseMint),
       getAccountMeta('baseVault', accounts.baseVault),
       getAccountMeta('quoteVault', accounts.quoteVault),
@@ -161,6 +273,7 @@ export function getPreviewMigrationInstruction<
   } as PreviewMigrationInstruction<
     TProgramAddress,
     TAccountLaunch,
+    TAccountLaunchFeeState,
     TAccountBaseMint,
     TAccountBaseVault,
     TAccountQuoteVault
@@ -174,9 +287,10 @@ export type ParsedPreviewMigrationInstruction<
   programAddress: Address<TProgram>;
   accounts: {
     launch: TAccountMetas[0];
-    baseMint: TAccountMetas[1];
-    baseVault: TAccountMetas[2];
-    quoteVault: TAccountMetas[3];
+    launchFeeState: TAccountMetas[1];
+    baseMint: TAccountMetas[2];
+    baseVault: TAccountMetas[3];
+    quoteVault: TAccountMetas[4];
   };
   data: PreviewMigrationInstructionData;
 };
@@ -189,12 +303,12 @@ export function parsePreviewMigrationInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedPreviewMigrationInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 4) {
+  if (instruction.accounts.length < 5) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 4,
+        expectedAccountMetas: 5,
       },
     );
   }
@@ -208,6 +322,7 @@ export function parsePreviewMigrationInstruction<
     programAddress: instruction.programAddress,
     accounts: {
       launch: getNextAccount(),
+      launchFeeState: getNextAccount(),
       baseMint: getNextAccount(),
       baseVault: getNextAccount(),
       quoteVault: getNextAccount(),

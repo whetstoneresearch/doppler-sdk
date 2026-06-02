@@ -27,11 +27,9 @@ import {
 export type ConfigUpdated = {
   config: Address;
   admin: Address;
-  numeraireMint: Address;
   hookAllowlistLen: number;
   maxSwapFeeBps: number;
   maxFeeSplitBps: number;
-  maxRouteHops: number;
   protocolFeeEnabled: boolean;
   protocolFeeBps: number;
 };
@@ -42,11 +40,9 @@ export function getConfigUpdatedEncoder(): FixedSizeEncoder<ConfigUpdatedArgs> {
   return getStructEncoder([
     ['config', getAddressEncoder()],
     ['admin', getAddressEncoder()],
-    ['numeraireMint', getAddressEncoder()],
     ['hookAllowlistLen', getU8Encoder()],
     ['maxSwapFeeBps', getU16Encoder()],
     ['maxFeeSplitBps', getU16Encoder()],
-    ['maxRouteHops', getU8Encoder()],
     ['protocolFeeEnabled', getBooleanEncoder()],
     ['protocolFeeBps', getU16Encoder()],
   ]);
@@ -56,11 +52,9 @@ export function getConfigUpdatedDecoder(): FixedSizeDecoder<ConfigUpdated> {
   return getStructDecoder([
     ['config', getAddressDecoder()],
     ['admin', getAddressDecoder()],
-    ['numeraireMint', getAddressDecoder()],
     ['hookAllowlistLen', getU8Decoder()],
     ['maxSwapFeeBps', getU16Decoder()],
     ['maxFeeSplitBps', getU16Decoder()],
-    ['maxRouteHops', getU8Decoder()],
     ['protocolFeeEnabled', getBooleanDecoder()],
     ['protocolFeeBps', getU16Decoder()],
   ]);

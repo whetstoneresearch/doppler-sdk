@@ -8,7 +8,9 @@ import {
   pipe,
   setTransactionMessageFeePayerSigner,
   setTransactionMessageLifetimeUsingBlockhash,
+  type AccountSignerMeta,
   type Address,
+  type Blockhash,
   type Instruction,
 } from '@solana/kit';
 import { SYSTEM_PROGRAM_ADDRESS } from '@solana-program/system';
@@ -16,7 +18,7 @@ import { SYSTEM_PROGRAM_ADDRESS } from '@solana-program/system';
 import { initializer } from '@/solana/index.js';
 
 const DUMMY_BLOCKHASH = {
-  blockhash: '11111111111111111111111111111111',
+  blockhash: '11111111111111111111111111111111' as Blockhash,
   lastValidBlockHeight: 0n,
 };
 
@@ -27,12 +29,16 @@ async function buildLookupTestInstruction(): Promise<Instruction> {
   return {
     programAddress: SYSTEM_PROGRAM_ADDRESS,
     accounts: [
-      { address: signer.address, role: AccountRole.READONLY_SIGNER, signer },
+      {
+        address: signer.address,
+        role: AccountRole.READONLY_SIGNER,
+        signer,
+      } as AccountSignerMeta,
       {
         address: writableSigner.address,
         role: AccountRole.WRITABLE_SIGNER,
         signer: writableSigner,
-      },
+      } as AccountSignerMeta,
       { address: SYSTEM_PROGRAM_ADDRESS, role: AccountRole.READONLY },
       { address: SYSTEM_PROGRAM_ADDRESS, role: AccountRole.READONLY },
     ],

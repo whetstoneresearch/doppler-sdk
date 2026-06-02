@@ -55,12 +55,10 @@ export type AmmConfig = {
   discriminator: ReadonlyUint8Array;
   admin: Address;
   paused: boolean;
-  numeraireMint: Address;
   hookAllowlistLen: number;
   hookAllowlist: Array<Address>;
   maxSwapFeeBps: number;
   maxFeeSplitBps: number;
-  maxRouteHops: number;
   protocolFeeEnabled: boolean;
   protocolFeeBps: number;
   version: number;
@@ -70,12 +68,10 @@ export type AmmConfig = {
 export type AmmConfigArgs = {
   admin: Address;
   paused: boolean;
-  numeraireMint: Address;
   hookAllowlistLen: number;
   hookAllowlist: Array<Address>;
   maxSwapFeeBps: number;
   maxFeeSplitBps: number;
-  maxRouteHops: number;
   protocolFeeEnabled: boolean;
   protocolFeeBps: number;
   version: number;
@@ -89,12 +85,10 @@ export function getAmmConfigEncoder(): FixedSizeEncoder<AmmConfigArgs> {
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       ['admin', getAddressEncoder()],
       ['paused', getBooleanEncoder()],
-      ['numeraireMint', getAddressEncoder()],
       ['hookAllowlistLen', getU8Encoder()],
       ['hookAllowlist', getArrayEncoder(getAddressEncoder(), { size: 32 })],
       ['maxSwapFeeBps', getU16Encoder()],
       ['maxFeeSplitBps', getU16Encoder()],
-      ['maxRouteHops', getU8Encoder()],
       ['protocolFeeEnabled', getBooleanEncoder()],
       ['protocolFeeBps', getU16Encoder()],
       ['version', getU8Encoder()],
@@ -110,12 +104,10 @@ export function getAmmConfigDecoder(): FixedSizeDecoder<AmmConfig> {
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['admin', getAddressDecoder()],
     ['paused', getBooleanDecoder()],
-    ['numeraireMint', getAddressDecoder()],
     ['hookAllowlistLen', getU8Decoder()],
     ['hookAllowlist', getArrayDecoder(getAddressDecoder(), { size: 32 })],
     ['maxSwapFeeBps', getU16Decoder()],
     ['maxFeeSplitBps', getU16Decoder()],
-    ['maxRouteHops', getU8Decoder()],
     ['protocolFeeEnabled', getBooleanDecoder()],
     ['protocolFeeBps', getU16Decoder()],
     ['version', getU8Decoder()],
@@ -182,5 +174,5 @@ export async function fetchAllMaybeAmmConfig(
 }
 
 export function getAmmConfigSize(): number {
-  return 1114;
+  return 1081;
 }

@@ -139,7 +139,7 @@ async function main() {
   console.log('Simulation result');
   console.log('Predicted token address:', simulation.tokenAddress);
   console.log('Predicted pool ID:', simulation.poolId);
-  console.log('Estimated gas:', simulation.gasEstimate.toString());
+  console.log('Estimated gas:', simulation.gasEstimate?.toString() ?? 'n/a');
   console.log();
 
   if (!executeMainnet) {

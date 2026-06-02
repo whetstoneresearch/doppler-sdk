@@ -4,7 +4,8 @@ import { cpmm, cpmmMigrator, initializer } from '@/solana/index.js';
 
 const { CPMM_MIGRATOR_INSTRUCTION_DISCRIMINATORS } = cpmmMigrator;
 
-const REGISTER_LAUNCH_DISCRIMINATOR = CPMM_MIGRATOR_INSTRUCTION_DISCRIMINATORS.registerLaunch;
+const REGISTER_LAUNCH_DISCRIMINATOR =
+  CPMM_MIGRATOR_INSTRUCTION_DISCRIMINATORS.registerLaunch;
 const MIGRATE_DISCRIMINATOR = CPMM_MIGRATOR_INSTRUCTION_DISCRIMINATORS.migrate;
 
 const TEST_CONFIG = address('E45nSdnfANtYhCy6qZXo2a7qAWCU6pYjpqsby1bbkaiL');
@@ -26,7 +27,9 @@ describe('cpmmMigrator payload encoders', () => {
         migratedPoolHookConfig: null,
       });
 
-      expect([...result.slice(0, 8)]).toEqual([...REGISTER_LAUNCH_DISCRIMINATOR]);
+      expect([...result.slice(0, 8)]).toEqual([
+        ...REGISTER_LAUNCH_DISCRIMINATOR,
+      ]);
     });
 
     it('encodes initialSwapFeeBps correctly', () => {
@@ -144,6 +147,7 @@ describe('cpmmMigrator remaining accounts', () => {
       poolInit.authority[0],
       poolInit.vault0[0],
       poolInit.vault1[0],
+      poolInit.protocolFeeOwner[0],
       poolInit.protocolFeePosition[0],
       expectedLpPosition,
       cpmm.CPMM_PROGRAM_ID,
@@ -152,7 +156,9 @@ describe('cpmmMigrator remaining accounts', () => {
       adminQuoteAta,
       recipientAta,
     ]);
-    expect(accounts.metas.map((meta) => meta.address)).toEqual(accounts.addresses);
+    expect(accounts.metas.map((meta) => meta.address)).toEqual(
+      accounts.addresses,
+    );
     expect([...accounts.hash]).toEqual([
       ...initializer.computeRemainingAccountsHash(accounts.addresses),
     ]);

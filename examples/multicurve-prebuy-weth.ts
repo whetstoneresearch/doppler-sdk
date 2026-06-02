@@ -102,11 +102,30 @@ async function main() {
 
   // 3. Simulate create to get predicted addresses and pool key
   console.log('🔮 Simulating pool creation...');
-  const { createParams, asset, pool, poolKey } =
+  const { createParams, tokenAddress, poolId } =
     await sdk.factory.simulateCreateMulticurve(params);
 
-  console.log('  Predicted token address:', asset);
-  console.log('  Predicted pool address:', pool);
+  console.log('  Predicted token address:', tokenAddress);
+  console.log('  Predicted pool ID:', poolId);
+  console.log();
+
+  // 4. Determine swap direction and quote WETH amount needed
+  const exactAmountOut = params.sale.numTokensToSell / 100n; // Buy 1% of tokens
+
+  console.log('💱 Quoting WETH amount needed...');
+  console.log('  Tokens to buy:', exactAmountOut / WAD);
+
+  const { amountIn, gasEstimate, poolKey } =
+    await sdk.factory.simulateMulticurveBundleExactOut(createParams, {
+      exactAmountOut,
+    });
+  const zeroForOne =
+    poolKey.currency0.toLowerCase() === addresses.weth.toLowerCase();
+
+  console.log(
+    '  Swap direction:',
+    zeroForOne ? 'WETH -> Token' : 'Token -> WETH',
+  );
   console.log('  Pool key:', {
     currency0: poolKey.currency0,
     currency1: poolKey.currency1,
@@ -114,25 +133,6 @@ async function main() {
     tickSpacing: poolKey.tickSpacing,
     hooks: poolKey.hooks,
   });
-  console.log();
-
-  // 4. Determine swap direction and quote WETH amount needed
-  const zeroForOne =
-    poolKey.currency0.toLowerCase() === addresses.weth.toLowerCase();
-  const exactAmountOut = params.sale.numTokensToSell / 100n; // Buy 1% of tokens
-
-  console.log('💱 Quoting WETH amount needed...');
-  console.log(
-    '  Swap direction:',
-    zeroForOne ? 'WETH → Token' : 'Token → WETH',
-  );
-  console.log('  Tokens to buy:', exactAmountOut / WAD);
-
-  const { amountIn, gasEstimate } =
-    await sdk.factory.simulateMulticurveBundleExactOut(createParams, {
-      exactAmountOut,
-    });
-
   console.log('  WETH required:', amountIn);
   console.log('  Estimated gas:', gasEstimate.toString());
   console.log();
@@ -176,8 +176,8 @@ async function main() {
     permit,
     baseSepolia.id,
     addresses.permit2,
-    publicClient,
-    walletClient,
+    publicClient as Parameters<typeof getPermitSignature>[3],
+    walletClient as Parameters<typeof getPermitSignature>[4],
   );
   console.log('  Signature obtained:', signature.slice(0, 20) + '...');
   console.log();
@@ -249,8 +249,8 @@ async function main() {
   console.log('Block:', receipt.blockNumber);
   console.log('Gas used:', receipt.gasUsed.toString());
   console.log();
-  console.log('Token address:', asset);
-  console.log('Pool address:', pool);
+  console.log('Token address:', tokenAddress);
+  console.log('Pool ID:', poolId);
   console.log();
   console.log('WETH spent:', amountIn.toString());
   console.log('Tokens received:', (exactAmountOut / WAD).toString());

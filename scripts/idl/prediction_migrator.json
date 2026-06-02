@@ -922,24 +922,9 @@
       "msg": "Quote mint mismatch"
     },
     {
-      "code": 6002,
-      "name": "EntryAlreadyRegistered",
-      "msg": "Entry already registered"
-    },
-    {
-      "code": 6003,
-      "name": "EntryNotRegistered",
-      "msg": "Entry not registered"
-    },
-    {
       "code": 6004,
       "name": "EntryAlreadyMigrated",
       "msg": "Entry already migrated"
-    },
-    {
-      "code": 6005,
-      "name": "EntryNotMigrated",
-      "msg": "Entry not migrated"
     },
     {
       "code": 6006,
@@ -990,11 +975,6 @@
       "code": 6015,
       "name": "WinningEntryNotMigrated",
       "msg": "Winning entry not migrated"
-    },
-    {
-      "code": 6016,
-      "name": "NoPendingRewards",
-      "msg": "No pending rewards"
     },
     {
       "code": 6017,

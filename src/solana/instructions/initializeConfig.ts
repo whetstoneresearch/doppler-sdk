@@ -17,6 +17,8 @@ import {
 export interface InitializeConfigAccounts {
   /** AmmConfig account to initialize (writable, PDA: ['config']) */
   config: Address;
+  /** Program data account for upgrade authority validation */
+  programData: Address;
   /** Payer for account creation (writable, signer) */
   payer: Address;
   /** System program */
@@ -30,7 +32,7 @@ export interface InitializeConfigAccounts {
  * per deployment to set up the admin, fees, and allowlist.
  *
  * @param accounts - Required accounts for initialization
- * @param args - Instruction arguments (admin, numeraireMint, fees, allowlist)
+ * @param args - Instruction arguments (admin, fees, allowlist)
  * @param programId - Program ID (defaults to CPMM program)
  * @returns Instruction to initialize the config
  *
@@ -44,10 +46,8 @@ export interface InitializeConfigAccounts {
  *   },
  *   {
  *     admin: adminPublicKey,
- *     numeraireMint: usdcMint,
  *     maxSwapFeeBps: 100,
  *     maxFeeSplitBps: 5000,
- *     maxRouteHops: 3,
  *     protocolFeeEnabled: true,
  *     protocolFeeBps: 500,
  *     hookAllowlist: [],
@@ -60,11 +60,17 @@ export function createInitializeConfigInstruction(
   args: InitializeConfigArgs,
   programId: Address = CPMM_PROGRAM_ID,
 ): Instruction {
-  const { config, payer, systemProgram = SYSTEM_PROGRAM_ADDRESS } = accounts;
+  const {
+    config,
+    programData,
+    payer,
+    systemProgram = SYSTEM_PROGRAM_ADDRESS,
+  } = accounts;
 
   // Build account metas in order expected by the program
   const keys: AccountMeta[] = [
     { address: config, role: AccountRole.WRITABLE },
+    { address: programData, role: AccountRole.READONLY },
     { address: payer, role: AccountRole.WRITABLE_SIGNER },
     { address: systemProgram, role: AccountRole.READONLY },
   ];

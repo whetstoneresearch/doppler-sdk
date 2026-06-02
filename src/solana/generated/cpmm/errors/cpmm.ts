@@ -40,10 +40,6 @@ export const CPMM_ERROR__INVALID_VAULT = 0x177a; // 6010
 export const CPMM_ERROR__INVALID_POSITION = 0x177b; // 6011
 /** PositionNotEmpty: Position not empty */
 export const CPMM_ERROR__POSITION_NOT_EMPTY = 0x177c; // 6012
-/** InvalidRoute: Invalid route */
-export const CPMM_ERROR__INVALID_ROUTE = 0x177d; // 6013
-/** NotSupportedInV0_1: Not supported in v0.1 */
-export const CPMM_ERROR__NOT_SUPPORTED_IN_V01 = 0x177e; // 6014
 /** OracleNotInitialized: Oracle not initialized */
 export const CPMM_ERROR__ORACLE_NOT_INITIALIZED = 0x177f; // 6015
 /** ZeroSharesOut: Zero shares out */
@@ -74,16 +70,11 @@ export const CPMM_ERROR__INVARIANT_VIOLATION = 0x178b; // 6027
 export const CPMM_ERROR__INVALID_MINT = 0x178c; // 6028
 /** InvalidInput: Invalid input */
 export const CPMM_ERROR__INVALID_INPUT = 0x178d; // 6029
-/** Reentrancy: Reentrancy */
-export const CPMM_ERROR__REENTRANCY = 0x178e; // 6030
-/** CpiForbidden: CPI calls into this program are forbidden */
-export const CPMM_ERROR__CPI_FORBIDDEN = 0x178f; // 6031
 /** UseCollectProtocolFees: Protocol fee position must be claimed via collect_protocol_fees */
 export const CPMM_ERROR__USE_COLLECT_PROTOCOL_FEES = 0x1790; // 6032
 
 export type CpmmError =
   | typeof CPMM_ERROR__AMOUNT_ZERO
-  | typeof CPMM_ERROR__CPI_FORBIDDEN
   | typeof CPMM_ERROR__HOOK_CPI_FAILED
   | typeof CPMM_ERROR__HOOK_NOT_ALLOWLISTED
   | typeof CPMM_ERROR__HOOK_PROGRAM_NOT_EXECUTABLE
@@ -98,17 +89,14 @@ export type CpmmError =
   | typeof CPMM_ERROR__INVALID_MINT
   | typeof CPMM_ERROR__INVALID_MINT_ORDER
   | typeof CPMM_ERROR__INVALID_POSITION
-  | typeof CPMM_ERROR__INVALID_ROUTE
   | typeof CPMM_ERROR__INVALID_TRADE_DIRECTION
   | typeof CPMM_ERROR__INVALID_VAULT
   | typeof CPMM_ERROR__INVARIANT_VIOLATION
   | typeof CPMM_ERROR__MATH_OVERFLOW
-  | typeof CPMM_ERROR__NOT_SUPPORTED_IN_V01
   | typeof CPMM_ERROR__ORACLE_NOT_INITIALIZED
   | typeof CPMM_ERROR__PAUSED
   | typeof CPMM_ERROR__POOL_LOCKED
   | typeof CPMM_ERROR__POSITION_NOT_EMPTY
-  | typeof CPMM_ERROR__REENTRANCY
   | typeof CPMM_ERROR__SAME_MINT_PAIR
   | typeof CPMM_ERROR__SLIPPAGE_EXCEEDED
   | typeof CPMM_ERROR__TOTAL_SHARES_ZERO
@@ -120,7 +108,6 @@ let cpmmErrorMessages: Record<CpmmError, string> | undefined;
 if (process.env.NODE_ENV !== 'production') {
   cpmmErrorMessages = {
     [CPMM_ERROR__AMOUNT_ZERO]: `Amount zero`,
-    [CPMM_ERROR__CPI_FORBIDDEN]: `CPI calls into this program are forbidden`,
     [CPMM_ERROR__HOOK_CPI_FAILED]: `Hook CPI failed`,
     [CPMM_ERROR__HOOK_NOT_ALLOWLISTED]: `Hook not allowlisted`,
     [CPMM_ERROR__HOOK_PROGRAM_NOT_EXECUTABLE]: `Hook program account is not executable`,
@@ -135,17 +122,14 @@ if (process.env.NODE_ENV !== 'production') {
     [CPMM_ERROR__INVALID_MINT]: `Invalid mint`,
     [CPMM_ERROR__INVALID_MINT_ORDER]: `Invalid mint order`,
     [CPMM_ERROR__INVALID_POSITION]: `Invalid position`,
-    [CPMM_ERROR__INVALID_ROUTE]: `Invalid route`,
     [CPMM_ERROR__INVALID_TRADE_DIRECTION]: `Invalid trade direction`,
     [CPMM_ERROR__INVALID_VAULT]: `Invalid vault`,
     [CPMM_ERROR__INVARIANT_VIOLATION]: `Invariant violation`,
     [CPMM_ERROR__MATH_OVERFLOW]: `Math overflow`,
-    [CPMM_ERROR__NOT_SUPPORTED_IN_V01]: `Not supported in v0.1`,
     [CPMM_ERROR__ORACLE_NOT_INITIALIZED]: `Oracle not initialized`,
     [CPMM_ERROR__PAUSED]: `Pool is paused`,
     [CPMM_ERROR__POOL_LOCKED]: `Pool locked`,
     [CPMM_ERROR__POSITION_NOT_EMPTY]: `Position not empty`,
-    [CPMM_ERROR__REENTRANCY]: `Reentrancy`,
     [CPMM_ERROR__SAME_MINT_PAIR]: `Cannot create pool with same token for both sides`,
     [CPMM_ERROR__SLIPPAGE_EXCEEDED]: `Slippage exceeded`,
     [CPMM_ERROR__TOTAL_SHARES_ZERO]: `Total shares zero`,

@@ -109,7 +109,7 @@ export function createRemoveLiquidityInstruction(
   } = accounts;
 
   // Build account metas in order expected by the program
-  // Order: config, pool, position, protocol_position, owner, authority,
+  // Order: config, pool, position, protocol_fee_position, owner, authority,
   //        vault0, vault1, token0_mint, token1_mint, user0, user1, token_program, [oracle]
   const keys: AccountMeta[] = [
     { address: config, role: AccountRole.READONLY },

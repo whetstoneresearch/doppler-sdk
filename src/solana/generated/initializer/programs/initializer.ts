@@ -52,22 +52,23 @@ import {
 import {
   getClaimFeesInstructionAsync,
   getCurveSwapExactInInstructionAsync,
+  getDistributeBaseAllocationNoMigrationInstructionAsync,
   getHarvestMigratedFeesInstructionAsync,
   getInitializeConfigInstructionAsync,
   getInitializeLaunchInstructionAsync,
   getMigrateLaunchInstructionAsync,
   getMigratorInitInstructionAsync,
-  getPreviewMigrationInstruction,
+  getPreviewMigrationInstructionAsync,
   getPreviewSwapExactInInstructionAsync,
   getReplaceFeeBeneficiaryInstructionAsync,
   getSetFeePolicyInstructionAsync,
   getSetHookAllowlistInstructionAsync,
   getSetMigratorAllowlistInstructionAsync,
   getTransferAdminInstructionAsync,
-  getUpdateLaunchPayloadInstructionAsync,
   getUpdateTradingFlagsInstructionAsync,
   parseClaimFeesInstruction,
   parseCurveSwapExactInInstruction,
+  parseDistributeBaseAllocationNoMigrationInstruction,
   parseHarvestMigratedFeesInstruction,
   parseInitializeConfigInstruction,
   parseInitializeLaunchInstruction,
@@ -80,10 +81,10 @@ import {
   parseSetHookAllowlistInstruction,
   parseSetMigratorAllowlistInstruction,
   parseTransferAdminInstruction,
-  parseUpdateLaunchPayloadInstruction,
   parseUpdateTradingFlagsInstruction,
   type ClaimFeesAsyncInput,
   type CurveSwapExactInAsyncInput,
+  type DistributeBaseAllocationNoMigrationAsyncInput,
   type HarvestMigratedFeesAsyncInput,
   type InitializeConfigAsyncInput,
   type InitializeLaunchAsyncInput,
@@ -91,6 +92,7 @@ import {
   type MigratorInitAsyncInput,
   type ParsedClaimFeesInstruction,
   type ParsedCurveSwapExactInInstruction,
+  type ParsedDistributeBaseAllocationNoMigrationInstruction,
   type ParsedHarvestMigratedFeesInstruction,
   type ParsedInitializeConfigInstruction,
   type ParsedInitializeLaunchInstruction,
@@ -103,16 +105,14 @@ import {
   type ParsedSetHookAllowlistInstruction,
   type ParsedSetMigratorAllowlistInstruction,
   type ParsedTransferAdminInstruction,
-  type ParsedUpdateLaunchPayloadInstruction,
   type ParsedUpdateTradingFlagsInstruction,
-  type PreviewMigrationInput,
+  type PreviewMigrationAsyncInput,
   type PreviewSwapExactInAsyncInput,
   type ReplaceFeeBeneficiaryAsyncInput,
   type SetFeePolicyAsyncInput,
   type SetHookAllowlistAsyncInput,
   type SetMigratorAllowlistAsyncInput,
   type TransferAdminAsyncInput,
-  type UpdateLaunchPayloadAsyncInput,
   type UpdateTradingFlagsAsyncInput,
 } from '../instructions';
 
@@ -195,6 +195,7 @@ export function identifyInitializerAccount(
 export enum InitializerInstruction {
   ClaimFees,
   CurveSwapExactIn,
+  DistributeBaseAllocationNoMigration,
   HarvestMigratedFees,
   InitializeConfig,
   InitializeLaunch,
@@ -207,7 +208,6 @@ export enum InitializerInstruction {
   SetHookAllowlist,
   SetMigratorAllowlist,
   TransferAdmin,
-  UpdateLaunchPayload,
   UpdateTradingFlags,
 }
 
@@ -236,6 +236,17 @@ export function identifyInitializerInstruction(
     )
   ) {
     return InitializerInstruction.CurveSwapExactIn;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([107, 200, 114, 3, 143, 2, 169, 56]),
+      ),
+      0,
+    )
+  ) {
+    return InitializerInstruction.DistributeBaseAllocationNoMigration;
   }
   if (
     containsBytes(
@@ -373,17 +384,6 @@ export function identifyInitializerInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([58, 183, 166, 177, 122, 162, 250, 205]),
-      ),
-      0,
-    )
-  ) {
-    return InitializerInstruction.UpdateLaunchPayload;
-  }
-  if (
-    containsBytes(
-      data,
-      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([40, 204, 40, 16, 219, 190, 133, 78]),
       ),
       0,
@@ -406,6 +406,9 @@ export type ParsedInitializerInstruction<
   | ({
       instructionType: InitializerInstruction.CurveSwapExactIn;
     } & ParsedCurveSwapExactInInstruction<TProgram>)
+  | ({
+      instructionType: InitializerInstruction.DistributeBaseAllocationNoMigration;
+    } & ParsedDistributeBaseAllocationNoMigrationInstruction<TProgram>)
   | ({
       instructionType: InitializerInstruction.HarvestMigratedFees;
     } & ParsedHarvestMigratedFeesInstruction<TProgram>)
@@ -443,9 +446,6 @@ export type ParsedInitializerInstruction<
       instructionType: InitializerInstruction.TransferAdmin;
     } & ParsedTransferAdminInstruction<TProgram>)
   | ({
-      instructionType: InitializerInstruction.UpdateLaunchPayload;
-    } & ParsedUpdateLaunchPayloadInstruction<TProgram>)
-  | ({
       instructionType: InitializerInstruction.UpdateTradingFlags;
     } & ParsedUpdateTradingFlagsInstruction<TProgram>);
 
@@ -466,6 +466,14 @@ export function parseInitializerInstruction<TProgram extends string>(
       return {
         instructionType: InitializerInstruction.CurveSwapExactIn,
         ...parseCurveSwapExactInInstruction(instruction),
+      };
+    }
+    case InitializerInstruction.DistributeBaseAllocationNoMigration: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType:
+          InitializerInstruction.DistributeBaseAllocationNoMigration,
+        ...parseDistributeBaseAllocationNoMigrationInstruction(instruction),
       };
     }
     case InitializerInstruction.HarvestMigratedFees: {
@@ -552,13 +560,6 @@ export function parseInitializerInstruction<TProgram extends string>(
         ...parseTransferAdminInstruction(instruction),
       };
     }
-    case InitializerInstruction.UpdateLaunchPayload: {
-      assertIsInstructionWithAccounts(instruction);
-      return {
-        instructionType: InitializerInstruction.UpdateLaunchPayload,
-        ...parseUpdateLaunchPayloadInstruction(instruction),
-      };
-    }
     case InitializerInstruction.UpdateTradingFlags: {
       assertIsInstructionWithAccounts(instruction);
       return {
@@ -603,6 +604,12 @@ export type InitializerPluginInstructions = {
     input: CurveSwapExactInAsyncInput,
   ) => ReturnType<typeof getCurveSwapExactInInstructionAsync> &
     SelfPlanAndSendFunctions;
+  distributeBaseAllocationNoMigration: (
+    input: DistributeBaseAllocationNoMigrationAsyncInput,
+  ) => ReturnType<
+    typeof getDistributeBaseAllocationNoMigrationInstructionAsync
+  > &
+    SelfPlanAndSendFunctions;
   harvestMigratedFees: (
     input: HarvestMigratedFeesAsyncInput,
   ) => ReturnType<typeof getHarvestMigratedFeesInstructionAsync> &
@@ -624,8 +631,8 @@ export type InitializerPluginInstructions = {
   ) => ReturnType<typeof getMigratorInitInstructionAsync> &
     SelfPlanAndSendFunctions;
   previewMigration: (
-    input: PreviewMigrationInput,
-  ) => ReturnType<typeof getPreviewMigrationInstruction> &
+    input: PreviewMigrationAsyncInput,
+  ) => ReturnType<typeof getPreviewMigrationInstructionAsync> &
     SelfPlanAndSendFunctions;
   previewSwapExactIn: (
     input: PreviewSwapExactInAsyncInput,
@@ -650,10 +657,6 @@ export type InitializerPluginInstructions = {
   transferAdmin: (
     input: TransferAdminAsyncInput,
   ) => ReturnType<typeof getTransferAdminInstructionAsync> &
-    SelfPlanAndSendFunctions;
-  updateLaunchPayload: (
-    input: UpdateLaunchPayloadAsyncInput,
-  ) => ReturnType<typeof getUpdateLaunchPayloadInstructionAsync> &
     SelfPlanAndSendFunctions;
   updateTradingFlags: (
     input: UpdateTradingFlagsAsyncInput,
@@ -694,6 +697,11 @@ export function initializerProgram() {
               client,
               getCurveSwapExactInInstructionAsync(input),
             ),
+          distributeBaseAllocationNoMigration: (input) =>
+            addSelfPlanAndSendFunctions(
+              client,
+              getDistributeBaseAllocationNoMigrationInstructionAsync(input),
+            ),
           harvestMigratedFees: (input) =>
             addSelfPlanAndSendFunctions(
               client,
@@ -731,7 +739,7 @@ export function initializerProgram() {
           previewMigration: (input) =>
             addSelfPlanAndSendFunctions(
               client,
-              getPreviewMigrationInstruction(input),
+              getPreviewMigrationInstructionAsync(input),
             ),
           previewSwapExactIn: (input) =>
             addSelfPlanAndSendFunctions(
@@ -762,11 +770,6 @@ export function initializerProgram() {
             addSelfPlanAndSendFunctions(
               client,
               getTransferAdminInstructionAsync(input),
-            ),
-          updateLaunchPayload: (input) =>
-            addSelfPlanAndSendFunctions(
-              client,
-              getUpdateLaunchPayloadInstructionAsync(input),
             ),
           updateTradingFlags: (input) =>
             addSelfPlanAndSendFunctions(

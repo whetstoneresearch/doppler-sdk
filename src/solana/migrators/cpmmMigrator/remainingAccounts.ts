@@ -34,6 +34,7 @@ export interface CpmmMigrationRemainingAccounts {
   poolAuthority: Address;
   poolVault0: Address;
   poolVault1: Address;
+  protocolFeeOwner: Address;
   protocolFeePosition: Address;
   launchLpPosition: Address;
   migrationAuthority: Address;
@@ -72,6 +73,7 @@ export async function buildCpmmMigrationRemainingAccounts({
     poolInit.authority[0],
     poolInit.vault0[0],
     poolInit.vault1[0],
+    poolInit.protocolFeeOwner[0],
     poolInit.protocolFeePosition[0],
     launchLpPosition,
     cpmmProgram,
@@ -91,6 +93,7 @@ export async function buildCpmmMigrationRemainingAccounts({
       { address: poolInit.authority[0], role: AccountRole.READONLY },
       { address: poolInit.vault0[0], role: AccountRole.WRITABLE },
       { address: poolInit.vault1[0], role: AccountRole.WRITABLE },
+      { address: poolInit.protocolFeeOwner[0], role: AccountRole.READONLY },
       { address: poolInit.protocolFeePosition[0], role: AccountRole.WRITABLE },
       { address: launchLpPosition, role: AccountRole.WRITABLE },
       { address: cpmmProgram, role: AccountRole.READONLY },
@@ -108,6 +111,7 @@ export async function buildCpmmMigrationRemainingAccounts({
     poolAuthority: poolInit.authority[0],
     poolVault0: poolInit.vault0[0],
     poolVault1: poolInit.vault1[0],
+    protocolFeeOwner: poolInit.protocolFeeOwner[0],
     protocolFeePosition: poolInit.protocolFeePosition[0],
     launchLpPosition,
     migrationAuthority,

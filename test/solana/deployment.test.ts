@@ -15,6 +15,7 @@ const CUSTOM_PROGRAMS: SolanaCpmmProgramAddresses = {
   initializerProgram: address('BPFLoaderUpgradeab1e11111111111111111111111'),
   cpmmMigratorProgram: address('AddressLookupTab1e1111111111111111111111111'),
   cpmmHookProgram: address('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr'),
+  cosignerHookProgram: address('Sysvar1nstructions1111111111111111111111111'),
 };
 
 describe('Solana deployment helpers', () => {

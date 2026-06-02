@@ -73,10 +73,7 @@ export type Pool = {
   feesUnclaimed1: bigint;
   hookProgram: Address;
   hookFlags: number;
-  numeraireMint: Address;
   liquidityMeasureTokenIndex: number;
-  routeNextPool: Address;
-  routeBridgeMint: Address;
   kLast: bigint;
   protocolFeePosition: Address;
   locked: number;
@@ -103,10 +100,7 @@ export type PoolArgs = {
   feesUnclaimed1: number | bigint;
   hookProgram: Address;
   hookFlags: number;
-  numeraireMint: Address;
   liquidityMeasureTokenIndex: number;
-  routeNextPool: Address;
-  routeBridgeMint: Address;
   kLast: number | bigint;
   protocolFeePosition: Address;
   locked: number;
@@ -137,10 +131,7 @@ export function getPoolEncoder(): FixedSizeEncoder<PoolArgs> {
       ['feesUnclaimed1', getU64Encoder()],
       ['hookProgram', getAddressEncoder()],
       ['hookFlags', getU32Encoder()],
-      ['numeraireMint', getAddressEncoder()],
       ['liquidityMeasureTokenIndex', getU8Encoder()],
-      ['routeNextPool', getAddressEncoder()],
-      ['routeBridgeMint', getAddressEncoder()],
       ['kLast', getU128Encoder()],
       ['protocolFeePosition', getAddressEncoder()],
       ['locked', getU8Encoder()],
@@ -173,10 +164,7 @@ export function getPoolDecoder(): FixedSizeDecoder<Pool> {
     ['feesUnclaimed1', getU64Decoder()],
     ['hookProgram', getAddressDecoder()],
     ['hookFlags', getU32Decoder()],
-    ['numeraireMint', getAddressDecoder()],
     ['liquidityMeasureTokenIndex', getU8Decoder()],
-    ['routeNextPool', getAddressDecoder()],
-    ['routeBridgeMint', getAddressDecoder()],
     ['kLast', getU128Decoder()],
     ['protocolFeePosition', getAddressDecoder()],
     ['locked', getU8Decoder()],
@@ -244,5 +232,5 @@ export async function fetchAllMaybePool(
 }
 
 export function getPoolSize(): number {
-  return 475;
+  return 379;
 }

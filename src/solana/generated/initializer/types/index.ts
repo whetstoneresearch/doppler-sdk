@@ -7,23 +7,24 @@
  */
 
 export * from './adminTransferred';
+export * from './claimFeesArgs';
 export * from './configInitialized';
 export * from './curveSwap';
 export * from './feeBeneficiary';
 export * from './feeBeneficiaryInput';
 export * from './feeBeneficiaryReplaced';
+export * from './feeClaimRole';
 export * from './feePolicyUpdated';
 export * from './feesClaimed';
 export * from './hookAllowlistUpdated';
 export * from './initializeConfigArgs';
 export * from './initializeLaunchArgs';
+export * from './launchBaseAllocationDistributed';
 export * from './launchInitialized';
 export * from './launchMigrated';
-export * from './launchPayloadUpdated';
 export * from './migratedFeesHarvested';
 export * from './migratorAllowlistUpdated';
 export * from './payloadBuf';
 export * from './setFeePolicyArgs';
 export * from './tradingFlagsUpdated';
-export * from './updateLaunchPayloadArgs';
 export * from './updateTradingFlagsArgs';

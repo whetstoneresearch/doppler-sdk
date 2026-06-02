@@ -391,6 +391,7 @@ export type InitializeLaunchAsyncInput<
 > = {
   config?: Address<TAccountConfig>;
   launch: Address<TAccountLaunch>;
+  /** Address is constrained by seeds, and it has no account data to deserialize. */
   launchAuthority?: Address<TAccountLaunchAuthority>;
   baseMint: TransactionSigner<TAccountBaseMint>;
   quoteMint: Address<TAccountQuoteMint>;
@@ -685,6 +686,7 @@ export type InitializeLaunchInput<
 > = {
   config: Address<TAccountConfig>;
   launch: Address<TAccountLaunch>;
+  /** Address is constrained by seeds, and it has no account data to deserialize. */
   launchAuthority: Address<TAccountLaunchAuthority>;
   baseMint: TransactionSigner<TAccountBaseMint>;
   quoteMint: Address<TAccountQuoteMint>;
@@ -917,6 +919,7 @@ export type ParsedInitializeLaunchInstruction<
   accounts: {
     config: TAccountMetas[0];
     launch: TAccountMetas[1];
+    /** Address is constrained by seeds, and it has no account data to deserialize. */
     launchAuthority: TAccountMetas[2];
     baseMint: TAccountMetas[3];
     quoteMint: TAccountMetas[4];

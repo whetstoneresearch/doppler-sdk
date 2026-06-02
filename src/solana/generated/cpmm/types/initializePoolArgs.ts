@@ -10,8 +10,6 @@ import {
   combineCodec,
   getAddressDecoder,
   getAddressEncoder,
-  getOptionDecoder,
-  getOptionEncoder,
   getStructDecoder,
   getStructEncoder,
   getU16Decoder,
@@ -21,11 +19,9 @@ import {
   getU8Decoder,
   getU8Encoder,
   type Address,
-  type Codec,
-  type Decoder,
-  type Encoder,
-  type Option,
-  type OptionOrNullable,
+  type FixedSizeCodec,
+  type FixedSizeDecoder,
+  type FixedSizeEncoder,
 } from '@solana/kit';
 
 export type InitializePoolArgs = {
@@ -34,49 +30,37 @@ export type InitializePoolArgs = {
   initialSwapFeeBps: number;
   initialFeeSplitBps: number;
   liquidityMeasureTokenIndex: number;
-  numeraireMintOverride: Option<Address>;
   hookProgram: Address;
   hookFlags: number;
 };
 
-export type InitializePoolArgsArgs = {
-  mintA: Address;
-  mintB: Address;
-  initialSwapFeeBps: number;
-  initialFeeSplitBps: number;
-  liquidityMeasureTokenIndex: number;
-  numeraireMintOverride: OptionOrNullable<Address>;
-  hookProgram: Address;
-  hookFlags: number;
-};
+export type InitializePoolArgsArgs = InitializePoolArgs;
 
-export function getInitializePoolArgsEncoder(): Encoder<InitializePoolArgsArgs> {
+export function getInitializePoolArgsEncoder(): FixedSizeEncoder<InitializePoolArgsArgs> {
   return getStructEncoder([
     ['mintA', getAddressEncoder()],
     ['mintB', getAddressEncoder()],
     ['initialSwapFeeBps', getU16Encoder()],
     ['initialFeeSplitBps', getU16Encoder()],
     ['liquidityMeasureTokenIndex', getU8Encoder()],
-    ['numeraireMintOverride', getOptionEncoder(getAddressEncoder())],
     ['hookProgram', getAddressEncoder()],
     ['hookFlags', getU32Encoder()],
   ]);
 }
 
-export function getInitializePoolArgsDecoder(): Decoder<InitializePoolArgs> {
+export function getInitializePoolArgsDecoder(): FixedSizeDecoder<InitializePoolArgs> {
   return getStructDecoder([
     ['mintA', getAddressDecoder()],
     ['mintB', getAddressDecoder()],
     ['initialSwapFeeBps', getU16Decoder()],
     ['initialFeeSplitBps', getU16Decoder()],
     ['liquidityMeasureTokenIndex', getU8Decoder()],
-    ['numeraireMintOverride', getOptionDecoder(getAddressDecoder())],
     ['hookProgram', getAddressDecoder()],
     ['hookFlags', getU32Decoder()],
   ]);
 }
 
-export function getInitializePoolArgsCodec(): Codec<
+export function getInitializePoolArgsCodec(): FixedSizeCodec<
   InitializePoolArgsArgs,
   InitializePoolArgs
 > {
