@@ -18,14 +18,8 @@ import { PREDICTION_MIGRATOR_PROGRAM_ADDRESS } from '../programs';
 export const PREDICTION_MIGRATOR_ERROR__UNAUTHORIZED = 0x1770; // 6000
 /** QuoteMintMismatch: Quote mint mismatch */
 export const PREDICTION_MIGRATOR_ERROR__QUOTE_MINT_MISMATCH = 0x1771; // 6001
-/** EntryAlreadyRegistered: Entry already registered */
-export const PREDICTION_MIGRATOR_ERROR__ENTRY_ALREADY_REGISTERED = 0x1772; // 6002
-/** EntryNotRegistered: Entry not registered */
-export const PREDICTION_MIGRATOR_ERROR__ENTRY_NOT_REGISTERED = 0x1773; // 6003
 /** EntryAlreadyMigrated: Entry already migrated */
 export const PREDICTION_MIGRATOR_ERROR__ENTRY_ALREADY_MIGRATED = 0x1774; // 6004
-/** EntryNotMigrated: Entry not migrated */
-export const PREDICTION_MIGRATOR_ERROR__ENTRY_NOT_MIGRATED = 0x1775; // 6005
 /** OracleNotFinalized: Oracle not finalized */
 export const PREDICTION_MIGRATOR_ERROR__ORACLE_NOT_FINALIZED = 0x1776; // 6006
 /** MarketNotResolved: Market not resolved */
@@ -46,8 +40,6 @@ export const PREDICTION_MIGRATOR_ERROR__INVALID_VAULT = 0x177d; // 6013
 export const PREDICTION_MIGRATOR_ERROR__INVALID_MINT = 0x177e; // 6014
 /** WinningEntryNotMigrated: Winning entry not migrated */
 export const PREDICTION_MIGRATOR_ERROR__WINNING_ENTRY_NOT_MIGRATED = 0x177f; // 6015
-/** NoPendingRewards: No pending rewards */
-export const PREDICTION_MIGRATOR_ERROR__NO_PENDING_REWARDS = 0x1780; // 6016
 /** InvalidOracle: Invalid oracle */
 export const PREDICTION_MIGRATOR_ERROR__INVALID_ORACLE = 0x1781; // 6017
 /** ZeroClaimableSupply: Zero claimable supply */
@@ -57,9 +49,6 @@ export const PREDICTION_MIGRATOR_ERROR__INVALID_INPUT = 0x1783; // 6019
 
 export type PredictionMigratorError =
   | typeof PREDICTION_MIGRATOR_ERROR__ENTRY_ALREADY_MIGRATED
-  | typeof PREDICTION_MIGRATOR_ERROR__ENTRY_ALREADY_REGISTERED
-  | typeof PREDICTION_MIGRATOR_ERROR__ENTRY_NOT_MIGRATED
-  | typeof PREDICTION_MIGRATOR_ERROR__ENTRY_NOT_REGISTERED
   | typeof PREDICTION_MIGRATOR_ERROR__INSUFFICIENT_BALANCE
   | typeof PREDICTION_MIGRATOR_ERROR__INVALID_ENTRY_ID
   | typeof PREDICTION_MIGRATOR_ERROR__INVALID_INPUT
@@ -70,7 +59,6 @@ export type PredictionMigratorError =
   | typeof PREDICTION_MIGRATOR_ERROR__INVALID_WINNER_MINT
   | typeof PREDICTION_MIGRATOR_ERROR__MARKET_NOT_RESOLVED
   | typeof PREDICTION_MIGRATOR_ERROR__MATH_OVERFLOW
-  | typeof PREDICTION_MIGRATOR_ERROR__NO_PENDING_REWARDS
   | typeof PREDICTION_MIGRATOR_ERROR__ORACLE_NOT_FINALIZED
   | typeof PREDICTION_MIGRATOR_ERROR__QUOTE_MINT_MISMATCH
   | typeof PREDICTION_MIGRATOR_ERROR__UNAUTHORIZED
@@ -83,9 +71,6 @@ let predictionMigratorErrorMessages:
 if (process.env.NODE_ENV !== 'production') {
   predictionMigratorErrorMessages = {
     [PREDICTION_MIGRATOR_ERROR__ENTRY_ALREADY_MIGRATED]: `Entry already migrated`,
-    [PREDICTION_MIGRATOR_ERROR__ENTRY_ALREADY_REGISTERED]: `Entry already registered`,
-    [PREDICTION_MIGRATOR_ERROR__ENTRY_NOT_MIGRATED]: `Entry not migrated`,
-    [PREDICTION_MIGRATOR_ERROR__ENTRY_NOT_REGISTERED]: `Entry not registered`,
     [PREDICTION_MIGRATOR_ERROR__INSUFFICIENT_BALANCE]: `Insufficient balance`,
     [PREDICTION_MIGRATOR_ERROR__INVALID_ENTRY_ID]: `Invalid entry ID`,
     [PREDICTION_MIGRATOR_ERROR__INVALID_INPUT]: `Invalid input`,
@@ -96,7 +81,6 @@ if (process.env.NODE_ENV !== 'production') {
     [PREDICTION_MIGRATOR_ERROR__INVALID_WINNER_MINT]: `Invalid winner mint`,
     [PREDICTION_MIGRATOR_ERROR__MARKET_NOT_RESOLVED]: `Market not resolved`,
     [PREDICTION_MIGRATOR_ERROR__MATH_OVERFLOW]: `Math overflow`,
-    [PREDICTION_MIGRATOR_ERROR__NO_PENDING_REWARDS]: `No pending rewards`,
     [PREDICTION_MIGRATOR_ERROR__ORACLE_NOT_FINALIZED]: `Oracle not finalized`,
     [PREDICTION_MIGRATOR_ERROR__QUOTE_MINT_MISMATCH]: `Quote mint mismatch`,
     [PREDICTION_MIGRATOR_ERROR__UNAUTHORIZED]: `Unauthorized`,

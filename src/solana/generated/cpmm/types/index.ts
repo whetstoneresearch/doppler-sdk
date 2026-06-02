@@ -46,7 +46,13 @@ export * from './poolInitialized';
 export * from './positionClosed';
 export * from './positionCreated';
 export * from './previewSwapExactInArgs';
-export * from './quoteToNumeraireArgs';
+export {
+  type RedeemProtocolShares,
+  getRedeemProtocolSharesEncoder,
+  getRedeemProtocolSharesDecoder,
+  getRedeemProtocolSharesCodec,
+} from './redeemProtocolShares';
+export * from './redeemProtocolSharesArgs';
 export {
   type RemoveLiquidity,
   getRemoveLiquidityEncoder,
@@ -54,10 +60,8 @@ export {
   getRemoveLiquidityCodec,
 } from './removeLiquidity';
 export * from './removeLiquidityArgs';
-export * from './routeUpdated';
 export * from './setFeesArgs';
 export * from './setHookArgs';
-export * from './setRouteArgs';
 export * from './swap';
 export * from './swapExactInArgs';
 export * from './unpaused';

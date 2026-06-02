@@ -37,6 +37,12 @@ import {
   type ResolvedInstructionAccount,
 } from '@solana/program-client-core';
 import { INITIALIZER_PROGRAM_ADDRESS } from '../programs';
+import {
+  getFeeClaimRoleDecoder,
+  getFeeClaimRoleEncoder,
+  type FeeClaimRole,
+  type FeeClaimRoleArgs,
+} from '../types';
 
 export const CLAIM_FEES_DISCRIMINATOR = new Uint8Array([
   82, 251, 233, 156, 12, 52, 184, 202,
@@ -48,10 +54,10 @@ export function getClaimFeesDiscriminatorBytes() {
 
 export type ClaimFeesInstruction<
   TProgram extends string = typeof INITIALIZER_PROGRAM_ADDRESS,
+  TAccountConfig extends string | AccountMeta<string> = string,
   TAccountLaunch extends string | AccountMeta<string> = string,
   TAccountLaunchFeeState extends string | AccountMeta<string> = string,
   TAccountLaunchAuthority extends string | AccountMeta<string> = string,
-  TAccountRecipient extends string | AccountMeta<string> = string,
   TAccountBaseMint extends string | AccountMeta<string> = string,
   TAccountQuoteMint extends string | AccountMeta<string> = string,
   TAccountBaseVault extends string | AccountMeta<string> = string,
@@ -65,6 +71,9 @@ export type ClaimFeesInstruction<
   InstructionWithData<ReadonlyUint8Array> &
   InstructionWithAccounts<
     [
+      TAccountConfig extends string
+        ? ReadonlyAccount<TAccountConfig>
+        : TAccountConfig,
       TAccountLaunch extends string
         ? ReadonlyAccount<TAccountLaunch>
         : TAccountLaunch,
@@ -74,9 +83,6 @@ export type ClaimFeesInstruction<
       TAccountLaunchAuthority extends string
         ? ReadonlyAccount<TAccountLaunchAuthority>
         : TAccountLaunchAuthority,
-      TAccountRecipient extends string
-        ? ReadonlyAccount<TAccountRecipient>
-        : TAccountRecipient,
       TAccountBaseMint extends string
         ? ReadonlyAccount<TAccountBaseMint>
         : TAccountBaseMint,
@@ -105,13 +111,19 @@ export type ClaimFeesInstruction<
     ]
   >;
 
-export type ClaimFeesInstructionData = { discriminator: ReadonlyUint8Array };
+export type ClaimFeesInstructionData = {
+  discriminator: ReadonlyUint8Array;
+  role: FeeClaimRole;
+};
 
-export type ClaimFeesInstructionDataArgs = {};
+export type ClaimFeesInstructionDataArgs = { role: FeeClaimRoleArgs };
 
 export function getClaimFeesInstructionDataEncoder(): FixedSizeEncoder<ClaimFeesInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
+    getStructEncoder([
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['role', getFeeClaimRoleEncoder()],
+    ]),
     (value) => ({ ...value, discriminator: CLAIM_FEES_DISCRIMINATOR }),
   );
 }
@@ -119,6 +131,7 @@ export function getClaimFeesInstructionDataEncoder(): FixedSizeEncoder<ClaimFees
 export function getClaimFeesInstructionDataDecoder(): FixedSizeDecoder<ClaimFeesInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['role', getFeeClaimRoleDecoder()],
   ]);
 }
 
@@ -133,10 +146,10 @@ export function getClaimFeesInstructionDataCodec(): FixedSizeCodec<
 }
 
 export type ClaimFeesAsyncInput<
+  TAccountConfig extends string = string,
   TAccountLaunch extends string = string,
   TAccountLaunchFeeState extends string = string,
   TAccountLaunchAuthority extends string = string,
-  TAccountRecipient extends string = string,
   TAccountBaseMint extends string = string,
   TAccountQuoteMint extends string = string,
   TAccountBaseVault extends string = string,
@@ -146,10 +159,10 @@ export type ClaimFeesAsyncInput<
   TAccountBaseTokenProgram extends string = string,
   TAccountQuoteTokenProgram extends string = string,
 > = {
+  config?: Address<TAccountConfig>;
   launch: Address<TAccountLaunch>;
   launchFeeState?: Address<TAccountLaunchFeeState>;
   launchAuthority?: Address<TAccountLaunchAuthority>;
-  recipient: Address<TAccountRecipient>;
   baseMint: Address<TAccountBaseMint>;
   quoteMint: Address<TAccountQuoteMint>;
   baseVault: Address<TAccountBaseVault>;
@@ -158,13 +171,14 @@ export type ClaimFeesAsyncInput<
   recipientQuoteAta: Address<TAccountRecipientQuoteAta>;
   baseTokenProgram: Address<TAccountBaseTokenProgram>;
   quoteTokenProgram: Address<TAccountQuoteTokenProgram>;
+  role: ClaimFeesInstructionDataArgs['role'];
 };
 
 export async function getClaimFeesInstructionAsync<
+  TAccountConfig extends string,
   TAccountLaunch extends string,
   TAccountLaunchFeeState extends string,
   TAccountLaunchAuthority extends string,
-  TAccountRecipient extends string,
   TAccountBaseMint extends string,
   TAccountQuoteMint extends string,
   TAccountBaseVault extends string,
@@ -176,10 +190,10 @@ export async function getClaimFeesInstructionAsync<
   TProgramAddress extends Address = typeof INITIALIZER_PROGRAM_ADDRESS,
 >(
   input: ClaimFeesAsyncInput<
+    TAccountConfig,
     TAccountLaunch,
     TAccountLaunchFeeState,
     TAccountLaunchAuthority,
-    TAccountRecipient,
     TAccountBaseMint,
     TAccountQuoteMint,
     TAccountBaseVault,
@@ -193,10 +207,10 @@ export async function getClaimFeesInstructionAsync<
 ): Promise<
   ClaimFeesInstruction<
     TProgramAddress,
+    TAccountConfig,
     TAccountLaunch,
     TAccountLaunchFeeState,
     TAccountLaunchAuthority,
-    TAccountRecipient,
     TAccountBaseMint,
     TAccountQuoteMint,
     TAccountBaseVault,
@@ -212,13 +226,13 @@ export async function getClaimFeesInstructionAsync<
 
   // Original accounts.
   const originalAccounts = {
+    config: { value: input.config ?? null, isWritable: false },
     launch: { value: input.launch ?? null, isWritable: false },
     launchFeeState: { value: input.launchFeeState ?? null, isWritable: true },
     launchAuthority: {
       value: input.launchAuthority ?? null,
       isWritable: false,
     },
-    recipient: { value: input.recipient ?? null, isWritable: false },
     baseMint: { value: input.baseMint ?? null, isWritable: false },
     quoteMint: { value: input.quoteMint ?? null, isWritable: false },
     baseVault: { value: input.baseVault ?? null, isWritable: true },
@@ -245,7 +259,18 @@ export async function getClaimFeesInstructionAsync<
     ResolvedInstructionAccount
   >;
 
+  // Original args.
+  const args = { ...input };
+
   // Resolve default values.
+  if (!accounts.config.value) {
+    accounts.config.value = await getProgramDerivedAddress({
+      programAddress,
+      seeds: [
+        getBytesEncoder().encode(new Uint8Array([99, 111, 110, 102, 105, 103])),
+      ],
+    });
+  }
   if (!accounts.launchFeeState.value) {
     accounts.launchFeeState.value = await getProgramDerivedAddress({
       programAddress,
@@ -288,10 +313,10 @@ export async function getClaimFeesInstructionAsync<
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
+      getAccountMeta('config', accounts.config),
       getAccountMeta('launch', accounts.launch),
       getAccountMeta('launchFeeState', accounts.launchFeeState),
       getAccountMeta('launchAuthority', accounts.launchAuthority),
-      getAccountMeta('recipient', accounts.recipient),
       getAccountMeta('baseMint', accounts.baseMint),
       getAccountMeta('quoteMint', accounts.quoteMint),
       getAccountMeta('baseVault', accounts.baseVault),
@@ -301,14 +326,16 @@ export async function getClaimFeesInstructionAsync<
       getAccountMeta('baseTokenProgram', accounts.baseTokenProgram),
       getAccountMeta('quoteTokenProgram', accounts.quoteTokenProgram),
     ],
-    data: getClaimFeesInstructionDataEncoder().encode({}),
+    data: getClaimFeesInstructionDataEncoder().encode(
+      args as ClaimFeesInstructionDataArgs,
+    ),
     programAddress,
   } as ClaimFeesInstruction<
     TProgramAddress,
+    TAccountConfig,
     TAccountLaunch,
     TAccountLaunchFeeState,
     TAccountLaunchAuthority,
-    TAccountRecipient,
     TAccountBaseMint,
     TAccountQuoteMint,
     TAccountBaseVault,
@@ -321,10 +348,10 @@ export async function getClaimFeesInstructionAsync<
 }
 
 export type ClaimFeesInput<
+  TAccountConfig extends string = string,
   TAccountLaunch extends string = string,
   TAccountLaunchFeeState extends string = string,
   TAccountLaunchAuthority extends string = string,
-  TAccountRecipient extends string = string,
   TAccountBaseMint extends string = string,
   TAccountQuoteMint extends string = string,
   TAccountBaseVault extends string = string,
@@ -334,10 +361,10 @@ export type ClaimFeesInput<
   TAccountBaseTokenProgram extends string = string,
   TAccountQuoteTokenProgram extends string = string,
 > = {
+  config: Address<TAccountConfig>;
   launch: Address<TAccountLaunch>;
   launchFeeState: Address<TAccountLaunchFeeState>;
   launchAuthority: Address<TAccountLaunchAuthority>;
-  recipient: Address<TAccountRecipient>;
   baseMint: Address<TAccountBaseMint>;
   quoteMint: Address<TAccountQuoteMint>;
   baseVault: Address<TAccountBaseVault>;
@@ -346,13 +373,14 @@ export type ClaimFeesInput<
   recipientQuoteAta: Address<TAccountRecipientQuoteAta>;
   baseTokenProgram: Address<TAccountBaseTokenProgram>;
   quoteTokenProgram: Address<TAccountQuoteTokenProgram>;
+  role: ClaimFeesInstructionDataArgs['role'];
 };
 
 export function getClaimFeesInstruction<
+  TAccountConfig extends string,
   TAccountLaunch extends string,
   TAccountLaunchFeeState extends string,
   TAccountLaunchAuthority extends string,
-  TAccountRecipient extends string,
   TAccountBaseMint extends string,
   TAccountQuoteMint extends string,
   TAccountBaseVault extends string,
@@ -364,10 +392,10 @@ export function getClaimFeesInstruction<
   TProgramAddress extends Address = typeof INITIALIZER_PROGRAM_ADDRESS,
 >(
   input: ClaimFeesInput<
+    TAccountConfig,
     TAccountLaunch,
     TAccountLaunchFeeState,
     TAccountLaunchAuthority,
-    TAccountRecipient,
     TAccountBaseMint,
     TAccountQuoteMint,
     TAccountBaseVault,
@@ -380,10 +408,10 @@ export function getClaimFeesInstruction<
   config?: { programAddress?: TProgramAddress },
 ): ClaimFeesInstruction<
   TProgramAddress,
+  TAccountConfig,
   TAccountLaunch,
   TAccountLaunchFeeState,
   TAccountLaunchAuthority,
-  TAccountRecipient,
   TAccountBaseMint,
   TAccountQuoteMint,
   TAccountBaseVault,
@@ -398,13 +426,13 @@ export function getClaimFeesInstruction<
 
   // Original accounts.
   const originalAccounts = {
+    config: { value: input.config ?? null, isWritable: false },
     launch: { value: input.launch ?? null, isWritable: false },
     launchFeeState: { value: input.launchFeeState ?? null, isWritable: true },
     launchAuthority: {
       value: input.launchAuthority ?? null,
       isWritable: false,
     },
-    recipient: { value: input.recipient ?? null, isWritable: false },
     baseMint: { value: input.baseMint ?? null, isWritable: false },
     quoteMint: { value: input.quoteMint ?? null, isWritable: false },
     baseVault: { value: input.baseVault ?? null, isWritable: true },
@@ -431,13 +459,16 @@ export function getClaimFeesInstruction<
     ResolvedInstructionAccount
   >;
 
+  // Original args.
+  const args = { ...input };
+
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
+      getAccountMeta('config', accounts.config),
       getAccountMeta('launch', accounts.launch),
       getAccountMeta('launchFeeState', accounts.launchFeeState),
       getAccountMeta('launchAuthority', accounts.launchAuthority),
-      getAccountMeta('recipient', accounts.recipient),
       getAccountMeta('baseMint', accounts.baseMint),
       getAccountMeta('quoteMint', accounts.quoteMint),
       getAccountMeta('baseVault', accounts.baseVault),
@@ -447,14 +478,16 @@ export function getClaimFeesInstruction<
       getAccountMeta('baseTokenProgram', accounts.baseTokenProgram),
       getAccountMeta('quoteTokenProgram', accounts.quoteTokenProgram),
     ],
-    data: getClaimFeesInstructionDataEncoder().encode({}),
+    data: getClaimFeesInstructionDataEncoder().encode(
+      args as ClaimFeesInstructionDataArgs,
+    ),
     programAddress,
   } as ClaimFeesInstruction<
     TProgramAddress,
+    TAccountConfig,
     TAccountLaunch,
     TAccountLaunchFeeState,
     TAccountLaunchAuthority,
-    TAccountRecipient,
     TAccountBaseMint,
     TAccountQuoteMint,
     TAccountBaseVault,
@@ -472,10 +505,10 @@ export type ParsedClaimFeesInstruction<
 > = {
   programAddress: Address<TProgram>;
   accounts: {
-    launch: TAccountMetas[0];
-    launchFeeState: TAccountMetas[1];
-    launchAuthority: TAccountMetas[2];
-    recipient: TAccountMetas[3];
+    config: TAccountMetas[0];
+    launch: TAccountMetas[1];
+    launchFeeState: TAccountMetas[2];
+    launchAuthority: TAccountMetas[3];
     baseMint: TAccountMetas[4];
     quoteMint: TAccountMetas[5];
     baseVault: TAccountMetas[6];
@@ -514,10 +547,10 @@ export function parseClaimFeesInstruction<
   return {
     programAddress: instruction.programAddress,
     accounts: {
+      config: getNextAccount(),
       launch: getNextAccount(),
       launchFeeState: getNextAccount(),
       launchAuthority: getNextAccount(),
-      recipient: getNextAccount(),
       baseMint: getNextAccount(),
       quoteMint: getNextAccount(),
       baseVault: getNextAccount(),

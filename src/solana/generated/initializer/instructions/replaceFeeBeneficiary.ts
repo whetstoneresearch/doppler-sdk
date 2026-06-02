@@ -54,6 +54,7 @@ export function getReplaceFeeBeneficiaryDiscriminatorBytes() {
 
 export type ReplaceFeeBeneficiaryInstruction<
   TProgram extends string = typeof INITIALIZER_PROGRAM_ADDRESS,
+  TAccountConfig extends string | AccountMeta<string> = string,
   TAccountLaunch extends string | AccountMeta<string> = string,
   TAccountLaunchFeeState extends string | AccountMeta<string> = string,
   TAccountCurrentBeneficiary extends string | AccountMeta<string> = string,
@@ -62,6 +63,9 @@ export type ReplaceFeeBeneficiaryInstruction<
   InstructionWithData<ReadonlyUint8Array> &
   InstructionWithAccounts<
     [
+      TAccountConfig extends string
+        ? ReadonlyAccount<TAccountConfig>
+        : TAccountConfig,
       TAccountLaunch extends string
         ? ReadonlyAccount<TAccountLaunch>
         : TAccountLaunch,
@@ -116,10 +120,12 @@ export function getReplaceFeeBeneficiaryInstructionDataCodec(): FixedSizeCodec<
 }
 
 export type ReplaceFeeBeneficiaryAsyncInput<
+  TAccountConfig extends string = string,
   TAccountLaunch extends string = string,
   TAccountLaunchFeeState extends string = string,
   TAccountCurrentBeneficiary extends string = string,
 > = {
+  config?: Address<TAccountConfig>;
   launch: Address<TAccountLaunch>;
   launchFeeState?: Address<TAccountLaunchFeeState>;
   currentBeneficiary: TransactionSigner<TAccountCurrentBeneficiary>;
@@ -127,12 +133,14 @@ export type ReplaceFeeBeneficiaryAsyncInput<
 };
 
 export async function getReplaceFeeBeneficiaryInstructionAsync<
+  TAccountConfig extends string,
   TAccountLaunch extends string,
   TAccountLaunchFeeState extends string,
   TAccountCurrentBeneficiary extends string,
   TProgramAddress extends Address = typeof INITIALIZER_PROGRAM_ADDRESS,
 >(
   input: ReplaceFeeBeneficiaryAsyncInput<
+    TAccountConfig,
     TAccountLaunch,
     TAccountLaunchFeeState,
     TAccountCurrentBeneficiary
@@ -141,6 +149,7 @@ export async function getReplaceFeeBeneficiaryInstructionAsync<
 ): Promise<
   ReplaceFeeBeneficiaryInstruction<
     TProgramAddress,
+    TAccountConfig,
     TAccountLaunch,
     TAccountLaunchFeeState,
     TAccountCurrentBeneficiary
@@ -151,6 +160,7 @@ export async function getReplaceFeeBeneficiaryInstructionAsync<
 
   // Original accounts.
   const originalAccounts = {
+    config: { value: input.config ?? null, isWritable: false },
     launch: { value: input.launch ?? null, isWritable: false },
     launchFeeState: { value: input.launchFeeState ?? null, isWritable: true },
     currentBeneficiary: {
@@ -167,6 +177,14 @@ export async function getReplaceFeeBeneficiaryInstructionAsync<
   const args = { ...input };
 
   // Resolve default values.
+  if (!accounts.config.value) {
+    accounts.config.value = await getProgramDerivedAddress({
+      programAddress,
+      seeds: [
+        getBytesEncoder().encode(new Uint8Array([99, 111, 110, 102, 105, 103])),
+      ],
+    });
+  }
   if (!accounts.launchFeeState.value) {
     accounts.launchFeeState.value = await getProgramDerivedAddress({
       programAddress,
@@ -190,6 +208,7 @@ export async function getReplaceFeeBeneficiaryInstructionAsync<
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
+      getAccountMeta('config', accounts.config),
       getAccountMeta('launch', accounts.launch),
       getAccountMeta('launchFeeState', accounts.launchFeeState),
       getAccountMeta('currentBeneficiary', accounts.currentBeneficiary),
@@ -200,6 +219,7 @@ export async function getReplaceFeeBeneficiaryInstructionAsync<
     programAddress,
   } as ReplaceFeeBeneficiaryInstruction<
     TProgramAddress,
+    TAccountConfig,
     TAccountLaunch,
     TAccountLaunchFeeState,
     TAccountCurrentBeneficiary
@@ -207,10 +227,12 @@ export async function getReplaceFeeBeneficiaryInstructionAsync<
 }
 
 export type ReplaceFeeBeneficiaryInput<
+  TAccountConfig extends string = string,
   TAccountLaunch extends string = string,
   TAccountLaunchFeeState extends string = string,
   TAccountCurrentBeneficiary extends string = string,
 > = {
+  config: Address<TAccountConfig>;
   launch: Address<TAccountLaunch>;
   launchFeeState: Address<TAccountLaunchFeeState>;
   currentBeneficiary: TransactionSigner<TAccountCurrentBeneficiary>;
@@ -218,12 +240,14 @@ export type ReplaceFeeBeneficiaryInput<
 };
 
 export function getReplaceFeeBeneficiaryInstruction<
+  TAccountConfig extends string,
   TAccountLaunch extends string,
   TAccountLaunchFeeState extends string,
   TAccountCurrentBeneficiary extends string,
   TProgramAddress extends Address = typeof INITIALIZER_PROGRAM_ADDRESS,
 >(
   input: ReplaceFeeBeneficiaryInput<
+    TAccountConfig,
     TAccountLaunch,
     TAccountLaunchFeeState,
     TAccountCurrentBeneficiary
@@ -231,6 +255,7 @@ export function getReplaceFeeBeneficiaryInstruction<
   config?: { programAddress?: TProgramAddress },
 ): ReplaceFeeBeneficiaryInstruction<
   TProgramAddress,
+  TAccountConfig,
   TAccountLaunch,
   TAccountLaunchFeeState,
   TAccountCurrentBeneficiary
@@ -240,6 +265,7 @@ export function getReplaceFeeBeneficiaryInstruction<
 
   // Original accounts.
   const originalAccounts = {
+    config: { value: input.config ?? null, isWritable: false },
     launch: { value: input.launch ?? null, isWritable: false },
     launchFeeState: { value: input.launchFeeState ?? null, isWritable: true },
     currentBeneficiary: {
@@ -258,6 +284,7 @@ export function getReplaceFeeBeneficiaryInstruction<
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
+      getAccountMeta('config', accounts.config),
       getAccountMeta('launch', accounts.launch),
       getAccountMeta('launchFeeState', accounts.launchFeeState),
       getAccountMeta('currentBeneficiary', accounts.currentBeneficiary),
@@ -268,6 +295,7 @@ export function getReplaceFeeBeneficiaryInstruction<
     programAddress,
   } as ReplaceFeeBeneficiaryInstruction<
     TProgramAddress,
+    TAccountConfig,
     TAccountLaunch,
     TAccountLaunchFeeState,
     TAccountCurrentBeneficiary
@@ -280,9 +308,10 @@ export type ParsedReplaceFeeBeneficiaryInstruction<
 > = {
   programAddress: Address<TProgram>;
   accounts: {
-    launch: TAccountMetas[0];
-    launchFeeState: TAccountMetas[1];
-    currentBeneficiary: TAccountMetas[2];
+    config: TAccountMetas[0];
+    launch: TAccountMetas[1];
+    launchFeeState: TAccountMetas[2];
+    currentBeneficiary: TAccountMetas[3];
   };
   data: ReplaceFeeBeneficiaryInstructionData;
 };
@@ -295,12 +324,12 @@ export function parseReplaceFeeBeneficiaryInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedReplaceFeeBeneficiaryInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 3) {
+  if (instruction.accounts.length < 4) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 3,
+        expectedAccountMetas: 4,
       },
     );
   }
@@ -313,6 +342,7 @@ export function parseReplaceFeeBeneficiaryInstruction<
   return {
     programAddress: instruction.programAddress,
     accounts: {
+      config: getNextAccount(),
       launch: getNextAccount(),
       launchFeeState: getNextAccount(),
       currentBeneficiary: getNextAccount(),

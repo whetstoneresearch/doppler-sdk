@@ -59,11 +59,10 @@ import {
   getOracleUpdateInstructionAsync,
   getPauseInstruction,
   getPreviewSwapExactInInstruction,
-  getQuoteToNumeraireInstruction,
+  getRedeemProtocolSharesInstructionAsync,
   getRemoveLiquidityInstructionAsync,
   getSetFeesInstruction,
   getSetHookInstruction,
-  getSetRouteInstruction,
   getSwapExactInInstructionAsync,
   getTransferAdminInstruction,
   getUnpauseInstruction,
@@ -81,11 +80,10 @@ import {
   parseOracleUpdateInstruction,
   parsePauseInstruction,
   parsePreviewSwapExactInInstruction,
-  parseQuoteToNumeraireInstruction,
+  parseRedeemProtocolSharesInstruction,
   parseRemoveLiquidityInstruction,
   parseSetFeesInstruction,
   parseSetHookInstruction,
-  parseSetRouteInstruction,
   parseSwapExactInInstruction,
   parseTransferAdminInstruction,
   parseUnpauseInstruction,
@@ -113,11 +111,10 @@ import {
   type ParsedOracleUpdateInstruction,
   type ParsedPauseInstruction,
   type ParsedPreviewSwapExactInInstruction,
-  type ParsedQuoteToNumeraireInstruction,
+  type ParsedRedeemProtocolSharesInstruction,
   type ParsedRemoveLiquidityInstruction,
   type ParsedSetFeesInstruction,
   type ParsedSetHookInstruction,
-  type ParsedSetRouteInstruction,
   type ParsedSwapExactInInstruction,
   type ParsedTransferAdminInstruction,
   type ParsedUnpauseInstruction,
@@ -125,11 +122,10 @@ import {
   type ParsedWithdrawVaultExcessInstruction,
   type PauseInput,
   type PreviewSwapExactInInput,
-  type QuoteToNumeraireInput,
+  type RedeemProtocolSharesAsyncInput,
   type RemoveLiquidityAsyncInput,
   type SetFeesInput,
   type SetHookInput,
-  type SetRouteInput,
   type SwapExactInAsyncInput,
   type TransferAdminInput,
   type UnpauseInput,
@@ -214,11 +210,10 @@ export enum CpmmInstruction {
   OracleUpdate,
   Pause,
   PreviewSwapExactIn,
-  QuoteToNumeraire,
+  RedeemProtocolShares,
   RemoveLiquidity,
   SetFees,
   SetHook,
-  SetRoute,
   SwapExactIn,
   TransferAdmin,
   Unpause,
@@ -366,12 +361,12 @@ export function identifyCpmmInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([4, 142, 249, 240, 129, 15, 143, 57]),
+        new Uint8Array([143, 253, 251, 77, 213, 178, 0, 225]),
       ),
       0,
     )
   ) {
-    return CpmmInstruction.QuoteToNumeraire;
+    return CpmmInstruction.RedeemProtocolShares;
   }
   if (
     containsBytes(
@@ -405,17 +400,6 @@ export function identifyCpmmInstruction(
     )
   ) {
     return CpmmInstruction.SetHook;
-  }
-  if (
-    containsBytes(
-      data,
-      fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([244, 231, 3, 84, 233, 61, 146, 149]),
-      ),
-      0,
-    )
-  ) {
-    return CpmmInstruction.SetRoute;
   }
   if (
     containsBytes(
@@ -518,8 +502,8 @@ export type ParsedCpmmInstruction<
       instructionType: CpmmInstruction.PreviewSwapExactIn;
     } & ParsedPreviewSwapExactInInstruction<TProgram>)
   | ({
-      instructionType: CpmmInstruction.QuoteToNumeraire;
-    } & ParsedQuoteToNumeraireInstruction<TProgram>)
+      instructionType: CpmmInstruction.RedeemProtocolShares;
+    } & ParsedRedeemProtocolSharesInstruction<TProgram>)
   | ({
       instructionType: CpmmInstruction.RemoveLiquidity;
     } & ParsedRemoveLiquidityInstruction<TProgram>)
@@ -529,9 +513,6 @@ export type ParsedCpmmInstruction<
   | ({
       instructionType: CpmmInstruction.SetHook;
     } & ParsedSetHookInstruction<TProgram>)
-  | ({
-      instructionType: CpmmInstruction.SetRoute;
-    } & ParsedSetRouteInstruction<TProgram>)
   | ({
       instructionType: CpmmInstruction.SwapExactIn;
     } & ParsedSwapExactInInstruction<TProgram>)
@@ -637,11 +618,11 @@ export function parseCpmmInstruction<TProgram extends string>(
         ...parsePreviewSwapExactInInstruction(instruction),
       };
     }
-    case CpmmInstruction.QuoteToNumeraire: {
+    case CpmmInstruction.RedeemProtocolShares: {
       assertIsInstructionWithAccounts(instruction);
       return {
-        instructionType: CpmmInstruction.QuoteToNumeraire,
-        ...parseQuoteToNumeraireInstruction(instruction),
+        instructionType: CpmmInstruction.RedeemProtocolShares,
+        ...parseRedeemProtocolSharesInstruction(instruction),
       };
     }
     case CpmmInstruction.RemoveLiquidity: {
@@ -663,13 +644,6 @@ export function parseCpmmInstruction<TProgram extends string>(
       return {
         instructionType: CpmmInstruction.SetHook,
         ...parseSetHookInstruction(instruction),
-      };
-    }
-    case CpmmInstruction.SetRoute: {
-      assertIsInstructionWithAccounts(instruction);
-      return {
-        instructionType: CpmmInstruction.SetRoute,
-        ...parseSetRouteInstruction(instruction),
       };
     }
     case CpmmInstruction.SwapExactIn: {
@@ -778,9 +752,9 @@ export type CpmmPluginInstructions = {
     input: PreviewSwapExactInInput,
   ) => ReturnType<typeof getPreviewSwapExactInInstruction> &
     SelfPlanAndSendFunctions;
-  quoteToNumeraire: (
-    input: QuoteToNumeraireInput,
-  ) => ReturnType<typeof getQuoteToNumeraireInstruction> &
+  redeemProtocolShares: (
+    input: RedeemProtocolSharesAsyncInput,
+  ) => ReturnType<typeof getRedeemProtocolSharesInstructionAsync> &
     SelfPlanAndSendFunctions;
   removeLiquidity: (
     input: RemoveLiquidityAsyncInput,
@@ -792,9 +766,6 @@ export type CpmmPluginInstructions = {
   setHook: (
     input: SetHookInput,
   ) => ReturnType<typeof getSetHookInstruction> & SelfPlanAndSendFunctions;
-  setRoute: (
-    input: SetRouteInput,
-  ) => ReturnType<typeof getSetRouteInstruction> & SelfPlanAndSendFunctions;
   swapExactIn: (
     input: SwapExactInAsyncInput,
   ) => ReturnType<typeof getSwapExactInInstructionAsync> &
@@ -903,10 +874,10 @@ export function cpmmProgram() {
               client,
               getPreviewSwapExactInInstruction(input),
             ),
-          quoteToNumeraire: (input) =>
+          redeemProtocolShares: (input) =>
             addSelfPlanAndSendFunctions(
               client,
-              getQuoteToNumeraireInstruction(input),
+              getRedeemProtocolSharesInstructionAsync(input),
             ),
           removeLiquidity: (input) =>
             addSelfPlanAndSendFunctions(
@@ -917,8 +888,6 @@ export function cpmmProgram() {
             addSelfPlanAndSendFunctions(client, getSetFeesInstruction(input)),
           setHook: (input) =>
             addSelfPlanAndSendFunctions(client, getSetHookInstruction(input)),
-          setRoute: (input) =>
-            addSelfPlanAndSendFunctions(client, getSetRouteInstruction(input)),
           swapExactIn: (input) =>
             addSelfPlanAndSendFunctions(
               client,

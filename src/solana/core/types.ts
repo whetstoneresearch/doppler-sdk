@@ -24,8 +24,6 @@ export interface AmmConfig {
   admin: Address;
   /** Whether all pool operations are paused */
   paused: boolean;
-  /** Default numeraire mint for pricing */
-  numeraireMint: Address;
   /** Number of programs in hook allowlist */
   hookAllowlistLen: number;
   /** Allowlist of hook programs (fixed size: 32) */
@@ -34,8 +32,6 @@ export interface AmmConfig {
   maxSwapFeeBps: number;
   /** Maximum allowed fee split in basis points */
   maxFeeSplitBps: number;
-  /** Maximum number of hops for routing */
-  maxRouteHops: number;
   /** Whether protocol fees are enabled */
   protocolFeeEnabled: boolean;
   /** Protocol fee in basis points (share of LP fees) */
@@ -87,14 +83,8 @@ export interface Pool {
   hookProgram: Address;
   /** Bitflags for enabled hooks */
   hookFlags: number;
-  /** Override numeraire mint for this pool */
-  numeraireMint: Address;
   /** Which token to use for liquidity measure (0 or 1) */
   liquidityMeasureTokenIndex: number;
-  /** Next pool in routing chain (default = none) */
-  routeNextPool: Address;
-  /** Bridge mint for routing (must be token0 or token1) */
-  routeBridgeMint: Address;
   /** Last k value for protocol fee calculation (u128) */
   kLast: bigint;
   /** Protocol fee position for protocol fee shares */
@@ -193,10 +183,8 @@ export interface OracleState {
 
 export interface InitializeConfigArgs {
   admin: Address;
-  numeraireMint: Address;
   maxSwapFeeBps: number;
   maxFeeSplitBps: number;
-  maxRouteHops: number;
   protocolFeeEnabled: boolean;
   protocolFeeBps: number;
   hookAllowlist: Address[];
@@ -208,7 +196,6 @@ export interface InitializePoolArgs {
   initialSwapFeeBps: number;
   initialFeeSplitBps: number;
   liquidityMeasureTokenIndex: number;
-  numeraireMintOverride: Address | null;
   hookProgram: Address;
   hookFlags: number;
 }
@@ -264,26 +251,11 @@ export interface SetFeesArgs {
   feeSplitBps: number;
 }
 
-export interface SetRouteArgs {
-  routeNextPool: Address;
-  routeBridgeMint: Address;
-}
-
 export interface TransferAdminArgs {
   newAdmin: Address;
 }
 
 export interface OracleConsultArgs {
-  windowSeconds: number;
-}
-
-export interface QuoteToNumeraireArgs {
-  amount: bigint;
-  inputTokenIndex: number;
-  maxHops: number;
-  /** Must be false in v0.1 (spot-only) */
-  useTwap: boolean;
-  /** Must be 0 in v0.1 (spot-only) */
   windowSeconds: number;
 }
 
@@ -452,13 +424,6 @@ export interface OracleUpdatedEvent {
   truncPrice1Q64: bigint;
   deviation0Q64: bigint;
   deviation1Q64: bigint;
-}
-
-export interface RouteUpdatedEvent {
-  pool: Address;
-  routeNextPool: Address;
-  routeBridgeMint: Address;
-  admin: Address;
 }
 
 export interface AdminTransferredEvent {

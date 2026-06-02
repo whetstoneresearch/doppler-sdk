@@ -62,7 +62,6 @@ export function getLaunchFeeStateDiscriminatorBytes() {
 export type LaunchFeeState = {
   discriminator: ReadonlyUint8Array;
   launch: Address;
-  protocolBeneficiary: Address;
   beneficiaryLen: number;
   bump: number;
   protocolFeeBps: number;
@@ -81,7 +80,6 @@ export type LaunchFeeState = {
 
 export type LaunchFeeStateArgs = {
   launch: Address;
-  protocolBeneficiary: Address;
   beneficiaryLen: number;
   bump: number;
   protocolFeeBps: number;
@@ -104,7 +102,6 @@ export function getLaunchFeeStateEncoder(): FixedSizeEncoder<LaunchFeeStateArgs>
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       ['launch', getAddressEncoder()],
-      ['protocolBeneficiary', getAddressEncoder()],
       ['beneficiaryLen', getU8Encoder()],
       ['bump', getU8Encoder()],
       ['protocolFeeBps', getU16Encoder()],
@@ -138,7 +135,6 @@ export function getLaunchFeeStateDecoder(): FixedSizeDecoder<LaunchFeeState> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['launch', getAddressDecoder()],
-    ['protocolBeneficiary', getAddressDecoder()],
     ['beneficiaryLen', getU8Decoder()],
     ['bump', getU8Decoder()],
     ['protocolFeeBps', getU16Decoder()],
@@ -232,5 +228,5 @@ export async function fetchAllMaybeLaunchFeeState(
 }
 
 export function getLaunchFeeStateSize(): number {
-  return 688;
+  return 656;
 }

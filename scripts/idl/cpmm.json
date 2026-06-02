@@ -592,6 +592,47 @@
                 "kind": "const",
                 "value": [
                   112,
+                  111,
+                  115,
+                  105,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pool"
+              },
+              {
+                "kind": "account",
+                "path": "protocol_fee_owner"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "protocol_fee_owner",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
                   114,
                   111,
                   116,
@@ -600,14 +641,15 @@
                   111,
                   108,
                   95,
-                  112,
+                  102,
+                  101,
+                  101,
+                  95,
                   111,
-                  115,
-                  105,
-                  116,
-                  105,
-                  111,
-                  110
+                  119,
+                  110,
+                  101,
+                  114
                 ]
               },
               {
@@ -885,26 +927,91 @@
       ]
     },
     {
-      "name": "quote_to_numeraire",
+      "name": "redeem_protocol_shares",
       "discriminator": [
-        4,
-        142,
-        249,
-        240,
-        129,
-        15,
         143,
-        57
+        253,
+        251,
+        77,
+        213,
+        178,
+        0,
+        225
       ],
       "accounts": [
         {
           "name": "config",
           "relations": [
-            "start_pool"
+            "pool"
           ]
         },
         {
-          "name": "start_pool"
+          "name": "pool",
+          "writable": true,
+          "relations": [
+            "protocol_fee_position"
+          ]
+        },
+        {
+          "name": "protocol_fee_position",
+          "writable": true
+        },
+        {
+          "name": "admin",
+          "signer": true
+        },
+        {
+          "name": "authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pool"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault0",
+          "writable": true
+        },
+        {
+          "name": "vault1",
+          "writable": true
+        },
+        {
+          "name": "token0_mint"
+        },
+        {
+          "name": "token1_mint"
+        },
+        {
+          "name": "recipient0",
+          "writable": true
+        },
+        {
+          "name": "recipient1",
+          "writable": true
+        },
+        {
+          "name": "token0_program"
+        },
+        {
+          "name": "token1_program"
         }
       ],
       "args": [
@@ -912,7 +1019,7 @@
           "name": "args",
           "type": {
             "defined": {
-              "name": "QuoteToNumeraireArgs"
+              "name": "RedeemProtocolSharesArgs"
             }
           }
         }
@@ -1100,49 +1207,6 @@
           "type": {
             "defined": {
               "name": "SetHookArgs"
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "set_route",
-      "discriminator": [
-        244,
-        231,
-        3,
-        84,
-        233,
-        61,
-        146,
-        149
-      ],
-      "accounts": [
-        {
-          "name": "config",
-          "relations": [
-            "pool"
-          ]
-        },
-        {
-          "name": "pool",
-          "writable": true
-        },
-        {
-          "name": "next_pool",
-          "optional": true
-        },
-        {
-          "name": "admin",
-          "signer": true
-        }
-      ],
-      "args": [
-        {
-          "name": "args",
-          "type": {
-            "defined": {
-              "name": "SetRouteArgs"
             }
           }
         }
@@ -1771,6 +1835,19 @@
       ]
     },
     {
+      "name": "RedeemProtocolShares",
+      "discriminator": [
+        134,
+        132,
+        218,
+        222,
+        35,
+        2,
+        35,
+        28
+      ]
+    },
+    {
       "name": "RemoveLiquidity",
       "discriminator": [
         116,
@@ -1781,19 +1858,6 @@
         31,
         152,
         58
-      ]
-    },
-    {
-      "name": "RouteUpdated",
-      "discriminator": [
-        55,
-        186,
-        57,
-        196,
-        250,
-        7,
-        86,
-        182
       ]
     },
     {
@@ -1903,16 +1967,6 @@
       "msg": "Position not empty"
     },
     {
-      "code": 6013,
-      "name": "InvalidRoute",
-      "msg": "Invalid route"
-    },
-    {
-      "code": 6014,
-      "name": "NotSupportedInV0_1",
-      "msg": "Not supported in v0.1"
-    },
-    {
       "code": 6015,
       "name": "OracleNotInitialized",
       "msg": "Oracle not initialized"
@@ -1986,16 +2040,6 @@
       "code": 6029,
       "name": "InvalidInput",
       "msg": "Invalid input"
-    },
-    {
-      "code": 6030,
-      "name": "Reentrancy",
-      "msg": "Reentrancy"
-    },
-    {
-      "code": 6031,
-      "name": "CpiForbidden",
-      "msg": "CPI calls into this program are forbidden"
     },
     {
       "code": 6032,
@@ -2086,10 +2130,6 @@
             "type": "bool"
           },
           {
-            "name": "numeraire_mint",
-            "type": "pubkey"
-          },
-          {
             "name": "hook_allowlist_len",
             "type": "u8"
           },
@@ -2109,10 +2149,6 @@
           {
             "name": "max_fee_split_bps",
             "type": "u16"
-          },
-          {
-            "name": "max_route_hops",
-            "type": "u8"
           },
           {
             "name": "protocol_fee_enabled",
@@ -2236,10 +2272,6 @@
             "type": "pubkey"
           },
           {
-            "name": "numeraire_mint",
-            "type": "pubkey"
-          },
-          {
             "name": "hook_allowlist_len",
             "type": "u8"
           },
@@ -2250,10 +2282,6 @@
           {
             "name": "max_fee_split_bps",
             "type": "u16"
-          },
-          {
-            "name": "max_route_hops",
-            "type": "u8"
           },
           {
             "name": "protocol_fee_enabled",
@@ -2392,20 +2420,12 @@
             "type": "pubkey"
           },
           {
-            "name": "numeraire_mint",
-            "type": "pubkey"
-          },
-          {
             "name": "max_swap_fee_bps",
             "type": "u16"
           },
           {
             "name": "max_fee_split_bps",
             "type": "u16"
-          },
-          {
-            "name": "max_route_hops",
-            "type": "u8"
           },
           {
             "name": "protocol_fee_enabled",
@@ -2464,12 +2484,6 @@
           {
             "name": "liquidity_measure_token_index",
             "type": "u8"
-          },
-          {
-            "name": "numeraire_mint_override",
-            "type": {
-              "option": "pubkey"
-            }
           },
           {
             "name": "hook_program",
@@ -2791,20 +2805,8 @@
             "type": "u32"
           },
           {
-            "name": "numeraire_mint",
-            "type": "pubkey"
-          },
-          {
             "name": "liquidity_measure_token_index",
             "type": "u8"
-          },
-          {
-            "name": "route_next_pool",
-            "type": "pubkey"
-          },
-          {
-            "name": "route_bridge_mint",
-            "type": "pubkey"
           },
           {
             "name": "k_last",
@@ -2976,29 +2978,53 @@
       }
     },
     {
-      "name": "QuoteToNumeraireArgs",
+      "name": "RedeemProtocolShares",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "amount",
+            "name": "pool",
+            "type": "pubkey"
+          },
+          {
+            "name": "shares_in",
             "type": "u128"
           },
           {
-            "name": "input_token_index",
-            "type": "u8"
+            "name": "amount0",
+            "type": "u64"
           },
           {
-            "name": "max_hops",
-            "type": "u8"
+            "name": "amount1",
+            "type": "u64"
           },
           {
-            "name": "use_twap",
-            "type": "bool"
+            "name": "recipient0",
+            "type": "pubkey"
           },
           {
-            "name": "window_seconds",
-            "type": "u32"
+            "name": "recipient1",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RedeemProtocolSharesArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "shares_in",
+            "type": "u128"
+          },
+          {
+            "name": "min_amount0_out",
+            "type": "u64"
+          },
+          {
+            "name": "min_amount1_out",
+            "type": "u64"
           }
         ]
       }
@@ -3056,30 +3082,6 @@
       }
     },
     {
-      "name": "RouteUpdated",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "pool",
-            "type": "pubkey"
-          },
-          {
-            "name": "route_next_pool",
-            "type": "pubkey"
-          },
-          {
-            "name": "route_bridge_mint",
-            "type": "pubkey"
-          },
-          {
-            "name": "admin",
-            "type": "pubkey"
-          }
-        ]
-      }
-    },
-    {
       "name": "SetFeesArgs",
       "type": {
         "kind": "struct",
@@ -3107,22 +3109,6 @@
           {
             "name": "hook_flags",
             "type": "u32"
-          }
-        ]
-      }
-    },
-    {
-      "name": "SetRouteArgs",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "route_next_pool",
-            "type": "pubkey"
-          },
-          {
-            "name": "route_bridge_mint",
-            "type": "pubkey"
           }
         ]
       }
@@ -3200,20 +3186,12 @@
         "kind": "struct",
         "fields": [
           {
-            "name": "numeraire_mint",
-            "type": "pubkey"
-          },
-          {
             "name": "max_swap_fee_bps",
             "type": "u16"
           },
           {
             "name": "max_fee_split_bps",
             "type": "u16"
-          },
-          {
-            "name": "max_route_hops",
-            "type": "u8"
           },
           {
             "name": "protocol_fee_enabled",

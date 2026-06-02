@@ -26,6 +26,10 @@ const rpcUrl = process.env.RPC_URL || baseSepolia.rpcUrls.default.http[0];
 
 if (!token) throw new Error('TOKEN is not set');
 
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? getErrorMessage(error) : String(error);
+}
+
 // Example token addresses (replace with actual addresses)
 const weth = '0x4200000000000000000000000000000000000006' as Address; // WETH on Base
 const usdc = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' as Address; // USDC on Base
@@ -65,7 +69,7 @@ async function main() {
     console.log('- Gas estimate:', v3Quote.gasEstimate.toString());
     console.log('- Final sqrtPriceX96:', v3Quote.sqrtPriceX96After.toString());
   } catch (error) {
-    console.error('V3 quote failed:', error.message);
+    console.error('V3 quote failed:', getErrorMessage(error));
   }
 
   // Example 2: Quote exact output on V3
@@ -89,7 +93,7 @@ async function main() {
     );
     console.log('- Gas estimate:', v3QuoteOut.gasEstimate.toString());
   } catch (error) {
-    console.error('V3 exact output quote failed:', error.message);
+    console.error('V3 exact output quote failed:', getErrorMessage(error));
   }
 
   // Example 3: Quote on V2 (if available)
@@ -103,7 +107,7 @@ async function main() {
     console.log('- Amount out:', formatEther(v2Quote[1]), 'USDC');
     console.log('- Simple constant product AMM pricing');
   } catch (error) {
-    console.error('V2 quote failed:', error.message);
+    console.error('V2 quote failed:', getErrorMessage(error));
   }
 
   // Example 4: Multi-hop V2 quote
@@ -119,7 +123,7 @@ async function main() {
     console.log('- After hop 1:', formatEther(multiHopQuote[1]), 'USDC');
     console.log('- Final:', formatEther(multiHopQuote[2]), 'TOKEN');
   } catch (error) {
-    console.error('Multi-hop quote failed:', error.message);
+    console.error('Multi-hop quote failed:', getErrorMessage(error));
   }
 
   // Example 5: V4 quote (for graduated dynamic auctions)
@@ -142,7 +146,7 @@ async function main() {
     console.log('- Amount out:', formatEther(v4Quote.amountOut), 'TOKEN');
     console.log('- Gas estimate:', v4Quote.gasEstimate.toString());
   } catch (error) {
-    console.error('V4 quote failed:', error.message);
+    console.error('V4 quote failed:', getErrorMessage(error));
   }
 
   // Example 6: Compare quotes across versions

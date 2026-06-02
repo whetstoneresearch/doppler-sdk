@@ -127,7 +127,7 @@ async function main() {
       if (available > 0n) {
         console.log('\n🎯 Releasing vested tokens...');
         try {
-          const txHash = await token.release(available);
+          const txHash = await token.release();
           console.log('✅ Tokens released! Transaction:', txHash);
         } catch (error) {
           console.error('❌ Failed to release tokens:', error);

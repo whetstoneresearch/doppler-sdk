@@ -18,8 +18,6 @@ import {
   getStructEncoder,
   getU16Decoder,
   getU16Encoder,
-  getU8Decoder,
-  getU8Encoder,
   type Address,
   type Codec,
   type Decoder,
@@ -28,10 +26,8 @@ import {
 
 export type InitializeConfigArgs = {
   admin: Address;
-  numeraireMint: Address;
   maxSwapFeeBps: number;
   maxFeeSplitBps: number;
-  maxRouteHops: number;
   protocolFeeEnabled: boolean;
   protocolFeeBps: number;
   hookAllowlist: Array<Address>;
@@ -42,10 +38,8 @@ export type InitializeConfigArgsArgs = InitializeConfigArgs;
 export function getInitializeConfigArgsEncoder(): Encoder<InitializeConfigArgsArgs> {
   return getStructEncoder([
     ['admin', getAddressEncoder()],
-    ['numeraireMint', getAddressEncoder()],
     ['maxSwapFeeBps', getU16Encoder()],
     ['maxFeeSplitBps', getU16Encoder()],
-    ['maxRouteHops', getU8Encoder()],
     ['protocolFeeEnabled', getBooleanEncoder()],
     ['protocolFeeBps', getU16Encoder()],
     ['hookAllowlist', getArrayEncoder(getAddressEncoder())],
@@ -55,10 +49,8 @@ export function getInitializeConfigArgsEncoder(): Encoder<InitializeConfigArgsAr
 export function getInitializeConfigArgsDecoder(): Decoder<InitializeConfigArgs> {
   return getStructDecoder([
     ['admin', getAddressDecoder()],
-    ['numeraireMint', getAddressDecoder()],
     ['maxSwapFeeBps', getU16Decoder()],
     ['maxFeeSplitBps', getU16Decoder()],
-    ['maxRouteHops', getU8Decoder()],
     ['protocolFeeEnabled', getBooleanDecoder()],
     ['protocolFeeBps', getU16Decoder()],
     ['hookAllowlist', getArrayDecoder(getAddressDecoder())],

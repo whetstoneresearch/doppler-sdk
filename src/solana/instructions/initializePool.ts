@@ -61,8 +61,10 @@ export interface InitializePoolAccounts {
   config: Address;
   /** Pool account to initialize (writable, PDA: ['pool', token0_mint, token1_mint]) */
   pool: Address;
-  /** Protocol position account (writable, PDA: ['protocol_position', pool]) */
+  /** Protocol position account (writable, PDA: ['position', pool, protocol_fee_owner, 0]) */
   protocolFeePosition: Address;
+  /** Protocol fee owner PDA (read-only, PDA: ['protocol_fee_owner', pool]) */
+  protocolFeeOwner: Address;
   /** Pool authority PDA (read-only, PDA: ['authority', pool]) */
   authority: Address;
   /** Vault PDA for token0 (writable, PDA: ['vault0', pool]) */
@@ -96,7 +98,7 @@ export interface InitializePoolAccounts {
  * (token0 < token1 by bytes). Use sortMints() to ensure proper ordering.
  *
  * @param accounts - Required accounts for pool initialization
- * @param args - Instruction arguments (mintA, mintB, fees, liquidityMeasureTokenIndex, numeraire override)
+ * @param args - Instruction arguments (mintA, mintB, fees, liquidityMeasureTokenIndex, hook config)
  * @param programId - Program ID (defaults to CPMM program)
  * @returns Instruction to initialize the pool
  *
@@ -108,6 +110,7 @@ export interface InitializePoolAccounts {
  *     config: addresses.config[0],
  *     pool: addresses.pool[0],
  *     protocolFeePosition: addresses.protocolFeePosition[0],
+ *     protocolFeeOwner: addresses.protocolFeeOwner[0],
  *     authority: addresses.authority[0],
  *     vault0: addresses.vault0[0],
  *     vault1: addresses.vault1[0],
@@ -123,7 +126,6 @@ export interface InitializePoolAccounts {
  *     initialSwapFeeBps: 30,
  *     initialFeeSplitBps: 5000,
  *     liquidityMeasureTokenIndex: 0,
- *     numeraireMintOverride: null,
  *     hookProgram: SYSTEM_PROGRAM_ADDRESS,
  *     hookFlags: 0,
  *   }
@@ -139,6 +141,7 @@ export function createInitializePoolInstruction(
     config,
     pool,
     protocolFeePosition,
+    protocolFeeOwner,
     authority,
     vault0,
     vault1,
@@ -160,6 +163,7 @@ export function createInitializePoolInstruction(
     { address: config, role: AccountRole.READONLY },
     { address: pool, role: AccountRole.WRITABLE },
     { address: protocolFeePosition, role: AccountRole.WRITABLE },
+    { address: protocolFeeOwner, role: AccountRole.READONLY },
     { address: authority, role: AccountRole.READONLY },
     { address: vault0, role: AccountRole.WRITABLE },
     { address: vault1, role: AccountRole.WRITABLE },

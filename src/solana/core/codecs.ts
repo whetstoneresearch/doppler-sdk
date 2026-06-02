@@ -5,7 +5,7 @@
  * and instruction data using Borsh-compatible binary formats.
  */
 
-import { getAddressCodec, type Address } from '@solana/kit';
+import { getAddressCodec } from '@solana/kit';
 import type { ReadonlyUint8Array } from '@solana/kit';
 import {
   fixCodecSize,
@@ -14,7 +14,6 @@ import {
   getBytesCodec,
   getConstantDecoder,
   getHiddenPrefixDecoder,
-  getOptionCodec,
   getStructCodec,
   getU8Codec,
   getU16Codec,
@@ -23,7 +22,6 @@ import {
   getU128Codec,
   mergeBytes,
   transformCodec,
-  unwrapOption,
   type Codec,
 } from '@solana/kit';
 import {
@@ -48,10 +46,8 @@ import type {
   InitializeOracleArgs,
   SetHookArgs,
   SetFeesArgs,
-  SetRouteArgs,
   TransferAdminArgs,
   OracleConsultArgs,
-  QuoteToNumeraireArgs,
 } from './types.js';
 
 const addressCodec = getAddressCodec();
@@ -106,12 +102,10 @@ export const observationCodec: Codec<Observation> = getStructCodec([
 export const ammConfigDataCodec: Codec<AmmConfig> = getStructCodec([
   ['admin', addressCodec],
   ['paused', boolCodec],
-  ['numeraireMint', addressCodec],
   ['hookAllowlistLen', u8Codec],
   ['hookAllowlist', getArrayCodec(addressCodec, { size: MAX_HOOK_ALLOWLIST })],
   ['maxSwapFeeBps', u16Codec],
   ['maxFeeSplitBps', u16Codec],
-  ['maxRouteHops', u8Codec],
   ['protocolFeeEnabled', boolCodec],
   ['protocolFeeBps', u16Codec],
   ['version', u8Codec],
@@ -137,10 +131,7 @@ export const poolDataCodec: Codec<Pool> = getStructCodec([
   ['feesUnclaimed1', u64Codec],
   ['hookProgram', addressCodec],
   ['hookFlags', u32Codec],
-  ['numeraireMint', addressCodec],
   ['liquidityMeasureTokenIndex', u8Codec],
-  ['routeNextPool', addressCodec],
-  ['routeBridgeMint', addressCodec],
   ['kLast', u128Codec],
   ['protocolFeePosition', addressCodec],
   ['locked', u8Codec],
@@ -252,12 +243,6 @@ export function encodeInstructionData<T>(
 
 type AddLiquidityArgsWithOracle = AddLiquidityArgs & { updateOracle?: boolean };
 
-const optionAddressCodec: Codec<Address | null> = transformCodec(
-  getOptionCodec(addressCodec, { prefix: u8Codec }),
-  (value: Address | null) => value,
-  (value) => unwrapOption(value),
-);
-
 export const swapExactInArgsCodec = getStructCodec([
   ['amountIn', u64Codec],
   ['minAmountOut', u64Codec],
@@ -309,10 +294,8 @@ export const createPositionArgsCodec: Codec<CreatePositionArgs> =
 export const initializeConfigArgsCodec: Codec<InitializeConfigArgs> =
   getStructCodec([
     ['admin', addressCodec],
-    ['numeraireMint', addressCodec],
     ['maxSwapFeeBps', u16Codec],
     ['maxFeeSplitBps', u16Codec],
-    ['maxRouteHops', u8Codec],
     ['protocolFeeEnabled', boolCodec],
     ['protocolFeeBps', u16Codec],
     ['hookAllowlist', getArrayCodec(addressCodec, { size: u32Codec })],
@@ -325,7 +308,6 @@ export const initializePoolArgsCodec: Codec<InitializePoolArgs> =
     ['initialSwapFeeBps', u16Codec],
     ['initialFeeSplitBps', u16Codec],
     ['liquidityMeasureTokenIndex', u8Codec],
-    ['numeraireMintOverride', optionAddressCodec],
     ['hookProgram', addressCodec],
     ['hookFlags', u32Codec],
   ]);
@@ -347,11 +329,6 @@ export const setFeesArgsCodec: Codec<SetFeesArgs> = getStructCodec([
   ['feeSplitBps', u16Codec],
 ]);
 
-export const setRouteArgsCodec: Codec<SetRouteArgs> = getStructCodec([
-  ['routeNextPool', addressCodec],
-  ['routeBridgeMint', addressCodec],
-]);
-
 export const transferAdminArgsCodec: Codec<TransferAdminArgs> = getStructCodec([
   ['newAdmin', addressCodec],
 ]);
@@ -359,15 +336,6 @@ export const transferAdminArgsCodec: Codec<TransferAdminArgs> = getStructCodec([
 export const oracleConsultArgsCodec: Codec<OracleConsultArgs> = getStructCodec([
   ['windowSeconds', u32Codec],
 ]);
-
-export const quoteToNumeraireArgsCodec: Codec<QuoteToNumeraireArgs> =
-  getStructCodec([
-    ['amount', u128Codec],
-    ['inputTokenIndex', u8Codec],
-    ['maxHops', u8Codec],
-    ['useTwap', boolCodec],
-    ['windowSeconds', u32Codec],
-  ]);
 
 /** Encode SwapExactIn args */
 export function encodeSwapExactInArgs(args: SwapExactInArgs): Uint8Array {
@@ -434,11 +402,6 @@ export function encodeSetFeesArgs(args: SetFeesArgs): Uint8Array {
   return new Uint8Array(setFeesArgsCodec.encode(args));
 }
 
-/** Encode SetRoute args */
-export function encodeSetRouteArgs(args: SetRouteArgs): Uint8Array {
-  return new Uint8Array(setRouteArgsCodec.encode(args));
-}
-
 /** Encode TransferAdmin args */
 export function encodeTransferAdminArgs(args: TransferAdminArgs): Uint8Array {
   return new Uint8Array(transferAdminArgsCodec.encode(args));
@@ -447,11 +410,4 @@ export function encodeTransferAdminArgs(args: TransferAdminArgs): Uint8Array {
 /** Encode OracleConsult args */
 export function encodeOracleConsultArgs(args: OracleConsultArgs): Uint8Array {
   return new Uint8Array(oracleConsultArgsCodec.encode(args));
-}
-
-/** Encode QuoteToNumeraire args */
-export function encodeQuoteToNumeraireArgs(
-  args: QuoteToNumeraireArgs,
-): Uint8Array {
-  return new Uint8Array(quoteToNumeraireArgsCodec.encode(args));
 }

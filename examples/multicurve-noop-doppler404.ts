@@ -30,7 +30,7 @@ const shouldExecute =
 if (!privateKey) throw new Error('PRIVATE_KEY is not set');
 
 async function main() {
-  const account = privateKeyToAccount(privateKey);
+  const account = privateKeyToAccount(privateKey as `0x${string}`);
 
   const publicClient = createPublicClient({
     chain: baseSepolia,

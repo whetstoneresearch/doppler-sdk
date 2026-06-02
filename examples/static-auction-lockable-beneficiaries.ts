@@ -24,7 +24,13 @@
 import './env';
 
 import { DopplerSDK, getAirlockOwner, WAD } from '../src/evm';
-import { parseEther, createPublicClient, createWalletClient, http } from 'viem';
+import {
+  parseEther,
+  createPublicClient,
+  createWalletClient,
+  http,
+  type Address,
+} from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { baseSepolia } from 'viem/chains';
 
@@ -59,7 +65,7 @@ async function createStaticAuctionWithBeneficiaries() {
   });
 
   // Get the protocol owner address (required beneficiary with min 5%)
-  const protocolOwner = await getAirlockOwner(publicClient, baseSepolia.id);
+  const protocolOwner = await getAirlockOwner(publicClient);
   console.log('Protocol owner:', protocolOwner);
 
   // Define beneficiaries with shares that sum to WAD (1e18 = 100%)
@@ -69,7 +75,7 @@ async function createStaticAuctionWithBeneficiaries() {
   // 2. Protocol owner must receive at least 5% (WAD / 20)
   // 3. Each beneficiary must have shares > 0
   // 4. SDK will automatically sort by address (ascending)
-  const beneficiaries = [
+  const beneficiaries: { beneficiary: Address; shares: bigint }[] = [
     {
       beneficiary: protocolOwner,
       shares: parseEther('0.05'), // 5% to protocol (minimum required)
@@ -79,7 +85,7 @@ async function createStaticAuctionWithBeneficiaries() {
       shares: parseEther('0.45'), // 45% to creator
     },
     {
-      beneficiary: '0x0000000000000000000000000000000000000001', // Example: DAO treasury
+      beneficiary: '0x0000000000000000000000000000000000000001' as Address, // Example: DAO treasury
       shares: parseEther('0.50'), // 50% to treasury
     },
   ];

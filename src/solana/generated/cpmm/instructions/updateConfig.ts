@@ -22,8 +22,6 @@ import {
   getStructEncoder,
   getU16Decoder,
   getU16Encoder,
-  getU8Decoder,
-  getU8Encoder,
   SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
   SolanaError,
   transformEncoder,
@@ -79,20 +77,16 @@ export type UpdateConfigInstruction<
 
 export type UpdateConfigInstructionData = {
   discriminator: ReadonlyUint8Array;
-  numeraireMint: Address;
   maxSwapFeeBps: number;
   maxFeeSplitBps: number;
-  maxRouteHops: number;
   protocolFeeEnabled: boolean;
   protocolFeeBps: number;
   hookAllowlist: Array<Address>;
 };
 
 export type UpdateConfigInstructionDataArgs = {
-  numeraireMint: Address;
   maxSwapFeeBps: number;
   maxFeeSplitBps: number;
-  maxRouteHops: number;
   protocolFeeEnabled: boolean;
   protocolFeeBps: number;
   hookAllowlist: Array<Address>;
@@ -102,10 +96,8 @@ export function getUpdateConfigInstructionDataEncoder(): Encoder<UpdateConfigIns
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['numeraireMint', getAddressEncoder()],
       ['maxSwapFeeBps', getU16Encoder()],
       ['maxFeeSplitBps', getU16Encoder()],
-      ['maxRouteHops', getU8Encoder()],
       ['protocolFeeEnabled', getBooleanEncoder()],
       ['protocolFeeBps', getU16Encoder()],
       ['hookAllowlist', getArrayEncoder(getAddressEncoder())],
@@ -117,10 +109,8 @@ export function getUpdateConfigInstructionDataEncoder(): Encoder<UpdateConfigIns
 export function getUpdateConfigInstructionDataDecoder(): Decoder<UpdateConfigInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['numeraireMint', getAddressDecoder()],
     ['maxSwapFeeBps', getU16Decoder()],
     ['maxFeeSplitBps', getU16Decoder()],
-    ['maxRouteHops', getU8Decoder()],
     ['protocolFeeEnabled', getBooleanDecoder()],
     ['protocolFeeBps', getU16Decoder()],
     ['hookAllowlist', getArrayDecoder(getAddressDecoder())],
@@ -143,10 +133,8 @@ export type UpdateConfigInput<
 > = {
   config: Address<TAccountConfig>;
   admin: TransactionSigner<TAccountAdmin>;
-  numeraireMint: UpdateConfigInstructionDataArgs['numeraireMint'];
   maxSwapFeeBps: UpdateConfigInstructionDataArgs['maxSwapFeeBps'];
   maxFeeSplitBps: UpdateConfigInstructionDataArgs['maxFeeSplitBps'];
-  maxRouteHops: UpdateConfigInstructionDataArgs['maxRouteHops'];
   protocolFeeEnabled: UpdateConfigInstructionDataArgs['protocolFeeEnabled'];
   protocolFeeBps: UpdateConfigInstructionDataArgs['protocolFeeBps'];
   hookAllowlist: UpdateConfigInstructionDataArgs['hookAllowlist'];

@@ -23,8 +23,6 @@ import {
   getStructEncoder,
   getU16Decoder,
   getU16Encoder,
-  getU8Decoder,
-  getU8Encoder,
   SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
   SolanaError,
   transformEncoder,
@@ -91,10 +89,8 @@ export type InitializeConfigInstruction<
 export type InitializeConfigInstructionData = {
   discriminator: ReadonlyUint8Array;
   admin: Address;
-  numeraireMint: Address;
   maxSwapFeeBps: number;
   maxFeeSplitBps: number;
-  maxRouteHops: number;
   protocolFeeEnabled: boolean;
   protocolFeeBps: number;
   hookAllowlist: Array<Address>;
@@ -102,10 +98,8 @@ export type InitializeConfigInstructionData = {
 
 export type InitializeConfigInstructionDataArgs = {
   admin: Address;
-  numeraireMint: Address;
   maxSwapFeeBps: number;
   maxFeeSplitBps: number;
-  maxRouteHops: number;
   protocolFeeEnabled: boolean;
   protocolFeeBps: number;
   hookAllowlist: Array<Address>;
@@ -116,10 +110,8 @@ export function getInitializeConfigInstructionDataEncoder(): Encoder<InitializeC
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       ['admin', getAddressEncoder()],
-      ['numeraireMint', getAddressEncoder()],
       ['maxSwapFeeBps', getU16Encoder()],
       ['maxFeeSplitBps', getU16Encoder()],
-      ['maxRouteHops', getU8Encoder()],
       ['protocolFeeEnabled', getBooleanEncoder()],
       ['protocolFeeBps', getU16Encoder()],
       ['hookAllowlist', getArrayEncoder(getAddressEncoder())],
@@ -132,10 +124,8 @@ export function getInitializeConfigInstructionDataDecoder(): Decoder<InitializeC
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['admin', getAddressDecoder()],
-    ['numeraireMint', getAddressDecoder()],
     ['maxSwapFeeBps', getU16Decoder()],
     ['maxFeeSplitBps', getU16Decoder()],
-    ['maxRouteHops', getU8Decoder()],
     ['protocolFeeEnabled', getBooleanDecoder()],
     ['protocolFeeBps', getU16Decoder()],
     ['hookAllowlist', getArrayDecoder(getAddressDecoder())],
@@ -163,10 +153,8 @@ export type InitializeConfigAsyncInput<
   payer: TransactionSigner<TAccountPayer>;
   systemProgram?: Address<TAccountSystemProgram>;
   admin: InitializeConfigInstructionDataArgs['admin'];
-  numeraireMint: InitializeConfigInstructionDataArgs['numeraireMint'];
   maxSwapFeeBps: InitializeConfigInstructionDataArgs['maxSwapFeeBps'];
   maxFeeSplitBps: InitializeConfigInstructionDataArgs['maxFeeSplitBps'];
-  maxRouteHops: InitializeConfigInstructionDataArgs['maxRouteHops'];
   protocolFeeEnabled: InitializeConfigInstructionDataArgs['protocolFeeEnabled'];
   protocolFeeBps: InitializeConfigInstructionDataArgs['protocolFeeBps'];
   hookAllowlist: InitializeConfigInstructionDataArgs['hookAllowlist'];
@@ -259,10 +247,8 @@ export type InitializeConfigInput<
   payer: TransactionSigner<TAccountPayer>;
   systemProgram?: Address<TAccountSystemProgram>;
   admin: InitializeConfigInstructionDataArgs['admin'];
-  numeraireMint: InitializeConfigInstructionDataArgs['numeraireMint'];
   maxSwapFeeBps: InitializeConfigInstructionDataArgs['maxSwapFeeBps'];
   maxFeeSplitBps: InitializeConfigInstructionDataArgs['maxFeeSplitBps'];
-  maxRouteHops: InitializeConfigInstructionDataArgs['maxRouteHops'];
   protocolFeeEnabled: InitializeConfigInstructionDataArgs['protocolFeeEnabled'];
   protocolFeeBps: InitializeConfigInstructionDataArgs['protocolFeeBps'];
   hookAllowlist: InitializeConfigInstructionDataArgs['hookAllowlist'];

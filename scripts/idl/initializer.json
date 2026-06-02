@@ -21,6 +21,24 @@
       ],
       "accounts": [
         {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
           "name": "launch"
         },
         {
@@ -89,9 +107,6 @@
           }
         },
         {
-          "name": "recipient"
-        },
-        {
           "name": "base_mint"
         },
         {
@@ -120,7 +135,16 @@
           "name": "quote_token_program"
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "ClaimFeesArgs"
+            }
+          }
+        }
+      ]
     },
     {
       "name": "curve_swap_exact_in",
@@ -247,6 +271,68 @@
           "type": "u8"
         }
       ]
+    },
+    {
+      "name": "distribute_base_allocation_no_migration",
+      "discriminator": [
+        107,
+        200,
+        114,
+        3,
+        143,
+        2,
+        169,
+        56
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "launch",
+          "writable": true
+        },
+        {
+          "name": "launch_authority"
+        },
+        {
+          "name": "base_mint"
+        },
+        {
+          "name": "base_vault",
+          "writable": true
+        },
+        {
+          "name": "recipient_base_account",
+          "writable": true
+        },
+        {
+          "name": "authority",
+          "docs": [
+            "Launch authority or config admin."
+          ],
+          "signer": true
+        },
+        {
+          "name": "base_token_program"
+        }
+      ],
+      "args": []
     },
     {
       "name": "harvest_migrated_fees",
@@ -474,6 +560,9 @@
         },
         {
           "name": "launch_authority",
+          "docs": [
+            "Address is constrained by seeds, and it has no account data to deserialize."
+          ],
           "pda": {
             "seeds": [
               {
@@ -826,6 +915,38 @@
           "name": "launch"
         },
         {
+          "name": "launch_fee_state",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  97,
+                  117,
+                  110,
+                  99,
+                  104,
+                  95,
+                  102,
+                  101,
+                  101,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "launch"
+              }
+            ]
+          }
+        },
+        {
           "name": "base_mint"
         },
         {
@@ -923,6 +1044,24 @@
         200
       ],
       "accounts": [
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
         {
           "name": "launch"
         },
@@ -1156,60 +1295,6 @@
       ]
     },
     {
-      "name": "update_launch_payload",
-      "discriminator": [
-        58,
-        183,
-        166,
-        177,
-        122,
-        162,
-        250,
-        205
-      ],
-      "accounts": [
-        {
-          "name": "config",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  99,
-                  111,
-                  110,
-                  102,
-                  105,
-                  103
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "launch",
-          "writable": true
-        },
-        {
-          "name": "authority",
-          "docs": [
-            "Authority of the launch (must match launch.authority or config.admin)"
-          ],
-          "signer": true
-        }
-      ],
-      "args": [
-        {
-          "name": "args",
-          "type": {
-            "defined": {
-              "name": "UpdateLaunchPayloadArgs"
-            }
-          }
-        }
-      ]
-    },
-    {
       "name": "update_trading_flags",
       "discriminator": [
         40,
@@ -1424,6 +1509,19 @@
       ]
     },
     {
+      "name": "LaunchBaseAllocationDistributed",
+      "discriminator": [
+        125,
+        126,
+        160,
+        211,
+        254,
+        37,
+        252,
+        216
+      ]
+    },
+    {
       "name": "LaunchInitialized",
       "discriminator": [
         60,
@@ -1447,19 +1545,6 @@
         170,
         159,
         33
-      ]
-    },
-    {
-      "name": "LaunchPayloadUpdated",
-      "discriminator": [
-        34,
-        8,
-        82,
-        125,
-        19,
-        46,
-        190,
-        170
       ]
     },
     {
@@ -1619,16 +1704,6 @@
       "msg": "Invalid input"
     },
     {
-      "code": 6023,
-      "name": "AlreadyMigrated",
-      "msg": "Already migrated"
-    },
-    {
-      "code": 6024,
-      "name": "QuoteVaultNotEmpty",
-      "msg": "Quote vault not empty"
-    },
-    {
       "code": 6025,
       "name": "LaunchLocked",
       "msg": "Launch locked"
@@ -1682,11 +1757,6 @@
       "code": 6035,
       "name": "MetadataCpiFailed",
       "msg": "Metadata CPI failed"
-    },
-    {
-      "code": 6036,
-      "name": "CpiForbidden",
-      "msg": "CPI not allowed"
     },
     {
       "code": 6037,
@@ -1746,6 +1816,22 @@
           {
             "name": "new_admin",
             "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ClaimFeesArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "role",
+            "type": {
+              "defined": {
+                "name": "FeeClaimRole"
+              }
+            }
           }
         ]
       }
@@ -1882,6 +1968,20 @@
           {
             "name": "new_wallet",
             "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "FeeClaimRole",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Protocol"
+          },
+          {
+            "name": "Beneficiary"
           }
         ]
       }
@@ -2433,6 +2533,26 @@
       }
     },
     {
+      "name": "LaunchBaseAllocationDistributed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "launch",
+            "type": "pubkey"
+          },
+          {
+            "name": "recipient",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
       "name": "LaunchFeeState",
       "serialization": "bytemuckunsafe",
       "repr": {
@@ -2443,10 +2563,6 @@
         "fields": [
           {
             "name": "launch",
-            "type": "pubkey"
-          },
-          {
-            "name": "protocol_beneficiary",
             "type": "pubkey"
           },
           {
@@ -2611,18 +2727,6 @@
       }
     },
     {
-      "name": "LaunchPayloadUpdated",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "launch",
-            "type": "pubkey"
-          }
-        ]
-      }
-    },
-    {
       "name": "MigratedFeesHarvested",
       "type": {
         "kind": "struct",
@@ -2764,20 +2868,8 @@
             "type": "u32"
           },
           {
-            "name": "numeraire_mint",
-            "type": "pubkey"
-          },
-          {
             "name": "liquidity_measure_token_index",
             "type": "u8"
-          },
-          {
-            "name": "route_next_pool",
-            "type": "pubkey"
-          },
-          {
-            "name": "route_bridge_mint",
-            "type": "pubkey"
           },
           {
             "name": "k_last",
@@ -2896,59 +2988,6 @@
           {
             "name": "allow_sell",
             "type": "u8"
-          }
-        ]
-      }
-    },
-    {
-      "name": "UpdateLaunchPayloadArgs",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "hook_payload",
-            "type": {
-              "option": "bytes"
-            }
-          },
-          {
-            "name": "migrator_migrate_payload",
-            "type": {
-              "option": "bytes"
-            }
-          },
-          {
-            "name": "hook_remaining_accounts_hash",
-            "type": {
-              "option": {
-                "array": [
-                  "u8",
-                  32
-                ]
-              }
-            }
-          },
-          {
-            "name": "migrator_init_remaining_accounts_hash",
-            "type": {
-              "option": {
-                "array": [
-                  "u8",
-                  32
-                ]
-              }
-            }
-          },
-          {
-            "name": "migrator_remaining_accounts_hash",
-            "type": {
-              "option": {
-                "array": [
-                  "u8",
-                  32
-                ]
-              }
-            }
           }
         ]
       }

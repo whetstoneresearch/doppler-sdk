@@ -18,8 +18,6 @@ import {
   getStructEncoder,
   getU16Decoder,
   getU16Encoder,
-  getU8Decoder,
-  getU8Encoder,
   type Address,
   type Codec,
   type Decoder,
@@ -27,10 +25,8 @@ import {
 } from '@solana/kit';
 
 export type UpdateConfigArgs = {
-  numeraireMint: Address;
   maxSwapFeeBps: number;
   maxFeeSplitBps: number;
-  maxRouteHops: number;
   protocolFeeEnabled: boolean;
   protocolFeeBps: number;
   hookAllowlist: Array<Address>;
@@ -40,10 +36,8 @@ export type UpdateConfigArgsArgs = UpdateConfigArgs;
 
 export function getUpdateConfigArgsEncoder(): Encoder<UpdateConfigArgsArgs> {
   return getStructEncoder([
-    ['numeraireMint', getAddressEncoder()],
     ['maxSwapFeeBps', getU16Encoder()],
     ['maxFeeSplitBps', getU16Encoder()],
-    ['maxRouteHops', getU8Encoder()],
     ['protocolFeeEnabled', getBooleanEncoder()],
     ['protocolFeeBps', getU16Encoder()],
     ['hookAllowlist', getArrayEncoder(getAddressEncoder())],
@@ -52,10 +46,8 @@ export function getUpdateConfigArgsEncoder(): Encoder<UpdateConfigArgsArgs> {
 
 export function getUpdateConfigArgsDecoder(): Decoder<UpdateConfigArgs> {
   return getStructDecoder([
-    ['numeraireMint', getAddressDecoder()],
     ['maxSwapFeeBps', getU16Decoder()],
     ['maxFeeSplitBps', getU16Decoder()],
-    ['maxRouteHops', getU8Decoder()],
     ['protocolFeeEnabled', getBooleanDecoder()],
     ['protocolFeeBps', getU16Decoder()],
     ['hookAllowlist', getArrayDecoder(getAddressDecoder())],

@@ -5,7 +5,9 @@ import { SYSTEM_PROGRAM_ADDRESS } from '@solana-program/system';
 import { TOKEN_PROGRAM_ADDRESS } from '@solana-program/token';
 import { initializer, cpmmMigrator } from '@/solana/index.js';
 
-const SYSVAR_RENT_PUBKEY = address('SysvarRent111111111111111111111111111111111');
+const SYSVAR_RENT_PUBKEY = address(
+  'SysvarRent111111111111111111111111111111111',
+);
 
 describe('initializer instructions', () => {
   it('builds initializeConfig with programData account in the correct position', async () => {
@@ -23,6 +25,9 @@ describe('initializer instructions', () => {
       {
         migratorAllowlist: [],
         hookAllowlist: [],
+        protocolFeeBps: 0,
+        minSwapFeeBps: 0,
+        maxSwapFeeBps: 10_000,
       },
     );
 
@@ -49,14 +54,18 @@ describe('initializer instructions', () => {
 
     const [config] = await initializer.getConfigAddress();
     const [launch] = await initializer.getLaunchAddress(namespace, launchId);
-    const [launchAuthority] = await initializer.getLaunchAuthorityAddress(launch);
+    const [launchAuthority] =
+      await initializer.getLaunchAuthorityAddress(launch);
     const [launchFeeState] = await initializer.getLaunchFeeStateAddress(launch);
 
     const migratorInitPayload = cpmmMigrator.encodeRegisterLaunchPayload({
       cpmmConfig,
       initialSwapFeeBps: 30,
       initialFeeSplitBps: 5000,
-      recipients: [{ wallet: admin.address, amount: 700_000n }, { wallet: admin.address, amount: 0n }],
+      recipients: [
+        { wallet: admin.address, amount: 700_000n },
+        { wallet: admin.address, amount: 0n },
+      ],
       minRaiseQuote: 500_000n,
       minMigrationPriceQ64Opt: null,
       migratedPoolHookConfig: null,
@@ -141,7 +150,8 @@ describe('initializer instructions', () => {
     expect(ix.accounts![15].address).toBe(SYSVAR_RENT_PUBKEY);
     expect(ix.accounts![16].address).toBe(initializer.INITIALIZER_PROGRAM_ID);
     expect(ix.accounts![17].address).toBe(initializer.INITIALIZER_PROGRAM_ID);
-    const [expectedCpmmMigratorState] = await cpmmMigrator.getCpmmMigratorStateAddress(launch);
+    const [expectedCpmmMigratorState] =
+      await cpmmMigrator.getCpmmMigratorStateAddress(launch);
     expect(ix.accounts![18].address).toBe(expectedCpmmMigratorState);
     expect(ix.accounts![19].address).toBe(cpmmConfig);
 
@@ -150,7 +160,6 @@ describe('initializer instructions', () => {
       const meta = ix.accounts![idx] as { signer?: unknown };
       expect(meta.signer).toBeDefined();
     }
-
   });
 
   it('rejects initializeLaunch when curve kind is not currently enabled', async () => {
@@ -165,7 +174,8 @@ describe('initializer instructions', () => {
 
     const [config] = await initializer.getConfigAddress();
     const [launch] = await initializer.getLaunchAddress(namespace, launchId);
-    const [launchAuthority] = await initializer.getLaunchAuthorityAddress(launch);
+    const [launchAuthority] =
+      await initializer.getLaunchAuthorityAddress(launch);
 
     await expect(
       initializer.createInitializeLaunchInstruction(

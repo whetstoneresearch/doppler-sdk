@@ -14,8 +14,6 @@ import {
   getAddressEncoder,
   getBytesDecoder,
   getBytesEncoder,
-  getOptionDecoder,
-  getOptionEncoder,
   getProgramDerivedAddress,
   getStructDecoder,
   getStructEncoder,
@@ -31,14 +29,12 @@ import {
   type AccountMeta,
   type AccountSignerMeta,
   type Address,
-  type Codec,
-  type Decoder,
-  type Encoder,
+  type FixedSizeCodec,
+  type FixedSizeDecoder,
+  type FixedSizeEncoder,
   type Instruction,
   type InstructionWithAccounts,
   type InstructionWithData,
-  type Option,
-  type OptionOrNullable,
   type ReadonlyAccount,
   type ReadonlySignerAccount,
   type ReadonlyUint8Array,
@@ -68,6 +64,7 @@ export type InitializePoolInstruction<
   TAccountConfig extends string | AccountMeta<string> = string,
   TAccountPool extends string | AccountMeta<string> = string,
   TAccountProtocolFeePosition extends string | AccountMeta<string> = string,
+  TAccountProtocolFeeOwner extends string | AccountMeta<string> = string,
   TAccountAuthority extends string | AccountMeta<string> = string,
   TAccountVault0 extends string | AccountMeta<string> = string,
   TAccountVault1 extends string | AccountMeta<string> = string,
@@ -95,6 +92,9 @@ export type InitializePoolInstruction<
       TAccountProtocolFeePosition extends string
         ? WritableAccount<TAccountProtocolFeePosition>
         : TAccountProtocolFeePosition,
+      TAccountProtocolFeeOwner extends string
+        ? ReadonlyAccount<TAccountProtocolFeeOwner>
+        : TAccountProtocolFeeOwner,
       TAccountAuthority extends string
         ? ReadonlyAccount<TAccountAuthority>
         : TAccountAuthority,
@@ -141,7 +141,6 @@ export type InitializePoolInstructionData = {
   initialSwapFeeBps: number;
   initialFeeSplitBps: number;
   liquidityMeasureTokenIndex: number;
-  numeraireMintOverride: Option<Address>;
   hookProgram: Address;
   hookFlags: number;
 };
@@ -152,12 +151,11 @@ export type InitializePoolInstructionDataArgs = {
   initialSwapFeeBps: number;
   initialFeeSplitBps: number;
   liquidityMeasureTokenIndex: number;
-  numeraireMintOverride: OptionOrNullable<Address>;
   hookProgram: Address;
   hookFlags: number;
 };
 
-export function getInitializePoolInstructionDataEncoder(): Encoder<InitializePoolInstructionDataArgs> {
+export function getInitializePoolInstructionDataEncoder(): FixedSizeEncoder<InitializePoolInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
@@ -166,7 +164,6 @@ export function getInitializePoolInstructionDataEncoder(): Encoder<InitializePoo
       ['initialSwapFeeBps', getU16Encoder()],
       ['initialFeeSplitBps', getU16Encoder()],
       ['liquidityMeasureTokenIndex', getU8Encoder()],
-      ['numeraireMintOverride', getOptionEncoder(getAddressEncoder())],
       ['hookProgram', getAddressEncoder()],
       ['hookFlags', getU32Encoder()],
     ]),
@@ -174,7 +171,7 @@ export function getInitializePoolInstructionDataEncoder(): Encoder<InitializePoo
   );
 }
 
-export function getInitializePoolInstructionDataDecoder(): Decoder<InitializePoolInstructionData> {
+export function getInitializePoolInstructionDataDecoder(): FixedSizeDecoder<InitializePoolInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['mintA', getAddressDecoder()],
@@ -182,13 +179,12 @@ export function getInitializePoolInstructionDataDecoder(): Decoder<InitializePoo
     ['initialSwapFeeBps', getU16Decoder()],
     ['initialFeeSplitBps', getU16Decoder()],
     ['liquidityMeasureTokenIndex', getU8Decoder()],
-    ['numeraireMintOverride', getOptionDecoder(getAddressDecoder())],
     ['hookProgram', getAddressDecoder()],
     ['hookFlags', getU32Decoder()],
   ]);
 }
 
-export function getInitializePoolInstructionDataCodec(): Codec<
+export function getInitializePoolInstructionDataCodec(): FixedSizeCodec<
   InitializePoolInstructionDataArgs,
   InitializePoolInstructionData
 > {
@@ -202,6 +198,7 @@ export type InitializePoolAsyncInput<
   TAccountConfig extends string = string,
   TAccountPool extends string = string,
   TAccountProtocolFeePosition extends string = string,
+  TAccountProtocolFeeOwner extends string = string,
   TAccountAuthority extends string = string,
   TAccountVault0 extends string = string,
   TAccountVault1 extends string = string,
@@ -217,6 +214,7 @@ export type InitializePoolAsyncInput<
   config: Address<TAccountConfig>;
   pool?: Address<TAccountPool>;
   protocolFeePosition?: Address<TAccountProtocolFeePosition>;
+  protocolFeeOwner?: Address<TAccountProtocolFeeOwner>;
   authority?: Address<TAccountAuthority>;
   vault0?: Address<TAccountVault0>;
   vault1?: Address<TAccountVault1>;
@@ -238,7 +236,6 @@ export type InitializePoolAsyncInput<
   initialSwapFeeBps: InitializePoolInstructionDataArgs['initialSwapFeeBps'];
   initialFeeSplitBps: InitializePoolInstructionDataArgs['initialFeeSplitBps'];
   liquidityMeasureTokenIndex: InitializePoolInstructionDataArgs['liquidityMeasureTokenIndex'];
-  numeraireMintOverride: InitializePoolInstructionDataArgs['numeraireMintOverride'];
   hookProgram: InitializePoolInstructionDataArgs['hookProgram'];
   hookFlags: InitializePoolInstructionDataArgs['hookFlags'];
 };
@@ -247,6 +244,7 @@ export async function getInitializePoolInstructionAsync<
   TAccountConfig extends string,
   TAccountPool extends string,
   TAccountProtocolFeePosition extends string,
+  TAccountProtocolFeeOwner extends string,
   TAccountAuthority extends string,
   TAccountVault0 extends string,
   TAccountVault1 extends string,
@@ -264,6 +262,7 @@ export async function getInitializePoolInstructionAsync<
     TAccountConfig,
     TAccountPool,
     TAccountProtocolFeePosition,
+    TAccountProtocolFeeOwner,
     TAccountAuthority,
     TAccountVault0,
     TAccountVault1,
@@ -283,6 +282,7 @@ export async function getInitializePoolInstructionAsync<
     TAccountConfig,
     TAccountPool,
     TAccountProtocolFeePosition,
+    TAccountProtocolFeeOwner,
     TAccountAuthority,
     TAccountVault0,
     TAccountVault1,
@@ -306,6 +306,10 @@ export async function getInitializePoolInstructionAsync<
     protocolFeePosition: {
       value: input.protocolFeePosition ?? null,
       isWritable: true,
+    },
+    protocolFeeOwner: {
+      value: input.protocolFeeOwner ?? null,
+      isWritable: false,
     },
     authority: { value: input.authority ?? null, isWritable: false },
     vault0: { value: input.vault0 ?? null, isWritable: true },
@@ -351,19 +355,39 @@ export async function getInitializePoolInstructionAsync<
       ],
     });
   }
-  if (!accounts.protocolFeePosition.value) {
-    accounts.protocolFeePosition.value = await getProgramDerivedAddress({
+  if (!accounts.protocolFeeOwner.value) {
+    accounts.protocolFeeOwner.value = await getProgramDerivedAddress({
       programAddress,
       seeds: [
         getBytesEncoder().encode(
           new Uint8Array([
-            112, 114, 111, 116, 111, 99, 111, 108, 95, 112, 111, 115, 105, 116,
-            105, 111, 110,
+            112, 114, 111, 116, 111, 99, 111, 108, 95, 102, 101, 101, 95, 111,
+            119, 110, 101, 114,
           ]),
         ),
         getAddressEncoder().encode(
           getAddressFromResolvedInstructionAccount('pool', accounts.pool.value),
         ),
+      ],
+    });
+  }
+  if (!accounts.protocolFeePosition.value) {
+    accounts.protocolFeePosition.value = await getProgramDerivedAddress({
+      programAddress,
+      seeds: [
+        getBytesEncoder().encode(
+          new Uint8Array([112, 111, 115, 105, 116, 105, 111, 110]),
+        ),
+        getAddressEncoder().encode(
+          getAddressFromResolvedInstructionAccount('pool', accounts.pool.value),
+        ),
+        getAddressEncoder().encode(
+          getAddressFromResolvedInstructionAccount(
+            'protocolFeeOwner',
+            accounts.protocolFeeOwner.value,
+          ),
+        ),
+        getBytesEncoder().encode(new Uint8Array([0, 0, 0, 0, 0, 0, 0, 0])),
       ],
     });
   }
@@ -417,6 +441,7 @@ export async function getInitializePoolInstructionAsync<
       getAccountMeta('config', accounts.config),
       getAccountMeta('pool', accounts.pool),
       getAccountMeta('protocolFeePosition', accounts.protocolFeePosition),
+      getAccountMeta('protocolFeeOwner', accounts.protocolFeeOwner),
       getAccountMeta('authority', accounts.authority),
       getAccountMeta('vault0', accounts.vault0),
       getAccountMeta('vault1', accounts.vault1),
@@ -438,6 +463,7 @@ export async function getInitializePoolInstructionAsync<
     TAccountConfig,
     TAccountPool,
     TAccountProtocolFeePosition,
+    TAccountProtocolFeeOwner,
     TAccountAuthority,
     TAccountVault0,
     TAccountVault1,
@@ -456,6 +482,7 @@ export type InitializePoolInput<
   TAccountConfig extends string = string,
   TAccountPool extends string = string,
   TAccountProtocolFeePosition extends string = string,
+  TAccountProtocolFeeOwner extends string = string,
   TAccountAuthority extends string = string,
   TAccountVault0 extends string = string,
   TAccountVault1 extends string = string,
@@ -471,6 +498,7 @@ export type InitializePoolInput<
   config: Address<TAccountConfig>;
   pool: Address<TAccountPool>;
   protocolFeePosition: Address<TAccountProtocolFeePosition>;
+  protocolFeeOwner: Address<TAccountProtocolFeeOwner>;
   authority: Address<TAccountAuthority>;
   vault0: Address<TAccountVault0>;
   vault1: Address<TAccountVault1>;
@@ -492,7 +520,6 @@ export type InitializePoolInput<
   initialSwapFeeBps: InitializePoolInstructionDataArgs['initialSwapFeeBps'];
   initialFeeSplitBps: InitializePoolInstructionDataArgs['initialFeeSplitBps'];
   liquidityMeasureTokenIndex: InitializePoolInstructionDataArgs['liquidityMeasureTokenIndex'];
-  numeraireMintOverride: InitializePoolInstructionDataArgs['numeraireMintOverride'];
   hookProgram: InitializePoolInstructionDataArgs['hookProgram'];
   hookFlags: InitializePoolInstructionDataArgs['hookFlags'];
 };
@@ -501,6 +528,7 @@ export function getInitializePoolInstruction<
   TAccountConfig extends string,
   TAccountPool extends string,
   TAccountProtocolFeePosition extends string,
+  TAccountProtocolFeeOwner extends string,
   TAccountAuthority extends string,
   TAccountVault0 extends string,
   TAccountVault1 extends string,
@@ -518,6 +546,7 @@ export function getInitializePoolInstruction<
     TAccountConfig,
     TAccountPool,
     TAccountProtocolFeePosition,
+    TAccountProtocolFeeOwner,
     TAccountAuthority,
     TAccountVault0,
     TAccountVault1,
@@ -536,6 +565,7 @@ export function getInitializePoolInstruction<
   TAccountConfig,
   TAccountPool,
   TAccountProtocolFeePosition,
+  TAccountProtocolFeeOwner,
   TAccountAuthority,
   TAccountVault0,
   TAccountVault1,
@@ -558,6 +588,10 @@ export function getInitializePoolInstruction<
     protocolFeePosition: {
       value: input.protocolFeePosition ?? null,
       isWritable: true,
+    },
+    protocolFeeOwner: {
+      value: input.protocolFeeOwner ?? null,
+      isWritable: false,
     },
     authority: { value: input.authority ?? null, isWritable: false },
     vault0: { value: input.vault0 ?? null, isWritable: true },
@@ -598,6 +632,7 @@ export function getInitializePoolInstruction<
       getAccountMeta('config', accounts.config),
       getAccountMeta('pool', accounts.pool),
       getAccountMeta('protocolFeePosition', accounts.protocolFeePosition),
+      getAccountMeta('protocolFeeOwner', accounts.protocolFeeOwner),
       getAccountMeta('authority', accounts.authority),
       getAccountMeta('vault0', accounts.vault0),
       getAccountMeta('vault1', accounts.vault1),
@@ -619,6 +654,7 @@ export function getInitializePoolInstruction<
     TAccountConfig,
     TAccountPool,
     TAccountProtocolFeePosition,
+    TAccountProtocolFeeOwner,
     TAccountAuthority,
     TAccountVault0,
     TAccountVault1,
@@ -642,22 +678,23 @@ export type ParsedInitializePoolInstruction<
     config: TAccountMetas[0];
     pool: TAccountMetas[1];
     protocolFeePosition: TAccountMetas[2];
-    authority: TAccountMetas[3];
-    vault0: TAccountMetas[4];
-    vault1: TAccountMetas[5];
-    token0Mint: TAccountMetas[6];
-    token1Mint: TAccountMetas[7];
-    payer: TAccountMetas[8];
-    token0Program: TAccountMetas[9];
-    token1Program: TAccountMetas[10];
-    systemProgram: TAccountMetas[11];
-    rent: TAccountMetas[12];
+    protocolFeeOwner: TAccountMetas[3];
+    authority: TAccountMetas[4];
+    vault0: TAccountMetas[5];
+    vault1: TAccountMetas[6];
+    token0Mint: TAccountMetas[7];
+    token1Mint: TAccountMetas[8];
+    payer: TAccountMetas[9];
+    token0Program: TAccountMetas[10];
+    token1Program: TAccountMetas[11];
+    systemProgram: TAccountMetas[12];
+    rent: TAccountMetas[13];
     /**
      * Capability PDA owned by the trusted migrator program. Anchor enforces
      * `is_signer`; the handler verifies the pubkey matches the expected
      * derivation. Together these prove the CPI originated from the migrator.
      */
-    migrationAuthority: TAccountMetas[13];
+    migrationAuthority: TAccountMetas[14];
   };
   data: InitializePoolInstructionData;
 };
@@ -670,12 +707,12 @@ export function parseInitializePoolInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedInitializePoolInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 14) {
+  if (instruction.accounts.length < 15) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 14,
+        expectedAccountMetas: 15,
       },
     );
   }
@@ -691,6 +728,7 @@ export function parseInitializePoolInstruction<
       config: getNextAccount(),
       pool: getNextAccount(),
       protocolFeePosition: getNextAccount(),
+      protocolFeeOwner: getNextAccount(),
       authority: getNextAccount(),
       vault0: getNextAccount(),
       vault1: getNextAccount(),

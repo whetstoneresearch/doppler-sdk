@@ -76,8 +76,8 @@ export const SEED_POSITION = 'position';
 /** Seed prefix for OracleState PDA: ['oracle', pool] */
 export const SEED_ORACLE = 'oracle';
 
-/** Seed prefix for protocol fee position PDA: ['protocol_position', pool] */
-export const SEED_PROTOCOL_FEE_POSITION = 'protocol_position';
+/** Seed prefix for protocol fee owner PDA: ['protocol_fee_owner', pool] */
+export const SEED_PROTOCOL_FEE_OWNER = 'protocol_fee_owner';
 
 // ============================================================================
 // Hook Flags
@@ -163,16 +163,10 @@ export const INSTRUCTION_DISCRIMINATORS = {
   oracleConsult: new Uint8Array([
     0xef, 0xed, 0xff, 0xb1, 0x8e, 0x48, 0x60, 0xaf,
   ]),
-  // SHA256("global:quote_to_numeraire")[0:8]
-  quoteToNumeraire: new Uint8Array([
-    0x04, 0x8e, 0xf9, 0xf0, 0x81, 0x0f, 0x8f, 0x39,
-  ]),
   // SHA256("global:set_hook")[0:8]
   setHook: new Uint8Array([0xaf, 0x10, 0xbb, 0xfc, 0x13, 0x36, 0x6f, 0xdd]),
   // SHA256("global:set_fees")[0:8]
   setFees: new Uint8Array([0x89, 0xb2, 0x31, 0x3a, 0x00, 0xf5, 0xf2, 0xbe]),
-  // SHA256("global:set_route")[0:8]
-  setRoute: new Uint8Array([0xf4, 0xe7, 0x03, 0x54, 0xe9, 0x3d, 0x92, 0x95]),
   // SHA256("global:transfer_admin")[0:8]
   transferAdmin: new Uint8Array([
     0x2a, 0xf2, 0x42, 0x6a, 0xe4, 0x0a, 0x6f, 0x9c,

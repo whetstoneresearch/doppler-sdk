@@ -167,11 +167,6 @@
       "msg": "Oracle already finalized"
     },
     {
-      "code": 6002,
-      "name": "NotFinalized",
-      "msg": "Oracle not finalized"
-    },
-    {
       "code": 6003,
       "name": "InvalidWinningMint",
       "msg": "Invalid winning mint"

@@ -134,6 +134,9 @@
           "writable": true
         },
         {
+          "name": "protocol_fee_owner"
+        },
+        {
           "name": "protocol_fee_position",
           "writable": true
         },
@@ -503,11 +506,6 @@
       "msg": "Launch configuration mismatch"
     },
     {
-      "code": 6019,
-      "name": "InvalidCpmmAdmin",
-      "msg": "CPMM admin signer does not match CPMM config admin"
-    },
-    {
       "code": 6020,
       "name": "InvalidPool",
       "msg": "Invalid pool"
@@ -538,10 +536,6 @@
             "type": "bool"
           },
           {
-            "name": "numeraire_mint",
-            "type": "pubkey"
-          },
-          {
             "name": "hook_allowlist_len",
             "type": "u8"
           },
@@ -561,10 +555,6 @@
           {
             "name": "max_fee_split_bps",
             "type": "u16"
-          },
-          {
-            "name": "max_route_hops",
-            "type": "u8"
           },
           {
             "name": "protocol_fee_enabled",

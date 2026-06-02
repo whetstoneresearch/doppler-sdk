@@ -74,6 +74,7 @@ export type MigrateInstruction<
   TAccountPoolAuthority extends string | AccountMeta<string> = string,
   TAccountPoolVault0 extends string | AccountMeta<string> = string,
   TAccountPoolVault1 extends string | AccountMeta<string> = string,
+  TAccountProtocolFeeOwner extends string | AccountMeta<string> = string,
   TAccountProtocolFeePosition extends string | AccountMeta<string> = string,
   TAccountLaunchLpPosition extends string | AccountMeta<string> = string,
   TAccountCpmmProgram extends string | AccountMeta<string> =
@@ -142,6 +143,9 @@ export type MigrateInstruction<
       TAccountPoolVault1 extends string
         ? WritableAccount<TAccountPoolVault1>
         : TAccountPoolVault1,
+      TAccountProtocolFeeOwner extends string
+        ? ReadonlyAccount<TAccountProtocolFeeOwner>
+        : TAccountProtocolFeeOwner,
       TAccountProtocolFeePosition extends string
         ? WritableAccount<TAccountProtocolFeePosition>
         : TAccountProtocolFeePosition,
@@ -227,6 +231,7 @@ export type MigrateAsyncInput<
   TAccountPoolAuthority extends string = string,
   TAccountPoolVault0 extends string = string,
   TAccountPoolVault1 extends string = string,
+  TAccountProtocolFeeOwner extends string = string,
   TAccountProtocolFeePosition extends string = string,
   TAccountLaunchLpPosition extends string = string,
   TAccountCpmmProgram extends string = string,
@@ -264,6 +269,7 @@ export type MigrateAsyncInput<
   poolVault0: Address<TAccountPoolVault0>;
   /** `initialize_pool`, and is constrained again by the CPMM CPI. */
   poolVault1: Address<TAccountPoolVault1>;
+  protocolFeeOwner: Address<TAccountProtocolFeeOwner>;
   protocolFeePosition: Address<TAccountProtocolFeePosition>;
   launchLpPosition: Address<TAccountLaunchLpPosition>;
   cpmmProgram?: Address<TAccountCpmmProgram>;
@@ -307,6 +313,7 @@ export async function getMigrateInstructionAsync<
   TAccountPoolAuthority extends string,
   TAccountPoolVault0 extends string,
   TAccountPoolVault1 extends string,
+  TAccountProtocolFeeOwner extends string,
   TAccountProtocolFeePosition extends string,
   TAccountLaunchLpPosition extends string,
   TAccountCpmmProgram extends string,
@@ -334,6 +341,7 @@ export async function getMigrateInstructionAsync<
     TAccountPoolAuthority,
     TAccountPoolVault0,
     TAccountPoolVault1,
+    TAccountProtocolFeeOwner,
     TAccountProtocolFeePosition,
     TAccountLaunchLpPosition,
     TAccountCpmmProgram,
@@ -363,6 +371,7 @@ export async function getMigrateInstructionAsync<
     TAccountPoolAuthority,
     TAccountPoolVault0,
     TAccountPoolVault1,
+    TAccountProtocolFeeOwner,
     TAccountProtocolFeePosition,
     TAccountLaunchLpPosition,
     TAccountCpmmProgram,
@@ -410,6 +419,10 @@ export async function getMigrateInstructionAsync<
     poolAuthority: { value: input.poolAuthority ?? null, isWritable: false },
     poolVault0: { value: input.poolVault0 ?? null, isWritable: true },
     poolVault1: { value: input.poolVault1 ?? null, isWritable: true },
+    protocolFeeOwner: {
+      value: input.protocolFeeOwner ?? null,
+      isWritable: false,
+    },
     protocolFeePosition: {
       value: input.protocolFeePosition ?? null,
       isWritable: true,
@@ -496,6 +509,7 @@ export async function getMigrateInstructionAsync<
       getAccountMeta('poolAuthority', accounts.poolAuthority),
       getAccountMeta('poolVault0', accounts.poolVault0),
       getAccountMeta('poolVault1', accounts.poolVault1),
+      getAccountMeta('protocolFeeOwner', accounts.protocolFeeOwner),
       getAccountMeta('protocolFeePosition', accounts.protocolFeePosition),
       getAccountMeta('launchLpPosition', accounts.launchLpPosition),
       getAccountMeta('cpmmProgram', accounts.cpmmProgram),
@@ -527,6 +541,7 @@ export async function getMigrateInstructionAsync<
     TAccountPoolAuthority,
     TAccountPoolVault0,
     TAccountPoolVault1,
+    TAccountProtocolFeeOwner,
     TAccountProtocolFeePosition,
     TAccountLaunchLpPosition,
     TAccountCpmmProgram,
@@ -555,6 +570,7 @@ export type MigrateInput<
   TAccountPoolAuthority extends string = string,
   TAccountPoolVault0 extends string = string,
   TAccountPoolVault1 extends string = string,
+  TAccountProtocolFeeOwner extends string = string,
   TAccountProtocolFeePosition extends string = string,
   TAccountLaunchLpPosition extends string = string,
   TAccountCpmmProgram extends string = string,
@@ -592,6 +608,7 @@ export type MigrateInput<
   poolVault0: Address<TAccountPoolVault0>;
   /** `initialize_pool`, and is constrained again by the CPMM CPI. */
   poolVault1: Address<TAccountPoolVault1>;
+  protocolFeeOwner: Address<TAccountProtocolFeeOwner>;
   protocolFeePosition: Address<TAccountProtocolFeePosition>;
   launchLpPosition: Address<TAccountLaunchLpPosition>;
   cpmmProgram?: Address<TAccountCpmmProgram>;
@@ -635,6 +652,7 @@ export function getMigrateInstruction<
   TAccountPoolAuthority extends string,
   TAccountPoolVault0 extends string,
   TAccountPoolVault1 extends string,
+  TAccountProtocolFeeOwner extends string,
   TAccountProtocolFeePosition extends string,
   TAccountLaunchLpPosition extends string,
   TAccountCpmmProgram extends string,
@@ -662,6 +680,7 @@ export function getMigrateInstruction<
     TAccountPoolAuthority,
     TAccountPoolVault0,
     TAccountPoolVault1,
+    TAccountProtocolFeeOwner,
     TAccountProtocolFeePosition,
     TAccountLaunchLpPosition,
     TAccountCpmmProgram,
@@ -690,6 +709,7 @@ export function getMigrateInstruction<
   TAccountPoolAuthority,
   TAccountPoolVault0,
   TAccountPoolVault1,
+  TAccountProtocolFeeOwner,
   TAccountProtocolFeePosition,
   TAccountLaunchLpPosition,
   TAccountCpmmProgram,
@@ -736,6 +756,10 @@ export function getMigrateInstruction<
     poolAuthority: { value: input.poolAuthority ?? null, isWritable: false },
     poolVault0: { value: input.poolVault0 ?? null, isWritable: true },
     poolVault1: { value: input.poolVault1 ?? null, isWritable: true },
+    protocolFeeOwner: {
+      value: input.protocolFeeOwner ?? null,
+      isWritable: false,
+    },
     protocolFeePosition: {
       value: input.protocolFeePosition ?? null,
       isWritable: true,
@@ -795,6 +819,7 @@ export function getMigrateInstruction<
       getAccountMeta('poolAuthority', accounts.poolAuthority),
       getAccountMeta('poolVault0', accounts.poolVault0),
       getAccountMeta('poolVault1', accounts.poolVault1),
+      getAccountMeta('protocolFeeOwner', accounts.protocolFeeOwner),
       getAccountMeta('protocolFeePosition', accounts.protocolFeePosition),
       getAccountMeta('launchLpPosition', accounts.launchLpPosition),
       getAccountMeta('cpmmProgram', accounts.cpmmProgram),
@@ -826,6 +851,7 @@ export function getMigrateInstruction<
     TAccountPoolAuthority,
     TAccountPoolVault0,
     TAccountPoolVault1,
+    TAccountProtocolFeeOwner,
     TAccountProtocolFeePosition,
     TAccountLaunchLpPosition,
     TAccountCpmmProgram,
@@ -871,26 +897,27 @@ export type ParsedMigrateInstruction<
     poolVault0: TAccountMetas[16];
     /** `initialize_pool`, and is constrained again by the CPMM CPI. */
     poolVault1: TAccountMetas[17];
-    protocolFeePosition: TAccountMetas[18];
-    launchLpPosition: TAccountMetas[19];
-    cpmmProgram: TAccountMetas[20];
+    protocolFeeOwner: TAccountMetas[18];
+    protocolFeePosition: TAccountMetas[19];
+    launchLpPosition: TAccountMetas[20];
+    cpmmProgram: TAccountMetas[21];
     /**
      * Capability PDA this program signs for to authorize `cpmm::initialize_pool`.
      * the key on the CPI side.
      */
-    migrationAuthority: TAccountMetas[21];
+    migrationAuthority: TAccountMetas[22];
     /**
      * Admin's base token ATA for returning unsold curve tokens and any residual
      * base dust left behind by the `add_liquidity` CPI.
      */
-    adminBaseAta: TAccountMetas[22];
+    adminBaseAta: TAccountMetas[23];
     /**
      * Admin's quote token ATA for sweeping any residual quote dust left behind
      * by the `add_liquidity` CPI. Transfer fees on either mint can cause
      * `add_liquidity` to under-consume one side even on the first deposit;
      * the initializer requires both launch vaults to be zero after migration.
      */
-    adminQuoteAta: TAccountMetas[23];
+    adminQuoteAta: TAccountMetas[24];
   };
   data: MigrateInstructionData;
 };
@@ -903,12 +930,12 @@ export function parseMigrateInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedMigrateInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 24) {
+  if (instruction.accounts.length < 25) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 24,
+        expectedAccountMetas: 25,
       },
     );
   }
@@ -939,6 +966,7 @@ export function parseMigrateInstruction<
       poolAuthority: getNextAccount(),
       poolVault0: getNextAccount(),
       poolVault1: getNextAccount(),
+      protocolFeeOwner: getNextAccount(),
       protocolFeePosition: getNextAccount(),
       launchLpPosition: getNextAccount(),
       cpmmProgram: getNextAccount(),

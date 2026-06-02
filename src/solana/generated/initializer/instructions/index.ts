@@ -8,6 +8,7 @@
 
 export * from './claimFees';
 export * from './curveSwapExactIn';
+export * from './distributeBaseAllocationNoMigration';
 export * from './harvestMigratedFees';
 export * from './initializeConfig';
 export * from './initializeLaunch';
@@ -20,5 +21,4 @@ export * from './setFeePolicy';
 export * from './setHookAllowlist';
 export * from './setMigratorAllowlist';
 export * from './transferAdmin';
-export * from './updateLaunchPayload';
 export * from './updateTradingFlags';

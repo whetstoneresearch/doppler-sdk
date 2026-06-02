@@ -12,7 +12,7 @@ export {
   SEED_AUTHORITY,
   SEED_POSITION,
   SEED_ORACLE,
-  SEED_PROTOCOL_FEE_POSITION,
+  SEED_PROTOCOL_FEE_OWNER,
   HF_BEFORE_SWAP,
   HF_AFTER_SWAP,
   HF_BEFORE_ADD_LIQ,
@@ -45,10 +45,8 @@ export type {
   CollectProtocolFeesArgs,
   SetHookArgs,
   SetFeesArgs,
-  SetRouteArgs,
   TransferAdminArgs,
   OracleConsultArgs,
-  QuoteToNumeraireArgs,
   SwapQuote,
   SwapQuoteExactOut,
   AddLiquidityQuote,
@@ -68,7 +66,6 @@ export type {
   FeesUpdatedEvent,
   OracleInitializedEvent,
   OracleUpdatedEvent,
-  RouteUpdatedEvent,
   AdminTransferredEvent,
   PausedEvent,
   UnpausedEvent,
@@ -101,10 +98,8 @@ export {
   encodeInitializeOracleArgs,
   encodeSetHookArgs,
   encodeSetFeesArgs,
-  encodeSetRouteArgs,
   encodeTransferAdminArgs,
   encodeOracleConsultArgs,
-  encodeQuoteToNumeraireArgs,
 } from './codecs.js';
 
 // Codecs - Legacy exports
@@ -125,10 +120,8 @@ export {
   initializeOracleArgsCodec,
   setHookArgsCodec,
   setFeesArgsCodec,
-  setRouteArgsCodec,
   transferAdminArgsCodec,
   oracleConsultArgsCodec,
-  quoteToNumeraireArgsCodec,
 } from './codecs.js';
 
 // PDA derivation
@@ -142,6 +135,7 @@ export {
   getPoolVault1Address,
   getPositionAddress,
   getOracleAddress,
+  getProtocolFeeOwnerAddress,
   getProtocolFeePositionAddress,
   getPoolInitAddresses,
   getSwapAddresses,
