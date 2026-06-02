@@ -1,12 +1,8 @@
-import type { Address, Instruction, AccountMeta } from '@solana/kit';
-import { AccountRole } from '@solana/kit';
-import {
-  CPMM_PROGRAM_ID,
-  TOKEN_PROGRAM_ADDRESS,
-  INSTRUCTION_DISCRIMINATORS,
-} from '../core/constants.js';
+import type { Address, Instruction, TransactionSigner } from '@solana/kit';
+import { createNoopSigner } from '@solana/kit';
+import { CPMM_PROGRAM_ID, TOKEN_PROGRAM_ADDRESS } from '../core/constants.js';
 import type { CollectFeesArgs } from '../core/types.js';
-import { collectFeesArgsCodec, encodeInstructionData } from '../core/codecs.js';
+import { getCollectFeesInstruction } from '../generated/cpmm/instructions/collectFees.js';
 
 /**
  * Accounts required for collect_fees instruction
@@ -17,7 +13,7 @@ export interface CollectFeesAccounts {
   /** User's position account (writable) */
   position: Address;
   /** Position owner (signer) */
-  owner: Address;
+  owner: Address | TransactionSigner;
   /** Pool authority PDA (read-only) */
   authority: Address;
   /** Pool vault for token0 (writable) */
@@ -32,7 +28,11 @@ export interface CollectFeesAccounts {
   user0: Address;
   /** User's token1 account (writable) */
   user1: Address;
-  /** SPL Token program */
+  /** Token0 program; defaults to tokenProgram or classic SPL Token */
+  token0Program?: Address;
+  /** Token1 program; defaults to tokenProgram or classic SPL Token */
+  token1Program?: Address;
+  /** Shared SPL Token program fallback */
   tokenProgram?: Address;
 }
 
@@ -87,37 +87,32 @@ export function createCollectFeesInstruction(
     token1Mint,
     user0,
     user1,
+    token0Program,
+    token1Program,
     tokenProgram = TOKEN_PROGRAM_ADDRESS,
   } = accounts;
+  const ownerSigner =
+    typeof owner === 'string' ? createNoopSigner(owner) : owner;
 
-  // Build account metas in order expected by the program
-  // Order: pool, position, owner, authority, vault0, vault1,
-  //        token0_mint, token1_mint, user0, user1, token_program
-  const keys: AccountMeta[] = [
-    { address: pool, role: AccountRole.WRITABLE },
-    { address: position, role: AccountRole.WRITABLE },
-    { address: owner, role: AccountRole.READONLY_SIGNER },
-    { address: authority, role: AccountRole.READONLY },
-    { address: vault0, role: AccountRole.WRITABLE },
-    { address: vault1, role: AccountRole.WRITABLE },
-    { address: token0Mint, role: AccountRole.READONLY },
-    { address: token1Mint, role: AccountRole.READONLY },
-    { address: user0, role: AccountRole.WRITABLE },
-    { address: user1, role: AccountRole.WRITABLE },
-    { address: tokenProgram, role: AccountRole.READONLY },
-  ];
-
-  const data = encodeInstructionData(
-    INSTRUCTION_DISCRIMINATORS.collectFees,
-    collectFeesArgsCodec,
-    args,
+  return getCollectFeesInstruction(
+    {
+      pool,
+      position,
+      owner: ownerSigner,
+      authority,
+      vault0,
+      vault1,
+      token0Mint,
+      token1Mint,
+      user0,
+      user1,
+      token0Program: token0Program ?? tokenProgram,
+      token1Program: token1Program ?? tokenProgram,
+      max0: args.max0,
+      max1: args.max1,
+    },
+    { programAddress: programId },
   );
-
-  return {
-    programAddress: programId,
-    accounts: keys,
-    data,
-  };
 }
 
 /**

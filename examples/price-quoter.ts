@@ -27,7 +27,7 @@ const rpcUrl = process.env.RPC_URL || baseSepolia.rpcUrls.default.http[0];
 if (!token) throw new Error('TOKEN is not set');
 
 function getErrorMessage(error: unknown): string {
-  return error instanceof Error ? getErrorMessage(error) : String(error);
+  return error instanceof Error ? error.message : String(error);
 }
 
 // Example token addresses (replace with actual addresses)
