@@ -245,7 +245,6 @@ async function main() {
             ]),
             allowBuy: true,
             allowSell: true,
-            hookProgram: initializer.PREDICTION_HOOK_PROGRAM_ID,
             hookFlags: initializer.HF_BEFORE_SWAP,
             hookPayload: new Uint8Array(),
             migratorInitPayload,

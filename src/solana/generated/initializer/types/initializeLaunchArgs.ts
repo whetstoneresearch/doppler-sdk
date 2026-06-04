@@ -57,11 +57,9 @@ export type InitializeLaunchArgs = {
   curveParams: ReadonlyUint8Array;
   allowBuy: number;
   allowSell: number;
-  hookProgram: Address;
   hookFlags: number;
   hookPayload: ReadonlyUint8Array;
   hookCreateRemainingAccountsLen: number;
-  migratorProgram: Address;
   migratorInitPayload: ReadonlyUint8Array;
   migratorMigratePayload: ReadonlyUint8Array;
   /**
@@ -107,11 +105,9 @@ export type InitializeLaunchArgsArgs = {
   curveParams: ReadonlyUint8Array;
   allowBuy: number;
   allowSell: number;
-  hookProgram: Address;
   hookFlags: number;
   hookPayload: ReadonlyUint8Array;
   hookCreateRemainingAccountsLen: number;
-  migratorProgram: Address;
   migratorInitPayload: ReadonlyUint8Array;
   migratorMigratePayload: ReadonlyUint8Array;
   /**
@@ -158,11 +154,9 @@ export function getInitializeLaunchArgsEncoder(): Encoder<InitializeLaunchArgsAr
     ['curveParams', addEncoderSizePrefix(getBytesEncoder(), getU32Encoder())],
     ['allowBuy', getU8Encoder()],
     ['allowSell', getU8Encoder()],
-    ['hookProgram', getAddressEncoder()],
     ['hookFlags', getU32Encoder()],
     ['hookPayload', addEncoderSizePrefix(getBytesEncoder(), getU32Encoder())],
     ['hookCreateRemainingAccountsLen', getU32Encoder()],
-    ['migratorProgram', getAddressEncoder()],
     [
       'migratorInitPayload',
       addEncoderSizePrefix(getBytesEncoder(), getU32Encoder()),
@@ -200,11 +194,9 @@ export function getInitializeLaunchArgsDecoder(): Decoder<InitializeLaunchArgs> 
     ['curveParams', addDecoderSizePrefix(getBytesDecoder(), getU32Decoder())],
     ['allowBuy', getU8Decoder()],
     ['allowSell', getU8Decoder()],
-    ['hookProgram', getAddressDecoder()],
     ['hookFlags', getU32Decoder()],
     ['hookPayload', addDecoderSizePrefix(getBytesDecoder(), getU32Decoder())],
     ['hookCreateRemainingAccountsLen', getU32Decoder()],
-    ['migratorProgram', getAddressDecoder()],
     [
       'migratorInitPayload',
       addDecoderSizePrefix(getBytesDecoder(), getU32Decoder()),

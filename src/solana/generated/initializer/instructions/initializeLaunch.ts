@@ -178,11 +178,9 @@ export type InitializeLaunchInstructionData = {
   curveParams: ReadonlyUint8Array;
   allowBuy: number;
   allowSell: number;
-  hookProgram: Address;
   hookFlags: number;
   hookPayload: ReadonlyUint8Array;
   hookCreateRemainingAccountsLen: number;
-  migratorProgram: Address;
   migratorInitPayload: ReadonlyUint8Array;
   migratorMigratePayload: ReadonlyUint8Array;
   /**
@@ -228,11 +226,9 @@ export type InitializeLaunchInstructionDataArgs = {
   curveParams: ReadonlyUint8Array;
   allowBuy: number;
   allowSell: number;
-  hookProgram: Address;
   hookFlags: number;
   hookPayload: ReadonlyUint8Array;
   hookCreateRemainingAccountsLen: number;
-  migratorProgram: Address;
   migratorInitPayload: ReadonlyUint8Array;
   migratorMigratePayload: ReadonlyUint8Array;
   /**
@@ -281,11 +277,9 @@ export function getInitializeLaunchInstructionDataEncoder(): Encoder<InitializeL
       ['curveParams', addEncoderSizePrefix(getBytesEncoder(), getU32Encoder())],
       ['allowBuy', getU8Encoder()],
       ['allowSell', getU8Encoder()],
-      ['hookProgram', getAddressEncoder()],
       ['hookFlags', getU32Encoder()],
       ['hookPayload', addEncoderSizePrefix(getBytesEncoder(), getU32Encoder())],
       ['hookCreateRemainingAccountsLen', getU32Encoder()],
-      ['migratorProgram', getAddressEncoder()],
       [
         'migratorInitPayload',
         addEncoderSizePrefix(getBytesEncoder(), getU32Encoder()),
@@ -332,11 +326,9 @@ export function getInitializeLaunchInstructionDataDecoder(): Decoder<InitializeL
     ['curveParams', addDecoderSizePrefix(getBytesDecoder(), getU32Decoder())],
     ['allowBuy', getU8Decoder()],
     ['allowSell', getU8Decoder()],
-    ['hookProgram', getAddressDecoder()],
     ['hookFlags', getU32Decoder()],
     ['hookPayload', addDecoderSizePrefix(getBytesDecoder(), getU32Decoder())],
     ['hookCreateRemainingAccountsLen', getU32Decoder()],
-    ['migratorProgram', getAddressDecoder()],
     [
       'migratorInitPayload',
       addDecoderSizePrefix(getBytesDecoder(), getU32Decoder()),
@@ -391,7 +383,7 @@ export type InitializeLaunchAsyncInput<
 > = {
   config?: Address<TAccountConfig>;
   launch: Address<TAccountLaunch>;
-  /** Address is constrained by seeds, and it has no account data to deserialize. */
+  /** System-owned PDA authority for launch vaults. */
   launchAuthority?: Address<TAccountLaunchAuthority>;
   baseMint: TransactionSigner<TAccountBaseMint>;
   quoteMint: Address<TAccountQuoteMint>;
@@ -401,9 +393,9 @@ export type InitializeLaunchAsyncInput<
   payer: TransactionSigner<TAccountPayer>;
   /** Optional authority (creator/admin). If not provided, launch is permissionless. */
   authority?: TransactionSigner<TAccountAuthority>;
-  /** Optional hook program for create hooks */
+  /** Optional hook program for launch hooks. */
   hookProgram?: Address<TAccountHookProgram>;
-  /** Optional migrator program for init hook */
+  /** Optional migrator program. */
   migratorProgram?: Address<TAccountMigratorProgram>;
   baseTokenProgram: Address<TAccountBaseTokenProgram>;
   quoteTokenProgram: Address<TAccountQuoteTokenProgram>;
@@ -426,11 +418,9 @@ export type InitializeLaunchAsyncInput<
   curveParams: InitializeLaunchInstructionDataArgs['curveParams'];
   allowBuy: InitializeLaunchInstructionDataArgs['allowBuy'];
   allowSell: InitializeLaunchInstructionDataArgs['allowSell'];
-  hookProgramArg: InitializeLaunchInstructionDataArgs['hookProgram'];
   hookFlags: InitializeLaunchInstructionDataArgs['hookFlags'];
   hookPayload: InitializeLaunchInstructionDataArgs['hookPayload'];
   hookCreateRemainingAccountsLen: InitializeLaunchInstructionDataArgs['hookCreateRemainingAccountsLen'];
-  migratorProgramArg: InitializeLaunchInstructionDataArgs['migratorProgram'];
   migratorInitPayload: InitializeLaunchInstructionDataArgs['migratorInitPayload'];
   migratorMigratePayload: InitializeLaunchInstructionDataArgs['migratorMigratePayload'];
   hookCreateRemainingAccountsHash: InitializeLaunchInstructionDataArgs['hookCreateRemainingAccountsHash'];
@@ -553,11 +543,7 @@ export async function getInitializeLaunchInstructionAsync<
   >;
 
   // Original args.
-  const args = {
-    ...input,
-    hookProgram: input.hookProgramArg,
-    migratorProgram: input.migratorProgramArg,
-  };
+  const args = { ...input };
 
   // Resolve default values.
   if (!accounts.config.value) {
@@ -686,7 +672,7 @@ export type InitializeLaunchInput<
 > = {
   config: Address<TAccountConfig>;
   launch: Address<TAccountLaunch>;
-  /** Address is constrained by seeds, and it has no account data to deserialize. */
+  /** System-owned PDA authority for launch vaults. */
   launchAuthority: Address<TAccountLaunchAuthority>;
   baseMint: TransactionSigner<TAccountBaseMint>;
   quoteMint: Address<TAccountQuoteMint>;
@@ -696,9 +682,9 @@ export type InitializeLaunchInput<
   payer: TransactionSigner<TAccountPayer>;
   /** Optional authority (creator/admin). If not provided, launch is permissionless. */
   authority?: TransactionSigner<TAccountAuthority>;
-  /** Optional hook program for create hooks */
+  /** Optional hook program for launch hooks. */
   hookProgram?: Address<TAccountHookProgram>;
-  /** Optional migrator program for init hook */
+  /** Optional migrator program. */
   migratorProgram?: Address<TAccountMigratorProgram>;
   baseTokenProgram: Address<TAccountBaseTokenProgram>;
   quoteTokenProgram: Address<TAccountQuoteTokenProgram>;
@@ -721,11 +707,9 @@ export type InitializeLaunchInput<
   curveParams: InitializeLaunchInstructionDataArgs['curveParams'];
   allowBuy: InitializeLaunchInstructionDataArgs['allowBuy'];
   allowSell: InitializeLaunchInstructionDataArgs['allowSell'];
-  hookProgramArg: InitializeLaunchInstructionDataArgs['hookProgram'];
   hookFlags: InitializeLaunchInstructionDataArgs['hookFlags'];
   hookPayload: InitializeLaunchInstructionDataArgs['hookPayload'];
   hookCreateRemainingAccountsLen: InitializeLaunchInstructionDataArgs['hookCreateRemainingAccountsLen'];
-  migratorProgramArg: InitializeLaunchInstructionDataArgs['migratorProgram'];
   migratorInitPayload: InitializeLaunchInstructionDataArgs['migratorInitPayload'];
   migratorMigratePayload: InitializeLaunchInstructionDataArgs['migratorMigratePayload'];
   hookCreateRemainingAccountsHash: InitializeLaunchInstructionDataArgs['hookCreateRemainingAccountsHash'];
@@ -846,11 +830,7 @@ export function getInitializeLaunchInstruction<
   >;
 
   // Original args.
-  const args = {
-    ...input,
-    hookProgram: input.hookProgramArg,
-    migratorProgram: input.migratorProgramArg,
-  };
+  const args = { ...input };
 
   // Resolve default values.
   if (!accounts.systemProgram.value) {
@@ -919,7 +899,7 @@ export type ParsedInitializeLaunchInstruction<
   accounts: {
     config: TAccountMetas[0];
     launch: TAccountMetas[1];
-    /** Address is constrained by seeds, and it has no account data to deserialize. */
+    /** System-owned PDA authority for launch vaults. */
     launchAuthority: TAccountMetas[2];
     baseMint: TAccountMetas[3];
     quoteMint: TAccountMetas[4];
@@ -929,9 +909,9 @@ export type ParsedInitializeLaunchInstruction<
     payer: TAccountMetas[8];
     /** Optional authority (creator/admin). If not provided, launch is permissionless. */
     authority?: TAccountMetas[9] | undefined;
-    /** Optional hook program for create hooks */
+    /** Optional hook program for launch hooks. */
     hookProgram?: TAccountMetas[10] | undefined;
-    /** Optional migrator program for init hook */
+    /** Optional migrator program. */
     migratorProgram?: TAccountMetas[11] | undefined;
     baseTokenProgram: TAccountMetas[12];
     quoteTokenProgram: TAccountMetas[13];

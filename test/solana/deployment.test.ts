@@ -134,7 +134,6 @@ describe('CPMM migrator custom deployment helpers', () => {
         curveParams: new Uint8Array([initializer.CURVE_PARAMS_FORMAT_XYK_V0]),
         allowBuy: true,
         allowSell: true,
-        hookProgram: CUSTOM_PROGRAMS.cpmmHookProgram,
         hookFlags: 0,
         hookPayload: new Uint8Array(),
         migratorInitPayload: new Uint8Array(),

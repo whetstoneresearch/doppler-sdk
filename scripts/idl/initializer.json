@@ -561,7 +561,7 @@
         {
           "name": "launch_authority",
           "docs": [
-            "Address is constrained by seeds, and it has no account data to deserialize."
+            "System-owned PDA authority for launch vaults."
           ],
           "pda": {
             "seeds": [
@@ -660,14 +660,14 @@
         {
           "name": "hook_program",
           "docs": [
-            "Optional hook program for create hooks"
+            "Optional hook program for launch hooks."
           ],
           "optional": true
         },
         {
           "name": "migrator_program",
           "docs": [
-            "Optional migrator program for init hook"
+            "Optional migrator program."
           ],
           "optional": true
         },
@@ -2216,10 +2216,6 @@
             "type": "u8"
           },
           {
-            "name": "hook_program",
-            "type": "pubkey"
-          },
-          {
             "name": "hook_flags",
             "type": "u32"
           },
@@ -2230,10 +2226,6 @@
           {
             "name": "hook_create_remaining_accounts_len",
             "type": "u32"
-          },
-          {
-            "name": "migrator_program",
-            "type": "pubkey"
           },
           {
             "name": "migrator_init_payload",
