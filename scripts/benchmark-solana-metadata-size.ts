@@ -230,7 +230,6 @@ async function buildMessage(
       curveParams: new Uint8Array([initializer.CURVE_PARAMS_FORMAT_XYK_V0]),
       allowBuy: true,
       allowSell: true,
-      hookProgram: initializer.CPMM_HOOK_PROGRAM_ID,
       hookFlags: initializer.HF_BEFORE_SWAP,
       hookPayload: new Uint8Array(),
       migratorInitPayload: context.migratorInitPayload,
@@ -367,7 +366,6 @@ async function buildPredictionMessage(metadata: {
       curveParams: new Uint8Array([initializer.CURVE_PARAMS_FORMAT_XYK_V0]),
       allowBuy: true,
       allowSell: true,
-      hookProgram: initializer.PREDICTION_HOOK_PROGRAM_ID,
       hookFlags: initializer.HF_BEFORE_SWAP,
       hookPayload: new Uint8Array(),
       migratorInitPayload: predictionMigrator

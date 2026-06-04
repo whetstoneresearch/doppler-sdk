@@ -61,7 +61,6 @@ export type InitializeLaunchParams = Omit<
   /** @deprecated Use swapFeeBps. */
   curveFeeBps?: number;
   feeBeneficiaries?: InitializeLaunchArgsArgs['feeBeneficiaries'];
-  hookProgram?: Address;
   hookCreateRemainingAccountsLen?: number;
   hookCreateRemainingAccountsHash?: ReadonlyUint8Array;
 };
@@ -262,10 +261,8 @@ export async function createInitializeLaunchInstruction(
     feeBeneficiaries: args.feeBeneficiaries ?? [],
     allowBuy: args.allowBuy ? 1 : 0,
     allowSell: args.allowSell ? 1 : 0,
-    hookProgram: args.hookProgram ?? hookProgram ?? SYSTEM_PROGRAM_ADDRESS,
     hookCreateRemainingAccountsLen:
       args.hookCreateRemainingAccountsLen ?? hookCreateRemainingAccounts.length,
-    migratorProgram: migratorProgram ?? SYSTEM_PROGRAM_ADDRESS,
     hookCreateRemainingAccountsHash:
       args.hookCreateRemainingAccountsHash ??
       (createHooksEnabled

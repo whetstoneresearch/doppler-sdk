@@ -124,6 +124,17 @@ export type {
   BuildAddressLookupTableSetupInstructionsInput,
   BuildAddressLookupTableSetupInstructionsResult,
 } from './addressLookupTables.js';
+export {
+  SOLANA_TRANSACTION_SIZE_LIMIT,
+  measureTransactionMessageSize,
+  measureTransactionMessageSizeWithLookupTable,
+  assertTransactionMessageFits,
+  assertTransactionMessageFitsWithLookupTable,
+} from './transactionSize.js';
+export type {
+  TransactionSizeAssertOptions,
+  TransactionSizeReport,
+} from './transactionSize.js';
 
 // Client helpers
 export {

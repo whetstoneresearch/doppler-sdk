@@ -229,7 +229,6 @@ async function main() {
         curveParams: new Uint8Array([initializer.CURVE_PARAMS_FORMAT_XYK_V0]),
         allowBuy: true,
         allowSell: true,
-        hookProgram: deployment.cpmmHookProgram,
         hookFlags: initializer.HF_BEFORE_SWAP,
         hookPayload: new Uint8Array(),
         migratorInitPayload,
