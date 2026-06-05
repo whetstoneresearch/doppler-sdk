@@ -1,5 +1,7 @@
 // Core contract ABIs needed for static and dynamic auctions
 
+export { feeClaimsInitializerAbi } from './multicurve/feeClaimsAbi';
+
 export const topUpDistributorAbi = [
   {
     type: 'function',

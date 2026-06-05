@@ -2,7 +2,7 @@ import { createPublicClient, createWalletClient, http } from 'viem';
 import { mainnet } from 'viem/chains';
 import { vi } from 'vitest';
 import type { Address, WalletClient } from 'viem';
-import { SupportedPublicClient } from '../../../../src/evm/types';
+import type { SupportedPublicClient } from '../../../../src/evm/types';
 import {
   mockAddresses,
   mockGovernanceAddress,
@@ -13,27 +13,48 @@ import {
   mockV2PoolAddress,
 } from './addresses';
 
+type MockedPublicClient = Omit<
+  ReturnType<typeof createPublicClient>,
+  | 'call'
+  | 'estimateContractGas'
+  | 'getBalance'
+  | 'getBlock'
+  | 'getBlockNumber'
+  | 'getBytecode'
+  | 'getChainId'
+  | 'getTransactionReceipt'
+  | 'multicall'
+  | 'readContract'
+  | 'simulateContract'
+  | 'waitForTransactionReceipt'
+  | 'watchBlockNumber'
+  | 'watchContractEvent'
+> & {
+  call: ReturnType<typeof vi.fn>;
+  estimateContractGas: ReturnType<typeof vi.fn>;
+  getBalance: ReturnType<typeof vi.fn>;
+  getBlock: ReturnType<typeof vi.fn>;
+  getBlockNumber: ReturnType<typeof vi.fn>;
+  getBytecode: ReturnType<typeof vi.fn>;
+  getChainId: ReturnType<typeof vi.fn>;
+  getTransactionReceipt: ReturnType<typeof vi.fn>;
+  multicall: ReturnType<typeof vi.fn>;
+  readContract: ReturnType<typeof vi.fn>;
+  simulateContract: ReturnType<typeof vi.fn>;
+  waitForTransactionReceipt: ReturnType<typeof vi.fn>;
+  watchBlockNumber: ReturnType<typeof vi.fn>;
+  watchContractEvent: ReturnType<typeof vi.fn>;
+};
+
+type MockSimulationCall = {
+  address?: Address;
+  abi?: unknown;
+  functionName?: string;
+  args?: readonly unknown[];
+};
+
 // Mock viem clients for testing
 export const createMockPublicClient = (): SupportedPublicClient => {
-  const client = createPublicClient({
-    chain: mainnet,
-    transport: http(),
-  });
-
-  // Mock the readContract method
-  client.readContract = vi.fn();
-  client.getTransactionReceipt = vi.fn();
-  client.waitForTransactionReceipt = vi.fn();
-  client.getBalance = vi.fn();
-  client.estimateContractGas = vi.fn();
-  client.getBytecode = vi.fn().mockResolvedValue('0x6000e2e9faa107087b0600');
-  client.getBlock = vi.fn().mockResolvedValue({ timestamp: 1_700_000_000n });
-  client.getChainId = vi.fn().mockResolvedValue(1);
-  client.watchContractEvent = vi.fn().mockReturnValue(() => {});
-  client.watchBlockNumber = vi.fn().mockReturnValue(() => {});
-  client.getBlockNumber = vi.fn().mockResolvedValue(1000n);
-  client.multicall = vi.fn();
-
   const defaultCreateResult: readonly Address[] = [
     mockTokenAddress,
     mockPoolAddress,
@@ -42,57 +63,78 @@ export const createMockPublicClient = (): SupportedPublicClient => {
     mockV2PoolAddress,
   ];
 
-  client.simulateContract = vi.fn(async (call: any) => {
-    const { address, abi, functionName, args } = call ?? {};
-
-    switch (functionName) {
-      case 'create':
-        return {
-          request: { address, abi, functionName, args },
-          result: defaultCreateResult,
-        };
-      case 'simulateBundleExactOut':
-        return {
-          request: { address, abi, functionName, args },
-          result: 0n,
-        };
-      case 'simulateMulticurveBundleExactOut':
-        return {
-          request: { address, abi, functionName, args },
-          result: [
-            mockTokenAddress,
-            [mockAddresses.weth, mockTokenAddress, 3000, 60, mockHookAddress],
-            0n,
-            0n,
-          ],
-        };
-      case 'simulateMulticurveBundleExactIn':
-        return {
-          request: { address, abi, functionName, args },
-          result: [
-            mockTokenAddress,
-            {
-              currency0: mockAddresses.weth,
-              currency1: mockTokenAddress,
-              fee: 3000n,
-              tickSpacing: 60n,
-              hooks: mockHookAddress,
-            },
-            0n,
-            0n,
-          ],
-        };
-      case 'bundle':
-        return {
-          request: { address, abi, functionName, args },
-        };
-      default:
-        return {
-          request: { address, abi, functionName, args },
-          result: undefined,
-        };
-    }
+  const baseClient = createPublicClient({
+    chain: mainnet,
+    transport: http(),
   });
+
+  const client: MockedPublicClient = {
+    ...baseClient,
+    readContract: vi.fn(),
+    getTransactionReceipt: vi.fn(),
+    waitForTransactionReceipt: vi.fn(),
+    getBalance: vi.fn(),
+    estimateContractGas: vi.fn(),
+    getBytecode: vi.fn().mockResolvedValue('0x6000e2e9faa107087b0600'),
+    getBlock: vi.fn().mockResolvedValue({ timestamp: 1_700_000_000n }),
+    getChainId: vi.fn().mockResolvedValue(1),
+    watchContractEvent: vi.fn().mockReturnValue(() => {}),
+    watchBlockNumber: vi.fn().mockReturnValue(() => {}),
+    getBlockNumber: vi.fn().mockResolvedValue(1000n),
+    call: vi.fn(),
+    multicall: vi.fn(),
+    simulateContract: vi.fn(async (call?: MockSimulationCall) => {
+      const { address, abi, functionName, args } = call ?? {};
+
+      switch (functionName) {
+        case 'create':
+          return {
+            request: { address, abi, functionName, args },
+            result: defaultCreateResult,
+          };
+        case 'simulateBundleExactOut':
+          return {
+            request: { address, abi, functionName, args },
+            result: 0n,
+          };
+        case 'simulateMulticurveBundleExactOut':
+          return {
+            request: { address, abi, functionName, args },
+            result: [
+              mockTokenAddress,
+              [mockAddresses.weth, mockTokenAddress, 3000, 60, mockHookAddress],
+              0n,
+              0n,
+            ],
+          };
+        case 'simulateMulticurveBundleExactIn':
+          return {
+            request: { address, abi, functionName, args },
+            result: [
+              mockTokenAddress,
+              {
+                currency0: mockAddresses.weth,
+                currency1: mockTokenAddress,
+                fee: 3000n,
+                tickSpacing: 60n,
+                hooks: mockHookAddress,
+              },
+              0n,
+              0n,
+            ],
+          };
+        case 'bundle':
+          return {
+            request: { address, abi, functionName, args },
+          };
+        default:
+          return {
+            request: { address, abi, functionName, args },
+            result: undefined,
+          };
+      }
+    }),
+  };
 
   return client;
 };

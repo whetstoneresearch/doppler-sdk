@@ -3,40 +3,29 @@ import {
   type PublicClient,
   type WalletClient,
   type Hash,
-  type Hex,
-  zeroAddress,
 } from 'viem';
 import {
   LockablePoolStatus,
   type MulticurveDecayFeeSchedule,
   type MulticurvePoolState,
   type SupportedPublicClient,
-  type V4PoolKey,
 } from '../../types';
-import {
-  decayMulticurveInitializerHookAbi,
-  dopplerHookInitializerAbi,
-  v4MulticurveInitializerAbi,
-  v4MulticurveMigratorAbi,
-  streamableFeesLockerAbi,
-} from '../../abis';
 import { getAddresses } from '../../addresses';
 import type { SupportedChainId } from '../../addresses';
-import { DYNAMIC_FEE_FLAG } from '../../constants';
 import { computePoolId } from '../../utils/poolKey';
-
-/** Result from finding which initializer contains the pool */
-interface InitializerDiscoveryResult {
-  initializerAddress: Address;
-  state: MulticurvePoolState;
-}
-
-interface ParsedInitializerState {
-  numeraire: Address;
-  status: number;
-  poolKey: V4PoolKey;
-  farTick: number;
-}
+import { callAggregate3, type Multicall3Client } from '../../utils/multicall3';
+import {
+  calculatePendingFees,
+  createPendingFeePreviewCalls,
+  type MulticurvePendingFees,
+} from './multicurve/multicurvePendingFees';
+import {
+  findMulticurveInitializerForPool,
+  type InitializerDiscoveryClient,
+} from './multicurve/multicurveInitializerDiscovery';
+import { collectMulticurveFees } from './multicurve/multicurveFeeCollection';
+import { getMulticurveFeeSchedule } from './multicurve/multicurveFeeSchedule';
+export type { MulticurvePendingFees } from './multicurve/multicurvePendingFees';
 
 /**
  * MulticurvePool class for interacting with V4 multicurve pools
@@ -97,176 +86,75 @@ export class MulticurvePool {
    * v4ScheduledMulticurveInitializer, v4DecayMulticurveInitializer, and
    * dopplerHookInitializer if needed.
    */
-  private async findInitializerForPool(): Promise<InitializerDiscoveryResult> {
+  private async findInitializerForPool() {
     const chainId = await this.rpc.getChainId();
     const addresses = getAddresses(chainId as SupportedChainId);
 
-    const initializersToTry = [
-      {
-        address: addresses.v4MulticurveInitializer,
-        kind: 'standard' as const,
-      },
-      {
-        address: addresses.v4ScheduledMulticurveInitializer,
-        kind: 'standard' as const,
-      },
-      {
-        address: addresses.v4DecayMulticurveInitializer,
-        kind: 'standard' as const,
-      },
-      {
-        address: addresses.dopplerHookInitializer,
-        kind: 'dopplerHook' as const,
-      },
-    ].filter(
-      (
-        entry,
-      ): entry is { address: Address; kind: 'standard' | 'dopplerHook' } =>
-        entry.address !== undefined && entry.address !== zeroAddress,
-    );
-
-    if (initializersToTry.length === 0) {
-      throw new Error(
-        'No V4 multicurve initializer addresses configured for this chain',
-      );
-    }
-
-    const triedInitializers: Address[] = [];
-
-    for (const initializer of initializersToTry) {
-      const { address: initializerAddress, kind } = initializer;
-      triedInitializers.push(initializerAddress);
-
-      const stateData = await this.rpc.readContract({
-        address: initializerAddress,
-        abi:
-          kind === 'dopplerHook'
-            ? dopplerHookInitializerAbi
-            : v4MulticurveInitializerAbi,
-        functionName: 'getState',
-        args: [this.tokenAddress],
-      });
-
-      const parsedState =
-        kind === 'dopplerHook'
-          ? this.parseDopplerHookInitializerState(stateData)
-          : this.parseStandardInitializerState(stateData);
-      const { numeraire, status, poolKey, farTick } = parsedState;
-
-      // Check if pool exists in this initializer
-      // A non-existent pool will have zeroed hooks and tickSpacing
-      if (poolKey.hooks !== zeroAddress && poolKey.tickSpacing !== 0) {
-        const state: MulticurvePoolState = {
-          asset: this.tokenAddress,
-          numeraire,
-          fee: poolKey.fee,
-          tickSpacing: poolKey.tickSpacing,
-          status,
-          poolKey,
-          farTick: Number(farTick),
-        };
-        return { initializerAddress, state };
-      }
-    }
-
-    // Pool not found in any initializer
-    throw new Error(
-      `Pool not found for token ${this.tokenAddress}. ` +
-        `Tried initializers: ${triedInitializers.join(', ')}`,
-    );
+    return findMulticurveInitializerForPool({
+      client: this.rpc as InitializerDiscoveryClient,
+      tokenAddress: this.tokenAddress,
+      addresses,
+    });
   }
 
   /**
-   * Collect fees from the pool and distribute to beneficiaries
+   * Collect fees from a locked initializer-side pool.
    *
-   * This function can be called by any beneficiary to trigger fee collection
-   * and distribution. Fees are automatically distributed according to the
-   * configured beneficiary shares.
+   * This function can be called by any account to pull pool fees into the
+   * initializer. If the caller is a configured beneficiary, their pending share
+   * is released as part of the same transaction.
    *
-   * @returns Object containing the amounts of fees0 and fees1 distributed, and the transaction hash
+   * @returns Object containing the contract's collectFees return values and the transaction hash.
+   * The returned fee amounts are newly collected pool fees, not necessarily the caller's beneficiary payout.
    */
   async collectFees(): Promise<{
     fees0: bigint;
     fees1: bigint;
     transactionHash: Hash;
   }> {
-    if (!this.walletClient) {
+    const walletClient = this.walletClient;
+    if (!walletClient) {
       throw new Error('Wallet client required to collect fees');
     }
 
     const chainId = await this.rpc.getChainId();
     const addresses = getAddresses(chainId as SupportedChainId);
 
-    // Discover which initializer has this pool and get state in one call
     const { initializerAddress, state } = await this.findInitializerForPool();
 
-    if (state.status === LockablePoolStatus.Locked) {
-      const poolId = computePoolId(state.poolKey);
-      const collectFeesAbi =
-        initializerAddress === addresses.dopplerHookInitializer
-          ? dopplerHookInitializerAbi
-          : v4MulticurveInitializerAbi;
-      return this.collectFeesFromContract(
-        initializerAddress,
-        collectFeesAbi,
-        poolId,
-      );
-    }
+    return collectMulticurveFees({
+      client: this.rpc,
+      walletClient,
+      initializerAddress,
+      state,
+      addresses,
+    });
+  }
+
+  /**
+   * Preview pending fees for a beneficiary on an initializer-side multicurve pool.
+   */
+  async getPendingFees(beneficiary: Address): Promise<MulticurvePendingFees> {
+    const { initializerAddress, state } = await this.findInitializerForPool();
 
     if (state.status === LockablePoolStatus.Exited) {
-      if (!addresses.v4Migrator) {
-        throw new Error(
-          'V4 multicurve migrator address not configured for this chain',
-        );
-      }
-
-      const assetData = await this.rpc.readContract({
-        address: addresses.v4Migrator,
-        abi: v4MulticurveMigratorAbi,
-        functionName: 'getAssetData',
-        args: [state.poolKey.currency0, state.poolKey.currency1],
-      });
-
-      const migratorPoolKey = this.parsePoolKey(
-        (assetData as any).poolKey ?? (assetData as any)[1],
-      );
-      const poolId = computePoolId(migratorPoolKey);
-
-      const beneficiaries =
-        (assetData as any).beneficiaries ?? (assetData as any)[4] ?? [];
-      if (!Array.isArray(beneficiaries) || beneficiaries.length === 0) {
-        throw new Error(
-          'Migrated multicurve pool has no beneficiaries configured',
-        );
-      }
-
-      const lockerAddress = await this.resolveLockerAddress(
-        addresses.v4Migrator,
-        addresses.streamableFeesLocker,
-      );
-
-      const streamData = await this.rpc.readContract({
-        address: lockerAddress,
-        abi: streamableFeesLockerAbi,
-        functionName: 'streams',
-        args: [poolId],
-      });
-
-      const startDate = Number(
-        (streamData as any).startDate ?? (streamData as any)[2] ?? 0,
-      );
-      if (startDate === 0) {
-        throw new Error('Migrated multicurve stream not initialized');
-      }
-
-      return this.collectFeesFromContract(
-        lockerAddress,
-        streamableFeesLockerAbi,
-        poolId,
+      throw new Error(
+        'Pending fee preview is only supported for initializer-side multicurve pools',
       );
     }
 
-    throw new Error('Multicurve pool is not locked or migrated');
+    if (state.status !== LockablePoolStatus.Locked) {
+      throw new Error('Multicurve pool is not locked or was migrated');
+    }
+
+    const poolId = computePoolId(state.poolKey);
+
+    const callResults = await callAggregate3(
+      this.rpc as Multicall3Client,
+      createPendingFeePreviewCalls(initializerAddress, poolId, beneficiary),
+    );
+
+    return calculatePendingFees(callResults);
   }
 
   /**
@@ -284,117 +172,6 @@ export class MulticurvePool {
    */
   async getFeeSchedule(): Promise<MulticurveDecayFeeSchedule | null> {
     const { state } = await this.findInitializerForPool();
-    if (state.poolKey.fee !== DYNAMIC_FEE_FLAG) {
-      return null;
-    }
-
-    const poolId = computePoolId(state.poolKey);
-    try {
-      const scheduleData = await this.rpc.readContract({
-        address: state.poolKey.hooks,
-        abi: decayMulticurveInitializerHookAbi,
-        functionName: 'getFeeScheduleOf',
-        args: [poolId],
-      });
-
-      const scheduleStruct = scheduleData as any;
-      return {
-        startingTime: Number(
-          scheduleStruct.startingTime ?? scheduleStruct[0] ?? 0,
-        ),
-        startFee: Number(scheduleStruct.startFee ?? scheduleStruct[1] ?? 0),
-        endFee: Number(scheduleStruct.endFee ?? scheduleStruct[2] ?? 0),
-        lastFee: Number(scheduleStruct.lastFee ?? scheduleStruct[3] ?? 0),
-        durationSeconds: Number(
-          scheduleStruct.durationSeconds ?? scheduleStruct[4] ?? 0,
-        ),
-      };
-    } catch {
-      throw new Error(
-        `Dynamic multicurve hook at ${state.poolKey.hooks} does not expose getFeeScheduleOf(poolId)`,
-      );
-    }
-  }
-
-  private parsePoolKey(rawPoolKey: unknown): V4PoolKey {
-    const poolKeyStruct = rawPoolKey as any;
-    return {
-      currency0: (poolKeyStruct.currency0 ?? poolKeyStruct[0]) as Address,
-      currency1: (poolKeyStruct.currency1 ?? poolKeyStruct[1]) as Address,
-      fee: Number(poolKeyStruct.fee ?? poolKeyStruct[2]),
-      tickSpacing: Number(poolKeyStruct.tickSpacing ?? poolKeyStruct[3]),
-      hooks: (poolKeyStruct.hooks ?? poolKeyStruct[4]) as Address,
-    };
-  }
-
-  private parseStandardInitializerState(
-    stateData: unknown,
-  ): ParsedInitializerState {
-    const state = stateData as any;
-    return {
-      numeraire: (state.numeraire ?? state[0]) as Address,
-      status: Number(state.status ?? state[1]),
-      poolKey: this.parsePoolKey(state.poolKey ?? state[2]),
-      farTick: Number(state.farTick ?? state[3]),
-    };
-  }
-
-  private parseDopplerHookInitializerState(
-    stateData: unknown,
-  ): ParsedInitializerState {
-    const state = stateData as any;
-    return {
-      numeraire: (state.numeraire ?? state[0]) as Address,
-      status: Number(state.status ?? state[4]),
-      poolKey: this.parsePoolKey(state.poolKey ?? state[5]),
-      farTick: Number(state.farTick ?? state[6]),
-    };
-  }
-
-  private async resolveLockerAddress(
-    migratorAddress: Address,
-    configuredLocker?: Address,
-  ): Promise<Address> {
-    if (configuredLocker) {
-      return configuredLocker;
-    }
-
-    const lockerAddress = await this.rpc.readContract({
-      address: migratorAddress,
-      abi: v4MulticurveMigratorAbi,
-      functionName: 'locker',
-      args: [],
-    });
-
-    return lockerAddress as Address;
-  }
-
-  private async collectFeesFromContract(
-    contractAddress: Address,
-    abi:
-      | typeof dopplerHookInitializerAbi
-      | typeof v4MulticurveInitializerAbi
-      | typeof streamableFeesLockerAbi,
-    poolId: Hex,
-  ): Promise<{ fees0: bigint; fees1: bigint; transactionHash: Hash }> {
-    const { request, result } = await this.rpc.simulateContract({
-      address: contractAddress,
-      abi,
-      functionName: 'collectFees',
-      args: [poolId],
-      account: this.walletClient!.account,
-    });
-
-    const hash = await this.walletClient!.writeContract(request);
-
-    await this.rpc.waitForTransactionReceipt({ hash, confirmations: 1 });
-
-    const [fees0, fees1] = result as readonly [bigint, bigint];
-
-    return {
-      fees0,
-      fees1,
-      transactionHash: hash,
-    };
+    return getMulticurveFeeSchedule(this.rpc, state);
   }
 }

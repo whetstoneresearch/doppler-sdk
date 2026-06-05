@@ -23,6 +23,7 @@ export {
   OpeningAuctionBidManager,
   OpeningAuctionPositionManager,
 } from './entities/auction';
+export type { MulticurvePendingFees } from './entities/auction';
 
 // Export quoter
 export { Quoter } from './entities/quoter';
