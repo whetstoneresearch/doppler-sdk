@@ -4,7 +4,8 @@
  * This example demonstrates:
  * - Getting a MulticurvePool instance from the SDK using the asset address
  * - Checking pool state and configuration
- * - Collecting and distributing fees to beneficiaries
+ * - Previewing pending fees for a beneficiary
+ * - Claiming fees for the caller when they are a configured beneficiary
  * - Understanding the fee distribution mechanism
  * - How the SDK computes the PoolId from the PoolKey
  *
@@ -17,7 +18,7 @@
  * - The SDK uses the asset address to look up pool configuration
  * - Internally, it computes the PoolId as keccak256(abi.encode(poolKey))
  * - The PoolKey contains: currency0, currency1, fee, tickSpacing, hooks
- * - Anyone can call collectFees(), but only configured beneficiaries receive distributions
+ * - Anyone can call collectFees(), but only configured beneficiary callers receive payouts
  * - Fees are split proportionally according to beneficiary shares configured at pool creation
  *
  * Note: This example requires an existing multicurve pool asset address (token address).
@@ -90,43 +91,51 @@ async function main() {
   console.log();
 
   // Get token information
-  const tokenAddress = await pool.getTokenAddress();
+  const tokenAddress = pool.getTokenAddress();
   const numeraireAddress = await pool.getNumeraireAddress();
   console.log('🪙 Token Addresses:');
   console.log('   Token:', tokenAddress);
   console.log('   Numeraire:', numeraireAddress);
   console.log();
 
-  // Check if there are fees to collect
-  // Note: The actual fee amounts aren't available until we call collectFees
-  // In a real scenario, you might want to:
-  // 1. Query pool swap events to estimate fees
-  // 2. Check beneficiary balances before/after
-  // 3. Monitor pool activity and collect periodically
-
-  console.log('💰 Collecting fees from the pool...');
-  console.log();
-  console.log('How it works:');
-  console.log(
-    '   1. SDK retrieves pool configuration (numeraire, lock status, PoolKey, farTick)',
-  );
-  console.log(
-    '   2. PoolKey already includes the hook address and canonical token ordering',
-  );
-  console.log('   3. SDK computes PoolId = keccak256(abi.encode(poolKey))');
-  console.log('   4. SDK calls collectFees(poolId) on the contract');
-  console.log(
-    '   5. Contract collects fees and distributes to all beneficiaries proportionally',
-  );
-  console.log();
-
   try {
+    const pendingFees = await pool.getPendingFees(account.address);
+    console.log('🔎 Pending Fee Preview For Caller:');
+    console.log(
+      '   Pending fees (token0):',
+      formatUnits(pendingFees.fees0, 18),
+    );
+    console.log(
+      '   Pending fees (token1):',
+      formatUnits(pendingFees.fees1, 18),
+    );
+    console.log();
+
+    console.log('💰 Collecting fees from the pool...');
+    console.log();
+    console.log('How it works:');
+    console.log(
+      '   1. SDK retrieves pool configuration (numeraire, lock status, PoolKey, farTick)',
+    );
+    console.log(
+      '   2. PoolKey already includes the hook address and canonical token ordering',
+    );
+    console.log('   3. SDK computes PoolId = keccak256(abi.encode(poolKey))');
+    console.log(
+      '   4. SDK can preview pending beneficiary fees with getPendingFees(beneficiary)',
+    );
+    console.log('   5. SDK calls collectFees(poolId) on the contract');
+    console.log(
+      "   6. Contract collects fees and releases the caller's beneficiary share when applicable",
+    );
+    console.log();
+
     // Collect fees - this will revert if there are no fees to collect
     const { fees0, fees1, transactionHash } = await pool.collectFees();
 
     console.log('✅ Fees collected successfully!');
     console.log();
-    console.log('📈 Fee Distribution:');
+    console.log('📈 Pool Fees Collected:');
     console.log('   Fees (token0):', formatUnits(fees0, 18));
     console.log('   Fees (token1):', formatUnits(fees1, 18));
     console.log('   Transaction:', transactionHash);
@@ -149,10 +158,12 @@ async function main() {
 
     console.log('💡 Important Points:');
     console.log(
-      '   - Fees have been distributed to beneficiaries according to their shares',
+      '   - If the caller is a configured beneficiary, their pending share has been released',
     );
     console.log('   - Anyone can call collectFees() - not just beneficiaries');
-    console.log('   - Only configured beneficiaries receive fee distributions');
+    console.log(
+      '   - Only configured beneficiary callers receive a fee payout',
+    );
     console.log(
       '   - Beneficiaries are set at pool creation and cannot be changed',
     );
@@ -165,10 +176,12 @@ async function main() {
     console.log(
       '   - Pool must be in "Locked" status (status = 2) for fee collection to work',
     );
-  } catch (error: any) {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
     if (
-      error.message?.includes('No fees to collect') ||
-      error.message?.includes('revert')
+      message.includes('No fees to collect') ||
+      message.includes('collectFees call failed') ||
+      message.includes('revert')
     ) {
       console.log('ℹ️  No fees available to collect at this time.');
       console.log();
@@ -182,7 +195,7 @@ async function main() {
       console.log('   - Wait for other users to trade');
       console.log('   - Check that the pool has a non-zero fee tier');
     } else {
-      console.error('❌ Error collecting fees:', error.message);
+      console.error('❌ Error collecting fees:', message);
       throw error;
     }
   }

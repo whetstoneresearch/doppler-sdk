@@ -10,6 +10,7 @@ The Doppler SDK exposes network-specific entrypoints for creating, managing, and
 
 - **EVM Auctions**: Static auctions, dynamic auctions, and multicurve launches across Uniswap V3/V4 paths
 - **EVM Migration Paths**: Support for V2, V2 split, V4, V4 split, DopplerHook, and no-op migration
+- **EVM Multicurve Fees**: Pending-fee previews and beneficiary fee claiming for locked multicurve pools
 - **Solana Launches**: Initializer, CPMM, migrator, hook, oracle, and Token-2022-compatible instruction helpers
 - **Solana Clients and React**: Read clients, PDA helpers, generated codecs, and optional React bindings
 - **Token Management**: Built-in EVM support for DERC20 tokens with vesting
@@ -603,8 +604,9 @@ const result = await sdk.factory.createMulticurve(params);
 const assetAddress = result.tokenAddress; // SAVE THIS - you'll need it to collect fees!
 console.log('Asset address:', assetAddress);
 
-// Later, to collect fees (works before and after migration):
+// Later, to preview and claim fees while the pool is locked:
 // const pool = await sdk.getMulticurvePool(assetAddress)
+// const pending = await pool.getPendingFees('0xBeneficiary...')
 // await pool.collectFees()
 ```
 
@@ -612,12 +614,14 @@ console.log('Asset address:', assetAddress);
 
 - Set `fee` > 0 (e.g., 3000 for 0.3%) to accumulate trading fees for beneficiaries
 - **Save the asset address** (token address) returned from creation - you need it to collect fees later
-- Beneficiaries receive fees proportional to their shares when `collectFees()` is called
+- Use `getPendingFees(beneficiary)` to preview a beneficiary's claimable token0/token1 fees
+- `collectFees()` claims a payout for the calling account only when the caller is a configured beneficiary
 - Pool enters "Locked" status (status = 2) and liquidity cannot be migrated
 - Beneficiaries are immutable and set at pool creation time
 - The SDK automatically handles PoolKey construction and PoolId computation for you
 
 See [examples/multicurve-lockable-beneficiaries.ts](./examples/multicurve-lockable-beneficiaries.ts) for a complete example.
+See [docs/multicurve-fees.md](./docs/multicurve-fees.md) for pending-fee previews, claiming, and current migrated-launch limitations.
 
 #### Transaction gas override
 
@@ -773,7 +777,8 @@ const currentEpoch = await auction.getCurrentEpoch();
 
 ### Multicurve Pool Interactions
 
-Multicurve pools support fee collection and distribution to beneficiaries when configured with `lockableBeneficiaries`.
+Multicurve pools support fee collection and beneficiary claims when configured
+with `pool.beneficiaries` and no-op migration.
 
 ```typescript
 // Get a multicurve pool instance using the asset address (token address)
@@ -795,15 +800,21 @@ if (feeSchedule) {
   console.log('Fee schedule:', feeSchedule);
 }
 
-// Collect and distribute fees to beneficiaries
-// This can be called by anyone, but only beneficiaries receive fees
+// Preview pending fees for a beneficiary. This is a read-only call.
+const pendingFees = await pool.getPendingFees(beneficiaryAddress);
+console.log('Pending fees (token0):', pendingFees.fees0);
+console.log('Pending fees (token1):', pendingFees.fees1);
+
+// Claim fees from a beneficiary wallet while the pool is locked.
+// Any account can call collectFees(), but only a configured beneficiary caller
+// receives their pending share.
 const { fees0, fees1, transactionHash } = await pool.collectFees();
 console.log('Fees collected (token0):', fees0);
 console.log('Fees collected (token1):', fees1);
 console.log('Transaction:', transactionHash);
 
 // Get token addresses
-const tokenAddress = await pool.getTokenAddress();
+const tokenAddress = pool.getTokenAddress();
 const numeraireAddress = await pool.getNumeraireAddress();
 ```
 
@@ -812,22 +823,21 @@ const numeraireAddress = await pool.getNumeraireAddress();
 The SDK handles the complexity of fee collection by:
 
 1. **Retrieving pool configuration** from the multicurve initializer contract
-2. **Detecting migration status** and, if the pool has migrated, resolving the shared `StreamableFeesLockerV2`
-   address via the multicurve migrator (no manual lookup required)
+2. **Detecting pool status** so only locked initializer-side pools proceed
 3. **Computing the PoolId** from the PoolKey using `keccak256(abi.encode(poolKey))`
-4. **Calling the correct contract** (initializer while locked, locker after migration) with the computed PoolId
-5. **Distributing fees** proportionally to all configured beneficiaries
+4. **Previewing pending fees** with a Multicall3 aggregate that simulates collection and reads beneficiary share/checkpoint data
+5. **Calling the initializer** with the computed PoolId when a beneficiary claims via `collectFees()`
 
 **Important Notes:**
 
 - Fees accumulate from swap activity on the pool (only if fee tier > 0)
-- Anyone can call `collectFees()`, but fees are distributed to beneficiaries only
-- Fees are automatically split according to configured beneficiary shares
-- The function returns the total amount collected for both tokens in the pair
-- Works exclusively with pools created using `lockableBeneficiaries` in the multicurve configuration
+- `getPendingFees(beneficiary)` returns the beneficiary's pending share for both tokens in the pair
+- `collectFees()` sends a transaction; the caller needs a wallet client
+- Anyone can call `collectFees()`, but only a configured beneficiary caller receives their pending share
+- The `collectFees()` return values are the newly collected pool fees, not necessarily the caller's beneficiary payout
+- Works exclusively with initializer-side locked pools created with `pool.beneficiaries` and no-op migration
 - Pools in "Locked" status (status = 2) use the multicurve initializer for collection
-- Pools in "Exited" status (status = 3) automatically stream fees through `StreamableFeesLockerV2`; the SDK
-  resolves the locker address and stream data for you
+- Pools in "Exited" status (status = 3) are migrated and are not currently supported by `MulticurvePool.getPendingFees()` or `MulticurvePool.collectFees()`
 - `getFeeSchedule()` returns decay schedule details only for dynamic-fee multicurve pools, otherwise `null`
 - Beneficiaries must be configured at pool creation time and cannot be changed
 
@@ -838,7 +848,7 @@ The SDK handles the complexity of fee collection by:
 - Allow any beneficiary to trigger collection after significant trading activity
 - Monitor swap events to determine optimal collection timing
 
-See [examples/multicurve-collect-fees.ts](./examples/multicurve-collect-fees.ts) for a complete example.
+See [docs/multicurve-fees.md](./docs/multicurve-fees.md) for a focused guide and [examples/multicurve-collect-fees.ts](./examples/multicurve-collect-fees.ts) for a complete example.
 
 ## Token Management
 
