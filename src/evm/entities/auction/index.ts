@@ -1,7 +1,13 @@
 export { StaticAuction } from './StaticAuction';
 export { DynamicAuction } from './DynamicAuction';
 export { MulticurvePool } from './MulticurvePool';
+export { MulticurveFees } from './MulticurveFees';
 export type { MulticurvePendingFees } from './MulticurvePool';
+export type {
+  MulticurveFeesOptions,
+  MulticurvePendingFeesOptions,
+  MulticurveTokenPendingFees,
+} from './MulticurveFees';
 export { RehypeDopplerHook } from './RehypeDopplerHook';
 export { RehypeDopplerHookMigrator } from './RehypeDopplerHookMigrator';
 export { OpeningAuction } from './OpeningAuction';

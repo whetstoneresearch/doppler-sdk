@@ -16,6 +16,10 @@ export interface MulticurvePendingFees {
   fees1: bigint;
 }
 
+export interface MulticurveTokenPendingFees extends MulticurvePendingFees {
+  tokenAddress: Address;
+}
+
 type PendingFeeReadFunctionName =
   | 'getShares'
   | 'getCumulatedFees0'
@@ -33,6 +37,8 @@ const PENDING_FEE_CALL_ORDER = [
   'getLastCumulatedFees0',
   'getLastCumulatedFees1',
 ] as const satisfies readonly PendingFeeCallFunctionName[];
+
+export const PENDING_FEE_PREVIEW_CALL_COUNT = PENDING_FEE_CALL_ORDER.length;
 
 export function createPendingFeePreviewCalls(
   target: Address,

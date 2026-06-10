@@ -16,6 +16,7 @@ export {
   StaticAuction,
   DynamicAuction,
   MulticurvePool,
+  MulticurveFees,
   RehypeDopplerHook,
   RehypeDopplerHookMigrator,
   OpeningAuction,
@@ -23,7 +24,12 @@ export {
   OpeningAuctionBidManager,
   OpeningAuctionPositionManager,
 } from './entities/auction';
-export type { MulticurvePendingFees } from './entities/auction';
+export type {
+  MulticurveFeesOptions,
+  MulticurvePendingFees,
+  MulticurvePendingFeesOptions,
+  MulticurveTokenPendingFees,
+} from './entities/auction';
 
 // Export quoter
 export { Quoter } from './entities/quoter';
