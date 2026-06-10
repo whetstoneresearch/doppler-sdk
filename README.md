@@ -10,7 +10,7 @@ The Doppler SDK exposes network-specific entrypoints for creating, managing, and
 
 - **EVM Auctions**: Static auctions, dynamic auctions, and multicurve launches across Uniswap V3/V4 paths
 - **EVM Migration Paths**: Support for V2, V2 split, V4, V4 split, DopplerHook, and no-op migration
-- **EVM Multicurve Fees**: Pending-fee previews and beneficiary fee claiming for locked multicurve pools
+- **EVM Multicurve Fees**: Single-token and batched pending-fee previews plus beneficiary fee claiming for locked multicurve pools
 - **Solana Launches**: Initializer, CPMM, migrator, hook, oracle, and Token-2022-compatible instruction helpers
 - **Solana Clients and React**: Read clients, PDA helpers, generated codecs, and optional React bindings
 - **Token Management**: Built-in EVM support for DERC20 tokens with vesting
@@ -555,7 +555,7 @@ For decay pools, `pool.fee` is always the terminal fee (`endFee`) of the schedul
 When you want fee revenue to flow to specific addresses without migrating liquidity after the auction, use lockable beneficiaries with NoOp migration:
 
 ```typescript
-import { WAD } from '@whetstone-research/doppler-sdk/evm';
+import { MulticurveFees, WAD } from '@whetstone-research/doppler-sdk/evm';
 
 // Define beneficiaries with shares that sum to WAD (1e18 = 100%)
 // IMPORTANT: Protocol owner must be included with at least 5% shares
@@ -608,20 +608,26 @@ console.log('Asset address:', assetAddress);
 // const pool = await sdk.getMulticurvePool(assetAddress)
 // const pending = await pool.getPendingFees('0xBeneficiary...')
 // await pool.collectFees()
+//
+// To preview many locked multicurve tokens at once:
+// const fees = new MulticurveFees(publicClient, walletClient, tokenAddresses)
+// const pendingByToken = await fees.getPendingFees('0xBeneficiary...')
 ```
 
 **Important Notes:**
 
 - Set `fee` > 0 (e.g., 3000 for 0.3%) to accumulate trading fees for beneficiaries
 - **Save the asset address** (token address) returned from creation - you need it to collect fees later
-- Use `getPendingFees(beneficiary)` to preview a beneficiary's claimable token0/token1 fees
+- Use `MulticurvePool.getPendingFees(beneficiary)` to preview a beneficiary's claimable token0/token1 fees for one pool
+- Use `MulticurveFees.getPendingFees(beneficiary)` to preview pending fees for multiple tokens with one multicall by default
+- Pass `tokenBatchSize` to `MulticurveFees` when an RPC provider needs large pending-fee previews split into smaller token batches
 - `collectFees()` claims a payout for the calling account only when the caller is a configured beneficiary
 - Pool enters "Locked" status (status = 2) and liquidity cannot be migrated
 - Beneficiaries are immutable and set at pool creation time
 - The SDK automatically handles PoolKey construction and PoolId computation for you
 
 See [examples/multicurve-lockable-beneficiaries.ts](./examples/multicurve-lockable-beneficiaries.ts) for a complete example.
-See [docs/multicurve-fees.md](./docs/multicurve-fees.md) for pending-fee previews, claiming, and current migrated-launch limitations.
+See [docs/multicurve-fees.md](./docs/multicurve-fees.md) for single-token and multi-token pending-fee previews, claiming, batching, and current migrated-launch limitations.
 
 #### Transaction gas override
 
@@ -781,6 +787,8 @@ Multicurve pools support fee collection and beneficiary claims when configured
 with `pool.beneficiaries` and no-op migration.
 
 ```typescript
+import { MulticurveFees } from '@whetstone-research/doppler-sdk/evm';
+
 // Get a multicurve pool instance using the asset address (token address)
 const pool = await sdk.getMulticurvePool(assetAddress);
 
@@ -804,6 +812,22 @@ if (feeSchedule) {
 const pendingFees = await pool.getPendingFees(beneficiaryAddress);
 console.log('Pending fees (token0):', pendingFees.fees0);
 console.log('Pending fees (token1):', pendingFees.fees1);
+
+// Preview pending fees for multiple launched tokens. By default this builds
+// one multicall for all requested tokens.
+const multicurveFees = new MulticurveFees(
+  publicClient,
+  walletClient,
+  [assetAddress, anotherAssetAddress],
+  { tokenBatchSize: 25 },
+);
+const pendingFeesByToken =
+  await multicurveFees.getPendingFees(beneficiaryAddress);
+for (const pendingFees of pendingFeesByToken) {
+  console.log('Asset:', pendingFees.tokenAddress);
+  console.log('Pending fees (token0):', pendingFees.fees0);
+  console.log('Pending fees (token1):', pendingFees.fees1);
+}
 
 // Claim fees from a beneficiary wallet while the pool is locked.
 // Any account can call collectFees(), but only a configured beneficiary caller
@@ -831,7 +855,9 @@ The SDK handles the complexity of fee collection by:
 **Important Notes:**
 
 - Fees accumulate from swap activity on the pool (only if fee tier > 0)
-- `getPendingFees(beneficiary)` returns the beneficiary's pending share for both tokens in the pair
+- `MulticurvePool.getPendingFees(beneficiary)` returns the beneficiary's pending share for both tokens in one pair
+- `MulticurveFees.getPendingFees(beneficiary)` returns pending fees for each requested token and uses one multicall by default
+- `MulticurveFees` accepts `tokenBatchSize` when large token lists need to be split into smaller multicalls
 - `collectFees()` sends a transaction; the caller needs a wallet client
 - Anyone can call `collectFees()`, but only a configured beneficiary caller receives their pending share
 - The `collectFees()` return values are the newly collected pool fees, not necessarily the caller's beneficiary payout
@@ -843,12 +869,13 @@ The SDK handles the complexity of fee collection by:
 
 **Common Use Cases:**
 
+- Preview pending fees for a portfolio or paginated token list
 - Set up periodic fee collection (e.g., daily or weekly)
 - Integrate with a bot that automatically collects fees when threshold is reached
 - Allow any beneficiary to trigger collection after significant trading activity
 - Monitor swap events to determine optimal collection timing
 
-See [docs/multicurve-fees.md](./docs/multicurve-fees.md) for a focused guide and [examples/multicurve-collect-fees.ts](./examples/multicurve-collect-fees.ts) for a complete example.
+See [docs/multicurve-fees.md](./docs/multicurve-fees.md) for a focused guide, [examples/multicurve-get-pending-fees.ts](./examples/multicurve-get-pending-fees.ts) for batched previews, and [examples/multicurve-collect-fees.ts](./examples/multicurve-collect-fees.ts) for claims.
 
 ## Token Management
 

@@ -5,26 +5,23 @@ import {
   type Hash,
 } from 'viem';
 import {
-  LockablePoolStatus,
   type MulticurveDecayFeeSchedule,
   type MulticurvePoolState,
   type SupportedPublicClient,
 } from '../../types';
 import { getAddresses } from '../../addresses';
 import type { SupportedChainId } from '../../addresses';
-import { computePoolId } from '../../utils/poolKey';
-import { callAggregate3, type Multicall3Client } from '../../utils/multicall3';
-import {
-  calculatePendingFees,
-  createPendingFeePreviewCalls,
-  type MulticurvePendingFees,
-} from './multicurve/multicurvePendingFees';
+import type { MulticurvePendingFees } from './multicurve/multicurvePendingFees';
 import {
   findMulticurveInitializerForPool,
   type InitializerDiscoveryClient,
 } from './multicurve/multicurveInitializerDiscovery';
 import { collectMulticurveFees } from './multicurve/multicurveFeeCollection';
 import { getMulticurveFeeSchedule } from './multicurve/multicurveFeeSchedule';
+import {
+  getPendingFeesForMulticurvePool,
+  type MulticurvePendingFeesClient,
+} from './multicurve/multicurvePendingFeeReader';
 export type { MulticurvePendingFees } from './multicurve/multicurvePendingFees';
 
 /**
@@ -135,26 +132,11 @@ export class MulticurvePool {
    * Preview pending fees for a beneficiary on an initializer-side multicurve pool.
    */
   async getPendingFees(beneficiary: Address): Promise<MulticurvePendingFees> {
-    const { initializerAddress, state } = await this.findInitializerForPool();
-
-    if (state.status === LockablePoolStatus.Exited) {
-      throw new Error(
-        'Pending fee preview is only supported for initializer-side multicurve pools',
-      );
-    }
-
-    if (state.status !== LockablePoolStatus.Locked) {
-      throw new Error('Multicurve pool is not locked or was migrated');
-    }
-
-    const poolId = computePoolId(state.poolKey);
-
-    const callResults = await callAggregate3(
-      this.rpc as Multicall3Client,
-      createPendingFeePreviewCalls(initializerAddress, poolId, beneficiary),
-    );
-
-    return calculatePendingFees(callResults);
+    return getPendingFeesForMulticurvePool({
+      client: this.rpc as MulticurvePendingFeesClient,
+      beneficiary,
+      poolContext: await this.findInitializerForPool(),
+    });
   }
 
   /**

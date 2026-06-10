@@ -28,6 +28,10 @@ Create a multicurve auction on Base Sepolia using NoOp migration (no liquidity m
 
 Collect and distribute trading fees from a multicurve pool with lockable beneficiaries. Demonstrates how beneficiaries can claim accumulated fees from swap activity.
 
+### 5a. [Multicurve Pending Fee Preview](./multicurve-get-pending-fees.ts)
+
+Preview pending fees for one beneficiary across multiple locked multicurve tokens with one multicall by default, plus optional token batching for RPC provider limits.
+
 ### 6. [Multicurve Pre-Buy with WETH](./multicurve-prebuy-weth.ts)
 
 Atomically create a multicurve auction and pre-buy tokens using WETH (not ETH) with Permit2 signatures. Demonstrates using `doppler-router` to build Universal Router commands for V4 swaps.
