@@ -57,7 +57,6 @@ export function getCurveSwapExactInDiscriminatorBytes() {
 
 export type CurveSwapExactInInstruction<
   TProgram extends string = typeof INITIALIZER_PROGRAM_ADDRESS,
-  TAccountConfig extends string | AccountMeta<string> = string,
   TAccountLaunch extends string | AccountMeta<string> = string,
   TAccountLaunchAuthority extends string | AccountMeta<string> = string,
   TAccountBaseVault extends string | AccountMeta<string> = string,
@@ -76,9 +75,6 @@ export type CurveSwapExactInInstruction<
   InstructionWithData<ReadonlyUint8Array> &
   InstructionWithAccounts<
     [
-      TAccountConfig extends string
-        ? ReadonlyAccount<TAccountConfig>
-        : TAccountConfig,
       TAccountLaunch extends string
         ? WritableAccount<TAccountLaunch>
         : TAccountLaunch,
@@ -167,7 +163,6 @@ export function getCurveSwapExactInInstructionDataCodec(): FixedSizeCodec<
 }
 
 export type CurveSwapExactInAsyncInput<
-  TAccountConfig extends string = string,
   TAccountLaunch extends string = string,
   TAccountLaunchAuthority extends string = string,
   TAccountBaseVault extends string = string,
@@ -182,7 +177,6 @@ export type CurveSwapExactInAsyncInput<
   TAccountBaseTokenProgram extends string = string,
   TAccountQuoteTokenProgram extends string = string,
 > = {
-  config?: Address<TAccountConfig>;
   launch: Address<TAccountLaunch>;
   launchAuthority: Address<TAccountLaunchAuthority>;
   baseVault: Address<TAccountBaseVault>;
@@ -203,7 +197,6 @@ export type CurveSwapExactInAsyncInput<
 };
 
 export async function getCurveSwapExactInInstructionAsync<
-  TAccountConfig extends string,
   TAccountLaunch extends string,
   TAccountLaunchAuthority extends string,
   TAccountBaseVault extends string,
@@ -220,7 +213,6 @@ export async function getCurveSwapExactInInstructionAsync<
   TProgramAddress extends Address = typeof INITIALIZER_PROGRAM_ADDRESS,
 >(
   input: CurveSwapExactInAsyncInput<
-    TAccountConfig,
     TAccountLaunch,
     TAccountLaunchAuthority,
     TAccountBaseVault,
@@ -239,7 +231,6 @@ export async function getCurveSwapExactInInstructionAsync<
 ): Promise<
   CurveSwapExactInInstruction<
     TProgramAddress,
-    TAccountConfig,
     TAccountLaunch,
     TAccountLaunchAuthority,
     TAccountBaseVault,
@@ -260,7 +251,6 @@ export async function getCurveSwapExactInInstructionAsync<
 
   // Original accounts.
   const originalAccounts = {
-    config: { value: input.config ?? null, isWritable: false },
     launch: { value: input.launch ?? null, isWritable: true },
     launchAuthority: {
       value: input.launchAuthority ?? null,
@@ -296,14 +286,6 @@ export async function getCurveSwapExactInInstructionAsync<
   const args = { ...input };
 
   // Resolve default values.
-  if (!accounts.config.value) {
-    accounts.config.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(new Uint8Array([99, 111, 110, 102, 105, 103])),
-      ],
-    });
-  }
   if (!accounts.launchFeeState.value) {
     accounts.launchFeeState.value = await getProgramDerivedAddress({
       programAddress,
@@ -327,7 +309,6 @@ export async function getCurveSwapExactInInstructionAsync<
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta('config', accounts.config),
       getAccountMeta('launch', accounts.launch),
       getAccountMeta('launchAuthority', accounts.launchAuthority),
       getAccountMeta('baseVault', accounts.baseVault),
@@ -348,7 +329,6 @@ export async function getCurveSwapExactInInstructionAsync<
     programAddress,
   } as CurveSwapExactInInstruction<
     TProgramAddress,
-    TAccountConfig,
     TAccountLaunch,
     TAccountLaunchAuthority,
     TAccountBaseVault,
@@ -366,7 +346,6 @@ export async function getCurveSwapExactInInstructionAsync<
 }
 
 export type CurveSwapExactInInput<
-  TAccountConfig extends string = string,
   TAccountLaunch extends string = string,
   TAccountLaunchAuthority extends string = string,
   TAccountBaseVault extends string = string,
@@ -381,7 +360,6 @@ export type CurveSwapExactInInput<
   TAccountBaseTokenProgram extends string = string,
   TAccountQuoteTokenProgram extends string = string,
 > = {
-  config: Address<TAccountConfig>;
   launch: Address<TAccountLaunch>;
   launchAuthority: Address<TAccountLaunchAuthority>;
   baseVault: Address<TAccountBaseVault>;
@@ -402,7 +380,6 @@ export type CurveSwapExactInInput<
 };
 
 export function getCurveSwapExactInInstruction<
-  TAccountConfig extends string,
   TAccountLaunch extends string,
   TAccountLaunchAuthority extends string,
   TAccountBaseVault extends string,
@@ -419,7 +396,6 @@ export function getCurveSwapExactInInstruction<
   TProgramAddress extends Address = typeof INITIALIZER_PROGRAM_ADDRESS,
 >(
   input: CurveSwapExactInInput<
-    TAccountConfig,
     TAccountLaunch,
     TAccountLaunchAuthority,
     TAccountBaseVault,
@@ -437,7 +413,6 @@ export function getCurveSwapExactInInstruction<
   config?: { programAddress?: TProgramAddress },
 ): CurveSwapExactInInstruction<
   TProgramAddress,
-  TAccountConfig,
   TAccountLaunch,
   TAccountLaunchAuthority,
   TAccountBaseVault,
@@ -457,7 +432,6 @@ export function getCurveSwapExactInInstruction<
 
   // Original accounts.
   const originalAccounts = {
-    config: { value: input.config ?? null, isWritable: false },
     launch: { value: input.launch ?? null, isWritable: true },
     launchAuthority: {
       value: input.launchAuthority ?? null,
@@ -495,7 +469,6 @@ export function getCurveSwapExactInInstruction<
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta('config', accounts.config),
       getAccountMeta('launch', accounts.launch),
       getAccountMeta('launchAuthority', accounts.launchAuthority),
       getAccountMeta('baseVault', accounts.baseVault),
@@ -516,7 +489,6 @@ export function getCurveSwapExactInInstruction<
     programAddress,
   } as CurveSwapExactInInstruction<
     TProgramAddress,
-    TAccountConfig,
     TAccountLaunch,
     TAccountLaunchAuthority,
     TAccountBaseVault,
@@ -539,21 +511,20 @@ export type ParsedCurveSwapExactInInstruction<
 > = {
   programAddress: Address<TProgram>;
   accounts: {
-    config: TAccountMetas[0];
-    launch: TAccountMetas[1];
-    launchAuthority: TAccountMetas[2];
-    baseVault: TAccountMetas[3];
-    quoteVault: TAccountMetas[4];
-    userBaseAccount: TAccountMetas[5];
-    userQuoteAccount: TAccountMetas[6];
-    baseMint: TAccountMetas[7];
-    quoteMint: TAccountMetas[8];
-    user: TAccountMetas[9];
+    launch: TAccountMetas[0];
+    launchAuthority: TAccountMetas[1];
+    baseVault: TAccountMetas[2];
+    quoteVault: TAccountMetas[3];
+    userBaseAccount: TAccountMetas[4];
+    userQuoteAccount: TAccountMetas[5];
+    baseMint: TAccountMetas[6];
+    quoteMint: TAccountMetas[7];
+    user: TAccountMetas[8];
     /** Optional hook program (must match launch.hook_program if set) */
-    hookProgram?: TAccountMetas[10] | undefined;
-    launchFeeState: TAccountMetas[11];
-    baseTokenProgram: TAccountMetas[12];
-    quoteTokenProgram: TAccountMetas[13];
+    hookProgram?: TAccountMetas[9] | undefined;
+    launchFeeState: TAccountMetas[10];
+    baseTokenProgram: TAccountMetas[11];
+    quoteTokenProgram: TAccountMetas[12];
   };
   data: CurveSwapExactInInstructionData;
 };
@@ -566,12 +537,12 @@ export function parseCurveSwapExactInInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedCurveSwapExactInInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 14) {
+  if (instruction.accounts.length < 13) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 14,
+        expectedAccountMetas: 13,
       },
     );
   }
@@ -590,7 +561,6 @@ export function parseCurveSwapExactInInstruction<
   return {
     programAddress: instruction.programAddress,
     accounts: {
-      config: getNextAccount(),
       launch: getNextAccount(),
       launchAuthority: getNextAccount(),
       baseVault: getNextAccount(),

@@ -487,7 +487,6 @@ async function main() {
 
     const swapIx = initializer.createCurveSwapExactInInstruction(
       {
-        config: initializerConfig,
         launch,
         launchAuthority,
         baseVault: baseVault.address,
@@ -513,7 +512,6 @@ async function main() {
 
     const unsignedSwapIx = initializer.createCurveSwapExactInInstruction(
       {
-        config: initializerConfig,
         launch,
         launchAuthority,
         baseVault: baseVault.address,

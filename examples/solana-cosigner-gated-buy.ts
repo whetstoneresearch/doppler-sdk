@@ -476,7 +476,6 @@ async function main() {
     getSyncNativeInstruction({ account: userQuoteAta }),
   ];
   const swapAccounts = {
-    config: deployment.initializerConfig,
     launch,
     launchAuthority,
     baseVault: baseVault.address,

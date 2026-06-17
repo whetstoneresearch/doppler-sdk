@@ -524,7 +524,6 @@ async function main() {
     }),
   ];
   const swapAccounts = {
-    config: deployment.initializerConfig,
     launch,
     launchAuthority,
     baseVault: baseVault.address,
