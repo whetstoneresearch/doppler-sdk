@@ -59,7 +59,6 @@ function createRemainingAccountMeta(
 }
 
 export interface CurveSwapExactInAccounts {
-  config: Address;
   launch: Address;
   launchAuthority: Address;
   baseVault: Address;
@@ -83,7 +82,6 @@ export function createCurveSwapExactInInstruction(
   programId: Address = INITIALIZER_PROGRAM_ID,
 ): Instruction {
   const {
-    config,
     launch,
     launchAuthority,
     baseVault,
@@ -101,7 +99,6 @@ export function createCurveSwapExactInInstruction(
   } = accounts;
 
   const keys: (AccountMeta | AccountSignerMeta)[] = [
-    { address: config, role: AccountRole.READONLY },
     { address: launch, role: AccountRole.WRITABLE },
     { address: launchAuthority, role: AccountRole.READONLY },
     { address: baseVault, role: AccountRole.WRITABLE },
