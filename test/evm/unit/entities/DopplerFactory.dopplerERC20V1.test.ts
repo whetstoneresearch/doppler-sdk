@@ -213,7 +213,7 @@ describe('DopplerFactory DopplerERC20V1 token routing', () => {
     expect(decoded[9]).toBe(getAddress(controller));
     expect(decoded[10]).toEqual([
       getAddress(excluded),
-      mockAddresses.v3Initializer,
+      mockAddresses.lockableV3Initializer,
       mockAddresses.v2Migrator,
       DEAD_ADDRESS,
       computeUniswapV3PoolAddress(tokenAddress, mockAddresses.weth, 3000),
@@ -287,7 +287,7 @@ describe('DopplerFactory DopplerERC20V1 token routing', () => {
     const decoded = decodeV1TokenFactoryData(createParams.tokenFactoryData);
 
     expect(decoded[10]).toEqual([
-      mockAddresses.v3Initializer,
+      mockAddresses.lockableV3Initializer,
       mockAddresses.v4Migrator,
       mockAddresses.poolManager,
       DEAD_ADDRESS,
@@ -456,7 +456,7 @@ describe('DopplerFactory DopplerERC20V1 token routing', () => {
     expect(decoded[10]).toContain(mockTimelockAddress);
   });
 
-  it('keeps standard cliff vesting on the DERC20 V2 route without DopplerERC20V1-specific fields', async () => {
+  it('routes standard cliff vesting through the DopplerERC20V1 route', async () => {
     const params = StaticAuctionBuilder.forChain(1)
       .tokenConfig({
         name: 'Static Cliff',
@@ -481,8 +481,17 @@ describe('DopplerFactory DopplerERC20V1 token routing', () => {
       .build();
 
     const createParams = await factory.encodeCreateStaticAuctionParams(params);
+    const decoded = decodeV1TokenFactoryData(createParams.tokenFactoryData);
 
-    expect(createParams.tokenFactory).toBe(mockAddresses.derc20V2Factory);
+    // Standard tokens are now DopplerERC20V1; cliff vesting is preserved in the
+    // V1 schedule tuple, beneficiaries, and amounts.
+    expect(createParams.tokenFactory).toBe(mockAddresses.dopplerERC20V1Factory);
+    expect(decoded[2]).toEqual([
+      { cliff: 90n * BigInt(DAY_SECONDS), duration: 180n * BigInt(DAY_SECONDS) },
+    ]);
+    expect(decoded[3]).toEqual([getAddress(beneficiary)]);
+    expect(decoded[4]).toEqual([0n]);
+    expect(decoded[5]).toEqual([parseEther('100000')]);
   });
 
   it('honors generic tokenFactory overrides on the DopplerERC20V1 path', async () => {
@@ -712,7 +721,7 @@ describe('DopplerFactory DopplerERC20V1 token routing', () => {
       await factory.encodeCreateDynamicAuctionParams(params);
     const decoded = decodeV1TokenFactoryData(createParams.tokenFactoryData);
 
-    expect(decoded[10]).toContain(mockAddresses.streamableFeesLocker);
+    expect(decoded[10]).toContain(mockAddresses.streamableFeesLockerV2);
   });
 
   it('adds the hook migrator locker for DopplerHook migrations', async () => {
@@ -1252,7 +1261,7 @@ describe('DopplerFactory DopplerERC20V1 token routing', () => {
     const decoded = decodeV1TokenFactoryData(createParams.tokenFactoryData);
 
     expect(decoded[10]).toEqual([
-      mockAddresses.v3Initializer,
+      mockAddresses.lockableV3Initializer,
       mockAddresses.v2Migrator,
       DEAD_ADDRESS,
       computeUniswapV3PoolAddress(tokenAddress, mockAddresses.weth, 3000),

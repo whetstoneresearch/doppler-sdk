@@ -68,7 +68,7 @@ describe('Multicurve + NoOp (no migration) + Doppler404 (Base Sepolia fork)', ()
             address: addresses.airlock,
             abi: airlockAbi,
             functionName: 'getModuleState',
-            args: [addresses.v4MulticurveInitializer!],
+            args: [addresses.dopplerHookInitializer!],
           }),
           publicClient.readContract({
             address: addresses.airlock,

@@ -25,7 +25,6 @@ import type {
   Doppler404TokenConfig,
   DopplerERC20V1TokenConfig,
   InferredDopplerERC20V1TokenConfig,
-  StandardTokenConfig,
   SaleConfig,
   VestingConfig,
   SupportedChainId,
@@ -42,7 +41,6 @@ import type {
   ProceedsSplitConfig,
   StreamableFeesConfig,
 } from '../types';
-import { hasDopplerERC20V1OnlyTokenConfigFields } from '../builders/shared';
 import { RehypeFeeRoutingMode } from '../types';
 import type { ModuleAddressOverrides } from '../types';
 import { getAddresses } from '../addresses';
@@ -56,7 +54,6 @@ import {
   OPENING_AUCTION_FLAGS,
   DEFAULT_V3_NUM_POSITIONS,
   DEFAULT_V3_MAX_SHARE_TO_BE_SOLD,
-  DEFAULT_V4_YEARLY_MINT_RATE,
   DEFAULT_V3_INITIAL_VOTING_DELAY,
   DEFAULT_V3_INITIAL_VOTING_PERIOD,
   DEFAULT_V3_INITIAL_PROPOSAL_THRESHOLD,
@@ -67,8 +64,6 @@ import {
   TICK_SPACINGS,
   DOPPLER_MAX_TICK_SPACING,
   DYNAMIC_FEE_FLAG,
-  DECAY_MAX_START_FEE,
-  V4_MAX_FEE,
   OPENING_AUCTION_PHASE_SETTLED,
   OPENING_AUCTION_STATUS_ACTIVE,
   INT24_MIN,
@@ -85,12 +80,9 @@ import { normalizeRehypeDopplerHookMigratorConfig } from '../utils/dopplerHookMi
 import {
   airlockAbi,
   bundlerAbi,
-  DERC20Bytecode,
-  DERC2080Bytecode,
   DopplerBytecode,
   DopplerDN404Bytecode,
   OpeningAuctionBytecode,
-  v4MulticurveInitializerAbi,
   openingAuctionAbi,
   openingAuctionInitializerAbi,
 } from '../abis';
@@ -119,20 +111,10 @@ const erc20BalanceOfAbi = [
   },
 ] as const;
 
-// TokenFactory80 has the same deterministic CREATE2 address across all chains
-const TOKEN_FACTORY_80_ADDRESS =
-  '0xf0b5141dd9096254b2ca624dff26024f46087229' as const;
-
-type ResolvedMulticurveInitializerMode =
-  | { type: 'standard' }
-  | { type: 'scheduled'; startTime: number }
-  | {
-      type: 'decay';
-      startTime: number;
-      startFee: number;
-      durationSeconds: number;
-    }
-  | { type: 'rehype'; hookConfig?: RehypeDopplerHookConfig };
+type ResolvedMulticurveInitializerMode = {
+  type: 'rehype';
+  hookConfig?: RehypeDopplerHookConfig;
+};
 
 type NormalizedRehypeHookConfig = {
   hookAddress: Address;
@@ -147,49 +129,12 @@ type NormalizedRehypeHookConfig = {
   farTick?: number;
 };
 
-type StandardTokenFactoryMode = 'legacy' | 'v2';
-type TokenFactoryVariant =
-  | 'standard'
-  | 'standard-v2'
-  | 'dopplerERC20V1'
-  | 'doppler404';
-
-type LegacyStandardTokenFactoryData = {
-  kind: 'legacy';
-  name: string;
-  symbol: string;
-  initialSupply: bigint;
-  airlock: Address;
-  yearlyMintRate: bigint;
-  vestingDuration: bigint;
-  recipients: Address[];
-  amounts: bigint[];
-  tokenURI: string;
-};
+type TokenFactoryVariant = 'dopplerERC20V1' | 'doppler404';
 
 type V2VestingSchedule = {
   cliff: bigint;
   duration: bigint;
 };
-
-type V2StandardTokenFactoryData = {
-  kind: 'v2';
-  name: string;
-  symbol: string;
-  initialSupply: bigint;
-  airlock: Address;
-  yearlyMintRate: bigint;
-  schedules: V2VestingSchedule[];
-  beneficiaries: Address[];
-  scheduleIds: bigint[];
-  amounts: bigint[];
-  tokenURI: string;
-  implementation: Address;
-};
-
-type StandardTokenFactoryData =
-  | LegacyStandardTokenFactoryData
-  | V2StandardTokenFactoryData;
 
 type DopplerERC20V1TokenFactoryData = {
   kind: 'dopplerERC20V1';
@@ -231,16 +176,6 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
 
   private hasCustomV2Schedules(vesting?: VestingConfig): boolean {
     return (vesting?.allocations?.length ?? 0) > 0;
-  }
-
-  private usesDerc20V2Vesting(vesting?: VestingConfig): boolean {
-    if (!vesting) {
-      return false;
-    }
-
-    return (
-      this.hasCustomV2Schedules(vesting) || (vesting.cliffDuration ?? 0) > 0
-    );
   }
 
   private resolveVestingAllocations(args: {
@@ -575,17 +510,12 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     migration: MigrationConfig,
     addresses: ReturnType<typeof getAddresses>,
   ): (Address | undefined)[] {
-    if (
-      (migration.type === 'uniswapV4' || migration.type === 'uniswapV4Split') &&
-      migration.streamableFees
-    ) {
-      return [addresses.streamableFeesLocker];
+    if (migration.type === 'uniswapV4' && migration.streamableFees) {
+      return [addresses.streamableFeesLockerV2];
     }
 
     if (migration.type === 'dopplerHook') {
-      return [
-        addresses.streamableFeesLockerV2 ?? addresses.streamableFeesLocker,
-      ];
+      return [addresses.streamableFeesLockerV2];
     }
 
     return [];
@@ -892,174 +822,6 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     return { schedules, scheduleIds };
   }
 
-  private resolveStandardTokenFactoryMode(args: {
-    vesting?: VestingConfig;
-    tokenFactory: Address;
-    addresses: ReturnType<typeof getAddresses>;
-  }): StandardTokenFactoryMode {
-    if (this.usesDerc20V2Vesting(args.vesting)) {
-      return 'v2';
-    }
-
-    const v2Factory = args.addresses.derc20V2Factory;
-    if (
-      v2Factory &&
-      args.tokenFactory.toLowerCase() === v2Factory.toLowerCase()
-    ) {
-      return 'v2';
-    }
-
-    return 'legacy';
-  }
-
-  private assertStandardTokenFactoryCompatibility(args: {
-    token: TokenConfig;
-    vesting?: VestingConfig;
-    tokenFactory: Address;
-    addresses: ReturnType<typeof getAddresses>;
-  }): void {
-    if (
-      this.isDoppler404Token(args.token) ||
-      this.isDopplerERC20V1Token(args.token) ||
-      !this.usesDerc20V2Vesting(args.vesting)
-    ) {
-      return;
-    }
-
-    const v2Factory = args.addresses.derc20V2Factory;
-    if (!v2Factory || v2Factory === ZERO_ADDRESS) {
-      throw new Error(
-        'Cliff vesting requires the DERC20 V2 factory, but no V2 factory is configured for this chain.',
-      );
-    }
-
-    if (args.tokenFactory.toLowerCase() !== v2Factory.toLowerCase()) {
-      throw new Error(
-        'Cliff vesting requires the DERC20 V2 factory. Remove the tokenFactory override or point it at the chain DERC20 V2 factory.',
-      );
-    }
-  }
-
-  private buildStandardTokenFactoryData(args: {
-    token: StandardTokenConfig;
-    sale: SaleConfig;
-    vesting?: VestingConfig;
-    userAddress: Address;
-    airlock: Address;
-    tokenFactory: Address;
-    addresses: ReturnType<typeof getAddresses>;
-  }): StandardTokenFactoryData {
-    const { recipients, amounts } = this.resolveVestingAllocations(args);
-    const yearlyMintRate =
-      args.token.yearlyMintRate ?? DEFAULT_V4_YEARLY_MINT_RATE;
-    const mode = this.resolveStandardTokenFactoryMode({
-      vesting: args.vesting,
-      tokenFactory: args.tokenFactory,
-      addresses: args.addresses,
-    });
-
-    if (mode === 'v2') {
-      const implementation = args.addresses.derc20V2Implementation;
-      if (!implementation || implementation === ZERO_ADDRESS) {
-        throw new Error(
-          'DERC20 V2 implementation address not configured for this chain.',
-        );
-      }
-
-      const { schedules, scheduleIds } = this.resolveV2VestingSchedules({
-        vesting: args.vesting,
-        recipientCount: recipients.length,
-      });
-
-      return {
-        kind: 'v2',
-        name: args.token.name,
-        symbol: args.token.symbol,
-        initialSupply: args.sale.initialSupply,
-        airlock: args.airlock,
-        yearlyMintRate,
-        schedules,
-        beneficiaries: recipients,
-        scheduleIds,
-        amounts,
-        tokenURI: args.token.tokenURI,
-        implementation,
-      };
-    }
-
-    return {
-      kind: 'legacy',
-      name: args.token.name,
-      symbol: args.token.symbol,
-      initialSupply: args.sale.initialSupply,
-      airlock: args.airlock,
-      yearlyMintRate,
-      vestingDuration: BigInt(args.vesting?.duration ?? 0),
-      recipients,
-      amounts,
-      tokenURI: args.token.tokenURI,
-    };
-  }
-
-  private encodeStandardTokenFactoryData(
-    tokenFactoryData: StandardTokenFactoryData,
-  ): Hex {
-    if (tokenFactoryData.kind === 'v2') {
-      return encodeAbiParameters(
-        [
-          { type: 'string' },
-          { type: 'string' },
-          { type: 'uint256' },
-          {
-            type: 'tuple[]',
-            components: [
-              { type: 'uint64', name: 'cliff' },
-              { type: 'uint64', name: 'duration' },
-            ],
-          },
-          { type: 'address[]' },
-          { type: 'uint256[]' },
-          { type: 'uint256[]' },
-          { type: 'string' },
-        ],
-        [
-          tokenFactoryData.name,
-          tokenFactoryData.symbol,
-          tokenFactoryData.yearlyMintRate,
-          tokenFactoryData.schedules.map((schedule) => ({
-            cliff: schedule.cliff,
-            duration: schedule.duration,
-          })),
-          tokenFactoryData.beneficiaries,
-          tokenFactoryData.scheduleIds,
-          tokenFactoryData.amounts,
-          tokenFactoryData.tokenURI,
-        ],
-      );
-    }
-
-    return encodeAbiParameters(
-      [
-        { type: 'string' },
-        { type: 'string' },
-        { type: 'uint256' },
-        { type: 'uint256' },
-        { type: 'address[]' },
-        { type: 'uint256[]' },
-        { type: 'string' },
-      ],
-      [
-        tokenFactoryData.name,
-        tokenFactoryData.symbol,
-        tokenFactoryData.yearlyMintRate,
-        tokenFactoryData.vestingDuration,
-        tokenFactoryData.recipients,
-        tokenFactoryData.amounts,
-        tokenFactoryData.tokenURI,
-      ],
-    );
-  }
-
   private encodeDopplerERC20V1TokenFactoryData(
     tokenFactoryData: DopplerERC20V1TokenFactoryData,
   ): Hex {
@@ -1107,59 +869,6 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       `0x602c3d8160093d39f33d3d3d3d363d3d37363d73${implementation.slice(
         2,
       )}5af43d3d93803e602a57fd5bf3`,
-    );
-  }
-
-  private computeStandardTokenInitHash(
-    tokenFactoryData: StandardTokenFactoryData,
-    tokenFactory: Address,
-  ): Hash {
-    if (tokenFactoryData.kind === 'v2') {
-      return this.computeSoladyCloneInitCodeHash(
-        tokenFactoryData.implementation,
-      );
-    }
-
-    const initData = encodeAbiParameters(
-      [
-        { type: 'string' },
-        { type: 'string' },
-        { type: 'uint256' },
-        { type: 'address' },
-        { type: 'address' },
-        { type: 'uint256' },
-        { type: 'uint256' },
-        { type: 'address[]' },
-        { type: 'uint256[]' },
-        { type: 'string' },
-      ],
-      [
-        tokenFactoryData.name,
-        tokenFactoryData.symbol,
-        tokenFactoryData.initialSupply,
-        tokenFactoryData.airlock,
-        tokenFactoryData.airlock,
-        tokenFactoryData.yearlyMintRate,
-        tokenFactoryData.vestingDuration,
-        tokenFactoryData.recipients,
-        tokenFactoryData.amounts,
-        tokenFactoryData.tokenURI,
-      ],
-    );
-
-    const isTokenFactory80 =
-      tokenFactory.toLowerCase() === TOKEN_FACTORY_80_ADDRESS;
-
-    return keccak256(
-      encodePacked(
-        ['bytes', 'bytes'],
-        [
-          isTokenFactory80
-            ? (DERC2080Bytecode as Hex)
-            : (DERC20Bytecode as Hex),
-          initData,
-        ],
-      ),
     );
   }
 
@@ -1275,38 +984,25 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       params.modules?.tokenFactory ??
       (this.isDoppler404Token(params.token)
         ? (addresses.doppler404Factory as Address | undefined)
-        : this.isDopplerERC20V1Token(params.token)
-          ? (params.modules?.dopplerERC20V1Factory ??
-            addresses.dopplerERC20V1Factory)
-          : this.usesDerc20V2Vesting(params.vesting)
-            ? addresses.derc20V2Factory
-            : addresses.tokenFactory);
+        : (params.modules?.dopplerERC20V1Factory ??
+          addresses.dopplerERC20V1Factory));
 
     if (!resolvedTokenFactory || resolvedTokenFactory === ZERO_ADDRESS) {
       throw new Error(
         'Token factory address not configured. Provide an explicit address via builder.withTokenFactory(...) or ensure chain config includes a valid factory.',
       );
     }
-    this.assertStandardTokenFactoryCompatibility({
-      token: params.token,
-      vesting: params.vesting,
-      tokenFactory: resolvedTokenFactory,
-      addresses,
-    });
 
     const poolInitializerAddress: Address = (() => {
-      if (hasBeneficiaries) {
-        const lockableInitializer =
-          params.modules?.lockableV3Initializer ??
-          addresses.lockableV3Initializer;
-        if (!lockableInitializer) {
-          throw new Error(
-            'Lockable V3 initializer address not configured on this chain. Required when using beneficiaries.',
-          );
-        }
-        return lockableInitializer;
+      const lockableInitializer =
+        params.modules?.lockableV3Initializer ??
+        addresses.lockableV3Initializer;
+      if (!lockableInitializer) {
+        throw new Error(
+          'Lockable V3 initializer address not configured on this chain.',
+        );
       }
-      return params.modules?.v3Initializer ?? addresses.v3Initializer;
+      return lockableInitializer;
     })();
     const liquidityMigratorAddress = this.getMigratorAddress(
       params.migration,
@@ -1331,9 +1027,11 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
         ],
         [params.token.name, params.token.symbol, baseURI, unit],
       );
-    } else if (this.isDopplerERC20V1Token(params.token)) {
+    } else {
       v1TokenFactoryData = this.resolveDopplerERC20V1TokenFactoryData({
-        token: params.token,
+        token: params.token as
+          | DopplerERC20V1TokenConfig
+          | InferredDopplerERC20V1TokenConfig,
         sale: params.sale,
         vesting: params.vesting,
         userAddress: params.userAddress,
@@ -1358,19 +1056,6 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       });
       tokenFactoryData =
         this.encodeDopplerERC20V1TokenFactoryData(v1TokenFactoryData);
-    } else {
-      const standardTokenFactoryData = this.buildStandardTokenFactoryData({
-        token: params.token as StandardTokenConfig,
-        sale: params.sale,
-        vesting: params.vesting,
-        userAddress: params.userAddress,
-        airlock: params.modules?.airlock ?? addresses.airlock,
-        tokenFactory: resolvedTokenFactory,
-        addresses,
-      });
-      tokenFactoryData = this.encodeStandardTokenFactoryData(
-        standardTokenFactoryData,
-      );
     }
 
     // 4. Encode governance factory data
@@ -1870,24 +1555,14 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       params.modules?.tokenFactory ??
       (this.isDoppler404Token(params.token)
         ? (addresses.doppler404Factory as Address | undefined)
-        : this.isDopplerERC20V1Token(params.token)
-          ? (params.modules?.dopplerERC20V1Factory ??
-            addresses.dopplerERC20V1Factory)
-          : this.usesDerc20V2Vesting(params.vesting)
-            ? addresses.derc20V2Factory
-            : addresses.tokenFactory);
+        : (params.modules?.dopplerERC20V1Factory ??
+          addresses.dopplerERC20V1Factory));
 
     if (!resolvedTokenFactoryDyn || resolvedTokenFactoryDyn === ZERO_ADDRESS) {
       throw new Error(
         'Token factory address not configured. Provide an explicit address via builder.withTokenFactory(...) or ensure chain config includes a valid factory.',
       );
     }
-    this.assertStandardTokenFactoryCompatibility({
-      token: params.token,
-      vesting: params.vesting,
-      tokenFactory: resolvedTokenFactoryDyn,
-      addresses,
-    });
 
     const poolInitializerAddress =
       params.modules?.v4Initializer ?? addresses.v4Initializer;
@@ -1908,39 +1583,30 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
             unit: t.unit !== undefined ? BigInt(t.unit) : 1000n,
           };
         })()
-      : this.isDopplerERC20V1Token(params.token)
-        ? this.resolveDopplerERC20V1TokenFactoryData({
-            token: params.token,
-            sale: params.sale,
-            vesting: params.vesting,
-            userAddress: params.userAddress,
-            addresses,
-            modules: params.modules,
-            protocolBalanceLimitExclusions:
-              includeProtocolBalanceLimitExclusions
-                ? [
-                    poolInitializerAddress,
-                    params.modules?.poolManager ?? addresses.poolManager,
-                    liquidityMigratorAddress,
-                    ...this.resolveMigrationLockerBalanceLimitExclusions(
-                      params.migration,
-                      addresses,
-                    ),
-                    ...this.resolveGovernanceBalanceLimitExclusions(
-                      params.governance,
-                    ),
-                  ]
-                : undefined,
-          })
-        : this.buildStandardTokenFactoryData({
-            token: params.token as StandardTokenConfig,
-            sale: params.sale,
-            vesting: params.vesting,
-            userAddress: params.userAddress,
-            airlock: params.modules?.airlock ?? addresses.airlock,
-            tokenFactory: resolvedTokenFactoryDyn,
-            addresses,
-          });
+      : this.resolveDopplerERC20V1TokenFactoryData({
+          token: params.token as
+            | DopplerERC20V1TokenConfig
+            | InferredDopplerERC20V1TokenConfig,
+          sale: params.sale,
+          vesting: params.vesting,
+          userAddress: params.userAddress,
+          addresses,
+          modules: params.modules,
+          protocolBalanceLimitExclusions: includeProtocolBalanceLimitExclusions
+            ? [
+                poolInitializerAddress,
+                params.modules?.poolManager ?? addresses.poolManager,
+                liquidityMigratorAddress,
+                ...this.resolveMigrationLockerBalanceLimitExclusions(
+                  params.migration,
+                  addresses,
+                ),
+                ...this.resolveGovernanceBalanceLimitExclusions(
+                  params.governance,
+                ),
+              ]
+            : undefined,
+        });
 
     // 5. Mine hook address with appropriate flags
 
@@ -1963,9 +1629,7 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       poolInitializerData: dopplerData,
       tokenVariant: this.isDoppler404Token(params.token)
         ? 'doppler404'
-        : this.isDopplerERC20V1Token(params.token)
-          ? 'dopplerERC20V1'
-          : 'standard',
+        : 'dopplerERC20V1',
       migration: params.migration,
       addresses,
       includeProtocolBalanceLimitExclusions,
@@ -2388,24 +2052,14 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       params.modules?.tokenFactory ??
       (this.isDoppler404Token(params.token)
         ? (addresses.doppler404Factory as Address | undefined)
-        : this.isDopplerERC20V1Token(params.token)
-          ? (params.modules?.dopplerERC20V1Factory ??
-            addresses.dopplerERC20V1Factory)
-          : this.usesDerc20V2Vesting(params.vesting)
-            ? addresses.derc20V2Factory
-            : addresses.tokenFactory);
+        : (params.modules?.dopplerERC20V1Factory ??
+          addresses.dopplerERC20V1Factory));
 
     if (!resolvedTokenFactory || resolvedTokenFactory === ZERO_ADDRESS) {
       throw new Error(
         'Token factory address not configured. Provide an explicit address via builder.withTokenFactory(...) or ensure chain config includes a valid factory.',
       );
     }
-    this.assertStandardTokenFactoryCompatibility({
-      token: params.token,
-      vesting: params.vesting,
-      tokenFactory: resolvedTokenFactory,
-      addresses,
-    });
 
     const liquidityMigratorAddress = this.getMigratorAddress(
       params.migration,
@@ -2424,40 +2078,31 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
             unit: t.unit !== undefined ? BigInt(t.unit) : 1000n,
           };
         })()
-      : this.isDopplerERC20V1Token(params.token)
-        ? this.resolveDopplerERC20V1TokenFactoryData({
-            token: params.token,
-            sale: params.sale,
-            vesting: params.vesting,
-            userAddress: params.userAddress,
-            addresses,
-            modules: params.modules,
-            protocolBalanceLimitExclusions:
-              includeProtocolBalanceLimitExclusions
-                ? [
-                    openingAuctionInitializer,
-                    poolManagerForAuction,
-                    auctionDeployer,
-                    liquidityMigratorAddress,
-                    ...this.resolveMigrationLockerBalanceLimitExclusions(
-                      params.migration,
-                      addresses,
-                    ),
-                    ...this.resolveGovernanceBalanceLimitExclusions(
-                      params.governance,
-                    ),
-                  ]
-                : undefined,
-          })
-        : this.buildStandardTokenFactoryData({
-            token: params.token as StandardTokenConfig,
-            sale: params.sale,
-            vesting: params.vesting,
-            userAddress: params.userAddress,
-            airlock: params.modules?.airlock ?? addresses.airlock,
-            tokenFactory: resolvedTokenFactory,
-            addresses,
-          });
+      : this.resolveDopplerERC20V1TokenFactoryData({
+          token: params.token as
+            | DopplerERC20V1TokenConfig
+            | InferredDopplerERC20V1TokenConfig,
+          sale: params.sale,
+          vesting: params.vesting,
+          userAddress: params.userAddress,
+          addresses,
+          modules: params.modules,
+          protocolBalanceLimitExclusions: includeProtocolBalanceLimitExclusions
+            ? [
+                openingAuctionInitializer,
+                poolManagerForAuction,
+                auctionDeployer,
+                liquidityMigratorAddress,
+                ...this.resolveMigrationLockerBalanceLimitExclusions(
+                  params.migration,
+                  addresses,
+                ),
+                ...this.resolveGovernanceBalanceLimitExclusions(
+                  params.governance,
+                ),
+              ]
+            : undefined,
+        });
 
     const auctionTokens =
       (params.sale.numTokensToSell *
@@ -2481,9 +2126,7 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
         initialSupply: params.sale.initialSupply,
         tokenVariant: this.isDoppler404Token(params.token)
           ? 'doppler404'
-          : this.isDopplerERC20V1Token(params.token)
-            ? 'dopplerERC20V1'
-            : 'standard',
+          : 'dopplerERC20V1',
         migration: params.migration,
         addresses,
         includeProtocolBalanceLimitExclusions,
@@ -3487,8 +3130,7 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
           baseURI: string;
           unit?: bigint;
         }
-      | DopplerERC20V1TokenFactoryData
-      | StandardTokenFactoryData;
+      | DopplerERC20V1TokenFactoryData;
     airlock: Address;
     initialSupply: bigint;
     tokenVariant: TokenFactoryVariant;
@@ -3559,13 +3201,9 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
               [t.name, t.symbol, t.baseURI, t.unit ?? 1000n],
             );
           })()
-        : params.tokenVariant === 'dopplerERC20V1'
-          ? this.encodeDopplerERC20V1TokenFactoryData(
-              params.tokenFactoryData as DopplerERC20V1TokenFactoryData,
-            )
-          : this.encodeStandardTokenFactoryData(
-              params.tokenFactoryData as StandardTokenFactoryData,
-            );
+        : this.encodeDopplerERC20V1TokenFactoryData(
+            params.tokenFactoryData as DopplerERC20V1TokenFactoryData,
+          );
 
     let tokenInitHash: Hash;
     if (params.tokenVariant === 'doppler404') {
@@ -3598,16 +3236,11 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
           [DopplerDN404Bytecode as Hex, initData],
         ),
       );
-    } else if (params.tokenVariant === 'dopplerERC20V1') {
+    } else {
       const tokenFactoryData =
         params.tokenFactoryData as DopplerERC20V1TokenFactoryData;
       tokenInitHash = this.computeSoladyCloneInitCodeHash(
         tokenFactoryData.implementation,
-      );
-    } else {
-      tokenInitHash = this.computeStandardTokenInitHash(
-        params.tokenFactoryData as StandardTokenFactoryData,
-        params.tokenFactory,
       );
     }
 
@@ -3717,10 +3350,9 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
   private isDopplerERC20V1Token(
     token: TokenConfig,
   ): token is DopplerERC20V1TokenConfig | InferredDopplerERC20V1TokenConfig {
-    return (
-      token.type === 'dopplerERC20V1' ||
-      hasDopplerERC20V1OnlyTokenConfigFields(token)
-    );
+    // Every non-404 token is now created via the DopplerERC20V1 factory; the
+    // legacy "standard" (DERC20) token path has been removed.
+    return !this.isDoppler404Token(token);
   }
 
   /**
@@ -3800,45 +3432,6 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
             beneficiaryData,
           ],
         );
-
-      case 'uniswapV4Split': {
-        const beneficiaryData = [...config.streamableFees.beneficiaries].sort(
-          (a, b) => {
-            const addrA = a.beneficiary.toLowerCase();
-            const addrB = b.beneficiary.toLowerCase();
-            return addrA < addrB ? -1 : addrA > addrB ? 1 : 0;
-          },
-        );
-
-        const proceedsRecipient =
-          config.proceedsSplit?.recipient ?? ZERO_ADDRESS;
-        const proceedsShare = config.proceedsSplit?.share ?? 0n;
-
-        return encodeAbiParameters(
-          [
-            { type: 'uint24' },
-            { type: 'int24' },
-            { type: 'uint32' },
-            {
-              type: 'tuple[]',
-              components: [
-                { type: 'address', name: 'beneficiary' },
-                { type: 'uint96', name: 'shares' },
-              ],
-            },
-            { type: 'address' },
-            { type: 'uint256' },
-          ],
-          [
-            config.fee,
-            config.tickSpacing,
-            config.streamableFees.lockDuration,
-            beneficiaryData,
-            proceedsRecipient,
-            proceedsShare,
-          ],
-        );
-      }
 
       case 'dopplerHook': {
         const dopplerHookConfig = config as DopplerHookMigrationConfig;
@@ -4192,150 +3785,14 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
   private resolveMulticurveInitializerMode(
     params: CreateMulticurveParams<C>,
   ): ResolvedMulticurveInitializerMode {
-    const legacySchedule = params.schedule;
-    const legacyHook = params.dopplerHook;
-    const hasLegacySchedule = legacySchedule !== undefined;
-    const hasLegacyHook = legacyHook !== undefined;
-
-    if (hasLegacySchedule && hasLegacyHook) {
-      throw new Error(
-        'Cannot combine schedule and dopplerHook legacy multicurve options. Use exactly one initializer mode.',
-      );
-    }
-
+    // Multicurve pools are always created through the DopplerHookInitializer
+    // (rehype) path. A rehype hook config is optional; when omitted the pool is
+    // initialized without a hook.
     const initializer = params.initializer;
-    let mode: ResolvedMulticurveInitializerMode;
-
-    if (!initializer) {
-      if (hasLegacySchedule) {
-        mode = {
-          type: 'scheduled',
-          startTime: this.normalizeUint32(
-            legacySchedule.startTime,
-            'Scheduled multicurve startTime',
-          ),
-        };
-      } else if (hasLegacyHook) {
-        mode = {
-          type: 'rehype',
-          hookConfig: legacyHook,
-        };
-      } else {
-        mode = { type: 'standard' };
-      }
-    } else {
-      switch (initializer.type) {
-        case 'standard': {
-          if (hasLegacySchedule || hasLegacyHook) {
-            throw new Error(
-              "Initializer type 'standard' cannot be combined with legacy schedule/dopplerHook fields",
-            );
-          }
-          mode = { type: 'standard' };
-          break;
-        }
-        case 'scheduled': {
-          if (hasLegacyHook) {
-            throw new Error(
-              "Initializer type 'scheduled' cannot be combined with dopplerHook",
-            );
-          }
-          const normalizedStart = this.normalizeUint32(
-            initializer.startTime,
-            'Scheduled multicurve startTime',
-          );
-          if (hasLegacySchedule) {
-            const legacyStart = this.normalizeUint32(
-              legacySchedule.startTime,
-              'Scheduled multicurve startTime',
-            );
-            if (legacyStart !== normalizedStart) {
-              throw new Error(
-                'Conflicting scheduled start times provided via initializer and schedule',
-              );
-            }
-          }
-          mode = { type: 'scheduled', startTime: normalizedStart };
-          break;
-        }
-        case 'decay': {
-          if (hasLegacySchedule || hasLegacyHook) {
-            throw new Error(
-              "Initializer type 'decay' cannot be combined with legacy schedule/dopplerHook fields",
-            );
-          }
-          const startTime = this.normalizeUint32(
-            initializer.startTime,
-            'Decay multicurve startTime',
-          );
-          const startFee = Number(initializer.startFee);
-          const durationSeconds = this.normalizeUint32(
-            initializer.durationSeconds,
-            'Decay multicurve durationSeconds',
-          );
-          const endFee = Number(params.pool.fee);
-          if (!Number.isInteger(startFee)) {
-            throw new Error('Decay multicurve startFee must be an integer');
-          }
-          if (startFee < 0 || startFee > DECAY_MAX_START_FEE) {
-            throw new Error(
-              `Decay multicurve startFee must be between 0 and ${DECAY_MAX_START_FEE}`,
-            );
-          }
-          if (!Number.isInteger(endFee) || endFee < 0 || endFee > V4_MAX_FEE) {
-            throw new Error(
-              `Multicurve pool fee must be between 0 and ${V4_MAX_FEE}`,
-            );
-          }
-          if (startFee < endFee) {
-            throw new Error(
-              `Decay multicurve startFee (${startFee}) must be greater than or equal to terminal pool fee (${endFee})`,
-            );
-          }
-          if (startFee > endFee && durationSeconds <= 0) {
-            throw new Error(
-              'Decay multicurve durationSeconds must be greater than 0 when startFee is greater than terminal pool fee',
-            );
-          }
-          mode = {
-            type: 'decay',
-            startTime,
-            startFee,
-            durationSeconds,
-          };
-          break;
-        }
-        case 'rehype': {
-          if (hasLegacySchedule) {
-            throw new Error(
-              "Initializer type 'rehype' cannot be combined with schedule",
-            );
-          }
-          mode = { type: 'rehype', hookConfig: initializer.config };
-          break;
-        }
-        default: {
-          const exhaustive: never = initializer;
-          throw new Error(
-            `Unsupported multicurve initializer type: ${(exhaustive as { type?: string })?.type ?? 'unknown'}`,
-          );
-        }
-      }
+    if (initializer) {
+      return { type: 'rehype', hookConfig: initializer.config };
     }
-
-    // Backwards-compatible behavior: an explicit dopplerHookInitializer override
-    // selects the DopplerHookInitializer path even without hook config.
-    if (params.modules?.dopplerHookInitializer !== undefined) {
-      if (mode.type === 'standard') {
-        mode = { type: 'rehype' };
-      } else if (mode.type !== 'rehype') {
-        throw new Error(
-          'modules.dopplerHookInitializer can only be used with the rehype or standard multicurve initializer mode',
-        );
-      }
-    }
-
-    return mode;
+    return { type: 'rehype', hookConfig: params.dopplerHook };
   }
 
   encodeCreateMulticurveParams(
@@ -4371,13 +3828,9 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       );
 
     const initializerMode = this.resolveMulticurveInitializerMode(params);
-    const useScheduledInitializer = initializerMode.type === 'scheduled';
-    const useDecayInitializer = initializerMode.type === 'decay';
-    const useDopplerHookInitializer = initializerMode.type === 'rehype';
-    const normalizedRehypeHookConfig =
-      initializerMode.type === 'rehype' && initializerMode.hookConfig
-        ? this.normalizeRehypeHookConfig(initializerMode.hookConfig)
-        : undefined;
+    const normalizedRehypeHookConfig = initializerMode.hookConfig
+      ? this.normalizeRehypeHookConfig(initializerMode.hookConfig)
+      : undefined;
 
     // Shared curve and beneficiary component definitions for ABI encoding
     const curveComponents = [
@@ -4407,26 +3860,13 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       }),
     );
 
-    // Encode pool initializer data based on which initializer is being used
-    // Each initializer expects a different InitData struct format:
-    //
-    // UniswapV4MulticurveInitializer (basic):
-    //   struct InitData { uint24 fee; int24 tickSpacing; Curve[] curves; BeneficiaryData[] beneficiaries; }
-    //
-    // UniswapV4ScheduledMulticurveInitializer:
-    //   struct InitData { uint24 fee; int24 tickSpacing; Curve[] curves; BeneficiaryData[] beneficiaries; uint32 startingTime; }
-    //
-    // DecayMulticurveInitializer:
-    //   struct InitData { uint24 startFee; uint24 fee; uint32 durationSeconds; int24 tickSpacing; Curve[] curves;
-    //                     BeneficiaryData[] beneficiaries; uint32 startingTime; }
-    //
-    // DopplerHookInitializer:
+    // Encode pool initializer data for the DopplerHookInitializer:
     //   struct InitData { uint24 fee; int24 tickSpacing; int24 farTick; Curve[] curves; BeneficiaryData[] beneficiaries;
     //                     address dopplerHook; bytes onInitializationDopplerHookCalldata; bytes graduationDopplerHookCalldata; }
 
     let poolInitializerData: Hex;
 
-    if (useDopplerHookInitializer) {
+    {
       const hookConfig = normalizedRehypeHookConfig;
       // DopplerHookInitializer format (8 fields)
       // Calculate farTick: use provided value from dopplerHook, or auto-calculate from curves
@@ -4522,120 +3962,21 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
           },
         ],
       );
-    } else if (useDecayInitializer) {
-      // DecayMulticurveInitializer format (7 fields)
-      const decayTupleComponents = [
-        { name: 'startFee', type: 'uint24' },
-        { name: 'fee', type: 'uint24' },
-        { name: 'durationSeconds', type: 'uint32' },
-        { name: 'tickSpacing', type: 'int24' },
-        { name: 'curves', type: 'tuple[]', components: curveComponents },
-        {
-          name: 'beneficiaries',
-          type: 'tuple[]',
-          components: beneficiaryComponents,
-        },
-        { name: 'startingTime', type: 'uint32' },
-      ];
-
-      if (initializerMode.type !== 'decay') {
-        throw new Error('Invalid multicurve initializer state for decay mode');
-      }
-
-      poolInitializerData = encodeAbiParameters(
-        [{ type: 'tuple', components: decayTupleComponents }],
-        [
-          {
-            startFee: initializerMode.startFee,
-            fee: params.pool.fee,
-            durationSeconds: initializerMode.durationSeconds,
-            tickSpacing: params.pool.tickSpacing,
-            curves: curvesData,
-            beneficiaries: beneficiariesData,
-            startingTime: initializerMode.startTime,
-          },
-        ],
-      );
-    } else if (useScheduledInitializer) {
-      // UniswapV4ScheduledMulticurveInitializer format (5 fields)
-      if (initializerMode.type !== 'scheduled') {
-        throw new Error(
-          'Invalid multicurve initializer state for scheduled mode',
-        );
-      }
-      const scheduledTupleComponents = [
-        { name: 'fee', type: 'uint24' },
-        { name: 'tickSpacing', type: 'int24' },
-        { name: 'curves', type: 'tuple[]', components: curveComponents },
-        {
-          name: 'beneficiaries',
-          type: 'tuple[]',
-          components: beneficiaryComponents,
-        },
-        { name: 'startingTime', type: 'uint32' },
-      ];
-
-      poolInitializerData = encodeAbiParameters(
-        [{ type: 'tuple', components: scheduledTupleComponents }],
-        [
-          {
-            fee: params.pool.fee,
-            tickSpacing: params.pool.tickSpacing,
-            curves: curvesData,
-            beneficiaries: beneficiariesData,
-            startingTime: initializerMode.startTime,
-          },
-        ],
-      );
-    } else {
-      // UniswapV4MulticurveInitializer format (4 fields - basic)
-      const basicTupleComponents = [
-        { name: 'fee', type: 'uint24' },
-        { name: 'tickSpacing', type: 'int24' },
-        { name: 'curves', type: 'tuple[]', components: curveComponents },
-        {
-          name: 'beneficiaries',
-          type: 'tuple[]',
-          components: beneficiaryComponents,
-        },
-      ];
-
-      poolInitializerData = encodeAbiParameters(
-        [{ type: 'tuple', components: basicTupleComponents }],
-        [
-          {
-            fee: params.pool.fee,
-            tickSpacing: params.pool.tickSpacing,
-            curves: curvesData,
-            beneficiaries: beneficiariesData,
-          },
-        ],
-      );
     }
 
     const resolvedTokenFactory: Address | undefined =
       params.modules?.tokenFactory ??
       (this.isDoppler404Token(params.token)
         ? (addresses.doppler404Factory as Address | undefined)
-        : this.isDopplerERC20V1Token(params.token)
-          ? (params.modules?.dopplerERC20V1Factory ??
-            addresses.dopplerERC20V1Factory)
-          : this.usesDerc20V2Vesting(params.vesting)
-            ? addresses.derc20V2Factory
-            : addresses.tokenFactory);
+        : (params.modules?.dopplerERC20V1Factory ??
+          addresses.dopplerERC20V1Factory));
     if (!resolvedTokenFactory || resolvedTokenFactory === ZERO_ADDRESS) {
       throw new Error(
         'Token factory address not configured. Provide an explicit address or ensure chain config includes a valid factory.',
       );
     }
-    this.assertStandardTokenFactoryCompatibility({
-      token: params.token,
-      vesting: params.vesting,
-      tokenFactory: resolvedTokenFactory,
-      addresses,
-    });
 
-    // Token factory data (standard vs 404)
+    // Token factory data (DopplerERC20V1 vs 404)
     let tokenFactoryData: Hex | undefined = undefined;
     if (this.isDoppler404Token(params.token)) {
       const token404 = params.token;
@@ -4648,19 +3989,6 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
           { type: 'uint256' },
         ],
         [token404.name, token404.symbol, token404.baseURI, unit],
-      );
-    } else if (!this.isDopplerERC20V1Token(params.token)) {
-      const standardTokenFactoryData = this.buildStandardTokenFactoryData({
-        token: params.token as StandardTokenConfig,
-        sale: params.sale,
-        vesting: params.vesting,
-        userAddress: params.userAddress,
-        airlock: params.modules?.airlock ?? addresses.airlock,
-        tokenFactory: resolvedTokenFactory,
-        addresses,
-      });
-      tokenFactoryData = this.encodeStandardTokenFactoryData(
-        standardTokenFactoryData,
       );
     }
 
@@ -4700,45 +4028,12 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     // Resolve module addresses
     const salt = this.generateRandomSalt(params.userAddress);
 
-    const resolvedInitializer: Address | undefined = (() => {
-      if (useDopplerHookInitializer) {
-        return (
-          params.modules?.dopplerHookInitializer ??
-          addresses.dopplerHookInitializer
-        );
-      }
-      if (useDecayInitializer) {
-        return (
-          params.modules?.v4DecayMulticurveInitializer ??
-          addresses.v4DecayMulticurveInitializer
-        );
-      }
-      if (useScheduledInitializer) {
-        return (
-          params.modules?.v4ScheduledMulticurveInitializer ??
-          addresses.v4ScheduledMulticurveInitializer
-        );
-      }
-      return (
-        params.modules?.v4MulticurveInitializer ??
-        addresses.v4MulticurveInitializer
-      );
-    })();
+    const resolvedInitializer: Address | undefined =
+      params.modules?.dopplerHookInitializer ??
+      addresses.dopplerHookInitializer;
     if (!resolvedInitializer || resolvedInitializer === ZERO_ADDRESS) {
-      if (useDopplerHookInitializer) {
-        throw new Error(
-          'DopplerHookInitializer address not configured on this chain. Override via builder.withDopplerHookInitializer() or update chain config.',
-        );
-      }
-      if (useDecayInitializer) {
-        throw new Error(
-          'Decay multicurve initializer address not configured on this chain. Override via builder.withV4DecayMulticurveInitializer() or update chain config.',
-        );
-      }
       throw new Error(
-        useScheduledInitializer
-          ? 'Scheduled multicurve initializer address not configured on this chain. Override via builder or update chain config.'
-          : 'Multicurve initializer address not configured on this chain. Override via builder or update chain config.',
+        'DopplerHookInitializer address not configured on this chain. Override via builder.withDopplerHookInitializer() or update chain config.',
       );
     }
 
@@ -4776,12 +4071,14 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       }
     }
 
-    if (this.isDopplerERC20V1Token(params.token)) {
+    if (!this.isDoppler404Token(params.token)) {
       const includeProtocolBalanceLimitExclusions =
         this.usesDefaultDopplerERC20V1Integration(params.modules);
       const resolvedV1TokenFactoryData =
         this.resolveDopplerERC20V1TokenFactoryData({
-          token: params.token,
+          token: params.token as
+            | DopplerERC20V1TokenConfig
+            | InferredDopplerERC20V1TokenConfig,
           sale: params.sale,
           vesting: params.vesting,
           userAddress: params.userAddress,
@@ -5287,17 +4584,6 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       );
     }
 
-    if (params.migration.type === 'uniswapV4Split') {
-      this.validateV4StreamableFeesConfig(
-        params.migration.streamableFees,
-        'V4 split migration',
-        true,
-      );
-      this.validateProceedsSplitConfig(
-        params.migration.proceedsSplit,
-        'V4 split migration',
-      );
-    }
 
     // Validate pool beneficiaries for V3 locked pools
     if (params.pool.beneficiaries && params.pool.beneficiaries.length > 0) {
@@ -5408,17 +4694,6 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       );
     }
 
-    if (params.migration.type === 'uniswapV4Split') {
-      this.validateV4StreamableFeesConfig(
-        params.migration.streamableFees,
-        'V4 split migration',
-        true,
-      );
-      this.validateProceedsSplitConfig(
-        params.migration.proceedsSplit,
-        'V4 split migration',
-      );
-    }
 
     if (params.migration.type === 'dopplerHook') {
       const migration = params.migration;
@@ -5633,17 +4908,6 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       );
     }
 
-    if (params.migration.type === 'uniswapV4Split') {
-      this.validateV4StreamableFeesConfig(
-        params.migration.streamableFees,
-        'V4 split migration',
-        true,
-      );
-      this.validateProceedsSplitConfig(
-        params.migration.proceedsSplit,
-        'V4 split migration',
-      );
-    }
   }
 
   /**
@@ -5711,17 +4975,6 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       );
     }
 
-    if (params.migration.type === 'uniswapV4Split') {
-      this.validateV4StreamableFeesConfig(
-        params.migration.streamableFees,
-        'V4 split migration',
-        true,
-      );
-      this.validateProceedsSplitConfig(
-        params.migration.proceedsSplit,
-        'V4 split migration',
-      );
-    }
   }
 
   /**
@@ -5768,16 +5021,6 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
           );
         }
         return v4Address;
-      }
-      case 'uniswapV4Split': {
-        const v4SplitAddress =
-          overrides?.v4MigratorSplit ?? addresses.v4MigratorSplit;
-        if (!v4SplitAddress || v4SplitAddress === ZERO_ADDRESS) {
-          throw new Error(
-            'UniswapV4MigratorSplit not deployed on this chain. Use uniswapV4 migration or provide override via modules.v4MigratorSplit.',
-          );
-        }
-        return v4SplitAddress;
       }
       case 'dopplerHook': {
         const dopplerHookMigratorAddress =
@@ -6127,8 +5370,7 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
           baseURI: string;
           unit?: bigint;
         }
-      | DopplerERC20V1TokenFactoryData
-      | StandardTokenFactoryData;
+      | DopplerERC20V1TokenFactoryData;
     poolInitializer: Address;
     poolInitializerData: {
       minimumProceeds: bigint;
@@ -6143,7 +5385,6 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       fee: number;
       tickSpacing: number;
     };
-    customDerc20Bytecode?: `0x${string}`;
     tokenVariant?: TokenFactoryVariant;
     migration?: MigrationConfig;
     addresses?: ReturnType<typeof getAddresses>;
@@ -6259,13 +5500,9 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
               [t.name, t.symbol, t.baseURI, t.unit ?? 1000n],
             );
           })()
-        : params.tokenVariant === 'dopplerERC20V1'
-          ? this.encodeDopplerERC20V1TokenFactoryData(
-              params.tokenFactoryData as DopplerERC20V1TokenFactoryData,
-            )
-          : this.encodeStandardTokenFactoryData(
-              params.tokenFactoryData as StandardTokenFactoryData,
-            );
+        : this.encodeDopplerERC20V1TokenFactoryData(
+            params.tokenFactoryData as DopplerERC20V1TokenFactoryData,
+          );
 
     // Compute token init hash; use DN404 bytecode if tokenVariant is doppler404
     let tokenInitHash: Hash | undefined;
@@ -6295,57 +5532,12 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
           [DopplerDN404Bytecode as Hex, initHashData],
         ),
       );
-    } else if (params.tokenVariant === 'dopplerERC20V1') {
+    } else {
       const tokenFactoryData =
         params.tokenFactoryData as DopplerERC20V1TokenFactoryData;
       tokenInitHash = this.computeSoladyCloneInitCodeHash(
         tokenFactoryData.implementation,
       );
-    } else {
-      const standardTokenFactoryData =
-        params.tokenFactoryData as StandardTokenFactoryData;
-      if (standardTokenFactoryData.kind === 'v2') {
-        tokenInitHash = this.computeStandardTokenInitHash(
-          standardTokenFactoryData,
-          params.tokenFactory,
-        );
-      } else {
-        const initHashData = encodeAbiParameters(
-          [
-            { type: 'string' },
-            { type: 'string' },
-            { type: 'uint256' },
-            { type: 'address' },
-            { type: 'address' },
-            { type: 'uint256' },
-            { type: 'uint256' },
-            { type: 'address[]' },
-            { type: 'uint256[]' },
-            { type: 'string' },
-          ],
-          [
-            standardTokenFactoryData.name,
-            standardTokenFactoryData.symbol,
-            standardTokenFactoryData.initialSupply,
-            standardTokenFactoryData.airlock,
-            standardTokenFactoryData.airlock,
-            standardTokenFactoryData.yearlyMintRate,
-            standardTokenFactoryData.vestingDuration,
-            standardTokenFactoryData.recipients,
-            standardTokenFactoryData.amounts,
-            standardTokenFactoryData.tokenURI,
-          ],
-        );
-        const isTokenFactory80 =
-          params.tokenFactory.toLowerCase() === TOKEN_FACTORY_80_ADDRESS;
-        const bytecode = isTokenFactory80
-          ? (DERC2080Bytecode as Hex)
-          : ((params.customDerc20Bytecode as Hex) ?? (DERC20Bytecode as Hex));
-
-        tokenInitHash = keccak256(
-          encodePacked(['bytes', 'bytes'], [bytecode, initHashData]),
-        );
-      }
     }
 
     // Use the exact flags from V4 SDK
@@ -6551,59 +5743,22 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     const addresses = getAddresses(this.chainId);
 
     const initializerMode = this.resolveMulticurveInitializerMode(params);
-    let hookAddress: Address;
-    if (initializerMode.type === 'rehype') {
-      // DopplerHookInitializer pools are registered on Uniswap with the
-      // initializer itself as poolKey.hooks. The rehype hook lives separately
-      // in the encoded init payload and is not part of the Uniswap pool key.
-      hookAddress =
-        params.modules?.dopplerHookInitializer ??
-        addresses.dopplerHookInitializer ??
-        ZERO_ADDRESS;
-      if (hookAddress === ZERO_ADDRESS) {
-        throw new Error('DopplerHookInitializer address not configured');
-      }
-    } else {
-      const initializerAddress = (() => {
-        if (initializerMode.type === 'decay') {
-          return (
-            params.modules?.v4DecayMulticurveInitializer ??
-            addresses.v4DecayMulticurveInitializer
-          );
-        }
-        if (initializerMode.type === 'scheduled') {
-          return (
-            params.modules?.v4ScheduledMulticurveInitializer ??
-            addresses.v4ScheduledMulticurveInitializer
-          );
-        }
-        return (
-          params.modules?.v4MulticurveInitializer ??
-          addresses.v4MulticurveInitializer
-        );
-      })();
-
-      if (!initializerAddress) {
-        throw new Error('Multicurve initializer address not configured');
-      }
-
-      // Standard/scheduled/decay initializers expose HOOK() directly.
-      hookAddress = (await (this.publicClient as PublicClient).readContract({
-        address: initializerAddress,
-        abi: v4MulticurveInitializerAbi,
-        functionName: 'HOOK',
-      })) as Address;
+    // DopplerHookInitializer pools are registered on Uniswap with the
+    // initializer itself as poolKey.hooks. The rehype hook lives separately
+    // in the encoded init payload and is not part of the Uniswap pool key.
+    const hookAddress: Address =
+      params.modules?.dopplerHookInitializer ??
+      addresses.dopplerHookInitializer ??
+      ZERO_ADDRESS;
+    if (hookAddress === ZERO_ADDRESS) {
+      throw new Error('DopplerHookInitializer address not configured');
     }
 
     // Construct the pool key and compute poolId
     const numeraire = params.sale.numeraire;
     const currency0 = tokenAddress < numeraire ? tokenAddress : numeraire;
     const currency1 = tokenAddress < numeraire ? numeraire : tokenAddress;
-    const fee =
-      initializerMode.type === 'decay' ||
-      (initializerMode.type === 'rehype' && initializerMode.hookConfig)
-        ? DYNAMIC_FEE_FLAG
-        : params.pool.fee;
+    const fee = initializerMode.hookConfig ? DYNAMIC_FEE_FLAG : params.pool.fee;
 
     return this.computePoolId({
       currency0,

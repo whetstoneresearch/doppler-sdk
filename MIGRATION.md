@@ -1,3 +1,53 @@
+# Migration Guide
+
+## 1.0 → 1.1: Deprecated contract removal
+
+Version `1.1.0` removes SDK support for a set of contracts that were deprecated
+(moved to `legacy/`) in the Doppler contracts repo. Code that relied on these
+contracts should pin to `@whetstone-research/doppler-sdk@<1.1` until it migrates
+to the replacements below. This is the only breaking change in `1.1.0`.
+
+### What changed
+
+| Removed | Replacement |
+| --- | --- |
+| `Derc20` / `Derc20V2` token entities, `getDerc20()` / `getDerc20V2()` on `DopplerSDK`, the DERC20/DERC2080 token-factory path (`CloneERC20Factory`, `TokenFactory`, `TokenFactory80`, `CloneDERC20VotesV2Factory`) | `DopplerERC20V1` / `getDopplerERC20V1()` via `DopplerERC20V1Factory` |
+| `UniswapV3Initializer` (the plain V3 static initializer) | `LockableUniswapV3Initializer` |
+| Multicurve `standard` / `scheduled` / `decay` initializers (`UniswapV4MulticurveInitializer`, `UniswapV4ScheduledMulticurveInitializer`, `DecayMulticurveInitializer`), `MulticurveBuilder.withDecay()` / `.withSchedule()` / `.withV4MulticurveInitializer()` / `.withV4ScheduledMulticurveInitializer()` / `.withV4DecayMulticurveInitializer()`, `MulticurvePool.getFeeSchedule()`, the `MulticurveDecayFeeSchedule` type | `DopplerHookInitializer` via the rehype path (`MulticurveBuilder.withRehypeDopplerHook()`) |
+| `uniswapV4Split` migration: the `UniswapV4SplitMigrationConfig` type, `{ type: 'uniswapV4Split' }` migration, `withV4MigratorSplit()` on every builder (`UniswapV4MigratorSplit`) | `uniswapV4` migration, or `uniswapV2Split` / `dopplerHook` |
+| `StreamableFeesLocker` (V1) | `StreamableFeesLockerV2` |
+
+The `ChainAddresses` fields `tokenFactory`, `derc20V2Factory`,
+`derc20V2Implementation`, `v3Initializer`, `v4MulticurveInitializer`,
+`v4ScheduledMulticurveInitializer`, `v4DecayMulticurveInitializer`,
+`v4MigratorSplit`, `v4MigratorHook`, and `streamableFeesLocker` were removed,
+along with the matching `ModuleAddressOverrides` entries.
+
+### Behavior changes
+
+- **Standard tokens are now DopplerERC20V1.** A `{ type: 'standard' }` (or
+  unspecified) token config now deploys a `DopplerERC20V1` token instead of a
+  DERC20. The `yearlyMintRate` field is ignored (DopplerERC20V1 has no yearly
+  mint rate); vesting now uses DopplerERC20V1 schedule semantics (24h minimum
+  vesting duration, 80% premint cap).
+- **Static auctions use `LockableUniswapV3Initializer`** on every chain.
+- **Multicurve pools always use `DopplerHookInitializer`.** Call
+  `withRehypeDopplerHook(...)` to configure a rehype hook; omit it for a plain
+  DopplerHookInitializer pool.
+
+### Chains without the new contracts
+
+The new contracts are not yet deployed on every chain. Where a replacement is
+missing the affected feature throws a clear "not configured on this chain"
+error instead of silently using a deprecated contract:
+
+- **Standard-token creation** requires `DopplerERC20V1Factory`, currently
+  deployed on **Mainnet, Base, Base Sepolia, Monad Mainnet**.
+- **Static (V3) auctions** require `LockableUniswapV3Initializer`, deployed on
+  all supported chains **except Ink and ETH Sepolia**.
+
+---
+
 # Migration Guide: V4 SDK to Unified SDK
 
 This guide helps you migrate from the `doppler-v4-sdk` to the new unified `@doppler/sdk`.

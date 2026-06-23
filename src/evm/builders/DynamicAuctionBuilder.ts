@@ -403,10 +403,6 @@ export class DynamicAuctionBuilder<
     return this.overrideModule('v4Migrator', address);
   }
 
-  withV4MigratorSplit(address: Address): this {
-    return this.overrideModule('v4MigratorSplit', address);
-  }
-
   withDopplerHookMigrator(address: Address): this {
     return this.overrideModule('dopplerHookMigrator', address);
   }

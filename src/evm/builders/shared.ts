@@ -183,7 +183,6 @@ export interface BaseAuctionBuilder<C extends SupportedChainId> {
   withV2Migrator(address: Address): this;
   withV2MigratorSplit(address: Address): this;
   withV4Migrator(address: Address): this;
-  withV4MigratorSplit(address: Address): this;
   withNoOpMigrator(address: Address): this;
 }
 

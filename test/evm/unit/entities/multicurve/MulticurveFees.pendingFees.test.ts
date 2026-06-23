@@ -5,7 +5,7 @@ import {
   getAddress,
   type Address,
 } from 'viem';
-import { v4MulticurveInitializerAbi } from '@/abis';
+import { dopplerHookInitializerAbi } from '@/abis';
 import { MulticurveFees } from '@/entities/auction/MulticurveFees';
 import { LockablePoolStatus, type V4PoolKey } from '@/types';
 import { computePoolId } from '@/utils/poolKey';
@@ -15,17 +15,16 @@ import {
 } from '@test/setup/fixtures/clients';
 import {
   buildPendingFeeAggregateResults,
-  createZeroState,
   decodePendingFeeAggregateCalls,
   decodePendingFeeInnerCall,
   defaultAddresses,
   encodePendingFeeAggregateResults,
   expectedPendingFeeCallOrder,
   mockBeneficiary,
+  mockDopplerHookInitializer,
   mockFarTick,
   mockHook,
   mockNumeraire,
-  mockScheduledInitializer,
   type AggregateResult,
   type MockPublicClient,
   type PendingFeeValues,
@@ -33,7 +32,7 @@ import {
 
 const batchAddresses = {
   ...defaultAddresses,
-  v4ScheduledMulticurveInitializer: mockScheduledInitializer,
+  dopplerHookInitializer: mockDopplerHookInitializer,
 };
 
 vi.mock('@/addresses', async (importOriginal) => {
@@ -54,7 +53,15 @@ const tokenC = getAddress(
   '0x0ccc0000000000000000000000000000000000cc',
 ) as Address;
 
-type GetStateResult = readonly [Address, number, V4PoolKey, number];
+type GetStateResult = readonly [
+  Address,
+  bigint,
+  Address,
+  `0x${string}`,
+  number,
+  V4PoolKey,
+  number,
+];
 
 describe('MulticurveFees getPendingFees', () => {
   let publicClient: MockPublicClient;
@@ -105,22 +112,22 @@ describe('MulticurveFees getPendingFees', () => {
     expect(publicClient.call).toHaveBeenCalledTimes(2);
 
     const discoveryCalls = decodeAggregateCalls(0);
-    expect(discoveryCalls).toHaveLength(6);
+    expect(discoveryCalls).toHaveLength(2);
     expect(
       discoveryCalls.map(
         (call) =>
           decodeFunctionData({
-            abi: v4MulticurveInitializerAbi,
+            abi: dopplerHookInitializerAbi,
             data: call.callData,
           }).args[0],
       ),
-    ).toEqual([tokenA, tokenA, tokenA, tokenB, tokenB, tokenB]);
+    ).toEqual([tokenA, tokenB]);
 
     const feeCalls = decodeAggregateCalls(1);
     expect(feeCalls).toHaveLength(expectedPendingFeeCallOrder.length * 2);
     expect(feeCalls.map((call) => call.target)).toEqual(
       Array(expectedPendingFeeCallOrder.length * 2).fill(
-        defaultAddresses.v4MulticurveInitializer,
+        mockDopplerHookInitializer,
       ),
     );
     expect(
@@ -170,11 +177,11 @@ describe('MulticurveFees getPendingFees', () => {
       discoveryCalls.map(
         (call) =>
           decodeFunctionData({
-            abi: v4MulticurveInitializerAbi,
+            abi: dopplerHookInitializerAbi,
             data: call.callData,
           }).args[0],
       ),
-    ).toEqual([tokenB, tokenB, tokenB, tokenC, tokenC, tokenC]);
+    ).toEqual([tokenB, tokenC]);
   });
 
   function mockPendingFeeBatch(
@@ -184,11 +191,7 @@ describe('MulticurveFees getPendingFees', () => {
     vi.mocked(publicClient.call)
       .mockResolvedValueOnce({
         data: encodePendingFeeAggregateResults(
-          states.flatMap((state) => [
-            encodeGetStateResult(state),
-            encodeGetStateResult(createZeroState()),
-            encodeGetStateResult(createZeroState()),
-          ]),
+          states.map((state) => encodeGetStateResult(state)),
         ),
       })
       .mockResolvedValueOnce({
@@ -221,14 +224,22 @@ function createPoolKey(tokenAddress: Address): V4PoolKey {
 }
 
 function createLockedState(poolKey: V4PoolKey): GetStateResult {
-  return [mockNumeraire, LockablePoolStatus.Locked, poolKey, mockFarTick];
+  return [
+    mockNumeraire,
+    0n,
+    mockHook,
+    '0x',
+    LockablePoolStatus.Locked,
+    poolKey,
+    mockFarTick,
+  ];
 }
 
 function encodeGetStateResult(result: GetStateResult): AggregateResult {
   return {
     success: true,
     returnData: encodeFunctionResult({
-      abi: v4MulticurveInitializerAbi,
+      abi: dopplerHookInitializerAbi,
       functionName: 'getState',
       result,
     }),

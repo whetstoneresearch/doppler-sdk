@@ -1,7 +1,6 @@
 import type { Address } from 'viem';
 import {
   DEFAULT_V3_YEARLY_MINT_RATE,
-  DECAY_MAX_START_FEE,
   FEE_TIERS,
   TICK_SPACINGS,
   V4_MAX_FEE,
@@ -27,7 +26,6 @@ import {
   type MulticurveMarketCapPreset,
   type ModuleAddressOverrides,
   type RehypeDopplerHookConfig,
-  type MulticurveInitializerConfig,
 } from '../types';
 import { type SupportedChainId } from '../addresses';
 import {
@@ -46,7 +44,6 @@ export class MulticurveBuilder<
   private sale?: CreateMulticurveParams<C>['sale'];
   private pool?: CreateMulticurveParams<C>['pool'];
   private initializer?: CreateMulticurveParams<C>['initializer'];
-  private schedule?: CreateMulticurveParams<C>['schedule'];
   private dopplerHook?: RehypeDopplerHookConfig;
   private vesting?: VestingConfig;
   private governance?: GovernanceOption<C>;
@@ -397,8 +394,6 @@ export class MulticurveBuilder<
    * ```
    */
   withRehypeDopplerHook(params: RehypeDopplerHookConfig): this {
-    this.assertCanSetInitializer('rehype');
-
     const feeDistributionInfo = this.resolveRehypeFeeDistributionInfo(params);
     this.validateRehypeDistribution(feeDistributionInfo);
 
@@ -675,101 +670,6 @@ export class MulticurveBuilder<
     return startTimeSeconds;
   }
 
-  private assertCanSetInitializer(
-    nextType: MulticurveInitializerConfig['type'],
-  ): void {
-    const currentType = this.initializer?.type;
-    if (
-      currentType === undefined ||
-      currentType === 'standard' ||
-      currentType === nextType
-    ) {
-      return;
-    }
-    throw new Error(
-      `Cannot set multicurve initializer to '${nextType}' because it is already configured as '${currentType}'`,
-    );
-  }
-
-  /**
-   * Configure decay multicurve initializer settings.
-   *
-   * The pool's terminal fee is always taken from `poolConfig().fee`.
-   * `startFee` must be greater than or equal to that terminal fee.
-   * `startTime` is optional and defaults to `0` when omitted.
-   */
-  withDecay(params?: {
-    startTime?: number | bigint | Date;
-    startFee: number;
-    durationSeconds: number | bigint;
-  }): this {
-    if (!params) {
-      if (this.initializer?.type === 'decay') {
-        this.initializer = { type: 'standard' };
-      }
-      return this;
-    }
-
-    this.assertCanSetInitializer('decay');
-
-    const startTime =
-      params.startTime === undefined
-        ? 0
-        : this.parseStartTimeSeconds(params.startTime, 'Decay startTime');
-    const startFee = Number(params.startFee);
-    const durationSeconds = Number(params.durationSeconds);
-
-    if (!Number.isFinite(startFee) || !Number.isInteger(startFee)) {
-      throw new Error('Decay startFee must be an integer');
-    }
-    if (startFee < 0 || startFee > DECAY_MAX_START_FEE) {
-      throw new Error(
-        `Decay startFee must be between 0 and ${DECAY_MAX_START_FEE} (80%)`,
-      );
-    }
-    if (
-      !Number.isFinite(durationSeconds) ||
-      !Number.isInteger(durationSeconds)
-    ) {
-      throw new Error('Decay durationSeconds must be an integer');
-    }
-    if (durationSeconds < 0) {
-      throw new Error('Decay durationSeconds cannot be negative');
-    }
-    const UINT32_MAX = 0xffffffff;
-    if (durationSeconds > UINT32_MAX) {
-      throw new Error('Decay durationSeconds must fit within uint32');
-    }
-
-    this.schedule = undefined;
-    this.initializer = {
-      type: 'decay',
-      startTime,
-      startFee,
-      durationSeconds,
-    };
-    return this;
-  }
-
-  withSchedule(params?: { startTime: number | bigint | Date }): this {
-    if (!params) {
-      if (this.initializer?.type === 'scheduled') {
-        this.initializer = { type: 'standard' };
-      }
-      this.schedule = undefined;
-      return this;
-    }
-
-    this.assertCanSetInitializer('scheduled');
-    const startTimeSeconds = this.parseStartTimeSeconds(
-      params.startTime,
-      'Schedule startTime',
-    );
-    this.schedule = { startTime: startTimeSeconds };
-    this.initializer = { type: 'scheduled', startTime: startTimeSeconds };
-    return this;
-  }
-
   withGovernance(params: GovernanceOption<C>): this {
     this.governance = params;
     return this;
@@ -812,15 +712,6 @@ export class MulticurveBuilder<
   withAirlock(address: Address): this {
     return this.overrideModule('airlock', address);
   }
-  withV4MulticurveInitializer(address: Address): this {
-    return this.overrideModule('v4MulticurveInitializer', address);
-  }
-  withV4ScheduledMulticurveInitializer(address: Address): this {
-    return this.overrideModule('v4ScheduledMulticurveInitializer', address);
-  }
-  withV4DecayMulticurveInitializer(address: Address): this {
-    return this.overrideModule('v4DecayMulticurveInitializer', address);
-  }
   withGovernanceFactory(address: Address): this {
     return this.overrideModule('governanceFactory', address);
   }
@@ -834,9 +725,6 @@ export class MulticurveBuilder<
 
   withV4Migrator(address: Address): this {
     return this.overrideModule('v4Migrator', address);
-  }
-  withV4MigratorSplit(address: Address): this {
-    return this.overrideModule('v4MigratorSplit', address);
   }
   withNoOpMigrator(address: Address): this {
     return this.overrideModule('noOpMigrator', address);
@@ -1011,47 +899,15 @@ export class MulticurveBuilder<
       dopplerHook = { ...dopplerHook, farTick };
     }
 
+    // Multicurve pools always use the DopplerHookInitializer (rehype) path.
+    // A rehype hook config is optional; without one the pool is initialized
+    // without a hook.
     const initializer =
       this.initializer ??
-      (dopplerHook
-        ? { type: 'rehype', config: dopplerHook }
-        : this.schedule
-          ? { type: 'scheduled', startTime: this.schedule.startTime }
-          : { type: 'standard' });
+      (dopplerHook ? { type: 'rehype', config: dopplerHook } : undefined);
 
-    if (initializer.type === 'scheduled' && dopplerHook) {
-      throw new Error(
-        'Cannot combine scheduled multicurve with rehype initializer. Use exactly one initializer mode.',
-      );
-    }
-    if (initializer.type === 'decay' && dopplerHook) {
-      throw new Error(
-        'Cannot combine decay multicurve with rehype initializer. Use exactly one initializer mode.',
-      );
-    }
-    if (initializer.type === 'decay') {
-      const startFee = Number(initializer.startFee);
-      const terminalFee = Number(this.pool.fee);
-
-      if (startFee < terminalFee) {
-        throw new Error(
-          `Decay startFee (${startFee}) must be greater than or equal to terminal pool fee (${terminalFee})`,
-        );
-      }
-
-      if (startFee > terminalFee && initializer.durationSeconds <= 0) {
-        throw new Error(
-          'Decay durationSeconds must be greater than 0 when startFee is greater than pool.fee',
-        );
-      }
-    }
-
-    const schedule =
-      initializer.type === 'scheduled'
-        ? { startTime: initializer.startTime }
-        : undefined;
     dopplerHook =
-      initializer.type === 'rehype' ? initializer.config : undefined;
+      initializer?.type === 'rehype' ? initializer.config : dopplerHook;
 
     // Default governance: noOp on supported chains, default on others (e.g., Ink)
     const governance =
@@ -1074,7 +930,6 @@ export class MulticurveBuilder<
       sale: this.sale,
       pool: this.pool,
       initializer,
-      schedule,
       dopplerHook,
       vesting: this.vesting,
       governance: governance as GovernanceOption<C>,

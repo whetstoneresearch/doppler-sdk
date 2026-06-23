@@ -9,11 +9,11 @@ The Doppler SDK exposes network-specific entrypoints for creating, managing, and
 ### Key Features
 
 - **EVM Auctions**: Static auctions, dynamic auctions, and multicurve launches across Uniswap V3/V4 paths
-- **EVM Migration Paths**: Support for V2, V2 split, V4, V4 split, DopplerHook, and no-op migration
+- **EVM Migration Paths**: Support for V2, V2 split, V4, DopplerHook, and no-op migration
 - **EVM Multicurve Fees**: Single-token and batched pending-fee previews plus beneficiary fee claiming for locked multicurve pools
 - **Solana Launches**: Initializer, CPMM, migrator, hook, oracle, and Token-2022-compatible instruction helpers
 - **Solana Clients and React**: Read clients, PDA helpers, generated codecs, and optional React bindings
-- **Token Management**: Built-in EVM support for DERC20 tokens with vesting
+- **Token Management**: Built-in EVM support for DopplerERC20V1 tokens with vesting
 - **Type Safety**: Full TypeScript support across EVM and Solana entrypoints
 - **Network Support**: EVM deployments on Base, Unichain, Ink, and other supported chains; Solana/SVM support via explicit Solana program deployments
 
@@ -126,7 +126,7 @@ const params = new StaticAuctionBuilder(base.id)
     // Optional: specify multiple recipients and amounts
     // recipients: ['0xTeam...', '0xAdvisor...'],
     // amounts: [parseEther('50000000'), parseEther('50000000')]
-    // Optional: define per-beneficiary vesting allocations on the DERC20 V2 path
+    // Optional: define per-beneficiary vesting allocations on the DopplerERC20V1 token
     // allocations: [
     //   {
     //     recipient: '0xTeam...',
@@ -149,7 +149,7 @@ console.log('Pool address:', result.poolAddress);
 console.log('Token address:', result.tokenAddress);
 ```
 
-If you set `cliffDuration > 0` or provide `allocations`, the SDK automatically uses the DERC20 V2 factory and exposes schedule-aware token reads via `sdk.getDerc20V2(tokenAddress)`. When `allocations` is provided, the SDK dedupes identical schedules internally and maps each recipient to the correct on-chain schedule.
+If you set `cliffDuration > 0` or provide `allocations`, the standard token path deploys a DopplerERC20V1 token that handles cliff and multi-schedule vesting, and exposes schedule-aware token reads via `sdk.getDopplerERC20V1(tokenAddress)`. When `allocations` is provided, the SDK dedupes identical schedules internally and maps each recipient to the correct on-chain schedule.
 
 For a runnable example, see [examples/multicurve-per-beneficiary-vesting.ts](./examples/multicurve-per-beneficiary-vesting.ts).
 
@@ -352,9 +352,9 @@ Position-manager bid wrappers are available, but bid sizing is still “advanced
 
 See [examples/opening-auction-lifecycle.ts](./examples/opening-auction-lifecycle.ts) for the full builder/factory/lifecycle flow, and [examples/opening-auction-bidding.ts](./examples/opening-auction-bidding.ts) for the bid-management pattern + positionId resolution.
 
-### Multicurve Auction (V4 Multicurve Initializer)
+### Multicurve Auction (DopplerHookInitializer)
 
-Multicurve auctions use a Uniswap V4-style initializer that seeds liquidity across multiple curves in a single pool. This enables richer distributions and can be combined with any supported migration path (V2, V3, V4, or NoOp). Multicurve initializer modes are modeled as a typed variant (`standard`, `scheduled`, `decay`, `rehype`) so new hook/initializer variations can be added without breaking existing integrations.
+Multicurve auctions use the DopplerHookInitializer to seed liquidity across multiple curves in a single pool. This enables richer distributions and can be combined with any supported migration path (V2, V2 split, V4, DopplerHook, or NoOp). By default the pool uses a plain DopplerHookInitializer; call `.withRehypeDopplerHook(...)` to configure a rehype hook (anti-sniping / dynamic fees) on the pool.
 
 **Standard Multicurve with Migration:**
 
@@ -393,7 +393,7 @@ const params = new MulticurveBuilder(base.id)
     ],
   })
   .withGovernance({ type: 'default' })
-  // Choose a migration path (V2, V2 split, V4, V4 split, DopplerHook, or noOp)
+  // Choose a migration path (V2, V2 split, V4, DopplerHook, or noOp)
   .withMigration({ type: 'uniswapV2' })
   .withUserAddress('0x...')
   .build();
@@ -444,20 +444,20 @@ The preset helper seeds three curated curve buckets sized for ~1B token supply t
 
 Pass `presets` to pick a subset (e.g. `['medium', 'high']`) or provide `overrides` to adjust ticks, positions, or shares for a specific tier. When the selected presets sum to less than 100%, the builder automatically appends a filler curve (using the highest selected tier's shape) so liquidity always covers the full sale. Shares must stay within 0-1e18 and the helper will throw if the total ever exceeds 100%.
 
-**Scheduled Multicurve Launch:**
+**Multicurve with a Rehype DopplerHook (Anti-sniping / Dynamic Fees):**
+
+Anti-sniping and dynamic-fee behavior is configured through the rehype DopplerHook rather than a separate scheduled/decay initializer. Call `.withRehypeDopplerHook(...)` to attach a rehype hook to the DopplerHookInitializer pool:
 
 ```typescript
 import { MulticurveBuilder } from '@whetstone-research/doppler-sdk/evm';
 import { parseEther } from 'viem';
 import { base } from 'viem/chains';
 
-const startTime = Math.floor(Date.now() / 1000) + 3600; // one hour from now
-
-const scheduled = new MulticurveBuilder(base.id)
+const rehype = new MulticurveBuilder(base.id)
   .tokenConfig({
     name: 'My Token',
     symbol: 'MTK',
-    tokenURI: 'ipfs://scheduled.json',
+    tokenURI: 'ipfs://rehype.json',
   })
   .saleConfig({
     initialSupply: parseEther('1000000'),
@@ -482,73 +482,18 @@ const scheduled = new MulticurveBuilder(base.id)
       },
     ],
   })
-  .withSchedule({ startTime })
-  .withGovernance({ type: 'default' })
-  .withMigration({ type: 'uniswapV2' })
-  .withUserAddress('0x...')
-  .build();
-
-const scheduledResult = await sdk.factory.createMulticurve(scheduled);
-console.log('Pool address:', scheduledResult.poolAddress);
-console.log('Token address:', scheduledResult.tokenAddress);
-```
-
-Ensure the target chain has the scheduled multicurve initializer whitelisted. If you are targeting a custom deployment, override it via `.withV4ScheduledMulticurveInitializer('0x...')`.
-
-**Decay Multicurve Launch (Dynamic Fee):**
-
-```typescript
-import { MulticurveBuilder } from '@whetstone-research/doppler-sdk/evm';
-import { parseEther } from 'viem';
-import { baseSepolia } from 'viem/chains';
-
-const startTime = Math.floor(Date.now() / 1000) + 300;
-
-const decay = new MulticurveBuilder(baseSepolia.id)
-  .tokenConfig({
-    name: 'Decay Token',
-    symbol: 'DMC',
-    tokenURI: 'ipfs://decay.json',
-  })
-  .saleConfig({
-    initialSupply: parseEther('1000000'),
-    numTokensToSell: parseEther('900000'),
-    numeraire: '0x4200000000000000000000000000000000000006',
-  })
-  .poolConfig({
-    fee: 500, // terminal fee (0.05%)
-    tickSpacing: 10,
-    curves: [
-      {
-        tickLower: 0,
-        tickUpper: 220000,
-        numPositions: 12,
-        shares: parseEther('0.5'),
-      },
-      {
-        tickLower: 20000,
-        tickUpper: 220000,
-        numPositions: 12,
-        shares: parseEther('0.5'),
-      },
-    ],
-  })
-  .withDecay({
-    startTime,
-    startFee: 3000, // starts at 0.3%
-    durationSeconds: 3600, // decays to pool.fee over 1 hour
+  .withRehypeDopplerHook({
+    // rehype hook configuration
   })
   .withGovernance({ type: 'default' })
   .withMigration({ type: 'uniswapV2' })
   .withUserAddress('0x...')
   .build();
 
-const decayResult = await sdk.factory.createMulticurve(decay);
-console.log('Pool address:', decayResult.poolAddress);
-console.log('Token address:', decayResult.tokenAddress);
+const rehypeResult = await sdk.factory.createMulticurve(rehype);
+console.log('Pool address:', rehypeResult.poolAddress);
+console.log('Token address:', rehypeResult.tokenAddress);
 ```
-
-For decay pools, `pool.fee` is always the terminal fee (`endFee`) of the schedule. `withDecay({ startTime })` is optional; if omitted, `startTime` defaults to `0`. The SDK supports `startFee` values up to `800_000` (80%) for anti-sniping configurations. Ensure your deployed decay initializer/hook also supports the same max start fee. Override the decay initializer module with `.withV4DecayMulticurveInitializer('0x...')` when targeting custom deployments.
 
 **Multicurve with Lockable Beneficiaries (NoOp Migration):**
 
@@ -802,12 +747,6 @@ console.log('Hook address:', state.poolKey.hooks);
 console.log('Far tick threshold:', state.farTick);
 console.log('Pool status:', state.status); // 0=Uninitialized, 1=Initialized, 2=Locked, 3=Exited
 
-// For dynamic-fee multicurve pools, read the live decay fee schedule
-const feeSchedule = await pool.getFeeSchedule();
-if (feeSchedule) {
-  console.log('Fee schedule:', feeSchedule);
-}
-
 // Preview pending fees for a beneficiary. This is a read-only call.
 const pendingFees = await pool.getPendingFees(beneficiaryAddress);
 console.log('Pending fees (token0):', pendingFees.fees0);
@@ -864,7 +803,6 @@ The SDK handles the complexity of fee collection by:
 - Works exclusively with initializer-side locked pools created with `pool.beneficiaries` and no-op migration
 - Pools in "Locked" status (status = 2) use the multicurve initializer for collection
 - Pools in "Exited" status (status = 3) are migrated and are not currently supported by `MulticurvePool.getPendingFees()` or `MulticurvePool.collectFees()`
-- `getFeeSchedule()` returns decay schedule details only for dynamic-fee multicurve pools, otherwise `null`
 - Beneficiaries must be configured at pool creation time and cannot be changed
 
 **Common Use Cases:**
@@ -879,38 +817,30 @@ See [docs/multicurve-fees.md](./docs/multicurve-fees.md) for a focused guide, [e
 
 ## Token Management
 
-### DERC20 Tokens
+### Standard Tokens (DopplerERC20V1)
 
-The SDK includes full support for DERC20 tokens with vesting functionality:
+The standard token path deploys a DopplerERC20V1 token. The SDK includes full support for reading these tokens and managing their vesting:
 
 ```typescript
-// Get a DERC20 instance from the SDK (uses its clients)
-const token = sdk.getDerc20(tokenAddress);
+// Get a DopplerERC20V1 instance from the SDK (uses its clients)
+const token = sdk.getDopplerERC20V1(tokenAddress);
 
 // Read token information
 const name = await token.getName();
 const symbol = await token.getSymbol();
 const balance = await token.getBalanceOf(address);
-
-// Vesting functionality
-const vestingData = await token.getVestingData(address);
-console.log('Total vested:', vestingData.totalAmount);
-console.log('Released:', vestingData.releasedAmount);
-
-// Release currently available vested tokens
-await token.release();
 ```
 
 Alternatively, you can instantiate directly if needed:
 
 ```typescript
-import { Derc20 } from '@whetstone-research/doppler-sdk/evm';
-const tokenDirect = new Derc20(publicClient, walletClient, tokenAddress);
+import { DopplerERC20V1 } from '@whetstone-research/doppler-sdk/evm';
+const tokenDirect = new DopplerERC20V1(publicClient, walletClient, tokenAddress);
 ```
 
 ### DopplerERC20V1 Tokens
 
-Use the newer DopplerERC20V1 token template by either setting `type: 'dopplerERC20V1'` explicitly or by passing fields such as `maxBalanceLimit` with `balanceLimitEnd`, `controller`, or `excludedFromBalanceLimit`. When selected, the SDK uses the configured `dopplerERC20V1Factory` by default. `withTokenFactory(address)` is a generic factory override and takes precedence, but it must point to a factory compatible with the selected token path and token data ABI. `controller` is optional and defaults to the zero address, set it only if early balance-limit disable should be possible. Standard configs without the specific fields still use the legacy `standard` path, where cliff/allocation vesting routes to legacy DERC20 V2. Keep explicit `type: 'dopplerERC20V1'` when you want its behavior but have no specific fields to infer from.
+Use the DopplerERC20V1 token template by either setting `type: 'dopplerERC20V1'` explicitly or by passing fields such as `maxBalanceLimit` with `balanceLimitEnd`, `controller`, or `excludedFromBalanceLimit`. When selected, the SDK uses the configured `dopplerERC20V1Factory` by default. `withTokenFactory(address)` is a generic factory override and takes precedence, but it must point to a factory compatible with the selected token path and token data ABI. `controller` is optional and defaults to the zero address, set it only if early balance-limit disable should be possible. The `standard` token config also deploys a DopplerERC20V1 token, with cliff/allocation vesting handled through DopplerERC20V1 schedule semantics. Keep explicit `type: 'dopplerERC20V1'` when you want its behavior but have no specific fields to infer from.
 
 When balance limiting is enabled on the default DopplerERC20V1 integration, the SDK encodes user exclusions plus determinable protocol recipients for the selected auction path into deployment-time `excludedFromBalanceLimit`, including initializers, hooks, PoolManager, migrators, known migration pools, no-op governance, launchpad governance multisigs, and standard GovernanceFactory timelocks for `default` or `custom` governance. Custom `withTokenFactory(address)` paths receive only the `excludedFromBalanceLimit` entries supplied in `tokenConfig`, so custom token factory users must provide any required deployment-time exclusions themselves. Custom `withGovernanceFactory(address)` paths skip standard-governance timelock auto-exclusion, so custom governance factory users must provide any required timelock exclusions themselves. Exclusions cannot be added later through the controller or governance.
 
@@ -971,14 +901,14 @@ For a runnable example, see [examples/doppler-erc20-v1.ts](./examples/doppler-er
 
 ### Governance Delegation (ERC20Votes)
 
-DERC20 extends OpenZeppelin's ERC20Votes. Voting power is tracked via checkpoints and only updates once an address delegates voting power (typically to itself). The SDK exposes simple read/write helpers for delegation.
+DopplerERC20V1 extends OpenZeppelin's ERC20Votes. Voting power is tracked via checkpoints and only updates once an address delegates voting power (typically to itself). The SDK exposes simple read/write helpers for delegation.
 
 Basics:
 
 ```ts
-import { Derc20 } from '@whetstone-research/doppler-sdk/evm';
+import { DopplerERC20V1 } from '@whetstone-research/doppler-sdk/evm';
 
-const token = sdk.getDerc20(tokenAddress);
+const token = sdk.getDopplerERC20V1(tokenAddress);
 
 // Read: who an account delegates to, and current voting power
 const currentDelegate = await token.getDelegates(userAddress);
@@ -1019,7 +949,7 @@ Client (sign only):
 const [nonce, name] = await Promise.all([
   publicClient.readContract({
     address: tokenAddress,
-    abi: derc20Abi,
+    abi: dopplerERC20V1Abi,
     functionName: 'nonces',
     args: [userAddress],
   }),
@@ -1065,7 +995,7 @@ function splitSig(sig: `0x${string}`) {
 const { v, r, s } = splitSig(signature);
 await relayerWallet.writeContract({
   address: tokenAddress,
-  abi: derc20Abi,
+  abi: dopplerERC20V1Abi,
   functionName: 'delegateBySig',
   args: ['0xDelegatee...', nonce, expiry, v, r, s],
 });
@@ -1184,6 +1114,8 @@ migration: {
 }
 ```
 
+`streamableFees` is optional; when provided, fees are locked via `StreamableFeesLockerV2`.
+
 ### Migrate to Uniswap V2 with Proceeds Split + Top-ups
 
 ```typescript
@@ -1198,31 +1130,6 @@ migration: {
 
 - The split recipient receives the configured share of numeraire proceeds during migration.
 - If the asset/numeraire pair was topped up in `TopUpDistributor` before migration, the split recipient also receives those top-ups automatically.
-
-### Migrate to Uniswap V4 with Proceeds Split + Top-ups
-
-```typescript
-migration: {
-  type: 'uniswapV4Split',
-  fee: 3000,
-  tickSpacing: 8,
-  streamableFees: {
-    lockDuration: 30 * 24 * 60 * 60,
-    beneficiaries: [
-      { beneficiary: '0xAirlockOwner...', shares: parseEther('0.05') },
-      { beneficiary: '0xTeam...', shares: parseEther('0.95') },
-    ],
-  },
-  proceedsSplit: {
-    recipient: '0xRecipient...',
-    share: parseEther('0.1'),
-  },
-}
-```
-
-- `streamableFees` is required for `uniswapV4Split`.
-- Beneficiaries must sum to `1e18`, and the Airlock owner must be included with at least 5% shares.
-- The split recipient also receives any `TopUpDistributor` funds pulled during migration.
 
 ### TopUpDistributor Top-ups
 
@@ -1704,7 +1611,7 @@ Note: Dual-prefix mining takes significantly longer than single-prefix mining. C
 - **Prefix format**: Omit the `0x` prefix (e.g., use `'dead'` not `'0x dead'`)
 - **Case insensitive**: `'DEAD'`, `'dead'`, and `'DeAd'` are equivalent
 - **Iteration limit**: Longer prefixes require more iterations. A 4-character hex prefix takes ~65,000 attempts on average.
-- **Token variants**: Set `tokenVariant: 'standard-v2'` or `tokenVariant: 'dopplerERC20V1'` with `v2Implementation` for clone templates, or `tokenVariant: 'doppler404'` for DN404-style tokens
+- **Token variants**: Set `tokenVariant: 'dopplerERC20V1'` for the standard DopplerERC20V1 token, or `tokenVariant: 'doppler404'` for DN404-style tokens
 - **Salt preservation**: High-level helpers like `createStaticAuction` and `createDynamicAuction` recompute salts internally to ensure proper token ordering. To use a mined salt, call `encodeCreate*Params` and submit the transaction manually via `publicClient.writeContract`
 - **Hook flags**: The miner automatically ensures V4 hooks have the correct permission flags for Doppler operations
 
@@ -1742,7 +1649,6 @@ import type {
   CreateDynamicAuctionParams,
   CreateMulticurveParams,
   MulticurveInitializerConfig,
-  MulticurveDecayFeeSchedule,
   MigrationConfig,
   PoolInfo,
   HookInfo,

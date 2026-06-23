@@ -1,4 +1,4 @@
-export const VERSION = '1.0.0';
+export const VERSION = '1.1.0';
 
 // Export the main SDK class
 export { DopplerSDK } from './DopplerSDK';
@@ -35,7 +35,7 @@ export type {
 export { Quoter } from './entities/quoter';
 
 // Export token entities
-export { Derc20, Derc20V2, DopplerERC20V1, Eth } from './entities/token';
+export { DopplerERC20V1, Eth } from './entities/token';
 
 // Export builders and common interface
 export {
@@ -116,7 +116,6 @@ export type {
   UniswapV2MigrationConfig,
   UniswapV2SplitMigrationConfig,
   UniswapV4MigrationConfig,
-  UniswapV4SplitMigrationConfig,
   DopplerHookMigrationConfig,
   BeneficiaryData,
 
@@ -131,7 +130,6 @@ export type {
   RehypeFeeDistributionInfo,
   RehypeDopplerHookMigratorConfig,
   MulticurveInitializerConfig,
-  MulticurveDecayFeeSchedule,
 
   // Parameter types
   CreateStaticAuctionParams,

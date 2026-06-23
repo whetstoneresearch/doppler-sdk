@@ -141,26 +141,17 @@ export function parseMulticurvePoolKey(rawPoolKey: unknown): V4PoolKey {
 export function getMulticurveInitializerCandidates(
   addresses: ChainAddresses,
 ): readonly MulticurveInitializerCandidate[] {
-  return [
-    {
-      address: addresses.v4MulticurveInitializer,
-      kind: 'standard' as const,
-    },
-    {
-      address: addresses.v4ScheduledMulticurveInitializer,
-      kind: 'standard' as const,
-    },
-    {
-      address: addresses.v4DecayMulticurveInitializer,
-      kind: 'standard' as const,
-    },
-    {
+  const candidates: MulticurveInitializerCandidate[] = [];
+  if (
+    addresses.dopplerHookInitializer &&
+    addresses.dopplerHookInitializer !== zeroAddress
+  ) {
+    candidates.push({
       address: addresses.dopplerHookInitializer,
-      kind: 'dopplerHook' as const,
-    },
-  ].filter((entry): entry is MulticurveInitializerCandidate =>
-    Boolean(entry.address && entry.address !== zeroAddress),
-  );
+      kind: 'dopplerHook',
+    });
+  }
+  return candidates;
 }
 
 export function getMulticurveInitializerAbi(

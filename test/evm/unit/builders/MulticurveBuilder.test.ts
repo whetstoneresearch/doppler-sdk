@@ -7,7 +7,6 @@ import {
   DEFAULT_MULTICURVE_MAX_SUPPLY_SHARES,
   DEFAULT_MULTICURVE_NUM_POSITIONS,
   DEFAULT_MULTICURVE_UPPER_TICKS,
-  DECAY_MAX_START_FEE,
   FEE_TIERS,
   TICK_SPACINGS,
   WAD,
@@ -229,112 +228,6 @@ describe('MulticurveBuilder', () => {
           '0x00000000000000000000000000000000000000AA' as Address,
         );
     }
-
-    it('builds decay initializer config and keeps pool.fee as terminal fee', () => {
-      const startTime = Math.floor(Date.now() / 1000) + 600;
-      const params = buildBaseBuilder()
-        .withDecay({
-          startTime,
-          startFee: 3000,
-          durationSeconds: 3600,
-        })
-        .build();
-
-      expect(params.pool.fee).toBe(500);
-      expect(params.initializer).toEqual({
-        type: 'decay',
-        startTime,
-        startFee: 3000,
-        durationSeconds: 3600,
-      });
-    });
-
-    it('defaults decay startTime to 0 when omitted', () => {
-      const params = buildBaseBuilder()
-        .withDecay({
-          startFee: 3000,
-          durationSeconds: 3600,
-        })
-        .build();
-
-      expect(params.initializer).toEqual({
-        type: 'decay',
-        startTime: 0,
-        startFee: 3000,
-        durationSeconds: 3600,
-      });
-    });
-
-    it('rejects decay startFee below terminal pool fee', () => {
-      const builder = buildBaseBuilder().withDecay({
-        startTime: Math.floor(Date.now() / 1000) + 600,
-        startFee: 100,
-        durationSeconds: 3600,
-      });
-
-      expect(() => builder.build()).toThrow(
-        'greater than or equal to terminal pool fee',
-      );
-    });
-
-    it('allows decay startFee up to 80%', () => {
-      const startTime = Math.floor(Date.now() / 1000) + 600;
-      const params = buildBaseBuilder()
-        .withDecay({
-          startTime,
-          startFee: DECAY_MAX_START_FEE,
-          durationSeconds: 3600,
-        })
-        .build();
-
-      expect(params.initializer).toEqual({
-        type: 'decay',
-        startTime,
-        startFee: DECAY_MAX_START_FEE,
-        durationSeconds: 3600,
-      });
-    });
-
-    it('rejects decay startFee above 80%', () => {
-      expect(() =>
-        buildBaseBuilder().withDecay({
-          startTime: Math.floor(Date.now() / 1000) + 600,
-          startFee: DECAY_MAX_START_FEE + 1,
-          durationSeconds: 3600,
-        }),
-      ).toThrow('must be between 0 and 800000');
-    });
-
-    it('prevents combining decay and scheduled initializers', () => {
-      const builder = buildBaseBuilder()
-        .withDecay({
-          startTime: Math.floor(Date.now() / 1000) + 600,
-          startFee: 3000,
-          durationSeconds: 3600,
-        });
-
-      expect(() =>
-        builder.withSchedule({
-          startTime: Math.floor(Date.now() / 1000) + 1200,
-        }),
-      ).toThrow("already configured as 'decay'");
-    });
-
-    it('supports overriding decay initializer address', () => {
-      const decayInitializer =
-        '0x9999999999999999999999999999999999999999' as Address;
-
-      const params = buildBaseBuilder()
-        .withDecay({
-          startTime: Math.floor(Date.now() / 1000) + 600,
-          startFee: 3000,
-          durationSeconds: 3600,
-        })
-        .withV4DecayMulticurveInitializer(decayInitializer)
-        .build();
-
-      expect(params.modules?.v4DecayMulticurveInitializer).toBe(decayInitializer);
-    });
 
     it('builds rehype initializer config with fee schedule and distribution matrix', () => {
       const params = buildBaseBuilder()

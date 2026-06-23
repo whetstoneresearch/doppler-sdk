@@ -5,7 +5,7 @@ import {
   getAddress,
   type Address,
 } from 'viem';
-import { v4MulticurveInitializerAbi } from '@/abis';
+import { dopplerHookInitializerAbi } from '@/abis';
 import { MulticurveFees } from '@/entities/auction/MulticurveFees';
 import { LockablePoolStatus, type V4PoolKey } from '@/types';
 import {
@@ -14,16 +14,15 @@ import {
 } from '@test/setup/fixtures/clients';
 import {
   buildPendingFeeAggregateResults,
-  createZeroState,
   decodePendingFeeAggregateCalls,
   defaultAddresses,
   encodePendingFeeAggregateResults,
   expectedPendingFeeCallOrder,
   mockBeneficiary,
+  mockDopplerHookInitializer,
   mockFarTick,
   mockHook,
   mockNumeraire,
-  mockScheduledInitializer,
   type AggregateResult,
   type MockPublicClient,
   type PendingFeeValues,
@@ -31,7 +30,7 @@ import {
 
 const batchAddresses = {
   ...defaultAddresses,
-  v4ScheduledMulticurveInitializer: mockScheduledInitializer,
+  dopplerHookInitializer: mockDopplerHookInitializer,
 };
 
 vi.mock('@/addresses', async (importOriginal) => {
@@ -52,7 +51,15 @@ const tokenC = getAddress(
   '0x0ccc0000000000000000000000000000000000cc',
 ) as Address;
 
-type GetStateResult = readonly [Address, number, V4PoolKey, number];
+type GetStateResult = readonly [
+  Address,
+  bigint,
+  Address,
+  `0x${string}`,
+  number,
+  V4PoolKey,
+  number,
+];
 
 describe('MulticurveFees getPendingFees token batch size', () => {
   let publicClient: MockPublicClient;
@@ -81,18 +88,11 @@ describe('MulticurveFees getPendingFees token batch size', () => {
       { tokenAddress: tokenC, fees0: 300n, fees1: 310n },
     ]);
     expect(publicClient.call).toHaveBeenCalledTimes(4);
-    expect(decodeDiscoveryTokens(0)).toEqual([
-      tokenA,
-      tokenA,
-      tokenA,
-      tokenB,
-      tokenB,
-      tokenB,
-    ]);
+    expect(decodeDiscoveryTokens(0)).toEqual([tokenA, tokenB]);
     expect(decodeAggregateCalls(1)).toHaveLength(
       expectedPendingFeeCallOrder.length * 2,
     );
-    expect(decodeDiscoveryTokens(2)).toEqual([tokenC, tokenC, tokenC]);
+    expect(decodeDiscoveryTokens(2)).toEqual([tokenC]);
     expect(decodeAggregateCalls(3)).toHaveLength(
       expectedPendingFeeCallOrder.length,
     );
@@ -116,14 +116,7 @@ describe('MulticurveFees getPendingFees token batch size', () => {
       { tokenAddress: tokenC, fees0: 300n, fees1: 310n },
     ]);
     expect(publicClient.call).toHaveBeenCalledTimes(2);
-    expect(decodeDiscoveryTokens(0)).toEqual([
-      tokenB,
-      tokenB,
-      tokenB,
-      tokenC,
-      tokenC,
-      tokenC,
-    ]);
+    expect(decodeDiscoveryTokens(0)).toEqual([tokenB, tokenC]);
   });
 
   it('throws when token batch size is not a positive integer', async () => {
@@ -146,11 +139,9 @@ describe('MulticurveFees getPendingFees token batch size', () => {
     vi.mocked(publicClient.call)
       .mockResolvedValueOnce({
         data: encodePendingFeeAggregateResults(
-          tokenAddresses.flatMap((tokenAddress) => [
+          tokenAddresses.map((tokenAddress) =>
             encodeGetStateResult(createLockedState(createPoolKey(tokenAddress))),
-            encodeGetStateResult(createZeroState()),
-            encodeGetStateResult(createZeroState()),
-          ]),
+          ),
         ),
       })
       .mockResolvedValueOnce({
@@ -166,7 +157,7 @@ describe('MulticurveFees getPendingFees token batch size', () => {
     return decodeAggregateCalls(callIndex).map(
       (call) =>
         decodeFunctionData({
-          abi: v4MulticurveInitializerAbi,
+          abi: dopplerHookInitializerAbi,
           data: call.callData,
         }).args[0],
     );
@@ -193,14 +184,22 @@ function createPoolKey(tokenAddress: Address): V4PoolKey {
 }
 
 function createLockedState(poolKey: V4PoolKey): GetStateResult {
-  return [mockNumeraire, LockablePoolStatus.Locked, poolKey, mockFarTick];
+  return [
+    mockNumeraire,
+    0n,
+    mockHook,
+    '0x',
+    LockablePoolStatus.Locked,
+    poolKey,
+    mockFarTick,
+  ];
 }
 
 function encodeGetStateResult(result: GetStateResult): AggregateResult {
   return {
     success: true,
     returnData: encodeFunctionResult({
-      abi: v4MulticurveInitializerAbi,
+      abi: dopplerHookInitializerAbi,
       functionName: 'getState',
       result,
     }),

@@ -25,7 +25,10 @@ describe('BaseAuctionBuilder interface', () => {
     expect(typeof builder.withGovernance).toBe('function');
     expect(typeof builder.withMigration).toBe('function');
     expect(typeof builder.withV2MigratorSplit).toBe('function');
-    expect(typeof builder.withV4MigratorSplit).toBe('function');
+    expect(
+      typeof (builder as StaticAuctionBuilder<typeof CHAIN_IDS.BASE>)
+        .withLockableV3Initializer,
+    ).toBe('function');
     expect(typeof builder.withUserAddress).toBe('function');
     expect(typeof builder.withIntegrator).toBe('function');
     expect(typeof builder.withGasLimit).toBe('function');
@@ -43,7 +46,6 @@ describe('BaseAuctionBuilder interface', () => {
     expect(typeof builder.withGovernance).toBe('function');
     expect(typeof builder.withMigration).toBe('function');
     expect(typeof builder.withV2MigratorSplit).toBe('function');
-    expect(typeof builder.withV4MigratorSplit).toBe('function');
     expect(typeof (builder as DynamicAuctionBuilder<typeof CHAIN_IDS.BASE>).withDopplerHookMigrator).toBe('function');
     expect(typeof (builder as DynamicAuctionBuilder<typeof CHAIN_IDS.BASE>).withRehypeDopplerHookMigrator).toBe('function');
     expect(typeof builder.withUserAddress).toBe('function');
@@ -63,7 +65,10 @@ describe('BaseAuctionBuilder interface', () => {
     expect(typeof builder.withGovernance).toBe('function');
     expect(typeof builder.withMigration).toBe('function');
     expect(typeof builder.withV2MigratorSplit).toBe('function');
-    expect(typeof builder.withV4MigratorSplit).toBe('function');
+    expect(
+      typeof (builder as MulticurveBuilder<typeof CHAIN_IDS.BASE>)
+        .withRehypeDopplerHook,
+    ).toBe('function');
     expect(typeof builder.withUserAddress).toBe('function');
     expect(typeof builder.withIntegrator).toBe('function');
     expect(typeof builder.withGasLimit).toBe('function');

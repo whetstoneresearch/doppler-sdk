@@ -66,7 +66,7 @@ describe('Opening Auction (Base Sepolia fork) smoke test', () => {
         address: addresses.airlock,
         abi: airlockAbi,
         functionName: 'getModuleState',
-        args: [addresses.tokenFactory],
+        args: [addresses.dopplerERC20V1Factory],
       })
       states.tokenFactory = Number(tokenFactoryState)
       tokenFactoryWhitelisted = states.tokenFactory === 1 // ModuleState.TokenFactory = 1

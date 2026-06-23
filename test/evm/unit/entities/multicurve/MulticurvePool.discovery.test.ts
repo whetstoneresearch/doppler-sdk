@@ -10,13 +10,10 @@ import {
   createState,
   createZeroState,
   defaultAddresses,
-  mockDecayInitializer,
-  mockDopplerHookInitializer,
   mockFarTick,
   mockNumeraire,
   mockPoolKey,
   mockRehypeHook,
-  mockScheduledInitializer,
   mockTokenAddress,
   type MockPublicClient,
 } from './multicurvePoolTestHelpers';
@@ -54,7 +51,7 @@ describe('MulticurvePool initializer discovery', () => {
     });
     expect(publicClient.readContract).toHaveBeenCalledWith(
       expect.objectContaining({
-        address: mockAddresses.v4MulticurveInitializer,
+        address: mockAddresses.dopplerHookInitializer,
         functionName: 'getState',
         args: [mockTokenAddress],
       }),
@@ -65,9 +62,7 @@ describe('MulticurvePool initializer discovery', () => {
     const { getAddresses } = await import('@/addresses');
     vi.mocked(getAddresses).mockReturnValue({
       ...defaultAddresses,
-      v4MulticurveInitializer: undefined,
-      v4ScheduledMulticurveInitializer: undefined,
-      v4DecayMulticurveInitializer: undefined,
+      dopplerHookInitializer: undefined,
     });
 
     await expect(multicurvePool.getState()).rejects.toThrow(
@@ -75,37 +70,34 @@ describe('MulticurvePool initializer discovery', () => {
     );
   });
 
-  it('continues to scheduled initializer for an explicit absent-pool custom error', async () => {
-    await mockScheduledInitializerAddress();
-    vi.mocked(publicClient.readContract)
-      .mockRejectedValueOnce(createAbsentPoolDiscoveryError())
-      .mockResolvedValueOnce(createState());
+  it('throws with tried initializers when an absent-pool custom error reverts discovery', async () => {
+    vi.mocked(publicClient.readContract).mockRejectedValueOnce(
+      createAbsentPoolDiscoveryError(),
+    );
 
-    const state = await multicurvePool.getState();
-
-    expect(state.poolKey).toEqual(mockPoolKey);
-    expect(publicClient.readContract).toHaveBeenCalledTimes(2);
+    await expect(multicurvePool.getState()).rejects.toThrow(
+      `Pool not found for token ${mockTokenAddress}. Tried initializers:`,
+    );
+    expect(publicClient.readContract).toHaveBeenCalledTimes(1);
     expect(publicClient.readContract).toHaveBeenLastCalledWith(
       expect.objectContaining({
-        address: mockScheduledInitializer,
+        address: mockAddresses.dopplerHookInitializer,
       }),
     );
   });
 
-  it('continues to scheduled initializer after zero-state absence', async () => {
-    await mockScheduledInitializerAddress();
-    vi.mocked(publicClient.readContract)
-      .mockResolvedValueOnce(createZeroState())
-      .mockResolvedValueOnce(createState());
+  it('throws with tried initializers after a zero-state absence', async () => {
+    vi.mocked(publicClient.readContract).mockResolvedValueOnce(
+      createZeroState(),
+    );
 
-    const state = await multicurvePool.getState();
-
-    expect(state.poolKey).toEqual(mockPoolKey);
-    expect(publicClient.readContract).toHaveBeenCalledTimes(2);
+    await expect(multicurvePool.getState()).rejects.toThrow(
+      `Pool not found for token ${mockTokenAddress}. Tried initializers:`,
+    );
+    expect(publicClient.readContract).toHaveBeenCalledTimes(1);
   });
 
   it('preserves provider failures during initializer discovery', async () => {
-    await mockScheduledInitializerAddress();
     vi.mocked(publicClient.readContract).mockRejectedValueOnce(
       new Error('HTTP request failed'),
     );
@@ -117,10 +109,9 @@ describe('MulticurvePool initializer discovery', () => {
   });
 
   it('preserves selector or decode failures', async () => {
-    await mockScheduledInitializerAddress();
-    vi.mocked(publicClient.readContract)
-      .mockRejectedValueOnce(new Error('Unknown function selector'))
-      .mockResolvedValueOnce(createState());
+    vi.mocked(publicClient.readContract).mockRejectedValueOnce(
+      new Error('Unknown function selector'),
+    );
 
     await expect(multicurvePool.getState()).rejects.toThrow(
       'Unknown function selector',
@@ -129,16 +120,13 @@ describe('MulticurvePool initializer discovery', () => {
   });
 
   it('preserves structured contract reverts during initializer discovery', async () => {
-    await mockScheduledInitializerAddress();
-    vi.mocked(publicClient.readContract)
-      .mockRejectedValueOnce(
-        new ContractFunctionRevertedError({
-          abi: v4MulticurveInitializerAbi,
-          functionName: 'getState',
-          message: 'Pool storage corrupted',
-        }),
-      )
-      .mockResolvedValueOnce(createState());
+    vi.mocked(publicClient.readContract).mockRejectedValueOnce(
+      new ContractFunctionRevertedError({
+        abi: v4MulticurveInitializerAbi,
+        functionName: 'getState',
+        message: 'Pool storage corrupted',
+      }),
+    );
 
     await expect(multicurvePool.getState()).rejects.toThrow(
       'Pool storage corrupted',
@@ -146,8 +134,7 @@ describe('MulticurvePool initializer discovery', () => {
     expect(publicClient.readContract).toHaveBeenCalledTimes(1);
   });
 
-  it('throws with tried initializers when pool is not found in any', async () => {
-    mockScheduledInitializerAddress();
+  it('throws with tried initializers when pool is not found', async () => {
     vi.mocked(publicClient.readContract).mockResolvedValue(createZeroState());
 
     await expect(multicurvePool.getState()).rejects.toThrow(
@@ -155,17 +142,10 @@ describe('MulticurvePool initializer discovery', () => {
     );
   });
 
-  it('aggregates absent-pool failures when every candidate reverts or returns zero state', async () => {
-    const { getAddresses } = await import('@/addresses');
-    vi.mocked(getAddresses).mockReturnValue({
-      ...defaultAddresses,
-      v4ScheduledMulticurveInitializer: mockScheduledInitializer,
-      v4DecayMulticurveInitializer: mockDecayInitializer,
-    });
-    vi.mocked(publicClient.readContract)
-      .mockRejectedValueOnce(createAbsentPoolDiscoveryError())
-      .mockResolvedValueOnce(createZeroState())
-      .mockRejectedValueOnce(createAbsentPoolDiscoveryError());
+  it('aggregates absent-pool failures when the candidate reverts', async () => {
+    vi.mocked(publicClient.readContract).mockRejectedValueOnce(
+      createAbsentPoolDiscoveryError(),
+    );
 
     try {
       await multicurvePool.getState();
@@ -177,51 +157,18 @@ describe('MulticurvePool initializer discovery', () => {
       );
 
       const aggregate = (error as { cause?: { errors?: unknown[] } }).cause;
-      expect(aggregate?.errors).toHaveLength(2);
+      expect(aggregate?.errors).toHaveLength(1);
       const messages = (aggregate?.errors ?? []).map(
         (entry) => (entry as Error).message,
       );
       expect(messages[0]).toContain(
-        `${mockAddresses.v4MulticurveInitializer} getState failed:`,
+        `${mockAddresses.dopplerHookInitializer} getState failed:`,
       );
       expect(messages[0]).toContain('PoolNotInitialized');
-      expect(messages[1]).toContain(`${mockDecayInitializer} getState failed:`);
-      expect(messages[1]).toContain('PoolNotInitialized');
     }
   });
 
-  it('falls back to decay initializer when standard and scheduled are zero-state', async () => {
-    const { getAddresses } = await import('@/addresses');
-    vi.mocked(getAddresses).mockReturnValue({
-      ...defaultAddresses,
-      v4ScheduledMulticurveInitializer: mockScheduledInitializer,
-      v4DecayMulticurveInitializer: mockDecayInitializer,
-    });
-    vi.mocked(publicClient.readContract)
-      .mockResolvedValueOnce(createZeroState())
-      .mockResolvedValueOnce(createZeroState())
-      .mockResolvedValueOnce(createState());
-
-    const state = await multicurvePool.getState();
-
-    expect(state.poolKey).toEqual(mockPoolKey);
-    expect(publicClient.readContract).toHaveBeenCalledTimes(3);
-    expect(publicClient.readContract).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        address: mockDecayInitializer,
-      }),
-    );
-  });
-
   it('decodes pool state from DopplerHookInitializer using the rehype layout', async () => {
-    const { getAddresses } = await import('@/addresses');
-    vi.mocked(getAddresses).mockReturnValue({
-      ...defaultAddresses,
-      v4MulticurveInitializer: undefined,
-      v4ScheduledMulticurveInitializer: undefined,
-      v4DecayMulticurveInitializer: undefined,
-      dopplerHookInitializer: mockDopplerHookInitializer,
-    });
     vi.mocked(publicClient.readContract).mockResolvedValueOnce([
       mockNumeraire,
       400000n,
@@ -233,7 +180,7 @@ describe('MulticurvePool initializer discovery', () => {
         currency1: mockNumeraire,
         fee: DYNAMIC_FEE_FLAG,
         tickSpacing: 60,
-        hooks: mockDopplerHookInitializer,
+        hooks: mockAddresses.dopplerHookInitializer,
       },
       mockFarTick,
     ]);
@@ -251,25 +198,16 @@ describe('MulticurvePool initializer discovery', () => {
         currency1: mockNumeraire,
         fee: DYNAMIC_FEE_FLAG,
         tickSpacing: 60,
-        hooks: mockDopplerHookInitializer,
+        hooks: mockAddresses.dopplerHookInitializer,
       },
       farTick: mockFarTick,
     });
     expect(publicClient.readContract).toHaveBeenCalledWith(
       expect.objectContaining({
-        address: mockDopplerHookInitializer,
+        address: mockAddresses.dopplerHookInitializer,
         functionName: 'getState',
         args: [mockTokenAddress],
       }),
     );
   });
-
-  async function mockScheduledInitializerAddress() {
-    vi.mocked(publicClient.readContract).mockClear();
-    const { getAddresses } = await import('@/addresses');
-    vi.mocked(getAddresses).mockReturnValue({
-      ...defaultAddresses,
-      v4ScheduledMulticurveInitializer: mockScheduledInitializer,
-    });
-  }
 });

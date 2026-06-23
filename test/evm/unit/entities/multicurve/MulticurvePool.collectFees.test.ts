@@ -5,9 +5,8 @@ import { MulticurvePool } from '@/entities/auction/MulticurvePool';
 import { mockAddresses } from '@test/setup/fixtures/addresses';
 import {
   createMulticurvePoolHarness,
+  createState,
   defaultAddresses,
-  mockFarTick,
-  mockNumeraire,
   mockPoolKey,
   mockTokenAddress,
   type MockPublicClient,
@@ -39,15 +38,12 @@ describe('MulticurvePool collectFees', () => {
     const mockTxHash = '0xabcdef1234567890';
     const expectedPoolId = computePoolId(mockPoolKey);
 
-    vi.mocked(publicClient.readContract).mockResolvedValueOnce([
-      mockNumeraire,
-      LockablePoolStatus.Locked,
-      mockPoolKey,
-      mockFarTick,
-    ]);
+    vi.mocked(publicClient.readContract).mockResolvedValueOnce(
+      createState(LockablePoolStatus.Locked),
+    );
     vi.mocked(publicClient.simulateContract).mockResolvedValueOnce({
       request: {
-        address: mockAddresses.v4MulticurveInitializer,
+        address: mockAddresses.dopplerHookInitializer,
         functionName: 'collectFees',
         args: [expectedPoolId],
       },
@@ -67,7 +63,7 @@ describe('MulticurvePool collectFees', () => {
     });
     expect(publicClient.simulateContract).toHaveBeenCalledWith(
       expect.objectContaining({
-        address: mockAddresses.v4MulticurveInitializer,
+        address: mockAddresses.dopplerHookInitializer,
         functionName: 'collectFees',
         args: [expectedPoolId],
       }),
@@ -97,9 +93,7 @@ describe('MulticurvePool collectFees', () => {
     const { getAddresses } = await import('@/addresses');
     vi.mocked(getAddresses).mockReturnValue({
       ...defaultAddresses,
-      v4MulticurveInitializer: undefined,
-      v4ScheduledMulticurveInitializer: undefined,
-      v4DecayMulticurveInitializer: undefined,
+      dopplerHookInitializer: undefined,
     });
 
     await expect(multicurvePool.collectFees()).rejects.toThrow(
@@ -108,12 +102,9 @@ describe('MulticurvePool collectFees', () => {
   });
 
   it('throws error if pool has exited or migrated', async () => {
-    vi.mocked(publicClient.readContract).mockResolvedValueOnce([
-      mockNumeraire,
-      LockablePoolStatus.Exited,
-      mockPoolKey,
-      mockFarTick,
-    ]);
+    vi.mocked(publicClient.readContract).mockResolvedValueOnce(
+      createState(LockablePoolStatus.Exited),
+    );
 
     await expect(multicurvePool.collectFees()).rejects.toThrow(
       'Multicurve pool is not locked or was migrated',
@@ -121,12 +112,9 @@ describe('MulticurvePool collectFees', () => {
   });
 
   it('throws error if pool is not locked', async () => {
-    vi.mocked(publicClient.readContract).mockResolvedValueOnce([
-      mockNumeraire,
-      LockablePoolStatus.Initialized,
-      mockPoolKey,
-      mockFarTick,
-    ]);
+    vi.mocked(publicClient.readContract).mockResolvedValueOnce(
+      createState(LockablePoolStatus.Initialized),
+    );
 
     await expect(multicurvePool.collectFees()).rejects.toThrow(
       'Multicurve pool is not locked or was migrated',

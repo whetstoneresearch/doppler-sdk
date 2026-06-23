@@ -364,22 +364,10 @@ export interface UniswapV4MigrationConfig {
   streamableFees?: StreamableFeesConfig;
 }
 
-export interface UniswapV4SplitMigrationConfig {
-  type: 'uniswapV4Split';
-  fee: number;
-  tickSpacing: number;
-  // Required for split V4 migration because the migrator always configures
-  // locker beneficiaries and lock duration during initialization.
-  streamableFees: StreamableFeesConfig;
-  // Optional proceeds split paid out during migration.
-  proceedsSplit?: ProceedsSplitConfig;
-}
-
 export type MigrationConfig =
   | UniswapV2MigrationConfig // Basic migration to a new Uniswap v2 pool
   | UniswapV2SplitMigrationConfig // V2 migration with proceeds split + TopUpDistributor support
   | UniswapV4MigrationConfig
-  | UniswapV4SplitMigrationConfig
   | DopplerHookMigrationConfig // Dynamic-only: migration via DopplerHookMigrator
   | { type: 'noOp' }; // No migration - used with lockable beneficiaries
 
@@ -1011,25 +999,12 @@ export interface RehypeDopplerHookConfig {
   farTick?: number;
 }
 
-// Decay fee schedule state for multicurve pools using a dynamic-fee hook
-export interface MulticurveDecayFeeSchedule {
-  startingTime: number;
-  startFee: number;
-  endFee: number;
-  lastFee: number;
-  durationSeconds: number;
-}
-
-export type MulticurveInitializerConfig =
-  | { type: 'standard' }
-  | { type: 'scheduled'; startTime: number }
-  | {
-      type: 'decay';
-      startTime: number;
-      startFee: number;
-      durationSeconds: number;
-    }
-  | { type: 'rehype'; config: RehypeDopplerHookConfig };
+// Multicurve pools are always initialized through the DopplerHookInitializer
+// (rehype) path. The rehype hook config is optional.
+export type MulticurveInitializerConfig = {
+  type: 'rehype';
+  config: RehypeDopplerHookConfig;
+};
 
 // Create Multicurve initializer parameters
 export interface CreateMulticurveParams<
@@ -1043,7 +1018,6 @@ export interface CreateMulticurveParams<
 
   // Pool configuration for multicurve initializer
   pool: {
-    // For decay initializer mode, this is the terminal fee (endFee).
     fee: number;
     tickSpacing: number;
     curves: MulticurveCurve[];
@@ -1051,17 +1025,8 @@ export interface CreateMulticurveParams<
     beneficiaries?: BeneficiaryData[];
   };
 
-  // Preferred initializer configuration. Defaults to { type: 'standard' }.
+  // Preferred initializer configuration (DopplerHookInitializer / rehype).
   initializer?: MulticurveInitializerConfig;
-
-  /**
-   * @deprecated Use initializer: { type: 'scheduled', startTime } instead.
-   * Retained for backwards compatibility.
-   */
-  // Optional scheduled launch configuration
-  schedule?: {
-    startTime: number;
-  };
 
   /**
    * @deprecated Use initializer: { type: 'rehype', config } instead.
@@ -1115,12 +1080,8 @@ export interface ModuleAddressOverrides {
   dopplerERC20V1Factory?: Address;
 
   // Initializers
-  v3Initializer?: Address;
   lockableV3Initializer?: Address;
   v4Initializer?: Address;
-  v4MulticurveInitializer?: Address;
-  v4ScheduledMulticurveInitializer?: Address;
-  v4DecayMulticurveInitializer?: Address;
   openingAuctionInitializer?: Address;
   openingAuctionPositionManager?: Address;
   dopplerHookInitializer?: Address;
@@ -1143,7 +1104,6 @@ export interface ModuleAddressOverrides {
   v2Migrator?: Address;
   v2MigratorSplit?: Address;
   v4Migrator?: Address;
-  v4MigratorSplit?: Address;
   dopplerHookMigrator?: Address;
   rehypeDopplerHookMigrator?: Address;
   noOpMigrator?: Address;

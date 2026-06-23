@@ -288,26 +288,6 @@ describe('SDK Workflows Integration Tests', () => {
 
   describe('Token and Quoter Interactions', () => {
     it('should interact with token entities after auction creation', async () => {
-      // 1. Get token entity
-      const { Derc20 } = await import('../../../src/evm/entities/token/derc20/Derc20');
-      const derc20 = new Derc20(publicClient, walletClient, mockTokenAddress);
-
-      // 2. Mock token info
-      vi.mocked(publicClient.readContract)
-        .mockResolvedValueOnce('Test Token')
-        .mockResolvedValueOnce('TEST')
-        .mockResolvedValueOnce(18);
-
-      const [name, symbol, decimals] = await Promise.all([
-        derc20.getName(),
-        derc20.getSymbol(),
-        derc20.getDecimals(),
-      ]);
-
-      expect(name).toBe('Test Token');
-      expect(symbol).toBe('TEST');
-      expect(decimals).toBe(18);
-
       // 3. Get ETH entity
       const { Eth } = await import('../../../src/evm/entities/token/eth/Eth');
       const eth = new Eth(publicClient);

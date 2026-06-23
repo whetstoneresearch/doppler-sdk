@@ -26,7 +26,7 @@ describe('Multicurve with multiple vesting beneficiaries (Base Sepolia fork)', (
         address: addresses.airlock,
         abi: airlockAbi,
         functionName: 'getModuleState',
-        args: [addresses.v4MulticurveInitializer!],
+        args: [addresses.dopplerHookInitializer!],
       }) as unknown as number
       states.initializer = Number(initState)
       initializerWhitelisted = states.initializer === 3
@@ -48,7 +48,7 @@ describe('Multicurve with multiple vesting beneficiaries (Base Sepolia fork)', (
         address: addresses.airlock,
         abi: airlockAbi,
         functionName: 'getModuleState',
-        args: [addresses.tokenFactory],
+        args: [addresses.dopplerERC20V1Factory!],
       }) as unknown as number
       states.tokenFactory = Number(tokenFactoryState)
       tokenFactoryWhitelisted = states.tokenFactory === 1
@@ -106,7 +106,6 @@ describe('Multicurve with multiple vesting beneficiaries (Base Sepolia fork)', (
       .withGovernance({ type: 'default' })
       .withMigration({ type: 'uniswapV2' })
       .withUserAddress(addresses.airlock)
-      .withV4MulticurveInitializer(addresses.v4MulticurveInitializer!)
       .withV2Migrator(addresses.v2Migrator)
 
     const params = builder.build()
@@ -172,7 +171,6 @@ describe('Multicurve with multiple vesting beneficiaries (Base Sepolia fork)', (
       .withGovernance({ type: 'default' })
       .withMigration({ type: 'uniswapV2' })
       .withUserAddress(addresses.airlock)
-      .withV4MulticurveInitializer(addresses.v4MulticurveInitializer!)
       .withV2Migrator(addresses.v2Migrator)
 
     const params = builder.build()
@@ -222,7 +220,6 @@ describe('Multicurve with multiple vesting beneficiaries (Base Sepolia fork)', (
       .withGovernance({ type: 'default' })
       .withMigration({ type: 'uniswapV2' })
       .withUserAddress(addresses.airlock)
-      .withV4MulticurveInitializer(addresses.v4MulticurveInitializer!)
       .withV2Migrator(addresses.v2Migrator)
 
     const params = builder.build()
@@ -269,7 +266,6 @@ describe('Multicurve with multiple vesting beneficiaries (Base Sepolia fork)', (
       .withGovernance({ type: 'default' })
       .withMigration({ type: 'uniswapV2' })
       .withUserAddress(addresses.airlock)
-      .withV4MulticurveInitializer(addresses.v4MulticurveInitializer!)
       .withV2Migrator(addresses.v2Migrator)
 
     const params = builder.build()
@@ -312,7 +308,6 @@ describe('Multicurve with multiple vesting beneficiaries (Base Sepolia fork)', (
       .withGovernance({ type: 'default' })
       .withMigration({ type: 'uniswapV2' })
       .withUserAddress(addresses.airlock)
-      .withV4MulticurveInitializer(addresses.v4MulticurveInitializer!)
       .withV2Migrator(addresses.v2Migrator)
 
     const params = builder.build()

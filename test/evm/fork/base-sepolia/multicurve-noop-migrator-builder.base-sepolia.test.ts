@@ -101,7 +101,6 @@ describe('Multicurve Builder with NoOpMigrator helper (Base Sepolia fork)', () =
       .withGovernance({ type: 'default' })
       .withMigration({ type: 'noOp' }) // Specify NoOp migration type
       .withUserAddress(addresses.airlock)
-      .withV4MulticurveInitializer(addresses.v4MulticurveInitializer!)
       // OPTIONAL: Override the NoOpMigrator address (uses chain default if not specified)
       .withNoOpMigrator(addresses.noOpMigrator!)
 
@@ -170,7 +169,6 @@ describe('Multicurve Builder with NoOpMigrator helper (Base Sepolia fork)', () =
       .withGovernance({ type: 'default' })
       .withMigration({ type: 'noOp' }) // Use NoOp migration type
       .withUserAddress(addresses.airlock)
-      .withV4MulticurveInitializer(addresses.v4MulticurveInitializer!)
       // NOTE: Not calling withNoOpMigrator() - SDK will use default from chain addresses
 
     const params = builder.build()
@@ -231,7 +229,6 @@ describe('Multicurve Builder with NoOpMigrator helper (Base Sepolia fork)', () =
       .withGovernance({ type: 'default' })
       .withMigration({ type: 'noOp' })
       .withUserAddress(addresses.airlock)
-      .withV4MulticurveInitializer(addresses.v4MulticurveInitializer!)
       // EXPLICIT: Override with custom NoOpMigrator address
       .withNoOpMigrator(customNoOpMigrator)
 

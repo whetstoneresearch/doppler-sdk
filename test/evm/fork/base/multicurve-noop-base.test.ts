@@ -119,7 +119,6 @@ maybeDescribe('Fork/Live - Multicurve NoOp Migration on Base', () => {
       .withGovernance({ type: 'default' })
       .withMigration({ type: 'noOp' })
       .withUserAddress(addresses.airlock)
-      .withV4MulticurveInitializer(addresses.v4MulticurveInitializer!)
       .withNoOpMigrator(addresses.noOpMigrator!);
 
     const params = builder.build();
@@ -192,7 +191,6 @@ maybeDescribe('Fork/Live - Multicurve NoOp Migration on Base', () => {
       .withGovernance({ type: 'default' })
       .withMigration({ type: 'noOp' })
       .withUserAddress(addresses.airlock)
-      .withV4MulticurveInitializer(addresses.v4MulticurveInitializer!)
       .withNoOpMigrator(addresses.noOpMigrator!);
 
     const params = builder.build();
@@ -256,7 +254,6 @@ maybeDescribe('Fork/Live - Multicurve NoOp Migration on Base', () => {
       .withGovernance({ type: 'default' })
       .withMigration({ type: 'noOp' })
       .withUserAddress(addresses.airlock)
-      .withV4MulticurveInitializer(addresses.v4MulticurveInitializer!)
       .withNoOpMigrator(addresses.noOpMigrator!);
 
     const params = builder.build();
