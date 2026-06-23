@@ -176,6 +176,7 @@ async function main() {
   const CPMM_SWAP_FEE_SPLIT_BPS = 10_000; // migrated launch fees route through LaunchFeeState
   const INITIALIZER_HOOK_FLAGS =
     initializer.HF_BEFORE_SWAP | initializer.HF_FORWARD_READONLY_SIGNERS;
+  const COSIGN_GATE_SECONDS = Number(process.env.COSIGN_GATE_SECONDS ?? 300);
   // ── Graduation threshold and price floor ────────────────────────────────
   const MIN_SOL_RAISE = 0.1; // low example threshold
   const minRaiseQuote = BigInt(MIN_SOL_RAISE * 1_000_000_000);
@@ -213,6 +214,14 @@ async function main() {
     namespace,
     cosigner.address,
   ]);
+  const cosignGateExpiresAt = BigInt(
+    Math.floor(Date.now() / 1_000) + COSIGN_GATE_SECONDS,
+  );
+  const hookPayload = cosignerHook.encodeCosignerGateExpiryPayload({
+    mode: cosignerHook.GATE_EXPIRY_UNIX_TIMESTAMP,
+    value: cosignGateExpiresAt,
+    cosigner: cosigner.address,
+  });
 
   const [launch] = await initializer.getLaunchAddress(
     namespace,
@@ -267,6 +276,7 @@ async function main() {
   console.log('  Cosigner config:    ', cosignerConfig);
   console.log('  Active cosigners:   ', activeCosigners.join(', '));
   console.log('  Signing cosigner:   ', cosigner.address);
+  console.log('  Cosign gate expiry: ', cosignGateExpiresAt.toString());
   console.log('');
 
   const migratorInitPayload = cpmmMigrator.encodeRegisterLaunchPayload({
@@ -332,7 +342,7 @@ async function main() {
         allowBuy: true,
         allowSell: true,
         hookFlags: INITIALIZER_HOOK_FLAGS,
-        hookPayload: new Uint8Array(),
+        hookPayload,
         migratorInitPayload,
         migratorMigratePayload,
         hookRemainingAccountsHash,
