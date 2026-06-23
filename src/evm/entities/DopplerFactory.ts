@@ -890,89 +890,54 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
 
     const addresses = getAddresses(this.chainId);
 
-    // Check if beneficiaries are provided - this determines which initializer to use
-    const hasBeneficiaries =
-      params.pool.beneficiaries && params.pool.beneficiaries.length > 0;
+    // 1. Encode pool initializer data.
+    // Static auctions always use the LockableUniswapV3Initializer, whose InitData
+    // includes a beneficiaries array (6 fields). When no beneficiaries are
+    // provided the array is empty and the pool is initialized (not locked).
+    const sortedBeneficiaries = (params.pool.beneficiaries ?? [])
+      .slice()
+      .sort((a, b) => {
+        const aAddr = a.beneficiary.toLowerCase();
+        const bAddr = b.beneficiary.toLowerCase();
+        return aAddr < bAddr ? -1 : aAddr > bAddr ? 1 : 0;
+      });
 
-    // 1. Encode pool initializer data
-    // Standard V3 initializer expects InitData struct WITHOUT beneficiaries (5 fields)
-    // Lockable V3 initializer expects InitData struct WITH beneficiaries (6 fields)
-    let poolInitializerData: Hex;
-
-    if (hasBeneficiaries) {
-      // Sort beneficiaries by address (ascending) as required by the contract
-      const sortedBeneficiaries = params.pool
-        .beneficiaries!.slice()
-        .sort((a, b) => {
-          const aAddr = a.beneficiary.toLowerCase();
-          const bAddr = b.beneficiary.toLowerCase();
-          return aAddr < bAddr ? -1 : aAddr > bAddr ? 1 : 0;
-        });
-
-      // Lockable V3 initializer encoding (6 fields including beneficiaries)
-      poolInitializerData = encodeAbiParameters(
-        [
-          {
-            type: 'tuple',
-            components: [
-              { type: 'uint24', name: 'fee' },
-              { type: 'int24', name: 'tickLower' },
-              { type: 'int24', name: 'tickUpper' },
-              { type: 'uint16', name: 'numPositions' },
-              { type: 'uint256', name: 'maxShareToBeSold' },
-              {
-                type: 'tuple[]',
-                name: 'beneficiaries',
-                components: [
-                  { type: 'address', name: 'beneficiary' },
-                  { type: 'uint96', name: 'shares' },
-                ],
-              },
-            ],
-          },
-        ],
-        [
-          {
-            fee: params.pool.fee,
-            tickLower: params.pool.startTick,
-            tickUpper: params.pool.endTick,
-            numPositions: params.pool.numPositions ?? DEFAULT_V3_NUM_POSITIONS,
-            maxShareToBeSold:
-              params.pool.maxShareToBeSold ?? DEFAULT_V3_MAX_SHARE_TO_BE_SOLD,
-            beneficiaries: sortedBeneficiaries.map((b) => ({
-              beneficiary: b.beneficiary,
-              shares: b.shares,
-            })),
-          },
-        ],
-      );
-    } else {
-      // Standard V3 initializer encoding (5 fields, no beneficiaries)
-      poolInitializerData = encodeAbiParameters(
-        [
-          {
-            type: 'tuple',
-            components: [
-              { type: 'uint24', name: 'fee' },
-              { type: 'int24', name: 'tickLower' },
-              { type: 'int24', name: 'tickUpper' },
-              { type: 'uint16', name: 'numPositions' },
-              { type: 'uint256', name: 'maxShareToBeSold' },
-            ],
-          },
-        ],
-        [
-          {
-            fee: params.pool.fee,
-            tickLower: params.pool.startTick,
-            tickUpper: params.pool.endTick,
-            numPositions: params.pool.numPositions ?? DEFAULT_V3_NUM_POSITIONS,
-            maxShareToBeSold:
-              params.pool.maxShareToBeSold ?? DEFAULT_V3_MAX_SHARE_TO_BE_SOLD,
-          },
-        ],
-      );
-    }
+    const poolInitializerData: Hex = encodeAbiParameters(
+      [
+        {
+          type: 'tuple',
+          components: [
+            { type: 'uint24', name: 'fee' },
+            { type: 'int24', name: 'tickLower' },
+            { type: 'int24', name: 'tickUpper' },
+            { type: 'uint16', name: 'numPositions' },
+            { type: 'uint256', name: 'maxShareToBeSold' },
+            {
+              type: 'tuple[]',
+              name: 'beneficiaries',
+              components: [
+                { type: 'address', name: 'beneficiary' },
+                { type: 'uint96', name: 'shares' },
+              ],
+            },
+          ],
+        },
+      ],
+      [
+        {
+          fee: params.pool.fee,
+          tickLower: params.pool.startTick,
+          tickUpper: params.pool.endTick,
+          numPositions: params.pool.numPositions ?? DEFAULT_V3_NUM_POSITIONS,
+          maxShareToBeSold:
+            params.pool.maxShareToBeSold ?? DEFAULT_V3_MAX_SHARE_TO_BE_SOLD,
+          beneficiaries: sortedBeneficiaries.map((b) => ({
+            beneficiary: b.beneficiary,
+            shares: b.shares,
+          })),
+        },
+      ],
+    );
 
     // 2. Encode migration data based on MigrationConfig
     const liquidityMigratorData = this.encodeMigrationData(params.migration, {
@@ -4584,7 +4549,6 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       );
     }
 
-
     // Validate pool beneficiaries for V3 locked pools
     if (params.pool.beneficiaries && params.pool.beneficiaries.length > 0) {
       const beneficiaries = params.pool.beneficiaries;
@@ -4693,7 +4657,6 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
         'V4 migration',
       );
     }
-
 
     if (params.migration.type === 'dopplerHook') {
       const migration = params.migration;
@@ -4907,7 +4870,6 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
         'V4 migration',
       );
     }
-
   }
 
   /**
@@ -4974,7 +4936,6 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
         'V4 migration',
       );
     }
-
   }
 
   /**
