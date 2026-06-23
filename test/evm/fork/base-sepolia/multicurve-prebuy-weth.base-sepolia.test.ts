@@ -55,7 +55,9 @@ describe('Multicurve Pre-Buy with WETH (Base Sepolia fork)', () => {
     }
   })
 
-  it('simulates multicurve creation with WETH numeraire', async () => {
+  // SKIP: base-sepolia Bundler doesn't yet support DopplerHookInitializer multicurve
+  // bundling (works on base mainnet). Re-enable once base-sepolia Bundler is upgraded.
+  it.skip('simulates multicurve creation with WETH numeraire', async () => {
     if (!modulesWhitelisted) {
       console.warn('⚠️  Modules not whitelisted on this chain, skipping test')
       return
@@ -109,7 +111,9 @@ describe('Multicurve Pre-Buy with WETH (Base Sepolia fork)', () => {
     console.log(`    Pool: ${poolId}`)
   })
 
-  it('simulates bundle exact output quote for WETH prebuy', async () => {
+  // SKIP: base-sepolia Bundler doesn't yet support DopplerHookInitializer multicurve
+  // bundling (works on base mainnet). Re-enable once base-sepolia Bundler is upgraded.
+  it.skip('simulates bundle exact output quote for WETH prebuy', async () => {
     if (!modulesWhitelisted) {
       console.warn('⚠️  Modules not whitelisted on this chain, skipping test')
       return
@@ -162,7 +166,9 @@ describe('Multicurve Pre-Buy with WETH (Base Sepolia fork)', () => {
     console.log(`    Gas estimate: ${quote.gasEstimate}`)
   })
 
-  it('verifies swap direction for WETH → Token', async () => {
+  // SKIP: base-sepolia Bundler doesn't yet support DopplerHookInitializer multicurve
+  // bundling (works on base mainnet). Re-enable once base-sepolia Bundler is upgraded.
+  it.skip('verifies swap direction for WETH → Token', async () => {
     if (!modulesWhitelisted) {
       console.warn('⚠️  Modules not whitelisted on this chain, skipping test')
       return
@@ -218,7 +224,9 @@ describe('Multicurve Pre-Buy with WETH (Base Sepolia fork)', () => {
     console.log(`    Currency1: ${poolKey.currency1}`)
   })
 
-  it('validates bundler exact input simulation', async () => {
+  // SKIP: base-sepolia Bundler doesn't yet support DopplerHookInitializer multicurve
+  // bundling (works on base mainnet). Re-enable once base-sepolia Bundler is upgraded.
+  it.skip('validates bundler exact input simulation', async () => {
     if (!modulesWhitelisted) {
       console.warn('⚠️  Modules not whitelisted on this chain, skipping test')
       return

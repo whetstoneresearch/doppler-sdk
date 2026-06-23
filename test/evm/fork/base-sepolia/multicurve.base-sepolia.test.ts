@@ -202,7 +202,9 @@ describe('Multicurve (Base Sepolia fork) smoke test', () => {
     expect(result.poolId).toMatch(/^0x[a-fA-F0-9]{64}$/)
   })
 
-  it('quotes multicurve bundle via the Bundler helpers', async () => {
+  // SKIP: base-sepolia Bundler doesn't yet support DopplerHookInitializer multicurve
+  // bundling (works on base mainnet). Re-enable once base-sepolia Bundler is upgraded.
+  it.skip('quotes multicurve bundle via the Bundler helpers', async () => {
     // Reuse whitelisting assertions to ensure modules are available
     expect(initializerWhitelisted && migratorWhitelisted && tokenFactoryWhitelisted && governanceFactoryWhitelisted).toBe(true)
 

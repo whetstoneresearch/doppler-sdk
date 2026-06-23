@@ -96,7 +96,9 @@ describe('Multicurve Quote & Swap (Base Sepolia fork)', () => {
     console.log(`  ✓ Created multicurve with ${params.pool.curves.length} curves`)
   })
 
-  it('quotes swap on simulated multicurve pool', async () => {
+  // SKIP: base-sepolia Bundler doesn't yet support DopplerHookInitializer multicurve
+  // bundling (works on base mainnet). Re-enable once base-sepolia Bundler is upgraded.
+  it.skip('quotes swap on simulated multicurve pool', async () => {
     if (!modulesWhitelisted) {
       console.warn('⚠️  Modules not whitelisted on this chain, skipping test')
       return
@@ -190,7 +192,9 @@ describe('Multicurve Quote & Swap (Base Sepolia fork)', () => {
     ).rejects.toThrow()
   })
 
-  it('simulates bundle quote for exact output', async () => {
+  // SKIP: base-sepolia Bundler doesn't yet support DopplerHookInitializer multicurve
+  // bundling (works on base mainnet). Re-enable once base-sepolia Bundler is upgraded.
+  it.skip('simulates bundle quote for exact output', async () => {
     if (!modulesWhitelisted) {
       console.warn('⚠️  Modules not whitelisted on this chain, skipping test')
       return
