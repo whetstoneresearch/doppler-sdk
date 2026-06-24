@@ -117,12 +117,9 @@ type StreamableFeesLockerCase = {
 const SKIPPED_AIRLOCK_MODULES_BY_CHAIN: Partial<
   Record<SupportedChainId, readonly string[]>
 > = {
-  [CHAIN_IDS.MAINNET]: ['UniswapV2MigratorSplit', 'UniswapV4MigratorSplit'],
-  [CHAIN_IDS.MONAD_MAINNET]: [
-    'UniswapV2MigratorSplit',
-    'UniswapV4MigratorSplit',
-  ],
-  [CHAIN_IDS.BASE]: ['UniswapV2MigratorSplit', 'UniswapV4MigratorSplit'],
+  [CHAIN_IDS.MAINNET]: ['UniswapV2MigratorSplit'],
+  [CHAIN_IDS.MONAD_MAINNET]: ['UniswapV2MigratorSplit'],
+  [CHAIN_IDS.BASE]: ['UniswapV2MigratorSplit'],
 };
 
 function shouldSkipAirlockModuleCase(

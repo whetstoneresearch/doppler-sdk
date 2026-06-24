@@ -195,9 +195,9 @@ describe('MulticurveBuilder', () => {
       return MulticurveBuilder.forChain(CHAIN_IDS.BASE_SEPOLIA)
         .tokenConfig({
           type: 'standard',
-          name: 'DecayToken',
-          symbol: 'DMC',
-          tokenURI: 'ipfs://decay',
+          name: 'RehypeToken',
+          symbol: 'RHP',
+          tokenURI: 'ipfs://rehype',
         })
         .saleConfig({
           initialSupply: parseEther('1000000000'),
