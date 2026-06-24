@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import { DopplerSDK, getAddresses, CHAIN_IDS, airlockAbi, WAD } from '../../../../src/evm'
 import { getTestClient, hasRpcUrl, getRpcEnvVar, delay } from '../../utils'
+import { usesLegacyBaseSepoliaMulticurveBundler } from './legacyMulticurveBundler'
 
 describe('Multicurve (Base Sepolia fork) smoke test', () => {
   if (!hasRpcUrl(CHAIN_IDS.BASE_SEPOLIA)) {
@@ -12,6 +13,10 @@ describe('Multicurve (Base Sepolia fork) smoke test', () => {
   const addresses = getAddresses(chainId)
   const publicClient = getTestClient(chainId)
   const sdk = new DopplerSDK({ publicClient, chainId })
+  const itWithCurrentMulticurveBundler = usesLegacyBaseSepoliaMulticurveBundler({
+    chainId,
+    bundler: addresses.bundler,
+  }) ? it.skip : it
 
   let initializerWhitelisted = false
   let migratorWhitelisted = false
@@ -202,7 +207,7 @@ describe('Multicurve (Base Sepolia fork) smoke test', () => {
     expect(result.poolId).toMatch(/^0x[a-fA-F0-9]{64}$/)
   })
 
-  it('quotes multicurve bundle via the Bundler helpers', async () => {
+  itWithCurrentMulticurveBundler('quotes multicurve bundle via the Bundler helpers', async () => {
     // Reuse whitelisting assertions to ensure modules are available
     expect(initializerWhitelisted && migratorWhitelisted && tokenFactoryWhitelisted && governanceFactoryWhitelisted).toBe(true)
 
@@ -233,36 +238,22 @@ describe('Multicurve (Base Sepolia fork) smoke test', () => {
     const { createParams, tokenAddress } = await sdk.factory.simulateCreateMulticurve(params)
 
     const exactAmountOut = params.sale.numTokensToSell / 10n || 1n
-    try {
-      const exactOutQuote = await sdk.factory.simulateMulticurveBundleExactOut(createParams, {
-        exactAmountOut,
-        hookData: '0x' as `0x${string}`,
-      })
+    const exactOutQuote = await sdk.factory.simulateMulticurveBundleExactOut(createParams, {
+      exactAmountOut,
+    })
 
-      expect(exactOutQuote.asset).toBe(tokenAddress)
-      expect(exactOutQuote.amountIn > 0n).toBe(true)
-      expect(exactOutQuote.gasEstimate >= 0n).toBe(true)
-      expect(exactOutQuote.poolKey.hooks).toMatch(/^0x[a-fA-F0-9]{40}$/)
+    expect(exactOutQuote.asset).toBe(tokenAddress)
+    expect(exactOutQuote.amountIn > 0n).toBe(true)
+    expect(exactOutQuote.gasEstimate >= 0n).toBe(true)
+    expect(exactOutQuote.poolKey.hooks).toMatch(/^0x[a-fA-F0-9]{40}$/)
 
-      const exactInQuote = await sdk.factory.simulateMulticurveBundleExactIn(createParams, {
-        exactAmountIn: exactOutQuote.amountIn,
-        hookData: '0x' as `0x${string}`,
-      })
+    const exactInQuote = await sdk.factory.simulateMulticurveBundleExactIn(createParams, {
+      exactAmountIn: exactOutQuote.amountIn,
+    })
 
-      expect(exactInQuote.asset).toBe(tokenAddress)
-      expect(exactInQuote.amountOut > 0n).toBe(true)
-      expect(exactInQuote.poolKey.hooks).toBe(exactOutQuote.poolKey.hooks)
-    } catch (error) {
-      // base-sepolia's deployed Bundler (0x69DB...) is compiled against the deprecated
-      // UniswapV4MulticurveInitializer and reads getState() poolKey at tuple index 2,
-      // but the deployed initializer is DopplerHookInitializer whose getState() returns
-      // poolKey at index 5. So the Bundler decodes the wrong field and reverts before
-      // quoting (create succeeds and the SDK passes valid params). Resolves once
-      // base-sepolia redeploys the Bundler from current source (which targets
-      // DopplerHookInitializer).
-      console.warn('  ⚠️  Multicurve bundle simulation not supported on this chain')
-      expect(error).toBeDefined()
-    }
+    expect(exactInQuote.asset).toBe(tokenAddress)
+    expect(exactInQuote.amountOut > 0n).toBe(true)
+    expect(exactInQuote.poolKey.hooks).toBe(exactOutQuote.poolKey.hooks)
   })
 
   it('simulate().execute() produces consistent addresses via closure', async () => {

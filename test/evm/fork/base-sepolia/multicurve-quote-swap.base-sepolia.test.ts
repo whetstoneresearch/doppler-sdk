@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll } from 'vitest'
 import { parseEther, type Address } from 'viem'
 import { DopplerSDK, getAddresses, CHAIN_IDS, airlockAbi, WAD, FEE_TIERS } from '../../../../src/evm'
 import { getTestClient, hasRpcUrl, getRpcEnvVar } from '../../utils'
+import { usesLegacyBaseSepoliaMulticurveBundler } from './legacyMulticurveBundler'
 
 describe('Multicurve Quote & Swap (Base Sepolia fork)', () => {
   if (!hasRpcUrl(CHAIN_IDS.BASE_SEPOLIA)) {
@@ -13,6 +14,10 @@ describe('Multicurve Quote & Swap (Base Sepolia fork)', () => {
   const addresses = getAddresses(chainId)
   const publicClient = getTestClient(chainId)
   const sdk = new DopplerSDK({ publicClient, chainId })
+  const itWithCurrentMulticurveBundler = usesLegacyBaseSepoliaMulticurveBundler({
+    chainId,
+    bundler: addresses.bundler,
+  }) ? it.skip : it
 
   let modulesWhitelisted = false
 
@@ -96,7 +101,7 @@ describe('Multicurve Quote & Swap (Base Sepolia fork)', () => {
     console.log(`  ✓ Created multicurve with ${params.pool.curves.length} curves`)
   })
 
-  it('quotes swap on simulated multicurve pool', async () => {
+  itWithCurrentMulticurveBundler('quotes swap on simulated multicurve pool', async () => {
     if (!modulesWhitelisted) {
       console.warn('⚠️  Modules not whitelisted on this chain, skipping test')
       return
@@ -129,24 +134,9 @@ describe('Multicurve Quote & Swap (Base Sepolia fork)', () => {
 
     // Get poolKey from bundle quote simulation instead
     const exactAmountOut = params.sale.numTokensToSell / 100n
-    let quoteResult
-    try {
-      quoteResult = await sdk.factory.simulateMulticurveBundleExactOut(createParams, {
-        exactAmountOut,
-        hookData: '0x' as `0x${string}`,
-      })
-    } catch (error) {
-      // base-sepolia's deployed Bundler (0x69DB...) is compiled against the deprecated
-      // UniswapV4MulticurveInitializer and reads getState() poolKey at tuple index 2,
-      // but the deployed initializer is DopplerHookInitializer whose getState() returns
-      // poolKey at index 5. So the Bundler decodes the wrong field and reverts before
-      // quoting (create succeeds and the SDK passes valid params). Resolves once
-      // base-sepolia redeploys the Bundler from current source (which targets
-      // DopplerHookInitializer).
-      console.warn('  ⚠️  Multicurve bundle simulation not supported on this chain')
-      expect(error).toBeDefined()
-      return
-    }
+    const quoteResult = await sdk.factory.simulateMulticurveBundleExactOut(createParams, {
+      exactAmountOut,
+    })
 
     const poolKey = quoteResult.poolKey
     expect(poolKey.currency0).toMatch(/^0x[a-fA-F0-9]{40}$/)
@@ -204,7 +194,7 @@ describe('Multicurve Quote & Swap (Base Sepolia fork)', () => {
     ).rejects.toThrow()
   })
 
-  it('simulates bundle quote for exact output', async () => {
+  itWithCurrentMulticurveBundler('simulates bundle quote for exact output', async () => {
     if (!modulesWhitelisted) {
       console.warn('⚠️  Modules not whitelisted on this chain, skipping test')
       return
@@ -237,30 +227,17 @@ describe('Multicurve Quote & Swap (Base Sepolia fork)', () => {
 
     const exactAmountOut = params.sale.numTokensToSell / 10n
 
-    try {
-      const quote = await sdk.factory.simulateMulticurveBundleExactOut(createParams, {
-        exactAmountOut,
-        hookData: '0x' as `0x${string}`,
-      })
+    const quote = await sdk.factory.simulateMulticurveBundleExactOut(createParams, {
+      exactAmountOut,
+    })
 
-      expect(quote.asset).toBe(tokenAddress)
-      expect(quote.amountIn).toBeGreaterThan(0n)
-      expect(quote.gasEstimate).toBeGreaterThanOrEqual(0n)
-      expect(quote.poolKey.hooks).toMatch(/^0x[a-fA-F0-9]{40}$/)
-    } catch (error) {
-      // base-sepolia's deployed Bundler (0x69DB...) is compiled against the deprecated
-      // UniswapV4MulticurveInitializer and reads getState() poolKey at tuple index 2,
-      // but the deployed initializer is DopplerHookInitializer whose getState() returns
-      // poolKey at index 5. So the Bundler decodes the wrong field and reverts before
-      // quoting (create succeeds and the SDK passes valid params). Resolves once
-      // base-sepolia redeploys the Bundler from current source (which targets
-      // DopplerHookInitializer).
-      console.warn('  ⚠️  Multicurve bundle simulation not supported on this chain')
-      expect(error).toBeDefined()
-    }
+    expect(quote.asset).toBe(tokenAddress)
+    expect(quote.amountIn).toBeGreaterThan(0n)
+    expect(quote.gasEstimate).toBeGreaterThanOrEqual(0n)
+    expect(quote.poolKey.hooks).toMatch(/^0x[a-fA-F0-9]{40}$/)
   })
 
-  it('simulates bundle quote for exact input', async () => {
+  itWithCurrentMulticurveBundler('simulates bundle quote for exact input', async () => {
     if (!modulesWhitelisted) {
       console.warn('⚠️  Modules not whitelisted on this chain, skipping test')
       return
@@ -293,22 +270,15 @@ describe('Multicurve Quote & Swap (Base Sepolia fork)', () => {
 
     const exactAmountIn = parseEther('1')
 
-    try {
-      const quote = await sdk.factory.simulateMulticurveBundleExactIn(createParams, {
-        exactAmountIn,
-        hookData: '0x' as `0x${string}`,
-      })
+    const quote = await sdk.factory.simulateMulticurveBundleExactIn(createParams, {
+      exactAmountIn,
+    })
 
-      expect(quote.asset).toBe(tokenAddress)
-      expect(quote.amountOut).toBeGreaterThan(0n)
-      expect(quote.gasEstimate).toBeGreaterThanOrEqual(0n)
-      expect(quote.poolKey.currency0).toMatch(/^0x[a-fA-F0-9]{40}$/)
-      expect(quote.poolKey.currency1).toMatch(/^0x[a-fA-F0-9]{40}$/)
-      console.log('  ✓ Exact input quote successful')
-    } catch (error) {
-      // The bundler on this chain may not support exact-in or has different requirements
-      console.warn('  ⚠️  Exact-in simulation not supported on this chain')
-      expect(error).toBeDefined()
-    }
+    expect(quote.asset).toBe(tokenAddress)
+    expect(quote.amountOut).toBeGreaterThan(0n)
+    expect(quote.gasEstimate).toBeGreaterThanOrEqual(0n)
+    expect(quote.poolKey.currency0).toMatch(/^0x[a-fA-F0-9]{40}$/)
+    expect(quote.poolKey.currency1).toMatch(/^0x[a-fA-F0-9]{40}$/)
+    console.log('  ✓ Exact input quote successful')
   })
 })

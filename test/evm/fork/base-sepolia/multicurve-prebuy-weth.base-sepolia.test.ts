@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll } from 'vitest'
 import { parseEther } from 'viem'
 import { DopplerSDK, getAddresses, CHAIN_IDS, airlockAbi, WAD } from '../../../../src/evm'
 import { getTestClient, hasRpcUrl, getRpcEnvVar } from '../../utils'
+import { usesLegacyBaseSepoliaMulticurveBundler } from './legacyMulticurveBundler'
 
 describe('Multicurve Pre-Buy with WETH (Base Sepolia fork)', () => {
   if (!hasRpcUrl(CHAIN_IDS.BASE_SEPOLIA)) {
@@ -13,6 +14,10 @@ describe('Multicurve Pre-Buy with WETH (Base Sepolia fork)', () => {
   const addresses = getAddresses(chainId)
   const publicClient = getTestClient(chainId)
   const sdk = new DopplerSDK({ publicClient, chainId })
+  const itWithCurrentMulticurveBundler = usesLegacyBaseSepoliaMulticurveBundler({
+    chainId,
+    bundler: addresses.bundler,
+  }) ? it.skip : it
 
   let modulesWhitelisted = false
 
@@ -91,37 +96,14 @@ describe('Multicurve Pre-Buy with WETH (Base Sepolia fork)', () => {
 
     expect(tokenAddress).toMatch(/^0x[a-fA-F0-9]{40}$/)
     expect(poolId).toMatch(/^0x[a-fA-F0-9]{64}$/)
+    expect(createParams.numeraire.toLowerCase()).toBe(addresses.weth.toLowerCase())
 
-    // Get poolKey from bundle quote to verify WETH
-    try {
-      const quote = await sdk.factory.simulateMulticurveBundleExactOut(createParams, {
-        exactAmountOut: params.sale.numTokensToSell / 100n,
-        hookData: '0x' as `0x${string}`,
-      })
-
-      const poolKey = quote.poolKey
-      const hasWETH =
-        poolKey.currency0.toLowerCase() === addresses.weth.toLowerCase() ||
-        poolKey.currency1.toLowerCase() === addresses.weth.toLowerCase()
-      expect(hasWETH).toBe(true)
-
-      console.log('  ✓ Simulated creation with WETH numeraire')
-      console.log(`    Asset: ${tokenAddress}`)
-      console.log(`    Pool: ${poolId}`)
-    } catch (error) {
-      // base-sepolia's deployed Bundler (0x69DB...) is compiled against the deprecated
-      // UniswapV4MulticurveInitializer and reads getState() poolKey at tuple index 2,
-      // but the deployed initializer is DopplerHookInitializer whose getState() returns
-      // poolKey at index 5. So the Bundler decodes the wrong field and reverts before
-      // quoting (create succeeds and the SDK passes valid params). Resolves once
-      // base-sepolia redeploys the Bundler from current source (which targets
-      // DopplerHookInitializer).
-      console.warn('  ⚠️  Multicurve bundle simulation not supported on this chain')
-      expect(error).toBeDefined()
-    }
+    console.log('  ✓ Simulated creation with WETH numeraire')
+    console.log(`    Asset: ${tokenAddress}`)
+    console.log(`    Pool: ${poolId}`)
   })
 
-  it('simulates bundle exact output quote for WETH prebuy', async () => {
+  itWithCurrentMulticurveBundler('simulates bundle exact output quote for WETH prebuy', async () => {
     if (!modulesWhitelisted) {
       console.warn('⚠️  Modules not whitelisted on this chain, skipping test')
       return
@@ -158,35 +140,22 @@ describe('Multicurve Pre-Buy with WETH (Base Sepolia fork)', () => {
     // Quote for buying 1% of tokens
     const exactAmountOut = params.sale.numTokensToSell / 100n
 
-    try {
-      const quote = await sdk.factory.simulateMulticurveBundleExactOut(createParams, {
-        exactAmountOut,
-        hookData: '0x' as `0x${string}`,
-      })
+    const quote = await sdk.factory.simulateMulticurveBundleExactOut(createParams, {
+      exactAmountOut,
+    })
 
-      expect(quote.asset).toBe(tokenAddress)
-      expect(quote.amountIn).toBeGreaterThan(0n)
-      expect(quote.gasEstimate).toBeGreaterThanOrEqual(0n)
-      expect(quote.poolKey.hooks).toMatch(/^0x[a-fA-F0-9]{40}$/)
+    expect(quote.asset).toBe(tokenAddress)
+    expect(quote.amountIn).toBeGreaterThan(0n)
+    expect(quote.gasEstimate).toBeGreaterThanOrEqual(0n)
+    expect(quote.poolKey.hooks).toMatch(/^0x[a-fA-F0-9]{40}$/)
 
-      console.log('  ✓ Bundle quote successful')
-      console.log(`    WETH required: ${quote.amountIn}`)
-      console.log(`    Tokens to receive: ${exactAmountOut}`)
-      console.log(`    Gas estimate: ${quote.gasEstimate}`)
-    } catch (error) {
-      // base-sepolia's deployed Bundler (0x69DB...) is compiled against the deprecated
-      // UniswapV4MulticurveInitializer and reads getState() poolKey at tuple index 2,
-      // but the deployed initializer is DopplerHookInitializer whose getState() returns
-      // poolKey at index 5. So the Bundler decodes the wrong field and reverts before
-      // quoting (create succeeds and the SDK passes valid params). Resolves once
-      // base-sepolia redeploys the Bundler from current source (which targets
-      // DopplerHookInitializer).
-      console.warn('  ⚠️  Multicurve bundle simulation not supported on this chain')
-      expect(error).toBeDefined()
-    }
+    console.log('  ✓ Bundle quote successful')
+    console.log(`    WETH required: ${quote.amountIn}`)
+    console.log(`    Tokens to receive: ${exactAmountOut}`)
+    console.log(`    Gas estimate: ${quote.gasEstimate}`)
   })
 
-  it('verifies swap direction for WETH → Token', async () => {
+  itWithCurrentMulticurveBundler('verifies swap direction for WETH → Token', async () => {
     if (!modulesWhitelisted) {
       console.warn('⚠️  Modules not whitelisted on this chain, skipping test')
       return
@@ -219,42 +188,28 @@ describe('Multicurve Pre-Buy with WETH (Base Sepolia fork)', () => {
 
     const { createParams } = await sdk.factory.simulateCreateMulticurve(params)
 
-    // Get poolKey from bundle quote
-    try {
-      const quote = await sdk.factory.simulateMulticurveBundleExactOut(createParams, {
-        exactAmountOut: params.sale.numTokensToSell / 100n,
-        hookData: '0x' as `0x${string}`,
-      })
+    const quote = await sdk.factory.simulateMulticurveBundleExactOut(createParams, {
+      exactAmountOut: params.sale.numTokensToSell / 100n,
+    })
 
-      const poolKey = quote.poolKey
+    const poolKey = quote.poolKey
 
-      // Determine swap direction
-      const zeroForOne = poolKey.currency0.toLowerCase() === addresses.weth.toLowerCase()
+    // Determine swap direction
+    const zeroForOne = poolKey.currency0.toLowerCase() === addresses.weth.toLowerCase()
 
-      // Verify one of the currencies is WETH
-      expect(
-        poolKey.currency0.toLowerCase() === addresses.weth.toLowerCase() ||
-        poolKey.currency1.toLowerCase() === addresses.weth.toLowerCase()
-      ).toBe(true)
+    // Verify one of the currencies is WETH
+    expect(
+      poolKey.currency0.toLowerCase() === addresses.weth.toLowerCase() ||
+      poolKey.currency1.toLowerCase() === addresses.weth.toLowerCase()
+    ).toBe(true)
 
-      console.log('  ✓ Swap direction determined')
-      console.log(`    zeroForOne: ${zeroForOne}`)
-      console.log(`    Currency0: ${poolKey.currency0}`)
-      console.log(`    Currency1: ${poolKey.currency1}`)
-    } catch (error) {
-      // base-sepolia's deployed Bundler (0x69DB...) is compiled against the deprecated
-      // UniswapV4MulticurveInitializer and reads getState() poolKey at tuple index 2,
-      // but the deployed initializer is DopplerHookInitializer whose getState() returns
-      // poolKey at index 5. So the Bundler decodes the wrong field and reverts before
-      // quoting (create succeeds and the SDK passes valid params). Resolves once
-      // base-sepolia redeploys the Bundler from current source (which targets
-      // DopplerHookInitializer).
-      console.warn('  ⚠️  Multicurve bundle simulation not supported on this chain')
-      expect(error).toBeDefined()
-    }
+    console.log('  ✓ Swap direction determined')
+    console.log(`    zeroForOne: ${zeroForOne}`)
+    console.log(`    Currency0: ${poolKey.currency0}`)
+    console.log(`    Currency1: ${poolKey.currency1}`)
   })
 
-  it('validates bundler exact input simulation', async () => {
+  itWithCurrentMulticurveBundler('validates bundler exact input simulation', async () => {
     if (!modulesWhitelisted) {
       console.warn('⚠️  Modules not whitelisted on this chain, skipping test')
       return
@@ -289,30 +244,17 @@ describe('Multicurve Pre-Buy with WETH (Base Sepolia fork)', () => {
 
     const exactAmountIn = parseEther('1') // 1 WETH
 
-    try {
-      const quote = await sdk.factory.simulateMulticurveBundleExactIn(createParams, {
-        exactAmountIn,
-        hookData: '0x' as `0x${string}`,
-      })
+    const quote = await sdk.factory.simulateMulticurveBundleExactIn(createParams, {
+      exactAmountIn,
+    })
 
-      expect(quote.asset).toBe(tokenAddress)
-      expect(quote.amountOut).toBeGreaterThan(0n)
-      expect(quote.gasEstimate).toBeGreaterThanOrEqual(0n)
+    expect(quote.asset).toBe(tokenAddress)
+    expect(quote.amountOut).toBeGreaterThan(0n)
+    expect(quote.gasEstimate).toBeGreaterThanOrEqual(0n)
 
-      console.log('  ✓ Exact input simulation successful')
-      console.log(`    WETH in: ${exactAmountIn}`)
-      console.log(`    Tokens out (estimated): ${quote.amountOut}`)
-    } catch (error) {
-      // base-sepolia's deployed Bundler (0x69DB...) is compiled against the deprecated
-      // UniswapV4MulticurveInitializer and reads getState() poolKey at tuple index 2,
-      // but the deployed initializer is DopplerHookInitializer whose getState() returns
-      // poolKey at index 5. So the Bundler decodes the wrong field and reverts before
-      // quoting (create succeeds and the SDK passes valid params). Resolves once
-      // base-sepolia redeploys the Bundler from current source (which targets
-      // DopplerHookInitializer).
-      console.warn('  ⚠️  Multicurve bundle simulation not supported on this chain')
-      expect(error).toBeDefined()
-    }
+    console.log('  ✓ Exact input simulation successful')
+    console.log(`    WETH in: ${exactAmountIn}`)
+    console.log(`    Tokens out (estimated): ${quote.amountOut}`)
   })
 
   it('ensures bundle helpers exist on SDK factory', () => {
