@@ -136,8 +136,11 @@ describe('Multicurve Quote & Swap (Base Sepolia fork)', () => {
         hookData: '0x' as `0x${string}`,
       })
     } catch (error) {
-      // base-sepolia Bundler doesn't yet support DopplerHookInitializer multicurve
-      // bundling (works on base mainnet). Re-enable assertions once it is upgraded.
+      // base-sepolia's deployed Bundler and DopplerHookInitializer are a mismatched
+      // pair: the Bundler decodes getState() into a PoolState shape that doesn't match
+      // what the initializer returns, so it reverts before quoting (create succeeds and
+      // the SDK passes valid params). Resolves once base-sepolia redeploys a matched
+      // Bundler/DopplerHookInitializer pair.
       console.warn('  ⚠️  Multicurve bundle simulation not supported on this chain')
       expect(error).toBeDefined()
       return
@@ -243,8 +246,11 @@ describe('Multicurve Quote & Swap (Base Sepolia fork)', () => {
       expect(quote.gasEstimate).toBeGreaterThanOrEqual(0n)
       expect(quote.poolKey.hooks).toMatch(/^0x[a-fA-F0-9]{40}$/)
     } catch (error) {
-      // base-sepolia Bundler doesn't yet support DopplerHookInitializer multicurve
-      // bundling (works on base mainnet). Re-enable assertions once it is upgraded.
+      // base-sepolia's deployed Bundler and DopplerHookInitializer are a mismatched
+      // pair: the Bundler decodes getState() into a PoolState shape that doesn't match
+      // what the initializer returns, so it reverts before quoting (create succeeds and
+      // the SDK passes valid params). Resolves once base-sepolia redeploys a matched
+      // Bundler/DopplerHookInitializer pair.
       console.warn('  ⚠️  Multicurve bundle simulation not supported on this chain')
       expect(error).toBeDefined()
     }

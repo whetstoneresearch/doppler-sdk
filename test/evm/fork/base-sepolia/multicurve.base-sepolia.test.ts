@@ -253,8 +253,11 @@ describe('Multicurve (Base Sepolia fork) smoke test', () => {
       expect(exactInQuote.amountOut > 0n).toBe(true)
       expect(exactInQuote.poolKey.hooks).toBe(exactOutQuote.poolKey.hooks)
     } catch (error) {
-      // base-sepolia Bundler doesn't yet support DopplerHookInitializer multicurve
-      // bundling (works on base mainnet). Re-enable assertions once it is upgraded.
+      // base-sepolia's deployed Bundler and DopplerHookInitializer are a mismatched
+      // pair: the Bundler decodes getState() into a PoolState shape that doesn't match
+      // what the initializer returns, so it reverts before quoting (create succeeds and
+      // the SDK passes valid params). Resolves once base-sepolia redeploys a matched
+      // Bundler/DopplerHookInitializer pair.
       console.warn('  ⚠️  Multicurve bundle simulation not supported on this chain')
       expect(error).toBeDefined()
     }

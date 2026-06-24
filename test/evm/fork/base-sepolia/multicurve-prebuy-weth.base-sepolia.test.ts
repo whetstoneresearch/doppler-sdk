@@ -109,8 +109,11 @@ describe('Multicurve Pre-Buy with WETH (Base Sepolia fork)', () => {
       console.log(`    Asset: ${tokenAddress}`)
       console.log(`    Pool: ${poolId}`)
     } catch (error) {
-      // base-sepolia Bundler doesn't yet support DopplerHookInitializer multicurve
-      // bundling (works on base mainnet). Re-enable assertions once it is upgraded.
+      // base-sepolia's deployed Bundler and DopplerHookInitializer are a mismatched
+      // pair: the Bundler decodes getState() into a PoolState shape that doesn't match
+      // what the initializer returns, so it reverts before quoting (create succeeds and
+      // the SDK passes valid params). Resolves once base-sepolia redeploys a matched
+      // Bundler/DopplerHookInitializer pair.
       console.warn('  ⚠️  Multicurve bundle simulation not supported on this chain')
       expect(error).toBeDefined()
     }
@@ -169,8 +172,11 @@ describe('Multicurve Pre-Buy with WETH (Base Sepolia fork)', () => {
       console.log(`    Tokens to receive: ${exactAmountOut}`)
       console.log(`    Gas estimate: ${quote.gasEstimate}`)
     } catch (error) {
-      // base-sepolia Bundler doesn't yet support DopplerHookInitializer multicurve
-      // bundling (works on base mainnet). Re-enable assertions once it is upgraded.
+      // base-sepolia's deployed Bundler and DopplerHookInitializer are a mismatched
+      // pair: the Bundler decodes getState() into a PoolState shape that doesn't match
+      // what the initializer returns, so it reverts before quoting (create succeeds and
+      // the SDK passes valid params). Resolves once base-sepolia redeploys a matched
+      // Bundler/DopplerHookInitializer pair.
       console.warn('  ⚠️  Multicurve bundle simulation not supported on this chain')
       expect(error).toBeDefined()
     }
@@ -232,8 +238,11 @@ describe('Multicurve Pre-Buy with WETH (Base Sepolia fork)', () => {
       console.log(`    Currency0: ${poolKey.currency0}`)
       console.log(`    Currency1: ${poolKey.currency1}`)
     } catch (error) {
-      // base-sepolia Bundler doesn't yet support DopplerHookInitializer multicurve
-      // bundling (works on base mainnet). Re-enable assertions once it is upgraded.
+      // base-sepolia's deployed Bundler and DopplerHookInitializer are a mismatched
+      // pair: the Bundler decodes getState() into a PoolState shape that doesn't match
+      // what the initializer returns, so it reverts before quoting (create succeeds and
+      // the SDK passes valid params). Resolves once base-sepolia redeploys a matched
+      // Bundler/DopplerHookInitializer pair.
       console.warn('  ⚠️  Multicurve bundle simulation not supported on this chain')
       expect(error).toBeDefined()
     }
@@ -288,8 +297,11 @@ describe('Multicurve Pre-Buy with WETH (Base Sepolia fork)', () => {
       console.log(`    WETH in: ${exactAmountIn}`)
       console.log(`    Tokens out (estimated): ${quote.amountOut}`)
     } catch (error) {
-      // base-sepolia Bundler doesn't yet support DopplerHookInitializer multicurve
-      // bundling (works on base mainnet). Re-enable assertions once it is upgraded.
+      // base-sepolia's deployed Bundler and DopplerHookInitializer are a mismatched
+      // pair: the Bundler decodes getState() into a PoolState shape that doesn't match
+      // what the initializer returns, so it reverts before quoting (create succeeds and
+      // the SDK passes valid params). Resolves once base-sepolia redeploys a matched
+      // Bundler/DopplerHookInitializer pair.
       console.warn('  ⚠️  Multicurve bundle simulation not supported on this chain')
       expect(error).toBeDefined()
     }
