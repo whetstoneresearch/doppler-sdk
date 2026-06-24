@@ -52,10 +52,6 @@ export const mockDopplerHookInitializer =
   '0x7777777777777777777777777777777777777777' as Address;
 export const mockRehypeHook =
   '0x9999999999999999999999999999999999999999' as Address;
-export const mockScheduledInitializer =
-  '0x8888888888888888888888888888888888888888' as Address;
-export const mockDecayInitializer =
-  '0x9999999999999999999999999999999999999999' as Address;
 export const mockBeneficiary =
   '0x0000000000000000000000000000000000000abc' as Address;
 

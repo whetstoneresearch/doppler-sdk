@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ContractFunctionRevertedError } from 'viem';
-import { v4MulticurveInitializerAbi } from '@/abis';
+import { dopplerHookInitializerAbi } from '@/abis';
 import { DYNAMIC_FEE_FLAG } from '@/constants';
 import { LockablePoolStatus } from '@/types';
 import { mockAddresses } from '@test/setup/fixtures/addresses';
@@ -66,7 +66,7 @@ describe('MulticurvePool initializer discovery', () => {
     });
 
     await expect(multicurvePool.getState()).rejects.toThrow(
-      'No V4 multicurve initializer addresses configured for this chain',
+      'No DopplerHookInitializer address configured for this chain',
     );
   });
 
@@ -122,7 +122,7 @@ describe('MulticurvePool initializer discovery', () => {
   it('preserves structured contract reverts during initializer discovery', async () => {
     vi.mocked(publicClient.readContract).mockRejectedValueOnce(
       new ContractFunctionRevertedError({
-        abi: v4MulticurveInitializerAbi,
+        abi: dopplerHookInitializerAbi,
         functionName: 'getState',
         message: 'Pool storage corrupted',
       }),

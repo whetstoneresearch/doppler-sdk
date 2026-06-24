@@ -97,7 +97,7 @@ describe('MulticurvePool collectFees', () => {
     });
 
     await expect(multicurvePool.collectFees()).rejects.toThrow(
-      'No V4 multicurve initializer addresses configured for this chain',
+      'No DopplerHookInitializer address configured for this chain',
     );
   });
 
