@@ -358,7 +358,7 @@ export interface UniswapV4MigrationConfig {
   type: 'uniswapV4';
   fee: number;
   tickSpacing: number;
-  // Configuration for fee streaming via StreamableFeesLocker (optional)
+  // Configuration for fee streaming via StreamableFeesLockerV2 (optional)
   // When omitted, fees are not locked and beneficiaries are not configured
   // This is useful when using noOp governance where lock duration is not meaningful
   streamableFees?: StreamableFeesConfig;
@@ -1040,7 +1040,7 @@ export interface CreateMulticurveParams<
   // Governance configuration
   governance: GovernanceOption<C>;
 
-  // Migration configuration (can be any supported migrator: V2, V3, or V4)
+  // Migration configuration.
   migration: MigrationConfig;
 
   // Integrator details

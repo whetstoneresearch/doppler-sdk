@@ -7,10 +7,7 @@ import {
   zeroAddress,
 } from 'viem';
 import type { ChainAddresses } from '../../../addresses';
-import {
-  dopplerHookInitializerAbi,
-  v4MulticurveInitializerAbi,
-} from '../../../abis';
+import { dopplerHookInitializerAbi } from '../../../abis';
 import type { MulticurvePoolState, V4PoolKey } from '../../../types';
 
 export interface InitializerDiscoveryResult {
@@ -21,17 +18,14 @@ export interface InitializerDiscoveryResult {
 export type InitializerDiscoveryClient = {
   readContract(parameters: {
     address: Address;
-    abi: typeof dopplerHookInitializerAbi | typeof v4MulticurveInitializerAbi;
+    abi: typeof dopplerHookInitializerAbi;
     functionName: 'getState';
     args: readonly [Address];
   }): Promise<unknown>;
 };
 
-export type MulticurveInitializerKind = 'standard' | 'dopplerHook';
-
 export type MulticurveInitializerCandidate = {
   address: Address;
-  kind: MulticurveInitializerKind;
 };
 
 type StructLike = Record<string, unknown> & {
@@ -63,7 +57,7 @@ export async function findMulticurveInitializerForPool({
 
   if (initializersToTry.length === 0) {
     throw new Error(
-      'No V4 multicurve initializer addresses configured for this chain',
+      'No DopplerHookInitializer address configured for this chain',
     );
   }
 
@@ -71,14 +65,14 @@ export async function findMulticurveInitializerForPool({
   const failedInitializers: Error[] = [];
 
   for (const initializer of initializersToTry) {
-    const { address: initializerAddress, kind } = initializer;
+    const { address: initializerAddress } = initializer;
     triedInitializers.push(initializerAddress);
 
     let stateData: unknown;
     try {
       stateData = await client.readContract({
         address: initializerAddress,
-        abi: getMulticurveInitializerAbi(kind),
+        abi: dopplerHookInitializerAbi,
         functionName: 'getState',
         args: [tokenAddress],
       });
@@ -97,7 +91,6 @@ export async function findMulticurveInitializerForPool({
     const discoveryResult = parseMulticurveInitializerDiscoveryResult({
       tokenAddress,
       initializerAddress,
-      kind,
       stateData,
     });
 
@@ -148,35 +141,21 @@ export function getMulticurveInitializerCandidates(
   ) {
     candidates.push({
       address: addresses.dopplerHookInitializer,
-      kind: 'dopplerHook',
     });
   }
   return candidates;
 }
 
-export function getMulticurveInitializerAbi(
-  kind: MulticurveInitializerKind,
-): typeof dopplerHookInitializerAbi | typeof v4MulticurveInitializerAbi {
-  return kind === 'dopplerHook'
-    ? dopplerHookInitializerAbi
-    : v4MulticurveInitializerAbi;
-}
-
 export function parseMulticurveInitializerDiscoveryResult({
   tokenAddress,
   initializerAddress,
-  kind,
   stateData,
 }: {
   tokenAddress: Address;
   initializerAddress: Address;
-  kind: MulticurveInitializerKind;
   stateData: unknown;
 }): InitializerDiscoveryResult {
-  const parsedState =
-    kind === 'dopplerHook'
-      ? parseDopplerHookInitializerState(stateData)
-      : parseStandardInitializerState(stateData);
+  const parsedState = parseDopplerHookInitializerState(stateData);
 
   const { numeraire, status, poolKey, farTick } = parsedState;
   return {
@@ -217,18 +196,6 @@ export function isAbsentPoolRevertData(data: Hex): boolean {
     }
     throw error;
   }
-}
-
-function parseStandardInitializerState(
-  stateData: unknown,
-): ParsedInitializerState {
-  const state = stateData as StructLike;
-  return {
-    numeraire: (state.numeraire ?? state[0]) as Address,
-    status: Number(state.status ?? state[1]),
-    poolKey: parseMulticurvePoolKey(state.poolKey ?? state[2]),
-    farTick: Number(state.farTick ?? state[3]),
-  };
 }
 
 function parseDopplerHookInitializerState(

@@ -1,5 +1,6 @@
 import { decodeFunctionResult, encodeFunctionData, type Address } from 'viem';
 import { getAddresses, type SupportedChainId } from '../../../addresses';
+import { dopplerHookInitializerAbi } from '../../../abis';
 import { LockablePoolStatus, type SupportedPublicClient } from '../../../types';
 import { computePoolId } from '../../../utils/poolKey';
 import {
@@ -16,7 +17,6 @@ import {
   type MulticurveTokenPendingFees,
 } from './multicurvePendingFees';
 import {
-  getMulticurveInitializerAbi,
   getMulticurveInitializerCandidates,
   isAbsentPoolRevertData,
   isInitializedMulticurvePoolKey,
@@ -94,7 +94,7 @@ async function discoverMulticurveFeePoolContexts(
 
   if (initializers.length === 0) {
     throw new Error(
-      'No V4 multicurve initializer addresses configured for this chain',
+      'No DopplerHookInitializer address configured for this chain',
     );
   }
 
@@ -144,7 +144,7 @@ function createDiscoveryCalls(
     target: initializer.address,
     allowFailure: true,
     callData: encodeFunctionData({
-      abi: getMulticurveInitializerAbi(initializer.kind),
+      abi: dopplerHookInitializerAbi,
       functionName: 'getState',
       args: [tokenAddress],
     }),
@@ -187,9 +187,8 @@ function findInitializedPoolForToken({
     const discoveryResult = parseMulticurveInitializerDiscoveryResult({
       tokenAddress,
       initializerAddress: initializer.address,
-      kind: initializer.kind,
       stateData: decodeFunctionResult({
-        abi: getMulticurveInitializerAbi(initializer.kind),
+        abi: dopplerHookInitializerAbi,
         functionName: 'getState',
         data: result.returnData,
       }),

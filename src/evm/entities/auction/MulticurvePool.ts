@@ -25,7 +25,7 @@ export type { MulticurvePendingFees } from './multicurve/multicurvePendingFees';
 /**
  * MulticurvePool class for interacting with V4 multicurve pools
  *
- * Multicurve pools use the V4 multicurve initializer which supports:
+ * Multicurve pools use DopplerHookInitializer, which supports:
  * - Multiple bonding curves with different price ranges
  * - Fee collection for configured beneficiaries
  * - No-migration lockable liquidity
@@ -66,8 +66,7 @@ export class MulticurvePool {
   /**
    * Get current pool state from the multicurve initializer
    *
-   * Automatically discovers which initializer (standard, scheduled, decay, or
-   * doppler-hook) contains the pool.
+   * Reads pool state from the configured DopplerHookInitializer.
    */
   async getState(): Promise<MulticurvePoolState> {
     const { state } = await this.findInitializerForPool();
@@ -110,9 +109,6 @@ export class MulticurvePool {
       throw new Error('Wallet client required to collect fees');
     }
 
-    const chainId = await this.rpc.getChainId();
-    const addresses = getAddresses(chainId as SupportedChainId);
-
     const { initializerAddress, state } = await this.findInitializerForPool();
 
     return collectMulticurveFees({
@@ -120,7 +116,6 @@ export class MulticurvePool {
       walletClient,
       initializerAddress,
       state,
-      addresses,
     });
   }
 
