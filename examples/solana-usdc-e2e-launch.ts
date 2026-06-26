@@ -38,7 +38,6 @@ import {
   createSetComputeUnitLimitInstruction,
   createSolanaClientsFromEnv,
   getSolanaCpmmDeploymentFromEnv,
-  getSwapFeeAmount,
   loadKeypairSignerFromEnv,
   sendInitializeLaunchWithLookupTable,
   sendInstructions,
@@ -374,7 +373,10 @@ async function main() {
       console.log('  Curve buy confirmed:', signature);
     }
 
-    const expectedQuoteFee = getSwapFeeAmount(BUY_AMOUNT_IN, SWAP_FEE_BPS);
+    const expectedQuoteFee = initializer.getCurveSwapFeeAmount(
+      BUY_AMOUNT_IN,
+      SWAP_FEE_BPS,
+    );
     const feeStateAccount = await fetchLaunchFeeState(rpc, launchFeeState, {
       commitment: 'confirmed',
     });

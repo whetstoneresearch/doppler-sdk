@@ -1,5 +1,7 @@
 import { getAddressEncoder, type Address } from '@solana/kit';
 import { keccak_256 } from '@noble/hashes/sha3.js';
+import { BPS_DENOM } from '../core/constants.js';
+import { ceilDiv } from '../core/math.js';
 import { PHASE_TRADING, PHASE_MIGRATED, PHASE_ABORTED } from './constants.js';
 
 /**
@@ -25,6 +27,30 @@ export function computeRemainingAccountsHash(addresses: Address[]): Uint8Array {
     buf.set(addressEncoder.encode(addresses[i]), 4 + i * 32);
   }
   return keccak_256(buf);
+}
+
+/**
+ * Compute the fee charged by initializer bonding-curve exact-in swaps.
+ *
+ * The initializer program rounds swap fees up, so small non-zero trades with a
+ * non-zero fee rate still pay at least one atom.
+ */
+export function getCurveSwapFeeAmount(
+  amountIn: bigint,
+  swapFeeBps: number,
+): bigint {
+  if (amountIn < 0n) {
+    throw new Error('amountIn must be non-negative');
+  }
+  if (
+    !Number.isInteger(swapFeeBps) ||
+    swapFeeBps < 0 ||
+    swapFeeBps > Number(BPS_DENOM)
+  ) {
+    throw new Error('swapFeeBps must be an integer from 0 to 10000');
+  }
+
+  return ceilDiv(amountIn * BigInt(swapFeeBps), BPS_DENOM);
 }
 
 /**

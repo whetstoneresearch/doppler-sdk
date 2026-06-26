@@ -45,10 +45,8 @@ import {
   assertSolanaExampleNetwork,
   createSetComputeUnitLimitInstruction,
   createSolanaClientsFromEnv,
-  getCosignerHookRemainingAccounts,
   getSolPriceUsd,
   getSolanaCpmmDeploymentFromEnv,
-  getSwapFeeAmount,
   getTokenAccountRentLamports,
   loadCosigner,
   loadKeypairSignerFromEnv,
@@ -170,7 +168,7 @@ async function main() {
     signedHookRemainingAccounts,
     unsignedHookRemainingAccounts,
     hookRemainingAccountsHash,
-  } = getCosignerHookRemainingAccounts({ namespace, cosigner });
+  } = cosignerHook.getCosignerHookRemainingAccounts({ namespace, cosigner });
 
   console.log('Creating Token-2022 cosigner-gated launch...');
   console.log('  Launch:            ', launch);
@@ -240,7 +238,6 @@ async function main() {
         curveParams: new Uint8Array([initializer.CURVE_PARAMS_FORMAT_XYK_V0]),
         allowBuy: true,
         allowSell: true,
-        hookProgram: deployment.cosignerHookProgram,
         hookFlags:
           initializer.HF_BEFORE_SWAP | initializer.HF_FORWARD_READONLY_SIGNERS,
         hookPayload: new Uint8Array(),
@@ -365,7 +362,10 @@ async function main() {
     await assertMigrationQuoteThreshold({
       rpc,
       quoteVault: quoteVault.address,
-      pendingQuoteFees: getSwapFeeAmount(BUY_AMOUNT_IN, SWAP_FEE_BPS),
+      pendingQuoteFees: initializer.getCurveSwapFeeAmount(
+        BUY_AMOUNT_IN,
+        SWAP_FEE_BPS,
+      ),
       minRaiseQuote,
     });
   console.log('  Quote vault amount:', quoteVaultAmount.toString());

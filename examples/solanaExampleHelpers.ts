@@ -431,7 +431,12 @@ export function parseDecimalTokenAmount(
   decimals: number,
 ): bigint {
   const raw = requiredEnv(name);
-  const [whole, fraction = ''] = raw.split('.');
+  const parts = raw.split('.');
+  if (parts.length > 2) {
+    throw new Error(name + ' must be a non-negative decimal amount');
+  }
+
+  const [whole, fraction = ''] = parts;
   if (!whole || !/^\d+$/.test(whole) || !/^\d*$/.test(fraction)) {
     throw new Error(name + ' must be a non-negative decimal amount');
   }
@@ -498,14 +503,6 @@ export function loadLaunchBeneficiaries({
   }
 
   return { recipients, feeBeneficiaries };
-}
-
-export function ceilDiv(numerator: bigint, denominator: bigint): bigint {
-  return (numerator + denominator - 1n) / denominator;
-}
-
-export function getSwapFeeAmount(amountIn: bigint, swapFeeBps: number): bigint {
-  return ceilDiv(amountIn * BigInt(swapFeeBps), 10_000n);
 }
 
 export function assertBigintEqual(
@@ -585,24 +582,6 @@ export async function assertCosignerRegistered({
         cosignerConfig,
     );
   }
-}
-
-export function getCosignerHookRemainingAccounts({
-  namespace,
-  cosigner,
-}: {
-  namespace: Address;
-  cosigner: TransactionSigner;
-}) {
-  const unsignedHookRemainingAccounts = [namespace, cosigner.address];
-
-  return {
-    signedHookRemainingAccounts: [namespace, cosigner],
-    unsignedHookRemainingAccounts,
-    hookRemainingAccountsHash: initializer.computeRemainingAccountsHash(
-      unsignedHookRemainingAccounts,
-    ),
-  };
 }
 
 async function fetchOwnedTokenAmount({
@@ -738,6 +717,15 @@ export async function getMigrationQuoteProgress({
     .getTokenAccountBalance(quoteVault, { commitment: 'confirmed' })
     .send();
   const quoteVaultAmount = BigInt(vaultBalance.value.amount);
+  if (pendingQuoteFees > quoteVaultAmount) {
+    throw new Error(
+      'Pending quote fees ' +
+        pendingQuoteFees +
+        ' exceed quote vault balance ' +
+        quoteVaultAmount,
+    );
+  }
+
   const migrationQuoteAmount = quoteVaultAmount - pendingQuoteFees;
 
   return {

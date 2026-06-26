@@ -47,7 +47,6 @@ import {
   createSetComputeUnitLimitInstruction,
   createSolanaClientsFromEnv,
   fetchActiveCosigners,
-  getCosignerHookRemainingAccounts,
   getSolPriceUsd,
   getSolanaCpmmDeploymentFromEnv,
   getTokenAccountRentLamports,
@@ -142,7 +141,7 @@ async function main() {
     signedHookRemainingAccounts,
     unsignedHookRemainingAccounts,
     hookRemainingAccountsHash,
-  } = getCosignerHookRemainingAccounts({ namespace, cosigner });
+  } = cosignerHook.getCosignerHookRemainingAccounts({ namespace, cosigner });
   const cosignGateExpiresAt = BigInt(
     Math.floor(Date.now() / 1_000) + COSIGN_GATE_SECONDS,
   );

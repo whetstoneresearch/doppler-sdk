@@ -113,7 +113,11 @@ export {
 } from './instructions/index.js';
 
 // Helpers
-export { computeRemainingAccountsHash, phaseLabel } from './helpers.js';
+export {
+  computeRemainingAccountsHash,
+  getCurveSwapFeeAmount,
+  phaseLabel,
+} from './helpers.js';
 export {
   DEFAULT_LOOKUP_TABLE_ADDRESSES_PER_EXTEND,
   getInstructionLookupTableAddresses,

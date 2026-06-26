@@ -7,6 +7,14 @@
  */
 import './env.js';
 
+import { address, type Address } from '@solana/kit';
+import {
+  TOKEN_PROGRAM_ADDRESS,
+  findAssociatedTokenPda,
+  getCreateAssociatedTokenIdempotentInstruction,
+} from '@solana-program/token';
+
+import { cpmm } from '../src/solana/index.js';
 import {
   assertSolanaExampleNetwork,
   createSolanaClientsFromEnv,

@@ -3,8 +3,10 @@ import {
   getAddressEncoder,
   type Address,
   type ReadonlyUint8Array,
+  type TransactionSigner,
 } from '@solana/kit';
 
+import { computeRemainingAccountsHash } from '../initializer/helpers.js';
 import {
   GATE_EXPIRY_DISABLED,
   GATE_EXPIRY_HEADER_LEN,
@@ -52,6 +54,12 @@ export type CosignerGateStatus = {
     | 'slot_unavailable'
     | 'invalid_expiry_payload'
     | 'invalid_expiry_mode';
+};
+
+export type CosignerHookRemainingAccounts = {
+  signedHookRemainingAccounts: [Address, TransactionSigner];
+  unsignedHookRemainingAccounts: [Address, Address];
+  hookRemainingAccountsHash: Uint8Array;
 };
 
 function toBigInt(value: bigint | number): bigint {
@@ -204,4 +212,25 @@ export function isCosignerGateEnforced(
   clock: CosignerGateClock = {},
 ): boolean {
   return getCosignerGateStatus(hookPayload, clock).gateEnforced;
+}
+
+export function getCosignerHookRemainingAccounts({
+  namespace,
+  cosigner,
+}: {
+  namespace: Address;
+  cosigner: TransactionSigner;
+}): CosignerHookRemainingAccounts {
+  const unsignedHookRemainingAccounts: [Address, Address] = [
+    namespace,
+    cosigner.address,
+  ];
+
+  return {
+    signedHookRemainingAccounts: [namespace, cosigner],
+    unsignedHookRemainingAccounts,
+    hookRemainingAccountsHash: computeRemainingAccountsHash(
+      unsignedHookRemainingAccounts,
+    ),
+  };
 }

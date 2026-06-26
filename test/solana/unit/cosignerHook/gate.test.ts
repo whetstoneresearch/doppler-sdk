@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Address } from '@solana/kit';
-import { cosignerHook } from '@/solana/index.js';
+import { generateKeyPairSigner } from '@solana/signers';
+import { cosignerHook, initializer } from '@/solana/index.js';
 
 describe('cosignerHook gate payload helpers', () => {
   const cosigner = 'So11111111111111111111111111111111111111112' as Address;
@@ -142,5 +143,25 @@ describe('cosignerHook gate payload helpers', () => {
         cosigner,
       }),
     ).toThrow(/Cosigner hint cannot be encoded/);
+  });
+
+  it('builds cosigner hook remaining accounts and commitment hash', async () => {
+    const signer = await generateKeyPairSigner();
+    const remainingAccounts = cosignerHook.getCosignerHookRemainingAccounts({
+      namespace: cosigner,
+      cosigner: signer,
+    });
+
+    expect(remainingAccounts.signedHookRemainingAccounts).toEqual([
+      cosigner,
+      signer,
+    ]);
+    expect(remainingAccounts.unsignedHookRemainingAccounts).toEqual([
+      cosigner,
+      signer.address,
+    ]);
+    expect(remainingAccounts.hookRemainingAccountsHash).toEqual(
+      initializer.computeRemainingAccountsHash([cosigner, signer.address]),
+    );
   });
 });

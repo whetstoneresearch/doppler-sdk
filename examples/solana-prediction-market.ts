@@ -16,6 +16,16 @@
  */
 import './env.js';
 
+import { TOKEN_PROGRAM_ADDRESS } from '@solana-program/token';
+import { SYSTEM_PROGRAM_ADDRESS } from '@solana-program/system';
+import { generateKeyPairSigner } from '@solana/kit';
+import { SYSVAR_RENT_ADDRESS } from '@solana/sysvars';
+
+import {
+  initializer,
+  predictionMigrator,
+  trustedOracle,
+} from '../src/solana/index.js';
 import {
   WSOL_MINT,
   assertSolanaExampleNetwork,

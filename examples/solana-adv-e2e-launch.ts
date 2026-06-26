@@ -15,6 +15,20 @@
 import './env.js';
 
 import {
+  TOKEN_PROGRAM_ADDRESS,
+  findAssociatedTokenPda,
+  getCreateAssociatedTokenIdempotentInstruction,
+  getSyncNativeInstruction,
+} from '@solana-program/token';
+import {
+  SYSTEM_PROGRAM_ADDRESS,
+  getTransferSolInstruction,
+} from '@solana-program/system';
+import { generateKeyPairSigner } from '@solana/kit';
+import { SYSVAR_RENT_ADDRESS } from '@solana/sysvars';
+
+import { cpmm, cpmmMigrator, initializer } from '../src/solana/index.js';
+import {
   DEFAULT_CPMM_FEE_SPLIT_BPS,
   DEFAULT_SWAP_FEE_BPS,
   DEFAULT_TEST_METADATA,

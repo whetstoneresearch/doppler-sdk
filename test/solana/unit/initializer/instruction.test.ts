@@ -208,6 +208,7 @@ describe('initializer instructions', () => {
         systemProgram: SYSTEM_PROGRAM_ADDRESS,
         rent: SYSVAR_RENT_PUBKEY,
         metadataAccount,
+        hookProgram: SYSTEM_PROGRAM_ADDRESS,
       },
       {
         namespace,
@@ -223,7 +224,6 @@ describe('initializer instructions', () => {
         curveParams: new Uint8Array([0]),
         allowBuy: true,
         allowSell: true,
-        hookProgram: SYSTEM_PROGRAM_ADDRESS,
         hookFlags: 0,
         hookPayload: new Uint8Array(),
         migratorInitPayload: cpmmMigrator.encodeRegisterLaunchPayload({
@@ -315,5 +315,18 @@ describe('initializer instructions', () => {
         },
       ),
     ).rejects.toThrow(/unsupported curve kind/);
+  });
+
+  it('computes initializer curve swap fees with ceil rounding', () => {
+    expect(initializer.getCurveSwapFeeAmount(0n, 30)).toBe(0n);
+    expect(initializer.getCurveSwapFeeAmount(1n, 30)).toBe(1n);
+    expect(initializer.getCurveSwapFeeAmount(333n, 30)).toBe(1n);
+    expect(initializer.getCurveSwapFeeAmount(10_001n, 30)).toBe(31n);
+    expect(() => initializer.getCurveSwapFeeAmount(-1n, 30)).toThrow(
+      /amountIn must be non-negative/,
+    );
+    expect(() => initializer.getCurveSwapFeeAmount(1n, 10_001)).toThrow(
+      /swapFeeBps must be an integer from 0 to 10000/,
+    );
   });
 });
