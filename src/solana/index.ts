@@ -11,6 +11,23 @@ export * as cpmmMigrator from './migrators/cpmmMigrator/index.js';
 export * as predictionMigrator from './migrators/predictionMigrator/index.js';
 export * as trustedOracle from './trustedOracle/index.js';
 
+export { createLaunch } from './initializer/createLaunch.js';
+export type {
+  CreateLaunchAccountSigners,
+  CreateLaunchAddresses,
+  CreateLaunchCpmmMigrationConfig,
+  CreateLaunchCustomMigrationConfig,
+  CreateLaunchHookMode,
+  CreateLaunchInput,
+  CreateLaunchMigrationConfig,
+  CreateLaunchResult,
+  DeriveCreateLaunchAddressesInput,
+  LaunchMetadata,
+  LaunchSupply,
+  LaunchTokenPrograms,
+  XykCurveConfig,
+} from './initializer/createLaunch.js';
+
 export {
   DOPPLER_SOLANA_DEVNET_PROGRAM_ADDRESSES,
   deriveSolanaCpmmDeployment,

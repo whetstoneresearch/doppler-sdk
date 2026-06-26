@@ -16,8 +16,8 @@
  */
 import './env.js';
 
-import { TOKEN_PROGRAM_ADDRESS } from '@solana-program/token';
 import { SYSTEM_PROGRAM_ADDRESS } from '@solana-program/system';
+import { TOKEN_PROGRAM_ADDRESS } from '@solana-program/token';
 import { generateKeyPairSigner } from '@solana/kit';
 import { SYSVAR_RENT_ADDRESS } from '@solana/sysvars';
 
@@ -82,7 +82,6 @@ async function main() {
   // namespace must equal oracleStateAddress (validated by register_entry:
   // require_keys_eq!(launch.namespace, oracle.key()))
   const namespace = oracleStateAddress;
-  const config = deployment.initializerConfig;
 
   console.log('Creating trusted oracle...');
   console.log('  Oracle state:', oracleStateAddress);
@@ -117,35 +116,31 @@ async function main() {
         // launchId must equal entryId (validated by register_entry:
         // require!(launch.launch_id == args.entry_id))
         const launchId = entryId;
-        const [launch] = await initializer.getLaunchAddress(
-          namespace,
-          launchId,
-          deployment.initializerProgram,
-        );
-        const [launchAuthority] = await initializer.getLaunchAuthorityAddress(
-          launch,
-          deployment.initializerProgram,
-        );
-        const [launchFeeState] = await initializer.getLaunchFeeStateAddress(
-          launch,
-          deployment.initializerProgram,
-        );
-
         const baseMint = await generateKeyPairSigner();
         const baseVault = await generateKeyPairSigner();
         const quoteVault = await generateKeyPairSigner();
-        const metadataAccount = await initializer.getTokenMetadataAddress(
-          baseMint.address,
-        );
+        const metadata = {
+          metadataName: `${outcome.label} Token`,
+          metadataSymbol: outcome.label,
+          metadataUri: `https://example.com/${outcome.label.toLowerCase()}.json`,
+        };
+        const launchAddresses = await initializer.deriveCreateLaunchAddresses({
+          deployment,
+          namespace,
+          launchId,
+          baseMint,
+          metadata,
+        });
+        const { launch, launchAuthority } = launchAddresses;
 
         console.log('  Launch:           ', launch);
         console.log('  Launch authority: ', launchAuthority);
         console.log('  Base mint:        ', baseMint.address);
 
         // ── Derive prediction market PDAs for remaining-accounts hash ────────
-        // These are the accounts the migrator will receive during migration.
-        // The instruction builder auto-appends them; we derive them here only
-        // to compute migratorRemainingAccountsHash.
+        // These are the accounts the migrator will receive during launch
+        // registration and migration. The launch helper commits their hashes;
+        // the low-level instruction builder appends the register_entry accounts.
         const [market] = await predictionMigrator.getPredictionMarketAddress(
           oracleStateAddress,
           WSOL_MINT,
@@ -161,6 +156,14 @@ async function main() {
             market,
             baseMint.address,
           );
+        const predictionRemainingAccounts = [
+          oracleStateAddress,
+          market,
+          potVault,
+          marketAuthority,
+          entryAddress,
+          entryByMint,
+        ];
 
         // ── Encode migrator payloads ────────────────────────────────────────
         // Init payload → registerEntry; migrate payload → migrateEntry.
@@ -172,25 +175,16 @@ async function main() {
           .getMigrateEntryInstructionDataEncoder()
           .encode({ entryId });
 
-        // ── Build the initializeLaunch instruction ───────────────────────────
-        // The instruction builder automatically appends the 6 register_entry
-        // remaining accounts for the prediction migrator.
-        const metadata = {
-          metadataName: `${outcome.label} Token`,
-          metadataSymbol: outcome.label,
-          metadataUri: `https://example.com/${outcome.label.toLowerCase()}.json`,
-        };
-
         const ix = await initializer.createInitializeLaunchInstruction(
           {
-            config,
+            config: launchAddresses.config,
             launch,
             launchAuthority,
             baseMint,
             quoteMint: WSOL_MINT,
             baseVault,
             quoteVault,
-            launchFeeState,
+            launchFeeState: launchAddresses.launchFeeState,
             payer,
             authority: payer,
             hookProgram: initializer.PREDICTION_HOOK_PROGRAM_ID,
@@ -200,7 +194,7 @@ async function main() {
             quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
             systemProgram: SYSTEM_PROGRAM_ADDRESS,
             rent: SYSVAR_RENT_ADDRESS,
-            metadataAccount,
+            metadataAccount: launchAddresses.metadataAccount,
           },
           {
             namespace,
@@ -211,7 +205,7 @@ async function main() {
             baseForLiquidity: BASE_FOR_LIQUIDITY,
             curveVirtualBase: CURVE_VIRTUAL_BASE,
             curveVirtualQuote: CURVE_VIRTUAL_QUOTE,
-            swapFeeBps: 100, // 1% swap fee
+            swapFeeBps: 100,
             curveKind: initializer.CURVE_KIND_XYK,
             curveParams: new Uint8Array([
               initializer.CURVE_PARAMS_FORMAT_XYK_V0,
@@ -222,30 +216,21 @@ async function main() {
             hookPayload: new Uint8Array(),
             migratorInitPayload,
             migratorMigratePayload,
-            // Prediction hook reads oracle_state to check is_finalized.
             hookRemainingAccountsHash: initializer.computeRemainingAccountsHash(
               [oracleStateAddress],
             ),
             migratorInitRemainingAccountsHash:
-              initializer.computeRemainingAccountsHash([
-                oracleStateAddress,
-                market,
-                potVault,
-                marketAuthority,
-                entryAddress,
-                entryByMint,
-              ]),
+              initializer.computeRemainingAccountsHash(
+                predictionRemainingAccounts,
+              ),
             migratorRemainingAccountsHash:
-              initializer.computeRemainingAccountsHash([
-                oracleStateAddress,
-                market,
-                potVault,
-                marketAuthority,
-                entryAddress,
-                entryByMint,
-              ]),
-            ...metadata,
+              initializer.computeRemainingAccountsHash(
+                predictionRemainingAccounts,
+              ),
             feeBeneficiaries: [{ wallet: payer.address, shareBps: 10_000 }],
+            metadataName: metadata.metadataName,
+            metadataSymbol: metadata.metadataSymbol,
+            metadataUri: metadata.metadataUri,
           },
           deployment.initializerProgram,
         );

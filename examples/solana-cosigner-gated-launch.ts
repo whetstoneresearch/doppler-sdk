@@ -35,10 +35,10 @@ import {
   cosignerHook,
   cpmm,
   cpmmMigrator,
+  createLaunch,
   initializer,
 } from '../src/solana/index.js';
 import {
-  DEFAULT_CPMM_FEE_SPLIT_BPS,
   DEFAULT_SWAP_FEE_BPS,
   DEFAULT_TEST_METADATA,
   WSOL_MINT,
@@ -103,10 +103,6 @@ async function main() {
 
   // ── Fee configuration ───────────────────────────────────────────────────
   const SWAP_FEE_BPS = DEFAULT_SWAP_FEE_BPS;
-  const CPMM_SWAP_FEE_BPS = SWAP_FEE_BPS;
-  const CPMM_SWAP_FEE_SPLIT_BPS = DEFAULT_CPMM_FEE_SPLIT_BPS; // migrated launch fees route through LaunchFeeState
-  const INITIALIZER_HOOK_FLAGS =
-    initializer.HF_BEFORE_SWAP | initializer.HF_FORWARD_READONLY_SIGNERS;
   const COSIGN_GATE_SECONDS = Number(process.env.COSIGN_GATE_SECONDS ?? 300);
   // ── Graduation threshold and price floor ────────────────────────────────
   const MIN_SOL_RAISE = 0.1; // low example threshold
@@ -131,156 +127,92 @@ async function main() {
   const baseMint = await generateKeyPairSigner();
   const baseVault = await generateKeyPairSigner();
   const quoteVault = await generateKeyPairSigner();
-  const metadataAccount = await initializer.getTokenMetadataAddress(
-    baseMint.address,
-  );
+  const metadata = DEFAULT_TEST_METADATA;
 
   const namespace = cosignerConfig;
   const launchId = initializer.launchIdFromU64(BigInt(Date.now()));
-  const {
-    signedHookRemainingAccounts,
-    unsignedHookRemainingAccounts,
-    hookRemainingAccountsHash,
-  } = cosignerHook.getCosignerHookRemainingAccounts({ namespace, cosigner });
+  const { signedHookRemainingAccounts, unsignedHookRemainingAccounts } =
+    cosignerHook.getCosignerHookRemainingAccounts({ namespace, cosigner });
   const cosignGateExpiresAt = BigInt(
     Math.floor(Date.now() / 1_000) + COSIGN_GATE_SECONDS,
   );
-  const hookPayload = cosignerHook.encodeCosignerGateExpiryPayload({
-    mode: cosignerHook.GATE_EXPIRY_UNIX_TIMESTAMP,
-    value: cosignGateExpiresAt,
-    cosigner: cosigner.address,
-  });
 
-  const [launch] = await initializer.getLaunchAddress(
+  const launchAddresses = await initializer.deriveCreateLaunchAddresses({
+    deployment,
     namespace,
     launchId,
-    deployment.initializerProgram,
-  );
-  const [launchAuthority] = await initializer.getLaunchAuthorityAddress(
-    launch,
-    deployment.initializerProgram,
-  );
-  const [launchFeeState] = await initializer.getLaunchFeeStateAddress(
-    launch,
-    deployment.initializerProgram,
-  );
-  const initializerConfig = deployment.initializerConfig;
-  const [payerBaseAta] = await findAssociatedTokenPda({
-    owner: payer.address,
-    mint: baseMint.address,
-    tokenProgram: TOKEN_PROGRAM_ADDRESS,
+    baseMint,
+    metadata,
   });
-  const [payerQuoteAta] = await findAssociatedTokenPda({
-    owner: payer.address,
-    mint: WSOL_MINT,
-    tokenProgram: TOKEN_PROGRAM_ADDRESS,
-  });
-
-  const migrationAccounts =
-    await cpmmMigrator.buildCpmmMigrationRemainingAccounts({
-      launch,
-      baseMint: baseMint.address,
-      quoteMint: WSOL_MINT,
-      launchAuthority,
-      adminBaseAta: payerBaseAta,
-      adminQuoteAta: payerQuoteAta,
-      recipientAtas: [payerBaseAta, payerBaseAta],
-      cpmmProgram: deployment.cpmmProgram,
-      cpmmMigratorProgram: deployment.cpmmMigratorProgram,
-    });
-  const cpmmConfig = migrationAccounts.cpmmConfig;
-  const cpmmMigrationState = migrationAccounts.cpmmMigrationState;
-
-  console.log('Derived addresses:');
-  console.log('  Launch:          ', launch);
-  console.log('  Launch authority:', launchAuthority);
-  console.log('  Initializer config:', initializerConfig);
-  console.log('  CPMM config:     ', cpmmConfig);
-  console.log('  CPMM migrator state:', cpmmMigrationState);
-  console.log('  Initializer program:', deployment.initializerProgram);
-  console.log('  CPMM program:       ', deployment.cpmmProgram);
-  console.log('  CPMM migrator:      ', deployment.cpmmMigratorProgram);
-  console.log('  Cosigner hook:      ', deployment.cosignerHookProgram);
-  console.log('  Cosigner config:    ', cosignerConfig);
-  console.log('  Active cosigners:   ', Array.from(activeCosigners).join(', '));
-  console.log('  Signing cosigner:   ', cosigner.address);
-  console.log('  Cosign gate expiry: ', cosignGateExpiresAt.toString());
-  console.log('');
-
-  const migratorInitPayload = cpmmMigrator.encodeRegisterLaunchPayload({
-    cpmmConfig: cpmmConfig,
-    initialSwapFeeBps: CPMM_SWAP_FEE_BPS,
-    initialFeeSplitBps: CPMM_SWAP_FEE_SPLIT_BPS,
-    recipients: [
-      { wallet: payer.address, amount: CREATOR_SHARE },
-      { wallet: payer.address, amount: TEAM_SHARE }, // use payer as team wallet in this example
-    ],
-    minRaiseQuote,
-    minMigrationPriceQ64Opt: null,
-    migratedPoolHookConfig: null,
-  });
-
-  const migratorMigratePayload = cpmmMigrator.encodeMigratePayload({
-    baseForDistribution: BASE_FOR_DISTRIBUTION,
-    baseForLiquidity: BASE_FOR_LIQUIDITY,
-  });
+  const { launch, launchAuthority, launchFeeState } = launchAddresses;
+  const initializerConfig = launchAddresses.config;
+  const recipients = [
+    { wallet: payer.address, amount: CREATOR_SHARE },
+    { wallet: payer.address, amount: TEAM_SHARE },
+  ];
 
   // ── Build, sign, and send ────────────────────────────────────────────────
   console.log('Building launch instruction...');
   try {
-    const metadata = DEFAULT_TEST_METADATA;
-
-    const ix = await initializer.createInitializeLaunchInstruction(
-      {
-        config: initializerConfig,
-        launch,
-        launchAuthority,
+    const { instruction: ix, cpmmMigration } = await createLaunch({
+      deployment,
+      namespace,
+      launchId,
+      addresses: launchAddresses,
+      launchAccounts: {
         baseMint,
         quoteMint: WSOL_MINT,
         baseVault,
         quoteVault,
-        launchFeeState,
-        payer,
-        authority: payer,
-        hookProgram: deployment.cosignerHookProgram,
-        migratorProgram: deployment.cpmmMigratorProgram,
-        cpmmConfig,
-        baseTokenProgram: TOKEN_PROGRAM_ADDRESS,
-        quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
-        systemProgram: SYSTEM_PROGRAM_ADDRESS,
-        rent: SYSVAR_RENT_ADDRESS,
-        metadataAccount,
       },
-      {
-        namespace,
-        launchId,
+      payer,
+      authority: payer,
+      supply: {
         baseDecimals: BASE_DECIMALS,
         baseTotalSupply: BASE_TOTAL_SUPPLY,
         baseForDistribution: BASE_FOR_DISTRIBUTION,
         baseForLiquidity: BASE_FOR_LIQUIDITY,
+      },
+      curve: {
         curveVirtualBase: start.curveVirtualBase,
         curveVirtualQuote: start.curveVirtualQuote,
         swapFeeBps: SWAP_FEE_BPS,
-        curveKind: initializer.CURVE_KIND_XYK,
-        curveParams: new Uint8Array([initializer.CURVE_PARAMS_FORMAT_XYK_V0]),
-        allowBuy: true,
-        allowSell: true,
-        hookFlags: INITIALIZER_HOOK_FLAGS,
-        hookPayload,
-        migratorInitPayload,
-        migratorMigratePayload,
-        hookRemainingAccountsHash,
-        migratorInitRemainingAccountsHash:
-          initializer.computeRemainingAccountsHash([
-            cpmmMigrationState,
-            cpmmConfig,
-          ]),
-        migratorRemainingAccountsHash: migrationAccounts.hash,
-        feeBeneficiaries: [{ wallet: payer.address, shareBps: 10_000 }],
-        ...metadata,
       },
-      deployment.initializerProgram,
+      cosigner,
+      cosignGateExpiresAt,
+      migration: {
+        recipients,
+        minRaiseQuote,
+      },
+      metadata,
+      feeBeneficiaries: [{ wallet: payer.address, shareBps: 10_000 }],
+    });
+    if (!cpmmMigration) {
+      throw new Error('CPMM migration accounts were not prepared');
+    }
+    const migrationAccounts = cpmmMigration;
+    const cpmmConfig = migrationAccounts.cpmmConfig;
+    const cpmmMigrationState = migrationAccounts.cpmmMigrationState;
+
+    console.log('Derived addresses:');
+    console.log('  Launch:          ', launch);
+    console.log('  Launch authority:', launchAuthority);
+    console.log('  Initializer config:', initializerConfig);
+    console.log('  CPMM config:     ', cpmmConfig);
+    console.log('  CPMM migrator state:', cpmmMigrationState);
+    console.log('  Initializer program:', deployment.initializerProgram);
+    console.log('  CPMM program:       ', deployment.cpmmProgram);
+    console.log('  CPMM migrator:      ', deployment.cpmmMigratorProgram);
+    console.log('  Cosigner hook:      ', deployment.cosignerHookProgram);
+    console.log('  Cosigner config:    ', cosignerConfig);
+    console.log(
+      '  Active cosigners:   ',
+      Array.from(activeCosigners).join(', '),
     );
+    console.log('  Signing cosigner:   ', cosigner.address);
+    console.log('  Cosign gate expiry: ', cosignGateExpiresAt.toString());
+    console.log('');
+
     const launchSignature = await sendInitializeLaunchWithLookupTable({
       rpc,
       rpcSubscriptions,

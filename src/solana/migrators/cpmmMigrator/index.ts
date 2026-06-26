@@ -21,6 +21,8 @@ export type {
   RecipientArgs,
   RegisterLaunchArgs,
   RegisterLaunchArgsArgs,
+  MigratedPoolHookConfig,
+  MigratedPoolHookConfigArgs,
   MigrateArgs,
   MigrateArgsArgs,
   CpmmMigratorState,

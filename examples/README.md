@@ -130,7 +130,8 @@ Minimal builder examples for `uniswapV2Split` / `uniswapV4Split` migrations and 
 
 The Solana examples use `@whetstone-research/doppler-sdk/solana`. Set `SOLANA_NETWORK=devnet` for the checked-in Doppler Solana deployment defaults, or `SOLANA_NETWORK=custom` with explicit RPC URLs and deployment program IDs.
 
-- [`solana-launch-by-marketcap.ts`](./solana-launch-by-marketcap.ts): simple WSOL XYK launch with CPMM migration configured.
+- [`solana-minimal-launch.ts`](./solana-minimal-launch.ts): smallest practical WSOL XYK launch using `createLaunch` defaults.
+- [`solana-launch-by-marketcap.ts`](./solana-launch-by-marketcap.ts): WSOL XYK launch with CPMM migration configured from market cap inputs.
 - [`solana-adv-launch.ts`](./solana-adv-launch.ts): WSOL launch with custom allocations, recipients, fees, and migration price floor.
 - [`solana-adv-e2e-launch.ts`](./solana-adv-e2e-launch.ts): create, buy, migrate, and inspect a graduated WSOL CPMM pool.
 - [`solana-usdc-e2e-launch.ts`](./solana-usdc-e2e-launch.ts): same lifecycle with devnet USDC and fee arithmetic checks.
@@ -148,7 +149,7 @@ export SOLANA_KEYPAIR_PATH=~/.config/solana/id.json
 export SOLANA_NETWORK=devnet
 export SOLANA_RPC_URL=https://api.devnet.solana.com
 export SOLANA_WS_URL=wss://api.devnet.solana.com
-pnpm tsx examples/solana-launch-by-marketcap.ts
+pnpm tsx examples/solana-minimal-launch.ts
 ```
 
 For a custom deployment, also set:
@@ -161,7 +162,7 @@ export SOLANA_CPMM_HOOK_PROGRAM_ID=...
 export SOLANA_COSIGNER_HOOK_PROGRAM_ID=...
 ```
 
-The cosigner-gated launch example derives the hook config PDA from `SOLANA_COSIGNER_HOOK_PROGRAM_ID`. Provide `COSIGNER_KEYPAIR_PATH` or `COSIGNER_KEYPAIR` for one of the cosigners registered in that config.
+On devnet, the cosigner-gated examples default to the Doppler native cosigner hook. For a custom deployment, `SOLANA_COSIGNER_HOOK_PROGRAM_ID` should be the hook program that owns the cosigner config. Provide `COSIGNER_KEYPAIR_PATH` or `COSIGNER_KEYPAIR` for one of the cosigners registered in that config.
 
 The launch examples use ALTs where possible. ALTs reduce account-key bytes, but they do not compress instruction data, so long `metadataName`, `metadataSymbol`, or `metadataUri` values can still exceed Solana's 1232-byte transaction limit.
 

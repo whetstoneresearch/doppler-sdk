@@ -18,17 +18,10 @@
  */
 import './env.js';
 
-import {
-  TOKEN_PROGRAM_ADDRESS,
-  findAssociatedTokenPda,
-} from '@solana-program/token';
-import { SYSTEM_PROGRAM_ADDRESS } from '@solana-program/system';
 import { generateKeyPairSigner } from '@solana/kit';
-import { SYSVAR_RENT_ADDRESS } from '@solana/sysvars';
 
-import { cpmm, cpmmMigrator, initializer } from '../src/solana/index.js';
+import { cpmm, createLaunch, initializer } from '../src/solana/index.js';
 import {
-  DEFAULT_CPMM_FEE_SPLIT_BPS,
   DEFAULT_SWAP_FEE_BPS,
   DEFAULT_TEST_METADATA,
   WSOL_MINT,
@@ -64,8 +57,6 @@ async function main() {
 
   // ── Fee configuration ───────────────────────────────────────────────────
   const SWAP_FEE_BPS = DEFAULT_SWAP_FEE_BPS;
-  const CPMM_SWAP_FEE_BPS = SWAP_FEE_BPS;
-  const CPMM_SWAP_FEE_SPLIT_BPS = DEFAULT_CPMM_FEE_SPLIT_BPS; // migrated launch fees route through LaunchFeeState
 
   // ── Graduation threshold and price floor ────────────────────────────────
   const MIN_SOL_RAISE = 50;
@@ -94,140 +85,73 @@ async function main() {
   const baseMint = await generateKeyPairSigner();
   const baseVault = await generateKeyPairSigner();
   const quoteVault = await generateKeyPairSigner();
-  const metadataAccount = await initializer.getTokenMetadataAddress(
-    baseMint.address,
-  );
+  const metadata = DEFAULT_TEST_METADATA;
 
   const namespace = payer.address;
   const launchId = initializer.launchIdFromU64(BigInt(Date.now()));
-
-  const [launch] = await initializer.getLaunchAddress(
+  const launchAddresses = await initializer.deriveCreateLaunchAddresses({
+    deployment,
     namespace,
     launchId,
-    deployment.initializerProgram,
-  );
-  const [launchAuthority] = await initializer.getLaunchAuthorityAddress(
-    launch,
-    deployment.initializerProgram,
-  );
-  const [launchFeeState] = await initializer.getLaunchFeeStateAddress(
-    launch,
-    deployment.initializerProgram,
-  );
-  const initializerConfig = deployment.initializerConfig;
-
-  // Payer receives admin dust and both example recipient allocations.
-  const [payerBaseAta] = await findAssociatedTokenPda({
-    owner: payer.address,
-    mint: baseMint.address,
-    tokenProgram: TOKEN_PROGRAM_ADDRESS,
+    baseMint,
+    metadata,
   });
-  const [payerQuoteAta] = await findAssociatedTokenPda({
-    owner: payer.address,
-    mint: WSOL_MINT,
-    tokenProgram: TOKEN_PROGRAM_ADDRESS,
-  });
-
-  const migrationAccounts =
-    await cpmmMigrator.buildCpmmMigrationRemainingAccounts({
-      launch,
-      baseMint: baseMint.address,
-      quoteMint: WSOL_MINT,
-      launchAuthority,
-      adminBaseAta: payerBaseAta,
-      adminQuoteAta: payerQuoteAta,
-      recipientAtas: [payerBaseAta, payerBaseAta],
-      cpmmProgram: deployment.cpmmProgram,
-      cpmmMigratorProgram: deployment.cpmmMigratorProgram,
-    });
-  const cpmmConfig = migrationAccounts.cpmmConfig;
-  const cpmmMigrationState = migrationAccounts.cpmmMigrationState;
-
-  console.log('Derived addresses:');
-  console.log('  Launch:          ', launch);
-  console.log('  Launch authority:', launchAuthority);
-  console.log('  Initializer config:', initializerConfig);
-  console.log('  CPMM config:     ', cpmmConfig);
-  console.log('  CPMM migrator state:', cpmmMigrationState);
-  console.log('');
-
-  // ── Encode migrator payloads ────────────────────────────────────────────
-  // migratorInitPayload registers graduation params; migratorMigratePayload
-  // is forwarded at migration. minRaiseQuote is the graduation threshold.
-  const migratorInitPayload = cpmmMigrator.encodeRegisterLaunchPayload({
-    cpmmConfig: cpmmConfig,
-    initialSwapFeeBps: CPMM_SWAP_FEE_BPS,
-    initialFeeSplitBps: CPMM_SWAP_FEE_SPLIT_BPS,
-    recipients: [
-      { wallet: payer.address, amount: CREATOR_SHARE },
-      { wallet: payer.address, amount: TEAM_SHARE }, // use payer as team wallet in this example
-    ],
-    minRaiseQuote,
-    minMigrationPriceQ64Opt,
-    migratedPoolHookConfig: null,
-  });
-
-  const migratorMigratePayload = cpmmMigrator.encodeMigratePayload({
-    baseForDistribution: BASE_FOR_DISTRIBUTION,
-    baseForLiquidity: BASE_FOR_LIQUIDITY,
-  });
+  const { launch, launchAuthority } = launchAddresses;
+  const initializerConfig = launchAddresses.config;
+  const recipients = [
+    { wallet: payer.address, amount: CREATOR_SHARE },
+    { wallet: payer.address, amount: TEAM_SHARE },
+  ];
 
   // ── Build, sign, and send ────────────────────────────────────────────────
   console.log('Creating advanced XYK token launch...');
   try {
-    const metadata = DEFAULT_TEST_METADATA;
-
-    const ix = await initializer.createInitializeLaunchInstruction(
-      {
-        config: initializerConfig,
-        launch,
-        launchAuthority,
+    const { instruction: ix, cpmmMigration } = await createLaunch({
+      deployment,
+      namespace,
+      launchId,
+      addresses: launchAddresses,
+      launchAccounts: {
         baseMint,
         quoteMint: WSOL_MINT,
         baseVault,
         quoteVault,
-        launchFeeState,
-        payer,
-        authority: payer,
-        hookProgram: deployment.cpmmHookProgram,
-        migratorProgram: deployment.cpmmMigratorProgram,
-        cpmmConfig,
-        baseTokenProgram: TOKEN_PROGRAM_ADDRESS,
-        quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
-        systemProgram: SYSTEM_PROGRAM_ADDRESS,
-        rent: SYSVAR_RENT_ADDRESS,
-        metadataAccount,
       },
-      {
-        namespace,
-        launchId,
+      payer,
+      authority: payer,
+      supply: {
         baseDecimals: BASE_DECIMALS,
         baseTotalSupply: BASE_TOTAL_SUPPLY,
         baseForDistribution: BASE_FOR_DISTRIBUTION,
         baseForLiquidity: BASE_FOR_LIQUIDITY,
+      },
+      curve: {
         curveVirtualBase: start.curveVirtualBase,
         curveVirtualQuote: start.curveVirtualQuote,
         swapFeeBps: SWAP_FEE_BPS,
-        curveKind: initializer.CURVE_KIND_XYK,
-        curveParams: new Uint8Array([initializer.CURVE_PARAMS_FORMAT_XYK_V0]),
-        allowBuy: true,
-        allowSell: true,
-        hookFlags: initializer.HF_BEFORE_SWAP,
-        hookPayload: new Uint8Array(),
-        migratorInitPayload,
-        migratorMigratePayload,
-        hookRemainingAccountsHash: initializer.EMPTY_REMAINING_ACCOUNTS_HASH,
-        migratorInitRemainingAccountsHash:
-          initializer.computeRemainingAccountsHash([
-            cpmmMigrationState,
-            cpmmConfig,
-          ]),
-        migratorRemainingAccountsHash: migrationAccounts.hash,
-        feeBeneficiaries: [{ wallet: payer.address, shareBps: 10_000 }],
-        ...metadata,
       },
-      deployment.initializerProgram,
-    );
+      migration: {
+        recipients,
+        minRaiseQuote,
+        minMigrationPriceQ64Opt,
+      },
+      metadata,
+      feeBeneficiaries: [{ wallet: payer.address, shareBps: 10_000 }],
+    });
+    if (!cpmmMigration) {
+      throw new Error('CPMM migration accounts were not prepared');
+    }
+    const cpmmConfig = cpmmMigration.cpmmConfig;
+    const cpmmMigrationState = cpmmMigration.cpmmMigrationState;
+
+    console.log('Derived addresses:');
+    console.log('  Launch:          ', launch);
+    console.log('  Launch authority:', launchAuthority);
+    console.log('  Initializer config:', initializerConfig);
+    console.log('  CPMM config:     ', cpmmConfig);
+    console.log('  CPMM migrator state:', cpmmMigrationState);
+    console.log('');
+
     const launchSignature = await sendInitializeLaunchWithLookupTable({
       rpc,
       rpcSubscriptions,

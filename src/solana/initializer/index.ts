@@ -112,6 +112,28 @@ export {
   type PreviewMigrationResult,
 } from './instructions/index.js';
 
+// High-level launch helpers
+export {
+  createLaunchId,
+  deriveCreateLaunchAddresses,
+  launchTokenPrograms,
+} from './createLaunch.js';
+export type {
+  CreateLaunchAccountSigners,
+  CreateLaunchAddresses,
+  CreateLaunchCpmmMigrationConfig,
+  CreateLaunchCustomMigrationConfig,
+  CreateLaunchHookMode,
+  CreateLaunchInput,
+  CreateLaunchMigrationConfig,
+  CreateLaunchResult,
+  DeriveCreateLaunchAddressesInput,
+  LaunchMetadata,
+  LaunchSupply,
+  LaunchTokenPrograms,
+  XykCurveConfig,
+} from './createLaunch.js';
+
 // Helpers
 export {
   computeRemainingAccountsHash,
