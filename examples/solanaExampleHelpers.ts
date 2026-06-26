@@ -27,6 +27,7 @@ import {
 
 import {
   DOPPLER_SOLANA_DEVNET_PROGRAM_ADDRESSES,
+  cosignerHook,
   deriveSolanaCpmmDeployment,
   initializer,
   type SolanaCpmmDeployment,
@@ -45,6 +46,17 @@ export type SolanaExampleNetwork =
 export const DEFAULT_SOLANA_EXAMPLE_NETWORK: SolanaExampleNetwork = 'devnet';
 export const TOKEN_ACCOUNT_SPACE = 165n;
 export const SOLANA_TRANSACTION_SIZE_LIMIT = 1232;
+export const WSOL_MINT = address('So11111111111111111111111111111111111111112');
+export const DEVNET_USDC_MINT = address(
+  '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU',
+);
+export const DEFAULT_TEST_METADATA = {
+  metadataName: 'TEST',
+  metadataSymbol: 'TEST',
+  metadataUri: 'https://example.com/metadata/test-token.json',
+} as const;
+export const DEFAULT_SWAP_FEE_BPS = 200;
+export const DEFAULT_CPMM_FEE_SPLIT_BPS = 10_000;
 
 const COMPUTE_BUDGET_PROGRAM_ID = address(
   'ComputeBudget111111111111111111111111111111',
@@ -106,7 +118,7 @@ const CUSTOM_CPMM_PROGRAM_ENV = {
 } as const satisfies Record<keyof SolanaCpmmProgramAddresses, string>;
 
 function requiredAddressFromEnv(name: string): Address {
-  const value = process.env[name];
+  const value = process.env[name]?.trim();
   if (!value) {
     throw new Error(`${name} is required when SOLANA_NETWORK=custom`);
   }
@@ -391,6 +403,365 @@ export async function createLookupTableForInstruction({
   );
 
   return lookupTable;
+}
+
+export type LaunchBeneficiaryConfig = {
+  recipients: { wallet: Address; amount: bigint }[];
+  feeBeneficiaries: { wallet: Address; shareBps: number }[];
+};
+
+export function requiredEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(name + ' is required');
+  }
+  return value;
+}
+
+export function parseShareBps(name: string): number {
+  const value = Number(requiredEnv(name));
+  if (!Number.isInteger(value) || value <= 0 || value > 10_000) {
+    throw new Error(name + ' must be an integer from 1 to 10000');
+  }
+  return value;
+}
+
+export function parseDecimalTokenAmount(
+  name: string,
+  decimals: number,
+): bigint {
+  const raw = requiredEnv(name);
+  const parts = raw.split('.');
+  if (parts.length > 2) {
+    throw new Error(name + ' must be a non-negative decimal amount');
+  }
+
+  const [whole, fraction = ''] = parts;
+  if (!whole || !/^\d+$/.test(whole) || !/^\d*$/.test(fraction)) {
+    throw new Error(name + ' must be a non-negative decimal amount');
+  }
+  if (fraction.length > decimals) {
+    throw new Error(name + ' supports at most ' + decimals + ' decimal places');
+  }
+
+  const paddedFraction = fraction.padEnd(decimals, '0');
+  return BigInt(whole + paddedFraction);
+}
+
+export function loadLaunchBeneficiaries({
+  baseDecimals,
+  expectedDistributionAmount,
+  count = 2,
+}: {
+  baseDecimals: number;
+  expectedDistributionAmount: bigint;
+  count?: number;
+}): LaunchBeneficiaryConfig {
+  const recipients: LaunchBeneficiaryConfig['recipients'] = [];
+  const feeBeneficiaries: LaunchBeneficiaryConfig['feeBeneficiaries'] = [];
+
+  for (let index = 0; index < count; index++) {
+    const suffix = index + 1;
+    const prefix = 'SOLANA_FEE_BENEFICIARY_' + suffix;
+    const wallet = address(requiredEnv(prefix + '_WALLET'));
+    const amount = parseDecimalTokenAmount(
+      prefix + '_BASE_AMOUNT',
+      baseDecimals,
+    );
+    const shareBps = parseShareBps(prefix + '_SHARE_BPS');
+
+    if (amount === 0n) {
+      throw new Error(prefix + '_BASE_AMOUNT must be greater than zero');
+    }
+
+    recipients.push({ wallet, amount });
+    feeBeneficiaries.push({ wallet, shareBps });
+  }
+
+  const distributionTotal = recipients.reduce(
+    (total, recipient) => total + recipient.amount,
+    0n,
+  );
+  if (distributionTotal !== expectedDistributionAmount) {
+    throw new Error(
+      'SOLANA_FEE_BENEFICIARY_*_BASE_AMOUNT values must sum to ' +
+        expectedDistributionAmount +
+        ' base atoms; got ' +
+        distributionTotal,
+    );
+  }
+
+  const feeShareTotal = feeBeneficiaries.reduce(
+    (total, recipient) => total + recipient.shareBps,
+    0,
+  );
+  if (feeShareTotal !== 10_000) {
+    throw new Error(
+      'SOLANA_FEE_BENEFICIARY_*_SHARE_BPS values must sum to 10000; got ' +
+        feeShareTotal,
+    );
+  }
+
+  return { recipients, feeBeneficiaries };
+}
+
+export function assertBigintEqual(
+  label: string,
+  actual: bigint,
+  expected: bigint,
+): void {
+  if (actual !== expected) {
+    throw new Error(label + ': expected ' + expected + ', got ' + actual);
+  }
+}
+
+export async function loadCosigner(): Promise<TransactionSigner> {
+  return loadKeypairSignerFromEnv({
+    pathEnv: 'COSIGNER_KEYPAIR_PATH',
+    jsonEnv: 'COSIGNER_KEYPAIR',
+    label: 'COSIGNER_KEYPAIR',
+  });
+}
+
+export async function fetchActiveCosigners({
+  rpc,
+  cosignerHookProgram,
+  cosignerConfig,
+}: {
+  rpc: SolanaClients['rpc'];
+  cosignerHookProgram: Address;
+  cosignerConfig: Address;
+}): Promise<Set<string>> {
+  const configAccount = await cosignerHook.fetchMaybeCosignerConfig(
+    rpc,
+    cosignerConfig,
+    { commitment: 'confirmed' },
+  );
+  if (!configAccount.exists) {
+    throw new Error('Cosigner config does not exist: ' + cosignerConfig);
+  }
+  if (configAccount.programAddress !== cosignerHookProgram) {
+    throw new Error(
+      'Cosigner config ' +
+        cosignerConfig +
+        ' is owned by ' +
+        configAccount.programAddress +
+        ', expected ' +
+        cosignerHookProgram,
+    );
+  }
+
+  return new Set(
+    configAccount.data.cosigners
+      .slice(0, configAccount.data.cosignerCount)
+      .map((authority) => authority.toString()),
+  );
+}
+
+export async function assertCosignerRegistered({
+  rpc,
+  cosignerHookProgram,
+  cosignerConfig,
+  cosigner,
+}: {
+  rpc: SolanaClients['rpc'];
+  cosignerHookProgram: Address;
+  cosignerConfig: Address;
+  cosigner: TransactionSigner;
+}): Promise<void> {
+  const activeCosigners = await fetchActiveCosigners({
+    rpc,
+    cosignerHookProgram,
+    cosignerConfig,
+  });
+  if (!activeCosigners.has(cosigner.address.toString())) {
+    throw new Error(
+      'Cosigner ' +
+        cosigner.address +
+        ' is not active in config ' +
+        cosignerConfig,
+    );
+  }
+}
+
+async function fetchOwnedTokenAmount({
+  rpc,
+  owner,
+  mint,
+  tokenAccount,
+}: {
+  rpc: SolanaClients['rpc'];
+  owner: Address;
+  mint: Address;
+  tokenAccount: Address;
+}): Promise<bigint> {
+  const account = await rpc
+    .getTokenAccountsByOwner(
+      owner,
+      { mint },
+      { commitment: 'confirmed', encoding: 'jsonParsed' },
+    )
+    .send();
+  const match = account.value.find(({ pubkey }) => pubkey === tokenAccount);
+  if (!match) {
+    return 0n;
+  }
+
+  const amount = match.account.data.parsed.info.tokenAmount.amount;
+  return BigInt(amount);
+}
+
+export async function assertTokenBalance({
+  rpc,
+  owner,
+  mint,
+  tokenAccount,
+  amount,
+  label = 'token',
+}: {
+  rpc: SolanaClients['rpc'];
+  owner: Address;
+  mint: Address;
+  tokenAccount: Address;
+  amount: bigint;
+  label?: string;
+}): Promise<void> {
+  const balance = await fetchOwnedTokenAmount({
+    rpc,
+    owner,
+    mint,
+    tokenAccount,
+  });
+  if (balance < amount) {
+    throw new Error(
+      'Payer ' +
+        owner +
+        ' needs at least ' +
+        amount +
+        ' ' +
+        label +
+        ' atoms; found ' +
+        balance +
+        '. Fund ' +
+        tokenAccount +
+        ' and retry.',
+    );
+  }
+}
+
+export async function sendInitializeLaunchWithLookupTable({
+  rpc,
+  rpcSubscriptions,
+  payer,
+  instruction,
+  metadata,
+  label = 'initialize_launch',
+}: {
+  rpc: SolanaClients['rpc'];
+  rpcSubscriptions: SolanaClients['rpcSubscriptions'];
+  payer: TransactionSigner;
+  instruction: Instruction;
+  metadata?: {
+    metadataName?: string;
+    metadataSymbol?: string;
+    metadataUri?: string;
+  };
+  label?: string;
+}): Promise<string> {
+  const lookupTable = await createLookupTableForInstruction({
+    rpc,
+    rpcSubscriptions,
+    payer,
+    instruction,
+    label: 'initialize_launch ALT',
+  });
+  const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
+  const message = initializer.compressTransactionMessageWithLookupTable(
+    pipe(
+      createTransactionMessage({ version: 0 }),
+      (tx) => setTransactionMessageFeePayerSigner(payer, tx),
+      (tx) => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
+      (tx) => appendTransactionMessageInstructions([instruction], tx),
+    ),
+    lookupTable,
+  );
+
+  assertTransactionFits(message, {
+    label,
+    metadataBytes: metadata ? getMetadataByteLength(metadata) : undefined,
+  });
+
+  const signedTransaction = await signTransactionMessageWithSigners(message);
+  const sendAndConfirmTransaction = sendAndConfirmTransactionFactory({
+    rpc,
+    rpcSubscriptions,
+  });
+  await sendAndConfirmTransaction(
+    signedTransaction as Parameters<typeof sendAndConfirmTransaction>[0],
+    { commitment: 'confirmed' },
+  );
+
+  return getSignatureFromTransaction(signedTransaction);
+}
+
+export async function getMigrationQuoteProgress({
+  rpc,
+  quoteVault,
+  pendingQuoteFees,
+}: {
+  rpc: SolanaClients['rpc'];
+  quoteVault: Address;
+  pendingQuoteFees: bigint;
+}) {
+  const vaultBalance = await rpc
+    .getTokenAccountBalance(quoteVault, { commitment: 'confirmed' })
+    .send();
+  const quoteVaultAmount = BigInt(vaultBalance.value.amount);
+  if (pendingQuoteFees > quoteVaultAmount) {
+    throw new Error(
+      'Pending quote fees ' +
+        pendingQuoteFees +
+        ' exceed quote vault balance ' +
+        quoteVaultAmount,
+    );
+  }
+
+  const migrationQuoteAmount = quoteVaultAmount - pendingQuoteFees;
+
+  return {
+    quoteVaultAmount,
+    pendingQuoteFees,
+    migrationQuoteAmount,
+  };
+}
+
+export async function assertMigrationQuoteThreshold({
+  rpc,
+  quoteVault,
+  pendingQuoteFees,
+  minRaiseQuote,
+}: {
+  rpc: SolanaClients['rpc'];
+  quoteVault: Address;
+  pendingQuoteFees: bigint;
+  minRaiseQuote: bigint;
+}) {
+  const progress = await getMigrationQuoteProgress({
+    rpc,
+    quoteVault,
+    pendingQuoteFees,
+  });
+
+  if (progress.migrationQuoteAmount < minRaiseQuote) {
+    throw new Error(
+      'Quote available for migration ' +
+        progress.migrationQuoteAmount +
+        ' is below minRaiseQuote ' +
+        minRaiseQuote,
+    );
+  }
+
+  return progress;
 }
 
 export async function getSolPriceUsd(): Promise<number> {

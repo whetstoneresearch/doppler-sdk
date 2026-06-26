@@ -112,8 +112,34 @@ export {
   type PreviewMigrationResult,
 } from './instructions/index.js';
 
+// High-level launch helpers
+export {
+  createLaunchId,
+  deriveCreateLaunchAddresses,
+  launchTokenPrograms,
+} from './createLaunch.js';
+export type {
+  CreateLaunchAccountSigners,
+  CreateLaunchAddresses,
+  CreateLaunchCpmmMigrationConfig,
+  CreateLaunchCustomMigrationConfig,
+  CreateLaunchHookMode,
+  CreateLaunchInput,
+  CreateLaunchMigrationConfig,
+  CreateLaunchResult,
+  DeriveCreateLaunchAddressesInput,
+  LaunchMetadata,
+  LaunchSupply,
+  LaunchTokenPrograms,
+  XykCurveConfig,
+} from './createLaunch.js';
+
 // Helpers
-export { computeRemainingAccountsHash, phaseLabel } from './helpers.js';
+export {
+  computeRemainingAccountsHash,
+  getCurveSwapFeeAmount,
+  phaseLabel,
+} from './helpers.js';
 export {
   DEFAULT_LOOKUP_TABLE_ADDRESSES_PER_EXTEND,
   getInstructionLookupTableAddresses,

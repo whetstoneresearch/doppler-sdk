@@ -28,103 +28,34 @@ import {
   SYSTEM_PROGRAM_ADDRESS,
   getTransferSolInstruction,
 } from '@solana-program/system';
-import {
-  pipe,
-  createTransactionMessage,
-  generateKeyPairSigner,
-  setTransactionMessageFeePayerSigner,
-  setTransactionMessageLifetimeUsingBlockhash,
-  appendTransactionMessageInstructions,
-  signTransactionMessageWithSigners,
-  sendAndConfirmTransactionFactory,
-  getSignatureFromTransaction,
-  type Address,
-  type TransactionSigner,
-} from '@solana/kit';
+import { generateKeyPairSigner } from '@solana/kit';
 import { SYSVAR_RENT_ADDRESS } from '@solana/sysvars';
 
 import {
   cosignerHook,
   cpmm,
-  initializer,
   cpmmMigrator,
+  createLaunch,
+  initializer,
 } from '../src/solana/index.js';
 import {
-  assertTransactionFits,
-  assertSolanaExampleNetwork,
+  DEFAULT_SWAP_FEE_BPS,
+  DEFAULT_TEST_METADATA,
+  WSOL_MINT,
   assertSimulationRejected,
-  createLookupTableForInstruction,
+  assertSolanaExampleNetwork,
   createSetComputeUnitLimitInstruction,
   createSolanaClientsFromEnv,
-  getMetadataByteLength,
+  fetchActiveCosigners,
   getSolPriceUsd,
   getSolanaCpmmDeploymentFromEnv,
   getTokenAccountRentLamports,
+  loadCosigner,
   loadKeypairSignerFromEnv,
+  sendInitializeLaunchWithLookupTable,
   sendInstructions,
   simulateInstructions,
 } from './solanaExampleHelpers.js';
-
-async function loadCosigner(): Promise<TransactionSigner> {
-  if (!process.env.COSIGNER_KEYPAIR_PATH && !process.env.COSIGNER_KEYPAIR) {
-    throw new Error(
-      'COSIGNER_KEYPAIR_PATH or COSIGNER_KEYPAIR is required to sign cosigner-gated swaps.',
-    );
-  }
-
-  const cosigner = await loadKeypairSignerFromEnv({
-    pathEnv: 'COSIGNER_KEYPAIR_PATH',
-    jsonEnv: 'COSIGNER_KEYPAIR',
-    label: 'COSIGNER_KEYPAIR',
-  });
-  return cosigner;
-}
-
-type SolanaClients = ReturnType<typeof createSolanaClientsFromEnv>;
-
-async function fetchActiveCosigners({
-  rpc,
-  cosignerHookProgram,
-  cosignerConfig,
-}: {
-  rpc: SolanaClients['rpc'];
-  cosignerHookProgram: Address;
-  cosignerConfig: Address;
-}): Promise<Address[]> {
-  const existingConfig = await cosignerHook.fetchMaybeCosignerConfig(
-    rpc,
-    cosignerConfig,
-    { commitment: 'confirmed' },
-  );
-
-  if (!existingConfig.exists) {
-    throw new Error(
-      `Cosigner hook config ${cosignerConfig} does not exist. The integrator/admin must initialize it before running this flow.`,
-    );
-  }
-
-  if (existingConfig.programAddress !== cosignerHookProgram) {
-    throw new Error(
-      `Cosigner hook config ${cosignerConfig} is owned by ${existingConfig.programAddress}, expected ${cosignerHookProgram}`,
-    );
-  }
-
-  const activeCosigners = existingConfig.data.cosigners.slice(
-    0,
-    existingConfig.data.cosignerCount,
-  );
-  if (activeCosigners.length === 0) {
-    throw new Error(
-      `Cosigner hook config ${cosignerConfig} does not include any active cosigners`,
-    );
-  }
-
-  return activeCosigners;
-}
-
-// WSOL mint — pools use the wrapped SPL mint since native SOL can't live in token vaults.
-const WSOL_MINT: Address =
-  'So11111111111111111111111111111111111111112' as Address;
 
 // ============================================================================
 // Main
@@ -146,7 +77,7 @@ async function main() {
     cosignerHookProgram: deployment.cosignerHookProgram,
     cosignerConfig,
   });
-  if (!activeCosigners.includes(cosigner.address)) {
+  if (!activeCosigners.has(cosigner.address.toString())) {
     throw new Error(
       `COSIGNER_KEYPAIR resolves to ${cosigner.address}, which is not registered in cosigner hook config ${cosignerConfig}`,
     );
@@ -171,11 +102,7 @@ async function main() {
   const END_MARKET_CAP_USD = 10_000_000;
 
   // ── Fee configuration ───────────────────────────────────────────────────
-  const SWAP_FEE_BPS = 200; // 2%; must fit this deployment's configured fee bounds
-  const CPMM_SWAP_FEE_BPS = SWAP_FEE_BPS;
-  const CPMM_SWAP_FEE_SPLIT_BPS = 10_000; // migrated launch fees route through LaunchFeeState
-  const INITIALIZER_HOOK_FLAGS =
-    initializer.HF_BEFORE_SWAP | initializer.HF_FORWARD_READONLY_SIGNERS;
+  const SWAP_FEE_BPS = DEFAULT_SWAP_FEE_BPS;
   const COSIGN_GATE_SECONDS = Number(process.env.COSIGN_GATE_SECONDS ?? 300);
   // ── Graduation threshold and price floor ────────────────────────────────
   const MIN_SOL_RAISE = 0.1; // low example threshold
@@ -200,211 +127,104 @@ async function main() {
   const baseMint = await generateKeyPairSigner();
   const baseVault = await generateKeyPairSigner();
   const quoteVault = await generateKeyPairSigner();
-  const metadataAccount = await initializer.getTokenMetadataAddress(
-    baseMint.address,
-  );
+  const metadata = DEFAULT_TEST_METADATA;
 
   const namespace = cosignerConfig;
   const launchId = initializer.launchIdFromU64(BigInt(Date.now()));
-  const signedHookRemainingAccounts = [namespace, cosigner];
-  // Same keys as the signed path, but the cosigner is only an address here.
-  // The hook should reject it because the runtime will not mark it as signed.
-  const unsignedHookRemainingAccounts = [namespace, cosigner.address];
-  const hookRemainingAccountsHash = initializer.computeRemainingAccountsHash([
-    namespace,
-    cosigner.address,
-  ]);
+  const { signedHookRemainingAccounts, unsignedHookRemainingAccounts } =
+    cosignerHook.getCosignerHookRemainingAccounts({ namespace, cosigner });
   const cosignGateExpiresAt = BigInt(
     Math.floor(Date.now() / 1_000) + COSIGN_GATE_SECONDS,
   );
-  const hookPayload = cosignerHook.encodeCosignerGateExpiryPayload({
-    mode: cosignerHook.GATE_EXPIRY_UNIX_TIMESTAMP,
-    value: cosignGateExpiresAt,
-    cosigner: cosigner.address,
-  });
 
-  const [launch] = await initializer.getLaunchAddress(
+  const launchAddresses = await initializer.deriveCreateLaunchAddresses({
+    deployment,
     namespace,
     launchId,
-    deployment.initializerProgram,
-  );
-  const [launchAuthority] = await initializer.getLaunchAuthorityAddress(
-    launch,
-    deployment.initializerProgram,
-  );
-  const [launchFeeState] = await initializer.getLaunchFeeStateAddress(
-    launch,
-    deployment.initializerProgram,
-  );
-  const initializerConfig = deployment.initializerConfig;
-  const [payerBaseAta] = await findAssociatedTokenPda({
-    owner: payer.address,
-    mint: baseMint.address,
-    tokenProgram: TOKEN_PROGRAM_ADDRESS,
+    baseMint,
+    metadata,
   });
-  const [payerQuoteAta] = await findAssociatedTokenPda({
-    owner: payer.address,
-    mint: WSOL_MINT,
-    tokenProgram: TOKEN_PROGRAM_ADDRESS,
-  });
-
-  const migrationAccounts =
-    await cpmmMigrator.buildCpmmMigrationRemainingAccounts({
-      launch,
-      baseMint: baseMint.address,
-      quoteMint: WSOL_MINT,
-      launchAuthority,
-      adminBaseAta: payerBaseAta,
-      adminQuoteAta: payerQuoteAta,
-      recipientAtas: [payerBaseAta, payerBaseAta],
-      cpmmProgram: deployment.cpmmProgram,
-      cpmmMigratorProgram: deployment.cpmmMigratorProgram,
-    });
-  const cpmmConfig = migrationAccounts.cpmmConfig;
-  const cpmmMigrationState = migrationAccounts.cpmmMigrationState;
-
-  console.log('Derived addresses:');
-  console.log('  Launch:          ', launch);
-  console.log('  Launch authority:', launchAuthority);
-  console.log('  Initializer config:', initializerConfig);
-  console.log('  CPMM config:     ', cpmmConfig);
-  console.log('  CPMM migrator state:', cpmmMigrationState);
-  console.log('  Initializer program:', deployment.initializerProgram);
-  console.log('  CPMM program:       ', deployment.cpmmProgram);
-  console.log('  CPMM migrator:      ', deployment.cpmmMigratorProgram);
-  console.log('  Cosigner hook:      ', deployment.cosignerHookProgram);
-  console.log('  Cosigner config:    ', cosignerConfig);
-  console.log('  Active cosigners:   ', activeCosigners.join(', '));
-  console.log('  Signing cosigner:   ', cosigner.address);
-  console.log('  Cosign gate expiry: ', cosignGateExpiresAt.toString());
-  console.log('');
-
-  const migratorInitPayload = cpmmMigrator.encodeRegisterLaunchPayload({
-    cpmmConfig: cpmmConfig,
-    initialSwapFeeBps: CPMM_SWAP_FEE_BPS,
-    initialFeeSplitBps: CPMM_SWAP_FEE_SPLIT_BPS,
-    recipients: [
-      { wallet: payer.address, amount: CREATOR_SHARE },
-      { wallet: payer.address, amount: TEAM_SHARE }, // use payer as team wallet in this example
-    ],
-    minRaiseQuote,
-    minMigrationPriceQ64Opt: null,
-    migratedPoolHookConfig: null,
-  });
-
-  const migratorMigratePayload = cpmmMigrator.encodeMigratePayload({
-    baseForDistribution: BASE_FOR_DISTRIBUTION,
-    baseForLiquidity: BASE_FOR_LIQUIDITY,
-  });
+  const { launch, launchAuthority, launchFeeState } = launchAddresses;
+  const initializerConfig = launchAddresses.config;
+  const recipients = [
+    { wallet: payer.address, amount: CREATOR_SHARE },
+    { wallet: payer.address, amount: TEAM_SHARE },
+  ];
 
   // ── Build, sign, and send ────────────────────────────────────────────────
   console.log('Building launch instruction...');
   try {
-    const metadata = {
-      metadataName: 'TEST',
-      metadataSymbol: 'TEST',
-      metadataUri: 'https://example.com/metadata/test-token.json',
-    };
-
-    const ix = await initializer.createInitializeLaunchInstruction(
-      {
-        config: initializerConfig,
-        launch,
-        launchAuthority,
+    const { instruction: ix, cpmmMigration } = await createLaunch({
+      deployment,
+      namespace,
+      launchId,
+      addresses: launchAddresses,
+      launchAccounts: {
         baseMint,
         quoteMint: WSOL_MINT,
         baseVault,
         quoteVault,
-        launchFeeState,
-        payer,
-        authority: payer,
-        hookProgram: deployment.cosignerHookProgram,
-        migratorProgram: deployment.cpmmMigratorProgram,
-        cpmmConfig,
-        baseTokenProgram: TOKEN_PROGRAM_ADDRESS,
-        quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
-        systemProgram: SYSTEM_PROGRAM_ADDRESS,
-        rent: SYSVAR_RENT_ADDRESS,
-        metadataAccount,
       },
-      {
-        namespace,
-        launchId,
+      payer,
+      authority: payer,
+      supply: {
         baseDecimals: BASE_DECIMALS,
         baseTotalSupply: BASE_TOTAL_SUPPLY,
         baseForDistribution: BASE_FOR_DISTRIBUTION,
         baseForLiquidity: BASE_FOR_LIQUIDITY,
+      },
+      curve: {
         curveVirtualBase: start.curveVirtualBase,
         curveVirtualQuote: start.curveVirtualQuote,
         swapFeeBps: SWAP_FEE_BPS,
-        curveKind: initializer.CURVE_KIND_XYK,
-        curveParams: new Uint8Array([initializer.CURVE_PARAMS_FORMAT_XYK_V0]),
-        allowBuy: true,
-        allowSell: true,
-        hookFlags: INITIALIZER_HOOK_FLAGS,
-        hookPayload,
-        migratorInitPayload,
-        migratorMigratePayload,
-        hookRemainingAccountsHash,
-        migratorInitRemainingAccountsHash:
-          initializer.computeRemainingAccountsHash([
-            cpmmMigrationState,
-            cpmmConfig,
-          ]),
-        migratorRemainingAccountsHash: migrationAccounts.hash,
-        feeBeneficiaries: [{ wallet: payer.address, shareBps: 10_000 }],
-        ...metadata,
       },
-      deployment.initializerProgram,
+      cosigner,
+      cosignGateExpiresAt,
+      migration: {
+        recipients,
+        minRaiseQuote,
+      },
+      metadata,
+      feeBeneficiaries: [{ wallet: payer.address, shareBps: 10_000 }],
+    });
+    if (!cpmmMigration) {
+      throw new Error('CPMM migration accounts were not prepared');
+    }
+    const migrationAccounts = cpmmMigration;
+    const cpmmConfig = migrationAccounts.cpmmConfig;
+    const cpmmMigrationState = migrationAccounts.cpmmMigrationState;
+
+    console.log('Derived addresses:');
+    console.log('  Launch:          ', launch);
+    console.log('  Launch authority:', launchAuthority);
+    console.log('  Initializer config:', initializerConfig);
+    console.log('  CPMM config:     ', cpmmConfig);
+    console.log('  CPMM migrator state:', cpmmMigrationState);
+    console.log('  Initializer program:', deployment.initializerProgram);
+    console.log('  CPMM program:       ', deployment.cpmmProgram);
+    console.log('  CPMM migrator:      ', deployment.cpmmMigratorProgram);
+    console.log('  Cosigner hook:      ', deployment.cosignerHookProgram);
+    console.log('  Cosigner config:    ', cosignerConfig);
+    console.log(
+      '  Active cosigners:   ',
+      Array.from(activeCosigners).join(', '),
     );
-    const lookupTable = await createLookupTableForInstruction({
+    console.log('  Signing cosigner:   ', cosigner.address);
+    console.log('  Cosign gate expiry: ', cosignGateExpiresAt.toString());
+    console.log('');
+
+    const launchSignature = await sendInitializeLaunchWithLookupTable({
       rpc,
       rpcSubscriptions,
       payer,
       instruction: ix,
-      label: 'initialize_launch lookup table',
+      metadata,
     });
-
-    const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
-
-    const transactionMessage =
-      initializer.compressTransactionMessageWithLookupTable(
-        pipe(
-          createTransactionMessage({ version: 0 }),
-          (tx) => setTransactionMessageFeePayerSigner(payer, tx),
-          (tx) =>
-            setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
-          (tx) => appendTransactionMessageInstructions([ix], tx),
-        ),
-        lookupTable,
-      );
-    assertTransactionFits(transactionMessage, {
-      label: 'initialize_launch',
-      metadataBytes: getMetadataByteLength(metadata),
-    });
-
-    const signedTransaction =
-      await signTransactionMessageWithSigners(transactionMessage);
-
-    const sendAndConfirmTransaction = sendAndConfirmTransactionFactory({
-      rpc,
-      rpcSubscriptions,
-    });
-    await sendAndConfirmTransaction(
-      signedTransaction as Parameters<typeof sendAndConfirmTransaction>[0],
-      {
-        commitment: 'confirmed',
-      },
-    );
-
     console.log('');
     console.log('Token launch created successfully!');
     console.log('  Launch address:', launch);
     console.log('  Base mint:     ', baseMint.address);
-    console.log(
-      '  Transaction:   ',
-      getSignatureFromTransaction(signedTransaction),
-    );
+    console.log('  Transaction:   ', launchSignature);
 
     // ── Step 2: Preview a curve buy without executing ────────────────────────
     console.log(
@@ -583,7 +403,8 @@ async function main() {
 
     // ── Step 4: Migrate launch to CPMM pool ─────────────────────────────────
     //
-    // Anyone can call migrate_launch once quoteDeposited >= minRaiseQuote.
+    // Anyone can call migrate_launch once quote_vault_amount - pending_quote_fees
+    // is at least minRaiseQuote.
     // The migrator creates the canonical CPMM pool graph inline, then seeds
     // liquidity into it. The remaining accounts must match the hash committed
     // at launch creation.
@@ -618,34 +439,17 @@ async function main() {
     };
 
     {
-      const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
+      const signature = await sendInstructions({
+        rpc,
+        rpcSubscriptions,
+        payer,
+        instructions: [
+          createSetComputeUnitLimitInstruction(400_000),
+          migrateLaunchIx,
+        ],
+      });
 
-      const transactionMessage = pipe(
-        createTransactionMessage({ version: 0 }),
-        (tx) => setTransactionMessageFeePayerSigner(payer, tx),
-        (tx) =>
-          setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
-        (tx) =>
-          appendTransactionMessageInstructions(
-            [createSetComputeUnitLimitInstruction(400_000), migrateLaunchIx],
-            tx,
-          ),
-      );
-
-      const signedTransaction =
-        await signTransactionMessageWithSigners(transactionMessage);
-
-      await sendAndConfirmTransaction(
-        signedTransaction as Parameters<typeof sendAndConfirmTransaction>[0],
-        {
-          commitment: 'confirmed',
-        },
-      );
-
-      console.log(
-        '  Migration confirmed:',
-        getSignatureFromTransaction(signedTransaction),
-      );
+      console.log('  Migration confirmed:', signature);
     }
     console.log('');
 

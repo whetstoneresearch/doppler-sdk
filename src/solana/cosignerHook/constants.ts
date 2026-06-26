@@ -1,6 +1,17 @@
-import { COSIGNER_HOOK_PROGRAM_ADDRESS } from '../generated/cosignerHook/programs/index.js';
+import { address, type Address } from '@solana/kit';
 
-export const COSIGNER_HOOK_PROGRAM_ID = COSIGNER_HOOK_PROGRAM_ADDRESS;
+/**
+ * Default Doppler native cosigner hook program for devnet deployments.
+ *
+ * The generated COSIGNER_HOOK_PROGRAM_ADDRESS reflects the IDL's generic
+ * cosigner hook deployment. Pass an explicit programAddress to generated
+ * instructions when targeting a custom/integrator hook deployment.
+ */
+export const DOPPLER_NATIVE_COSIGNER_HOOK_PROGRAM_ID: Address = address(
+  '5iWYdN9SEDeF3FTjKB48XYyCFAcVDuYHsz31Z4Wmq7Ch',
+);
+
+export const COSIGNER_HOOK_PROGRAM_ID = DOPPLER_NATIVE_COSIGNER_HOOK_PROGRAM_ID;
 
 export const SEED_COSIGNER_HOOK_CONFIG = 'cosigner_hook_config';
 export const MAX_COSIGNERS = 32;

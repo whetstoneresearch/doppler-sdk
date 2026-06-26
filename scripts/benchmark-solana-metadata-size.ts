@@ -34,9 +34,9 @@ const SAMPLE_METADATA = {
   metadataUri: 'https://example.com/metadata/test-token.json',
 };
 const REQUESTED_METADATA = {
-  metadataName: METADATA_NAME,
-  metadataSymbol: METADATA_SYMBOL,
-  metadataUri: SAMPLE_METADATA.metadataUri,
+  metadataName: 'Frenzy Devnet Cosigner',
+  metadataSymbol: 'FDC',
+  metadataUri: 'https://example.com/frenzy-devnet-cosigner.json',
 };
 const DUMMY_BLOCKHASH = {
   blockhash: '11111111111111111111111111111111',
@@ -241,6 +241,7 @@ async function buildMessage(
           context.cpmmConfig,
         ]),
       migratorRemainingAccountsHash: context.migrationHash,
+      feeBeneficiaries: [{ wallet: context.payer.address, shareBps: 10_000 }],
       ...metadata,
     },
   );
@@ -534,13 +535,23 @@ async function benchmark(
     sampleRemainingBytes: sample.remaining,
     requestedMetadataBytes: requested.metadataBytes,
     requestedSize: requested.size,
+    requestedFits: requested.fits,
     requestedRemainingBytes: requested.remaining,
+    requestedOverflowBytes: Math.max(0, -requested.remaining),
+    requestedExtraMetadataBytes: max.metadataBytes - requested.metadataBytes,
     launchAltMaxUriBytes,
     launchAltMaxMetadataBytes: launchAltMax.metadataBytes,
     launchAltSampleSize: launchAltSample.size,
     launchAltSampleRemainingBytes: launchAltSample.remaining,
     launchAltRequestedSize: launchAltRequested.size,
+    launchAltRequestedFits: launchAltRequested.fits,
     launchAltRequestedRemainingBytes: launchAltRequested.remaining,
+    launchAltRequestedOverflowBytes: Math.max(
+      0,
+      -launchAltRequested.remaining,
+    ),
+    launchAltRequestedExtraMetadataBytes:
+      launchAltMax.metadataBytes - launchAltRequested.metadataBytes,
   };
 }
 
@@ -562,6 +573,7 @@ async function benchmarkPrediction() {
     metadataUri: 'u'.repeat(maxUriBytes),
   });
   const sample = await measurePrediction(SAMPLE_METADATA);
+  const requested = await measurePrediction(REQUESTED_METADATA);
 
   return {
     shape: 'prediction',
@@ -576,6 +588,12 @@ async function benchmarkPrediction() {
     sampleMetadataBytes: sample.metadataBytes,
     sampleSize: sample.size,
     sampleRemainingBytes: sample.remaining,
+    requestedMetadataBytes: requested.metadataBytes,
+    requestedSize: requested.size,
+    requestedFits: requested.fits,
+    requestedRemainingBytes: requested.remaining,
+    requestedOverflowBytes: Math.max(0, -requested.remaining),
+    requestedExtraMetadataBytes: max.metadataBytes - requested.metadataBytes,
   };
 }
 

@@ -130,12 +130,17 @@ Minimal builder examples for `uniswapV2Split` / `uniswapV4Split` migrations and 
 
 The Solana examples use `@whetstone-research/doppler-sdk/solana`. Set `SOLANA_NETWORK=devnet` for the checked-in Doppler Solana deployment defaults, or `SOLANA_NETWORK=custom` with explicit RPC URLs and deployment program IDs.
 
-- [`solana-launch-by-marketcap.ts`](./solana-launch-by-marketcap.ts): simple XYK launch with CPMM migration configured.
-- [`solana-adv-launch.ts`](./solana-adv-launch.ts): launch with custom allocations, recipients, fees, and migration price floor.
-- [`solana-adv-e2e-launch.ts`](./solana-adv-e2e-launch.ts): create, buy, migrate, and inspect the graduated CPMM pool.
-- [`solana-swap.ts`](./solana-swap.ts): quote and submit an exact-in CPMM swap.
+- [`solana-minimal-launch.ts`](./solana-minimal-launch.ts): smallest practical WSOL XYK launch using `createLaunch` defaults.
+- [`solana-launch-by-marketcap.ts`](./solana-launch-by-marketcap.ts): WSOL XYK launch with CPMM migration configured from market cap inputs.
+- [`solana-adv-launch.ts`](./solana-adv-launch.ts): WSOL launch with custom allocations, recipients, fees, and migration price floor.
+- [`solana-adv-e2e-launch.ts`](./solana-adv-e2e-launch.ts): create, buy, migrate, and inspect a graduated WSOL CPMM pool.
+- [`solana-usdc-e2e-launch.ts`](./solana-usdc-e2e-launch.ts): same lifecycle with devnet USDC and fee arithmetic checks.
 - [`solana-cosigner-gated-launch.ts`](./solana-cosigner-gated-launch.ts): E2E launch with bonding-curve swaps gated by the configured cosigner hook.
-- [`solana-cosigner-gated-buy.ts`](./solana-cosigner-gated-buy.ts): create a cosigner-gated launch with three env-configured beneficiaries, execute one cosigned bonding-curve buy, migrate, then execute an ungated CPMM swap.
+- [`solana-cosigner-gated-buy.ts`](./solana-cosigner-gated-buy.ts): cosigner-gated WSOL buy flow with env-configured fee beneficiaries.
+- [`solana-cosigner-gated-buy-token-2022.ts`](./solana-cosigner-gated-buy-token-2022.ts): same cosigner-gated WSOL flow with a Token-2022 base mint and Metaplex metadata.
+- [`solana-usdc-cosigner-gated-buy.ts`](./solana-usdc-cosigner-gated-buy.ts): cosigner-gated devnet USDC buy flow.
+- [`solana-prediction-market.ts`](./solana-prediction-market.ts): create a two-outcome prediction market with trusted oracle and prediction migrator.
+- [`solana-swap.ts`](./solana-swap.ts): quote and submit an exact-in CPMM swap.
 
 Quick run:
 
@@ -144,7 +149,7 @@ export SOLANA_KEYPAIR_PATH=~/.config/solana/id.json
 export SOLANA_NETWORK=devnet
 export SOLANA_RPC_URL=https://api.devnet.solana.com
 export SOLANA_WS_URL=wss://api.devnet.solana.com
-pnpm tsx examples/solana-launch-by-marketcap.ts
+pnpm tsx examples/solana-minimal-launch.ts
 ```
 
 For a custom deployment, also set:
@@ -157,7 +162,7 @@ export SOLANA_CPMM_HOOK_PROGRAM_ID=...
 export SOLANA_COSIGNER_HOOK_PROGRAM_ID=...
 ```
 
-The cosigner-gated launch example derives the hook config PDA from `SOLANA_COSIGNER_HOOK_PROGRAM_ID`. Provide `COSIGNER_KEYPAIR_PATH` or `COSIGNER_KEYPAIR` for one of the cosigners registered in that config.
+On devnet, the cosigner-gated examples default to the Doppler native cosigner hook. For a custom deployment, `SOLANA_COSIGNER_HOOK_PROGRAM_ID` should be the hook program that owns the cosigner config. Provide `COSIGNER_KEYPAIR_PATH` or `COSIGNER_KEYPAIR` for one of the cosigners registered in that config.
 
 The launch examples use ALTs where possible. ALTs reduce account-key bytes, but they do not compress instruction data, so long `metadataName`, `metadataSymbol`, or `metadataUri` values can still exceed Solana's 1232-byte transaction limit.
 
@@ -169,7 +174,7 @@ For larger CPMM launch metadata, use a launch-specific ALT:
 4. Wait for the ALT to be usable in a later slot.
 5. Rebuild the transaction and call `initializer.compressTransactionMessageWithLookupTable(...)`.
 
-The advanced examples demonstrate this flow and call `assertTransactionFits` before signing so metadata and account-pressure failures surface before broadcast.
+The shared example helper performs this flow and checks transaction size before signing so metadata and account-pressure failures surface before broadcast.
 
 `SOL_PRICE_USD` can be set to bypass the CoinGecko price lookup in launch examples. `SOLANA_KEYPAIR_PATH` is preferred for local development; `SOLANA_KEYPAIR` also works with a 64-byte JSON secret key array.
 

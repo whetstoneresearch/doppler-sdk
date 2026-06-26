@@ -19,235 +19,36 @@ import {
   getCreateAssociatedTokenIdempotentInstruction,
 } from '@solana-program/token';
 import { SYSTEM_PROGRAM_ADDRESS } from '@solana-program/system';
-import {
-  pipe,
-  createTransactionMessage,
-  generateKeyPairSigner,
-  setTransactionMessageFeePayerSigner,
-  setTransactionMessageLifetimeUsingBlockhash,
-  appendTransactionMessageInstructions,
-  signTransactionMessageWithSigners,
-  sendAndConfirmTransactionFactory,
-  getSignatureFromTransaction,
-  address,
-  type Address,
-  type TransactionSigner,
-} from '@solana/kit';
+import { generateKeyPairSigner } from '@solana/kit';
 import { SYSVAR_RENT_ADDRESS } from '@solana/sysvars';
 
 import {
   cosignerHook,
   cpmm,
+  createLaunch,
   initializer,
-  cpmmMigrator,
 } from '../src/solana/index.js';
+
 import {
-  assertTransactionFits,
-  assertSolanaExampleNetwork,
+  DEFAULT_SWAP_FEE_BPS,
+  DEFAULT_TEST_METADATA,
+  DEVNET_USDC_MINT as USDC_MINT,
+  assertCosignerRegistered,
+  assertMigrationQuoteThreshold,
   assertSimulationRejected,
-  createLookupTableForInstruction,
+  assertSolanaExampleNetwork,
+  assertTokenBalance,
   createSetComputeUnitLimitInstruction,
   createSolanaClientsFromEnv,
-  getMetadataByteLength,
   getSolanaCpmmDeploymentFromEnv,
+  loadCosigner,
   loadKeypairSignerFromEnv,
+  loadLaunchBeneficiaries,
+  parseDecimalTokenAmount,
+  sendInitializeLaunchWithLookupTable,
   sendInstructions,
   simulateInstructions,
 } from './solanaExampleHelpers.js';
-
-type SolanaClients = ReturnType<typeof createSolanaClientsFromEnv>;
-type LaunchBeneficiaryConfig = {
-  recipients: { wallet: Address; amount: bigint }[];
-  feeBeneficiaries: { wallet: Address; shareBps: number }[];
-};
-
-async function fetchOwnedTokenAmount({
-  rpc,
-  owner,
-  mint,
-  tokenAccount,
-}: {
-  rpc: SolanaClients['rpc'];
-  owner: Address;
-  mint: Address;
-  tokenAccount: Address;
-}): Promise<bigint | null> {
-  const result = await rpc
-    .getTokenAccountsByOwner(
-      owner,
-      { mint },
-      { encoding: 'jsonParsed', commitment: 'confirmed' },
-    )
-    .send();
-  const account = result.value.find(({ pubkey }) => pubkey === tokenAccount);
-  return account
-    ? BigInt(account.account.data.parsed.info.tokenAmount.amount)
-    : null;
-}
-
-async function assertTokenBalance({
-  rpc,
-  owner,
-  mint,
-  tokenAccount,
-  amount,
-}: {
-  rpc: SolanaClients['rpc'];
-  owner: Address;
-  mint: Address;
-  tokenAccount: Address;
-  amount: bigint;
-}): Promise<void> {
-  const balance = await fetchOwnedTokenAmount({
-    rpc,
-    owner,
-    mint,
-    tokenAccount,
-  });
-  if (balance === null || balance < amount) {
-    throw new Error(
-      `USDC token account ${tokenAccount} needs at least ${amount} atoms; current balance is ${balance ?? 0n}`,
-    );
-  }
-}
-
-// Standard devnet USDC mint.
-const USDC_MINT: Address =
-  '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU' as Address;
-
-async function loadCosigner(): Promise<TransactionSigner> {
-  if (!process.env.COSIGNER_KEYPAIR_PATH && !process.env.COSIGNER_KEYPAIR) {
-    throw new Error(
-      'COSIGNER_KEYPAIR_PATH or COSIGNER_KEYPAIR is required to sign cosigner-gated swaps.',
-    );
-  }
-
-  return loadKeypairSignerFromEnv({
-    pathEnv: 'COSIGNER_KEYPAIR_PATH',
-    jsonEnv: 'COSIGNER_KEYPAIR',
-    label: 'COSIGNER_KEYPAIR',
-  });
-}
-
-async function fetchActiveCosigners({
-  rpc,
-  cosignerHookProgram,
-  cosignerConfig,
-}: {
-  rpc: SolanaClients['rpc'];
-  cosignerHookProgram: Address;
-  cosignerConfig: Address;
-}): Promise<Address[]> {
-  const existingConfig = await cosignerHook.fetchMaybeCosignerConfig(
-    rpc,
-    cosignerConfig,
-    { commitment: 'confirmed' },
-  );
-
-  if (!existingConfig.exists) {
-    throw new Error(
-      `Cosigner hook config ${cosignerConfig} does not exist. The integrator/admin must initialize it before running this flow.`,
-    );
-  }
-
-  if (existingConfig.programAddress !== cosignerHookProgram) {
-    throw new Error(
-      `Cosigner hook config ${cosignerConfig} is owned by ${existingConfig.programAddress}, expected ${cosignerHookProgram}`,
-    );
-  }
-
-  const activeCosigners = existingConfig.data.cosigners.slice(
-    0,
-    existingConfig.data.cosignerCount,
-  );
-  if (activeCosigners.length === 0) {
-    throw new Error(
-      `Cosigner hook config ${cosignerConfig} does not include any active cosigners`,
-    );
-  }
-
-  return activeCosigners;
-}
-
-function requiredEnv(name: string): string {
-  const value = process.env[name]?.trim();
-  if (!value) {
-    throw new Error(`${name} is required`);
-  }
-  return value;
-}
-
-function parseShareBps(name: string): number {
-  const value = Number(requiredEnv(name));
-  if (!Number.isInteger(value) || value <= 0 || value > 10_000) {
-    throw new Error(`${name} must be an integer from 1 to 10000`);
-  }
-  return value;
-}
-
-function parseDecimalTokenAmount(name: string, decimals: number): bigint {
-  const value = requiredEnv(name);
-  if (!/^\d+(\.\d+)?$/.test(value)) {
-    throw new Error(`${name} must be a non-negative decimal token amount`);
-  }
-
-  const [whole, fractional = ''] = value.split('.');
-  if (fractional.length > decimals) {
-    throw new Error(`${name} has more than ${decimals} decimal places`);
-  }
-
-  return (
-    BigInt(whole) * 10n ** BigInt(decimals) +
-    BigInt(fractional.padEnd(decimals, '0'))
-  );
-}
-
-function loadLaunchBeneficiaries({
-  baseDecimals,
-  expectedDistributionAmount,
-}: {
-  baseDecimals: number;
-  expectedDistributionAmount: bigint;
-}): LaunchBeneficiaryConfig {
-  const recipients: LaunchBeneficiaryConfig['recipients'] = [];
-  const feeBeneficiaries: LaunchBeneficiaryConfig['feeBeneficiaries'] = [];
-
-  for (let i = 1; i <= 2; i++) {
-    const prefix = `SOLANA_FEE_BENEFICIARY_${i}`;
-    const wallet = address(requiredEnv(`${prefix}_WALLET`));
-    const amount = parseDecimalTokenAmount(
-      `${prefix}_BASE_AMOUNT`,
-      baseDecimals,
-    );
-    const shareBps = parseShareBps(`${prefix}_SHARE_BPS`);
-
-    if (amount === 0n) {
-      throw new Error(`${prefix}_BASE_AMOUNT must be greater than zero`);
-    }
-
-    recipients.push({ wallet, amount });
-    feeBeneficiaries.push({ wallet, shareBps });
-  }
-
-  const totalAmount = recipients.reduce((sum, entry) => sum + entry.amount, 0n);
-  if (totalAmount !== expectedDistributionAmount) {
-    throw new Error(
-      `SOLANA_FEE_BENEFICIARY_*_BASE_AMOUNT values must sum to ${expectedDistributionAmount} base atoms`,
-    );
-  }
-
-  const totalShareBps = feeBeneficiaries.reduce(
-    (sum, entry) => sum + entry.shareBps,
-    0,
-  );
-  if (totalShareBps !== 10_000) {
-    throw new Error(
-      'SOLANA_FEE_BENEFICIARY_*_SHARE_BPS values must sum to 10000',
-    );
-  }
-
-  return { recipients, feeBeneficiaries };
-}
 
 async function main() {
   const payer = await loadKeypairSignerFromEnv();
@@ -260,16 +61,12 @@ async function main() {
   );
 
   console.log('Checking cosigner hook config...');
-  const activeCosigners = await fetchActiveCosigners({
+  await assertCosignerRegistered({
     rpc,
     cosignerHookProgram: deployment.cosignerHookProgram,
     cosignerConfig,
+    cosigner,
   });
-  if (!activeCosigners.includes(cosigner.address)) {
-    throw new Error(
-      `COSIGNER_KEYPAIR resolves to ${cosigner.address}, which is not registered in cosigner hook config ${cosignerConfig}`,
-    );
-  }
 
   const BASE_DECIMALS = 6;
   const BASE_TOTAL_SUPPLY = 1_000_000_000n * 10n ** BigInt(BASE_DECIMALS);
@@ -278,8 +75,7 @@ async function main() {
   const BASE_FOR_CURVE =
     BASE_TOTAL_SUPPLY - BASE_FOR_DISTRIBUTION - BASE_FOR_LIQUIDITY;
   const QUOTE_DECIMALS = 6;
-  const SWAP_FEE_BPS = 200;
-  const CPMM_SWAP_FEE_SPLIT_BPS = 10_000;
+  const SWAP_FEE_BPS = DEFAULT_SWAP_FEE_BPS;
   const BUY_AMOUNT_IN = parseDecimalTokenAmount(
     'SOLANA_COSIGNER_BUY_AMOUNT_USDC',
     QUOTE_DECIMALS,
@@ -309,30 +105,18 @@ async function main() {
   const baseMint = await generateKeyPairSigner();
   const baseVault = await generateKeyPairSigner();
   const quoteVault = await generateKeyPairSigner();
-  const metadataAccount = await initializer.getTokenMetadataAddress(
-    baseMint.address,
-  );
+  const metadata = DEFAULT_TEST_METADATA;
 
   const namespace = cosignerConfig;
   const launchId = initializer.launchIdFromU64(BigInt(Date.now()));
-  const [launch] = await initializer.getLaunchAddress(
+  const launchAddresses = await initializer.deriveCreateLaunchAddresses({
+    deployment,
     namespace,
     launchId,
-    deployment.initializerProgram,
-  );
-  const [launchAuthority] = await initializer.getLaunchAuthorityAddress(
-    launch,
-    deployment.initializerProgram,
-  );
-  const [launchFeeState] = await initializer.getLaunchFeeStateAddress(
-    launch,
-    deployment.initializerProgram,
-  );
-  const [payerBaseAta] = await findAssociatedTokenPda({
-    owner: payer.address,
-    mint: baseMint.address,
-    tokenProgram: TOKEN_PROGRAM_ADDRESS,
+    baseMint,
+    metadata,
   });
+  const { launch, launchAuthority, launchFeeState } = launchAddresses;
   const [payerQuoteAta] = await findAssociatedTokenPda({
     owner: payer.address,
     mint: USDC_MINT,
@@ -345,36 +129,9 @@ async function main() {
     tokenAccount: payerQuoteAta,
     amount: BUY_AMOUNT_IN,
   });
-  const recipientAtas = await Promise.all(
-    launchBeneficiaries.recipients.map(async ({ wallet }) => {
-      const [ata] = await findAssociatedTokenPda({
-        owner: wallet,
-        mint: baseMint.address,
-        tokenProgram: TOKEN_PROGRAM_ADDRESS,
-      });
-      return ata;
-    }),
-  );
 
-  const migrationAccounts =
-    await cpmmMigrator.buildCpmmMigrationRemainingAccounts({
-      launch,
-      baseMint: baseMint.address,
-      quoteMint: USDC_MINT,
-      launchAuthority,
-      adminBaseAta: payerBaseAta,
-      adminQuoteAta: payerQuoteAta,
-      recipientAtas,
-      cpmmProgram: deployment.cpmmProgram,
-      cpmmMigratorProgram: deployment.cpmmMigratorProgram,
-    });
-
-  const signedHookRemainingAccounts = [namespace, cosigner];
-  const unsignedHookRemainingAccounts = [namespace, cosigner.address];
-  const hookRemainingAccountsHash = initializer.computeRemainingAccountsHash([
-    namespace,
-    cosigner.address,
-  ]);
+  const { signedHookRemainingAccounts, unsignedHookRemainingAccounts } =
+    cosignerHook.getCosignerHookRemainingAccounts({ namespace, cosigner });
 
   console.log('Creating cosigner-gated launch...');
   console.log('  Launch:            ', launch);
@@ -394,110 +151,53 @@ async function main() {
     );
   }
 
-  const migratorInitPayload = cpmmMigrator.encodeRegisterLaunchPayload({
-    cpmmConfig: migrationAccounts.cpmmConfig,
-    initialSwapFeeBps: SWAP_FEE_BPS,
-    initialFeeSplitBps: CPMM_SWAP_FEE_SPLIT_BPS,
-    recipients: launchBeneficiaries.recipients,
-    minRaiseQuote,
-    minMigrationPriceQ64Opt: null,
-    migratedPoolHookConfig: null,
-  });
-  const migratorMigratePayload = cpmmMigrator.encodeMigratePayload({
-    baseForDistribution: BASE_FOR_DISTRIBUTION,
-    baseForLiquidity: BASE_FOR_LIQUIDITY,
-  });
-
-  const metadata = {
-    metadataName: 'TEST',
-    metadataSymbol: 'TEST',
-    metadataUri: 'https://example.com/metadata/test-token.json',
-  };
-  const initializeLaunchIx =
-    await initializer.createInitializeLaunchInstruction(
-      {
-        config: deployment.initializerConfig,
-        launch,
-        launchAuthority,
+  const { instruction: initializeLaunchIx, cpmmMigration } = await createLaunch(
+    {
+      deployment,
+      namespace,
+      launchId,
+      addresses: launchAddresses,
+      launchAccounts: {
         baseMint,
         quoteMint: USDC_MINT,
         baseVault,
         quoteVault,
-        launchFeeState,
-        payer,
-        authority: payer,
-        hookProgram: deployment.cosignerHookProgram,
-        migratorProgram: deployment.cpmmMigratorProgram,
-        cpmmConfig: migrationAccounts.cpmmConfig,
-        baseTokenProgram: TOKEN_PROGRAM_ADDRESS,
-        quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
-        rent: SYSVAR_RENT_ADDRESS,
-        metadataAccount,
       },
-      {
-        namespace,
-        launchId,
+      payer,
+      authority: payer,
+      supply: {
         baseDecimals: BASE_DECIMALS,
         baseTotalSupply: BASE_TOTAL_SUPPLY,
         baseForDistribution: BASE_FOR_DISTRIBUTION,
         baseForLiquidity: BASE_FOR_LIQUIDITY,
+      },
+      curve: {
         curveVirtualBase: start.curveVirtualBase,
         curveVirtualQuote: start.curveVirtualQuote,
         swapFeeBps: SWAP_FEE_BPS,
-        curveKind: initializer.CURVE_KIND_XYK,
-        curveParams: new Uint8Array([initializer.CURVE_PARAMS_FORMAT_XYK_V0]),
-        allowBuy: true,
-        allowSell: true,
-        hookFlags:
-          initializer.HF_BEFORE_SWAP | initializer.HF_FORWARD_READONLY_SIGNERS,
-        hookPayload: new Uint8Array(),
-        migratorInitPayload,
-        migratorMigratePayload,
-        hookRemainingAccountsHash,
-        migratorInitRemainingAccountsHash:
-          initializer.computeRemainingAccountsHash([
-            migrationAccounts.cpmmMigrationState,
-            migrationAccounts.cpmmConfig,
-          ]),
-        migratorRemainingAccountsHash: migrationAccounts.hash,
-        feeBeneficiaries: launchBeneficiaries.feeBeneficiaries,
-        ...metadata,
       },
-      deployment.initializerProgram,
-    );
+      cosigner,
+      migration: {
+        recipients: launchBeneficiaries.recipients,
+        minRaiseQuote,
+      },
+      metadata,
+      feeBeneficiaries: launchBeneficiaries.feeBeneficiaries,
+    },
+  );
+  if (!cpmmMigration) {
+    throw new Error('CPMM migration accounts were not prepared');
+  }
+  const migrationAccounts = cpmmMigration;
 
-  const lookupTable = await createLookupTableForInstruction({
+  const launchSignature = await sendInitializeLaunchWithLookupTable({
     rpc,
     rpcSubscriptions,
     payer,
     instruction: initializeLaunchIx,
-    label: 'initialize_launch lookup table',
+    metadata,
   });
-  const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
-  const launchMessage = initializer.compressTransactionMessageWithLookupTable(
-    pipe(
-      createTransactionMessage({ version: 0 }),
-      (tx) => setTransactionMessageFeePayerSigner(payer, tx),
-      (tx) => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
-      (tx) => appendTransactionMessageInstructions([initializeLaunchIx], tx),
-    ),
-    lookupTable,
-  );
-  assertTransactionFits(launchMessage, {
-    label: 'initialize_launch',
-    metadataBytes: getMetadataByteLength(metadata),
-  });
-  const signedLaunch = await signTransactionMessageWithSigners(launchMessage);
-  await sendAndConfirmTransactionFactory({ rpc, rpcSubscriptions })(
-    signedLaunch as Parameters<
-      ReturnType<typeof sendAndConfirmTransactionFactory>
-    >[0],
-    { commitment: 'confirmed' },
-  );
-  console.log(
-    '  Launch tx:         ',
-    getSignatureFromTransaction(signedLaunch),
-  );
+  console.log('  Launch tx:         ', launchSignature);
 
   const [userBaseAta] = await findAssociatedTokenPda({
     owner: payer.address,
@@ -584,29 +284,28 @@ async function main() {
     initializer.phaseLabel(launchAccount.phase),
   );
 
-  const quoteVaultBalance = await rpc
-    .getTokenAccountBalance(quoteVault.address, { commitment: 'confirmed' })
-    .send();
-  const quoteVaultAmount = BigInt(quoteVaultBalance.value.amount);
-  const pendingQuoteFees =
-    (BUY_AMOUNT_IN * BigInt(SWAP_FEE_BPS) + 9_999n) / 10_000n;
-  const migrationQuoteAmount = quoteVaultAmount - pendingQuoteFees;
+  const { quoteVaultAmount, pendingQuoteFees } =
+    await assertMigrationQuoteThreshold({
+      rpc,
+      quoteVault: quoteVault.address,
+      pendingQuoteFees: initializer.getCurveSwapFeeAmount(
+        BUY_AMOUNT_IN,
+        SWAP_FEE_BPS,
+      ),
+      minRaiseQuote,
+    });
   console.log('  Quote vault amount:', quoteVaultAmount.toString());
   console.log('  Pending quote fees:', pendingQuoteFees.toString());
-  if (migrationQuoteAmount < minRaiseQuote) {
-    throw new Error(
-      `Migration quote amount ${migrationQuoteAmount} is below threshold ${minRaiseQuote}`,
-    );
-  }
   console.log('');
 
-  const createRecipientAtaIxs = recipientAtas.map((ata, index) =>
-    getCreateAssociatedTokenIdempotentInstruction({
-      payer,
-      ata,
-      owner: launchBeneficiaries.recipients[index].wallet,
-      mint: baseMint.address,
-    }),
+  const createRecipientAtaIxs = migrationAccounts.recipientAtas.map(
+    (ata, index) =>
+      getCreateAssociatedTokenIdempotentInstruction({
+        payer,
+        ata,
+        owner: launchBeneficiaries.recipients[index].wallet,
+        mint: baseMint.address,
+      }),
   );
 
   const migrateLaunchIxBase = initializer.createMigrateLaunchInstruction(

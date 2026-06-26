@@ -30,6 +30,9 @@ export interface CpmmMigrationRemainingAccounts {
   hash: Uint8Array;
   cpmmMigrationState: Address;
   cpmmConfig: Address;
+  adminBaseAta: Address;
+  adminQuoteAta: Address;
+  recipientAtas: Address[];
   pool: Address;
   poolAuthority: Address;
   poolVault0: Address;
@@ -107,6 +110,9 @@ export async function buildCpmmMigrationRemainingAccounts({
     ],
     cpmmMigrationState,
     cpmmConfig: poolInit.config[0],
+    adminBaseAta,
+    adminQuoteAta,
+    recipientAtas,
     pool,
     poolAuthority: poolInit.authority[0],
     poolVault0: poolInit.vault0[0],

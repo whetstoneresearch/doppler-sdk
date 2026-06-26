@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { address } from '@solana/kit';
 
 import {
+  cosignerHook,
   cpmm,
   cpmmMigrator,
   DOPPLER_SOLANA_DEVNET_PROGRAM_ADDRESSES,
@@ -23,6 +24,9 @@ describe('Solana deployment helpers', () => {
     const deployment = await deriveSolanaCpmmDeployment();
 
     expect(deployment).toMatchObject(DOPPLER_SOLANA_DEVNET_PROGRAM_ADDRESSES);
+    expect(deployment.cosignerHookProgram).toBe(
+      cosignerHook.DOPPLER_NATIVE_COSIGNER_HOOK_PROGRAM_ID,
+    );
     expect(deployment.cpmmConfig).toBeDefined();
     expect(deployment.initializerConfig).toBeDefined();
   });

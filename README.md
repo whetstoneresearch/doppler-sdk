@@ -88,10 +88,16 @@ console.log('CPMM config:', cpmmConfig);
 console.log('Pool:', pool?.address ?? 'not found');
 ```
 
-For runnable Solana flows, see:
+For runnable Solana flows, configure `examples/.env` and run with `pnpm tsx`, for example `pnpm tsx examples/solana-launch-by-marketcap.ts`:
 
 - [examples/solana-launch-by-marketcap.ts](./examples/solana-launch-by-marketcap.ts)
+- [examples/solana-adv-launch.ts](./examples/solana-adv-launch.ts)
 - [examples/solana-adv-e2e-launch.ts](./examples/solana-adv-e2e-launch.ts)
+- [examples/solana-cosigner-gated-launch.ts](./examples/solana-cosigner-gated-launch.ts)
+- [examples/solana-cosigner-gated-buy.ts](./examples/solana-cosigner-gated-buy.ts)
+- [examples/solana-usdc-e2e-launch.ts](./examples/solana-usdc-e2e-launch.ts)
+- [examples/solana-usdc-cosigner-gated-buy.ts](./examples/solana-usdc-cosigner-gated-buy.ts)
+- [examples/solana-prediction-market.ts](./examples/solana-prediction-market.ts)
 - [examples/solana-swap.ts](./examples/solana-swap.ts)
 
 ## Creating Auctions

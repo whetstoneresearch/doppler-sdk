@@ -20,97 +20,33 @@ import {
   getCreateAssociatedTokenIdempotentInstruction,
 } from '@solana-program/token';
 import { SYSTEM_PROGRAM_ADDRESS } from '@solana-program/system';
-import {
-  generateKeyPairSigner,
-  getBase64EncodedWireTransaction,
-  pipe,
-  createTransactionMessage,
-  setTransactionMessageFeePayerSigner,
-  setTransactionMessageLifetimeUsingBlockhash,
-  appendTransactionMessageInstructions,
-  signTransactionMessageWithSigners,
-  sendAndConfirmTransactionFactory,
-  getSignatureFromTransaction,
-  type Address,
-} from '@solana/kit';
+import { generateKeyPairSigner } from '@solana/kit';
 import { SYSVAR_RENT_ADDRESS } from '@solana/sysvars';
 
-import { cpmm, initializer, cpmmMigrator } from '../src/solana/index.js';
-import { fetchLaunchFeeState } from '../src/solana/generated/initializer/accounts/launchFeeState.js';
 import {
-  assertTransactionFits,
+  cpmm,
+  initializer,
+  cpmmMigrator,
+  createLaunch,
+} from '../src/solana/index.js';
+import { fetchLaunchFeeState } from '../src/solana/generated/initializer/accounts/launchFeeState.js';
+
+import {
+  DEFAULT_SWAP_FEE_BPS,
+  DEFAULT_TEST_METADATA,
+  DEVNET_USDC_MINT as USDC_MINT,
+  assertBigintEqual,
+  assertMigrationQuoteThreshold,
   assertSolanaExampleNetwork,
-  createLookupTableForInstruction,
+  assertTokenBalance,
   createSetComputeUnitLimitInstruction,
   createSolanaClientsFromEnv,
-  getMetadataByteLength,
   getSolanaCpmmDeploymentFromEnv,
   loadKeypairSignerFromEnv,
+  sendInitializeLaunchWithLookupTable,
+  sendInstructions,
+  simulateInstructions,
 } from './solanaExampleHelpers.js';
-
-// Standard devnet USDC mint.
-const USDC_MINT: Address =
-  '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU' as Address;
-
-async function fetchOwnedTokenAmount({
-  rpc,
-  owner,
-  mint,
-  tokenAccount,
-}: {
-  rpc: ReturnType<typeof createSolanaClientsFromEnv>['rpc'];
-  owner: Address;
-  mint: Address;
-  tokenAccount: Address;
-}): Promise<bigint | null> {
-  const result = await rpc
-    .getTokenAccountsByOwner(
-      owner,
-      { mint },
-      { encoding: 'jsonParsed', commitment: 'confirmed' },
-    )
-    .send();
-  const account = result.value.find(({ pubkey }) => pubkey === tokenAccount);
-  return account
-    ? BigInt(account.account.data.parsed.info.tokenAmount.amount)
-    : null;
-}
-
-async function assertTokenBalance({
-  rpc,
-  owner,
-  mint,
-  tokenAccount,
-  amount,
-}: {
-  rpc: ReturnType<typeof createSolanaClientsFromEnv>['rpc'];
-  owner: Address;
-  mint: Address;
-  tokenAccount: Address;
-  amount: bigint;
-}): Promise<void> {
-  const balance = await fetchOwnedTokenAmount({
-    rpc,
-    owner,
-    mint,
-    tokenAccount,
-  });
-  if (balance === null || balance < amount) {
-    throw new Error(
-      `USDC token account ${tokenAccount} needs at least ${amount} atoms; current balance is ${balance ?? 0n}`,
-    );
-  }
-}
-
-function ceilDiv(numerator: bigint, denominator: bigint): bigint {
-  return (numerator + denominator - 1n) / denominator;
-}
-
-function assertEqual(label: string, actual: bigint, expected: bigint): void {
-  if (actual !== expected) {
-    throw new Error(`${label}: expected ${expected}, got ${actual}`);
-  }
-}
 
 // ============================================================================
 // Main
@@ -139,9 +75,7 @@ async function main() {
   const END_MARKET_CAP_USD = 10_000_000;
 
   // ── Fee configuration ───────────────────────────────────────────────────
-  const SWAP_FEE_BPS = 200; // 2%; must fit this deployment's configured fee bounds
-  const CPMM_SWAP_FEE_BPS = SWAP_FEE_BPS;
-  const CPMM_SWAP_FEE_SPLIT_BPS = 10_000; // migrated launch fees route through LaunchFeeState
+  const SWAP_FEE_BPS = DEFAULT_SWAP_FEE_BPS;
 
   // ── Graduation threshold and price floor ────────────────────────────────
   const minRaiseQuote = 100_000n; // 0.1 USDC
@@ -164,33 +98,20 @@ async function main() {
   const baseMint = await generateKeyPairSigner();
   const baseVault = await generateKeyPairSigner();
   const quoteVault = await generateKeyPairSigner();
-  const metadataAccount = await initializer.getTokenMetadataAddress(
-    baseMint.address,
-  );
+  const metadata = DEFAULT_TEST_METADATA;
 
   const namespace = payer.address;
   const launchId = initializer.launchIdFromU64(BigInt(Date.now()));
-
-  const [launch] = await initializer.getLaunchAddress(
+  const launchAddresses = await initializer.deriveCreateLaunchAddresses({
+    deployment,
     namespace,
     launchId,
-    deployment.initializerProgram,
-  );
-  const [launchAuthority] = await initializer.getLaunchAuthorityAddress(
-    launch,
-    deployment.initializerProgram,
-  );
-  const [launchFeeState] = await initializer.getLaunchFeeStateAddress(
-    launch,
-    deployment.initializerProgram,
-  );
-  const initializerConfig = deployment.initializerConfig;
-
-  const [payerBaseAta] = await findAssociatedTokenPda({
-    owner: payer.address,
-    mint: baseMint.address,
-    tokenProgram: TOKEN_PROGRAM_ADDRESS,
+    baseMint,
+    metadata,
   });
+  const { launch, launchAuthority, launchFeeState } = launchAddresses;
+  const initializerConfig = launchAddresses.config;
+
   const [payerQuoteAta] = await findAssociatedTokenPda({
     owner: payer.address,
     mint: USDC_MINT,
@@ -203,156 +124,72 @@ async function main() {
     tokenAccount: payerQuoteAta,
     amount: BUY_AMOUNT_IN,
   });
-
-  const migrationAccounts =
-    await cpmmMigrator.buildCpmmMigrationRemainingAccounts({
-      launch,
-      baseMint: baseMint.address,
-      quoteMint: USDC_MINT,
-      launchAuthority,
-      adminBaseAta: payerBaseAta,
-      adminQuoteAta: payerQuoteAta,
-      recipientAtas: [payerBaseAta, payerBaseAta],
-      cpmmProgram: deployment.cpmmProgram,
-      cpmmMigratorProgram: deployment.cpmmMigratorProgram,
-    });
-  const cpmmConfig = migrationAccounts.cpmmConfig;
-  const cpmmMigrationState = migrationAccounts.cpmmMigrationState;
-
-  console.log('Derived addresses:');
-  console.log('  Launch:          ', launch);
-  console.log('  Launch authority:', launchAuthority);
-  console.log('  Initializer config:', initializerConfig);
-  console.log('  CPMM config:     ', cpmmConfig);
-  console.log('  CPMM migrator state:', cpmmMigrationState);
-  console.log('');
-
-  const migratorInitPayload = cpmmMigrator.encodeRegisterLaunchPayload({
-    cpmmConfig: cpmmConfig,
-    initialSwapFeeBps: CPMM_SWAP_FEE_BPS,
-    initialFeeSplitBps: CPMM_SWAP_FEE_SPLIT_BPS,
-    recipients: [
-      { wallet: payer.address, amount: CREATOR_SHARE },
-      { wallet: payer.address, amount: TEAM_SHARE }, // use payer as team wallet in this example
-    ],
-    minRaiseQuote,
-    minMigrationPriceQ64Opt: null,
-    migratedPoolHookConfig: null,
-  });
-
-  const migratorMigratePayload = cpmmMigrator.encodeMigratePayload({
-    baseForDistribution: BASE_FOR_DISTRIBUTION,
-    baseForLiquidity: BASE_FOR_LIQUIDITY,
-  });
+  const recipients = [
+    { wallet: payer.address, amount: CREATOR_SHARE },
+    { wallet: payer.address, amount: TEAM_SHARE },
+  ];
 
   // ── Build, sign, and send ────────────────────────────────────────────────
   console.log('Building launch instruction...');
   try {
-    const metadata = {
-      metadataName: 'TEST',
-      metadataSymbol: 'TEST',
-      metadataUri: 'https://example.com/metadata/test-token.json',
-    };
-
-    const ix = await initializer.createInitializeLaunchInstruction(
-      {
-        config: initializerConfig,
-        launch,
-        launchAuthority,
+    const { instruction: ix, cpmmMigration } = await createLaunch({
+      deployment,
+      namespace,
+      launchId,
+      addresses: launchAddresses,
+      launchAccounts: {
         baseMint,
         quoteMint: USDC_MINT,
         baseVault,
         quoteVault,
-        launchFeeState,
-        payer,
-        authority: payer,
-        hookProgram: deployment.cpmmHookProgram,
-        migratorProgram: deployment.cpmmMigratorProgram,
-        cpmmConfig,
-        baseTokenProgram: TOKEN_PROGRAM_ADDRESS,
-        quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
-        systemProgram: SYSTEM_PROGRAM_ADDRESS,
-        rent: SYSVAR_RENT_ADDRESS,
-        metadataAccount,
       },
-      {
-        namespace,
-        launchId,
+      payer,
+      authority: payer,
+      supply: {
         baseDecimals: BASE_DECIMALS,
         baseTotalSupply: BASE_TOTAL_SUPPLY,
         baseForDistribution: BASE_FOR_DISTRIBUTION,
         baseForLiquidity: BASE_FOR_LIQUIDITY,
+      },
+      curve: {
         curveVirtualBase: start.curveVirtualBase,
         curveVirtualQuote: start.curveVirtualQuote,
         swapFeeBps: SWAP_FEE_BPS,
-        curveKind: initializer.CURVE_KIND_XYK,
-        curveParams: new Uint8Array([initializer.CURVE_PARAMS_FORMAT_XYK_V0]),
-        allowBuy: true,
-        allowSell: true,
-        hookFlags: initializer.HF_BEFORE_SWAP,
-        hookPayload: new Uint8Array(),
-        migratorInitPayload,
-        migratorMigratePayload,
-        hookRemainingAccountsHash: initializer.EMPTY_REMAINING_ACCOUNTS_HASH,
-        migratorInitRemainingAccountsHash:
-          initializer.computeRemainingAccountsHash([
-            cpmmMigrationState,
-            cpmmConfig,
-          ]),
-        migratorRemainingAccountsHash: migrationAccounts.hash,
-        feeBeneficiaries: [{ wallet: payer.address, shareBps: 10_000 }],
-        ...metadata,
       },
-      deployment.initializerProgram,
-    );
-    const lookupTable = await createLookupTableForInstruction({
+      migration: {
+        recipients,
+        minRaiseQuote,
+      },
+      metadata,
+      feeBeneficiaries: [{ wallet: payer.address, shareBps: 10_000 }],
+    });
+    if (!cpmmMigration) {
+      throw new Error('CPMM migration accounts were not prepared');
+    }
+    const migrationAccounts = cpmmMigration;
+    const cpmmConfig = migrationAccounts.cpmmConfig;
+    const cpmmMigrationState = migrationAccounts.cpmmMigrationState;
+
+    console.log('Derived addresses:');
+    console.log('  Launch:          ', launch);
+    console.log('  Launch authority:', launchAuthority);
+    console.log('  Initializer config:', initializerConfig);
+    console.log('  CPMM config:     ', cpmmConfig);
+    console.log('  CPMM migrator state:', cpmmMigrationState);
+    console.log('');
+
+    const launchSignature = await sendInitializeLaunchWithLookupTable({
       rpc,
       rpcSubscriptions,
       payer,
       instruction: ix,
-      label: 'initialize_launch lookup table',
+      metadata,
     });
-
-    const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
-
-    const transactionMessage =
-      initializer.compressTransactionMessageWithLookupTable(
-        pipe(
-          createTransactionMessage({ version: 0 }),
-          (tx) => setTransactionMessageFeePayerSigner(payer, tx),
-          (tx) =>
-            setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
-          (tx) => appendTransactionMessageInstructions([ix], tx),
-        ),
-        lookupTable,
-      );
-    assertTransactionFits(transactionMessage, {
-      label: 'initialize_launch',
-      metadataBytes: getMetadataByteLength(metadata),
-    });
-
-    const signedTransaction =
-      await signTransactionMessageWithSigners(transactionMessage);
-
-    const sendAndConfirmTransaction = sendAndConfirmTransactionFactory({
-      rpc,
-      rpcSubscriptions,
-    });
-    await sendAndConfirmTransaction(
-      signedTransaction as Parameters<typeof sendAndConfirmTransaction>[0],
-      {
-        commitment: 'confirmed',
-      },
-    );
-
     console.log('');
     console.log('Token launch created successfully!');
     console.log('  Launch address:', launch);
     console.log('  Base mint:     ', baseMint.address);
-    console.log(
-      '  Transaction:   ',
-      getSignatureFromTransaction(signedTransaction),
-    );
+    console.log('  Transaction:   ', launchSignature);
 
     // ── Step 2: Enumerate launches by this wallet (indexer-style) ───────────
     console.log('Step 2: Listing launches owned by this wallet...');
@@ -388,25 +225,11 @@ async function main() {
       deployment.initializerProgram,
     );
 
-    // simulateTransaction is the idiomatic way to run a read-only instruction.
-    const { value: previewBlockhash } = await rpc.getLatestBlockhash().send();
-
-    const previewMessage = pipe(
-      createTransactionMessage({ version: 0 }),
-      (tx) => setTransactionMessageFeePayerSigner(payer, tx),
-      (tx) => setTransactionMessageLifetimeUsingBlockhash(previewBlockhash, tx),
-      (tx) => appendTransactionMessageInstructions([previewIx], tx),
-    );
-
-    const signedPreview =
-      await signTransactionMessageWithSigners(previewMessage);
-
-    const { value: simulateResult } = await rpc
-      .simulateTransaction(getBase64EncodedWireTransaction(signedPreview), {
-        encoding: 'base64',
-        replaceRecentBlockhash: true,
-      })
-      .send();
+    const simulateResult = await simulateInstructions({
+      rpc,
+      payer,
+      instructions: [previewIx],
+    });
 
     if (simulateResult.returnData?.data) {
       const returnBytes = Uint8Array.from(
@@ -485,59 +308,41 @@ async function main() {
     );
 
     {
-      const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
+      const signature = await sendInstructions({
+        rpc,
+        rpcSubscriptions,
+        payer,
+        instructions: [createBaseAtaIx, createQuoteAtaIx, swapIx],
+      });
 
-      const transactionMessage = pipe(
-        createTransactionMessage({ version: 0 }),
-        (tx) => setTransactionMessageFeePayerSigner(payer, tx),
-        (tx) =>
-          setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
-        (tx) =>
-          appendTransactionMessageInstructions(
-            [createBaseAtaIx, createQuoteAtaIx, swapIx],
-            tx,
-          ),
-      );
-
-      const signedTransaction =
-        await signTransactionMessageWithSigners(transactionMessage);
-
-      await sendAndConfirmTransaction(
-        signedTransaction as Parameters<typeof sendAndConfirmTransaction>[0],
-        {
-          commitment: 'confirmed',
-        },
-      );
-
-      console.log(
-        '  Curve buy confirmed:',
-        getSignatureFromTransaction(signedTransaction),
-      );
+      console.log('  Curve buy confirmed:', signature);
     }
 
-    const expectedQuoteFee = ceilDiv(
-      BUY_AMOUNT_IN * BigInt(SWAP_FEE_BPS),
-      10_000n,
+    const expectedQuoteFee = initializer.getCurveSwapFeeAmount(
+      BUY_AMOUNT_IN,
+      SWAP_FEE_BPS,
     );
     const feeStateAccount = await fetchLaunchFeeState(rpc, launchFeeState, {
       commitment: 'confirmed',
     });
     const feeState = feeStateAccount.data;
-    assertEqual(
+    assertBigintEqual(
       'cumulatedQuoteFees',
       feeState.cumulatedQuoteFees,
       expectedQuoteFee,
     );
-    assertEqual('cumulatedBaseFees', feeState.cumulatedBaseFees, 0n);
+    assertBigintEqual('cumulatedBaseFees', feeState.cumulatedBaseFees, 0n);
     const protocolQuoteFees =
       (expectedQuoteFee * BigInt(feeState.protocolFeeBps)) / 10_000n;
     const beneficiaryQuoteFees = expectedQuoteFee - protocolQuoteFees;
-    const quoteVaultBalance = await rpc
-      .getTokenAccountBalance(quoteVault.address, { commitment: 'confirmed' })
-      .send();
-    const quoteVaultAmount = BigInt(quoteVaultBalance.value.amount);
     const pendingQuoteFees = feeState.cumulatedQuoteFees;
-    const migrationQuoteAmount = quoteVaultAmount - pendingQuoteFees;
+    const { quoteVaultAmount, migrationQuoteAmount } =
+      await assertMigrationQuoteThreshold({
+        rpc,
+        quoteVault: quoteVault.address,
+        pendingQuoteFees,
+        minRaiseQuote,
+      });
 
     console.log('  Fee arithmetic verified:');
     console.log('    cumulated quote fees:', expectedQuoteFee.toString());
@@ -545,11 +350,6 @@ async function main() {
     console.log('    beneficiary fees:    ', beneficiaryQuoteFees.toString());
     console.log('    quote vault amount:  ', quoteVaultAmount.toString());
     console.log('    migration quote:     ', migrationQuoteAmount.toString());
-    if (migrationQuoteAmount < minRaiseQuote) {
-      throw new Error(
-        `Migration quote amount ${migrationQuoteAmount} is below threshold ${minRaiseQuote}`,
-      );
-    }
     console.log('');
 
     // ── Step 5: Migrate launch to CPMM pool ─────────────────────────────────
@@ -590,34 +390,17 @@ async function main() {
     };
 
     {
-      const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
+      const signature = await sendInstructions({
+        rpc,
+        rpcSubscriptions,
+        payer,
+        instructions: [
+          createSetComputeUnitLimitInstruction(400_000),
+          migrateLaunchIx,
+        ],
+      });
 
-      const transactionMessage = pipe(
-        createTransactionMessage({ version: 0 }),
-        (tx) => setTransactionMessageFeePayerSigner(payer, tx),
-        (tx) =>
-          setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
-        (tx) =>
-          appendTransactionMessageInstructions(
-            [createSetComputeUnitLimitInstruction(400_000), migrateLaunchIx],
-            tx,
-          ),
-      );
-
-      const signedTransaction =
-        await signTransactionMessageWithSigners(transactionMessage);
-
-      await sendAndConfirmTransaction(
-        signedTransaction as Parameters<typeof sendAndConfirmTransaction>[0],
-        {
-          commitment: 'confirmed',
-        },
-      );
-
-      console.log(
-        '  Migration confirmed:',
-        getSignatureFromTransaction(signedTransaction),
-      );
+      console.log('  Migration confirmed:', signature);
     }
     console.log('');
 
