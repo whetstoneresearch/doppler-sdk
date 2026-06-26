@@ -5,22 +5,13 @@ import type { ChainAddresses } from '../../../../src/evm/addresses';
 // Mock addresses for testing - all checksummed for consistency with decodeEventLog
 export const mockAddresses: ChainAddresses = {
   airlock: getAddress('0x1000000000000000000000000000000000000001') as Address,
-  tokenFactory: getAddress(
-    '0x2000000000000000000000000000000000000002',
-  ) as Address,
-  derc20V2Factory: getAddress(
-    '0x2000000000000000000000000000000000000003',
-  ) as Address,
-  derc20V2Implementation: getAddress(
-    '0x2000000000000000000000000000000000000004',
-  ) as Address,
   dopplerERC20V1Factory: getAddress(
     '0x2000000000000000000000000000000000000005',
   ) as Address,
   dopplerERC20V1Implementation: getAddress(
     '0x2000000000000000000000000000000000000006',
   ) as Address,
-  v3Initializer: getAddress(
+  lockableV3Initializer: getAddress(
     '0x3000000000000000000000000000000000000003',
   ) as Address,
   dopplerDeployer: getAddress(
@@ -35,11 +26,8 @@ export const mockAddresses: ChainAddresses = {
   v4Initializer: getAddress(
     '0x7000000000000000000000000000000000000007',
   ) as Address,
-  v4MulticurveInitializer: getAddress(
+  dopplerHookInitializer: getAddress(
     '0x7100000000000000000000000000000000000007',
-  ) as Address,
-  v4DecayMulticurveInitializer: getAddress(
-    '0x7200000000000000000000000000000000000007',
   ) as Address,
   rehypeDopplerHookInitializer: getAddress(
     '0x7300000000000000000000000000000000000007',
@@ -50,20 +38,11 @@ export const mockAddresses: ChainAddresses = {
   v4Migrator: getAddress(
     '0x8000000000000000000000000000000000000008',
   ) as Address,
-  v4MigratorSplit: getAddress(
-    '0x8000000000000000000000000000000000000028',
-  ) as Address,
   dopplerHookMigrator: getAddress(
     '0x8100000000000000000000000000000000000008',
   ) as Address,
   rehypeDopplerHookMigrator: getAddress(
     '0x8200000000000000000000000000000000000008',
-  ) as Address,
-  v4MigratorHook: getAddress(
-    '0x9000000000000000000000000000000000000009',
-  ) as Address,
-  streamableFeesLocker: getAddress(
-    '0xa000000000000000000000000000000000000010',
   ) as Address,
   streamableFeesLockerV2: getAddress(
     '0xa000000000000000000000000000000000000012',

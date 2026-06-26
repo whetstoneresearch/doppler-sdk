@@ -52,10 +52,6 @@ export const mockDopplerHookInitializer =
   '0x7777777777777777777777777777777777777777' as Address;
 export const mockRehypeHook =
   '0x9999999999999999999999999999999999999999' as Address;
-export const mockScheduledInitializer =
-  '0x8888888888888888888888888888888888888888' as Address;
-export const mockDecayInitializer =
-  '0x9999999999999999999999999999999999999999' as Address;
 export const mockBeneficiary =
   '0x0000000000000000000000000000000000000abc' as Address;
 
@@ -97,6 +93,9 @@ export const defaultAddresses = {
 export function createZeroState() {
   return [
     zeroAddress,
+    0n,
+    zeroAddress,
+    '0x' as Hex,
     0,
     {
       currency0: zeroAddress,
@@ -112,7 +111,17 @@ export function createZeroState() {
 export function createState(
   status: LockablePoolStatus = LockablePoolStatus.Initialized,
 ) {
-  return [mockNumeraire, status, mockPoolKey, mockFarTick] as const;
+  // DopplerHookInitializer state layout:
+  // [0]=numeraire, [4]=status, [5]=poolKey, [6]=farTick
+  return [
+    mockNumeraire,
+    0n,
+    zeroAddress,
+    '0x' as Hex,
+    status,
+    mockPoolKey,
+    mockFarTick,
+  ] as const;
 }
 
 export function buildPendingFeeAggregateResults(
@@ -182,7 +191,7 @@ export async function createMulticurvePoolHarness() {
 
   vi.clearAllMocks();
   const { getAddresses } = await import('@/addresses');
-  vi.mocked(getAddresses).mockReturnValue(defaultAddresses);
+  vi.mocked(getAddresses).mockReturnValue(mockAddresses);
 
   return {
     publicClient,

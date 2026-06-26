@@ -33,14 +33,14 @@ describe('Multicurve pending fees preview (Base Sepolia fork)', () => {
 
   const chainId = CHAIN_IDS.BASE_SEPOLIA
   const addresses = getAddresses(chainId)
-  const initializer = addresses.v4MulticurveInitializer
+  const initializer = addresses.dopplerHookInitializer
   const noOpMigrator = addresses.noOpMigrator
   const noOpGovernanceFactory = addresses.noOpGovernanceFactory
   const anvilManager = getAnvilManager()
 
   if (!initializer || !noOpMigrator || !noOpGovernanceFactory) {
     it.skip(
-      'requires v4MulticurveInitializer, noOpMigrator, and noOpGovernanceFactory addresses',
+      'requires dopplerHookInitializer, noOpMigrator, and noOpGovernanceFactory addresses',
     )
     return
   }
@@ -89,7 +89,7 @@ describe('Multicurve pending fees preview (Base Sepolia fork)', () => {
         address: addresses.airlock,
         abi: airlockAbi,
         functionName: 'getModuleState',
-        args: [addresses.tokenFactory],
+        args: [addresses.dopplerERC20V1Factory!],
       }),
       publicClient.readContract({
         address: addresses.airlock,
@@ -145,7 +145,6 @@ describe('Multicurve pending fees preview (Base Sepolia fork)', () => {
       .withGovernance({ type: 'noOp' })
       .withMigration({ type: 'noOp' })
       .withUserAddress(account.address)
-      .withV4MulticurveInitializer(initializer)
       .withNoOpMigrator(noOpMigrator)
       .build()
 

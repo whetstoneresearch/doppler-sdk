@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll } from 'vitest'
 import { parseEther } from 'viem'
 import { DopplerSDK, getAddresses, CHAIN_IDS, airlockAbi, WAD } from '../../../../src/evm'
 import { getTestClient, hasRpcUrl, getRpcEnvVar } from '../../utils'
+import { usesLegacyBaseSepoliaMulticurveBundler } from './legacyMulticurveBundler'
 
 describe('Multicurve Pre-Buy with WETH (Base Sepolia fork)', () => {
   if (!hasRpcUrl(CHAIN_IDS.BASE_SEPOLIA)) {
@@ -13,6 +14,10 @@ describe('Multicurve Pre-Buy with WETH (Base Sepolia fork)', () => {
   const addresses = getAddresses(chainId)
   const publicClient = getTestClient(chainId)
   const sdk = new DopplerSDK({ publicClient, chainId })
+  const itWithCurrentMulticurveBundler = usesLegacyBaseSepoliaMulticurveBundler({
+    chainId,
+    bundler: addresses.bundler,
+  }) ? it.skip : it
 
   let modulesWhitelisted = false
 
@@ -23,7 +28,7 @@ describe('Multicurve Pre-Buy with WETH (Base Sepolia fork)', () => {
           address: addresses.airlock,
           abi: airlockAbi,
           functionName: 'getModuleState',
-          args: [addresses.v4MulticurveInitializer!],
+          args: [addresses.dopplerHookInitializer!],
         }),
         publicClient.readContract({
           address: addresses.airlock,
@@ -35,7 +40,7 @@ describe('Multicurve Pre-Buy with WETH (Base Sepolia fork)', () => {
           address: addresses.airlock,
           abi: airlockAbi,
           functionName: 'getModuleState',
-          args: [addresses.tokenFactory],
+          args: [addresses.dopplerERC20V1Factory!],
         }),
         publicClient.readContract({
           address: addresses.airlock,
@@ -84,7 +89,6 @@ describe('Multicurve Pre-Buy with WETH (Base Sepolia fork)', () => {
       .withGovernance({ type: 'default' })
       .withMigration({ type: 'uniswapV2' })
       .withUserAddress(addresses.airlock)
-      .withV4MulticurveInitializer(addresses.v4MulticurveInitializer!)
       .withV2Migrator(addresses.v2Migrator)
       .build()
 
@@ -92,25 +96,14 @@ describe('Multicurve Pre-Buy with WETH (Base Sepolia fork)', () => {
 
     expect(tokenAddress).toMatch(/^0x[a-fA-F0-9]{40}$/)
     expect(poolId).toMatch(/^0x[a-fA-F0-9]{64}$/)
-
-    // Get poolKey from bundle quote to verify WETH
-    const quote = await sdk.factory.simulateMulticurveBundleExactOut(createParams, {
-      exactAmountOut: params.sale.numTokensToSell / 100n,
-      hookData: '0x' as `0x${string}`,
-    })
-
-    const poolKey = quote.poolKey
-    const hasWETH =
-      poolKey.currency0.toLowerCase() === addresses.weth.toLowerCase() ||
-      poolKey.currency1.toLowerCase() === addresses.weth.toLowerCase()
-    expect(hasWETH).toBe(true)
+    expect(createParams.numeraire.toLowerCase()).toBe(addresses.weth.toLowerCase())
 
     console.log('  ✓ Simulated creation with WETH numeraire')
     console.log(`    Asset: ${tokenAddress}`)
     console.log(`    Pool: ${poolId}`)
   })
 
-  it('simulates bundle exact output quote for WETH prebuy', async () => {
+  itWithCurrentMulticurveBundler('simulates bundle exact output quote for WETH prebuy', async () => {
     if (!modulesWhitelisted) {
       console.warn('⚠️  Modules not whitelisted on this chain, skipping test')
       return
@@ -139,7 +132,6 @@ describe('Multicurve Pre-Buy with WETH (Base Sepolia fork)', () => {
       .withGovernance({ type: 'default' })
       .withMigration({ type: 'uniswapV2' })
       .withUserAddress(addresses.airlock)
-      .withV4MulticurveInitializer(addresses.v4MulticurveInitializer!)
       .withV2Migrator(addresses.v2Migrator)
       .build()
 
@@ -150,7 +142,6 @@ describe('Multicurve Pre-Buy with WETH (Base Sepolia fork)', () => {
 
     const quote = await sdk.factory.simulateMulticurveBundleExactOut(createParams, {
       exactAmountOut,
-      hookData: '0x' as `0x${string}`,
     })
 
     expect(quote.asset).toBe(tokenAddress)
@@ -164,7 +155,7 @@ describe('Multicurve Pre-Buy with WETH (Base Sepolia fork)', () => {
     console.log(`    Gas estimate: ${quote.gasEstimate}`)
   })
 
-  it('verifies swap direction for WETH → Token', async () => {
+  itWithCurrentMulticurveBundler('verifies swap direction for WETH → Token', async () => {
     if (!modulesWhitelisted) {
       console.warn('⚠️  Modules not whitelisted on this chain, skipping test')
       return
@@ -192,16 +183,13 @@ describe('Multicurve Pre-Buy with WETH (Base Sepolia fork)', () => {
       .withGovernance({ type: 'default' })
       .withMigration({ type: 'uniswapV2' })
       .withUserAddress(addresses.airlock)
-      .withV4MulticurveInitializer(addresses.v4MulticurveInitializer!)
       .withV2Migrator(addresses.v2Migrator)
       .build()
 
     const { createParams } = await sdk.factory.simulateCreateMulticurve(params)
 
-    // Get poolKey from bundle quote
     const quote = await sdk.factory.simulateMulticurveBundleExactOut(createParams, {
       exactAmountOut: params.sale.numTokensToSell / 100n,
-      hookData: '0x' as `0x${string}`,
     })
 
     const poolKey = quote.poolKey
@@ -221,7 +209,7 @@ describe('Multicurve Pre-Buy with WETH (Base Sepolia fork)', () => {
     console.log(`    Currency1: ${poolKey.currency1}`)
   })
 
-  it('validates bundler exact input simulation', async () => {
+  itWithCurrentMulticurveBundler('validates bundler exact input simulation', async () => {
     if (!modulesWhitelisted) {
       console.warn('⚠️  Modules not whitelisted on this chain, skipping test')
       return
@@ -249,7 +237,6 @@ describe('Multicurve Pre-Buy with WETH (Base Sepolia fork)', () => {
       .withGovernance({ type: 'default' })
       .withMigration({ type: 'uniswapV2' })
       .withUserAddress(addresses.airlock)
-      .withV4MulticurveInitializer(addresses.v4MulticurveInitializer!)
       .withV2Migrator(addresses.v2Migrator)
       .build()
 
@@ -259,7 +246,6 @@ describe('Multicurve Pre-Buy with WETH (Base Sepolia fork)', () => {
 
     const quote = await sdk.factory.simulateMulticurveBundleExactIn(createParams, {
       exactAmountIn,
-      hookData: '0x' as `0x${string}`,
     })
 
     expect(quote.asset).toBe(tokenAddress)

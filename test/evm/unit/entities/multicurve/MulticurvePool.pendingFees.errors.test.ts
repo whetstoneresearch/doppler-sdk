@@ -5,11 +5,9 @@ import { mockAddresses } from '@test/setup/fixtures/addresses';
 import {
   buildPendingFeeAggregateResults,
   createMulticurvePoolHarness,
+  createState,
   encodePendingFeeAggregateResults,
   mockBeneficiary,
-  mockFarTick,
-  mockNumeraire,
-  mockPoolKey,
   type AggregateResult,
   type MockPublicClient,
   type PendingFeeValues,
@@ -96,12 +94,9 @@ describe('MulticurvePool getPendingFees errors', () => {
   });
 
   it('throws when the pool is initialized but not locked', async () => {
-    vi.mocked(publicClient.readContract).mockResolvedValueOnce([
-      mockNumeraire,
-      LockablePoolStatus.Initialized,
-      mockPoolKey,
-      mockFarTick,
-    ]);
+    vi.mocked(publicClient.readContract).mockResolvedValueOnce(
+      createState(LockablePoolStatus.Initialized),
+    );
 
     await expect(
       multicurvePool.getPendingFees(mockBeneficiary),
@@ -110,12 +105,9 @@ describe('MulticurvePool getPendingFees errors', () => {
   });
 
   function mockLockedState() {
-    vi.mocked(publicClient.readContract).mockResolvedValueOnce([
-      mockNumeraire,
-      LockablePoolStatus.Locked,
-      mockPoolKey,
-      mockFarTick,
-    ]);
+    vi.mocked(publicClient.readContract).mockResolvedValueOnce(
+      createState(LockablePoolStatus.Locked),
+    );
   }
 
   function mockPendingFeeAggregate(values: PendingFeeValues) {

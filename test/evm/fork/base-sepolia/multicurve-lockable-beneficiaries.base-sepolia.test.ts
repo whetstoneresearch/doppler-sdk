@@ -47,7 +47,7 @@ describe('Multicurve with lockable beneficiaries using NoOpMigrator (Base Sepoli
         address: addresses.airlock,
         abi: airlockAbi,
         functionName: 'getModuleState',
-        args: [addresses.v4MulticurveInitializer!],
+        args: [addresses.dopplerHookInitializer!],
       }) as unknown as number
       states.initializer = Number(initState)
       // ModuleState.PoolInitializer = 3
@@ -71,7 +71,7 @@ describe('Multicurve with lockable beneficiaries using NoOpMigrator (Base Sepoli
         address: addresses.airlock,
         abi: airlockAbi,
         functionName: 'getModuleState',
-        args: [addresses.tokenFactory],
+        args: [addresses.dopplerERC20V1Factory!],
       }) as unknown as number
       states.tokenFactory = Number(tokenFactoryState)
       // ModuleState.TokenFactory = 1
@@ -152,7 +152,6 @@ describe('Multicurve with lockable beneficiaries using NoOpMigrator (Base Sepoli
       .withGovernance({ type: 'default' })
       .withMigration({ type: 'noOp' }) // Use NoOp migration when beneficiaries are present
       .withUserAddress(addresses.airlock)
-      .withV4MulticurveInitializer(addresses.v4MulticurveInitializer!)
       .withNoOpMigrator(addresses.noOpMigrator!) // Explicitly set NoOpMigrator
 
     const params = builder.build()
@@ -207,7 +206,6 @@ describe('Multicurve with lockable beneficiaries using NoOpMigrator (Base Sepoli
       .withGovernance({ type: 'default' })
       .withMigration({ type: 'uniswapV2' })
       .withUserAddress(addresses.airlock)
-      .withV4MulticurveInitializer(addresses.v4MulticurveInitializer!)
       .withV2Migrator(addresses.v2Migrator)
 
     const params = builder.build()
@@ -278,7 +276,6 @@ describe('Multicurve with lockable beneficiaries using NoOpMigrator (Base Sepoli
       .withGovernance({ type: 'default' })
       .withMigration({ type: 'noOp' })
       .withUserAddress(addresses.airlock)
-      .withV4MulticurveInitializer(addresses.v4MulticurveInitializer!)
       .withNoOpMigrator(addresses.noOpMigrator!)
 
     const params = builder.build()
@@ -347,7 +344,6 @@ describe('Multicurve with lockable beneficiaries using NoOpMigrator (Base Sepoli
       .withGovernance({ type: 'default' })
       .withMigration({ type: 'noOp' })
       .withUserAddress(addresses.airlock)
-      .withV4MulticurveInitializer(addresses.v4MulticurveInitializer!)
       .withNoOpMigrator(addresses.noOpMigrator!)
 
     const params = builder.build()

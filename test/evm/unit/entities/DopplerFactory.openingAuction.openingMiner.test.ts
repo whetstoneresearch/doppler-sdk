@@ -40,18 +40,6 @@ describe('DopplerFactory opening auction miner', () => {
     shareToAuctionBps: 2000,
   } as const;
 
-  const STANDARD_TOKEN_FACTORY_DATA = {
-    name: 'Opening Miner Token',
-    symbol: 'OMT',
-    initialSupply: parseEther('1000000'),
-    airlock: mockAddresses.airlock,
-    yearlyMintRate: 0n,
-    vestingDuration: 30n * 24n * 60n * 60n,
-    recipients: [getAddress('0x1111111111111111111111111111111111111111') as Address],
-    amounts: [parseEther('1')],
-    tokenURI: 'https://example.com/omt.json',
-  } as const;
-
   const DOPPLER_ERC20_V1_TOKEN_FACTORY_DATA = {
     kind: 'dopplerERC20V1',
     name: 'Opening Miner Token',
@@ -75,11 +63,11 @@ describe('DopplerFactory opening auction miner', () => {
     auctionTokens: parseEther('100000'),
     openingAuctionConfig: OPENING_AUCTION_CONFIG,
     numeraire: LOW_NUMERAIRE as Address,
-    tokenFactory: mockAddresses.tokenFactory,
-    tokenFactoryData: STANDARD_TOKEN_FACTORY_DATA,
+    tokenFactory: mockAddresses.dopplerERC20V1Factory,
+    tokenFactoryData: DOPPLER_ERC20_V1_TOKEN_FACTORY_DATA,
     airlock: mockAddresses.airlock,
     initialSupply: parseEther('1000000'),
-    tokenVariant: 'standard' as const,
+    tokenVariant: 'dopplerERC20V1' as const,
   };
 
   it('returns a hook address satisfying OPENING_AUCTION_FLAGS mask', () => {
@@ -125,33 +113,50 @@ describe('DopplerFactory opening auction miner', () => {
     expect(second).toEqual(first);
   });
 
-  it('returns encodedTokenFactoryData matching encodeAbiParameters for standard variant', () => {
+  it('returns encodedTokenFactoryData matching encodeAbiParameters for the default dopplerERC20V1 variant', () => {
+    // Standard tokens now route through the DopplerERC20V1 factory. Without
+    // protocol balance-limit exclusions the encoded data is the plain V1 shape.
     const [_salt, _hookAddress, _tokenAddress, encodedTokenFactoryData] = (
       factory as any
     ).mineOpeningAuctionHookAddress({
       ...baseParams,
-      tokenVariant: 'standard',
-      tokenFactoryData: STANDARD_TOKEN_FACTORY_DATA,
+      tokenVariant: 'dopplerERC20V1',
+      tokenFactory: mockAddresses.dopplerERC20V1Factory,
+      tokenFactoryData: DOPPLER_ERC20_V1_TOKEN_FACTORY_DATA,
     }) as readonly [string, Address, Address, `0x${string}`];
 
     const expected = encodeAbiParameters(
       [
         { type: 'string' },
         { type: 'string' },
-        { type: 'uint256' },
-        { type: 'uint256' },
+        {
+          type: 'tuple[]',
+          components: [
+            { type: 'uint64', name: 'cliff' },
+            { type: 'uint64', name: 'duration' },
+          ],
+        },
         { type: 'address[]' },
         { type: 'uint256[]' },
+        { type: 'uint256[]' },
         { type: 'string' },
+        { type: 'uint256' },
+        { type: 'uint48' },
+        { type: 'address' },
+        { type: 'address[]' },
       ],
       [
-        STANDARD_TOKEN_FACTORY_DATA.name,
-        STANDARD_TOKEN_FACTORY_DATA.symbol,
-        STANDARD_TOKEN_FACTORY_DATA.yearlyMintRate,
-        STANDARD_TOKEN_FACTORY_DATA.vestingDuration,
-        STANDARD_TOKEN_FACTORY_DATA.recipients,
-        STANDARD_TOKEN_FACTORY_DATA.amounts,
-        STANDARD_TOKEN_FACTORY_DATA.tokenURI,
+        DOPPLER_ERC20_V1_TOKEN_FACTORY_DATA.name,
+        DOPPLER_ERC20_V1_TOKEN_FACTORY_DATA.symbol,
+        DOPPLER_ERC20_V1_TOKEN_FACTORY_DATA.schedules,
+        DOPPLER_ERC20_V1_TOKEN_FACTORY_DATA.beneficiaries,
+        DOPPLER_ERC20_V1_TOKEN_FACTORY_DATA.scheduleIds,
+        DOPPLER_ERC20_V1_TOKEN_FACTORY_DATA.amounts,
+        DOPPLER_ERC20_V1_TOKEN_FACTORY_DATA.tokenURI,
+        DOPPLER_ERC20_V1_TOKEN_FACTORY_DATA.maxBalanceLimit,
+        DOPPLER_ERC20_V1_TOKEN_FACTORY_DATA.balanceLimitEnd,
+        DOPPLER_ERC20_V1_TOKEN_FACTORY_DATA.controller,
+        [...DOPPLER_ERC20_V1_TOKEN_FACTORY_DATA.excludedFromBalanceLimit],
       ],
     );
 

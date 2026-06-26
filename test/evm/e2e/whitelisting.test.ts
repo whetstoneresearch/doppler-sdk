@@ -117,12 +117,9 @@ type StreamableFeesLockerCase = {
 const SKIPPED_AIRLOCK_MODULES_BY_CHAIN: Partial<
   Record<SupportedChainId, readonly string[]>
 > = {
-  [CHAIN_IDS.MAINNET]: ['UniswapV2MigratorSplit', 'UniswapV4MigratorSplit'],
-  [CHAIN_IDS.MONAD_MAINNET]: [
-    'UniswapV2MigratorSplit',
-    'UniswapV4MigratorSplit',
-  ],
-  [CHAIN_IDS.BASE]: ['UniswapV2MigratorSplit', 'UniswapV4MigratorSplit'],
+  [CHAIN_IDS.MAINNET]: ['UniswapV2MigratorSplit'],
+  [CHAIN_IDS.MONAD_MAINNET]: ['UniswapV2MigratorSplit'],
+  [CHAIN_IDS.BASE]: ['UniswapV2MigratorSplit'],
 };
 
 function shouldSkipAirlockModuleCase(
@@ -361,12 +358,6 @@ describe('Airlock Module Whitelisting', () => {
 
       const airlockModuleCases: AirlockModuleCase[] = [
         {
-          title: `TokenFactory (${addresses.tokenFactory}) whitelisted`,
-          module: 'TokenFactory',
-          address: addresses.tokenFactory,
-          expectedState: ModuleState.TokenFactory,
-        },
-        {
           title: `DopplerERC20V1Factory (${addresses.dopplerERC20V1Factory}) whitelisted`,
           module: 'DopplerERC20V1Factory',
           address: addresses.dopplerERC20V1Factory,
@@ -377,12 +368,6 @@ describe('Airlock Module Whitelisting', () => {
           module: 'GovernanceFactory',
           address: addresses.governanceFactory,
           expectedState: ModuleState.GovernanceFactory,
-        },
-        {
-          title: `UniswapV3Initializer (${addresses.v3Initializer}) whitelisted`,
-          module: 'UniswapV3Initializer',
-          address: addresses.v3Initializer,
-          expectedState: ModuleState.PoolInitializer,
         },
         {
           title: `UniswapV4Initializer (${addresses.v4Initializer}) whitelisted`,
@@ -403,24 +388,6 @@ describe('Airlock Module Whitelisting', () => {
           expectedState: ModuleState.PoolInitializer,
         },
         {
-          title: `V4MulticurveInitializer (${addresses.v4MulticurveInitializer}) whitelisted`,
-          module: 'V4MulticurveInitializer',
-          address: addresses.v4MulticurveInitializer,
-          expectedState: ModuleState.PoolInitializer,
-        },
-        {
-          title: `V4ScheduledMulticurveInitializer (${addresses.v4ScheduledMulticurveInitializer}) whitelisted`,
-          module: 'V4ScheduledMulticurveInitializer',
-          address: addresses.v4ScheduledMulticurveInitializer,
-          expectedState: ModuleState.PoolInitializer,
-        },
-        {
-          title: `V4DecayMulticurveInitializer (${addresses.v4DecayMulticurveInitializer}) whitelisted`,
-          module: 'V4DecayMulticurveInitializer',
-          address: addresses.v4DecayMulticurveInitializer,
-          expectedState: ModuleState.PoolInitializer,
-        },
-        {
           title: `UniswapV2Migrator (${addresses.v2Migrator}) whitelisted`,
           module: 'UniswapV2Migrator',
           address: addresses.v2Migrator,
@@ -436,12 +403,6 @@ describe('Airlock Module Whitelisting', () => {
           title: `UniswapV4Migrator (${addresses.v4Migrator}) whitelisted`,
           module: 'UniswapV4Migrator',
           address: addresses.v4Migrator,
-          expectedState: ModuleState.LiquidityMigrator,
-        },
-        {
-          title: `UniswapV4MigratorSplit (${addresses.v4MigratorSplit}) whitelisted`,
-          module: 'UniswapV4MigratorSplit',
-          address: addresses.v4MigratorSplit,
           expectedState: ModuleState.LiquidityMigrator,
         },
         {

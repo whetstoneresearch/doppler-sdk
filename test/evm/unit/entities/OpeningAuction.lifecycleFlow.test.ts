@@ -98,7 +98,7 @@ describe('OpeningAuction lifecycle flow (mocked)', () => {
       initialSupply: params.sale.initialSupply,
       numTokensToSell: params.sale.numTokensToSell,
       numeraire: params.sale.numeraire,
-      tokenFactory: mockAddresses.tokenFactory,
+      tokenFactory: mockAddresses.dopplerERC20V1Factory!,
       tokenFactoryData: '0x1234',
       governanceFactory: mockAddresses.governanceFactory!,
       governanceFactoryData: '0x',

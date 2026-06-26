@@ -186,7 +186,7 @@ export const createMockCreateEventLog = (
   tokenAddress: Address = mockTokenAddress,
   poolOrHookAddress: Address = mockPoolAddress,
   numeraire: Address = mockAddresses.weth,
-  initializer: Address = mockAddresses.v3Initializer,
+  initializer: Address = mockAddresses.lockableV3Initializer,
 ) => {
   // Event: Create(address asset, address indexed numeraire, address initializer, address poolOrHook)
   const eventSignature = keccak256(

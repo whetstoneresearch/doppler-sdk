@@ -8,27 +8,11 @@ import {
   getAddress,
   decodeAbiParameters,
 } from 'viem';
-import {
-  DERC20Bytecode,
-  DERC2080Bytecode,
-  DopplerDN404Bytecode,
-} from '../abis';
+import { DopplerDN404Bytecode } from '../abis';
 
 const DEFAULT_MAX_ITERATIONS = 1_000_000;
 
-export type TokenVariant =
-  | 'standard'
-  | 'standard-v2'
-  | 'dopplerERC20V1'
-  | 'doppler404';
-
-// TokenFactory80 has the same deterministic CREATE2 address across all chains where it is deployed.
-const TOKEN_FACTORY_80_ADDRESS =
-  '0xf0B5141dD9096254B2ca624dff26024f46087229' as const;
-
-function isTokenFactory80(tokenFactory: Address): boolean {
-  return tokenFactory.toLowerCase() === TOKEN_FACTORY_80_ADDRESS.toLowerCase();
-}
+export type TokenVariant = 'dopplerERC20V1' | 'doppler404';
 
 export interface TokenAddressHookConfig {
   deployer: Address;
@@ -54,7 +38,7 @@ export interface TokenAddressMiningParams {
   customBytecode?: Hex;
   /**
    * Implementation address for token templates deployed as Solady clones.
-   * Used by `standard-v2` and `dopplerERC20V1`.
+   * Used by `dopplerERC20V1`.
    */
   v2Implementation?: Address;
   maxIterations?: number;
@@ -68,33 +52,6 @@ export interface TokenAddressMiningResult {
   iterations: number;
   hookAddress?: Address;
 }
-
-const STANDARD_TOKEN_DATA_ABI = [
-  { type: 'string' },
-  { type: 'string' },
-  { type: 'uint256' },
-  { type: 'uint256' },
-  { type: 'address[]' },
-  { type: 'uint256[]' },
-  { type: 'string' },
-] as const;
-
-const STANDARD_TOKEN_V2_DATA_ABI = [
-  { type: 'string' },
-  { type: 'string' },
-  { type: 'uint256' },
-  {
-    type: 'tuple[]',
-    components: [
-      { type: 'uint64', name: 'cliff' },
-      { type: 'uint64', name: 'duration' },
-    ],
-  },
-  { type: 'address[]' },
-  { type: 'uint256[]' },
-  { type: 'uint256[]' },
-  { type: 'string' },
-] as const;
 
 const DOPPLER_ERC20_V1_TOKEN_DATA_ABI = [
   { type: 'string' },
@@ -223,7 +180,6 @@ function computeSoladyCloneInitCodeHash(implementation: Address): Hash {
 
 function buildTokenInitHash(params: {
   variant: TokenVariant;
-  tokenFactory: Address;
   tokenData: Hex;
   initialSupply: bigint;
   recipient: Address;
@@ -233,7 +189,6 @@ function buildTokenInitHash(params: {
 }): Hash {
   const {
     variant,
-    tokenFactory,
     tokenData,
     initialSupply,
     recipient,
@@ -268,85 +223,17 @@ function buildTokenInitHash(params: {
     ) as Hash;
   }
 
-  if (variant === 'standard-v2') {
-    decodeAbiParameters(STANDARD_TOKEN_V2_DATA_ABI, tokenData);
-    if (!v2Implementation) {
-      throw new Error(
-        'TokenAddressMiner: v2Implementation is required for standard-v2 tokens',
-      );
-    }
-
-    return computeSoladyCloneInitCodeHash(v2Implementation);
+  // dopplerERC20V1 (also the default for "standard" tokens). DopplerERC20V1
+  // tokens are deployed as Solady minimal-proxy clones of the implementation,
+  // so the init code hash is derived from the implementation address.
+  decodeAbiParameters(DOPPLER_ERC20_V1_TOKEN_DATA_ABI, tokenData);
+  if (!v2Implementation) {
+    throw new Error(
+      'TokenAddressMiner: v2Implementation is required for dopplerERC20V1 tokens',
+    );
   }
 
-  if (variant === 'dopplerERC20V1') {
-    decodeAbiParameters(DOPPLER_ERC20_V1_TOKEN_DATA_ABI, tokenData);
-    // `v2Implementation` is the shared clone implementation input for both
-    // CloneDERC20VotesV2 and DopplerERC20V1 token factories.
-    if (!v2Implementation) {
-      throw new Error(
-        'TokenAddressMiner: v2Implementation is required for dopplerERC20V1 tokens',
-      );
-    }
-
-    return computeSoladyCloneInitCodeHash(v2Implementation);
-  }
-
-  const [
-    name,
-    symbol,
-    yearlyMintRate,
-    vestingDuration,
-    vestingRecipients,
-    vestingAmounts,
-    tokenURI,
-  ] = decodeAbiParameters(STANDARD_TOKEN_DATA_ABI, tokenData) as readonly [
-    string,
-    string,
-    bigint,
-    bigint,
-    readonly Address[],
-    readonly bigint[],
-    string,
-  ];
-
-  const initHashData = encodeAbiParameters(
-    [
-      { type: 'string' },
-      { type: 'string' },
-      { type: 'uint256' },
-      { type: 'address' },
-      { type: 'address' },
-      { type: 'uint256' },
-      { type: 'uint256' },
-      { type: 'address[]' },
-      { type: 'uint256[]' },
-      { type: 'string' },
-    ],
-    [
-      name,
-      symbol,
-      initialSupply,
-      recipient,
-      owner,
-      yearlyMintRate,
-      vestingDuration,
-      Array.from(vestingRecipients),
-      Array.from(vestingAmounts),
-      tokenURI,
-    ],
-  );
-
-  const defaultBytecode = isTokenFactory80(tokenFactory)
-    ? (DERC2080Bytecode as Hex)
-    : (DERC20Bytecode as Hex);
-
-  return keccak256(
-    encodePacked(
-      ['bytes', 'bytes'],
-      [customBytecode ?? defaultBytecode, initHashData],
-    ),
-  ) as Hash;
+  return computeSoladyCloneInitCodeHash(v2Implementation);
 }
 
 export function mineTokenAddress(
@@ -360,7 +247,7 @@ export function mineTokenAddress(
     recipient,
     owner,
     tokenData,
-    tokenVariant = 'standard',
+    tokenVariant = 'dopplerERC20V1',
     customBytecode,
     maxIterations = DEFAULT_MAX_ITERATIONS,
     startSalt = 0n,
@@ -394,7 +281,6 @@ export function mineTokenAddress(
 
   const tokenInitHash = buildTokenInitHash({
     variant: tokenVariant,
-    tokenFactory,
     tokenData,
     initialSupply,
     recipient,

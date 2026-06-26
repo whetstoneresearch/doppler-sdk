@@ -5,7 +5,6 @@ import {
   type Hash,
 } from 'viem';
 import {
-  type MulticurveDecayFeeSchedule,
   type MulticurvePoolState,
   type SupportedPublicClient,
 } from '../../types';
@@ -17,7 +16,6 @@ import {
   type InitializerDiscoveryClient,
 } from './multicurve/multicurveInitializerDiscovery';
 import { collectMulticurveFees } from './multicurve/multicurveFeeCollection';
-import { getMulticurveFeeSchedule } from './multicurve/multicurveFeeSchedule';
 import {
   getPendingFeesForMulticurvePool,
   type MulticurvePendingFeesClient,
@@ -27,7 +25,7 @@ export type { MulticurvePendingFees } from './multicurve/multicurvePendingFees';
 /**
  * MulticurvePool class for interacting with V4 multicurve pools
  *
- * Multicurve pools use the V4 multicurve initializer which supports:
+ * Multicurve pools use DopplerHookInitializer, which supports:
  * - Multiple bonding curves with different price ranges
  * - Fee collection for configured beneficiaries
  * - No-migration lockable liquidity
@@ -68,8 +66,7 @@ export class MulticurvePool {
   /**
    * Get current pool state from the multicurve initializer
    *
-   * Automatically discovers which initializer (standard, scheduled, decay, or
-   * doppler-hook) contains the pool.
+   * Reads pool state from the configured DopplerHookInitializer.
    */
   async getState(): Promise<MulticurvePoolState> {
     const { state } = await this.findInitializerForPool();
@@ -79,9 +76,7 @@ export class MulticurvePool {
   /**
    * Find which initializer contains this pool and return both the address and state.
    *
-   * Tries v4MulticurveInitializer first (more common), then falls back to
-   * v4ScheduledMulticurveInitializer, v4DecayMulticurveInitializer, and
-   * dopplerHookInitializer if needed.
+   * Multicurve pools are initialized through the DopplerHookInitializer.
    */
   private async findInitializerForPool() {
     const chainId = await this.rpc.getChainId();
@@ -114,9 +109,6 @@ export class MulticurvePool {
       throw new Error('Wallet client required to collect fees');
     }
 
-    const chainId = await this.rpc.getChainId();
-    const addresses = getAddresses(chainId as SupportedChainId);
-
     const { initializerAddress, state } = await this.findInitializerForPool();
 
     return collectMulticurveFees({
@@ -124,7 +116,6 @@ export class MulticurvePool {
       walletClient,
       initializerAddress,
       state,
-      addresses,
     });
   }
 
@@ -145,15 +136,5 @@ export class MulticurvePool {
   async getNumeraireAddress(): Promise<Address> {
     const state = await this.getState();
     return state.numeraire;
-  }
-
-  /**
-   * Get the decay fee schedule for dynamic-fee multicurve pools.
-   *
-   * Returns `null` when the pool is not using dynamic fees.
-   */
-  async getFeeSchedule(): Promise<MulticurveDecayFeeSchedule | null> {
-    const { state } = await this.findInitializerForPool();
-    return getMulticurveFeeSchedule(this.rpc, state);
   }
 }

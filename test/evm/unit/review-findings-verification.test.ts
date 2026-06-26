@@ -630,13 +630,15 @@ describe('L12: Multicurve should use DEFAULT_V4_YEARLY_MINT_RATE', () => {
       'utf-8',
     );
 
-    // Check entire file — V3 yearly mint rate should not be imported or used at all
+    // Standard tokens now deploy DopplerERC20V1 via the DopplerERC20V1Factory.
+    // The V3 yearly mint rate is no longer used by the factory encoding path,
+    // so the multicurve token factory encoding must not reference the V3 rate.
     const usesV3 = source.includes('DEFAULT_V3_YEARLY_MINT_RATE');
-    const usesV4 = source.includes('DEFAULT_V4_YEARLY_MINT_RATE');
-
-    // Should use V4, not V3
-    expect(usesV4).toBe(true);
     expect(usesV3).toBe(false);
+
+    // Multicurve standard tokens are encoded through the DopplerERC20V1 factory.
+    const usesDopplerERC20V1Factory = source.includes('dopplerERC20V1Factory');
+    expect(usesDopplerERC20V1Factory).toBe(true);
   });
 });
 

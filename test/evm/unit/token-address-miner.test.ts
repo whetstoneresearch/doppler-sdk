@@ -9,45 +9,12 @@ import {
   getAddress,
 } from 'viem';
 import { mineTokenAddress } from '../../../src/evm/utils/tokenAddressMiner';
-import {
-  DERC20Bytecode,
-  DERC2080Bytecode,
-  DopplerDN404Bytecode,
-} from '../../../src/evm/abis';
+import { DopplerDN404Bytecode } from '../../../src/evm/abis';
 
 const TOKEN_FACTORY = '0x0000000000000000000000000000000000000fac' as Address;
-const TOKEN_FACTORY_80 =
-  '0xf0B5141dD9096254B2ca624dff26024f46087229' as Address;
 const RECIPIENT = '0x000000000000000000000000000000000000beef' as Address;
 const OWNER = '0x000000000000000000000000000000000000c0de' as Address;
 const HOOK_DEPLOYER = '0x000000000000000000000000000000000000dEaD' as Address;
-
-const STANDARD_TOKEN_ABI = [
-  { type: 'string' },
-  { type: 'string' },
-  { type: 'uint256' },
-  { type: 'uint256' },
-  { type: 'address[]' },
-  { type: 'uint256[]' },
-  { type: 'string' },
-] as const;
-
-const STANDARD_TOKEN_V2_ABI = [
-  { type: 'string' },
-  { type: 'string' },
-  { type: 'uint256' },
-  {
-    type: 'tuple[]',
-    components: [
-      { type: 'uint64', name: 'cliff' },
-      { type: 'uint64', name: 'duration' },
-    ],
-  },
-  { type: 'address[]' },
-  { type: 'uint256[]' },
-  { type: 'uint256[]' },
-  { type: 'string' },
-] as const;
 
 const DOPPLER_ERC20_V1_TOKEN_ABI = [
   { type: 'string' },
@@ -76,10 +43,27 @@ const DOPPLER404_TOKEN_ABI = [
   { type: 'uint256' },
 ] as const;
 
-const V2_IMPLEMENTATION =
-  '0x4BBfed1c27CDE12eF6638251D81ab4e3be7556b7' as Address;
 const DOPPLER_ERC20_V1_IMPLEMENTATION =
   '0xDB7B520bb5C3a2C5d4871198081911359f93be87' as Address;
+
+function buildDopplerErc20V1TokenData(
+  name = 'Vanity Token V1',
+  symbol = 'VNY1',
+): Hex {
+  return encodeAbiParameters(DOPPLER_ERC20_V1_TOKEN_ABI, [
+    name,
+    symbol,
+    [{ cliff: 90n, duration: 180n }],
+    [RECIPIENT],
+    [0n],
+    [100n],
+    'ipfs://token-v1',
+    10_000n,
+    1_800,
+    OWNER,
+    [RECIPIENT],
+  ]);
+}
 
 function computeCreate2Address(
   salt: Hash,
@@ -104,15 +88,7 @@ function computeSoladyCloneInitCodeHash(implementation: Address): Hash {
 describe('mineTokenAddress', () => {
   it('mines a matching prefix for standard tokens', () => {
     const initialSupply = 1_000_000n;
-    const tokenData = encodeAbiParameters(STANDARD_TOKEN_ABI, [
-      'Vanity Token',
-      'VNY',
-      1000n,
-      30n,
-      [RECIPIENT],
-      [100n],
-      'ipfs://token',
-    ]);
+    const tokenData = buildDopplerErc20V1TokenData();
 
     const result = mineTokenAddress({
       prefix: '0',
@@ -121,6 +97,7 @@ describe('mineTokenAddress', () => {
       recipient: RECIPIENT,
       owner: OWNER,
       tokenData,
+      v2Implementation: DOPPLER_ERC20_V1_IMPLEMENTATION,
     });
 
     expect(result.tokenAddress.slice(2).toLowerCase().startsWith('0')).toBe(
@@ -128,35 +105,9 @@ describe('mineTokenAddress', () => {
     );
     expect(result.iterations).toBeGreaterThan(0);
 
-    const initHashData = encodeAbiParameters(
-      [
-        { type: 'string' },
-        { type: 'string' },
-        { type: 'uint256' },
-        { type: 'address' },
-        { type: 'address' },
-        { type: 'uint256' },
-        { type: 'uint256' },
-        { type: 'address[]' },
-        { type: 'uint256[]' },
-        { type: 'string' },
-      ],
-      [
-        'Vanity Token',
-        'VNY',
-        initialSupply,
-        RECIPIENT,
-        OWNER,
-        1000n,
-        30n,
-        [RECIPIENT],
-        [100n],
-        'ipfs://token',
-      ],
+    const initHash = computeSoladyCloneInitCodeHash(
+      DOPPLER_ERC20_V1_IMPLEMENTATION,
     );
-    const initHash = keccak256(
-      encodePacked(['bytes', 'bytes'], [DERC20Bytecode as Hex, initHashData]),
-    ) as Hash;
     const manualAddress = computeCreate2Address(
       result.salt,
       initHash,
@@ -165,77 +116,9 @@ describe('mineTokenAddress', () => {
     expect(manualAddress).toBe(result.tokenAddress);
   });
 
-  it('uses v80 bytecode when tokenFactory is TokenFactory80', () => {
-    const initialSupply = 1_000_000n;
-    const tokenData = encodeAbiParameters(STANDARD_TOKEN_ABI, [
-      'Vanity Token',
-      'VNY',
-      1000n,
-      30n,
-      [RECIPIENT],
-      [100n],
-      'ipfs://token',
-    ]);
-
-    const result = mineTokenAddress({
-      prefix: '0',
-      tokenFactory: TOKEN_FACTORY_80,
-      initialSupply,
-      recipient: RECIPIENT,
-      owner: OWNER,
-      tokenData,
-      maxIterations: 200_000,
-    });
-
-    const initHashData = encodeAbiParameters(
-      [
-        { type: 'string' },
-        { type: 'string' },
-        { type: 'uint256' },
-        { type: 'address' },
-        { type: 'address' },
-        { type: 'uint256' },
-        { type: 'uint256' },
-        { type: 'address[]' },
-        { type: 'uint256[]' },
-        { type: 'string' },
-      ],
-      [
-        'Vanity Token',
-        'VNY',
-        initialSupply,
-        RECIPIENT,
-        OWNER,
-        1000n,
-        30n,
-        [RECIPIENT],
-        [100n],
-        'ipfs://token',
-      ],
-    );
-    const initHash = keccak256(
-      encodePacked(['bytes', 'bytes'], [DERC2080Bytecode as Hex, initHashData]),
-    ) as Hash;
-
-    const manualAddress = computeCreate2Address(
-      result.salt,
-      initHash,
-      TOKEN_FACTORY_80,
-    );
-    expect(manualAddress).toBe(result.tokenAddress);
-  });
-
   it('mines a matching suffix for standard tokens', () => {
     const initialSupply = 1_000_000n;
-    const tokenData = encodeAbiParameters(STANDARD_TOKEN_ABI, [
-      'Vanity Token',
-      'VNY',
-      1000n,
-      30n,
-      [RECIPIENT],
-      [100n],
-      'ipfs://token',
-    ]);
+    const tokenData = buildDopplerErc20V1TokenData();
 
     const result = mineTokenAddress({
       prefix: '',
@@ -245,6 +128,7 @@ describe('mineTokenAddress', () => {
       recipient: RECIPIENT,
       owner: OWNER,
       tokenData,
+      v2Implementation: DOPPLER_ERC20_V1_IMPLEMENTATION,
       maxIterations: 100_000,
     });
 
@@ -252,85 +136,9 @@ describe('mineTokenAddress', () => {
     expect(result.iterations).toBeGreaterThan(0);
   });
 
-  it('mines standard-v2 token addresses using the clone init code hash', () => {
-    const initialSupply = 1_000_000n;
-    const tokenData = encodeAbiParameters(STANDARD_TOKEN_V2_ABI, [
-      'Vanity Token V2',
-      'VNY2',
-      1000n,
-      [{ cliff: 90n, duration: 180n }],
-      [RECIPIENT],
-      [0n],
-      [100n],
-      'ipfs://token-v2',
-    ]);
-
-    const result = mineTokenAddress({
-      prefix: '0',
-      tokenFactory: TOKEN_FACTORY,
-      initialSupply,
-      recipient: RECIPIENT,
-      owner: OWNER,
-      tokenData,
-      tokenVariant: 'standard-v2',
-      v2Implementation: V2_IMPLEMENTATION,
-    });
-
-    expect(result.tokenAddress.slice(2).toLowerCase().startsWith('0')).toBe(
-      true,
-    );
-
-    const initHash = computeSoladyCloneInitCodeHash(V2_IMPLEMENTATION);
-    const manualAddress = computeCreate2Address(
-      result.salt,
-      initHash,
-      TOKEN_FACTORY,
-    );
-    expect(manualAddress).toBe(result.tokenAddress);
-  });
-
-  it('throws when standard-v2 mining is attempted without a v2 implementation address', () => {
-    const tokenData = encodeAbiParameters(STANDARD_TOKEN_V2_ABI, [
-      'Vanity Token V2',
-      'VNY2',
-      1000n,
-      [{ cliff: 90n, duration: 180n }],
-      [RECIPIENT],
-      [0n],
-      [100n],
-      'ipfs://token-v2',
-    ]);
-
-    expect(() =>
-      mineTokenAddress({
-        prefix: '0',
-        tokenFactory: TOKEN_FACTORY,
-        initialSupply: 1_000_000n,
-        recipient: RECIPIENT,
-        owner: OWNER,
-        tokenData,
-        tokenVariant: 'standard-v2',
-      }),
-    ).toThrow(
-      'TokenAddressMiner: v2Implementation is required for standard-v2 tokens',
-    );
-  });
-
   it('mines dopplerERC20V1 token addresses using the clone init code hash', () => {
     const initialSupply = 1_000_000n;
-    const tokenData = encodeAbiParameters(DOPPLER_ERC20_V1_TOKEN_ABI, [
-      'Vanity Token V1',
-      'VNY1',
-      [{ cliff: 90n, duration: 180n }],
-      [RECIPIENT],
-      [0n],
-      [100n],
-      'ipfs://token-v1',
-      10_000n,
-      1_800,
-      OWNER,
-      [RECIPIENT],
-    ]);
+    const tokenData = buildDopplerErc20V1TokenData();
 
     const result = mineTokenAddress({
       prefix: '0',
@@ -390,15 +198,7 @@ describe('mineTokenAddress', () => {
 
   it('mines a matching prefix and suffix together', () => {
     const initialSupply = 1_000_000n;
-    const tokenData = encodeAbiParameters(STANDARD_TOKEN_ABI, [
-      'Vanity Token',
-      'VNY',
-      1000n,
-      30n,
-      [RECIPIENT],
-      [100n],
-      'ipfs://token',
-    ]);
+    const tokenData = buildDopplerErc20V1TokenData();
 
     const result = mineTokenAddress({
       prefix: '0',
@@ -408,6 +208,7 @@ describe('mineTokenAddress', () => {
       recipient: RECIPIENT,
       owner: OWNER,
       tokenData,
+      v2Implementation: DOPPLER_ERC20_V1_IMPLEMENTATION,
       maxIterations: 500_000,
     });
 
@@ -473,15 +274,7 @@ describe('mineTokenAddress', () => {
 
   it('returns hook address when hook configuration is provided', () => {
     const initialSupply = 250_000n;
-    const tokenData = encodeAbiParameters(STANDARD_TOKEN_ABI, [
-      'Hook Vanity',
-      'HVNY',
-      1500n,
-      60n,
-      [RECIPIENT],
-      [500n],
-      'ipfs://hook-token',
-    ]);
+    const tokenData = buildDopplerErc20V1TokenData('Hook Vanity', 'HVNY');
 
     const hookInitHash = keccak256(
       encodePacked(['bytes'], ['0xfeedface']),
@@ -494,6 +287,7 @@ describe('mineTokenAddress', () => {
       recipient: RECIPIENT,
       owner: OWNER,
       tokenData,
+      v2Implementation: DOPPLER_ERC20_V1_IMPLEMENTATION,
       hook: {
         deployer: HOOK_DEPLOYER,
         initCodeHash: hookInitHash,
@@ -521,45 +315,11 @@ describe('mineTokenAddress', () => {
 
   it('throws when prefix cannot be mined within iteration limit', () => {
     const initialSupply = 1_000_000n;
-    const tokenData = encodeAbiParameters(STANDARD_TOKEN_ABI, [
-      'Vanity Token',
-      'VNY',
-      1000n,
-      30n,
-      [RECIPIENT],
-      [100n],
-      'ipfs://token',
-    ]);
+    const tokenData = buildDopplerErc20V1TokenData();
 
-    const initHashData = encodeAbiParameters(
-      [
-        { type: 'string' },
-        { type: 'string' },
-        { type: 'uint256' },
-        { type: 'address' },
-        { type: 'address' },
-        { type: 'uint256' },
-        { type: 'uint256' },
-        { type: 'address[]' },
-        { type: 'uint256[]' },
-        { type: 'string' },
-      ],
-      [
-        'Vanity Token',
-        'VNY',
-        initialSupply,
-        RECIPIENT,
-        OWNER,
-        1000n,
-        30n,
-        [RECIPIENT],
-        [100n],
-        'ipfs://token',
-      ],
+    const initHash = computeSoladyCloneInitCodeHash(
+      DOPPLER_ERC20_V1_IMPLEMENTATION,
     );
-    const initHash = keccak256(
-      encodePacked(['bytes', 'bytes'], [DERC20Bytecode as Hex, initHashData]),
-    ) as Hash;
     const firstCandidate = computeCreate2Address(
       '0x'.padEnd(66, '0') as Hash,
       initHash,
@@ -576,6 +336,7 @@ describe('mineTokenAddress', () => {
         recipient: RECIPIENT,
         owner: OWNER,
         tokenData,
+        v2Implementation: DOPPLER_ERC20_V1_IMPLEMENTATION,
         maxIterations: 1,
       }),
     ).toThrowError(/could not find salt/i);
@@ -583,15 +344,7 @@ describe('mineTokenAddress', () => {
 
   it('throws when neither prefix nor suffix is provided', () => {
     const initialSupply = 1_000_000n;
-    const tokenData = encodeAbiParameters(STANDARD_TOKEN_ABI, [
-      'Vanity Token',
-      'VNY',
-      1000n,
-      30n,
-      [RECIPIENT],
-      [100n],
-      'ipfs://token',
-    ]);
+    const tokenData = buildDopplerErc20V1TokenData();
 
     expect(() =>
       mineTokenAddress({
@@ -601,21 +354,14 @@ describe('mineTokenAddress', () => {
         recipient: RECIPIENT,
         owner: OWNER,
         tokenData,
+        v2Implementation: DOPPLER_ERC20_V1_IMPLEMENTATION,
       }),
     ).toThrowError(/must provide prefix and\/or suffix/i);
   });
 
   it('throws on invalid suffix', () => {
     const initialSupply = 1_000_000n;
-    const tokenData = encodeAbiParameters(STANDARD_TOKEN_ABI, [
-      'Vanity Token',
-      'VNY',
-      1000n,
-      30n,
-      [RECIPIENT],
-      [100n],
-      'ipfs://token',
-    ]);
+    const tokenData = buildDopplerErc20V1TokenData();
 
     expect(() =>
       mineTokenAddress({
@@ -626,6 +372,7 @@ describe('mineTokenAddress', () => {
         recipient: RECIPIENT,
         owner: OWNER,
         tokenData,
+        v2Implementation: DOPPLER_ERC20_V1_IMPLEMENTATION,
       }),
     ).toThrowError(/suffix must be a hexadecimal string/i);
   });

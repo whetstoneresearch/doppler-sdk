@@ -1,10 +1,6 @@
 import type { Address, Hash, Hex, PublicClient, WalletClient } from 'viem';
 import { LockablePoolStatus, type MulticurvePoolState } from '../../../types';
-import type { ChainAddresses } from '../../../addresses';
-import {
-  dopplerHookInitializerAbi,
-  v4MulticurveInitializerAbi,
-} from '../../../abis';
+import { dopplerHookInitializerAbi } from '../../../abis';
 import { computePoolId } from '../../../utils/poolKey';
 
 export type MulticurveCollectedFees = {
@@ -23,25 +19,19 @@ export async function collectMulticurveFees({
   walletClient,
   initializerAddress,
   state,
-  addresses,
 }: {
   client: FeeCollectionClient;
   walletClient: WalletClient;
   initializerAddress: Address;
   state: MulticurvePoolState;
-  addresses: ChainAddresses;
 }): Promise<MulticurveCollectedFees> {
   if (state.status === LockablePoolStatus.Locked) {
     const poolId = computePoolId(state.poolKey);
-    const collectFeesAbi =
-      initializerAddress === addresses.dopplerHookInitializer
-        ? dopplerHookInitializerAbi
-        : v4MulticurveInitializerAbi;
     return collectFeesFromContract({
       client,
       walletClient,
       contractAddress: initializerAddress,
-      abi: collectFeesAbi,
+      abi: dopplerHookInitializerAbi,
       poolId,
     });
   }
@@ -59,7 +49,7 @@ async function collectFeesFromContract({
   client: FeeCollectionClient;
   walletClient: WalletClient;
   contractAddress: Address;
-  abi: typeof dopplerHookInitializerAbi | typeof v4MulticurveInitializerAbi;
+  abi: typeof dopplerHookInitializerAbi;
   poolId: Hex;
 }): Promise<MulticurveCollectedFees> {
   const { request, result } = await client.simulateContract({

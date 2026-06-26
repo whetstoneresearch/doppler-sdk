@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import { DopplerSDK, getAddresses, CHAIN_IDS, airlockAbi, WAD } from '../../../../src/evm'
 import { getTestClient, hasRpcUrl, getRpcEnvVar, delay } from '../../utils'
+import { usesLegacyBaseSepoliaMulticurveBundler } from './legacyMulticurveBundler'
 
 describe('Multicurve (Base Sepolia fork) smoke test', () => {
   if (!hasRpcUrl(CHAIN_IDS.BASE_SEPOLIA)) {
@@ -12,6 +13,10 @@ describe('Multicurve (Base Sepolia fork) smoke test', () => {
   const addresses = getAddresses(chainId)
   const publicClient = getTestClient(chainId)
   const sdk = new DopplerSDK({ publicClient, chainId })
+  const itWithCurrentMulticurveBundler = usesLegacyBaseSepoliaMulticurveBundler({
+    chainId,
+    bundler: addresses.bundler,
+  }) ? it.skip : it
 
   let initializerWhitelisted = false
   let migratorWhitelisted = false
@@ -26,7 +31,7 @@ describe('Multicurve (Base Sepolia fork) smoke test', () => {
         address: addresses.airlock,
         abi: airlockAbi,
         functionName: 'getModuleState',
-        args: [addresses.v4MulticurveInitializer!],
+        args: [addresses.dopplerHookInitializer!],
       }) as unknown as number
       // ModuleState.PoolInitializer = 3
       states.initializer = Number(initState)
@@ -54,7 +59,7 @@ describe('Multicurve (Base Sepolia fork) smoke test', () => {
         address: addresses.airlock,
         abi: airlockAbi,
         functionName: 'getModuleState',
-        args: [addresses.tokenFactory],
+        args: [addresses.dopplerERC20V1Factory!],
       }) as unknown as number
       // ModuleState.TokenFactory = 1
       states.tokenFactory = Number(tokenFactoryState)
@@ -101,7 +106,6 @@ describe('Multicurve (Base Sepolia fork) smoke test', () => {
       .withGovernance({ type: 'default' })
       .withMigration({ type: 'uniswapV2' })
       .withUserAddress(addresses.airlock)
-      .withV4MulticurveInitializer(addresses.v4MulticurveInitializer!)
       .withV2Migrator(addresses.v2Migrator)
 
     const params = builder.build()
@@ -133,7 +137,6 @@ describe('Multicurve (Base Sepolia fork) smoke test', () => {
       .withGovernance({ type: 'default' })
       .withMigration({ type: 'uniswapV2' })
       .withUserAddress(addresses.airlock)
-      .withV4MulticurveInitializer(addresses.v4MulticurveInitializer!)
       .withV2Migrator(addresses.v2Migrator)
 
     const zeroFeeParams = zeroFeeBuilder.build()
@@ -157,7 +160,6 @@ describe('Multicurve (Base Sepolia fork) smoke test', () => {
       .withGovernance({ type: 'default' })
       .withMigration({ type: 'uniswapV2' })
       .withUserAddress(addresses.airlock)
-      .withV4MulticurveInitializer(addresses.v4MulticurveInitializer!)
       .withV2Migrator(addresses.v2Migrator)
       .withGasLimit(18_000_000n)
 
@@ -196,7 +198,6 @@ describe('Multicurve (Base Sepolia fork) smoke test', () => {
       .withGovernance({ type: 'default' })
       .withMigration({ type: 'uniswapV2' })
       .withUserAddress(addresses.airlock)
-      .withV4MulticurveInitializer(addresses.v4MulticurveInitializer!)
       .withV2Migrator(addresses.v2Migrator)
       .withGasLimit(18_000_000n)
 
@@ -206,7 +207,7 @@ describe('Multicurve (Base Sepolia fork) smoke test', () => {
     expect(result.poolId).toMatch(/^0x[a-fA-F0-9]{64}$/)
   })
 
-  it('quotes multicurve bundle via the Bundler helpers', async () => {
+  itWithCurrentMulticurveBundler('quotes multicurve bundle via the Bundler helpers', async () => {
     // Reuse whitelisting assertions to ensure modules are available
     expect(initializerWhitelisted && migratorWhitelisted && tokenFactoryWhitelisted && governanceFactoryWhitelisted).toBe(true)
 
@@ -231,7 +232,6 @@ describe('Multicurve (Base Sepolia fork) smoke test', () => {
       .withGovernance({ type: 'default' })
       .withMigration({ type: 'uniswapV2' })
       .withUserAddress(addresses.airlock)
-      .withV4MulticurveInitializer(addresses.v4MulticurveInitializer!)
       .withV2Migrator(addresses.v2Migrator)
 
     const params = builder.build()
@@ -240,7 +240,6 @@ describe('Multicurve (Base Sepolia fork) smoke test', () => {
     const exactAmountOut = params.sale.numTokensToSell / 10n || 1n
     const exactOutQuote = await sdk.factory.simulateMulticurveBundleExactOut(createParams, {
       exactAmountOut,
-      hookData: '0x' as `0x${string}`,
     })
 
     expect(exactOutQuote.asset).toBe(tokenAddress)
@@ -250,7 +249,6 @@ describe('Multicurve (Base Sepolia fork) smoke test', () => {
 
     const exactInQuote = await sdk.factory.simulateMulticurveBundleExactIn(createParams, {
       exactAmountIn: exactOutQuote.amountIn,
-      hookData: '0x' as `0x${string}`,
     })
 
     expect(exactInQuote.asset).toBe(tokenAddress)
@@ -284,7 +282,6 @@ describe('Multicurve (Base Sepolia fork) smoke test', () => {
       .withGovernance({ type: 'default' })
       .withMigration({ type: 'uniswapV2' })
       .withUserAddress(addresses.airlock)
-      .withV4MulticurveInitializer(addresses.v4MulticurveInitializer!)
       .withV2Migrator(addresses.v2Migrator)
 
     const params = builder.build()

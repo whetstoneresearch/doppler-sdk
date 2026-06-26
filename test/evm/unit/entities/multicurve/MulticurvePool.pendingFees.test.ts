@@ -5,18 +5,14 @@ import { computePoolId } from '@/utils/poolKey';
 import { mockAddresses } from '@test/setup/fixtures/addresses';
 import {
   buildPendingFeeAggregateResults,
-  createAbsentPoolDiscoveryError,
   createMulticurvePoolHarness,
+  createState,
   decodePendingFeeAggregateCalls,
   decodePendingFeeInnerCall,
-  defaultAddresses,
   encodePendingFeeAggregateResults,
   expectedPendingFeeCallOrder,
   mockBeneficiary,
-  mockFarTick,
-  mockNumeraire,
   mockPoolKey,
-  mockScheduledInitializer,
   type MockPublicClient,
   type PendingFeeValues,
 } from './multicurvePoolTestHelpers';
@@ -63,7 +59,7 @@ describe('MulticurvePool getPendingFees', () => {
     const aggregateCalls = decodeAggregateCalls();
     expect(aggregateCalls.map((call) => call.target)).toEqual(
       Array(expectedPendingFeeCallOrder.length).fill(
-        mockAddresses.v4MulticurveInitializer,
+        mockAddresses.dopplerHookInitializer,
       ),
     );
     expect(aggregateCalls.map((call) => call.allowFailure)).toEqual(
@@ -168,48 +164,10 @@ describe('MulticurvePool getPendingFees', () => {
     });
   });
 
-  it('targets the later initializer after a valid discovery fallback', async () => {
-    const { getAddresses } = await import('@/addresses');
-    vi.mocked(getAddresses).mockReturnValue({
-      ...defaultAddresses,
-      v4ScheduledMulticurveInitializer: mockScheduledInitializer,
-    });
-    vi.mocked(publicClient.readContract)
-      .mockRejectedValueOnce(createAbsentPoolDiscoveryError())
-      .mockResolvedValueOnce([
-        mockNumeraire,
-        LockablePoolStatus.Locked,
-        mockPoolKey,
-        mockFarTick,
-      ]);
-    mockPendingFeeAggregate({
-      simulatedFees0: 300n,
-      simulatedFees1: 600n,
-      shares: 500000000000000000n,
-      cumulatedFees0: 1300n,
-      cumulatedFees1: 2600n,
-      lastCumulatedFees0: 100n,
-      lastCumulatedFees1: 400n,
-    });
-
-    await expect(
-      multicurvePool.getPendingFees(mockBeneficiary),
-    ).resolves.toEqual({
-      fees0: 600n,
-      fees1: 1100n,
-    });
-    expect(decodeAggregateCalls().map((call) => call.target)).toEqual(
-      Array(expectedPendingFeeCallOrder.length).fill(mockScheduledInitializer),
-    );
-  });
-
   function mockLockedState() {
-    vi.mocked(publicClient.readContract).mockResolvedValueOnce([
-      mockNumeraire,
-      LockablePoolStatus.Locked,
-      mockPoolKey,
-      mockFarTick,
-    ]);
+    vi.mocked(publicClient.readContract).mockResolvedValueOnce(
+      createState(LockablePoolStatus.Locked),
+    );
   }
 
   function mockPendingFeeAggregate(values: PendingFeeValues) {

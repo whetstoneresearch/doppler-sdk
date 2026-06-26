@@ -131,7 +131,7 @@ describe('V4 Dynamic Auction Graduation - successful migration (Base Sepolia for
             address: addresses.airlock,
             abi: airlockAbi,
             functionName: 'getModuleState',
-            args: [addresses.tokenFactory],
+            args: [addresses.dopplerERC20V1Factory],
           }),
           publicClient.readContract({
             address: addresses.airlock,

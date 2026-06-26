@@ -35,7 +35,6 @@ describe('MulticurvePool', () => {
   const mockFarTick = 120;
   const defaultAddresses = {
     ...mockAddresses,
-    dopplerHookInitializer: undefined,
   };
 
   let publicClient: MockPublicClient;
@@ -64,8 +63,13 @@ describe('MulticurvePool', () => {
 
   describe('getNumeraireAddress', () => {
     it('should return the numeraire address from state', async () => {
+      // DopplerHookInitializer state layout:
+      // [0]=numeraire, [4]=status, [5]=poolKey, [6]=farTick
       vi.mocked(publicClient.readContract).mockResolvedValueOnce([
         mockNumeraire,
+        0n,
+        mockHook,
+        '0x',
         LockablePoolStatus.Initialized,
         mockPoolKey,
         mockFarTick,

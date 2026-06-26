@@ -78,7 +78,7 @@ describe('Multicurve cliff vesting (Base Sepolia fork)', () => {
             address: addresses.airlock,
             abi: airlockAbi,
             functionName: 'getModuleState',
-            args: [addresses.v4MulticurveInitializer!],
+            args: [addresses.dopplerHookInitializer!],
           }),
           publicClient.readContract({
             address: addresses.airlock,
@@ -90,7 +90,7 @@ describe('Multicurve cliff vesting (Base Sepolia fork)', () => {
             address: addresses.airlock,
             abi: airlockAbi,
             functionName: 'getModuleState',
-            args: [addresses.derc20V2Factory!],
+            args: [addresses.dopplerERC20V1Factory!],
           }),
           publicClient.readContract({
             address: addresses.airlock,
@@ -163,13 +163,12 @@ describe('Multicurve cliff vesting (Base Sepolia fork)', () => {
       .withGovernance({ type: 'noOp' })
       .withMigration({ type: 'uniswapV2' })
       .withUserAddress(account.address)
-      .withV4MulticurveInitializer(addresses.v4MulticurveInitializer!)
       .build()
 
     const sim = await sdk.factory.simulateCreateMulticurve(params)
     expect(sim.tokenAddress).toMatch(/^0x[a-fA-F0-9]{40}$/)
     expect(sim.poolId).toMatch(/^0x[a-fA-F0-9]{64}$/)
-    expect(sim.createParams.tokenFactory).toBe(addresses.derc20V2Factory)
+    expect(sim.createParams.tokenFactory).toBe(addresses.dopplerERC20V1Factory)
 
     let mining = true
     const miner = (async () => {
@@ -192,7 +191,7 @@ describe('Multicurve cliff vesting (Base Sepolia fork)', () => {
     expect(result.tokenAddress).toMatch(/^0x[a-fA-F0-9]{40}$/)
     expect(result.poolId).toMatch(/^0x[a-fA-F0-9]{64}$/)
 
-    const token = sdk.getDerc20V2(result.tokenAddress as Address)
+    const token = sdk.getDopplerERC20V1(result.tokenAddress as Address)
     expect(await token.getVestingScheduleCount()).toBe(1n)
     expect(await token.getVestingSchedule(0n)).toEqual({
       cliffDuration,
@@ -220,7 +219,9 @@ describe('Multicurve cliff vesting (Base Sepolia fork)', () => {
       expectedReleased
     )
 
-    const releaseTx = await token.releaseSchedule(0n)
+    const availableToRelease =
+      await token.getAvailableVestedAmountForSchedule(account.address, 0n)
+    const releaseTx = await token.releaseSchedule(0n, availableToRelease)
     await testClient.mine({ blocks: 1 })
     const releaseReceipt = await publicClient.waitForTransactionReceipt({
       hash: releaseTx,
@@ -307,7 +308,6 @@ describe('Multicurve cliff vesting (Base Sepolia fork)', () => {
       .withGovernance({ type: 'noOp' })
       .withMigration({ type: 'uniswapV2' })
       .withUserAddress(account.address)
-      .withV4MulticurveInitializer(addresses.v4MulticurveInitializer!)
       .build()
 
     let mining = true
@@ -328,7 +328,7 @@ describe('Multicurve cliff vesting (Base Sepolia fork)', () => {
       await miner
     }
 
-    const token = sdk.getDerc20V2(result.tokenAddress as Address)
+    const token = sdk.getDopplerERC20V1(result.tokenAddress as Address)
     expect(await token.getVestingScheduleCount()).toBe(2n)
     expect(await token.getVestingSchedule(0n)).toEqual(primarySchedule)
     expect(await token.getVestingSchedule(1n)).toEqual(secondarySchedule)
@@ -366,7 +366,13 @@ describe('Multicurve cliff vesting (Base Sepolia fork)', () => {
       await token.getAvailableVestedAmountForSchedule(secondaryRecipient, 1n)
     ).toBe(secondaryReleased)
 
-    const releaseTx = await token.releaseFor(secondaryRecipient, 1n)
+    const availableToRelease =
+      await token.getAvailableVestedAmountForSchedule(secondaryRecipient, 1n)
+    const releaseTx = await token.releaseFor(
+      secondaryRecipient,
+      1n,
+      availableToRelease
+    )
     await testClient.mine({ blocks: 1 })
     const releaseReceipt = await publicClient.waitForTransactionReceipt({
       hash: releaseTx,

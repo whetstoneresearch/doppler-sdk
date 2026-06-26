@@ -59,7 +59,7 @@ describe('Static Auction with lockable beneficiaries (Base Sepolia)', () => {
         address: addresses.airlock,
         abi: airlockAbi,
         functionName: 'getModuleState',
-        args: [addresses.v3Initializer],
+        args: [addresses.lockableV3Initializer],
       }) as unknown as number
       states.v3Initializer = Number(initState)
       // ModuleState.PoolInitializer = 3
@@ -83,7 +83,7 @@ describe('Static Auction with lockable beneficiaries (Base Sepolia)', () => {
         address: addresses.airlock,
         abi: airlockAbi,
         functionName: 'getModuleState',
-        args: [addresses.tokenFactory],
+        args: [addresses.dopplerERC20V1Factory],
       }) as unknown as number
       states.tokenFactory = Number(tokenFactoryState)
       // ModuleState.TokenFactory = 1

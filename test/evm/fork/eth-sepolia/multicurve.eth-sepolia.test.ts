@@ -24,17 +24,12 @@ describe('Multicurve (Ethereum Sepolia fork) smoke test', () => {
   }> = [
     {
       label: 'TokenFactory',
-      address: addresses.tokenFactory,
+      address: addresses.dopplerERC20V1Factory,
       expectedState: 1,
     },
     {
       label: 'V4Initializer',
       address: addresses.v4Initializer,
-      expectedState: 3,
-    },
-    {
-      label: 'V4ScheduledMulticurveInitializer',
-      address: addresses.v4ScheduledMulticurveInitializer,
       expectedState: 3,
     },
     {
@@ -152,11 +147,11 @@ describe('Multicurve (Ethereum Sepolia fork) smoke test', () => {
       .build()
 
     const canSimulate =
-      addresses.tokenFactory !== ZERO_ADDRESS &&
+      addresses.dopplerERC20V1Factory !== ZERO_ADDRESS &&
       addresses.v2Migrator !== ZERO_ADDRESS &&
       addresses.noOpGovernanceFactory !== ZERO_ADDRESS &&
-      !!addresses.v4MulticurveInitializer &&
-      addresses.v4MulticurveInitializer !== ZERO_ADDRESS
+      !!addresses.dopplerHookInitializer &&
+      addresses.dopplerHookInitializer !== ZERO_ADDRESS
 
     if (!canSimulate) {
       expect(() => sdk.factory.encodeCreateMulticurveParams(params)).toThrow(

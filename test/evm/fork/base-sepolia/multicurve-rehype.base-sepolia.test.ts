@@ -91,7 +91,7 @@ describe('Multicurve with RehypeDopplerHook (Base Sepolia) test', () => {
         address: addresses.airlock,
         abi: airlockAbi,
         functionName: 'getModuleState',
-        args: [addresses.tokenFactory],
+        args: [addresses.dopplerERC20V1Factory!],
       }) as unknown as number
       states.tokenFactory = Number(tokenFactoryState)
     } catch {}

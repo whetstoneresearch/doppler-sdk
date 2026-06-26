@@ -348,8 +348,8 @@ export class StaticAuctionBuilder<
     return this.overrideModule('airlock', address);
   }
 
-  withV3Initializer(address: Address): this {
-    return this.overrideModule('v3Initializer', address);
+  withLockableV3Initializer(address: Address): this {
+    return this.overrideModule('lockableV3Initializer', address);
   }
 
   withGovernanceFactory(address: Address): this {
@@ -366,10 +366,6 @@ export class StaticAuctionBuilder<
 
   withV4Migrator(address: Address): this {
     return this.overrideModule('v4Migrator', address);
-  }
-
-  withV4MigratorSplit(address: Address): this {
-    return this.overrideModule('v4MigratorSplit', address);
   }
 
   withNoOpMigrator(address: Address): this {
