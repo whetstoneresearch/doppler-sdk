@@ -1051,7 +1051,10 @@ export interface CreateMulticurveParams<
     beneficiaries?: BeneficiaryData[];
   };
 
-  // Preferred initializer configuration. Defaults to { type: 'standard' }.
+  // Preferred initializer configuration. When omitted, defaults to the
+  // scheduled initializer with instant launch ({ type: 'scheduled', startTime: 0 }).
+  // The non-scheduled { type: 'standard' } initializer is deprecated and must be
+  // requested explicitly.
   initializer?: MulticurveInitializerConfig;
 
   /**

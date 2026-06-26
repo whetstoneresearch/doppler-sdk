@@ -336,6 +336,33 @@ describe('MulticurveBuilder', () => {
       expect(params.modules?.v4DecayMulticurveInitializer).toBe(decayInitializer);
     });
 
+    it('defaults to the scheduled initializer with instant launch (startTime 0)', () => {
+      const params = buildBaseBuilder().build();
+
+      expect(params.initializer).toEqual({ type: 'scheduled', startTime: 0 });
+      expect(params.schedule).toEqual({ startTime: 0 });
+    });
+
+    it('builds scheduled initializer config from withSchedule', () => {
+      const startTime = Math.floor(Date.now() / 1000) + 600;
+      const params = buildBaseBuilder()
+        .withSchedule({ startTime })
+        .build();
+
+      expect(params.initializer).toEqual({ type: 'scheduled', startTime });
+      expect(params.schedule).toEqual({ startTime });
+    });
+
+    it('reverts to the default scheduled instant launch when withSchedule is cleared', () => {
+      const params = buildBaseBuilder()
+        .withSchedule({ startTime: Math.floor(Date.now() / 1000) + 600 })
+        .withSchedule()
+        .build();
+
+      expect(params.initializer).toEqual({ type: 'scheduled', startTime: 0 });
+      expect(params.schedule).toEqual({ startTime: 0 });
+    });
+
     it('builds rehype initializer config with fee schedule and distribution matrix', () => {
       const params = buildBaseBuilder()
         .withRehypeDopplerHook({

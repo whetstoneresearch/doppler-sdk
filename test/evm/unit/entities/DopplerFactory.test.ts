@@ -167,6 +167,50 @@ describe('DopplerFactory', () => {
       expect(() => factory.encodeCreateMulticurveParams(params)).not.toThrow();
     });
 
+    it('defaults to the scheduled initializer with instant launch when no initializer is set', () => {
+      const params = multicurveParams();
+      const createParams = factory.encodeCreateMulticurveParams(params);
+
+      expect(createParams.poolInitializer).toBe(
+        mockAddresses.v4ScheduledMulticurveInitializer,
+      );
+
+      // Scheduled initializer encodes a 5-field InitData struct ending in startingTime
+      const [poolInitData] = decodeAbiParameters(
+        [
+          {
+            type: 'tuple',
+            components: [
+              { name: 'fee', type: 'uint24' },
+              { name: 'tickSpacing', type: 'int24' },
+              {
+                name: 'curves',
+                type: 'tuple[]',
+                components: [
+                  { name: 'tickLower', type: 'int24' },
+                  { name: 'tickUpper', type: 'int24' },
+                  { name: 'numPositions', type: 'uint16' },
+                  { name: 'shares', type: 'uint256' },
+                ],
+              },
+              {
+                name: 'beneficiaries',
+                type: 'tuple[]',
+                components: [
+                  { name: 'beneficiary', type: 'address' },
+                  { name: 'shares', type: 'uint96' },
+                ],
+              },
+              { name: 'startingTime', type: 'uint32' },
+            ],
+          },
+        ],
+        createParams.poolInitializerData,
+      ) as any;
+
+      expect(Number(poolInitData.startingTime)).toBe(0);
+    });
+
     it('encodes decay multicurve params with decay initializer', () => {
       const params = multicurveParams();
       params.initializer = {

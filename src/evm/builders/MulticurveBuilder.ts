@@ -705,7 +705,7 @@ export class MulticurveBuilder<
   }): this {
     if (!params) {
       if (this.initializer?.type === 'decay') {
-        this.initializer = { type: 'standard' };
+        this.initializer = undefined;
       }
       return this;
     }
@@ -754,7 +754,7 @@ export class MulticurveBuilder<
   withSchedule(params?: { startTime: number | bigint | Date }): this {
     if (!params) {
       if (this.initializer?.type === 'scheduled') {
-        this.initializer = { type: 'standard' };
+        this.initializer = undefined;
       }
       this.schedule = undefined;
       return this;
@@ -1011,13 +1011,17 @@ export class MulticurveBuilder<
       dopplerHook = { ...dopplerHook, farTick };
     }
 
+    // Default to the scheduled initializer with instant launch (startTime 0)
+    // when no initializer mode is configured. The non-scheduled standard
+    // multicurve initializer is deprecated and only reachable by explicitly
+    // setting `initializer: { type: 'standard' }` on CreateMulticurveParams.
     const initializer =
       this.initializer ??
       (dopplerHook
         ? { type: 'rehype', config: dopplerHook }
         : this.schedule
           ? { type: 'scheduled', startTime: this.schedule.startTime }
-          : { type: 'standard' });
+          : { type: 'scheduled', startTime: 0 });
 
     if (initializer.type === 'scheduled' && dopplerHook) {
       throw new Error(

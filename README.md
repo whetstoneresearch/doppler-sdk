@@ -356,7 +356,9 @@ See [examples/opening-auction-lifecycle.ts](./examples/opening-auction-lifecycle
 
 Multicurve auctions use a Uniswap V4-style initializer that seeds liquidity across multiple curves in a single pool. This enables richer distributions and can be combined with any supported migration path (V2, V3, V4, or NoOp). Multicurve initializer modes are modeled as a typed variant (`standard`, `scheduled`, `decay`, `rehype`) so new hook/initializer variations can be added without breaking existing integrations.
 
-**Standard Multicurve with Migration:**
+By default the SDK uses the **scheduled** multicurve initializer. When `withSchedule()` is omitted the pool is created with `startTime: 0`, which launches instantly — equivalent to the legacy standard behavior but routed through the scheduled initializer. Call `withSchedule({ startTime })` to schedule a future launch. The non-scheduled `standard` initializer is deprecated and only used when explicitly requested via `initializer: { type: 'standard' }`.
+
+**Multicurve with Migration (instant launch):**
 
 ```typescript
 import { MulticurveBuilder } from '@whetstone-research/doppler-sdk/evm';

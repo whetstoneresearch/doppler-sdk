@@ -4220,8 +4220,15 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
           type: 'rehype',
           hookConfig: legacyHook,
         };
+      } else if (params.modules?.dopplerHookInitializer !== undefined) {
+        // An explicit dopplerHookInitializer override selects the rehype path
+        // even without an initializer/hook config (backwards-compatible).
+        mode = { type: 'rehype' };
       } else {
-        mode = { type: 'standard' };
+        // Default to the scheduled initializer with instant launch (startTime 0).
+        // The non-scheduled standard initializer is deprecated and only used
+        // when explicitly requested via initializer: { type: 'standard' }.
+        mode = { type: 'scheduled', startTime: 0 };
       }
     } else {
       switch (initializer.type) {
