@@ -338,7 +338,9 @@ const params = sdk.buildMulticurveAuction()
       // Curve 2: Mid-range (provides depth as price rises)
       { marketCap: { start: 1_000_000, end: 5_000_000 }, numPositions: 15, shares: parseEther('0.4') }, // 40%
       // Curve 3: Upper range (moon bag for high market cap)
-      { marketCap: { start: 4_000_000, end: 50_000_000 }, numPositions: 10, shares: parseEther('0.3') }, // 30%
+      { marketCap: { start: 4_000_000, end: 50_000_000 }, numPositions: 10, shares: parseEther('0.29') }, // 29%
+      // Tail position: extends from the highest curve to infinity ('max')
+      { marketCap: { start: 50_000_000, end: 'max' }, numPositions: 10, shares: parseEther('0.01') }, // 1%
     ],
   })
   .withVesting({ duration: BigInt(365*24*60*60) })

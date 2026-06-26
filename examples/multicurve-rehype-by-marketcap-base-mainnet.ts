@@ -280,7 +280,14 @@ async function main() {
         {
           marketCap: { start: 4_000_000, end: 50_000_000 }, // $4M - $50M
           numPositions: 10,
-          shares: parseEther('0.3'), // 30%
+          shares: parseEther('0.29'), // 29%
+        },
+        {
+          // Tail position: extends from the highest curve to infinity so the
+          // pool always has liquidity above the top market cap target.
+          marketCap: { start: 50_000_000, end: 'max' }, // $50M - infinity
+          numPositions: 10,
+          shares: parseEther('0.01'), // 1%
         },
       ],
       beneficiaries, // Required for RehypeDopplerHook
