@@ -81,7 +81,9 @@ const params = sdk.buildMulticurveAuction()
     curves: [
       { marketCap: { start: 500_000, end: 1_500_000 }, numPositions: 10, shares: parseEther('0.3') },
       { marketCap: { start: 1_000_000, end: 5_000_000 }, numPositions: 20, shares: parseEther('0.5') },
-      { marketCap: { start: 4_000_000, end: 50_000_000 }, numPositions: 10, shares: parseEther('0.2') },
+      { marketCap: { start: 4_000_000, end: 50_000_000 }, numPositions: 10, shares: parseEther('0.19') },
+      // Tail position: extends from the highest curve to infinity
+      { marketCap: { start: 50_000_000, end: 'max' }, numPositions: 10, shares: parseEther('0.01') },
     ]
   })
   .withVesting()
@@ -222,12 +224,20 @@ Curve 3: $4M - $50M market cap → tickLower/tickUpper calculated
     { marketCap: { start: 1_000_000, end: 5_000_000 }, numPositions: 15, shares: parseEther('0.4') },
     
     // Upper range with overlap at $4M-$5M
-    { marketCap: { start: 4_000_000, end: 50_000_000 }, numPositions: 10, shares: parseEther('0.3') },
+    { marketCap: { start: 4_000_000, end: 50_000_000 }, numPositions: 10, shares: parseEther('0.29') },
+
+    // Tail position: from the highest curve to infinity ('max')
+    { marketCap: { start: 50_000_000, end: 'max' }, numPositions: 10, shares: parseEther('0.01') },
   ]
 })
 ```
 
 **Shares must sum to 1e18 (100%)**. The SDK validates this automatically.
+
+**Add a tail position from the highest curve to infinity.** Set the final curve's
+`marketCap.end` to `'max'` so the pool always retains liquidity above the top market
+cap target (no upper bound on price). Without it, swaps that would push the price past
+the highest curve have no liquidity to trade against.
 
 ---
 
