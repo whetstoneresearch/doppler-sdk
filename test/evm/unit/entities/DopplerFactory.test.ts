@@ -92,7 +92,11 @@ describe('DopplerFactory', () => {
       const params = multicurveParams();
       const createParams = factory.encodeCreateMulticurveParams(params);
 
-      // Basic UniswapV4MulticurveInitializer expects 4-field InitData struct
+      expect(createParams.poolInitializer).toBe(
+        mockAddresses.v4ScheduledMulticurveInitializer,
+      );
+
+      // The default scheduled initializer uses a 5-field InitData struct.
       const [poolInitData] = decodeAbiParameters(
         [
           {
@@ -118,6 +122,7 @@ describe('DopplerFactory', () => {
                   { name: 'shares', type: 'uint96' },
                 ],
               },
+              { name: 'startingTime', type: 'uint32' },
             ],
           },
         ],
@@ -149,6 +154,67 @@ describe('DopplerFactory', () => {
       expect(Number(fallback.tickUpper)).toBe(expectedTickUpper);
       expect(Number(fallback.numPositions)).toBe(
         params.pool.curves[params.pool.curves.length - 1]!.numPositions,
+      );
+      expect(Number(poolInitData.startingTime)).toBe(0);
+    });
+
+    it('uses the standard multicurve initializer only when explicitly requested', () => {
+      const params = multicurveParams();
+      params.initializer = { type: 'standard' };
+
+      const createParams = factory.encodeCreateMulticurveParams(params);
+
+      expect(createParams.poolInitializer).toBe(
+        mockAddresses.v4MulticurveInitializer,
+      );
+
+      const [poolInitData] = decodeAbiParameters(
+        [
+          {
+            type: 'tuple',
+            components: [
+              { name: 'fee', type: 'uint24' },
+              { name: 'tickSpacing', type: 'int24' },
+              {
+                name: 'curves',
+                type: 'tuple[]',
+                components: [
+                  { name: 'tickLower', type: 'int24' },
+                  { name: 'tickUpper', type: 'int24' },
+                  { name: 'numPositions', type: 'uint16' },
+                  { name: 'shares', type: 'uint256' },
+                ],
+              },
+              {
+                name: 'beneficiaries',
+                type: 'tuple[]',
+                components: [
+                  { name: 'beneficiary', type: 'address' },
+                  { name: 'shares', type: 'uint96' },
+                ],
+              },
+            ],
+          },
+        ],
+        createParams.poolInitializerData,
+      ) as any;
+
+      expect(Number(poolInitData.fee)).toBe(params.pool.fee);
+      expect(Number(poolInitData.tickSpacing)).toBe(params.pool.tickSpacing);
+      expect(poolInitData.curves).toHaveLength(params.pool.curves.length + 1);
+    });
+
+    it('uses the standard multicurve initializer when its module address is explicitly overridden', () => {
+      const params = multicurveParams();
+      params.modules = {
+        v4MulticurveInitializer:
+          '0x7100000000000000000000000000000000000099' as Address,
+      };
+
+      const createParams = factory.encodeCreateMulticurveParams(params);
+
+      expect(createParams.poolInitializer).toBe(
+        params.modules.v4MulticurveInitializer,
       );
     });
 

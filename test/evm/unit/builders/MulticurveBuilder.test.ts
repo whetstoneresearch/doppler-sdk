@@ -230,6 +230,56 @@ describe('MulticurveBuilder', () => {
         );
     }
 
+    it('defaults to the scheduled initializer with an instant start time', () => {
+      const params = buildBaseBuilder().build();
+
+      expect(params.initializer).toEqual({
+        type: 'scheduled',
+        startTime: 0,
+      });
+      expect(params.schedule).toEqual({ startTime: 0 });
+    });
+
+    it('uses an instant scheduled initializer when withSchedule is called without params', () => {
+      const params = buildBaseBuilder().withSchedule().build();
+
+      expect(params.initializer).toEqual({
+        type: 'scheduled',
+        startTime: 0,
+      });
+      expect(params.schedule).toEqual({ startTime: 0 });
+    });
+
+    it('keeps an explicit DopplerHookInitializer override on the factory-selected path', () => {
+      const dopplerHookInitializer =
+        '0x7777777777777777777777777777777777777777' as Address;
+
+      const params = buildBaseBuilder()
+        .withDopplerHookInitializer(dopplerHookInitializer)
+        .build();
+
+      expect(params.initializer).toBeUndefined();
+      expect(params.schedule).toBeUndefined();
+      expect(params.modules?.dopplerHookInitializer).toBe(
+        dopplerHookInitializer,
+      );
+    });
+
+    it('uses the legacy standard initializer when its address is explicitly overridden', () => {
+      const standardInitializer =
+        '0x9999999999999999999999999999999999999999' as Address;
+
+      const params = buildBaseBuilder()
+        .withV4MulticurveInitializer(standardInitializer)
+        .build();
+
+      expect(params.initializer).toEqual({ type: 'standard' });
+      expect(params.schedule).toBeUndefined();
+      expect(params.modules?.v4MulticurveInitializer).toBe(
+        standardInitializer,
+      );
+    });
+
     it('builds decay initializer config and keeps pool.fee as terminal fee', () => {
       const startTime = Math.floor(Date.now() / 1000) + 600;
       const params = buildBaseBuilder()

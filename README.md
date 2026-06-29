@@ -360,9 +360,9 @@ See [examples/opening-auction-lifecycle.ts](./examples/opening-auction-lifecycle
 
 ### Multicurve Auction (V4 Multicurve Initializer)
 
-Multicurve auctions use a Uniswap V4-style initializer that seeds liquidity across multiple curves in a single pool. This enables richer distributions and can be combined with any supported migration path (V2, V3, V4, or NoOp). Multicurve initializer modes are modeled as a typed variant (`standard`, `scheduled`, `decay`, `rehype`) so new hook/initializer variations can be added without breaking existing integrations.
+Multicurve auctions use a Uniswap V4-style initializer that seeds liquidity across multiple curves in a single pool. This enables richer distributions and can be combined with any supported migration path (V2, V3, V4, or NoOp). Multicurve initializer modes are modeled as a typed variant (`standard`, `scheduled`, `decay`, `rehype`) so new hook/initializer variations can be added without breaking existing integrations. The default multicurve initializer mode is `scheduled` with `startTime: 0`, which launches immediately.
 
-**Standard Multicurve with Migration:**
+**Default Multicurve with Migration:**
 
 ```typescript
 import { MulticurveBuilder } from '@whetstone-research/doppler-sdk/evm';
@@ -500,6 +500,7 @@ console.log('Token address:', scheduledResult.tokenAddress);
 ```
 
 Ensure the target chain has the scheduled multicurve initializer whitelisted. If you are targeting a custom deployment, override it via `.withV4ScheduledMulticurveInitializer('0x...')`.
+Omit `.withSchedule(...)` to use the same scheduled initializer with an instant `startTime` of `0`.
 
 **Decay Multicurve Launch (Dynamic Fee):**
 

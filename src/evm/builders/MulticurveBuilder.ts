@@ -752,19 +752,11 @@ export class MulticurveBuilder<
   }
 
   withSchedule(params?: { startTime: number | bigint | Date }): this {
-    if (!params) {
-      if (this.initializer?.type === 'scheduled') {
-        this.initializer = { type: 'standard' };
-      }
-      this.schedule = undefined;
-      return this;
-    }
-
     this.assertCanSetInitializer('scheduled');
-    const startTimeSeconds = this.parseStartTimeSeconds(
-      params.startTime,
-      'Schedule startTime',
-    );
+    const startTimeSeconds =
+      params === undefined
+        ? 0
+        : this.parseStartTimeSeconds(params.startTime, 'Schedule startTime');
     this.schedule = { startTime: startTimeSeconds };
     this.initializer = { type: 'scheduled', startTime: startTimeSeconds };
     return this;
@@ -1011,25 +1003,32 @@ export class MulticurveBuilder<
       dopplerHook = { ...dopplerHook, farTick };
     }
 
+    const hasDopplerHookInitializerOverride =
+      this.moduleAddresses?.dopplerHookInitializer !== undefined;
+    const hasStandardMulticurveInitializerOverride =
+      this.moduleAddresses?.v4MulticurveInitializer !== undefined;
+
     const initializer =
       this.initializer ??
       (dopplerHook
         ? { type: 'rehype', config: dopplerHook }
-        : this.schedule
-          ? { type: 'scheduled', startTime: this.schedule.startTime }
-          : { type: 'standard' });
+        : hasDopplerHookInitializerOverride
+          ? undefined
+          : hasStandardMulticurveInitializerOverride
+            ? { type: 'standard' }
+            : { type: 'scheduled', startTime: this.schedule?.startTime ?? 0 });
 
-    if (initializer.type === 'scheduled' && dopplerHook) {
+    if (initializer?.type === 'scheduled' && dopplerHook) {
       throw new Error(
         'Cannot combine scheduled multicurve with rehype initializer. Use exactly one initializer mode.',
       );
     }
-    if (initializer.type === 'decay' && dopplerHook) {
+    if (initializer?.type === 'decay' && dopplerHook) {
       throw new Error(
         'Cannot combine decay multicurve with rehype initializer. Use exactly one initializer mode.',
       );
     }
-    if (initializer.type === 'decay') {
+    if (initializer?.type === 'decay') {
       const startFee = Number(initializer.startFee);
       const terminalFee = Number(this.pool.fee);
 
@@ -1047,11 +1046,11 @@ export class MulticurveBuilder<
     }
 
     const schedule =
-      initializer.type === 'scheduled'
+      initializer?.type === 'scheduled'
         ? { startTime: initializer.startTime }
         : undefined;
     dopplerHook =
-      initializer.type === 'rehype' ? initializer.config : undefined;
+      initializer?.type === 'rehype' ? initializer.config : undefined;
 
     // Default governance: noOp on supported chains, default on others (e.g., Ink)
     const governance =

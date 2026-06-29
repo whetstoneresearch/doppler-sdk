@@ -269,7 +269,7 @@ const paramsManual = new DynamicAuctionBuilder(chainId)
 
 ## MulticurveBuilder (V4 Multicurve Initializer)
 
-Recommended when you want to seed a Uniswap V4 pool with multiple curves in a single initializer call. This supports richer liquidity distributions and works with any migration type (V2, V3, or V4).
+Recommended when you want to seed a Uniswap V4 pool with multiple curves in a single initializer call. This supports richer liquidity distributions and works with any migration type (V2, V3, or V4). Multicurve launches default to the scheduled initializer with `startTime: 0`, so they launch immediately unless `withSchedule({ startTime })` provides a future start.
 
 Methods (chainable):
 
@@ -311,6 +311,8 @@ Methods (chainable):
   - withAirlock(address)
   - withTokenFactory(address)
   - withV4MulticurveInitializer(address)
+  - withV4ScheduledMulticurveInitializer(address)
+  - withDopplerHookInitializer(address)
   - withGovernanceFactory(address)
   - withV2Migrator(address)
   - withV2MigratorSplit(address)

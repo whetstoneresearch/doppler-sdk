@@ -4196,6 +4196,8 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     const legacyHook = params.dopplerHook;
     const hasLegacySchedule = legacySchedule !== undefined;
     const hasLegacyHook = legacyHook !== undefined;
+    const hasExplicitInitializerMode =
+      params.initializer !== undefined || hasLegacySchedule || hasLegacyHook;
 
     if (hasLegacySchedule && hasLegacyHook) {
       throw new Error(
@@ -4221,7 +4223,7 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
           hookConfig: legacyHook,
         };
       } else {
-        mode = { type: 'standard' };
+        mode = { type: 'scheduled', startTime: 0 };
       }
     } else {
       switch (initializer.type) {
@@ -4326,13 +4328,22 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     // Backwards-compatible behavior: an explicit dopplerHookInitializer override
     // selects the DopplerHookInitializer path even without hook config.
     if (params.modules?.dopplerHookInitializer !== undefined) {
-      if (mode.type === 'standard') {
+      if (
+        mode.type === 'standard' ||
+        (!hasExplicitInitializerMode && mode.type === 'scheduled')
+      ) {
         mode = { type: 'rehype' };
       } else if (mode.type !== 'rehype') {
         throw new Error(
           'modules.dopplerHookInitializer can only be used with the rehype or standard multicurve initializer mode',
         );
       }
+    } else if (
+      !hasExplicitInitializerMode &&
+      params.modules?.v4MulticurveInitializer !== undefined &&
+      params.modules.v4ScheduledMulticurveInitializer === undefined
+    ) {
+      mode = { type: 'standard' };
     }
 
     return mode;
