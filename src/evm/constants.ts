@@ -125,19 +125,20 @@ export const DEFAULT_OPENING_DOPPLER_FEE = FEE_TIERS.HIGH; // 1%
 export const DEFAULT_OPENING_DOPPLER_TICK_SPACING = DOPPLER_MAX_TICK_SPACING;
 
 // V4 Multicurve Default Tick Ranges
-// Based on market cap tiers: LOW ($7.5k -> $30k), MEDIUM ($50k -> $150k), HIGH ($250k -> $750k)
-// Calculated for 1B token supply, $4500 numeraire (e.g., WETH on Base)
+// Based on market cap tiers: LOW ($0 -> $3M), MEDIUM ($1k -> $40M), HIGH ($100k -> $1B)
+// Calculated for 1B token supply, $4500 numeraire (e.g., WETH on Base).
+// The zero-start low tier uses the lowest usable tick rounded to 100 tick spacing.
 export const DEFAULT_MULTICURVE_LOWER_TICKS = [
-  -202_100, -183_100, -167_000,
+  -887_200, -222_200, -176_200,
 ] as const;
 export const DEFAULT_MULTICURVE_UPPER_TICKS = [
-  -188_200, -172_100, -156_000,
+  -142_200, -116_300, -84_100,
 ] as const;
 export const DEFAULT_MULTICURVE_NUM_POSITIONS = [11, 11, 11] as const;
 export const DEFAULT_MULTICURVE_MAX_SUPPLY_SHARES = [
-  parseEther('0.05'), // 5% for LOW tier
-  parseEther('0.125'), // 12.5% for MEDIUM tier
-  parseEther('0.2'), // 20% for HIGH tier
+  parseEther('0.5'), // 50% for LOW tier
+  parseEther('0.25'), // 25% for MEDIUM tier
+  parseEther('0.24'), // 24% for HIGH tier
 ] as const;
 
 // Price bounds
