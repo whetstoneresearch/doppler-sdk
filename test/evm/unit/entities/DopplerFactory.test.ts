@@ -613,6 +613,23 @@ describe('DopplerFactory', () => {
       );
     });
 
+    it('rejects duplicate pool beneficiary addresses', () => {
+      // The pool contract requires strictly ascending beneficiary addresses and
+      // reverts with UnorderedBeneficiaries() on duplicates. The encode layer
+      // should surface this as a readable error before broadcasting.
+      const duplicate =
+        '0x0000000000000000000000000000000000000001' as Address;
+      const params = multicurveParams();
+      params.pool.beneficiaries = [
+        { beneficiary: duplicate, shares: parseEther('0.5') },
+        { beneficiary: duplicate, shares: parseEther('0.5') },
+      ];
+
+      expect(() => factory.encodeCreateMulticurveParams(params)).toThrow(
+        /Duplicate beneficiary address/,
+      );
+    });
+
     it('accepts decay startFee up to 80%', () => {
       const params = multicurveParams();
       params.initializer = {
