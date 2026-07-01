@@ -1,5 +1,5 @@
 /**
- * Example: Create a Multicurve Pool with Graduation Market Cap (Rehype)
+ * Example: Create a Multicurve Pool with Graduation Market Cap (Rehype Initializer)
  *
  * This example demonstrates:
  * - Using withCurves() with market cap ranges (no tick math required)
@@ -17,9 +17,9 @@
  * Note: This is NOT a price cap - prices can exceed this value after graduation.
  * This is the market cap at which the pool can graduate (migrate or change status).
  */
-import './env';
+import '../env';
 
-import { DopplerSDK, WAD, getAddresses } from '../src/evm';
+import { DopplerSDK, WAD, getAddresses } from '../../src/evm';
 import {
   parseEther,
   createPublicClient,
@@ -35,9 +35,15 @@ const rpcUrl = process.env.RPC_URL ?? baseSepolia.rpcUrls.default.http[0];
 
 if (!privateKey) throw new Error('PRIVATE_KEY is not set');
 
-// RehypeDopplerHook deployed on Base Sepolia
-const REHYPE_DOPPLER_HOOK_ADDRESS = getAddresses(baseSepolia.id)
-  .rehypeDopplerHookInitializer as Address;
+const REHYPE_DOPPLER_HOOK_INITIALIZER_ADDRESS = (() => {
+  const address = getAddresses(baseSepolia.id).rehypeDopplerHookInitializer;
+  if (!address) {
+    throw new Error(
+      'Base Sepolia RehypeDopplerHookInitializer is not configured in SDK deployments',
+    );
+  }
+  return address;
+})();
 const BUYBACK_DESTINATION =
   '0x0000000000000000000000000000000000000007' as Address;
 
@@ -104,6 +110,7 @@ async function main() {
   const params = sdk
     .buildMulticurveAuction()
     .tokenConfig({
+      type: 'dopplerERC20V1',
       name: 'Graduation Market Cap Token',
       symbol: 'GMC',
       tokenURI: 'https://example.com/graduation-token.json',
@@ -133,7 +140,12 @@ async function main() {
         {
           marketCap: { start: 4_000_000, end: 50_000_000 }, // $4M - $50M
           numPositions: 10,
-          shares: parseEther('0.3'), // 30%
+          shares: parseEther('0.29'),
+        },
+        {
+          marketCap: { start: 50_000_000, end: 'max' },
+          numPositions: 10,
+          shares: parseEther('0.01'),
         },
       ],
       beneficiaries,
@@ -141,7 +153,7 @@ async function main() {
     // Configure rehype with graduationMarketCap
     // graduationMarketCap is rehype-only - it uses numerairePrice from withCurves()
     .withRehypeDopplerHook({
-      hookAddress: REHYPE_DOPPLER_HOOK_ADDRESS,
+      hookAddress: REHYPE_DOPPLER_HOOK_INITIALIZER_ADDRESS,
       buybackDestination: BUYBACK_DESTINATION,
       startFee: 3000, // 0.3%
       endFee: 3000,
@@ -182,7 +194,8 @@ async function main() {
 
   console.log('\nMarket Cap Targets:');
   console.log('  Launch price: $500,000 market cap');
-  console.log('  Highest curve end: $50,000,000');
+  console.log('  Highest finite curve end: $50,000,000');
+  console.log('  Tail curve: $50,000,000+');
   console.log('  Graduation target: $40,000,000');
 
   // Log curve details

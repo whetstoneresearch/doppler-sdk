@@ -1,13 +1,13 @@
 /**
- * Example: Create a Multicurve Pool with RehypeDopplerHook
+ * Example: Create a Multicurve Pool with RehypeDopplerHookInitializer
  *
  * This example demonstrates:
- * - Configuring a RehypeDopplerHook for advanced fee distribution
+ * - Configuring a RehypeDopplerHookInitializer for advanced fee distribution
  * - Setting up asset/numeraire buybacks, beneficiary fees, and LP fees
  * - Using the DopplerHookInitializer with a whitelisted hook
  * - Power-user configuration with poolConfig() (raw ticks)
  *
- * RehypeDopplerHook enables:
+ * RehypeDopplerHookInitializer enables:
  * - Custom swap fees (e.g., 0.3% instead of default)
  * - Fee distribution to multiple destinations:
  *   - Asset buyback: fees used to buy back the token
@@ -21,11 +21,11 @@
  * - Beneficiaries must include the Airlock owner with >= 5% shares
  *
  * For easier configuration using market cap ranges (no tick math), see:
- * - examples/multicurve-rehype-by-marketcap.ts
+ * - examples/rehype/multicurve-rehype-by-marketcap.ts
  */
-import './env';
+import '../env';
 
-import { DopplerSDK, WAD, getAddresses } from '../src/evm';
+import { DopplerSDK, WAD, getAddresses } from '../../src/evm';
 import {
   createPublicClient,
   createWalletClient,
@@ -40,10 +40,15 @@ const rpcUrl = process.env.RPC_URL ?? baseSepolia.rpcUrls.default.http[0];
 
 if (!privateKey) throw new Error('PRIVATE_KEY is not set');
 
-// RehypeDopplerHook deployed on Base Sepolia
-// This address must be whitelisted in the DopplerHookInitializer
-const REHYPE_DOPPLER_HOOK_ADDRESS = getAddresses(baseSepolia.id)
-  .rehypeDopplerHookInitializer as Address;
+const REHYPE_DOPPLER_HOOK_INITIALIZER_ADDRESS = (() => {
+  const address = getAddresses(baseSepolia.id).rehypeDopplerHookInitializer;
+  if (!address) {
+    throw new Error(
+      'Base Sepolia RehypeDopplerHookInitializer is not configured in SDK deployments',
+    );
+  }
+  return address;
+})();
 
 // Destination address for buyback tokens
 const BUYBACK_DESTINATION =
@@ -96,11 +101,10 @@ async function main() {
     { beneficiary: airlockOwner, shares: 50_000_000_000_000_000n }, // 5% (minimum required)
   ];
 
-  // Build multicurve with RehypeDopplerHook
   const params = sdk
     .buildMulticurveAuction()
     .tokenConfig({
-      type: 'standard',
+      type: 'dopplerERC20V1',
       name: 'RehypeHook Token',
       symbol: 'RHT',
       tokenURI: 'ipfs://rehype-hook-example',
@@ -122,10 +126,9 @@ async function main() {
       })),
       beneficiaries,
     })
-    // Configure the RehypeDopplerHook for fee distribution
     // All percentages must sum to exactly WAD (1e18 = 100%)
     .withRehypeDopplerHook({
-      hookAddress: REHYPE_DOPPLER_HOOK_ADDRESS,
+      hookAddress: REHYPE_DOPPLER_HOOK_INITIALIZER_ADDRESS,
       buybackDestination: BUYBACK_DESTINATION,
       startFee: 3000, // 0.3% swap fee
       endFee: 3000,
@@ -159,7 +162,7 @@ async function main() {
   console.log('  Beneficiaries:', params.pool.beneficiaries?.length);
   console.log('  Migration:', params.migration.type);
 
-  console.log('\nRehypeDopplerHook Fee Distribution:');
+  console.log('\nRehypeDopplerHookInitializer Fee Distribution:');
   console.log(
     '  Fee schedule:',
     `${params.dopplerHook?.startFee} -> ${params.dopplerHook?.endFee}`,
@@ -171,7 +174,7 @@ async function main() {
 
   // Create the multicurve pool + token
   // Note: createMulticurve internally simulates first, ensuring consistent addresses
-  console.log('\nCreating multicurve with RehypeDopplerHook...');
+  console.log('\nCreating multicurve with RehypeDopplerHookInitializer...');
   const result = await sdk.factory.createMulticurve(params);
   console.log('Multicurve created successfully!');
   console.log('  Token address:', result.tokenAddress);

@@ -1,7 +1,7 @@
 /**
- * Example: Create a Multicurve Pool with RehypeDopplerHook using Market Cap Ranges
+ * Example: Create a Multicurve Pool with RehypeDopplerHookInitializer using Market Cap Ranges
  *
- * This example demonstrates the recommended way to configure a RehypeDopplerHook:
+ * This example demonstrates the recommended way to configure a RehypeDopplerHookInitializer:
  * - Using withCurves() with market cap ranges (no tick math required)
  * - Setting graduationMarketCap to define when the pool can graduate
  * - Configuring advanced fee distribution (buybacks, beneficiaries, LPs)
@@ -11,11 +11,11 @@
  * without dealing with raw tick values.
  *
  * For power-user configuration with raw ticks, see:
- * - examples/multicurve-with-rehype-hook.ts
+ * - examples/rehype/multicurve-rehype-raw-ticks.ts
  */
-import './env';
+import '../env';
 
-import { DopplerSDK, getAddresses } from '../src/evm';
+import { DopplerSDK, getAddresses } from '../../src/evm';
 import {
   parseEther,
   createPublicClient,
@@ -31,9 +31,15 @@ const rpcUrl = process.env.RPC_URL ?? baseSepolia.rpcUrls.default.http[0];
 
 if (!privateKey) throw new Error('PRIVATE_KEY is not set');
 
-// RehypeDopplerHook deployed on Base Sepolia
-const REHYPE_DOPPLER_HOOK_ADDRESS = getAddresses(baseSepolia.id)
-  .rehypeDopplerHookInitializer as Address;
+const REHYPE_DOPPLER_HOOK_INITIALIZER_ADDRESS = (() => {
+  const address = getAddresses(baseSepolia.id).rehypeDopplerHookInitializer;
+  if (!address) {
+    throw new Error(
+      'Base Sepolia RehypeDopplerHookInitializer is not configured in SDK deployments',
+    );
+  }
+  return address;
+})();
 
 // Destination address for buyback tokens
 const BUYBACK_DESTINATION =
@@ -94,17 +100,16 @@ async function main() {
 
   console.log('Airlock owner:', airlockOwner);
 
-  // Define beneficiaries (required for RehypeDopplerHook)
   // Airlock owner must have >= 5% shares
   const beneficiaries = [
     { beneficiary: BUYBACK_DESTINATION, shares: 950_000_000_000_000_000n }, // 95%
     { beneficiary: airlockOwner, shares: 50_000_000_000_000_000n }, // 5%
   ];
 
-  // Build multicurve using market cap ranges + RehypeDopplerHook
   const params = sdk
     .buildMulticurveAuction()
     .tokenConfig({
+      type: 'dopplerERC20V1',
       name: 'Rehype MarketCap Token',
       symbol: 'RMC',
       tokenURI: 'ipfs://rehype-marketcap-example',
@@ -131,15 +136,20 @@ async function main() {
         {
           marketCap: { start: 4_000_000, end: 50_000_000 }, // $4M - $50M
           numPositions: 10,
-          shares: parseEther('0.3'), // 30%
+          shares: parseEther('0.29'),
+        },
+        {
+          marketCap: { start: 50_000_000, end: 'max' },
+          numPositions: 10,
+          shares: parseEther('0.01'),
         },
       ],
-      beneficiaries, // Required for RehypeDopplerHook
+      beneficiaries,
     })
     // Configure fee distribution (must sum to 100%)
     // graduationMarketCap uses numerairePrice from withCurves() for tick conversion
     .withRehypeDopplerHook({
-      hookAddress: REHYPE_DOPPLER_HOOK_ADDRESS,
+      hookAddress: REHYPE_DOPPLER_HOOK_INITIALIZER_ADDRESS,
       buybackDestination: BUYBACK_DESTINATION,
       startFee: 3000, // 0.3% swap fee
       endFee: 3000,
@@ -175,12 +185,13 @@ async function main() {
 
   console.log('\nMarket Cap Targets:');
   console.log('  Launch price: $500,000');
-  console.log('  Highest curve end: $50,000,000');
+  console.log('  Highest finite curve end: $50,000,000');
+  console.log('  Tail curve: $50,000,000+');
   console.log(
     '  Graduation target: $40,000,000 (before max, demonstrating flexibility)',
   );
 
-  console.log('\nRehypeDopplerHook Fee Distribution:');
+  console.log('\nRehypeDopplerHookInitializer Fee Distribution:');
   console.log('  Custom fee: 3000 (0.3%)');
   console.log('  Asset buyback: 20%');
   console.log('  Numeraire buyback: 20%');

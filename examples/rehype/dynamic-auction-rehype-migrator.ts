@@ -1,11 +1,11 @@
 /**
- * Example: Create a Dynamic Auction with DopplerHookMigrator + Rehype helper
+ * Example: Create a Dynamic Auction with RehypeDopplerHookMigrator
  *
  * This example demonstrates dynamic-launch rehypothecation configuration.
  */
-import './env';
+import '../env';
 
-import { DAY_SECONDS, DopplerSDK } from '../src/evm';
+import { DAY_SECONDS, DopplerSDK } from '../../src/evm';
 
 import {
   createPublicClient,
@@ -49,6 +49,7 @@ async function main() {
   const params = sdk
     .buildDynamicAuction()
     .tokenConfig({
+      type: 'dopplerERC20V1',
       name: 'TEST DYNAMIC REHYPE',
       symbol: 'TDR',
       tokenURI: 'https://example.com/dynamic-rehype-token.json',
