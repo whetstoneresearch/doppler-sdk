@@ -52,6 +52,10 @@ Monitor an existing auction for graduation status and key metrics.
 
 Interact with launched tokens - check balances, approve spending, and release vested tokens.
 
+### 10a. [Vesting Release](./vesting-release.ts)
+
+Preview and claim vested tokens from existing `Derc20`, `Derc20V2`, or `DopplerERC20V1` contracts. Demonstrates `release()`, `releaseSchedule()`, and `releaseFor()` paths.
+
 ### 11. [Price Quoter](./price-quoter.ts)
 
 Get price quotes across different Uniswap versions for optimal trading.

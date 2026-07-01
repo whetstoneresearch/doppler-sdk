@@ -914,6 +914,8 @@ import { Derc20 } from '@whetstone-research/doppler-sdk/evm';
 const tokenDirect = new Derc20(publicClient, walletClient, tokenAddress);
 ```
 
+For a runnable release-focused example covering legacy DERC20, DERC20 V2 schedules, and DopplerERC20V1 partial releases, see [examples/vesting-release.ts](./examples/vesting-release.ts).
+
 ### DopplerERC20V1 Tokens
 
 Use the newer DopplerERC20V1 token template by either setting `type: 'dopplerERC20V1'` explicitly or by passing fields such as `maxBalanceLimit` with `balanceLimitEnd`, `controller`, or `excludedFromBalanceLimit`. When selected, the SDK uses the configured `dopplerERC20V1Factory` by default. `withTokenFactory(address)` is a generic factory override and takes precedence, but it must point to a factory compatible with the selected token path and token data ABI. `controller` is optional and defaults to the zero address, set it only if early balance-limit disable should be possible. Standard configs without the specific fields still use the legacy `standard` path, where cliff/allocation vesting routes to legacy DERC20 V2. Keep explicit `type: 'dopplerERC20V1'` when you want its behavior but have no specific fields to infer from.
