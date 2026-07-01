@@ -7,6 +7,7 @@ const dopplerERC20V1TargetChains = [
   { name: 'mainnet', chainId: CHAIN_IDS.MAINNET },
   { name: 'base', chainId: CHAIN_IDS.BASE },
   { name: 'base-sepolia', chainId: CHAIN_IDS.BASE_SEPOLIA },
+  { name: 'temp', chainId: CHAIN_IDS.TEMP },
   { name: 'monad-mainnet', chainId: CHAIN_IDS.MONAD_MAINNET },
 ] as const;
 
@@ -27,9 +28,7 @@ describe('address configuration', () => {
       const addresses = getAddresses(chainId);
       const generated = GENERATED_DOPPLER_DEPLOYMENTS[chainId];
 
-      const factory = expectConfiguredAddress(
-        addresses.dopplerERC20V1Factory,
-      );
+      const factory = expectConfiguredAddress(addresses.dopplerERC20V1Factory);
       const implementation = expectConfiguredAddress(
         addresses.dopplerERC20V1Implementation,
       );
