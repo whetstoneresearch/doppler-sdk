@@ -1833,7 +1833,7 @@ If you're migrating from `doppler-v3-sdk` or `doppler-v4-sdk`, see our [Migratio
 
 ## Contributing
 
-Contributions are welcome! Please see our [Contributing Guide](../../CONTRIBUTING.md) for details.
+Contributions are welcome! Please see our [Contributing Guide](./CONTRIBUTING.md) for details.
 
 ## License
 
