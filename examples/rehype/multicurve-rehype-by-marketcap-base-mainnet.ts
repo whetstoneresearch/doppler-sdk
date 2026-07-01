@@ -288,12 +288,12 @@ async function main() {
         {
           marketCap: { start: 4_000_000, end: 50_000_000 }, // $4M - $50M
           numPositions: 10,
-          shares: parseEther('0.29'),
+          shares: parseEther('0.29'), // 29%
         },
         {
-          marketCap: { start: 50_000_000, end: 'max' },
+          marketCap: { start: 50_000_000, end: 'max' }, // $50M - max
           numPositions: 10,
-          shares: parseEther('0.01'),
+          shares: parseEther('0.01'), // 1%
         },
       ],
       beneficiaries,
