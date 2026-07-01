@@ -12,10 +12,11 @@
  * - SCHEDULE_ID=0                  # schedule-aware tokens only
  * - RELEASE_AMOUNT=100             # DopplerERC20V1 only; defaults to available
  * - USE_RELEASE_FOR=true           # DERC20 V2 / DopplerERC20V1 releaseFor path
- * - EXECUTE_RELEASE=true           # broadcast the release transaction
+ * - EXECUTE=1                      # broadcast the release transaction
+ * - EXECUTE_RELEASE=true           # accepted as an alias for EXECUTE=1
  * - RELEASE_GAS_LIMIT=250000       # optional write gas override
- * - BASE_SEPOLIA_RPC_URL=...       # or RPC_URL
- * - PRIVATE_KEY=0x...              # required when EXECUTE_RELEASE=true
+ * - BASE_SEPOLIA_RPC_URL=...       # or RPC_URL; defaults to Base Sepolia public RPC
+ * - PRIVATE_KEY=0x...              # required when broadcasting
  */
 import './env';
 
@@ -42,10 +43,10 @@ type SchedulePreview = {
 };
 
 const tokenAddress = readAddress('TOKEN_ADDRESS');
-const rpcUrl = process.env.BASE_SEPOLIA_RPC_URL ?? process.env.RPC_URL;
-if (!rpcUrl) {
-  throw new Error('Set BASE_SEPOLIA_RPC_URL or RPC_URL');
-}
+const rpcUrl =
+  process.env.BASE_SEPOLIA_RPC_URL ??
+  process.env.RPC_URL ??
+  baseSepolia.rpcUrls.default.http[0];
 
 const tokenKind = readTokenKind(process.env.VESTING_TOKEN_KIND ?? 'derc20-v2');
 const privateKey = process.env.PRIVATE_KEY as `0x${string}` | undefined;
@@ -58,14 +59,15 @@ if (!configuredBeneficiary) {
 const beneficiary: Address = configuredBeneficiary;
 const callerAddress = account?.address;
 
-const executeRelease = readBoolean(process.env.EXECUTE_RELEASE);
+const executeRelease =
+  isEnabled(process.env.EXECUTE) || isEnabled(process.env.EXECUTE_RELEASE);
 if (executeRelease && !account) {
-  throw new Error('Set PRIVATE_KEY when EXECUTE_RELEASE=true');
+  throw new Error('Set PRIVATE_KEY when EXECUTE=1 or EXECUTE_RELEASE=true');
 }
 
 const scheduleId = readOptionalBigInt('SCHEDULE_ID');
 const releaseGasLimit = readOptionalBigInt('RELEASE_GAS_LIMIT');
-const useReleaseFor = readBoolean(process.env.USE_RELEASE_FOR);
+const useReleaseFor = isEnabled(process.env.USE_RELEASE_FOR);
 const releaseOptions = releaseGasLimit ? { gas: releaseGasLimit } : undefined;
 
 const publicClient = createPublicClient({
@@ -355,6 +357,15 @@ function readReleaseAmount(decimals: number): bigint | undefined {
   return parseUnits(rawAmount, decimals);
 }
 
-function readBoolean(rawValue: string | undefined): boolean {
-  return rawValue === '1' || rawValue === 'true';
+function isEnabled(rawValue: string | undefined): boolean {
+  if (!rawValue) {
+    return false;
+  }
+
+  const normalizedValue = rawValue.trim().toLowerCase();
+  return (
+    normalizedValue === '1' ||
+    normalizedValue === 'true' ||
+    normalizedValue === 'yes'
+  );
 }
