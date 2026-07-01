@@ -389,9 +389,9 @@ const presetParams = new MulticurveBuilder(chainId)
 ```
 
 Preset tiers map to approximate market cap bands (assuming ~1B supply, $4,500 reference numeraire):
-- `low`: 5% allocation targeting $7.5k-$30k launches
-- `medium`: 12.5% allocation targeting $50k-$150k
-- `high`: 20% allocation targeting $250k-$750k
+- `low`: 50% allocation targeting $0-$3M launches
+- `medium`: 25% allocation targeting $1k-$40M
+- `high`: 24% allocation targeting $100k-$1B
 
 All presets use the curated tick ranges from `DEFAULT_MULTICURVE_*` constants. Shares are represented in WAD (1e18 = 100%); if you override shares, ensure they remain within bounds or the builder will throw.
 

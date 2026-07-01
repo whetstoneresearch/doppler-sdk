@@ -444,9 +444,9 @@ console.log('Token address:', presetResult.tokenAddress);
 
 The preset helper seeds three curated curve buckets sized for ~1B token supply targets:
 
-- `low`: ~5% of the sale allocated to a $7.5k-$30k market cap window.
-- `medium`: ~12.5% targeting roughly $50k-$150k market caps.
-- `high`: ~20% aimed at $250k-$750k market caps.
+- `low`: 50% of the sale allocated to a $0-$3M market cap window.
+- `medium`: 25% targeting roughly $1k-$40M market caps.
+- `high`: 24% aimed at $100k-$1B market caps.
 
 Pass `presets` to pick a subset (e.g. `['medium', 'high']`) or provide `overrides` to adjust ticks, positions, or shares for a specific tier. When the selected presets sum to less than 100%, the builder automatically appends a filler curve (using the highest selected tier's shape) so liquidity always covers the full sale. Shares must stay within 0-1e18 and the helper will throw if the total ever exceeds 100%.
 

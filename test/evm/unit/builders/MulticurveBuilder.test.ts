@@ -84,6 +84,18 @@ describe('MulticurveBuilder', () => {
       FEE_TIERS.LOW
     ];
 
+    expect(DEFAULT_MULTICURVE_LOWER_TICKS).toEqual([
+      -887_200, -222_200, -176_200,
+    ]);
+    expect(DEFAULT_MULTICURVE_UPPER_TICKS).toEqual([
+      -142_200, -116_300, -84_100,
+    ]);
+    expect(DEFAULT_MULTICURVE_MAX_SUPPLY_SHARES).toEqual([
+      parseEther('0.5'),
+      parseEther('0.25'),
+      parseEther('0.24'),
+    ]);
+
     const builder = MulticurveBuilder.forChain(CHAIN_IDS.BASE)
       .tokenConfig({
         type: 'standard',
