@@ -80,6 +80,7 @@ import {
   MIN_TICK,
   MAX_TICK,
   isToken0Expected,
+  sortBeneficiaries,
 } from '../utils';
 import { normalizeRehypeDopplerHookMigratorConfig } from '../utils/dopplerHookMigrator';
 import {
@@ -1191,14 +1192,9 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     let poolInitializerData: Hex;
 
     if (hasBeneficiaries) {
-      // Sort beneficiaries by address (ascending) as required by the contract
-      const sortedBeneficiaries = params.pool
-        .beneficiaries!.slice()
-        .sort((a, b) => {
-          const aAddr = a.beneficiary.toLowerCase();
-          const bAddr = b.beneficiary.toLowerCase();
-          return aAddr < bAddr ? -1 : aAddr > bAddr ? 1 : 0;
-        });
+      // Sort beneficiaries by address (ascending) and reject duplicates as
+      // required by the contract
+      const sortedBeneficiaries = sortBeneficiaries(params.pool.beneficiaries!);
 
       // Lockable V3 initializer encoding (6 fields including beneficiaries)
       poolInitializerData = encodeAbiParameters(
@@ -3768,14 +3764,8 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
           return '0x';
         }
 
-        // Copy beneficiaries and sort by address in ascending order (required by contract)
-        const beneficiaryData = [...streamableFees.beneficiaries].sort(
-          (a, b) => {
-            const addrA = a.beneficiary.toLowerCase();
-            const addrB = b.beneficiary.toLowerCase();
-            return addrA < addrB ? -1 : addrA > addrB ? 1 : 0;
-          },
-        );
+        // Copy beneficiaries, sort by address ascending and reject duplicates (required by contract)
+        const beneficiaryData = sortBeneficiaries(streamableFees.beneficiaries);
 
         // Note: The contract will validate that the airlock owner gets at least 5%
         // If not present, the SDK user should add it manually
@@ -3802,12 +3792,8 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
         );
 
       case 'uniswapV4Split': {
-        const beneficiaryData = [...config.streamableFees.beneficiaries].sort(
-          (a, b) => {
-            const addrA = a.beneficiary.toLowerCase();
-            const addrB = b.beneficiary.toLowerCase();
-            return addrA < addrB ? -1 : addrA > addrB ? 1 : 0;
-          },
+        const beneficiaryData = sortBeneficiaries(
+          config.streamableFees.beneficiaries,
         );
 
         const proceedsRecipient =
@@ -3849,13 +3835,9 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
           );
         }
 
-        // Copy beneficiaries and sort by address in ascending order (required by contract)
-        const beneficiaries = [...dopplerHookConfig.beneficiaries].sort(
-          (a, b) => {
-            const addrA = a.beneficiary.toLowerCase();
-            const addrB = b.beneficiary.toLowerCase();
-            return addrA < addrB ? -1 : addrA > addrB ? 1 : 0;
-          },
+        // Copy beneficiaries, sort by address ascending and reject duplicates (required by contract)
+        const beneficiaries = sortBeneficiaries(
+          dopplerHookConfig.beneficiaries,
         );
 
         let dopplerHookAddress: Address = ZERO_ADDRESS;
@@ -4357,18 +4339,9 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     const addresses = getAddresses(this.chainId);
 
     // Pool initializer data: (fee, tickSpacing, farTick, curves[], beneficiaries[], dopplerHook, onInitializationCalldata, graduationCalldata)
-    const sortedBeneficiaries = (params.pool.beneficiaries ?? [])
-      .slice()
-      .sort(
-        (
-          a: NonNullable<typeof params.pool.beneficiaries>[number],
-          b: NonNullable<typeof params.pool.beneficiaries>[number],
-        ) => {
-          const aAddr = a.beneficiary.toLowerCase();
-          const bAddr = b.beneficiary.toLowerCase();
-          return aAddr < bAddr ? -1 : aAddr > bAddr ? 1 : 0;
-        },
-      );
+    const sortedBeneficiaries = sortBeneficiaries(
+      params.pool.beneficiaries ?? [],
+    );
 
     const initializerMode = this.resolveMulticurveInitializerMode(params);
     const useScheduledInitializer = initializerMode.type === 'scheduled';
