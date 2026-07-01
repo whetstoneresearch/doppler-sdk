@@ -1,21 +1,25 @@
 /**
- * Example: Create a Multicurve Pool with RehypeDopplerHook using Market Cap Ranges
+ * Example: Create a Multicurve Pool with Graduation Market Cap (Rehype Initializer)
  *
- * This example demonstrates the recommended way to configure a RehypeDopplerHook:
+ * This example demonstrates:
  * - Using withCurves() with market cap ranges (no tick math required)
- * - Setting graduationMarketCap to define when the pool can graduate
- * - Configuring advanced fee distribution (buybacks, beneficiaries, LPs)
+ * - Setting graduationMarketCap in withRehypeDopplerHook() to define when the pool can graduate
  * - Live ETH price fetching for accurate market cap calculations
  *
- * This is the easiest path for most users who want custom fee distribution
- * without dealing with raw tick values.
+ * IMPORTANT: graduationMarketCap is only available for rehype pools.
+ * If you don't need rehype, omit graduationMarketCap - the pool will use the highest curve's tickUpper.
  *
- * For power-user configuration with raw ticks, see:
- * - examples/multicurve-with-rehype-hook.ts
+ * graduationMarketCap behavior:
+ * - Must be within the curve boundaries (>= lowest start, <= highest end)
+ * - Converts to farTick internally for the pool configuration
+ * - Reuses numerairePrice from withCurves() for the conversion
+ *
+ * Note: This is NOT a price cap - prices can exceed this value after graduation.
+ * This is the market cap at which the pool can graduate (migrate or change status).
  */
-import './env';
+import '../env';
 
-import { DopplerSDK, getAddresses } from '../src/evm';
+import { DopplerSDK, WAD, getAddresses } from '../../src/evm';
 import {
   parseEther,
   createPublicClient,
@@ -31,11 +35,15 @@ const rpcUrl = process.env.RPC_URL ?? baseSepolia.rpcUrls.default.http[0];
 
 if (!privateKey) throw new Error('PRIVATE_KEY is not set');
 
-// RehypeDopplerHook deployed on Base Sepolia
-const REHYPE_DOPPLER_HOOK_ADDRESS = getAddresses(baseSepolia.id)
-  .rehypeDopplerHookInitializer as Address;
-
-// Destination address for buyback tokens
+const REHYPE_DOPPLER_HOOK_INITIALIZER_ADDRESS = (() => {
+  const address = getAddresses(baseSepolia.id).rehypeDopplerHookInitializer;
+  if (!address) {
+    throw new Error(
+      'Base Sepolia RehypeDopplerHookInitializer is not configured in SDK deployments',
+    );
+  }
+  return address;
+})();
 const BUYBACK_DESTINATION =
   '0x0000000000000000000000000000000000000007' as Address;
 
@@ -70,7 +78,7 @@ async function main() {
   });
   const addresses = getAddresses(baseSepolia.id);
 
-  // Fetch current ETH price
+  // Fetch current ETH price from CoinGecko
   console.log('Fetching current ETH price from CoinGecko...');
   const ethPriceUsd = await getEthPriceUsd();
   console.log('Current ETH price: $' + ethPriceUsd.toLocaleString());
@@ -92,70 +100,82 @@ async function main() {
     functionName: 'owner',
   })) as Address;
 
-  console.log('Airlock owner:', airlockOwner);
-
-  // Define beneficiaries (required for RehypeDopplerHook)
-  // Airlock owner must have >= 5% shares
+  // Beneficiaries for fee collection (required for rehype)
   const beneficiaries = [
     { beneficiary: BUYBACK_DESTINATION, shares: 950_000_000_000_000_000n }, // 95%
     { beneficiary: airlockOwner, shares: 50_000_000_000_000_000n }, // 5%
   ];
 
-  // Build multicurve using market cap ranges + RehypeDopplerHook
+  // Build multicurve using market cap ranges with a graduation target
   const params = sdk
     .buildMulticurveAuction()
     .tokenConfig({
-      name: 'Rehype MarketCap Token',
-      symbol: 'RMC',
-      tokenURI: 'ipfs://rehype-marketcap-example',
+      type: 'dopplerERC20V1',
+      name: 'Graduation Market Cap Token',
+      symbol: 'GMC',
+      tokenURI: 'https://example.com/graduation-token.json',
     })
     .saleConfig({
       initialSupply: parseEther('1000000000'), // 1 billion tokens
-      numTokensToSell: parseEther('900000000'), // 900 million for sale
+      numTokensToSell: parseEther('900000000'), // 900 million for sale (90%)
       numeraire: addresses.weth,
     })
-    // Easy mode: use market cap ranges instead of raw ticks
+    // Use market cap ranges - no tick math needed!
     .withCurves({
       numerairePrice: ethPriceUsd,
       curves: [
+        // Curve 1: Launch curve
         {
           marketCap: { start: 500_000, end: 1_500_000 }, // $500k - $1.5M
           numPositions: 10,
           shares: parseEther('0.3'), // 30%
         },
+        // Curve 2: Growth phase
         {
           marketCap: { start: 1_000_000, end: 5_000_000 }, // $1M - $5M
           numPositions: 15,
           shares: parseEther('0.4'), // 40%
         },
+        // Curve 3: Upper range - ends at $50M
         {
           marketCap: { start: 4_000_000, end: 50_000_000 }, // $4M - $50M
           numPositions: 10,
-          shares: parseEther('0.3'), // 30%
+          shares: parseEther('0.29'),
+        },
+        {
+          marketCap: { start: 50_000_000, end: 'max' },
+          numPositions: 10,
+          shares: parseEther('0.01'),
         },
       ],
-      beneficiaries, // Required for RehypeDopplerHook
+      beneficiaries,
     })
-    // Configure fee distribution (must sum to 100%)
-    // graduationMarketCap uses numerairePrice from withCurves() for tick conversion
+    // Configure rehype with graduationMarketCap
+    // graduationMarketCap is rehype-only - it uses numerairePrice from withCurves()
     .withRehypeDopplerHook({
-      hookAddress: REHYPE_DOPPLER_HOOK_ADDRESS,
+      hookAddress: REHYPE_DOPPLER_HOOK_INITIALIZER_ADDRESS,
       buybackDestination: BUYBACK_DESTINATION,
-      startFee: 3000, // 0.3% swap fee
+      startFee: 3000, // 0.3%
       endFee: 3000,
       durationSeconds: 0,
       feeRoutingMode: 0,
       feeDistributionInfo: {
-        assetFeesToAssetBuybackWad: 200_000_000_000_000_000n, // 20%
-        assetFeesToNumeraireBuybackWad: 200_000_000_000_000_000n, // 20%
-        assetFeesToBeneficiaryWad: 300_000_000_000_000_000n, // 30%
-        assetFeesToLpWad: 300_000_000_000_000_000n, // 30%
-        numeraireFeesToAssetBuybackWad: 200_000_000_000_000_000n,
-        numeraireFeesToNumeraireBuybackWad: 200_000_000_000_000_000n,
-        numeraireFeesToBeneficiaryWad: 300_000_000_000_000_000n,
-        numeraireFeesToLpWad: 300_000_000_000_000_000n,
+        assetFeesToAssetBuybackWad: WAD / 4n, // 25%
+        assetFeesToNumeraireBuybackWad: WAD / 4n, // 25%
+        assetFeesToBeneficiaryWad: WAD / 4n, // 25%
+        assetFeesToLpWad: WAD / 4n, // 25%
+        numeraireFeesToAssetBuybackWad: WAD / 4n,
+        numeraireFeesToNumeraireBuybackWad: WAD / 4n,
+        numeraireFeesToBeneficiaryWad: WAD / 4n,
+        numeraireFeesToLpWad: WAD / 4n,
       },
-      graduationMarketCap: 40_000_000, // $40M graduation target (within curve range)
+      // Set the graduation market cap at $40M (must be within curve boundaries)
+      // This uses numerairePrice from withCurves() to convert to tick
+      graduationMarketCap: 40_000_000, // $40M graduation target
+    })
+    .withVesting({
+      duration: BigInt(365 * 24 * 60 * 60), // 1 year vesting
+      cliffDuration: 0,
     })
     .withGovernance({ type: 'noOp' })
     .withMigration({ type: 'noOp' })
@@ -171,21 +191,28 @@ async function main() {
     '  Far tick (from graduationMarketCap):',
     params.dopplerHook?.farTick,
   );
-  console.log('  Beneficiaries:', params.pool.beneficiaries?.length);
 
   console.log('\nMarket Cap Targets:');
-  console.log('  Launch price: $500,000');
-  console.log('  Highest curve end: $50,000,000');
-  console.log(
-    '  Graduation target: $40,000,000 (before max, demonstrating flexibility)',
-  );
+  console.log('  Launch price: $500,000 market cap');
+  console.log('  Highest finite curve end: $50,000,000');
+  console.log('  Tail curve: $50,000,000+');
+  console.log('  Graduation target: $40,000,000');
 
-  console.log('\nRehypeDopplerHook Fee Distribution:');
-  console.log('  Custom fee: 3000 (0.3%)');
-  console.log('  Asset buyback: 20%');
-  console.log('  Numeraire buyback: 20%');
-  console.log('  Beneficiaries: 30%');
-  console.log('  LPs: 30%');
+  // Log curve details
+  console.log('\nCurve Details (converted to ticks):');
+  params.pool.curves.forEach((curve, i) => {
+    console.log(
+      '  Curve ' +
+        (i + 1) +
+        ': ticks ' +
+        curve.tickLower +
+        ' -> ' +
+        curve.tickUpper +
+        ', ' +
+        curve.numPositions +
+        ' positions',
+    );
+  });
 
   try {
     // Simulate to preview addresses
@@ -195,7 +222,7 @@ async function main() {
     console.log('  Predicted pool ID:', simulation.poolId);
     console.log('  Gas estimate:', simulation.gasEstimate?.toString());
 
-    // Execute
+    // Execute with guaranteed same addresses
     const result = await simulation.execute();
 
     console.log('\nMulticurve created successfully!');
@@ -203,12 +230,18 @@ async function main() {
     console.log('  Pool ID:', result.poolId);
     console.log('  Transaction:', result.transactionHash);
 
-    console.log('\nFee Flow Summary:');
-    console.log('  On each swap, 0.3% fee is collected and distributed:');
-    console.log('  - 20% used to buy back ' + params.token.symbol);
-    console.log('  - 20% kept as WETH (sent to buyback destination)');
-    console.log('  - 30% streamed to beneficiaries');
-    console.log('  - 30% distributed to liquidity providers');
+    // Get the pool instance for monitoring
+    const poolInstance = await sdk.getMulticurvePool(result.tokenAddress);
+    const state = await poolInstance.getState();
+
+    console.log('\nPool Info:');
+    console.log('  Fee:', state.poolKey.fee);
+    console.log('  Tick spacing:', state.poolKey.tickSpacing);
+    console.log('  Far tick:', state.farTick);
+    console.log('  Status:', state.status);
+
+    console.log('\nThe pool can graduate when it reaches $40M market cap.');
+    console.log('After graduation, prices can continue to rise.');
   } catch (error) {
     console.error('\nError creating multicurve:', error);
     process.exit(1);

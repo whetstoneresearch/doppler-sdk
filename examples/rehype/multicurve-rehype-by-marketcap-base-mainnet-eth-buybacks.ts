@@ -1,5 +1,5 @@
 /**
- * Example: Create a Multicurve Pool with RehypeDopplerHook using Market Cap Ranges on Base Mainnet
+ * Example: Create a Multicurve Pool with RehypeDopplerHookInitializer using Market Cap Ranges on Base Mainnet
  *
  * This example is simulation-first and supports optional execution.
  *
@@ -10,15 +10,22 @@
  * Optional env:
  * - RPC_URL (defaults to Base mainnet RPC)
  * - EXECUTE_MAINNET=true (if omitted, the script only simulates)
+ * - BUYBACK_DESTINATION (defaults to the deployer account)
  *
- * This example demonstrates the recommended way to configure a RehypeDopplerHook:
+ * This example demonstrates a RehypeDopplerHookInitializer configured for WETH/numeraire
+ * accrual:
  * - Using withCurves() with market cap ranges (no tick math required)
  * - Setting graduationMarketCap to define when the pool can graduate
- * - Configuring advanced fee distribution (buybacks, beneficiaries, LPs)
+ * - Routing 100% of distributable fees into WETH/numeraire
+ * - Accruing those WETH fees until collectFees(asset) transfers them to the
+ *   buyback destination
+ * - Contrasting routeToBeneficiaryFees with directBuyback:
+ *   - directBuyback transfers buyback outputs during hook processing
+ *   - routeToBeneficiaryFees records buyback outputs as claimable hook fees
  * - Live ETH price fetching for accurate market cap calculations
- * - Executing a small follow-up buy 20 seconds after deployment
+ * - Executing a small follow-up buy and demonstrating fee collection
  */
-import './env';
+import '../env';
 
 import {
   CommandBuilder,
@@ -26,13 +33,15 @@ import {
   V4ActionBuilder,
   V4ActionType,
 } from 'doppler-router';
-import { DopplerSDK, getAddresses } from '../src/evm';
+import { DAY_SECONDS, DopplerSDK, getAddresses } from '../../src/evm';
 import {
   parseEther,
   createPublicClient,
   createWalletClient,
   formatEther,
+  getAddress,
   http,
+  isAddress,
   type Address,
   type Hex,
 } from 'viem';
@@ -48,7 +57,8 @@ const REHYPE_START_DELAY_SECONDS = 20;
 const REHYPE_START_FEE = 800_000; // 80%
 const REHYPE_END_FEE = 10_000; // 1%
 const REHYPE_DURATION_SECONDS = 15;
-const SWAP_AMOUNT_IN = 1000000n;
+const BALANCE_LIMIT_DURATION_SECONDS = 1 * DAY_SECONDS;
+const SWAP_AMOUNT_IN = parseEther('0.00001');
 const POST_DEPLOY_SWAP_SLIPPAGE_BPS = 500n; // 5%
 
 const CONTRACT_BALANCE = BigInt(
@@ -62,10 +72,6 @@ if (!confirmMainnet) {
     'Set CONFIRM_BASE_MAINNET=true to run this script on Base mainnet',
   );
 }
-
-// Destination address for buyback tokens
-const BUYBACK_DESTINATION =
-  '0x0000000000000000000000000000000000000007' as Address;
 
 const universalRouterAbi = [
   {
@@ -104,6 +110,15 @@ async function getEthPriceUsd(): Promise<number> {
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function optionalAddressEnv(name: string): Address | undefined {
+  const value = process.env[name];
+  if (!value) return undefined;
+  if (!isAddress(value)) {
+    throw new Error(`${name} must be a valid EVM address`);
+  }
+  return getAddress(value);
 }
 
 async function waitUntilTimestamp(
@@ -169,6 +184,8 @@ function buildBuyEthV4Commands(params: {
 
 async function main() {
   const account = privateKeyToAccount(privateKey);
+  const claimableNumeraireRecipient =
+    optionalAddressEnv('BUYBACK_DESTINATION') ?? account.address;
 
   const publicClient = createPublicClient({
     chain: base,
@@ -194,9 +211,9 @@ async function main() {
   });
   const addresses = getAddresses(base.id);
 
-  const rehypeDopplerHookAddress = addresses.rehypeDopplerHookInitializer;
-  console.log('rehype initializer', addresses.rehypeDopplerHookInitializer);
-  if (!rehypeDopplerHookAddress) {
+  const rehypeDopplerHookInitializerAddress =
+    addresses.rehypeDopplerHookInitializer;
+  if (!rehypeDopplerHookInitializerAddress) {
     throw new Error(
       'Base mainnet RehypeDopplerHookInitializer is not configured in SDK deployments',
     );
@@ -236,10 +253,14 @@ async function main() {
 
   console.log('Airlock owner:', airlockOwner);
 
-  // Define beneficiaries (required for RehypeDopplerHook)
-  // Airlock owner must have >= 5% shares
+  // Pool beneficiaries are still required by the initializer. They are distinct
+  // from Rehype's claimable fee accounting, which routes to the claim recipient.
+  // Airlock owner must have >= 5% shares.
   const beneficiaries = [
-    { beneficiary: BUYBACK_DESTINATION, shares: 950_000_000_000_000_000n }, // 95%
+    {
+      beneficiary: claimableNumeraireRecipient,
+      shares: 950_000_000_000_000_000n,
+    }, // 95%
     { beneficiary: airlockOwner, shares: 50_000_000_000_000_000n }, // 5%
   ];
 
@@ -249,14 +270,18 @@ async function main() {
   const rehypeStartingTime =
     Number(latestBlock.timestamp) + REHYPE_START_DELAY_SECONDS;
 
-  // Build multicurve using market cap ranges + RehypeDopplerHook
-  console.log(addresses.dopplerHookInitializer);
   const params = sdk
     .buildMulticurveAuction()
     .tokenConfig({
+      type: 'dopplerERC20V1',
       name: 'Rehype MarketCap Token',
       symbol: 'RMC',
       tokenURI: 'ipfs://rehype-marketcap-example',
+      maxBalanceLimit: parseEther('10000'),
+      balanceLimitEnd:
+        Math.floor(Date.now() / 1000) + BALANCE_LIMIT_DURATION_SECONDS,
+      controller: account.address,
+      excludedFromBalanceLimit: [account.address],
     })
     .saleConfig({
       initialSupply: parseEther('1000000000'), // 1 billion tokens
@@ -280,29 +305,34 @@ async function main() {
         {
           marketCap: { start: 4_000_000, end: 50_000_000 }, // $4M - $50M
           numPositions: 10,
-          shares: parseEther('0.3'), // 30%
+          shares: parseEther('0.29'),
+        },
+        {
+          marketCap: { start: 50_000_000, end: 'max' },
+          numPositions: 10,
+          shares: parseEther('0.01'),
         },
       ],
-      beneficiaries, // Required for RehypeDopplerHook
+      beneficiaries,
     })
     // graduationMarketCap uses numerairePrice from withCurves() for tick conversion
     .withRehypeDopplerHook({
-      hookAddress: rehypeDopplerHookAddress,
-      buybackDestination: BUYBACK_DESTINATION,
+      hookAddress: rehypeDopplerHookInitializerAddress,
+      buybackDestination: claimableNumeraireRecipient,
       startFee: REHYPE_START_FEE,
       endFee: REHYPE_END_FEE,
       durationSeconds: REHYPE_DURATION_SECONDS,
       startingTime: rehypeStartingTime,
-      feeRoutingMode: 0,
+      feeRoutingMode: 'routeToBeneficiaryFees',
       feeDistributionInfo: {
-        assetFeesToAssetBuybackWad: 200_000_000_000_000_000n, // 20%
-        assetFeesToNumeraireBuybackWad: 200_000_000_000_000_000n, // 20%
-        assetFeesToBeneficiaryWad: 300_000_000_000_000_000n, // 30%
-        assetFeesToLpWad: 300_000_000_000_000_000n, // 30%
-        numeraireFeesToAssetBuybackWad: 200_000_000_000_000_000n,
-        numeraireFeesToNumeraireBuybackWad: 200_000_000_000_000_000n,
-        numeraireFeesToBeneficiaryWad: 300_000_000_000_000_000n,
-        numeraireFeesToLpWad: 300_000_000_000_000_000n,
+        assetFeesToAssetBuybackWad: 0n,
+        assetFeesToNumeraireBuybackWad: parseEther('1'),
+        assetFeesToBeneficiaryWad: 0n,
+        assetFeesToLpWad: 0n,
+        numeraireFeesToAssetBuybackWad: 0n,
+        numeraireFeesToNumeraireBuybackWad: parseEther('1'),
+        numeraireFeesToBeneficiaryWad: 0n,
+        numeraireFeesToLpWad: 0n,
       },
       graduationMarketCap: 40_000_000, // $40M graduation target (within curve range)
     })
@@ -312,9 +342,6 @@ async function main() {
     .withDopplerHookInitializer(addresses.dopplerHookInitializer)
     .withNoOpMigrator(addresses.noOpMigrator)
     .build();
-
-  console.log(rehypeDopplerHookAddress);
-  console.log('initializer', addresses.dopplerHookInitializer);
 
   console.log('\nMulticurve Configuration:');
   console.log('  Network: Base mainnet');
@@ -329,23 +356,26 @@ async function main() {
     params.dopplerHook?.farTick,
   );
   console.log('  Beneficiaries:', params.pool.beneficiaries?.length);
+  console.log('  Claim recipient:', claimableNumeraireRecipient);
 
   console.log('\nMarket Cap Targets:');
   console.log('  Launch price: $500,000');
-  console.log('  Highest curve end: $50,000,000');
+  console.log('  Highest finite curve end: $50,000,000');
+  console.log('  Tail curve: $50,000,000+');
   console.log(
     '  Graduation target: $40,000,000 (before max, demonstrating flexibility)',
   );
 
-  console.log('\nRehypeDopplerHook Fee Distribution:');
+  console.log('\nRehypeDopplerHookInitializer Fee Distribution:');
   console.log('  Start fee: 800000 (80%)');
   console.log('  End fee: 10000 (1%)');
   console.log('  Duration: 15 seconds');
   console.log('  Starts at unix time:', rehypeStartingTime);
-  console.log('  Asset buyback: 20%');
-  console.log('  Numeraire buyback: 20%');
-  console.log('  Beneficiaries: 30%');
-  console.log('  LPs: 30%');
+  console.log('  Routing mode: routeToBeneficiaryFees (claimable accrual)');
+  console.log('  Asset-denominated fees: 100% swapped to WETH');
+  console.log('  WETH-denominated fees: 100% kept as WETH');
+  console.log('  Beneficiary and LP fee shares: 0%');
+  console.log('  Claim recipient:', claimableNumeraireRecipient);
 
   try {
     // Simulate to preview addresses
@@ -372,10 +402,17 @@ async function main() {
 
     console.log('\nFee Flow Summary:');
     console.log('  On each swap, fees decay from 80% to 1% over 15 seconds.');
-    console.log('  - 20% used to buy back ' + params.token.symbol);
-    console.log('  - 20% kept as WETH (sent to buyback destination)');
-    console.log('  - 30% streamed to beneficiaries');
-    console.log('  - 30% distributed to liquidity providers');
+    console.log('  - Asset-denominated hook fees are swapped into WETH.');
+    console.log('  - WETH-denominated hook fees remain WETH.');
+    console.log(
+      '  - routeToBeneficiaryFees accrues WETH as claimable hook fees.',
+    );
+    console.log(
+      '  - directBuyback would transfer buyback outputs during hook processing.',
+    );
+    console.log(
+      '  - collectFees(asset) transfers claimable fees to the buyback destination.',
+    );
 
     const deploymentReceipt = await publicClient.getTransactionReceipt({
       hash: result.transactionHash as `0x${string}`,
@@ -399,8 +436,9 @@ async function main() {
     const multicurvePool = await sdk.getMulticurvePool(result.tokenAddress);
     const poolState = await multicurvePool.getState();
     const poolKey = poolState.poolKey;
-    const zeroForOne =
+    const wethIsCurrency0 =
       poolKey.currency0.toLowerCase() === addresses.weth.toLowerCase();
+    const zeroForOne = wethIsCurrency0;
 
     console.log('\nQuoting live buy...');
     console.log(
@@ -485,6 +523,51 @@ async function main() {
       formatEther(tokenBalance),
       params.token.symbol,
     );
+
+    const rehypeHook = await sdk.getRehypeDopplerHook(
+      rehypeDopplerHookInitializerAddress,
+    );
+    const routingMode = await rehypeHook.getFeeRoutingMode(result.poolId);
+    const hookFees = await rehypeHook.getHookFees(result.poolId);
+    const claimableWeth = wethIsCurrency0
+      ? hookFees.beneficiaryFees0
+      : hookFees.beneficiaryFees1;
+    const claimableToken = wethIsCurrency0
+      ? hookFees.beneficiaryFees1
+      : hookFees.beneficiaryFees0;
+
+    console.log('\nClaimable Rehype fees:');
+    console.log('  Routing mode:', routingMode, '(1 = routeToBeneficiaryFees)');
+    console.log('  Claim recipient:', claimableNumeraireRecipient);
+    console.log('  Claimable WETH:', formatEther(claimableWeth));
+    console.log(
+      '  Claimable token:',
+      formatEther(claimableToken),
+      params.token.symbol,
+    );
+
+    if (claimableWeth > 0n || claimableToken > 0n) {
+      const collection = await rehypeHook.collectFees(result.tokenAddress);
+      const collectedWeth = wethIsCurrency0
+        ? collection.amount0
+        : collection.amount1;
+      const collectedToken = wethIsCurrency0
+        ? collection.amount1
+        : collection.amount0;
+
+      console.log('\nCollected Rehype fees!');
+      console.log('  Collection transaction:', collection.transactionHash);
+      console.log('  Collected WETH:', formatEther(collectedWeth));
+      console.log(
+        '  Collected token:',
+        formatEther(collectedToken),
+        params.token.symbol,
+      );
+    } else {
+      console.log(
+        '  No claimable fees yet. Run collectFees(asset) after additional swaps.',
+      );
+    }
   } catch (error) {
     console.error('\nError creating multicurve:', error);
     process.exit(1);

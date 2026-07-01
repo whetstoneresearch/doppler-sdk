@@ -40,6 +40,30 @@ Atomically create a multicurve auction and pre-buy tokens using WETH (not ETH) w
 
 Create a multicurve auction with market cap presets, quote a swap using the SDK quoter, and execute the swap via Universal Router. Shows the complete flow of quoting and swapping on V4 pools.
 
+### 7a. [Multicurve Rehype Initializer, Raw Ticks](./rehype/multicurve-rehype-raw-ticks.ts)
+
+Create a Base Sepolia multicurve pool with `RehypeDopplerHookInitializer` using power-user tick configuration. This is the raw-tick counterpart to the market-cap examples: it sets `farTick` directly, uses direct buyback routing, and demonstrates a mixed fee split across asset buyback, WETH buyback, beneficiaries, and LPs.
+
+### 7b. [Multicurve Rehype by Market Cap, Base Sepolia](./rehype/multicurve-rehype-by-marketcap.ts)
+
+Create a Base Sepolia multicurve pool with `RehypeDopplerHookInitializer` using market-cap ranges instead of raw ticks. This is the easiest initializer-side Rehype multicurve path: `withCurves()` derives ticks from target market caps, includes a small `$50M+` tail range, `graduationMarketCap` derives `farTick`, and the example keeps the standard mixed direct-buyback fee split.
+
+### 7c. [Multicurve Rehype by Market Cap, Base Mainnet](./rehype/multicurve-rehype-by-marketcap-base-mainnet.ts)
+
+Simulate, and optionally broadcast, the same initializer-side market-cap Rehype multicurve flow on Base mainnet. This variant adds mainnet confirmation guards, live ETH pricing, the `$50M+` tail range, decaying Rehype fees, and a small post-deploy buy while still using direct buyback routing with the mixed fee split.
+
+### 7d. [Multicurve Rehype Claimable WETH Buybacks, Base Mainnet](./rehype/multicurve-rehype-by-marketcap-base-mainnet-eth-buybacks.ts)
+
+Simulate, and optionally broadcast, a Base mainnet initializer-side Rehype multicurve whose distributable hook fees accrue 100% as WETH/numeraire claimable by the configured recipient. Unlike the direct-buyback examples, this uses `routeToBeneficiaryFees`, the `$50M+` tail range, a `dopplerERC20V1` token, and demonstrates reading claimable hook fees and calling `collectFees(asset)`.
+
+### 7e. [Multicurve Rehype Graduation Market Cap](./rehype/multicurve-with-graduation-market-cap.ts)
+
+Focus on `graduationMarketCap` behavior for a Rehype multicurve pool on Base Sepolia. Use this when you want to see how market-cap thresholds must fit inside the configured curve range, how the `$50M+` tail keeps the curve open above the finite target range, and how the SDK converts the graduation target into the hook's `farTick`.
+
+### 7f. [Dynamic Auction Rehype Migrator](./rehype/dynamic-auction-rehype-migrator.ts)
+
+Create a dynamic auction that configures `RehypeDopplerHookMigrator` on the Doppler Hook migrator path instead of the initializer-side multicurve path. This is for launches that graduate into a Doppler Hook migration, with Rehype fee routing configured on the migrated pool rather than on a live multicurve initializer.
+
 ### 8. [Multicurve Indexer Data](./multicurve-indexer-data.ts)
 
 Query and process pool data from the Doppler indexer. Demonstrates fetching pool metrics, parsing PoolKey data, monitoring migration status, and using indexer data with the SDK for quoting. **Note:** Requires `graphql-request` package.
