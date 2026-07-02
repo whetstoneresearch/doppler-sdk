@@ -1429,6 +1429,10 @@ for (const id of SUPPORTED_CHAIN_IDS) {
 }
 ```
 
+Robinhood Chain is available as `CHAIN_IDS.ROBINHOOD` (`4663`). The SDK exposes
+addresses and support checks for it, but does not export a viem chain definition;
+use your application's chain/client setup when constructing clients.
+
 ## Advanced Usage
 
 ### Custom Vesting Configuration
@@ -1784,7 +1788,7 @@ pnpm dev
 
 The SDK includes comprehensive tests covering:
 
-- **Airlock Whitelisting**: Verifies that all modules are properly whitelisted on Ethereum Mainnet, Monad Mainnet, Base Mainnet, and Base Sepolia
+- **Airlock Whitelisting**: Verifies that all modules are properly whitelisted on Ethereum Mainnet, Monad Mainnet, Base Mainnet, Base Sepolia, and Robinhood Chain
 - **Multicurve Functionality**: Tests multicurve auction creation and quoting
 - **Token Address Mining**: Tests for generating optimized token addresses
 
@@ -1798,10 +1802,10 @@ pnpm test:whitelisting
 ALCHEMY_API_KEY=your_key_here pnpm test:whitelisting
 
 # Limit to specific whitelist-audit chains when needed
-TEST_CHAINS=mainnet,base,base-sepolia,monad-mainnet pnpm test:whitelisting
+TEST_CHAINS=mainnet,base,base-sepolia,monad-mainnet,robinhood pnpm test:whitelisting
 ```
 
-The whitelisting suite is scoped to the release-audit chains: Ethereum Mainnet, Monad Mainnet, Base Mainnet, and Base Sepolia.
+The whitelisting suite is scoped to the release-audit chains: Ethereum Mainnet, Monad Mainnet, Base Mainnet, Base Sepolia, and Robinhood Chain.
 
 Whitelisting test RPC priority is:
 

@@ -31,6 +31,7 @@ const WHITELIST_TEST_CHAIN_IDS = [
   CHAIN_IDS.MONAD_MAINNET,
   CHAIN_IDS.BASE,
   CHAIN_IDS.BASE_SEPOLIA,
+  CHAIN_IDS.ROBINHOOD,
 ] as const satisfies readonly SupportedChainId[];
 
 // Chain name mapping for TEST_CHAINS env var filtering
@@ -39,6 +40,7 @@ const CHAIN_NAME_TO_ID: Record<string, SupportedChainId> = {
   'base-sepolia': CHAIN_IDS.BASE_SEPOLIA,
   mainnet: CHAIN_IDS.MAINNET,
   'monad-mainnet': CHAIN_IDS.MONAD_MAINNET,
+  robinhood: CHAIN_IDS.ROBINHOOD,
 };
 
 // Parse TEST_CHAINS env var (comma-separated chain names or 'all')
@@ -91,6 +93,7 @@ const CHAIN_ID_NAMES: Record<number, string> = {
   8453: 'Base',
   84532: 'Base Sepolia',
   143: 'Monad Mainnet',
+  4663: 'Robinhood',
 };
 
 type AirlockModuleCase = {

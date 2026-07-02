@@ -49,7 +49,7 @@ const DEFAULT_TEST_CLIENT_CONFIG = {
 
 /** Monad Mainnet chain definition (not in viem/chains yet) */
 export const monadMainnet = defineChain({
-  id: 143,
+  id: CHAIN_IDS.MONAD_MAINNET,
   name: 'Monad Mainnet',
   nativeCurrency: {
     decimals: 18,
@@ -59,6 +59,27 @@ export const monadMainnet = defineChain({
   rpcUrls: {
     default: {
       http: [],
+    },
+  },
+})
+
+export const robinhoodChain = defineChain({
+  id: CHAIN_IDS.ROBINHOOD,
+  name: 'Robinhood Chain',
+  nativeCurrency: {
+    decimals: 18,
+    name: 'Ether',
+    symbol: 'ETH',
+  },
+  rpcUrls: {
+    default: {
+      http: ['https://rpc.mainnet.chain.robinhood.com'],
+    },
+  },
+  blockExplorers: {
+    default: {
+      name: 'Robinhood Chain Blockscout',
+      url: 'https://robinhoodchain.blockscout.com',
     },
   },
 })
@@ -91,6 +112,10 @@ const CHAIN_CONFIG: Record<number, ChainTestConfig> = {
     chain: baseSepolia,
     envVar: 'BASE_SEPOLIA_RPC_URL',
     alchemyNetwork: 'base-sepolia',
+  },
+  [CHAIN_IDS.ROBINHOOD]: {
+    chain: robinhoodChain,
+    envVar: 'ROBINHOOD_RPC_URL',
   },
   [CHAIN_IDS.MONAD_MAINNET]: {
     chain: monadMainnet,
@@ -179,6 +204,7 @@ export const getMainnetClient = () => getTestClient(CHAIN_IDS.MAINNET)
 export const getEthSepoliaClient = () => getTestClient(CHAIN_IDS.ETH_SEPOLIA)
 export const getBaseClient = () => getTestClient(CHAIN_IDS.BASE)
 export const getBaseSepoliaClient = () => getTestClient(CHAIN_IDS.BASE_SEPOLIA)
+export const getRobinhoodClient = () => getTestClient(CHAIN_IDS.ROBINHOOD)
 export const getMonadMainnetClient = () => getTestClient(CHAIN_IDS.MONAD_MAINNET)
 
 /**
