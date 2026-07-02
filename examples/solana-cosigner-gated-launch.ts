@@ -18,25 +18,18 @@
  */
 import './env.js';
 
-import {
-  TOKEN_PROGRAM_ADDRESS,
-  findAssociatedTokenPda,
-  getCreateAssociatedTokenIdempotentInstruction,
-  getSyncNativeInstruction,
-} from '@solana-program/token';
-import {
-  SYSTEM_PROGRAM_ADDRESS,
-  getTransferSolInstruction,
-} from '@solana-program/system';
+import { SYSTEM_PROGRAM_ADDRESS } from '@solana-program/system';
 import { generateKeyPairSigner } from '@solana/kit';
-import { SYSVAR_RENT_ADDRESS } from '@solana/sysvars';
 
 import {
   cosignerHook,
   cpmm,
   cpmmMigrator,
   createLaunch,
+  curveSwapExactIn,
   initializer,
+  migrateLaunch,
+  swapExactIn,
 } from '../src/solana/index.js';
 import {
   DEFAULT_SWAP_FEE_BPS,
@@ -44,12 +37,10 @@ import {
   WSOL_MINT,
   assertSimulationRejected,
   assertSolanaExampleNetwork,
-  createSetComputeUnitLimitInstruction,
   createSolanaClientsFromEnv,
   fetchActiveCosigners,
   getSolPriceUsd,
   getSolanaCpmmDeploymentFromEnv,
-  getTokenAccountRentLamports,
   loadCosigner,
   loadKeypairSignerFromEnv,
   sendInitializeLaunchWithLookupTable,
@@ -279,104 +270,38 @@ async function main() {
     console.log('');
 
     // ── Step 3: Execute the curve buy ────────────────────────────────────────
-    // ATA creation, WSOL deposit, and the curve buy are batched into a single
-    // transaction — instructions execute sequentially so the ATAs exist and are
-    // funded before the swap runs.
     console.log('Step 3: Executing bonding curve buy...');
 
-    const [userBaseAta] = await findAssociatedTokenPda({
-      owner: payer.address,
-      mint: baseMint.address,
-      tokenProgram: TOKEN_PROGRAM_ADDRESS,
-    });
-    const [userQuoteAta] = await findAssociatedTokenPda({
-      owner: payer.address,
-      mint: WSOL_MINT,
-      tokenProgram: TOKEN_PROGRAM_ADDRESS,
-    });
-
-    const createBaseAtaIx = getCreateAssociatedTokenIdempotentInstruction({
+    const swapBaseInput = {
+      deployment,
+      launch,
+      launchAuthority,
+      baseVault: baseVault.address,
+      quoteVault: quoteVault.address,
+      launchFeeState,
+      baseMint: baseMint.address,
+      quoteMint: WSOL_MINT,
       payer,
-      ata: userBaseAta,
-      owner: payer.address,
-      mint: baseMint.address,
+      amountIn: BUY_AMOUNT_IN,
+      minAmountOut: 1n,
+      tradeDirection: initializer.TRADE_DIRECTION_BUY,
+      hookProgram: deployment.cosignerHookProgram,
+    } as const;
+    const signedBuy = await curveSwapExactIn({
+      ...swapBaseInput,
+      remainingAccounts: signedHookRemainingAccounts,
     });
-    const createQuoteAtaIx = getCreateAssociatedTokenIdempotentInstruction({
-      payer,
-      ata: userQuoteAta,
-      owner: payer.address,
-      mint: WSOL_MINT,
+    const unsignedBuy = await curveSwapExactIn({
+      ...swapBaseInput,
+      remainingAccounts: unsignedHookRemainingAccounts,
     });
-    const transferSolIx = getTransferSolInstruction({
-      source: payer,
-      destination: userQuoteAta,
-      amount: BUY_AMOUNT_IN + getTokenAccountRentLamports(),
-    });
-
-    const syncNativeIx = getSyncNativeInstruction({ account: userQuoteAta });
-
-    const swapIx = initializer.createCurveSwapExactInInstruction(
-      {
-        launch,
-        launchAuthority,
-        baseVault: baseVault.address,
-        quoteVault: quoteVault.address,
-        launchFeeState,
-        userBaseAccount: userBaseAta,
-        userQuoteAccount: userQuoteAta,
-        baseMint: baseMint.address,
-        quoteMint: WSOL_MINT,
-        user: payer,
-        hookProgram: deployment.cosignerHookProgram,
-        baseTokenProgram: TOKEN_PROGRAM_ADDRESS,
-        quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
-        remainingAccounts: signedHookRemainingAccounts,
-      },
-      {
-        amountIn: BUY_AMOUNT_IN,
-        minAmountOut: 1n, // accept any amount for the example; use preview.amountOut in prod
-        tradeDirection: initializer.TRADE_DIRECTION_BUY,
-      },
-      deployment.initializerProgram,
-    );
-
-    const unsignedSwapIx = initializer.createCurveSwapExactInInstruction(
-      {
-        launch,
-        launchAuthority,
-        baseVault: baseVault.address,
-        quoteVault: quoteVault.address,
-        launchFeeState,
-        userBaseAccount: userBaseAta,
-        userQuoteAccount: userQuoteAta,
-        baseMint: baseMint.address,
-        quoteMint: WSOL_MINT,
-        user: payer,
-        hookProgram: deployment.cosignerHookProgram,
-        baseTokenProgram: TOKEN_PROGRAM_ADDRESS,
-        quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
-        remainingAccounts: unsignedHookRemainingAccounts,
-      },
-      {
-        amountIn: BUY_AMOUNT_IN,
-        minAmountOut: 1n,
-        tradeDirection: initializer.TRADE_DIRECTION_BUY,
-      },
-      deployment.initializerProgram,
-    );
 
     // This intentionally omits the cosigner signer account. The initializer
     // hook is configured to reject this pre-migration swap.
     const unsignedCurveResult = await simulateInstructions({
       rpc,
       payer,
-      instructions: [
-        createBaseAtaIx,
-        createQuoteAtaIx,
-        transferSolIx,
-        syncNativeIx,
-        unsignedSwapIx,
-      ],
+      instructions: unsignedBuy.instructions,
     });
     assertSimulationRejected(
       'Unsigned bonding curve buy',
@@ -388,13 +313,7 @@ async function main() {
         rpc,
         rpcSubscriptions,
         payer,
-        instructions: [
-          createBaseAtaIx,
-          createQuoteAtaIx,
-          transferSolIx,
-          syncNativeIx,
-          swapIx,
-        ],
+        instructions: signedBuy.instructions,
       });
 
       console.log('  Cosigned curve buy confirmed:', signature);
@@ -410,43 +329,27 @@ async function main() {
     // at launch creation.
     console.log('Step 4: Migrating launch to CPMM pool...');
 
-    const migrateLaunchIxBase = initializer.createMigrateLaunchInstruction(
-      {
-        config: initializerConfig,
-        launch,
-        launchAuthority,
-        baseMint: baseMint.address,
-        quoteMint: WSOL_MINT,
-        baseVault: baseVault.address,
-        quoteVault: quoteVault.address,
-        launchFeeState,
-        migratorProgram: deployment.cpmmMigratorProgram,
-        payer,
-        baseTokenProgram: TOKEN_PROGRAM_ADDRESS,
-        quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
-        systemProgram: SYSTEM_PROGRAM_ADDRESS,
-        rent: SYSVAR_RENT_ADDRESS,
-      },
-      deployment.initializerProgram,
-    );
-
-    const migrateLaunchIx = {
-      ...migrateLaunchIxBase,
-      accounts: [
-        ...(migrateLaunchIxBase.accounts ?? []),
-        ...migrationAccounts.metas,
-      ],
-    };
+    const migration = migrateLaunch({
+      deployment,
+      config: initializerConfig,
+      launch,
+      launchAuthority,
+      baseMint: baseMint.address,
+      quoteMint: WSOL_MINT,
+      baseVault: baseVault.address,
+      quoteVault: quoteVault.address,
+      launchFeeState,
+      payer,
+      cpmmMigration: migrationAccounts,
+      computeUnitLimit: 400_000,
+    });
 
     {
       const signature = await sendInstructions({
         rpc,
         rpcSubscriptions,
         payer,
-        instructions: [
-          createSetComputeUnitLimitInstruction(400_000),
-          migrateLaunchIx,
-        ],
+        instructions: migration.instructions,
       });
 
       console.log('  Migration confirmed:', signature);
@@ -527,33 +430,13 @@ async function main() {
 
         const tradeDirection = pool.token0Mint === baseMint.address ? 0 : 1;
         const CPMM_SWAP_AMOUNT_IN = 1_000_000n; // 1 base token at 6 decimals
-        const quote = cpmm.getSwapQuote(
-          pool,
-          CPMM_SWAP_AMOUNT_IN,
-          tradeDirection,
-        );
-        const minAmountOut = (quote.amountOut * 9_500n) / 10_000n; // 5% example slippage
-
-        const userToken0 =
-          pool.token0Mint === baseMint.address ? userBaseAta : userQuoteAta;
-        const userToken1 =
-          pool.token1Mint === baseMint.address ? userBaseAta : userQuoteAta;
-
-        const cpmmSwapIx = cpmm.createSwapInstruction({
-          config: cpmmConfig,
-          pool: poolAddress,
-          authority: pool.authority,
-          vault0: pool.vault0,
-          vault1: pool.vault1,
-          token0Mint: pool.token0Mint,
-          token1Mint: pool.token1Mint,
-          userToken0,
-          userToken1,
-          user: payer,
+        const cpmmSwap = await swapExactIn({
+          deployment,
+          pool: poolResult,
+          payer,
           amountIn: CPMM_SWAP_AMOUNT_IN,
-          minAmountOut,
+          slippageBps: 500n,
           tradeDirection,
-          programId: deployment.cpmmProgram,
         });
 
         {
@@ -561,10 +444,7 @@ async function main() {
             rpc,
             rpcSubscriptions,
             payer,
-            instructions: [
-              createSetComputeUnitLimitInstruction(400_000),
-              cpmmSwapIx,
-            ],
+            instructions: cpmmSwap.instructions,
           });
 
           console.log('  Ungated CPMM swap confirmed:', signature);
