@@ -16,17 +16,19 @@ import './env.js';
 import {
   TOKEN_PROGRAM_ADDRESS,
   findAssociatedTokenPda,
-  getCreateAssociatedTokenIdempotentInstruction,
 } from '@solana-program/token';
 import { SYSTEM_PROGRAM_ADDRESS } from '@solana-program/system';
 import { generateKeyPairSigner } from '@solana/kit';
-import { SYSVAR_RENT_ADDRESS } from '@solana/sysvars';
 
 import {
+  assertMigrationQuoteThreshold,
   cosignerHook,
   cpmm,
   createLaunch,
+  curveSwapExactIn,
   initializer,
+  migrateLaunch,
+  swapExactIn,
 } from '../src/solana/index.js';
 
 import {
@@ -34,11 +36,9 @@ import {
   DEFAULT_TEST_METADATA,
   DEVNET_USDC_MINT as USDC_MINT,
   assertCosignerRegistered,
-  assertMigrationQuoteThreshold,
   assertSimulationRejected,
   assertSolanaExampleNetwork,
   assertTokenBalance,
-  createSetComputeUnitLimitInstruction,
   createSolanaClientsFromEnv,
   getSolanaCpmmDeploymentFromEnv,
   loadCosigner,
@@ -199,76 +199,42 @@ async function main() {
   });
   console.log('  Launch tx:         ', launchSignature);
 
-  const [userBaseAta] = await findAssociatedTokenPda({
-    owner: payer.address,
-    mint: baseMint.address,
-    tokenProgram: TOKEN_PROGRAM_ADDRESS,
-  });
-  const [userQuoteAta] = await findAssociatedTokenPda({
-    owner: payer.address,
-    mint: USDC_MINT,
-    tokenProgram: TOKEN_PROGRAM_ADDRESS,
-  });
-  const setupAndFund = [
-    getCreateAssociatedTokenIdempotentInstruction({
-      payer,
-      ata: userBaseAta,
-      owner: payer.address,
-      mint: baseMint.address,
-    }),
-    getCreateAssociatedTokenIdempotentInstruction({
-      payer,
-      ata: userQuoteAta,
-      owner: payer.address,
-      mint: USDC_MINT,
-    }),
-  ];
-  const swapAccounts = {
+  const swapBaseInput = {
+    deployment,
     launch,
     launchAuthority,
     baseVault: baseVault.address,
     quoteVault: quoteVault.address,
     launchFeeState,
-    userBaseAccount: userBaseAta,
-    userQuoteAccount: userQuoteAta,
     baseMint: baseMint.address,
     quoteMint: USDC_MINT,
-    user: payer,
+    payer,
+    amountIn: BUY_AMOUNT_IN,
+    minAmountOut: 1n,
+    tradeDirection: initializer.TRADE_DIRECTION_BUY,
     hookProgram: deployment.cosignerHookProgram,
-    baseTokenProgram: TOKEN_PROGRAM_ADDRESS,
-    quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
-  };
+  } as const;
 
-  const unsignedSwapIx = initializer.createCurveSwapExactInInstruction(
-    { ...swapAccounts, remainingAccounts: unsignedHookRemainingAccounts },
-    {
-      amountIn: BUY_AMOUNT_IN,
-      minAmountOut: 1n,
-      tradeDirection: initializer.TRADE_DIRECTION_BUY,
-    },
-    deployment.initializerProgram,
-  );
+  const unsignedBuy = await curveSwapExactIn({
+    ...swapBaseInput,
+    remainingAccounts: unsignedHookRemainingAccounts,
+  });
   const unsignedResult = await simulateInstructions({
     rpc,
     payer,
-    instructions: [...setupAndFund, unsignedSwapIx],
+    instructions: unsignedBuy.instructions,
   });
   assertSimulationRejected('Unsigned bonding curve buy', unsignedResult.err);
 
-  const signedSwapIx = initializer.createCurveSwapExactInInstruction(
-    { ...swapAccounts, remainingAccounts: signedHookRemainingAccounts },
-    {
-      amountIn: BUY_AMOUNT_IN,
-      minAmountOut: 1n,
-      tradeDirection: initializer.TRADE_DIRECTION_BUY,
-    },
-    deployment.initializerProgram,
-  );
+  const signedBuy = await curveSwapExactIn({
+    ...swapBaseInput,
+    remainingAccounts: signedHookRemainingAccounts,
+  });
   const buySignature = await sendInstructions({
     rpc,
     rpcSubscriptions,
     payer,
-    instructions: [...setupAndFund, signedSwapIx],
+    instructions: signedBuy.instructions,
   });
   console.log('  Cosigned buy tx:   ', buySignature);
 
@@ -298,51 +264,24 @@ async function main() {
   console.log('  Pending quote fees:', pendingQuoteFees.toString());
   console.log('');
 
-  const createRecipientAtaIxs = migrationAccounts.recipientAtas.map(
-    (ata, index) =>
-      getCreateAssociatedTokenIdempotentInstruction({
-        payer,
-        ata,
-        owner: launchBeneficiaries.recipients[index].wallet,
-        mint: baseMint.address,
-      }),
-  );
-
-  const migrateLaunchIxBase = initializer.createMigrateLaunchInstruction(
-    {
-      config: deployment.initializerConfig,
-      launch,
-      launchAuthority,
-      baseMint: baseMint.address,
-      quoteMint: USDC_MINT,
-      baseVault: baseVault.address,
-      quoteVault: quoteVault.address,
-      launchFeeState,
-      migratorProgram: deployment.cpmmMigratorProgram,
-      payer,
-      baseTokenProgram: TOKEN_PROGRAM_ADDRESS,
-      quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
-      systemProgram: SYSTEM_PROGRAM_ADDRESS,
-      rent: SYSVAR_RENT_ADDRESS,
-    },
-    deployment.initializerProgram,
-  );
-  const migrateLaunchIx = {
-    ...migrateLaunchIxBase,
-    accounts: [
-      ...(migrateLaunchIxBase.accounts ?? []),
-      ...migrationAccounts.metas,
-    ],
-  };
+  const migration = migrateLaunch({
+    deployment,
+    launch,
+    launchAuthority,
+    baseMint: baseMint.address,
+    quoteMint: USDC_MINT,
+    baseVault: baseVault.address,
+    quoteVault: quoteVault.address,
+    launchFeeState,
+    payer,
+    cpmmMigration: migrationAccounts,
+    recipients: launchBeneficiaries.recipients,
+  });
   const migrationSignature = await sendInstructions({
     rpc,
     rpcSubscriptions,
     payer,
-    instructions: [
-      createSetComputeUnitLimitInstruction(800_000),
-      ...createRecipientAtaIxs,
-      migrateLaunchIx,
-    ],
+    instructions: migration.instructions,
   });
   console.log('  Migration tx:      ', migrationSignature);
 
@@ -371,7 +310,7 @@ async function main() {
     throw new Error('CPMM pool was not found after migration');
   }
 
-  const { address: poolAddress, account: pool } = poolResult;
+  const { account: pool } = poolResult;
   if (pool.hookProgram !== SYSTEM_PROGRAM_ADDRESS || pool.hookFlags !== 0) {
     throw new Error(
       `Migrated pool hook mismatch: got program ${pool.hookProgram} flags ${pool.hookFlags}, expected no CPMM hook`,
@@ -380,33 +319,19 @@ async function main() {
 
   const tradeDirection = pool.token0Mint === baseMint.address ? 0 : 1;
   const CPMM_SWAP_AMOUNT_IN = 1_000_000n;
-  const quote = cpmm.getSwapQuote(pool, CPMM_SWAP_AMOUNT_IN, tradeDirection);
-  const minAmountOut = (quote.amountOut * 9_500n) / 10_000n;
-  const userToken0 =
-    pool.token0Mint === baseMint.address ? userBaseAta : userQuoteAta;
-  const userToken1 =
-    pool.token1Mint === baseMint.address ? userBaseAta : userQuoteAta;
-  const cpmmSwapIx = cpmm.createSwapInstruction({
-    config: migrationAccounts.cpmmConfig,
-    pool: poolAddress,
-    authority: pool.authority,
-    vault0: pool.vault0,
-    vault1: pool.vault1,
-    token0Mint: pool.token0Mint,
-    token1Mint: pool.token1Mint,
-    userToken0,
-    userToken1,
-    user: payer,
+  const cpmmSwap = await swapExactIn({
+    deployment,
+    pool: poolResult,
+    payer,
     amountIn: CPMM_SWAP_AMOUNT_IN,
-    minAmountOut,
+    slippageBps: 500n,
     tradeDirection,
-    programId: deployment.cpmmProgram,
   });
   const cpmmSwapSignature = await sendInstructions({
     rpc,
     rpcSubscriptions,
     payer,
-    instructions: [createSetComputeUnitLimitInstruction(400_000), cpmmSwapIx],
+    instructions: cpmmSwap.instructions,
   });
   console.log('  Ungated CPMM swap tx:', cpmmSwapSignature);
   console.log('');

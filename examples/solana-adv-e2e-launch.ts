@@ -14,35 +14,24 @@
  */
 import './env.js';
 
-import {
-  TOKEN_PROGRAM_ADDRESS,
-  findAssociatedTokenPda,
-  getCreateAssociatedTokenIdempotentInstruction,
-  getSyncNativeInstruction,
-} from '@solana-program/token';
-import {
-  SYSTEM_PROGRAM_ADDRESS,
-  getTransferSolInstruction,
-} from '@solana-program/system';
 import { generateKeyPairSigner } from '@solana/kit';
-import { SYSVAR_RENT_ADDRESS } from '@solana/sysvars';
 
 import {
   cpmm,
   cpmmMigrator,
   createLaunch,
+  curveSwapExactIn,
   initializer,
+  migrateLaunch,
 } from '../src/solana/index.js';
 import {
   DEFAULT_SWAP_FEE_BPS,
   DEFAULT_TEST_METADATA,
   WSOL_MINT,
   assertSolanaExampleNetwork,
-  createSetComputeUnitLimitInstruction,
   createSolanaClientsFromEnv,
   getSolPriceUsd,
   getSolanaCpmmDeploymentFromEnv,
-  getTokenAccountRentLamports,
   loadKeypairSignerFromEnv,
   sendInitializeLaunchWithLookupTable,
   sendInstructions,
@@ -248,78 +237,30 @@ async function main() {
     console.log('');
 
     // ── Step 4: Execute the curve buy ────────────────────────────────────────
-    // ATA creation, WSOL deposit, and the curve buy are batched into a single
-    // transaction — instructions execute sequentially so the ATAs exist and are
-    // funded before the swap runs.
     console.log('Step 4: Executing bonding curve buy...');
 
-    const [userBaseAta] = await findAssociatedTokenPda({
-      owner: payer.address,
-      mint: baseMint.address,
-      tokenProgram: TOKEN_PROGRAM_ADDRESS,
-    });
-    const [userQuoteAta] = await findAssociatedTokenPda({
-      owner: payer.address,
-      mint: WSOL_MINT,
-      tokenProgram: TOKEN_PROGRAM_ADDRESS,
-    });
-
-    const createBaseAtaIx = getCreateAssociatedTokenIdempotentInstruction({
+    const curveBuy = await curveSwapExactIn({
+      deployment,
+      launch,
+      launchAuthority,
+      baseVault: baseVault.address,
+      quoteVault: quoteVault.address,
+      launchFeeState,
+      baseMint: baseMint.address,
+      quoteMint: WSOL_MINT,
       payer,
-      ata: userBaseAta,
-      owner: payer.address,
-      mint: baseMint.address,
+      amountIn: BUY_AMOUNT_IN,
+      minAmountOut: 1n, // accept any amount for the example; use preview.amountOut in prod
+      tradeDirection: initializer.TRADE_DIRECTION_BUY,
+      hookProgram: deployment.cpmmHookProgram,
     });
-    const createQuoteAtaIx = getCreateAssociatedTokenIdempotentInstruction({
-      payer,
-      ata: userQuoteAta,
-      owner: payer.address,
-      mint: WSOL_MINT,
-    });
-    const transferSolIx = getTransferSolInstruction({
-      source: payer,
-      destination: userQuoteAta,
-      amount: BUY_AMOUNT_IN + getTokenAccountRentLamports(),
-    });
-
-    const syncNativeIx = getSyncNativeInstruction({ account: userQuoteAta });
-
-    const swapIx = initializer.createCurveSwapExactInInstruction(
-      {
-        launch,
-        launchAuthority,
-        baseVault: baseVault.address,
-        quoteVault: quoteVault.address,
-        launchFeeState,
-        userBaseAccount: userBaseAta,
-        userQuoteAccount: userQuoteAta,
-        baseMint: baseMint.address,
-        quoteMint: WSOL_MINT,
-        user: payer,
-        hookProgram: deployment.cpmmHookProgram,
-        baseTokenProgram: TOKEN_PROGRAM_ADDRESS,
-        quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
-      },
-      {
-        amountIn: BUY_AMOUNT_IN,
-        minAmountOut: 1n, // accept any amount for the example; use preview.amountOut in prod
-        tradeDirection: initializer.TRADE_DIRECTION_BUY,
-      },
-      deployment.initializerProgram,
-    );
 
     {
       const signature = await sendInstructions({
         rpc,
         rpcSubscriptions,
         payer,
-        instructions: [
-          createBaseAtaIx,
-          createQuoteAtaIx,
-          transferSolIx,
-          syncNativeIx,
-          swapIx,
-        ],
+        instructions: curveBuy.instructions,
       });
 
       console.log('  Curve buy confirmed:', signature);
@@ -335,43 +276,27 @@ async function main() {
     // at launch creation.
     console.log('Step 5: Migrating launch to CPMM pool...');
 
-    const migrateLaunchIxBase = initializer.createMigrateLaunchInstruction(
-      {
-        config: initializerConfig,
-        launch,
-        launchAuthority,
-        baseMint: baseMint.address,
-        quoteMint: WSOL_MINT,
-        baseVault: baseVault.address,
-        quoteVault: quoteVault.address,
-        launchFeeState,
-        migratorProgram: deployment.cpmmMigratorProgram,
-        payer,
-        baseTokenProgram: TOKEN_PROGRAM_ADDRESS,
-        quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
-        systemProgram: SYSTEM_PROGRAM_ADDRESS,
-        rent: SYSVAR_RENT_ADDRESS,
-      },
-      deployment.initializerProgram,
-    );
-
-    const migrateLaunchIx = {
-      ...migrateLaunchIxBase,
-      accounts: [
-        ...(migrateLaunchIxBase.accounts ?? []),
-        ...migrationAccounts.metas,
-      ],
-    };
+    const migration = migrateLaunch({
+      deployment,
+      config: initializerConfig,
+      launch,
+      launchAuthority,
+      baseMint: baseMint.address,
+      quoteMint: WSOL_MINT,
+      baseVault: baseVault.address,
+      quoteVault: quoteVault.address,
+      launchFeeState,
+      payer,
+      cpmmMigration: migrationAccounts,
+      computeUnitLimit: 400_000,
+    });
 
     {
       const signature = await sendInstructions({
         rpc,
         rpcSubscriptions,
         payer,
-        instructions: [
-          createSetComputeUnitLimitInstruction(400_000),
-          migrateLaunchIx,
-        ],
+        instructions: migration.instructions,
       });
 
       console.log('  Migration confirmed:', signature);
