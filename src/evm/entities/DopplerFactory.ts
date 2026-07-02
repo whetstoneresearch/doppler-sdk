@@ -77,6 +77,7 @@ import {
 import {
   computeOptimalGamma,
   encodeRehypeDopplerHookMigratorCalldata,
+  getMaxLiquiditySafeMulticurveTickUpper,
   MIN_TICK,
   MAX_TICK,
   isToken0Expected,
@@ -4346,6 +4347,7 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     const normalizedCurves = this.normalizeMulticurveCurves(
       params.pool.curves,
       params.pool.tickSpacing,
+      params.sale.numTokensToSell,
     );
 
     const addresses = getAddresses(this.chainId);
@@ -4978,6 +4980,7 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
   private normalizeMulticurveCurves(
     curves: CreateMulticurveParams['pool']['curves'],
     tickSpacing: number,
+    numTokensToSell: bigint,
   ): CreateMulticurveParams['pool']['curves'] {
     if (tickSpacing <= 0) {
       throw new Error('Tick spacing must be positive');
@@ -5044,33 +5047,21 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       throw new Error('Unable to determine fallback multicurve tick range');
     }
 
-    const fallbackTickUpper = this.roundMaxTickDown(tickSpacing);
-
-    // Guard: if fallback range is invalid, step back by tickSpacing
-    if (fallbackTickLower >= fallbackTickUpper) {
-      // Cannot extend beyond max tick — adjust fallback to use a valid range
-      const adjustedLower = fallbackTickUpper - tickSpacing;
-      if (adjustedLower < fallbackTickLower) {
-        // No room for fallback curve — return sanitized curves without fallback
-        return sanitizedCurves;
-      }
-      // Otherwise use adjusted range
-      const fallbackCurve = {
-        tickLower: adjustedLower,
-        tickUpper: fallbackTickUpper,
-        numPositions:
-          sanitizedCurves[sanitizedCurves.length - 1]?.numPositions ?? 1,
-        shares: missingShare,
-      };
-      return [...sanitizedCurves, fallbackCurve];
-    }
+    const fallbackNumPositions =
+      sanitizedCurves[sanitizedCurves.length - 1]?.numPositions ?? 1;
+    const fallbackTickUpper = getMaxLiquiditySafeMulticurveTickUpper({
+      tickLower: fallbackTickLower,
+      tickUpper: this.roundMaxTickDown(tickSpacing),
+      tickSpacing,
+      numPositions: fallbackNumPositions,
+      curveSupply: (numTokensToSell * missingShare) / WAD,
+    });
 
     const fallbackCurve = {
       // Extend from the most positive user tick out to the maximum supported tick bucket
       tickLower: fallbackTickLower,
       tickUpper: fallbackTickUpper,
-      numPositions:
-        sanitizedCurves[sanitizedCurves.length - 1]?.numPositions ?? 1,
+      numPositions: fallbackNumPositions,
       shares: missingShare,
     };
 

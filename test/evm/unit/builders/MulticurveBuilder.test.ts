@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { parseEther, type Address } from 'viem';
 import { MulticurveBuilder } from '../../../../src/evm/builders';
 import { CHAIN_IDS } from '../../../../src/evm/addresses';
+import { marketCapToTickForMulticurve } from '../../../../src/evm/utils';
 import {
   DEFAULT_MULTICURVE_LOWER_TICKS,
   DEFAULT_MULTICURVE_MAX_SUPPLY_SHARES,
@@ -474,6 +475,85 @@ describe('MulticurveBuilder', () => {
       expect(() => builder.build()).toThrow(
         'graduationMarketCap requires numerairePrice',
       );
+    });
+
+    it('derives farTick for rehype initializer config from graduationMarketCap', () => {
+      const graduationMarketCap = 20_000_000;
+      const initialSupply = parseEther('1000000000');
+      const expectedFarTick = marketCapToTickForMulticurve({
+        marketCapUSD: graduationMarketCap,
+        tokenSupply: initialSupply,
+        numerairePriceUSD: 3000,
+        tickSpacing: 10,
+        tokenDecimals: 18,
+        numeraireDecimals: 18,
+      });
+
+      const params = MulticurveBuilder.forChain(CHAIN_IDS.BASE_SEPOLIA)
+        .tokenConfig({
+          type: 'standard',
+          name: 'RehypeMarketCap',
+          symbol: 'RMC',
+          tokenURI: 'ipfs://rehype-market-cap',
+        })
+        .saleConfig({
+          initialSupply,
+          numTokensToSell: parseEther('900000000'),
+          numeraire: WETH_BASE,
+        })
+        .withCurves({
+          numerairePrice: 3000,
+          fee: FEE_TIERS.LOW,
+          curves: [
+            {
+              marketCap: { start: 500_000, end: 1_000_000 },
+              numPositions: 10,
+              shares: parseEther('0.3'),
+            },
+            {
+              marketCap: { start: 1_000_000, end: 5_000_000 },
+              numPositions: 20,
+              shares: parseEther('0.5'),
+            },
+            {
+              marketCap: { start: 5_000_000, end: 50_000_000 },
+              numPositions: 10,
+              shares: parseEther('0.2'),
+            },
+          ],
+        })
+        .withRehypeDopplerHook({
+          hookAddress: '0x9999999999999999999999999999999999999999' as Address,
+          buybackDestination:
+            '0x8888888888888888888888888888888888888888' as Address,
+          startFee: 3000,
+          endFee: 3000,
+          durationSeconds: 0,
+          graduationMarketCap,
+          feeDistributionInfo: {
+            assetFeesToAssetBuybackWad: 0n,
+            assetFeesToNumeraireBuybackWad: parseEther('1'),
+            assetFeesToBeneficiaryWad: 0n,
+            assetFeesToLpWad: 0n,
+            numeraireFeesToAssetBuybackWad: 0n,
+            numeraireFeesToNumeraireBuybackWad: parseEther('1'),
+            numeraireFeesToBeneficiaryWad: 0n,
+            numeraireFeesToLpWad: 0n,
+          },
+        })
+        .withGovernance({ type: 'noOp' })
+        .withMigration({ type: 'uniswapV2' })
+        .withUserAddress(
+          '0x00000000000000000000000000000000000000AA' as Address,
+        )
+        .build();
+
+      expect(params.initializer?.type).toBe('rehype');
+      if (params.initializer?.type !== 'rehype') {
+        throw new Error('Expected rehype initializer');
+      }
+      expect(params.initializer.config.farTick).toBe(expectedFarTick);
+      expect(params.dopplerHook?.farTick).toBe(expectedFarTick);
     });
 
     it('normalizes legacy rehype fields into fee schedule and matrix fields', () => {
@@ -1218,8 +1298,7 @@ describe('MulticurveBuilder', () => {
       expect(params.pool.curves).toHaveLength(3);
       const lastCurve = params.pool.curves[2];
       expect(lastCurve.tickUpper).toBeGreaterThan(lastCurve.tickLower);
-      // 'max' resolves to MAX_TICK rounded down: floor(887272/60)*60 = 887220 (tickSpacing=60 for default FEE_TIERS.MEDIUM)
-      expect(lastCurve.tickUpper).toBe(887220);
+      expect(lastCurve.tickUpper).toBe(463140);
     });
 
     it('sorts curve with "max" end to last position', () => {

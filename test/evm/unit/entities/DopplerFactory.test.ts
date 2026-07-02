@@ -25,7 +25,11 @@ import {
   keccak256,
   type Address,
 } from 'viem';
-import { MAX_TICK, isToken0Expected } from '../../../../src/evm/utils';
+import {
+  MAX_TICK,
+  getMaxLiquiditySafeMulticurveTickUpper,
+  isToken0Expected,
+} from '../../../../src/evm/utils';
 import {
   DAY_SECONDS,
   DYNAMIC_FEE_FLAG,
@@ -41,6 +45,42 @@ vi.mock('../../../../src/evm/addresses', async (importOriginal) => {
     getAddresses: vi.fn(() => mockAddresses),
   };
 });
+
+const basicMulticurvePoolInitializerAbi = [
+  {
+    type: 'tuple',
+    components: [
+      { name: 'fee', type: 'uint24' },
+      { name: 'tickSpacing', type: 'int24' },
+      {
+        name: 'curves',
+        type: 'tuple[]',
+        components: [
+          { name: 'tickLower', type: 'int24' },
+          { name: 'tickUpper', type: 'int24' },
+          { name: 'numPositions', type: 'uint16' },
+          { name: 'shares', type: 'uint256' },
+        ],
+      },
+      {
+        name: 'beneficiaries',
+        type: 'tuple[]',
+        components: [
+          { name: 'beneficiary', type: 'address' },
+          { name: 'shares', type: 'uint96' },
+        ],
+      },
+    ],
+  },
+] as const;
+
+function decodeBasicMulticurvePoolInitializerData(data: `0x${string}`) {
+  const [poolInitData] = decodeAbiParameters(
+    basicMulticurvePoolInitializerAbi,
+    data,
+  );
+  return poolInitData;
+}
 
 describe('DopplerFactory', () => {
   let factory: DopplerFactory;
@@ -92,63 +132,106 @@ describe('DopplerFactory', () => {
       const params = multicurveParams();
       const createParams = factory.encodeCreateMulticurveParams(params);
 
-      // Basic UniswapV4MulticurveInitializer expects 4-field InitData struct
-      const [poolInitData] = decodeAbiParameters(
-        [
-          {
-            type: 'tuple',
-            components: [
-              { name: 'fee', type: 'uint24' },
-              { name: 'tickSpacing', type: 'int24' },
-              {
-                name: 'curves',
-                type: 'tuple[]',
-                components: [
-                  { name: 'tickLower', type: 'int24' },
-                  { name: 'tickUpper', type: 'int24' },
-                  { name: 'numPositions', type: 'uint16' },
-                  { name: 'shares', type: 'uint256' },
-                ],
-              },
-              {
-                name: 'beneficiaries',
-                type: 'tuple[]',
-                components: [
-                  { name: 'beneficiary', type: 'address' },
-                  { name: 'shares', type: 'uint96' },
-                ],
-              },
-            ],
-          },
-        ],
+      const poolInitData = decodeBasicMulticurvePoolInitializerData(
         createParams.poolInitializerData,
-      ) as any;
-
-      const curves = poolInitData.curves as Array<{
-        tickLower: bigint;
-        tickUpper: bigint;
-        numPositions: number | bigint;
-        shares: bigint;
-      }>;
+      );
+      const curves = poolInitData.curves;
       const tickSpacing = Number(poolInitData.tickSpacing);
       expect(curves).toHaveLength(params.pool.curves.length + 1);
 
       const fallback = curves[curves.length - 1];
+      if (!fallback) {
+        throw new Error('Expected fallback curve to be appended');
+      }
+      const lastCurve = params.pool.curves.at(-1);
+      if (!lastCurve) {
+        throw new Error('Expected source curve to derive fallback positions');
+      }
       const expectedShare =
         parseEther('1') -
         params.pool.curves.reduce((acc, curve) => acc + curve.shares, 0n);
-      const expectedTickUpper =
-        Math.floor(MAX_TICK / tickSpacing) * tickSpacing;
       const mostPositiveTickUpper = params.pool.curves.reduce(
         (max, curve) => Math.max(max, curve.tickUpper),
-        params.pool.curves[0]!.tickUpper,
+        params.pool.curves[0]?.tickUpper ?? Number.NEGATIVE_INFINITY,
       );
+      const expectedTickUpper = getMaxLiquiditySafeMulticurveTickUpper({
+        tickLower: mostPositiveTickUpper,
+        tickUpper: Math.floor(MAX_TICK / tickSpacing) * tickSpacing,
+        tickSpacing,
+        numPositions: lastCurve.numPositions,
+        curveSupply:
+          (params.sale.numTokensToSell * expectedShare) / parseEther('1'),
+      });
 
       expect(fallback.shares).toBe(expectedShare);
       expect(Number(fallback.tickLower)).toBe(mostPositiveTickUpper);
       expect(Number(fallback.tickUpper)).toBe(expectedTickUpper);
-      expect(Number(fallback.numPositions)).toBe(
-        params.pool.curves[params.pool.curves.length - 1]!.numPositions,
+      expect(Number(fallback.numPositions)).toBe(lastCurve.numPositions);
+    });
+
+    it('uses a liquidity-safe fallback tick when appended fallback would reach max tick', () => {
+      const params = multicurveParams();
+      params.sale = {
+        ...params.sale,
+        initialSupply: parseEther('1000000000'),
+        numTokensToSell: parseEther('900000000'),
+      };
+      params.pool.curves = [
+        {
+          tickLower: -133020,
+          tickUpper: -100000,
+          numPositions: 10,
+          shares: parseEther('0.5'),
+        },
+      ];
+
+      const createParams = factory.encodeCreateMulticurveParams(params);
+
+      const poolInitData = decodeBasicMulticurvePoolInitializerData(
+        createParams.poolInitializerData,
+      );
+      const fallback = poolInitData.curves[1];
+      if (!fallback) {
+        throw new Error('Expected fallback curve to be appended');
+      }
+      const sourceCurve = params.pool.curves[0];
+      if (!sourceCurve) {
+        throw new Error('Expected source curve to derive fallback range');
+      }
+      const tickSpacing = Number(poolInitData.tickSpacing);
+      const rawMaxTick = Math.floor(MAX_TICK / tickSpacing) * tickSpacing;
+      const expectedShare = parseEther('0.5');
+      const expectedTickUpper = getMaxLiquiditySafeMulticurveTickUpper({
+        tickLower: sourceCurve.tickUpper,
+        tickUpper: rawMaxTick,
+        tickSpacing,
+        numPositions: sourceCurve.numPositions,
+        curveSupply:
+          (params.sale.numTokensToSell * expectedShare) / parseEther('1'),
+      });
+
+      expect(fallback.tickLower).toBe(sourceCurve.tickUpper);
+      expect(fallback.shares).toBe(expectedShare);
+      expect(fallback.tickUpper).toBe(expectedTickUpper);
+      expect(fallback.tickUpper).toBeLessThan(rawMaxTick);
+    });
+
+    it('rejects an appended fallback when the highest user tick already reaches max tick', () => {
+      const params = multicurveParams();
+      const roundedMaxTick =
+        Math.floor(MAX_TICK / params.pool.tickSpacing) *
+        params.pool.tickSpacing;
+      params.pool.curves = [
+        {
+          tickLower: 0,
+          tickUpper: roundedMaxTick,
+          numPositions: 10,
+          shares: parseEther('0.5'),
+        },
+      ];
+
+      expect(() => factory.encodeCreateMulticurveParams(params)).toThrow(
+        'Unable to find a uint128-safe multicurve max tick',
       );
     });
 
