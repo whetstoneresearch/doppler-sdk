@@ -9,7 +9,7 @@ export const CHAIN_IDS = {
   BASE: 8453,
   BASE_SEPOLIA: 84532,
   INK: 57073,
-  TEMP: 4663,
+  ROBINHOOD: 4663,
   UNICHAIN: 130,
   UNICHAIN_SEPOLIA: 1301,
   MONAD_TESTNET: 10143,
@@ -459,61 +459,67 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     weth: '0x4200000000000000000000000000000000000006' as Address,
     uniswapV4Quoter: '0x3972c00f7ed4885e145823eb7c655375d275a1c5' as Address,
   },
-  [CHAIN_IDS.TEMP]: {
-    airlock: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.TEMP].Airlock as Address,
+  [CHAIN_IDS.ROBINHOOD]: {
+    airlock: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ROBINHOOD]
+      .Airlock as Address,
     tokenFactory: ZERO_ADDRESS,
     dopplerERC20V1Factory: getGeneratedAddress(
-      CHAIN_IDS.TEMP,
+      CHAIN_IDS.ROBINHOOD,
       'DopplerERC20V1Factory',
     ),
     dopplerERC20V1Implementation: getGeneratedAddress(
-      CHAIN_IDS.TEMP,
+      CHAIN_IDS.ROBINHOOD,
       'DopplerERC20V1',
     ),
-    doppler404Factory: getGeneratedAddress(CHAIN_IDS.TEMP, 'DN404Factory'),
+    doppler404Factory: getGeneratedAddress(CHAIN_IDS.ROBINHOOD, 'DN404Factory'),
     v3Initializer: ZERO_ADDRESS,
     v3Quoter: '0x33e885ed0ec9bf04ecfb19341582aadcb4c8a9e7' as Address,
-    lockableV3Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.TEMP]
+    lockableV3Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ROBINHOOD]
       .LockableUniswapV3Initializer as Address,
-    v4Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.TEMP]
+    v4Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ROBINHOOD]
       .UniswapV4Initializer as Address,
-    dopplerHookInitializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.TEMP]
+    dopplerHookInitializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ROBINHOOD]
       .DopplerHookInitializer as Address,
     rehypeDopplerHookInitializer: getRehypeDopplerHookInitializerAddress(
-      CHAIN_IDS.TEMP,
+      CHAIN_IDS.ROBINHOOD,
     ),
-    rehypeDopplerHook: getRehypeDopplerHookInitializerAddress(CHAIN_IDS.TEMP),
-    dopplerLens: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.TEMP]
+    rehypeDopplerHook: getRehypeDopplerHookInitializerAddress(
+      CHAIN_IDS.ROBINHOOD,
+    ),
+    dopplerLens: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ROBINHOOD]
       .DopplerLensQuoter as Address,
-    dopplerDeployer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.TEMP]
+    dopplerDeployer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ROBINHOOD]
       .DopplerDeployer as Address,
     poolManager: '0x8366a39cc670b4001a1121b8f6a443a643e40951' as Address,
     v2Migrator: ZERO_ADDRESS,
-    v2MigratorSplit: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.TEMP]
+    v2MigratorSplit: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ROBINHOOD]
       .UniswapV2MigratorSplit as Address,
     v4Migrator: ZERO_ADDRESS,
-    dopplerHookMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.TEMP]
+    dopplerHookMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ROBINHOOD]
       .DopplerHookMigrator as Address,
-    rehypeDopplerHookMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.TEMP]
-      .RehypeDopplerHookMigrator as Address,
-    noOpMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.TEMP]
+    rehypeDopplerHookMigrator: GENERATED_DOPPLER_DEPLOYMENTS[
+      CHAIN_IDS.ROBINHOOD
+    ].RehypeDopplerHookMigrator as Address,
+    noOpMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ROBINHOOD]
       .NoOpMigrator as Address,
-    governanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.TEMP]
+    governanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ROBINHOOD]
       .GovernanceFactory as Address,
-    noOpGovernanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.TEMP]
+    noOpGovernanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ROBINHOOD]
       .NoOpGovernanceFactory as Address,
-    launchpadGovernanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.TEMP]
-      .LaunchpadGovernanceFactory as Address,
+    launchpadGovernanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[
+      CHAIN_IDS.ROBINHOOD
+    ].LaunchpadGovernanceFactory as Address,
     streamableFeesLocker: ZERO_ADDRESS,
     streamableFeesLockerV2: getGeneratedAddress(
-      CHAIN_IDS.TEMP,
+      CHAIN_IDS.ROBINHOOD,
       'StreamableFeesLockerV2',
     ),
-    topUpDistributor: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.TEMP]
+    topUpDistributor: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ROBINHOOD]
       .TopUpDistributor as Address,
     universalRouter: '0x8876789976decbfcbbbe364623c63652db8c0904' as Address,
     permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3' as Address,
-    bundler: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.TEMP].Bundler as Address,
+    bundler: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ROBINHOOD]
+      .Bundler as Address,
     weth: '0x0bd7d308f8e1639fab988df18a8011f41eacad73' as Address,
     uniswapV2Factory: '0x8bceaa40b9acdfaedf85adf4ff01f5ad6517937f' as Address,
     uniswapV3Factory: '0x1f7d7550b1b028f7571e69a784071f0205fd2efa' as Address,

@@ -1295,14 +1295,21 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
         const lockableInitializer =
           params.modules?.lockableV3Initializer ??
           addresses.lockableV3Initializer;
-        if (!lockableInitializer) {
+        if (!lockableInitializer || lockableInitializer === ZERO_ADDRESS) {
           throw new Error(
             'Lockable V3 initializer address not configured on this chain. Required when using beneficiaries.',
           );
         }
         return lockableInitializer;
       }
-      return params.modules?.v3Initializer ?? addresses.v3Initializer;
+      const standardInitializer =
+        params.modules?.v3Initializer ?? addresses.v3Initializer;
+      if (!standardInitializer || standardInitializer === ZERO_ADDRESS) {
+        throw new Error(
+          'UniswapV3Initializer address not configured on this chain. Use beneficiaries for lockable V3 support, provide an override via builder.withV3Initializer(...), or use a chain with standard V3 initializer support.',
+        );
+      }
+      return standardInitializer;
     })();
     const liquidityMigratorAddress = this.getMigratorAddress(
       params.migration,
@@ -1887,6 +1894,11 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
 
     const poolInitializerAddress =
       params.modules?.v4Initializer ?? addresses.v4Initializer;
+    if (!poolInitializerAddress || poolInitializerAddress === ZERO_ADDRESS) {
+      throw new Error(
+        'UniswapV4Initializer address not configured on this chain. Provide an override via builder.withV4Initializer(...) or use a chain with dynamic auction support.',
+      );
+    }
     const liquidityMigratorAddress = this.getMigratorAddress(
       params.migration,
       params.modules,
@@ -5721,8 +5733,15 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     const addresses = getAddresses(this.chainId);
 
     switch (config.type) {
-      case 'uniswapV2':
-        return overrides?.v2Migrator ?? addresses.v2Migrator;
+      case 'uniswapV2': {
+        const v2Address = overrides?.v2Migrator ?? addresses.v2Migrator;
+        if (!v2Address || v2Address === ZERO_ADDRESS) {
+          throw new Error(
+            'UniswapV2Migrator not deployed on this chain. Use uniswapV2Split migration or provide override via modules.v2Migrator.',
+          );
+        }
+        return v2Address;
+      }
       case 'uniswapV2Split': {
         const v2SplitAddress =
           overrides?.v2MigratorSplit ?? addresses.v2MigratorSplit;
@@ -5735,7 +5754,7 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       }
       case 'uniswapV4': {
         const v4Address = overrides?.v4Migrator ?? addresses.v4Migrator;
-        if (v4Address === '0x0000000000000000000000000000000000000000') {
+        if (!v4Address || v4Address === ZERO_ADDRESS) {
           throw new Error(
             'UniswapV4Migrator not deployed on this chain. Use uniswapV2 migration or provide override via modules.v4Migrator.',
           );

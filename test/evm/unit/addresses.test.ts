@@ -7,7 +7,7 @@ const dopplerERC20V1TargetChains = [
   { name: 'mainnet', chainId: CHAIN_IDS.MAINNET },
   { name: 'base', chainId: CHAIN_IDS.BASE },
   { name: 'base-sepolia', chainId: CHAIN_IDS.BASE_SEPOLIA },
-  { name: 'temp', chainId: CHAIN_IDS.TEMP },
+  { name: 'robinhood', chainId: CHAIN_IDS.ROBINHOOD },
   { name: 'monad-mainnet', chainId: CHAIN_IDS.MONAD_MAINNET },
 ] as const;
 

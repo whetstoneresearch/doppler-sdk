@@ -96,7 +96,11 @@ Create a multicurve auction whose vesting beneficiaries use different cliff and 
 
 Create a `dopplerERC20V1` token selected automatically from template-specific balance-limit fields, enumerate vesting schedules, release a partial vested amount by schedule or across schedules, and read max-balance-limit state. The default DopplerERC20V1 integration adds protocol balance-limit exclusions; custom `withTokenFactory(address)` paths must provide any required exclusions explicitly. This implementation does not configure or expose yearly mint inflation.
 
-### 12c. [Multicurve DopplerERC20V1 Multi-Schedule Vesting + Governance](./multicurve-derc20v1-multi-vesting-governance.ts)
+### 12c. [Latest Robinhood Multicurve DopplerERC20V1](./multicurve-latest.ts)
+
+Create and simulate a Robinhood Chain multicurve launch using `dopplerERC20V1`, max-balance limits, the deployed DopplerHookInitializer path, no-op governance, no-op migration, fee beneficiaries, and multiple vesting distributions for one address. Falls back to Robinhood's public RPC when `RPC_URL` is unset. Optionally broadcasts, previews/claims pool fees, and partially or fully releases vested tokens.
+
+### 12d. [Multicurve DopplerERC20V1 Multi-Schedule Vesting + Governance](./multicurve-derc20v1-multi-vesting-governance.ts)
 
 Build a Base multicurve configuration using the `dopplerERC20V1` token template, standard governance, and per-allocation vesting schedules. Includes multiple unique vesting schedules and one recipient with two vesting allocations on different schedules.
 
