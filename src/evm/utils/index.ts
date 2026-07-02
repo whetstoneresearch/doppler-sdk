@@ -56,6 +56,8 @@ export {
   getLiquidityForAmount0,
   getLiquidityForAmount1,
 } from './liquidityMath';
+export { getMaxLiquiditySafeMulticurveTickUpper } from './multicurveLiquidity';
+export type { MulticurveMaxTickLiquidityParams } from './multicurveLiquidity';
 
 export { computeOptimalGamma } from './computeOptimalGamma';
 

@@ -18,6 +18,7 @@ import {
   DAY_SECONDS,
   DopplerSDK,
   FEE_TIERS,
+  RehypeFeeRoutingMode,
   WAD,
   getAddresses,
 } from '../src/evm';
@@ -55,9 +56,9 @@ async function main(): Promise<void> {
   const account = privateKeyToAccount(privateKey);
   const chainId = CHAIN_IDS.ROBINHOOD;
   const addresses = getAddresses(chainId);
-  const dopplerHookInitializer = addresses.dopplerHookInitializer;
-  if (!dopplerHookInitializer) {
-    throw new Error('DopplerHookInitializer is not configured');
+  const rehypeDopplerHookInitializer = addresses.rehypeDopplerHookInitializer;
+  if (!rehypeDopplerHookInitializer) {
+    throw new Error('RehypeDopplerHookInitializer is not configured');
   }
   const shouldExecute = process.env.EXECUTE === '1';
   const shouldClaimFees = process.env.CLAIM_FEES === '1';
@@ -146,21 +147,39 @@ async function main(): Promise<void> {
           shares: parseEther('0.35'),
         },
         {
-          marketCap: { start: 8_000_000, end: 20_000_000 },
+          marketCap: { start: 8_000_000, end: 'max' },
           numPositions: 16,
           shares: parseEther('0.25'),
         },
       ],
     })
     .withVesting({ allocations: vestingAllocations })
+    .withRehypeDopplerHook({
+      hookAddress: rehypeDopplerHookInitializer,
+      buybackDestination: account.address,
+      startFee: 3000,
+      endFee: 3000,
+      durationSeconds: 0,
+      feeRoutingMode: RehypeFeeRoutingMode.RouteToBeneficiaryFees,
+      feeDistributionInfo: {
+        assetFeesToAssetBuybackWad: 0n,
+        assetFeesToNumeraireBuybackWad: WAD,
+        assetFeesToBeneficiaryWad: 0n,
+        assetFeesToLpWad: 0n,
+        numeraireFeesToAssetBuybackWad: 0n,
+        numeraireFeesToNumeraireBuybackWad: WAD,
+        numeraireFeesToBeneficiaryWad: 0n,
+        numeraireFeesToLpWad: 0n,
+      },
+    })
     .withGovernance({ type: 'noOp' })
     .withMigration({ type: 'noOp' })
     .withUserAddress(account.address)
-    .withDopplerHookInitializer(dopplerHookInitializer)
     .build();
 
   console.log('Multicurve latest example');
   console.log('Deployer:', account.address);
+  console.log('Rehype numeraire fee recipient:', account.address);
 
   const simulation = await sdk.factory.simulateCreateMulticurve(params);
   console.log('Simulation OK');

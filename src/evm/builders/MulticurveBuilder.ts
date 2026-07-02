@@ -13,6 +13,7 @@ import {
   marketCapToTicksForMulticurve,
   marketCapToTickForMulticurve,
   validateMarketCapParameters,
+  getMaxLiquiditySafeMulticurveTickUpper,
 } from '../utils';
 import {
   isNoOpEnabledChain,
@@ -917,10 +918,20 @@ export class MulticurveBuilder<
           tokenDecimals: config.tokenDecimals ?? 18,
           numeraireDecimals: config.numeraireDecimals ?? 18,
         });
+        const curveSupply = (this.sale.numTokensToSell * curve.shares) / WAD;
+        const tickUpper =
+          curve.marketCap.end === 'max'
+            ? getMaxLiquiditySafeMulticurveTickUpper({
+                ...curveTicks,
+                tickSpacing,
+                numPositions: curve.numPositions,
+                curveSupply,
+              })
+            : curveTicks.tickUpper;
 
         curves.push({
           tickLower: curveTicks.tickLower,
-          tickUpper: curveTicks.tickUpper,
+          tickUpper,
           numPositions: curve.numPositions,
           shares: curve.shares,
         });
@@ -1011,13 +1022,15 @@ export class MulticurveBuilder<
       dopplerHook = { ...dopplerHook, farTick };
     }
 
-    const initializer =
-      this.initializer ??
-      (dopplerHook
+    const initializer: MulticurveInitializerConfig =
+      this.initializer?.type === 'rehype' && dopplerHook
         ? { type: 'rehype', config: dopplerHook }
-        : this.schedule
-          ? { type: 'scheduled', startTime: this.schedule.startTime }
-          : { type: 'standard' });
+        : (this.initializer ??
+          (dopplerHook
+            ? { type: 'rehype', config: dopplerHook }
+            : this.schedule
+              ? { type: 'scheduled', startTime: this.schedule.startTime }
+              : { type: 'standard' }));
 
     if (initializer.type === 'scheduled' && dopplerHook) {
       throw new Error(

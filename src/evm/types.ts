@@ -716,7 +716,7 @@ export interface MulticurveMarketCapRangeCurve {
   marketCap: {
     /** Start market cap in USD (for the first curve, this is the launch price) */
     start: number;
-    /** End market cap in USD, or 'max' for MAX_TICK rounded to tick spacing */
+    /** End market cap in USD, or 'max' for the highest contract-safe terminal tick */
     end: number | 'max';
   };
   /** Number of liquidity positions in this curve */

@@ -7,10 +7,10 @@
  *
  * Naming convention: [severity][number] - description
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import fs from 'fs';
 import path from 'path';
-import { type Address, getAddress, encodeAbiParameters, zeroAddress } from 'viem';
+import { type Address } from 'viem';
 import { ADDRESSES, CHAIN_IDS } from '../../../src/evm/addresses';
 import { GENERATED_DOPPLER_DEPLOYMENTS } from '../../../src/evm/deployments.generated';
 import {
@@ -121,12 +121,9 @@ describe('H2: Fallback curve should not have tickLower >= tickUpper', () => {
     };
     const factory = new DopplerFactory(mockPublicClient as any, mockWalletClient as any, 84532);
 
-    // Use bracket notation to access private method
-    const normalized = (factory as any).normalizeMulticurveCurves(curves, tickSpacing);
-
-    // The fallback curve (last element) should have tickLower < tickUpper
-    const fallbackCurve = normalized[normalized.length - 1];
-    expect(fallbackCurve.tickLower).toBeLessThan(fallbackCurve.tickUpper);
+    expect(() =>
+      (factory as any).normalizeMulticurveCurves(curves, tickSpacing, WAD),
+    ).toThrow('Unable to find a uint128-safe multicurve max tick');
   });
 });
 
@@ -138,9 +135,6 @@ describe('H3: Opening auction encodeMigrationData should pass numeraire for dopp
     // The static auction path at line 257 passes { numeraire, overrides }
     // The opening auction path at line 1405 passes NO options argument.
     // We verify by reading the source code structure.
-    const { DopplerFactory } = await import('../../../src/evm/entities/DopplerFactory');
-    const source = DopplerFactory.prototype.encodeCreateOpeningAuctionParams?.toString() ?? '';
-
     // For a more reliable test, let's check what the method actually does by
     // looking for the pattern in the source code
     const factorySource = fs.readFileSync(
@@ -375,7 +369,7 @@ describe('M14: SupportedChain type should include all chains in CHAIN_IDS', () =
     // This is already true (ADDRESSES is keyed by SupportedChainId).
     // But SupportedChain type is missing Unichain Sepolia, Monad Testnet, Monad Mainnet.
     // This is a type-level issue. We verify the runtime mapping is complete:
-    for (const [chainName, chainId] of Object.entries(CHAIN_IDS)) {
+    for (const chainId of Object.values(CHAIN_IDS)) {
       expect(ADDRESSES[chainId as keyof typeof ADDRESSES]).toBeDefined();
     }
   });
