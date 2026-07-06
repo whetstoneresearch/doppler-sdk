@@ -238,17 +238,7 @@ describe('DynamicAuction', () => {
 
   describe('getCurrentPrice', () => {
     it('should return the current tick from state', async () => {
-      const mockState = {
-        lastEpoch: 5n,
-        tickAccumulator: 1000000n,
-        totalTokensSold: 250000000000000000000000n,
-        totalProceeds: 50000000000000000000n,
-        totalTokensSoldLastEpoch: 50000000000000000000000n,
-        feesAccrued: { amount0: 100n, amount1: 200n },
-      };
-
       vi.mocked(publicClient.readContract)
-        .mockResolvedValueOnce(mockState) // state
         .mockResolvedValueOnce(-92103) // startingTick
         .mockResolvedValueOnce(-69080) // endingTick
         .mockResolvedValueOnce(100) // gamma
@@ -263,17 +253,7 @@ describe('DynamicAuction', () => {
     });
 
     it('should handle zero epochs', async () => {
-      const mockState = {
-        lastEpoch: 0n,
-        tickAccumulator: 0n,
-        totalTokensSold: 0n,
-        totalProceeds: 0n,
-        totalTokensSoldLastEpoch: 0n,
-        feesAccrued: { amount0: 0n, amount1: 0n },
-      };
-
       vi.mocked(publicClient.readContract)
-        .mockResolvedValueOnce(mockState) // state
         .mockResolvedValueOnce(-92103) // startingTick
         .mockResolvedValueOnce(-69080) // endingTick
         .mockResolvedValueOnce(100) // gamma

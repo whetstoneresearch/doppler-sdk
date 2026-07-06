@@ -2,12 +2,8 @@ import { isAddress, isHex, type Address, type Hex } from 'viem';
 import type { RehypeFeeDistributionInfo } from '../../types';
 
 export interface DynamicHookState {
-  lastEpoch: bigint;
-  tickAccumulator: bigint;
   totalTokensSold: bigint;
   totalProceeds: bigint;
-  totalTokensSoldLastEpoch: bigint;
-  feesAccrued: unknown;
 }
 
 export interface RehypeFeeSchedule {
@@ -72,17 +68,8 @@ export function normalizeDynamicHookState(
   context = 'DopplerHook state',
 ): DynamicHookState {
   return {
-    lastEpoch: parseBigIntField(rawState, 'lastEpoch', 0, context),
-    tickAccumulator: parseBigIntField(rawState, 'tickAccumulator', 1, context),
     totalTokensSold: parseBigIntField(rawState, 'totalTokensSold', 2, context),
     totalProceeds: parseBigIntField(rawState, 'totalProceeds', 3, context),
-    totalTokensSoldLastEpoch: parseBigIntField(
-      rawState,
-      'totalTokensSoldLastEpoch',
-      4,
-      context,
-    ),
-    feesAccrued: readContractResultField(rawState, ['feesAccrued'], 5, context),
   };
 }
 

@@ -216,9 +216,8 @@ export class DynamicAuction {
    * Returns the current tick based on the epoch and gamma parameters
    */
   async getCurrentPrice(): Promise<bigint> {
-    const [_state, startingTick, endingTick, gamma, startingTime, epochLength] =
+    const [startingTick, endingTick, gamma, startingTime, epochLength] =
       await Promise.all([
-        this.readHookState(),
         this.rpc.readContract({
           address: this.hookAddress,
           abi: dopplerHookAbi,

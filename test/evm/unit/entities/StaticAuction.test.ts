@@ -105,6 +105,29 @@ describe('StaticAuction', () => {
       expect(poolInfo.tokenAddress).toBe(mockTokenAddress);
       expect(poolInfo.numeraireAddress).toBe(mockAddresses.weth);
     });
+
+    it('should treat an invalid token0 Airlock probe as token1 auction token', async () => {
+      vi.mocked(publicClient.readContract)
+        .mockResolvedValueOnce([
+          79228162514264337593543950336n, // sqrtPriceX96
+          0, // tick
+          0, // observationIndex
+          1, // observationCardinality
+          1, // observationCardinalityNext
+          0, // feeProtocol
+          true, // unlocked
+        ])
+        .mockResolvedValueOnce(1000000000000000000n)
+        .mockResolvedValueOnce(mockAddresses.weth) // token0
+        .mockResolvedValueOnce(mockTokenAddress) // token1
+        .mockResolvedValueOnce(3000)
+        .mockResolvedValueOnce(undefined); // getAssetData for token0 (not the asset)
+
+      const poolInfo = await auction.getPoolInfo();
+
+      expect(poolInfo.tokenAddress).toBe(mockTokenAddress);
+      expect(poolInfo.numeraireAddress).toBe(mockAddresses.weth);
+    });
   });
 
   describe('getTokenAddress', () => {

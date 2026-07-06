@@ -57,29 +57,17 @@ describe('contract result normalizers', () => {
   it('normalizes dynamic hook state from object and tuple shapes', () => {
     expect(
       normalizeDynamicHookState({
-        lastEpoch: 1,
-        tickAccumulator: -2n,
         totalTokensSold: 3n,
         totalProceeds: 4n,
-        totalTokensSoldLastEpoch: 5n,
-        feesAccrued: 6n,
       }),
     ).toEqual({
-      lastEpoch: 1n,
-      tickAccumulator: -2n,
       totalTokensSold: 3n,
       totalProceeds: 4n,
-      totalTokensSoldLastEpoch: 5n,
-      feesAccrued: 6n,
     });
 
     expect(normalizeDynamicHookState([1n, -2n, 3n, 4n, 5n, 6n])).toEqual({
-      lastEpoch: 1n,
-      tickAccumulator: -2n,
       totalTokensSold: 3n,
       totalProceeds: 4n,
-      totalTokensSoldLastEpoch: 5n,
-      feesAccrued: 6n,
     });
   });
 

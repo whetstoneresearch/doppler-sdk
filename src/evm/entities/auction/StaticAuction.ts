@@ -76,8 +76,7 @@ export class StaticAuction {
       functionName: 'getAssetData',
       args: [token0],
     });
-    const token0PoolOrHook = parseAirlockPoolOrHook(assetData);
-    const isToken0AuctionToken = token0PoolOrHook !== zeroAddress;
+    const isToken0AuctionToken = this.isRegisteredAirlockAsset(assetData);
 
     return {
       address: this.poolAddress,
@@ -159,5 +158,13 @@ export class StaticAuction {
       abi: uniswapV3PoolAbi,
       functionName: 'liquidity',
     });
+  }
+
+  private isRegisteredAirlockAsset(assetData: unknown): boolean {
+    try {
+      return parseAirlockPoolOrHook(assetData) !== zeroAddress;
+    } catch {
+      return false;
+    }
   }
 }
