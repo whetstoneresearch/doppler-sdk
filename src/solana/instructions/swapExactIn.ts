@@ -1,48 +1,13 @@
-import type {
-  AccountMeta,
-  AccountSignerMeta,
-  Address,
-  Instruction,
-  TransactionSigner,
-} from '@solana/kit';
-import { AccountRole, createNoopSigner } from '@solana/kit';
+import type { Address, Instruction, TransactionSigner } from '@solana/kit';
+import { createNoopSigner } from '@solana/kit';
 import { CPMM_PROGRAM_ADDRESS } from '../generated/cpmm/programs/index.js';
 import { getSwapExactInInstruction } from '../generated/cpmm/instructions/index.js';
 import { TOKEN_PROGRAM_ADDRESS } from '../core/constants.js';
 import type { TradeDirection } from '../core/types.js';
-
-type RemainingAccount =
-  | Address
-  | AccountMeta
-  | AccountSignerMeta
-  | TransactionSigner;
-
-function isTransactionSigner(
-  value: RemainingAccount,
-): value is TransactionSigner {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'address' in value &&
-    'signTransactions' in value
-  );
-}
-
-function toRemainingAccountMeta(
-  account: RemainingAccount,
-): AccountMeta | AccountSignerMeta {
-  if (typeof account === 'string') {
-    return { address: account, role: AccountRole.READONLY };
-  }
-  if (isTransactionSigner(account)) {
-    return {
-      address: account.address,
-      role: AccountRole.READONLY_SIGNER,
-      signer: account,
-    };
-  }
-  return account;
-}
+import {
+  createReadonlyRemainingAccountMeta,
+  type RemainingAccount,
+} from '../core/accounts.js';
 
 /**
  * Helper to create swap instruction with simplified parameters
@@ -126,7 +91,7 @@ export function createSwapInstruction(params: {
     ...instruction,
     accounts: [
       ...(instruction.accounts ?? []),
-      ...remainingAccounts.map(toRemainingAccountMeta),
+      ...remainingAccounts.map(createReadonlyRemainingAccountMeta),
     ],
   };
 }

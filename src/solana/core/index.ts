@@ -84,6 +84,27 @@ export {
   decodeOracleState,
 } from './codecs.js';
 
+// Account and RPC boundary helpers
+export {
+  addressToBase58EncodedBytes,
+  base64ToBytes,
+  bytesToBase64,
+  bytesToBase64EncodedBytes,
+  createAccountMeta,
+  createReadonlyRemainingAccountMeta,
+  getAddressFromAddressOrSigner,
+  getAddressFromRemainingAccount,
+  isTransactionSigner,
+  normalizeProgramAccountsResponse,
+  warnAccountDecodeFailure,
+} from './accounts.js';
+export type {
+  AccountMetaRole,
+  AddressOrTransactionSigner,
+  EncodedProgramAccount,
+  RemainingAccount,
+} from './accounts.js';
+
 // Codecs - Instruction encoders
 export {
   encodeInstructionData,

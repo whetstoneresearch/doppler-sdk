@@ -2,10 +2,13 @@ import type {
   Address,
   Instruction,
   AccountMeta,
-  TransactionSigner,
   AccountSignerMeta,
 } from '@solana/kit';
 import { AccountRole } from '@solana/kit';
+import {
+  createAccountMeta,
+  type AddressOrTransactionSigner,
+} from '../core/accounts.js';
 import {
   CPMM_PROGRAM_ID,
   SYSTEM_PROGRAM_ADDRESS,
@@ -19,39 +22,12 @@ import {
 } from '../core/codecs.js';
 
 /** Type that can be either an Address or a TransactionSigner */
-type AddressOrSigner = Address | TransactionSigner;
+type AddressOrSigner = AddressOrTransactionSigner;
 type InitializePoolParams = Omit<
   InitializePoolArgs,
   'hookProgram' | 'hookFlags'
 > &
   Partial<Pick<InitializePoolArgs, 'hookProgram' | 'hookFlags'>>;
-
-/** Check if value is a TransactionSigner (duck typing) */
-function isTransactionSigner(
-  value: AddressOrSigner,
-): value is TransactionSigner {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'address' in value &&
-    'signTransactions' in value
-  );
-}
-
-/** Create an account meta, embedding signer if provided */
-function createSignerAccountMeta(
-  value: AddressOrSigner,
-  role: typeof AccountRole.READONLY_SIGNER | typeof AccountRole.WRITABLE_SIGNER,
-): AccountMeta | AccountSignerMeta {
-  if (isTransactionSigner(value)) {
-    return {
-      address: value.address,
-      role,
-      signer: value,
-    };
-  }
-  return { address: value, role };
-}
 
 /**
  * Accounts required for initialize_pool instruction
@@ -76,7 +52,7 @@ export interface InitializePoolAccounts {
   /** Token1 mint (read-only, must be lexicographically larger) */
   token1Mint: Address;
   /** Payer for account creation (writable signer - pass TransactionSigner to include signer in instruction) */
-  payer: Address | TransactionSigner;
+  payer: AddressOrSigner;
   /** Token0 program; defaults to tokenProgram or classic SPL Token */
   token0Program?: Address;
   /** Token1 program; defaults to tokenProgram or classic SPL Token */
@@ -88,7 +64,7 @@ export interface InitializePoolAccounts {
   /** Rent sysvar */
   rent: Address;
   /** Migrator authority PDA signer authorizing pool initialization */
-  migrationAuthority: Address | TransactionSigner;
+  migrationAuthority: AddressOrSigner;
 }
 
 /**
@@ -169,12 +145,12 @@ export function createInitializePoolInstruction(
     { address: vault1, role: AccountRole.WRITABLE },
     { address: token0Mint, role: AccountRole.READONLY },
     { address: token1Mint, role: AccountRole.READONLY },
-    createSignerAccountMeta(payer, AccountRole.WRITABLE_SIGNER),
+    createAccountMeta(payer, AccountRole.WRITABLE_SIGNER),
     { address: resolvedToken0Program, role: AccountRole.READONLY },
     { address: resolvedToken1Program, role: AccountRole.READONLY },
     { address: systemProgram, role: AccountRole.READONLY },
     { address: rent, role: AccountRole.READONLY },
-    createSignerAccountMeta(migrationAuthority, AccountRole.READONLY_SIGNER),
+    createAccountMeta(migrationAuthority, AccountRole.READONLY_SIGNER),
   ];
 
   const data = encodeInstructionData(

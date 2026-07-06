@@ -5,6 +5,15 @@ import type {
 } from '../../types';
 import { rehypeDopplerHookMigratorAbi } from '../../abis';
 import { decodeBalanceDelta } from '../../utils';
+import {
+  normalizeRehypeFeeDistributionInfo,
+  normalizeRehypeHookFees,
+  normalizeRehypePoolInfo,
+  normalizeRehypePosition,
+  type RehypeHookFees,
+  type RehypePoolInfo,
+  type RehypePosition,
+} from './contractResults';
 
 export class RehypeDopplerHookMigrator {
   private client: SupportedPublicClient;
@@ -121,29 +130,7 @@ export class RehypeDopplerHookMigrator {
       args: [poolId],
     });
 
-    const info = result as any;
-    return {
-      assetFeesToAssetBuybackWad: BigInt(
-        info.assetFeesToAssetBuybackWad ?? info[0],
-      ),
-      assetFeesToNumeraireBuybackWad: BigInt(
-        info.assetFeesToNumeraireBuybackWad ?? info[1],
-      ),
-      assetFeesToBeneficiaryWad: BigInt(
-        info.assetFeesToBeneficiaryWad ?? info[2],
-      ),
-      assetFeesToLpWad: BigInt(info.assetFeesToLpWad ?? info[3]),
-      numeraireFeesToAssetBuybackWad: BigInt(
-        info.numeraireFeesToAssetBuybackWad ?? info[4],
-      ),
-      numeraireFeesToNumeraireBuybackWad: BigInt(
-        info.numeraireFeesToNumeraireBuybackWad ?? info[5],
-      ),
-      numeraireFeesToBeneficiaryWad: BigInt(
-        info.numeraireFeesToBeneficiaryWad ?? info[6],
-      ),
-      numeraireFeesToLpWad: BigInt(info.numeraireFeesToLpWad ?? info[7]),
-    };
+    return normalizeRehypeFeeDistributionInfo(result);
   }
 
   async getFeeRoutingMode(poolId: Hex): Promise<number> {
@@ -156,15 +143,7 @@ export class RehypeDopplerHookMigrator {
     return Number(mode);
   }
 
-  async getHookFees(poolId: Hex): Promise<{
-    fees0: bigint;
-    fees1: bigint;
-    beneficiaryFees0: bigint;
-    beneficiaryFees1: bigint;
-    airlockOwnerFees0: bigint;
-    airlockOwnerFees1: bigint;
-    customFee: number;
-  }> {
+  async getHookFees(poolId: Hex): Promise<RehypeHookFees> {
     const result = await this.rpc.readContract({
       address: this.hookAddress,
       abi: rehypeDopplerHookMigratorAbi,
@@ -172,23 +151,10 @@ export class RehypeDopplerHookMigrator {
       args: [poolId],
     });
 
-    const fees = result as any;
-    return {
-      fees0: BigInt(fees.fees0 ?? fees[0] ?? 0),
-      fees1: BigInt(fees.fees1 ?? fees[1] ?? 0),
-      beneficiaryFees0: BigInt(fees.beneficiaryFees0 ?? fees[2] ?? 0),
-      beneficiaryFees1: BigInt(fees.beneficiaryFees1 ?? fees[3] ?? 0),
-      airlockOwnerFees0: BigInt(fees.airlockOwnerFees0 ?? fees[4] ?? 0),
-      airlockOwnerFees1: BigInt(fees.airlockOwnerFees1 ?? fees[5] ?? 0),
-      customFee: Number(fees.customFee ?? fees[6] ?? 0),
-    };
+    return normalizeRehypeHookFees(result);
   }
 
-  async getPoolInfo(poolId: Hex): Promise<{
-    asset: Address;
-    numeraire: Address;
-    buybackDst: Address;
-  }> {
+  async getPoolInfo(poolId: Hex): Promise<RehypePoolInfo> {
     const result = await this.rpc.readContract({
       address: this.hookAddress,
       abi: rehypeDopplerHookMigratorAbi,
@@ -196,20 +162,10 @@ export class RehypeDopplerHookMigrator {
       args: [poolId],
     });
 
-    const info = result as any;
-    return {
-      asset: (info.asset ?? info[0]) as Address,
-      numeraire: (info.numeraire ?? info[1]) as Address,
-      buybackDst: (info.buybackDst ?? info[2]) as Address,
-    };
+    return normalizeRehypePoolInfo(result);
   }
 
-  async getPosition(poolId: Hex): Promise<{
-    tickLower: number;
-    tickUpper: number;
-    liquidity: bigint;
-    salt: Hex;
-  }> {
+  async getPosition(poolId: Hex): Promise<RehypePosition> {
     const result = await this.rpc.readContract({
       address: this.hookAddress,
       abi: rehypeDopplerHookMigratorAbi,
@@ -217,12 +173,6 @@ export class RehypeDopplerHookMigrator {
       args: [poolId],
     });
 
-    const position = result as any;
-    return {
-      tickLower: Number(position.tickLower ?? position[0] ?? 0),
-      tickUpper: Number(position.tickUpper ?? position[1] ?? 0),
-      liquidity: BigInt(position.liquidity ?? position[2] ?? 0),
-      salt: (position.salt ?? position[3]) as Hex,
-    };
+    return normalizeRehypePosition(result);
   }
 }

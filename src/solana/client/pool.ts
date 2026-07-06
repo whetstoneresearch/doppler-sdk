@@ -4,30 +4,17 @@
 
 import type { Address } from '@solana/kit';
 import type { Rpc, GetAccountInfoApi } from '@solana/kit';
-import type { Base64EncodedBytes } from '@solana/kit';
 import type { GetProgramAccountsRpc } from '../core/rpc.js';
 import type { Pool } from '../core/types.js';
 import { decodePool } from '../core/codecs.js';
+import {
+  base64ToBytes,
+  bytesToBase64EncodedBytes,
+  normalizeProgramAccountsResponse,
+  warnAccountDecodeFailure,
+} from '../core/accounts.js';
 import { CPMM_PROGRAM_ID, ACCOUNT_DISCRIMINATORS } from '../core/constants.js';
 import { getPoolAddress, sortMints } from '../core/pda.js';
-
-// Browser-compatible base64 encoding/decoding utilities
-function bytesToBase64(bytes: Uint8Array): string {
-  let binary = '';
-  for (let i = 0; i < bytes.length; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary);
-}
-
-function base64ToBytes(base64: string): Uint8Array {
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-  return bytes;
-}
 
 /**
  * Configuration for fetching pools
@@ -46,11 +33,6 @@ export interface PoolWithAddress {
   address: Address;
   account: Pool;
 }
-
-type ProgramAccount = Readonly<{
-  pubkey: Address;
-  account: Readonly<{ data: [string, 'base64'] }>;
-}>;
 
 /**
  * Fetch and decode a single pool account
@@ -115,24 +97,19 @@ export async function fetchAllPools(
   const discriminatorFilter = {
     memcmp: {
       offset: 0n,
-      bytes: bytesToBase64(ACCOUNT_DISCRIMINATORS.Pool) as Base64EncodedBytes,
+      bytes: bytesToBase64EncodedBytes(ACCOUNT_DISCRIMINATORS.Pool),
       encoding: 'base64' as const,
     },
   };
 
-  const response = (await rpc
+  const response = await rpc
     .getProgramAccounts(programId, {
       encoding: 'base64',
       commitment: config?.commitment,
       filters: [discriminatorFilter],
     })
-    .send()) as unknown;
-
-  const accounts = (
-    Array.isArray(response)
-      ? response
-      : (response as { value: ProgramAccount[] }).value
-  ) as ProgramAccount[];
+    .send();
+  const accounts = normalizeProgramAccountsResponse(response);
 
   const pools: PoolWithAddress[] = [];
 
@@ -145,7 +122,7 @@ export async function fetchAllPools(
       });
     } catch {
       // Skip accounts that fail to decode (shouldn't happen with proper filter)
-      console.warn(`Failed to decode pool account: ${account.pubkey}`);
+      warnAccountDecodeFailure('pool', account.pubkey);
     }
   }
 

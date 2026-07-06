@@ -1,11 +1,7 @@
 import {
-  AccountRole,
-  type AccountMeta,
-  type AccountSignerMeta,
   type Address,
   type Instruction,
   type ReadonlyUint8Array,
-  type TransactionSigner,
 } from '@solana/kit';
 import { findAssociatedTokenPda } from '@solana-program/token';
 import {
@@ -54,13 +50,14 @@ import {
   getLaunchFeeStateAddress,
 } from './pda.js';
 import { computeRemainingAccountsHash } from './helpers.js';
+import {
+  createReadonlyRemainingAccountMeta,
+  getAddressFromAddressOrSigner,
+  getAddressFromRemainingAccount,
+  type RemainingAccount,
+} from '../core/accounts.js';
 
 type AddressOrSigner = InitializeLaunchAccounts['baseMint'];
-type RemainingAccount =
-  | Address
-  | AccountMeta
-  | AccountSignerMeta
-  | TransactionSigner;
 
 const DEFAULT_CPMM_MIGRATION_FEE_SPLIT_BPS = 10_000;
 
@@ -253,40 +250,8 @@ export function createLaunchId(): Uint8Array {
   return bytes;
 }
 
-function isTransactionSigner(value: unknown): value is TransactionSigner {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'address' in value &&
-    'signTransactions' in value
-  );
-}
-
-function getAccountAddress(account: RemainingAccount): Address {
-  if (typeof account === 'string') {
-    return account;
-  }
-  return account.address;
-}
-
 function getSignerAddress(value: AddressOrSigner): Address {
-  return isTransactionSigner(value) ? value.address : value;
-}
-
-function getRemainingAccountMeta(
-  account: RemainingAccount,
-): AccountMeta | AccountSignerMeta {
-  if (typeof account === 'string') {
-    return { address: account, role: AccountRole.READONLY };
-  }
-  if (isTransactionSigner(account)) {
-    return {
-      address: account.address,
-      role: AccountRole.READONLY_SIGNER,
-      signer: account,
-    };
-  }
-  return account;
+  return getAddressFromAddressOrSigner(value);
 }
 
 function hasMetadata(metadata: LaunchMetadata | null | undefined): boolean {
@@ -315,7 +280,9 @@ function hashRemainingAccounts(
   if (!accounts) {
     return undefined;
   }
-  return computeRemainingAccountsHash(accounts.map(getAccountAddress));
+  return computeRemainingAccountsHash(
+    accounts.map(getAddressFromRemainingAccount),
+  );
 }
 
 function isCustomMigrationConfig(
@@ -704,7 +671,7 @@ export async function createLaunch(
         accounts: [
           ...(instruction.accounts ?? []),
           ...(migration?.initRemainingAccounts ?? []).map(
-            getRemainingAccountMeta,
+            createReadonlyRemainingAccountMeta,
           ),
         ],
       }

@@ -1,14 +1,13 @@
-import {
-  type Address,
-  type PublicClient,
-  type Hex,
-  keccak256,
-  encodeAbiParameters,
-  zeroAddress,
-} from 'viem';
+import { type Address, type PublicClient, type Hex, zeroAddress } from 'viem';
 import type { HookInfo, SupportedPublicClient } from '../../types';
 import { dopplerHookAbi, airlockAbi } from '../../abis';
 import { getAddresses } from '../../addresses';
+import { computePoolId, normalizePoolKey } from '../../utils/poolKey';
+import {
+  normalizeDynamicHookState,
+  parseAirlockLiquidityMigrator,
+  type DynamicHookState,
+} from './contractResults';
 
 /**
  * DynamicAuction class for interacting with dynamic auctions (Uniswap V4 hook based)
@@ -111,13 +110,13 @@ export class DynamicAuction {
       epochLength > 0n ? Number(elapsedTime / epochLength) : 0;
 
     // Determine token addresses from poolKey
-    const poolKey = this.normalizePoolKey(poolKeyRaw as any);
+    const poolKey = normalizePoolKey(poolKeyRaw);
     const isToken0 = poolKey.currency0 !== zeroAddress;
     const tokenAddress = isToken0 ? poolKey.currency0 : poolKey.currency1;
     const numeraireAddress = isToken0 ? poolKey.currency1 : poolKey.currency0;
 
     // Compute pool ID
-    const poolId = this.computePoolId(poolKey);
+    const poolId = computePoolId(poolKey);
 
     return {
       hookAddress: this.hookAddress,
@@ -125,8 +124,8 @@ export class DynamicAuction {
       numeraireAddress,
       poolId,
       currentEpoch,
-      totalProceeds: (state as any).totalProceeds,
-      totalTokensSold: (state as any).totalTokensSold,
+      totalProceeds: state.totalProceeds,
+      totalTokensSold: state.totalTokensSold,
       earlyExit,
       insufficientProceeds,
       startingTime,
@@ -146,7 +145,7 @@ export class DynamicAuction {
       abi: dopplerHookAbi,
       functionName: 'poolKey',
     });
-    const poolKey = this.normalizePoolKey(poolKeyRaw as any);
+    const poolKey = normalizePoolKey(poolKeyRaw);
 
     const isToken0 = await this.rpc.readContract({
       address: this.hookAddress,
@@ -166,8 +165,8 @@ export class DynamicAuction {
       abi: dopplerHookAbi,
       functionName: 'poolKey',
     });
-    const poolKey = this.normalizePoolKey(poolKeyRaw as any);
-    return this.computePoolId(poolKey);
+    const poolKey = normalizePoolKey(poolKeyRaw);
+    return computePoolId(poolKey);
   }
 
   /**
@@ -184,10 +183,7 @@ export class DynamicAuction {
       functionName: 'getAssetData',
       args: [tokenAddress],
     });
-    // Check if the asset is graduated (liquidityMigrator is zero)
-    const liquidityMigrator = Array.isArray(assetData)
-      ? (assetData as any)[3]
-      : (assetData as any)?.liquidityMigrator;
+    const liquidityMigrator = parseAirlockLiquidityMigrator(assetData);
     return liquidityMigrator === zeroAddress;
   }
 
@@ -276,7 +272,7 @@ export class DynamicAuction {
   async getTotalProceeds(): Promise<bigint> {
     const state = await this.readHookState();
 
-    return (state as any).totalProceeds;
+    return state.totalProceeds;
   }
 
   /**
@@ -290,84 +286,12 @@ export class DynamicAuction {
     });
   }
 
-  /**
-   * Compute V4 pool ID from pool key components
-   */
-  private computePoolId(poolKey: {
-    currency0: Address;
-    currency1: Address;
-    fee: number;
-    tickSpacing: number;
-    hooks: Address;
-  }): string {
-    // V4 pools are identified by the hash of their PoolKey
-    const encoded = encodeAbiParameters(
-      [
-        { type: 'address' },
-        { type: 'address' },
-        { type: 'uint24' },
-        { type: 'int24' },
-        { type: 'address' },
-      ],
-      [
-        poolKey.currency0,
-        poolKey.currency1,
-        poolKey.fee,
-        poolKey.tickSpacing,
-        poolKey.hooks,
-      ],
-    );
-    return keccak256(encoded);
-  }
-
-  /**
-   * Read hook state with backward-compatible decoding.
-   * Falls back to legacy state() ABI if the latest ABI fails to decode.
-   */
-  private async readHookState(): Promise<any> {
-    const result: any = await this.rpc.readContract({
+  private async readHookState(): Promise<DynamicHookState> {
+    const rawState = await this.rpc.readContract({
       address: this.hookAddress,
       abi: dopplerHookAbi,
       functionName: 'state',
     });
-    if (Array.isArray(result)) {
-      const [
-        lastEpoch,
-        tickAccumulator,
-        totalTokensSold,
-        totalProceeds,
-        totalTokensSoldLastEpoch,
-        feesAccrued,
-      ] = result as any[];
-      return {
-        lastEpoch,
-        tickAccumulator,
-        totalTokensSold,
-        totalProceeds,
-        totalTokensSoldLastEpoch,
-        feesAccrued,
-      };
-    }
-    return result;
-  }
-
-  private normalizePoolKey(value: any): {
-    currency0: Address;
-    currency1: Address;
-    fee: number;
-    tickSpacing: number;
-    hooks: Address;
-  } {
-    if (Array.isArray(value)) {
-      const [currency0, currency1, fee, tickSpacing, hooks] = value as [
-        Address,
-        Address,
-        number,
-        number,
-        Address,
-      ];
-      return { currency0, currency1, fee, tickSpacing, hooks };
-    }
-    return value as any;
+    return normalizeDynamicHookState(rawState);
   }
 }

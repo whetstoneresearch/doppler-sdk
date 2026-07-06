@@ -2,6 +2,10 @@ import { type Address, zeroAddress, type PublicClient } from 'viem';
 import type { PoolInfo, SupportedPublicClient } from '../../types';
 import { uniswapV3PoolAbi, airlockAbi } from '../../abis';
 import { getAddresses } from '../../addresses';
+import {
+  parseAirlockLiquidityMigrator,
+  parseAirlockPoolOrHook,
+} from './contractResults';
 
 /**
  * StaticAuction class for interacting with static auctions (Uniswap V3 based)
@@ -72,17 +76,8 @@ export class StaticAuction {
       functionName: 'getAssetData',
       args: [token0],
     });
-    // Determine whether token0 is the auction token.
-    // Handle both tuple and object return shapes from getAssetData.
-    // Tuple (legacy): [numeraire, timelock, governance, liquidityMigrator, poolInitializer, pool, ...]
-    // Object (unified): { poolOrHook, liquidityMigrator, numeraire, ... }
-    let poolOrHook0: any;
-    if (Array.isArray(assetData)) {
-      poolOrHook0 = assetData[5];
-    } else if (assetData && typeof assetData === 'object') {
-      poolOrHook0 = (assetData as any).poolOrHook ?? (assetData as any).pool;
-    }
-    const isToken0AuctionToken = poolOrHook0 && poolOrHook0 !== zeroAddress;
+    const token0PoolOrHook = parseAirlockPoolOrHook(assetData);
+    const isToken0AuctionToken = token0PoolOrHook !== zeroAddress;
 
     return {
       address: this.poolAddress,
@@ -116,10 +111,7 @@ export class StaticAuction {
       functionName: 'getAssetData',
       args: [tokenAddress],
     });
-    // Check if the asset is graduated (liquidityMigrator is zero)
-    const liquidityMigrator = Array.isArray(assetData)
-      ? (assetData as any)[3]
-      : (assetData as any)?.liquidityMigrator;
+    const liquidityMigrator = parseAirlockLiquidityMigrator(assetData);
     return liquidityMigrator === zeroAddress;
   }
 
@@ -130,19 +122,11 @@ export class StaticAuction {
   async getCurrentPrice(): Promise<bigint> {
     const poolInfo = await this.getPoolInfo();
 
-    // Get token ordering
-    const [token0] = await Promise.all([
-      this.rpc.readContract({
-        address: this.poolAddress,
-        abi: uniswapV3PoolAbi,
-        functionName: 'token0',
-      }),
-      this.rpc.readContract({
-        address: this.poolAddress,
-        abi: uniswapV3PoolAbi,
-        functionName: 'token1',
-      }),
-    ]);
+    const token0 = await this.rpc.readContract({
+      address: this.poolAddress,
+      abi: uniswapV3PoolAbi,
+      functionName: 'token0',
+    });
 
     // Calculate price from sqrtPriceX96
     // sqrtPriceX96 = sqrt(price) * 2^96
