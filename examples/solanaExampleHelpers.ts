@@ -8,7 +8,6 @@ import {
   createTransactionMessage,
   getBase64EncodedWireTransaction,
   getTransactionMessageSize,
-  getMinimumBalanceForRentExemption,
   getSignatureFromTransaction,
   isTransactionMessageWithinSizeLimit,
   pipe,
@@ -44,7 +43,6 @@ export type SolanaExampleNetwork =
   | keyof typeof SOLANA_NETWORK_ENDPOINTS
   | 'custom';
 export const DEFAULT_SOLANA_EXAMPLE_NETWORK: SolanaExampleNetwork = 'devnet';
-export const TOKEN_ACCOUNT_SPACE = 165n;
 export const SOLANA_TRANSACTION_SIZE_LIMIT = 1232;
 export const WSOL_MINT = address('So11111111111111111111111111111111111111112');
 export const DEVNET_USDC_MINT = address(
@@ -57,10 +55,6 @@ export const DEFAULT_TEST_METADATA = {
 } as const;
 export const DEFAULT_SWAP_FEE_BPS = 200;
 export const DEFAULT_CPMM_FEE_SPLIT_BPS = 10_000;
-
-const COMPUTE_BUDGET_PROGRAM_ID = address(
-  'ComputeBudget111111111111111111111111111111',
-);
 
 export function createSolanaClientsFromEnv() {
   const network = parseSolanaNetwork(
@@ -177,23 +171,6 @@ export async function loadKeypairSignerFromEnv({
   return createKeyPairSignerFromBytes(
     new Uint8Array(JSON.parse(keypairJson) as number[]),
   );
-}
-
-export function createSetComputeUnitLimitInstruction(
-  units: number,
-): Instruction {
-  const data = new Uint8Array(5);
-  data[0] = 2;
-  new DataView(data.buffer).setUint32(1, units, true);
-  return {
-    programAddress: COMPUTE_BUDGET_PROGRAM_ID,
-    accounts: [],
-    data,
-  };
-}
-
-export function getTokenAccountRentLamports(): bigint {
-  return getMinimumBalanceForRentExemption(TOKEN_ACCOUNT_SPACE);
 }
 
 export function getMetadataByteLength(params: {
@@ -702,66 +679,6 @@ export async function sendInitializeLaunchWithLookupTable({
   );
 
   return getSignatureFromTransaction(signedTransaction);
-}
-
-export async function getMigrationQuoteProgress({
-  rpc,
-  quoteVault,
-  pendingQuoteFees,
-}: {
-  rpc: SolanaClients['rpc'];
-  quoteVault: Address;
-  pendingQuoteFees: bigint;
-}) {
-  const vaultBalance = await rpc
-    .getTokenAccountBalance(quoteVault, { commitment: 'confirmed' })
-    .send();
-  const quoteVaultAmount = BigInt(vaultBalance.value.amount);
-  if (pendingQuoteFees > quoteVaultAmount) {
-    throw new Error(
-      'Pending quote fees ' +
-        pendingQuoteFees +
-        ' exceed quote vault balance ' +
-        quoteVaultAmount,
-    );
-  }
-
-  const migrationQuoteAmount = quoteVaultAmount - pendingQuoteFees;
-
-  return {
-    quoteVaultAmount,
-    pendingQuoteFees,
-    migrationQuoteAmount,
-  };
-}
-
-export async function assertMigrationQuoteThreshold({
-  rpc,
-  quoteVault,
-  pendingQuoteFees,
-  minRaiseQuote,
-}: {
-  rpc: SolanaClients['rpc'];
-  quoteVault: Address;
-  pendingQuoteFees: bigint;
-  minRaiseQuote: bigint;
-}) {
-  const progress = await getMigrationQuoteProgress({
-    rpc,
-    quoteVault,
-    pendingQuoteFees,
-  });
-
-  if (progress.migrationQuoteAmount < minRaiseQuote) {
-    throw new Error(
-      'Quote available for migration ' +
-        progress.migrationQuoteAmount +
-        ' is below minRaiseQuote ' +
-        minRaiseQuote,
-    );
-  }
-
-  return progress;
 }
 
 export async function getSolPriceUsd(): Promise<number> {

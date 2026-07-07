@@ -27,6 +27,23 @@ export type {
   LaunchTokenPrograms,
   XykCurveConfig,
 } from './initializer/createLaunch.js';
+export {
+  curveSwapExactIn,
+  swapExactIn,
+  type CurveSwapExactInInput,
+  type CurveSwapExactInResult,
+  type SolanaRemainingAccount,
+  type SwapExactInInput,
+  type SwapExactInResult,
+} from './swaps.js';
+export {
+  assertMigrationQuoteThreshold,
+  getMigrationQuoteProgress,
+  migrateLaunch,
+  type MigrateLaunchInput,
+  type MigrateLaunchResult,
+  type MigrationQuoteProgress,
+} from './migrateLaunch.js';
 
 export {
   DOPPLER_SOLANA_DEVNET_PROGRAM_ADDRESSES,
