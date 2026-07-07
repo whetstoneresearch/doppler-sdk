@@ -8,16 +8,7 @@ import type { AmmConfig } from '../core/types.js';
 import { decodeAmmConfig } from '../core/codecs.js';
 import { CPMM_PROGRAM_ID } from '../core/constants.js';
 import { getConfigAddress } from '../core/pda.js';
-
-// Browser-compatible base64 decoding
-function base64ToBytes(base64: string): Uint8Array {
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-  return bytes;
-}
+import { base64ToBytes } from '../core/accounts.js';
 
 /**
  * Fetch and decode the AmmConfig account

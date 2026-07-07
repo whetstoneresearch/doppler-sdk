@@ -2,7 +2,6 @@ import type {
   Address,
   Instruction,
   AccountMeta,
-  TransactionSigner,
   AccountSignerMeta,
 } from '@solana/kit';
 import { AccountRole } from '@solana/kit';
@@ -11,33 +10,16 @@ import {
   TOKEN_PROGRAM_ADDRESS,
 } from '../../core/constants.js';
 import {
+  createAccountMeta,
+  type AddressOrTransactionSigner,
+} from '../../core/accounts.js';
+import {
   INITIALIZER_INSTRUCTION_DISCRIMINATORS,
   INITIALIZER_PROGRAM_ID,
 } from '../constants.js';
 import { encodeInstructionData } from '../../core/codecs.js';
 
-type AddressOrSigner = Address | TransactionSigner;
-
-function isTransactionSigner(
-  value: AddressOrSigner,
-): value is TransactionSigner {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'address' in value &&
-    'signTransactions' in value
-  );
-}
-
-function createSignerAccountMeta(
-  value: AddressOrSigner,
-  role: typeof AccountRole.WRITABLE_SIGNER,
-): AccountMeta | AccountSignerMeta {
-  if (isTransactionSigner(value)) {
-    return { address: value.address, role, signer: value };
-  }
-  return { address: value, role };
-}
+type AddressOrSigner = AddressOrTransactionSigner;
 
 export interface MigrateLaunchAccounts {
   config: Address;
@@ -87,7 +69,7 @@ export function createMigrateLaunchInstruction(
     { address: quoteVault, role: AccountRole.WRITABLE },
     { address: launchFeeState, role: AccountRole.READONLY },
     { address: migratorProgram, role: AccountRole.READONLY },
-    createSignerAccountMeta(payer, AccountRole.WRITABLE_SIGNER),
+    createAccountMeta(payer, AccountRole.WRITABLE_SIGNER),
     { address: baseTokenProgram, role: AccountRole.READONLY },
     { address: quoteTokenProgram, role: AccountRole.READONLY },
     { address: systemProgram, role: AccountRole.READONLY },

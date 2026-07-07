@@ -2,7 +2,6 @@ import type {
   Address,
   Instruction,
   AccountMeta,
-  TransactionSigner,
   AccountSignerMeta,
   ReadonlyUint8Array,
 } from '@solana/kit';
@@ -18,6 +17,12 @@ import {
   TOKEN_PROGRAM_ADDRESS,
   TOKEN_METADATA_PROGRAM_ID,
 } from '../../core/constants.js';
+import {
+  createAccountMeta,
+  getAddressFromAddressOrSigner,
+  isTransactionSigner,
+  type AddressOrTransactionSigner,
+} from '../../core/accounts.js';
 import {
   CURVE_KIND_XYK,
   CURVE_PARAMS_FORMAT_XYK_V0,
@@ -67,33 +72,8 @@ export type InitializeLaunchParams = Omit<
   hookCreateRemainingAccountsHash?: ReadonlyUint8Array;
 };
 
-type AddressOrSigner = Address | TransactionSigner;
+type AddressOrSigner = AddressOrTransactionSigner;
 type ReadonlyRemainingAccount = AddressOrSigner;
-
-function isTransactionSigner(
-  value: AddressOrSigner,
-): value is TransactionSigner {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'address' in value &&
-    'signTransactions' in value
-  );
-}
-
-function createAccountMeta(
-  value: AddressOrSigner,
-  role:
-    | typeof AccountRole.READONLY
-    | typeof AccountRole.WRITABLE
-    | typeof AccountRole.READONLY_SIGNER
-    | typeof AccountRole.WRITABLE_SIGNER,
-): AccountMeta | AccountSignerMeta {
-  if (isTransactionSigner(value)) {
-    return { address: value.address, role, signer: value };
-  }
-  return { address: value, role };
-}
 
 /**
  * Derive the Metaplex token metadata PDA for a given mint.
@@ -206,7 +186,7 @@ export async function createInitializeLaunchInstruction(
   const createHooksEnabled =
     (args.hookFlags & (HF_BEFORE_CREATE | HF_AFTER_CREATE)) !== 0;
   const hookCreateRemainingAccountAddresses = hookCreateRemainingAccounts.map(
-    (account) => (isTransactionSigner(account) ? account.address : account),
+    getAddressFromAddressOrSigner,
   );
   const swapFeeBps = args.swapFeeBps ?? args.curveFeeBps;
   if (swapFeeBps === undefined) {
@@ -326,9 +306,7 @@ export async function createInitializeLaunchInstruction(
   if (migratorProgram === PREDICTION_MIGRATOR_PROGRAM_ADDRESS) {
     const oracleState = args.namespace as Address;
     const entryId = args.launchId;
-    const baseMintAddress = isTransactionSigner(baseMint)
-      ? baseMint.address
-      : baseMint;
+    const baseMintAddress = getAddressFromAddressOrSigner(baseMint);
 
     const [market] = await getPredictionMarketAddress(oracleState, quoteMint);
     const [potVault] = await getPredictionPotVaultAddress(market);

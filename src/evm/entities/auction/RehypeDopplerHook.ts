@@ -1,7 +1,19 @@
 import type { Address, Hash, Hex, PublicClient, WalletClient } from 'viem';
-import type { SupportedPublicClient } from '../../types';
+import type {
+  RehypeFeeDistributionInfo,
+  SupportedPublicClient,
+} from '../../types';
 import { rehypeDopplerHookAbi } from '../../abis';
 import { decodeBalanceDelta } from '../../utils';
+import {
+  normalizeRehypeFeeDistributionInfo,
+  normalizeRehypeFeeSchedule,
+  normalizeRehypeHookFees,
+  normalizeRehypePoolInfo,
+  type RehypeFeeSchedule,
+  type RehypeHookFees,
+  type RehypePoolInfo,
+} from './contractResults';
 
 export class RehypeDopplerHook {
   private client: SupportedPublicClient;
@@ -77,16 +89,9 @@ export class RehypeDopplerHook {
     return { fees0, fees1, transactionHash: hash };
   }
 
-  async getFeeDistributionInfo(poolId: Hex): Promise<{
-    assetFeesToAssetBuybackWad: bigint;
-    assetFeesToNumeraireBuybackWad: bigint;
-    assetFeesToBeneficiaryWad: bigint;
-    assetFeesToLpWad: bigint;
-    numeraireFeesToAssetBuybackWad: bigint;
-    numeraireFeesToNumeraireBuybackWad: bigint;
-    numeraireFeesToBeneficiaryWad: bigint;
-    numeraireFeesToLpWad: bigint;
-  }> {
+  async getFeeDistributionInfo(
+    poolId: Hex,
+  ): Promise<RehypeFeeDistributionInfo> {
     const result = await this.rpc.readContract({
       address: this.hookAddress,
       abi: rehypeDopplerHookAbi,
@@ -94,29 +99,7 @@ export class RehypeDopplerHook {
       args: [poolId],
     });
 
-    const info = result as any;
-    return {
-      assetFeesToAssetBuybackWad: BigInt(
-        info.assetFeesToAssetBuybackWad ?? info[0],
-      ),
-      assetFeesToNumeraireBuybackWad: BigInt(
-        info.assetFeesToNumeraireBuybackWad ?? info[1],
-      ),
-      assetFeesToBeneficiaryWad: BigInt(
-        info.assetFeesToBeneficiaryWad ?? info[2],
-      ),
-      assetFeesToLpWad: BigInt(info.assetFeesToLpWad ?? info[3]),
-      numeraireFeesToAssetBuybackWad: BigInt(
-        info.numeraireFeesToAssetBuybackWad ?? info[4],
-      ),
-      numeraireFeesToNumeraireBuybackWad: BigInt(
-        info.numeraireFeesToNumeraireBuybackWad ?? info[5],
-      ),
-      numeraireFeesToBeneficiaryWad: BigInt(
-        info.numeraireFeesToBeneficiaryWad ?? info[6],
-      ),
-      numeraireFeesToLpWad: BigInt(info.numeraireFeesToLpWad ?? info[7]),
-    };
+    return normalizeRehypeFeeDistributionInfo(result);
   }
 
   async getFeeRoutingMode(poolId: Hex): Promise<number> {
@@ -129,13 +112,7 @@ export class RehypeDopplerHook {
     return Number(mode);
   }
 
-  async getFeeSchedule(poolId: Hex): Promise<{
-    startingTime: number;
-    startFee: number;
-    endFee: number;
-    lastFee: number;
-    durationSeconds: number;
-  }> {
+  async getFeeSchedule(poolId: Hex): Promise<RehypeFeeSchedule> {
     const result = await this.rpc.readContract({
       address: this.hookAddress,
       abi: rehypeDopplerHookAbi,
@@ -143,25 +120,10 @@ export class RehypeDopplerHook {
       args: [poolId],
     });
 
-    const schedule = result as any;
-    return {
-      startingTime: Number(schedule.startingTime ?? schedule[0] ?? 0),
-      startFee: Number(schedule.startFee ?? schedule[1] ?? 0),
-      endFee: Number(schedule.endFee ?? schedule[2] ?? 0),
-      lastFee: Number(schedule.lastFee ?? schedule[3] ?? 0),
-      durationSeconds: Number(schedule.durationSeconds ?? schedule[4] ?? 0),
-    };
+    return normalizeRehypeFeeSchedule(result);
   }
 
-  async getHookFees(poolId: Hex): Promise<{
-    fees0: bigint;
-    fees1: bigint;
-    beneficiaryFees0: bigint;
-    beneficiaryFees1: bigint;
-    airlockOwnerFees0: bigint;
-    airlockOwnerFees1: bigint;
-    customFee: number;
-  }> {
+  async getHookFees(poolId: Hex): Promise<RehypeHookFees> {
     const result = await this.rpc.readContract({
       address: this.hookAddress,
       abi: rehypeDopplerHookAbi,
@@ -169,23 +131,10 @@ export class RehypeDopplerHook {
       args: [poolId],
     });
 
-    const fees = result as any;
-    return {
-      fees0: BigInt(fees.fees0 ?? fees[0] ?? 0),
-      fees1: BigInt(fees.fees1 ?? fees[1] ?? 0),
-      beneficiaryFees0: BigInt(fees.beneficiaryFees0 ?? fees[2] ?? 0),
-      beneficiaryFees1: BigInt(fees.beneficiaryFees1 ?? fees[3] ?? 0),
-      airlockOwnerFees0: BigInt(fees.airlockOwnerFees0 ?? fees[4] ?? 0),
-      airlockOwnerFees1: BigInt(fees.airlockOwnerFees1 ?? fees[5] ?? 0),
-      customFee: Number(fees.customFee ?? fees[6] ?? 0),
-    };
+    return normalizeRehypeHookFees(result);
   }
 
-  async getPoolInfo(poolId: Hex): Promise<{
-    asset: Address;
-    numeraire: Address;
-    buybackDst: Address;
-  }> {
+  async getPoolInfo(poolId: Hex): Promise<RehypePoolInfo> {
     const result = await this.rpc.readContract({
       address: this.hookAddress,
       abi: rehypeDopplerHookAbi,
@@ -193,11 +142,6 @@ export class RehypeDopplerHook {
       args: [poolId],
     });
 
-    const info = result as any;
-    return {
-      asset: (info.asset ?? info[0]) as Address,
-      numeraire: (info.numeraire ?? info[1]) as Address,
-      buybackDst: (info.buybackDst ?? info[2]) as Address,
-    };
+    return normalizeRehypePoolInfo(result);
   }
 }

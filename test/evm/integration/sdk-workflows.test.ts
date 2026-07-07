@@ -261,7 +261,6 @@ describe('SDK Workflows Integration Tests', () => {
       };
 
       vi.mocked(publicClient.readContract)
-        .mockResolvedValueOnce(mockState) // state
         .mockResolvedValueOnce(-92103) // startingTick
         .mockResolvedValueOnce(-69080) // endingTick
         .mockResolvedValueOnce(100) // gamma
@@ -289,7 +288,8 @@ describe('SDK Workflows Integration Tests', () => {
   describe('Token and Quoter Interactions', () => {
     it('should interact with token entities after auction creation', async () => {
       // 1. Get token entity
-      const { Derc20 } = await import('../../../src/evm/entities/token/derc20/Derc20');
+      const { Derc20 } =
+        await import('../../../src/evm/entities/token/derc20/Derc20');
       const derc20 = new Derc20(publicClient, walletClient, mockTokenAddress);
 
       // 2. Mock token info

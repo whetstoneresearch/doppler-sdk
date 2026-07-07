@@ -5,30 +5,18 @@
 import type { Address } from '@solana/kit';
 import type { Rpc, GetAccountInfoApi } from '@solana/kit';
 import type { GetProgramAccountsRpc } from '../core/rpc.js';
-import type { Base58EncodedBytes, Base64EncodedBytes } from '@solana/kit';
 import type { Position, Pool } from '../core/types.js';
 import { decodePosition } from '../core/codecs.js';
+import {
+  addressToBase58EncodedBytes,
+  base64ToBytes,
+  bytesToBase64EncodedBytes,
+  normalizeProgramAccountsResponse,
+  warnAccountDecodeFailure,
+} from '../core/accounts.js';
 import { CPMM_PROGRAM_ID, ACCOUNT_DISCRIMINATORS } from '../core/constants.js';
 import { getPositionAddress } from '../core/pda.js';
 import { getPendingFees, ratioToNumber } from '../core/math.js';
-
-// Browser-compatible base64 encoding/decoding utilities
-function bytesToBase64(bytes: Uint8Array): string {
-  let binary = '';
-  for (let i = 0; i < bytes.length; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary);
-}
-
-function base64ToBytes(base64: string): Uint8Array {
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-  return bytes;
-}
 
 /**
  * Configuration for fetching positions
@@ -47,11 +35,6 @@ export interface PositionWithAddress {
   address: Address;
   account: Position;
 }
-
-type ProgramAccount = Readonly<{
-  pubkey: Address;
-  account: Readonly<{ data: [string, 'base64'] }>;
-}>;
 
 /**
  * Position value in underlying tokens
@@ -140,9 +123,7 @@ export async function fetchUserPositions(
     {
       memcmp: {
         offset: 0n,
-        bytes: bytesToBase64(
-          ACCOUNT_DISCRIMINATORS.Position,
-        ) as Base64EncodedBytes,
+        bytes: bytesToBase64EncodedBytes(ACCOUNT_DISCRIMINATORS.Position),
         encoding: 'base64' as const,
       },
     },
@@ -150,7 +131,7 @@ export async function fetchUserPositions(
     {
       memcmp: {
         offset: 40n,
-        bytes: owner as unknown as Base58EncodedBytes,
+        bytes: addressToBase58EncodedBytes(owner),
         encoding: 'base58' as const,
       },
     },
@@ -161,25 +142,20 @@ export async function fetchUserPositions(
     filters.push({
       memcmp: {
         offset: 8n,
-        bytes: pool as unknown as Base58EncodedBytes,
+        bytes: addressToBase58EncodedBytes(pool),
         encoding: 'base58' as const,
       },
     });
   }
 
-  const response = (await rpc
+  const response = await rpc
     .getProgramAccounts(programId, {
       encoding: 'base64',
       commitment: config?.commitment,
       filters,
     })
-    .send()) as unknown;
-
-  const accounts = (
-    Array.isArray(response)
-      ? response
-      : (response as { value: ProgramAccount[] }).value
-  ) as ProgramAccount[];
+    .send();
+  const accounts = normalizeProgramAccountsResponse(response);
 
   const positions: PositionWithAddress[] = [];
 
@@ -191,7 +167,7 @@ export async function fetchUserPositions(
         account: position,
       });
     } catch {
-      console.warn(`Failed to decode position account: ${account.pubkey}`);
+      warnAccountDecodeFailure('position', account.pubkey);
     }
   }
 
@@ -218,9 +194,7 @@ export async function fetchPoolPositions(
     {
       memcmp: {
         offset: 0n,
-        bytes: bytesToBase64(
-          ACCOUNT_DISCRIMINATORS.Position,
-        ) as Base64EncodedBytes,
+        bytes: bytesToBase64EncodedBytes(ACCOUNT_DISCRIMINATORS.Position),
         encoding: 'base64' as const,
       },
     },
@@ -228,25 +202,20 @@ export async function fetchPoolPositions(
     {
       memcmp: {
         offset: 8n,
-        bytes: pool as unknown as Base58EncodedBytes,
+        bytes: addressToBase58EncodedBytes(pool),
         encoding: 'base58' as const,
       },
     },
   ];
 
-  const response = (await rpc
+  const response = await rpc
     .getProgramAccounts(programId, {
       encoding: 'base64',
       commitment: config?.commitment,
       filters,
     })
-    .send()) as unknown;
-
-  const accounts = (
-    Array.isArray(response)
-      ? response
-      : (response as { value: ProgramAccount[] }).value
-  ) as ProgramAccount[];
+    .send();
+  const accounts = normalizeProgramAccountsResponse(response);
 
   const positions: PositionWithAddress[] = [];
 
@@ -258,7 +227,7 @@ export async function fetchPoolPositions(
         account: position,
       });
     } catch {
-      console.warn(`Failed to decode position account: ${account.pubkey}`);
+      warnAccountDecodeFailure('position', account.pubkey);
     }
   }
 

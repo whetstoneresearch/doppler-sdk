@@ -9,8 +9,17 @@ export async function resolveGasEstimate(
   request: unknown,
   fallback: () => Promise<bigint>,
 ): Promise<bigint> {
-  if (typeof (request as any)?.gas === 'bigint') {
-    return (request as any).gas as bigint;
+  if (isGasEstimateRequest(request)) {
+    return request.gas;
   }
   return await fallback();
+}
+
+function isGasEstimateRequest(request: unknown): request is { gas: bigint } {
+  return (
+    typeof request === 'object' &&
+    request !== null &&
+    'gas' in request &&
+    typeof request.gas === 'bigint'
+  );
 }

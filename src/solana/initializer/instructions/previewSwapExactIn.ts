@@ -1,44 +1,11 @@
-import type {
-  AccountMeta,
-  AccountSignerMeta,
-  Address,
-  Instruction,
-  TransactionSigner,
-} from '@solana/kit';
+import type { Address, Instruction } from '@solana/kit';
 import { getStructCodec, getU64Codec, AccountRole } from '@solana/kit';
+import {
+  createReadonlyRemainingAccountMeta,
+  type RemainingAccount,
+} from '../../core/accounts.js';
 import { INITIALIZER_PROGRAM_ID } from '../constants.js';
 import { getPreviewSwapExactInInstructionDataEncoder } from '../../generated/initializer/index.js';
-
-type RemainingAccount =
-  | Address
-  | AccountMeta
-  | AccountSignerMeta
-  | TransactionSigner;
-
-function isTransactionSigner(value: unknown): value is TransactionSigner {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'address' in value &&
-    'signTransactions' in value
-  );
-}
-
-function createRemainingAccountMeta(
-  value: RemainingAccount,
-): AccountMeta | AccountSignerMeta {
-  if (typeof value === 'string') {
-    return { address: value, role: AccountRole.READONLY };
-  }
-  if (isTransactionSigner(value)) {
-    return {
-      address: value.address,
-      role: AccountRole.READONLY_SIGNER,
-      signer: value,
-    };
-  }
-  return value;
-}
 
 export interface PreviewSwapExactInResult {
   amountOut: bigint;
@@ -86,7 +53,7 @@ export function createPreviewSwapExactInInstruction(
 
   const accountsWithRemaining = [
     ...accountsList,
-    ...remainingAccounts.map(createRemainingAccountMeta),
+    ...remainingAccounts.map(createReadonlyRemainingAccountMeta),
   ];
 
   const data = new Uint8Array(

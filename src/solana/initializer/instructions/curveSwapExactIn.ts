@@ -1,62 +1,22 @@
 import type {
+  AccountMeta,
+  AccountSignerMeta,
   Address,
   Instruction,
-  AccountMeta,
-  TransactionSigner,
-  AccountSignerMeta,
 } from '@solana/kit';
 import { AccountRole } from '@solana/kit';
 import {
   SYSTEM_PROGRAM_ADDRESS,
   TOKEN_PROGRAM_ADDRESS,
 } from '../../core/constants.js';
+import {
+  createAccountMeta,
+  createReadonlyRemainingAccountMeta,
+  type AddressOrTransactionSigner,
+  type RemainingAccount,
+} from '../../core/accounts.js';
 import { INITIALIZER_PROGRAM_ID } from '../constants.js';
 import { getCurveSwapExactInInstructionDataEncoder } from '../../generated/initializer/index.js';
-
-type AddressOrSigner = Address | TransactionSigner;
-type RemainingAccount =
-  | Address
-  | AccountMeta
-  | AccountSignerMeta
-  | TransactionSigner;
-
-function isTransactionSigner(value: unknown): value is TransactionSigner {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'address' in value &&
-    'signTransactions' in value
-  );
-}
-
-function createAccountMeta(
-  value: AddressOrSigner,
-  role:
-    | typeof AccountRole.READONLY
-    | typeof AccountRole.WRITABLE
-    | typeof AccountRole.READONLY_SIGNER,
-): AccountMeta | AccountSignerMeta {
-  if (isTransactionSigner(value)) {
-    return { address: value.address, role, signer: value };
-  }
-  return { address: value, role };
-}
-
-function createRemainingAccountMeta(
-  value: RemainingAccount,
-): AccountMeta | AccountSignerMeta {
-  if (typeof value === 'string') {
-    return { address: value, role: AccountRole.READONLY };
-  }
-  if (isTransactionSigner(value)) {
-    return {
-      address: value.address,
-      role: AccountRole.READONLY_SIGNER,
-      signer: value,
-    };
-  }
-  return value;
-}
 
 export interface CurveSwapExactInAccounts {
   launch: Address;
@@ -67,7 +27,7 @@ export interface CurveSwapExactInAccounts {
   userQuoteAccount: Address;
   baseMint: Address;
   quoteMint: Address;
-  user: AddressOrSigner;
+  user: AddressOrTransactionSigner;
   /** Pass the actual hook program address, or omit to use System Program as a no-op placeholder. */
   hookProgram?: Address;
   launchFeeState: Address;
@@ -115,7 +75,7 @@ export function createCurveSwapExactInInstruction(
     { address: launchFeeState, role: AccountRole.WRITABLE },
     { address: baseTokenProgram, role: AccountRole.READONLY },
     { address: quoteTokenProgram, role: AccountRole.READONLY },
-    ...remainingAccounts.map(createRemainingAccountMeta),
+    ...remainingAccounts.map(createReadonlyRemainingAccountMeta),
   ];
 
   const data = new Uint8Array(
