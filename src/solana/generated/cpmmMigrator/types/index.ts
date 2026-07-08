@@ -6,6 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
+export * from './createSpotPoolArgs';
 export * from './launchMigrated';
 export * from './launchRegistered';
 export * from './migrateArgs';
@@ -13,3 +14,4 @@ export * from './migratedPoolHookConfig';
 export * from './payloadBuf';
 export * from './recipient';
 export * from './registerLaunchArgs';
+export * from './spotPoolCreated';

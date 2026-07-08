@@ -12,6 +12,10 @@ export const SEED_MIGRATION_AUTHORITY = 'migration_authority';
 export const MAX_RECIPIENTS = 2;
 
 export const CPMM_MIGRATOR_INSTRUCTION_DISCRIMINATORS = {
+  // SHA256("global:create_spot_pool")[0:8]
+  createSpotPool: new Uint8Array([
+    0x0d, 0x89, 0x10, 0x1a, 0x28, 0x24, 0x6e, 0x1a,
+  ]),
   // SHA256("global:register_launch")[0:8]
   registerLaunch: new Uint8Array([
     0x72, 0x72, 0x43, 0x17, 0x29, 0x46, 0x00, 0xe1,

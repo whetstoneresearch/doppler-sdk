@@ -47,11 +47,15 @@ import {
   type LaunchArgs,
 } from '../accounts';
 import {
+  getCreateSpotPoolInstructionAsync,
   getMigrateInstructionAsync,
   getRegisterLaunchInstructionAsync,
+  parseCreateSpotPoolInstruction,
   parseMigrateInstruction,
   parseRegisterLaunchInstruction,
+  type CreateSpotPoolAsyncInput,
   type MigrateAsyncInput,
+  type ParsedCreateSpotPoolInstruction,
   type ParsedMigrateInstruction,
   type ParsedRegisterLaunchInstruction,
   type RegisterLaunchAsyncInput,
@@ -122,6 +126,7 @@ export function identifyCpmmMigratorAccount(
 }
 
 export enum CpmmMigratorInstruction {
+  CreateSpotPool,
   Migrate,
   RegisterLaunch,
 }
@@ -130,6 +135,17 @@ export function identifyCpmmMigratorInstruction(
   instruction: { data: ReadonlyUint8Array } | ReadonlyUint8Array,
 ): CpmmMigratorInstruction {
   const data = 'data' in instruction ? instruction.data : instruction;
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([13, 137, 16, 26, 40, 36, 110, 26]),
+      ),
+      0,
+    )
+  ) {
+    return CpmmMigratorInstruction.CreateSpotPool;
+  }
   if (
     containsBytes(
       data,
@@ -162,6 +178,9 @@ export type ParsedCpmmMigratorInstruction<
   TProgram extends string = '7WMUTNC41eMCo6eGH5Sy2xbgE3AycvLbFPo95AU9CSUd',
 > =
   | ({
+      instructionType: CpmmMigratorInstruction.CreateSpotPool;
+    } & ParsedCreateSpotPoolInstruction<TProgram>)
+  | ({
       instructionType: CpmmMigratorInstruction.Migrate;
     } & ParsedMigrateInstruction<TProgram>)
   | ({
@@ -173,6 +192,13 @@ export function parseCpmmMigratorInstruction<TProgram extends string>(
 ): ParsedCpmmMigratorInstruction<TProgram> {
   const instructionType = identifyCpmmMigratorInstruction(instruction);
   switch (instructionType) {
+    case CpmmMigratorInstruction.CreateSpotPool: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: CpmmMigratorInstruction.CreateSpotPool,
+        ...parseCreateSpotPoolInstruction(instruction),
+      };
+    }
     case CpmmMigratorInstruction.Migrate: {
       assertIsInstructionWithAccounts(instruction);
       return {
@@ -215,6 +241,10 @@ export type CpmmMigratorPluginAccounts = {
 };
 
 export type CpmmMigratorPluginInstructions = {
+  createSpotPool: (
+    input: MakeOptional<CreateSpotPoolAsyncInput, 'payer'>,
+  ) => ReturnType<typeof getCreateSpotPoolInstructionAsync> &
+    SelfPlanAndSendFunctions;
   migrate: (
     input: MakeOptional<MigrateAsyncInput, 'payer'>,
   ) => ReturnType<typeof getMigrateInstructionAsync> & SelfPlanAndSendFunctions;
@@ -246,6 +276,14 @@ export function cpmmMigratorProgram() {
           launch: addSelfFetchFunctions(client, getLaunchCodec()),
         },
         instructions: {
+          createSpotPool: (input) =>
+            addSelfPlanAndSendFunctions(
+              client,
+              getCreateSpotPoolInstructionAsync({
+                ...input,
+                payer: input.payer ?? client.payer,
+              }),
+            ),
           migrate: (input) =>
             addSelfPlanAndSendFunctions(
               client,

@@ -1,17 +1,62 @@
 import { describe, expect, it } from 'vitest';
-import { address } from '@solana/kit';
+import { AccountRole, address, type TransactionSigner } from '@solana/kit';
 import { cpmm, cpmmMigrator, initializer } from '@/solana/index.js';
 
 const { CPMM_MIGRATOR_INSTRUCTION_DISCRIMINATORS } = cpmmMigrator;
 
+const CREATE_SPOT_POOL_DISCRIMINATOR =
+  CPMM_MIGRATOR_INSTRUCTION_DISCRIMINATORS.createSpotPool;
 const REGISTER_LAUNCH_DISCRIMINATOR =
   CPMM_MIGRATOR_INSTRUCTION_DISCRIMINATORS.registerLaunch;
 const MIGRATE_DISCRIMINATOR = CPMM_MIGRATOR_INSTRUCTION_DISCRIMINATORS.migrate;
 
 const TEST_CONFIG = address('E45nSdnfANtYhCy6qZXo2a7qAWCU6pYjpqsby1bbkaiL');
 const TEST_WALLET = address('11111111111111111111111111111111');
+const TEST_MINT_A = address('So11111111111111111111111111111111111111112');
+const TEST_MINT_B = address('E45nSdnfANtYhCy6qZXo2a7qAWCU6pYjpqsby1bbkaiL');
+const TEST_VAULT = address('5B6PDEnK92XgKdTec5NJtoAeFqfAZQfuyxiuF4nGK5KQ');
+const TEST_SIGNER = { address: TEST_WALLET } as TransactionSigner;
 
 describe('cpmmMigrator payload encoders', () => {
+  describe('encodeCreateSpotPoolPayload', () => {
+    it('prefixes output with the createSpotPool discriminator', () => {
+      const result = cpmmMigrator.encodeCreateSpotPoolPayload({
+        initialSwapFeeBps: 30,
+        initialFeeSplitBps: 5000,
+        liquidityMeasureTokenIndex: 0,
+        positionId: 0n,
+        amount0Max: 700_000n,
+        amount1Max: 300_000n,
+        minSharesOut: 1n,
+      });
+
+      expect([...result.slice(0, 8)]).toEqual([
+        ...CREATE_SPOT_POOL_DISCRIMINATOR,
+      ]);
+    });
+
+    it('encodes spot pool args correctly', () => {
+      const result = cpmmMigrator.encodeCreateSpotPoolPayload({
+        initialSwapFeeBps: 42,
+        initialFeeSplitBps: 6000,
+        liquidityMeasureTokenIndex: 1,
+        positionId: 7n,
+        amount0Max: 700_000n,
+        amount1Max: 300_000n,
+        minSharesOut: 10n,
+      });
+
+      const view = new DataView(result.buffer, result.byteOffset);
+      expect(view.getUint16(8, true)).toBe(42);
+      expect(view.getUint16(10, true)).toBe(6000);
+      expect(result[12]).toBe(1);
+      expect(view.getBigUint64(13, true)).toBe(7n);
+      expect(view.getBigUint64(21, true)).toBe(700_000n);
+      expect(view.getBigUint64(29, true)).toBe(300_000n);
+      expect(view.getBigUint64(37, true)).toBe(10n);
+    });
+  });
+
   describe('encodeRegisterLaunchPayload', () => {
     it('prefixes output with the registerLaunch discriminator', () => {
       const result = cpmmMigrator.encodeRegisterLaunchPayload({
@@ -46,7 +91,6 @@ describe('cpmmMigrator payload encoders', () => {
         migratedPoolHookConfig: null,
       });
 
-      // initialSwapFeeBps is a u16 at bytes 8+32 (after discriminator + cpmmConfig pubkey)
       const view = new DataView(result.buffer, result.byteOffset);
       const is_fee_bps = view.getUint16(8 + 32, true);
       expect(is_fee_bps).toBe(42);
@@ -162,5 +206,108 @@ describe('cpmmMigrator remaining accounts', () => {
     expect([...accounts.hash]).toEqual([
       ...initializer.computeRemainingAccountsHash(accounts.addresses),
     ]);
+  });
+});
+
+describe('cpmmMigrator spot pool helpers', () => {
+  it('derives canonical spot pool accounts from token A/B inputs', async () => {
+    const accounts = await cpmmMigrator.deriveSpotPoolAccounts({
+      tokenAMint: TEST_MINT_A,
+      tokenBMint: TEST_MINT_B,
+      liquidityOwner: TEST_WALLET,
+      positionId: 7n,
+    });
+
+    expect([accounts.token0Mint, accounts.token1Mint]).toEqual(
+      cpmm.sortMints(TEST_MINT_A, TEST_MINT_B),
+    );
+    expect(accounts.user0).not.toBe(accounts.user1);
+    expect(accounts.pool).not.toBe(TEST_WALLET);
+    expect(accounts.migrationAuthority).not.toBe(TEST_WALLET);
+  });
+
+  it('builds a createSpotPool instruction with canonical amounts', async () => {
+    const ix = await cpmmMigrator.createSpotPoolInstruction({
+      admin: TEST_SIGNER,
+      tokenAMint: TEST_MINT_A,
+      tokenBMint: TEST_MINT_B,
+      tokenAAmount: 700_000n,
+      tokenBAmount: 300_000n,
+      initialSwapFeeBps: 30,
+      initialFeeSplitBps: 5000,
+      positionId: 7n,
+    });
+    const accounts = await cpmmMigrator.deriveSpotPoolAccounts({
+      tokenAMint: TEST_MINT_A,
+      tokenBMint: TEST_MINT_B,
+      liquidityOwner: TEST_WALLET,
+      positionId: 7n,
+    });
+    const token0IsA = accounts.token0Mint === TEST_MINT_A;
+    const view = new DataView(ix.data.buffer, ix.data.byteOffset);
+
+    expect([...ix.data.slice(0, 8)]).toEqual([
+      ...CREATE_SPOT_POOL_DISCRIMINATOR,
+    ]);
+    expect(ix.accounts![0].address).toBe(accounts.cpmmConfig);
+    expect(ix.accounts![1].address).toBe(TEST_WALLET);
+    expect(ix.accounts![2].address).toBe(TEST_WALLET);
+    expect(ix.accounts![6].address).toBe(accounts.pool);
+    expect(view.getBigUint64(21, true)).toBe(token0IsA ? 700_000n : 300_000n);
+    expect(view.getBigUint64(29, true)).toBe(token0IsA ? 300_000n : 700_000n);
+  });
+
+  it('includes signer objects for local signer inputs', async () => {
+    const ix = await cpmmMigrator.createSpotPoolInstruction({
+      admin: TEST_SIGNER,
+      tokenAMint: TEST_MINT_A,
+      tokenBMint: TEST_MINT_B,
+      tokenAAmount: 700_000n,
+      tokenBAmount: 300_000n,
+      initialSwapFeeBps: 30,
+      initialFeeSplitBps: 5000,
+    });
+
+    expect(ix.accounts[1].role).toBe(AccountRole.READONLY_SIGNER);
+    expect(ix.accounts[2].role).toBe(AccountRole.WRITABLE_SIGNER);
+    expect(ix.accounts[3].role).toBe(AccountRole.READONLY_SIGNER);
+    expect((ix.accounts[1] as { signer?: unknown }).signer).toBe(TEST_SIGNER);
+    expect((ix.accounts[2] as { signer?: unknown }).signer).toBe(TEST_SIGNER);
+    expect((ix.accounts[3] as { signer?: unknown }).signer).toBe(TEST_SIGNER);
+  });
+
+  it('marks a Squads vault address as signer without a local signer object', async () => {
+    const ix = await cpmmMigrator.createSpotPoolInstruction({
+      admin: TEST_VAULT,
+      payer: TEST_VAULT,
+      liquidityOwner: TEST_VAULT,
+      tokenAMint: TEST_MINT_A,
+      tokenBMint: TEST_MINT_B,
+      tokenAAmount: 700_000n,
+      tokenBAmount: 300_000n,
+      initialSwapFeeBps: 30,
+      initialFeeSplitBps: 5000,
+    });
+    const accounts = await cpmmMigrator.deriveSpotPoolAccounts({
+      tokenAMint: TEST_MINT_A,
+      tokenBMint: TEST_MINT_B,
+      liquidityOwner: TEST_VAULT,
+    });
+
+    expect(ix.accounts[1]).toEqual({
+      address: TEST_VAULT,
+      role: AccountRole.READONLY_SIGNER,
+    });
+    expect(ix.accounts[2]).toEqual({
+      address: TEST_VAULT,
+      role: AccountRole.WRITABLE_SIGNER,
+    });
+    expect(ix.accounts[3]).toEqual({
+      address: TEST_VAULT,
+      role: AccountRole.READONLY_SIGNER,
+    });
+    expect(ix.accounts[12].address).toBe(accounts.position);
+    expect(ix.accounts[13].address).toBe(accounts.user0);
+    expect(ix.accounts[14].address).toBe(accounts.user1);
   });
 });

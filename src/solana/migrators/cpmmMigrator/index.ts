@@ -2,8 +2,10 @@ import { mergeBytes } from '@solana/kit';
 import {
   getRegisterLaunchArgsEncoder,
   getMigrateArgsEncoder,
+  getCreateSpotPoolArgsEncoder,
   type RegisterLaunchArgsArgs,
   type MigrateArgsArgs,
+  type CreateSpotPoolArgsArgs,
 } from '../../generated/cpmmMigrator/index.js';
 import { CPMM_MIGRATOR_INSTRUCTION_DISCRIMINATORS } from './constants.js';
 
@@ -25,11 +27,23 @@ export type {
   MigratedPoolHookConfigArgs,
   MigrateArgs,
   MigrateArgsArgs,
+  CreateSpotPoolArgs,
+  CreateSpotPoolArgsArgs,
   CpmmMigratorState,
   CpmmMigratorStateArgs,
+  SpotPoolCreated,
+  SpotPoolCreatedArgs,
 } from '../../generated/cpmmMigrator/index.js';
 
 export {
+  getCreateSpotPoolInstruction,
+  getCreateSpotPoolInstructionAsync,
+  getCreateSpotPoolInstructionDataEncoder,
+  getCreateSpotPoolInstructionDataDecoder,
+  getCreateSpotPoolInstructionDataCodec,
+  getCreateSpotPoolArgsEncoder,
+  getCreateSpotPoolArgsDecoder,
+  getCreateSpotPoolArgsCodec,
   getRecipientEncoder,
   getRecipientDecoder,
   getRecipientCodec,
@@ -50,6 +64,15 @@ export {
 } from './pda.js';
 
 export { fetchCpmmMigratorState } from './client.js';
+export {
+  deriveSpotPoolAccounts,
+  createSpotPoolInstruction,
+  type DeriveSpotPoolAccountsInput,
+  type SpotPoolAccounts,
+  type AddressOrSigner,
+  type CreateSpotPoolInstruction,
+  type CreateSpotPoolInstructionInput,
+} from './spotPool.js';
 
 export {
   buildCpmmMigrationRemainingAccounts,
@@ -58,10 +81,31 @@ export {
   type CpmmMigrationRemainingAccountsInput,
 } from './remainingAccounts.js';
 
-export function encodeRegisterLaunchPayload(
-  args: RegisterLaunchArgsArgs,
+export type RegisterLaunchPayloadArgs = Omit<
+  RegisterLaunchArgsArgs,
+  'migratedPoolHookConfig'
+> &
+  Partial<Pick<RegisterLaunchArgsArgs, 'migratedPoolHookConfig'>>;
+
+export function encodeCreateSpotPoolPayload(
+  args: CreateSpotPoolArgsArgs,
 ): Uint8Array {
-  const encoded = new Uint8Array(getRegisterLaunchArgsEncoder().encode(args));
+  const encoded = new Uint8Array(getCreateSpotPoolArgsEncoder().encode(args));
+  return mergeBytes([
+    CPMM_MIGRATOR_INSTRUCTION_DISCRIMINATORS.createSpotPool,
+    encoded,
+  ]);
+}
+
+export function encodeRegisterLaunchPayload(
+  args: RegisterLaunchPayloadArgs,
+): Uint8Array {
+  const encoded = new Uint8Array(
+    getRegisterLaunchArgsEncoder().encode({
+      ...args,
+      migratedPoolHookConfig: args.migratedPoolHookConfig ?? null,
+    }),
+  );
   return mergeBytes([
     CPMM_MIGRATOR_INSTRUCTION_DISCRIMINATORS.registerLaunch,
     encoded,
