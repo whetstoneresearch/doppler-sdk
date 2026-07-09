@@ -17,6 +17,14 @@ import {
   encodeCosignerGateExpiryPayload,
   getCosignerHookConfigAddress,
 } from '../cosignerHook/index.js';
+import {
+  DYNAMIC_FEE_HOOK_PROGRAM_ID,
+  encodeDynamicFeeHookPayload,
+  getDynamicFeeHookConfigAddress,
+  getDynamicFeeHookRemainingAccounts,
+  type DynamicFeeHookPayloadArgs,
+  type DynamicFeeScheduleArgs,
+} from '../dynamicFeeHook/index.js';
 import type { SolanaCpmmDeployment } from '../deployment.js';
 import {
   buildCpmmMigrationRemainingAccounts,
@@ -33,6 +41,7 @@ import {
   CURVE_KIND_XYK,
   CURVE_PARAMS_FORMAT_XYK_V0,
   EMPTY_REMAINING_ACCOUNTS_HASH,
+  HF_BEFORE_CREATE,
   HF_BEFORE_SWAP,
   HF_FORWARD_READONLY_SIGNERS,
   INITIALIZER_PROGRAM_ID,
@@ -92,7 +101,7 @@ export type CreateLaunchAccountSigners = {
   quoteVault: AddressOrSigner;
 };
 
-export type CreateLaunchHookMode = 'cpmm' | 'cosigner' | false;
+export type CreateLaunchHookMode = 'cpmm' | 'cosigner' | 'dynamicFee' | false;
 
 export type CreateLaunchCpmmMigrationConfig = {
   enabled?: true;
@@ -164,6 +173,7 @@ export type CreateLaunchInput = {
         | 'cpmmProgram'
         | 'cpmmHookProgram'
         | 'cosignerHookProgram'
+        | 'dynamicFeeHookProgram'
       >
     >;
   programId?: Address;
@@ -180,6 +190,7 @@ export type CreateLaunchInput = {
   hook?: CreateLaunchHookMode | null;
   cosigner?: AddressOrSigner;
   cosignGateExpiresAt?: bigint | number | null;
+  dynamicFee?: DynamicFeeScheduleArgs | null;
   migration?: boolean | CreateLaunchMigrationConfig | null;
   metadata?: LaunchMetadata | null;
   feeBeneficiaries?: InitializeLaunchParams['feeBeneficiaries'];
@@ -213,6 +224,7 @@ type ResolvedCreateLaunchMigration = {
 type CreateLaunchHookContext = {
   mode: CreateLaunchHookMode;
   cosignerConfig?: Address;
+  dynamicFeeConfig?: Address;
 };
 
 type ResolvedCreateLaunchHook = {
@@ -297,6 +309,9 @@ function getCreateLaunchHookMode(
   if (input.hook !== undefined && input.hook !== null) {
     return input.hook;
   }
+  if (input.dynamicFee) {
+    return 'dynamicFee';
+  }
   return input.cosigner ? 'cosigner' : 'cpmm';
 }
 
@@ -304,8 +319,27 @@ async function getCreateLaunchHookContext(
   input: CreateLaunchInput,
 ): Promise<CreateLaunchHookContext> {
   const mode = getCreateLaunchHookMode(input);
-  if (mode !== 'cosigner') {
+  if (input.dynamicFee && mode !== 'dynamicFee') {
+    throw new Error(
+      'dynamicFee requires hook to be unset or set to "dynamicFee"',
+    );
+  }
+  if (mode !== 'cosigner' && mode !== 'dynamicFee') {
     return { mode };
+  }
+  if (mode === 'dynamicFee') {
+    if (!input.dynamicFee && !input.cosigner) {
+      throw new Error(
+        'dynamicFee hook mode requires dynamicFee or cosigner input',
+      );
+    }
+    if (!input.cosigner) {
+      return { mode };
+    }
+    const [dynamicFeeConfig] = await getDynamicFeeHookConfigAddress(
+      input.deployment?.dynamicFeeHookProgram ?? DYNAMIC_FEE_HOOK_PROGRAM_ID,
+    );
+    return { mode, dynamicFeeConfig };
   }
   const [cosignerConfig] = await getCosignerHookConfigAddress(
     input.deployment?.cosignerHookProgram ??
@@ -350,6 +384,30 @@ function resolveCosignerHookPayload(
   });
 }
 
+function resolveDynamicFeeHookPayload(
+  input: CreateLaunchInput,
+): ReadonlyUint8Array {
+  let gateExpiry: DynamicFeeHookPayloadArgs['gateExpiry'] = null;
+  if (
+    input.cosignGateExpiresAt !== undefined &&
+    input.cosignGateExpiresAt !== null
+  ) {
+    if (!input.cosigner) {
+      throw new Error('cosigner is required when cosignGateExpiresAt is set');
+    }
+    gateExpiry = {
+      mode: GATE_EXPIRY_UNIX_TIMESTAMP,
+      value: input.cosignGateExpiresAt,
+      cosigner: getSignerAddress(input.cosigner),
+    };
+  }
+
+  return encodeDynamicFeeHookPayload({
+    schedule: input.dynamicFee ?? null,
+    gateExpiry,
+  });
+}
+
 function resolveCreateLaunchHook({
   input,
   namespace,
@@ -387,6 +445,36 @@ function resolveCreateLaunchHook({
       remainingAccountsHash:
         hashRemainingAccounts(remainingAccounts) ??
         EMPTY_REMAINING_ACCOUNTS_HASH,
+    };
+  }
+  if (hookContext.mode === 'dynamicFee') {
+    const hasCosigner = Boolean(input.cosigner);
+    const hasSchedule = Boolean(input.dynamicFee);
+    if (
+      input.cosignGateExpiresAt !== undefined &&
+      input.cosignGateExpiresAt !== null &&
+      !input.cosigner
+    ) {
+      throw new Error('cosigner is required when cosignGateExpiresAt is set');
+    }
+    if (hasCosigner && !hookContext.dynamicFeeConfig) {
+      throw new Error('dynamic fee hook config could not be derived');
+    }
+    const remainingAccounts = getDynamicFeeHookRemainingAccounts({
+      namespace,
+      config: hookContext.dynamicFeeConfig,
+      cosigner: input.cosigner,
+    });
+    return {
+      program:
+        input.deployment?.dynamicFeeHookProgram ?? DYNAMIC_FEE_HOOK_PROGRAM_ID,
+      flags:
+        HF_BEFORE_SWAP |
+        (hasSchedule ? HF_BEFORE_CREATE : 0) |
+        (hasCosigner ? HF_FORWARD_READONLY_SIGNERS : 0),
+      payload: resolveDynamicFeeHookPayload(input),
+      remainingAccounts: remainingAccounts.signedHookRemainingAccounts,
+      remainingAccountsHash: remainingAccounts.hookRemainingAccountsHash,
     };
   }
   return {
@@ -578,6 +666,7 @@ export async function createLaunch(
   const namespace =
     input.namespace ??
     hookContext.cosignerConfig ??
+    (hookContext.mode === 'dynamicFee' ? SYSTEM_PROGRAM_ADDRESS : undefined) ??
     getSignerAddress(input.payer);
   const tokenPrograms = {
     ...launchTokenPrograms.splToken(),

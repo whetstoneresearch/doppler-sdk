@@ -9,7 +9,9 @@ import {
   initializer,
   cpmmMigrator,
   cosignerHook,
+  dynamicFeeHook,
 } from '@/solana/index.js';
+import { getInitializeLaunchInstructionDataDecoder } from '@/solana/generated/initializer/instructions/initializeLaunch.js';
 import {
   SYSVAR_INSTRUCTIONS_ADDRESS,
   TOKEN_2022_PROGRAM_ADDRESS,
@@ -420,6 +422,168 @@ describe('initializer instructions', () => {
       prepared.cpmmMigration!.cpmmMigrationState,
     );
     expect(ix.accounts![19].address).toBe(prepared.cpmmMigration!.cpmmConfig);
+  });
+
+  it('uses the dynamic fee hook when a dynamic fee schedule is provided', async () => {
+    const baseMint = await generateKeyPairSigner();
+    const baseVault = await generateKeyPairSigner();
+    const quoteVault = await generateKeyPairSigner();
+    const admin = await generateKeyPairSigner();
+
+    const quoteMint = address('DtCGbAhmf5R6Fjuo3zJqCS9Ep5wePTmxHzK8ri8E5nhb');
+    const launchId = initializer.launchIdFromU64(7n);
+
+    const prepared = await createLaunch({
+      namespace: admin.address,
+      launchId,
+      launchAccounts: {
+        baseMint,
+        quoteMint,
+        baseVault,
+        quoteVault,
+      },
+      payer: admin,
+      authority: admin,
+      supply: {
+        baseDecimals: 6,
+        baseTotalSupply: 1_000_000n,
+        baseForDistribution: 0n,
+        baseForLiquidity: 0n,
+      },
+      curve: {
+        curveVirtualBase: 200_000n,
+        curveVirtualQuote: 200_000n,
+        swapFeeBps: 100,
+      },
+      dynamicFee: {
+        startingTime: 0n,
+        startFeeBps: 8_000,
+        endFeeBps: 120,
+        durationSeconds: 600n,
+      },
+      cosignGateExpiresAt: null,
+      migration: false,
+      metadata: null,
+    });
+
+    const ix = prepared.instruction;
+    if (!ix.data) {
+      throw new Error('initialize launch instruction data missing');
+    }
+    const data = getInitializeLaunchInstructionDataDecoder().decode(ix.data);
+
+    expect(prepared.namespace).toBe(admin.address);
+    expect(ix.accounts).toHaveLength(18);
+    expect(ix.accounts![10].address).toBe(
+      dynamicFeeHook.DYNAMIC_FEE_HOOK_PROGRAM_ID,
+    );
+    expect(ix.accounts![11].address).toBe(initializer.INITIALIZER_PROGRAM_ID);
+    expect(data.hookFlags).toBe(
+      initializer.HF_BEFORE_CREATE | initializer.HF_BEFORE_SWAP,
+    );
+    expect(data.hookPayload).toHaveLength(
+      dynamicFeeHook.DYNAMIC_FEE_SCHEDULE_LEN,
+    );
+    expect(dynamicFeeHook.isDynamicFeeSchedulePayload(data.hookPayload)).toBe(
+      true,
+    );
+    expect(data.hookCreateRemainingAccountsHash).toEqual(
+      initializer.EMPTY_REMAINING_ACCOUNTS_HASH,
+    );
+    expect(data.hookRemainingAccountsHash).toEqual(
+      initializer.computeRemainingAccountsHash([admin.address]),
+    );
+  });
+
+  it('uses the dynamic fee hook with cosigner remaining-account commitments', async () => {
+    const baseMint = await generateKeyPairSigner();
+    const baseVault = await generateKeyPairSigner();
+    const quoteVault = await generateKeyPairSigner();
+    const admin = await generateKeyPairSigner();
+    const cosigner = await generateKeyPairSigner();
+
+    const quoteMint = address('DtCGbAhmf5R6Fjuo3zJqCS9Ep5wePTmxHzK8ri8E5nhb');
+    const launchId = initializer.launchIdFromU64(8n);
+    const [dynamicFeeConfig] =
+      await dynamicFeeHook.getDynamicFeeHookConfigAddress();
+
+    const prepared = await createLaunch({
+      launchId,
+      launchAccounts: {
+        baseMint,
+        quoteMint,
+        baseVault,
+        quoteVault,
+      },
+      payer: admin,
+      authority: admin,
+      supply: {
+        baseDecimals: 6,
+        baseTotalSupply: 1_000_000n,
+        baseForDistribution: 0n,
+        baseForLiquidity: 0n,
+      },
+      curve: {
+        curveVirtualBase: 200_000n,
+        curveVirtualQuote: 200_000n,
+        swapFeeBps: 100,
+      },
+      cosigner,
+      cosignGateExpiresAt: 1_000n,
+      dynamicFee: {
+        startingTime: 0n,
+        startFeeBps: 8_000,
+        endFeeBps: 120,
+        durationSeconds: 600n,
+      },
+      migration: false,
+      metadata: null,
+    });
+
+    const ix = prepared.instruction;
+    if (!ix.data) {
+      throw new Error('initialize launch instruction data missing');
+    }
+    const data = getInitializeLaunchInstructionDataDecoder().decode(ix.data);
+
+    expect(prepared.namespace).toBe(SYSTEM_PROGRAM_ADDRESS);
+    expect(ix.accounts).toHaveLength(18);
+    expect(ix.accounts![10].address).toBe(
+      dynamicFeeHook.DYNAMIC_FEE_HOOK_PROGRAM_ID,
+    );
+    expect(data.hookFlags).toBe(
+      initializer.HF_BEFORE_CREATE |
+        initializer.HF_BEFORE_SWAP |
+        initializer.HF_FORWARD_READONLY_SIGNERS,
+    );
+    expect(data.hookPayload).toHaveLength(
+      dynamicFeeHook.DYNAMIC_FEE_SCHEDULE_LEN +
+        cosignerHook.GATE_EXPIRY_PAYLOAD_LEN,
+    );
+    expect(
+      dynamicFeeHook.isDynamicFeeSchedulePayload(
+        data.hookPayload.slice(0, dynamicFeeHook.DYNAMIC_FEE_SCHEDULE_LEN),
+      ),
+    ).toBe(true);
+    expect(
+      cosignerHook.decodeCosignerGateExpiryPayload(
+        data.hookPayload.slice(dynamicFeeHook.DYNAMIC_FEE_SCHEDULE_LEN),
+      ),
+    ).toEqual({
+      mode: cosignerHook.GATE_EXPIRY_UNIX_TIMESTAMP,
+      value: 1_000n,
+      cosigner: cosigner.address,
+    });
+    expect(data.hookCreateRemainingAccountsHash).toEqual(
+      initializer.EMPTY_REMAINING_ACCOUNTS_HASH,
+    );
+    expect(data.hookRemainingAccountsHash).toEqual(
+      initializer.computeRemainingAccountsHash([
+        SYSTEM_PROGRAM_ADDRESS,
+        dynamicFeeConfig,
+        cosigner.address,
+      ]),
+    );
   });
 
   it('prepares initializeLaunch without a migrator when migration is disabled', async () => {
