@@ -24,6 +24,7 @@ const PROGRAMS = [
   { idl_name: 'cpmm', out_dir: 'cpmm' },
   { idl_name: 'cpmm_migrator', out_dir: 'cpmmMigrator' },
   { idl_name: 'cosigner_hook', out_dir: 'cosignerHook' },
+  { idl_name: 'dynamic_fee_hook', out_dir: 'dynamicFeeHook' },
   { idl_name: 'initializer', out_dir: 'initializer' },
   { idl_name: 'prediction_migrator', out_dir: 'predictionMigrator' },
   { idl_name: 'trusted_oracle', out_dir: 'trustedOracle' },

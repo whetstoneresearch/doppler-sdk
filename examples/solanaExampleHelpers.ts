@@ -109,6 +109,7 @@ const CUSTOM_CPMM_PROGRAM_ENV = {
   cpmmMigratorProgram: 'SOLANA_CPMM_MIGRATOR_PROGRAM_ID',
   cpmmHookProgram: 'SOLANA_CPMM_HOOK_PROGRAM_ID',
   cosignerHookProgram: 'SOLANA_COSIGNER_HOOK_PROGRAM_ID',
+  dynamicFeeHookProgram: 'SOLANA_DYNAMIC_FEE_HOOK_PROGRAM_ID',
 } as const satisfies Record<keyof SolanaCpmmProgramAddresses, string>;
 
 function requiredAddressFromEnv(name: string): Address {
@@ -133,6 +134,9 @@ export function getSolanaCpmmProgramAddressesFromEnv(): SolanaCpmmProgramAddress
     ),
     cosignerHookProgram: requiredAddressFromEnv(
       CUSTOM_CPMM_PROGRAM_ENV.cosignerHookProgram,
+    ),
+    dynamicFeeHookProgram: requiredAddressFromEnv(
+      CUSTOM_CPMM_PROGRAM_ENV.dynamicFeeHookProgram,
     ),
   };
 }

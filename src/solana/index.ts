@@ -7,6 +7,7 @@
 export * as cpmm from './cpmm/index.js';
 export * as cosignerHook from './cosignerHook/index.js';
 export * as initializer from './initializer/index.js';
+export * as dynamicFeeHook from './dynamicFeeHook/index.js';
 export * as cpmmMigrator from './migrators/cpmmMigrator/index.js';
 export * as predictionMigrator from './migrators/predictionMigrator/index.js';
 export * as trustedOracle from './trustedOracle/index.js';
