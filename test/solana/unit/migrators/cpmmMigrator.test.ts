@@ -328,7 +328,7 @@ describe('cpmmMigrator spot pool helpers', () => {
     ).rejects.toThrow('positionId must be a safe integer');
   });
 
-  it('rejects unsafe numeric create instruction amounts', async () => {
+  it('rejects unsafe numeric create instruction values', async () => {
     const input = {
       payer: TEST_SIGNER,
       tokenAMint: TEST_MINT_A,
@@ -339,6 +339,12 @@ describe('cpmmMigrator spot pool helpers', () => {
     };
     const unsafeNumber = Number.MAX_SAFE_INTEGER + 1;
 
+    await expect(
+      cpmmMigrator.createSpotPoolInstruction({
+        ...input,
+        positionId: unsafeNumber,
+      }),
+    ).rejects.toThrow('positionId must be a safe integer');
     await expect(
       cpmmMigrator.createSpotPoolInstruction({
         ...input,
