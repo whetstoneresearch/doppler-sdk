@@ -8,6 +8,135 @@
   },
   "instructions": [
     {
+      "name": "create_spot_pool",
+      "docs": [
+        "Permissionlessly create an immutable-fee, hookless spot CPMM pool."
+      ],
+      "discriminator": [
+        13,
+        137,
+        16,
+        26,
+        40,
+        36,
+        110,
+        26
+      ],
+      "accounts": [
+        {
+          "name": "cpmm_config"
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "liquidity_owner",
+          "signer": true
+        },
+        {
+          "name": "token0_mint"
+        },
+        {
+          "name": "token1_mint"
+        },
+        {
+          "name": "pool",
+          "writable": true
+        },
+        {
+          "name": "pool_authority"
+        },
+        {
+          "name": "pool_vault0",
+          "writable": true
+        },
+        {
+          "name": "pool_vault1",
+          "writable": true
+        },
+        {
+          "name": "protocol_fee_owner"
+        },
+        {
+          "name": "protocol_fee_position",
+          "writable": true
+        },
+        {
+          "name": "position",
+          "writable": true
+        },
+        {
+          "name": "user0",
+          "writable": true
+        },
+        {
+          "name": "user1",
+          "writable": true
+        },
+        {
+          "name": "cpmm_program",
+          "address": "9PSxVPoPfnbZ8Q1uQhgS6ZxvBjFboZtebNsu34umxkgQ"
+        },
+        {
+          "name": "migration_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  105,
+                  103,
+                  114,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "token0_program"
+        },
+        {
+          "name": "token1_program"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "CreateSpotPoolArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "migrate",
       "docs": [
         "Migrate a launch to a CPMM pool.",
@@ -407,6 +536,19 @@
         122,
         253
       ]
+    },
+    {
+      "name": "SpotPoolCreated",
+      "discriminator": [
+        161,
+        251,
+        13,
+        232,
+        166,
+        81,
+        52,
+        162
+      ]
     }
   ],
   "errors": [
@@ -519,6 +661,11 @@
       "code": 6022,
       "name": "InvalidPosition",
       "msg": "Invalid position"
+    },
+    {
+      "code": 6023,
+      "name": "InvalidFee",
+      "msg": "Invalid fee"
     }
   ],
   "types": [
@@ -707,6 +854,34 @@
                 14
               ]
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "CreateSpotPoolArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "swap_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "position_id",
+            "type": "u64"
+          },
+          {
+            "name": "amount0_max",
+            "type": "u64"
+          },
+          {
+            "name": "amount1_max",
+            "type": "u64"
+          },
+          {
+            "name": "min_shares_out",
+            "type": "u128"
           }
         ]
       }
@@ -1174,6 +1349,42 @@
                 }
               }
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "SpotPoolCreated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "pool",
+            "type": "pubkey"
+          },
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "token0_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "token1_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount0_max",
+            "type": "u64"
+          },
+          {
+            "name": "amount1_max",
+            "type": "u64"
+          },
+          {
+            "name": "swap_fee_bps",
+            "type": "u16"
           }
         ]
       }

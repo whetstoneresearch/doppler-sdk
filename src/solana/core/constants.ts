@@ -62,8 +62,11 @@ export const MAX_ORACLE_OBSERVATIONS = 64;
 /** Seed for AmmConfig PDA: ['config'] */
 export const SEED_CONFIG = 'config';
 
-/** Seed prefix for Pool PDA: ['pool', token0_mint, token1_mint] */
+/** Seed prefix for launch-migrated Pool PDA: ['pool', token0_mint, token1_mint] */
 export const SEED_POOL = 'pool';
+
+/** Seed prefix for spot Pool PDA: ['spot_pool', token0_mint, token1_mint, swap_fee_bps] */
+export const SEED_SPOT_POOL = 'spot_pool';
 
 /** Seed prefix for pool authority PDA: ['authority', pool] */
 export const SEED_AUTHORITY = 'authority';

@@ -8,6 +8,7 @@ import {
   CPMM_PROGRAM_ID,
   SEED_CONFIG,
   SEED_POOL,
+  SEED_SPOT_POOL,
   SEED_AUTHORITY,
   SEED_VAULT0,
   SEED_VAULT1,
@@ -18,6 +19,16 @@ import {
 
 const addressCodec = getAddressCodec();
 const textEncoder = new TextEncoder();
+
+function u16Seed(value: number): Uint8Array {
+  if (!Number.isInteger(value) || value < 0 || value > 0xffff) {
+    throw new RangeError('u16 value must be between 0 and 65535');
+  }
+
+  const bytes = new Uint8Array(2);
+  new DataView(bytes.buffer).setUint16(0, value, true);
+  return bytes;
+}
 
 // ============================================================================
 // Token Sorting
@@ -97,6 +108,30 @@ export async function getPoolAddress(
       textEncoder.encode(SEED_POOL),
       addressCodec.encode(token0),
       addressCodec.encode(token1),
+    ],
+  });
+}
+
+/**
+ * Derive the spot Pool PDA address for a token pair and immutable fee tier.
+ * Seeds: ['spot_pool', token0_mint, token1_mint, swap_fee_bps_le]
+ *
+ * Note: Mints will be automatically sorted if not in canonical order.
+ */
+export async function getSpotPoolAddress(
+  mint0: Address,
+  mint1: Address,
+  swapFeeBps: number,
+  programId: Address = CPMM_PROGRAM_ID,
+): Promise<ProgramDerivedAddress> {
+  const [token0, token1] = sortMints(mint0, mint1);
+  return getProgramDerivedAddress({
+    programAddress: programId,
+    seeds: [
+      textEncoder.encode(SEED_SPOT_POOL),
+      addressCodec.encode(token0),
+      addressCodec.encode(token1),
+      u16Seed(swapFeeBps),
     ],
   });
 }
