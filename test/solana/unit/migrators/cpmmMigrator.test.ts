@@ -43,7 +43,7 @@ describe('cpmmMigrator payload encoders', () => {
         positionId: 7n,
         amount0Max: 700_000n,
         amount1Max: 300_000n,
-        minSharesOut: 10n,
+        minSharesOut: (1n << 64n) + 10n,
       });
 
       const view = new DataView(result.buffer, result.byteOffset);
@@ -54,6 +54,7 @@ describe('cpmmMigrator payload encoders', () => {
       expect(view.getBigUint64(21, true)).toBe(700_000n);
       expect(view.getBigUint64(29, true)).toBe(300_000n);
       expect(view.getBigUint64(37, true)).toBe(10n);
+      expect(view.getBigUint64(45, true)).toBe(1n);
     });
   });
 
@@ -224,6 +225,17 @@ describe('cpmmMigrator spot pool helpers', () => {
     expect(accounts.user0).not.toBe(accounts.user1);
     expect(accounts.pool).not.toBe(TEST_WALLET);
     expect(accounts.migrationAuthority).not.toBe(TEST_WALLET);
+  });
+
+  it('rejects unsafe numeric position IDs', async () => {
+    await expect(
+      cpmmMigrator.deriveSpotPoolAccounts({
+        tokenAMint: TEST_MINT_A,
+        tokenBMint: TEST_MINT_B,
+        liquidityOwner: TEST_WALLET,
+        positionId: Number.MAX_SAFE_INTEGER + 1,
+      }),
+    ).rejects.toThrow('safe integers');
   });
 
   it('builds a createSpotPool instruction with canonical amounts', async () => {
