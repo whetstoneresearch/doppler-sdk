@@ -37,6 +37,7 @@ export * from './hookUpdated';
 export * from './initializeConfigArgs';
 export * from './initializeOracleArgs';
 export * from './initializePoolArgs';
+export * from './initializeSpotPoolArgs';
 export * from './observation';
 export * from './oracleConsultArgs';
 export * from './oracleInitialized';

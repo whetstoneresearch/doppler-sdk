@@ -16,8 +16,6 @@ import {
   getU16Encoder,
   getU64Decoder,
   getU64Encoder,
-  getU8Decoder,
-  getU8Encoder,
   type Address,
   type FixedSizeCodec,
   type FixedSizeDecoder,
@@ -31,9 +29,7 @@ export type SpotPoolCreated = {
   token1Mint: Address;
   amount0Max: bigint;
   amount1Max: bigint;
-  initialSwapFeeBps: number;
-  initialFeeSplitBps: number;
-  liquidityMeasureTokenIndex: number;
+  swapFeeBps: number;
 };
 
 export type SpotPoolCreatedArgs = {
@@ -43,9 +39,7 @@ export type SpotPoolCreatedArgs = {
   token1Mint: Address;
   amount0Max: number | bigint;
   amount1Max: number | bigint;
-  initialSwapFeeBps: number;
-  initialFeeSplitBps: number;
-  liquidityMeasureTokenIndex: number;
+  swapFeeBps: number;
 };
 
 export function getSpotPoolCreatedEncoder(): FixedSizeEncoder<SpotPoolCreatedArgs> {
@@ -56,9 +50,7 @@ export function getSpotPoolCreatedEncoder(): FixedSizeEncoder<SpotPoolCreatedArg
     ['token1Mint', getAddressEncoder()],
     ['amount0Max', getU64Encoder()],
     ['amount1Max', getU64Encoder()],
-    ['initialSwapFeeBps', getU16Encoder()],
-    ['initialFeeSplitBps', getU16Encoder()],
-    ['liquidityMeasureTokenIndex', getU8Encoder()],
+    ['swapFeeBps', getU16Encoder()],
   ]);
 }
 
@@ -70,9 +62,7 @@ export function getSpotPoolCreatedDecoder(): FixedSizeDecoder<SpotPoolCreated> {
     ['token1Mint', getAddressDecoder()],
     ['amount0Max', getU64Decoder()],
     ['amount1Max', getU64Decoder()],
-    ['initialSwapFeeBps', getU16Decoder()],
-    ['initialFeeSplitBps', getU16Decoder()],
-    ['liquidityMeasureTokenIndex', getU8Decoder()],
+    ['swapFeeBps', getU16Decoder()],
   ]);
 }
 

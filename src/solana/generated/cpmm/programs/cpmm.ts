@@ -55,6 +55,7 @@ import {
   getInitializeConfigInstructionAsync,
   getInitializeOracleInstructionAsync,
   getInitializePoolInstructionAsync,
+  getInitializeSpotPoolInstructionAsync,
   getOracleConsultInstructionAsync,
   getOracleUpdateInstructionAsync,
   getPauseInstruction,
@@ -76,6 +77,7 @@ import {
   parseInitializeConfigInstruction,
   parseInitializeOracleInstruction,
   parseInitializePoolInstruction,
+  parseInitializeSpotPoolInstruction,
   parseOracleConsultInstruction,
   parseOracleUpdateInstruction,
   parsePauseInstruction,
@@ -97,6 +99,7 @@ import {
   type InitializeConfigAsyncInput,
   type InitializeOracleAsyncInput,
   type InitializePoolAsyncInput,
+  type InitializeSpotPoolAsyncInput,
   type OracleConsultAsyncInput,
   type OracleUpdateAsyncInput,
   type ParsedAddLiquidityInstruction,
@@ -107,6 +110,7 @@ import {
   type ParsedInitializeConfigInstruction,
   type ParsedInitializeOracleInstruction,
   type ParsedInitializePoolInstruction,
+  type ParsedInitializeSpotPoolInstruction,
   type ParsedOracleConsultInstruction,
   type ParsedOracleUpdateInstruction,
   type ParsedPauseInstruction,
@@ -206,6 +210,7 @@ export enum CpmmInstruction {
   InitializeConfig,
   InitializeOracle,
   InitializePool,
+  InitializeSpotPool,
   OracleConsult,
   OracleUpdate,
   Pause,
@@ -312,6 +317,17 @@ export function identifyCpmmInstruction(
     )
   ) {
     return CpmmInstruction.InitializePool;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([254, 243, 84, 29, 237, 165, 241, 217]),
+      ),
+      0,
+    )
+  ) {
+    return CpmmInstruction.InitializeSpotPool;
   }
   if (
     containsBytes(
@@ -490,6 +506,9 @@ export type ParsedCpmmInstruction<
       instructionType: CpmmInstruction.InitializePool;
     } & ParsedInitializePoolInstruction<TProgram>)
   | ({
+      instructionType: CpmmInstruction.InitializeSpotPool;
+    } & ParsedInitializeSpotPoolInstruction<TProgram>)
+  | ({
       instructionType: CpmmInstruction.OracleConsult;
     } & ParsedOracleConsultInstruction<TProgram>)
   | ({
@@ -588,6 +607,13 @@ export function parseCpmmInstruction<TProgram extends string>(
       return {
         instructionType: CpmmInstruction.InitializePool,
         ...parseInitializePoolInstruction(instruction),
+      };
+    }
+    case CpmmInstruction.InitializeSpotPool: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: CpmmInstruction.InitializeSpotPool,
+        ...parseInitializeSpotPoolInstruction(instruction),
       };
     }
     case CpmmInstruction.OracleConsult: {
@@ -737,6 +763,10 @@ export type CpmmPluginInstructions = {
     input: MakeOptional<InitializePoolAsyncInput, 'payer'>,
   ) => ReturnType<typeof getInitializePoolInstructionAsync> &
     SelfPlanAndSendFunctions;
+  initializeSpotPool: (
+    input: MakeOptional<InitializeSpotPoolAsyncInput, 'payer'>,
+  ) => ReturnType<typeof getInitializeSpotPoolInstructionAsync> &
+    SelfPlanAndSendFunctions;
   oracleConsult: (
     input: OracleConsultAsyncInput,
   ) => ReturnType<typeof getOracleConsultInstructionAsync> &
@@ -853,6 +883,14 @@ export function cpmmProgram() {
             addSelfPlanAndSendFunctions(
               client,
               getInitializePoolInstructionAsync({
+                ...input,
+                payer: input.payer ?? client.payer,
+              }),
+            ),
+          initializeSpotPool: (input) =>
+            addSelfPlanAndSendFunctions(
+              client,
+              getInitializeSpotPoolInstructionAsync({
                 ...input,
                 payer: input.payer ?? client.payer,
               }),

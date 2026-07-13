@@ -10,7 +10,7 @@
     {
       "name": "create_spot_pool",
       "docs": [
-        "Create a spot CPMM pool with initial liquidity and no hooks."
+        "Permissionlessly create an immutable-fee, hookless spot CPMM pool."
       ],
       "discriminator": [
         13,
@@ -25,10 +25,6 @@
       "accounts": [
         {
           "name": "cpmm_config"
-        },
-        {
-          "name": "admin",
-          "signer": true
         },
         {
           "name": "payer",
@@ -665,6 +661,11 @@
       "code": 6022,
       "name": "InvalidPosition",
       "msg": "Invalid position"
+    },
+    {
+      "code": 6023,
+      "name": "InvalidFee",
+      "msg": "Invalid fee"
     }
   ],
   "types": [
@@ -863,16 +864,8 @@
         "kind": "struct",
         "fields": [
           {
-            "name": "initial_swap_fee_bps",
+            "name": "swap_fee_bps",
             "type": "u16"
-          },
-          {
-            "name": "initial_fee_split_bps",
-            "type": "u16"
-          },
-          {
-            "name": "liquidity_measure_token_index",
-            "type": "u8"
           },
           {
             "name": "position_id",
@@ -1390,16 +1383,8 @@
             "type": "u64"
           },
           {
-            "name": "initial_swap_fee_bps",
+            "name": "swap_fee_bps",
             "type": "u16"
-          },
-          {
-            "name": "initial_fee_split_bps",
-            "type": "u16"
-          },
-          {
-            "name": "liquidity_measure_token_index",
-            "type": "u8"
           }
         ]
       }

@@ -21,8 +21,6 @@ import {
   getU16Encoder,
   getU64Decoder,
   getU64Encoder,
-  getU8Decoder,
-  getU8Encoder,
   SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
   SolanaError,
   transformEncoder,
@@ -61,7 +59,6 @@ export function getCreateSpotPoolDiscriminatorBytes() {
 export type CreateSpotPoolInstruction<
   TProgram extends string = typeof CPMM_MIGRATOR_PROGRAM_ADDRESS,
   TAccountCpmmConfig extends string | AccountMeta<string> = string,
-  TAccountAdmin extends string | AccountMeta<string> = string,
   TAccountPayer extends string | AccountMeta<string> = string,
   TAccountLiquidityOwner extends string | AccountMeta<string> = string,
   TAccountToken0Mint extends string | AccountMeta<string> = string,
@@ -92,10 +89,6 @@ export type CreateSpotPoolInstruction<
       TAccountCpmmConfig extends string
         ? ReadonlyAccount<TAccountCpmmConfig>
         : TAccountCpmmConfig,
-      TAccountAdmin extends string
-        ? ReadonlySignerAccount<TAccountAdmin> &
-            AccountSignerMeta<TAccountAdmin>
-        : TAccountAdmin,
       TAccountPayer extends string
         ? WritableSignerAccount<TAccountPayer> &
             AccountSignerMeta<TAccountPayer>
@@ -161,9 +154,7 @@ export type CreateSpotPoolInstruction<
 
 export type CreateSpotPoolInstructionData = {
   discriminator: ReadonlyUint8Array;
-  initialSwapFeeBps: number;
-  initialFeeSplitBps: number;
-  liquidityMeasureTokenIndex: number;
+  swapFeeBps: number;
   positionId: bigint;
   amount0Max: bigint;
   amount1Max: bigint;
@@ -171,9 +162,7 @@ export type CreateSpotPoolInstructionData = {
 };
 
 export type CreateSpotPoolInstructionDataArgs = {
-  initialSwapFeeBps: number;
-  initialFeeSplitBps: number;
-  liquidityMeasureTokenIndex: number;
+  swapFeeBps: number;
   positionId: number | bigint;
   amount0Max: number | bigint;
   amount1Max: number | bigint;
@@ -184,9 +173,7 @@ export function getCreateSpotPoolInstructionDataEncoder(): FixedSizeEncoder<Crea
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['initialSwapFeeBps', getU16Encoder()],
-      ['initialFeeSplitBps', getU16Encoder()],
-      ['liquidityMeasureTokenIndex', getU8Encoder()],
+      ['swapFeeBps', getU16Encoder()],
       ['positionId', getU64Encoder()],
       ['amount0Max', getU64Encoder()],
       ['amount1Max', getU64Encoder()],
@@ -199,9 +186,7 @@ export function getCreateSpotPoolInstructionDataEncoder(): FixedSizeEncoder<Crea
 export function getCreateSpotPoolInstructionDataDecoder(): FixedSizeDecoder<CreateSpotPoolInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['initialSwapFeeBps', getU16Decoder()],
-    ['initialFeeSplitBps', getU16Decoder()],
-    ['liquidityMeasureTokenIndex', getU8Decoder()],
+    ['swapFeeBps', getU16Decoder()],
     ['positionId', getU64Decoder()],
     ['amount0Max', getU64Decoder()],
     ['amount1Max', getU64Decoder()],
@@ -221,7 +206,6 @@ export function getCreateSpotPoolInstructionDataCodec(): FixedSizeCodec<
 
 export type CreateSpotPoolAsyncInput<
   TAccountCpmmConfig extends string = string,
-  TAccountAdmin extends string = string,
   TAccountPayer extends string = string,
   TAccountLiquidityOwner extends string = string,
   TAccountToken0Mint extends string = string,
@@ -243,7 +227,6 @@ export type CreateSpotPoolAsyncInput<
   TAccountRent extends string = string,
 > = {
   cpmmConfig: Address<TAccountCpmmConfig>;
-  admin: TransactionSigner<TAccountAdmin>;
   payer: TransactionSigner<TAccountPayer>;
   liquidityOwner: TransactionSigner<TAccountLiquidityOwner>;
   token0Mint: Address<TAccountToken0Mint>;
@@ -263,9 +246,7 @@ export type CreateSpotPoolAsyncInput<
   token1Program: Address<TAccountToken1Program>;
   systemProgram?: Address<TAccountSystemProgram>;
   rent?: Address<TAccountRent>;
-  initialSwapFeeBps: CreateSpotPoolInstructionDataArgs['initialSwapFeeBps'];
-  initialFeeSplitBps: CreateSpotPoolInstructionDataArgs['initialFeeSplitBps'];
-  liquidityMeasureTokenIndex: CreateSpotPoolInstructionDataArgs['liquidityMeasureTokenIndex'];
+  swapFeeBps: CreateSpotPoolInstructionDataArgs['swapFeeBps'];
   positionId: CreateSpotPoolInstructionDataArgs['positionId'];
   amount0Max: CreateSpotPoolInstructionDataArgs['amount0Max'];
   amount1Max: CreateSpotPoolInstructionDataArgs['amount1Max'];
@@ -274,7 +255,6 @@ export type CreateSpotPoolAsyncInput<
 
 export async function getCreateSpotPoolInstructionAsync<
   TAccountCpmmConfig extends string,
-  TAccountAdmin extends string,
   TAccountPayer extends string,
   TAccountLiquidityOwner extends string,
   TAccountToken0Mint extends string,
@@ -298,7 +278,6 @@ export async function getCreateSpotPoolInstructionAsync<
 >(
   input: CreateSpotPoolAsyncInput<
     TAccountCpmmConfig,
-    TAccountAdmin,
     TAccountPayer,
     TAccountLiquidityOwner,
     TAccountToken0Mint,
@@ -324,7 +303,6 @@ export async function getCreateSpotPoolInstructionAsync<
   CreateSpotPoolInstruction<
     TProgramAddress,
     TAccountCpmmConfig,
-    TAccountAdmin,
     TAccountPayer,
     TAccountLiquidityOwner,
     TAccountToken0Mint,
@@ -353,7 +331,6 @@ export async function getCreateSpotPoolInstructionAsync<
   // Original accounts.
   const originalAccounts = {
     cpmmConfig: { value: input.cpmmConfig ?? null, isWritable: false },
-    admin: { value: input.admin ?? null, isWritable: false },
     payer: { value: input.payer ?? null, isWritable: true },
     liquidityOwner: { value: input.liquidityOwner ?? null, isWritable: false },
     token0Mint: { value: input.token0Mint ?? null, isWritable: false },
@@ -422,7 +399,6 @@ export async function getCreateSpotPoolInstructionAsync<
   return Object.freeze({
     accounts: [
       getAccountMeta('cpmmConfig', accounts.cpmmConfig),
-      getAccountMeta('admin', accounts.admin),
       getAccountMeta('payer', accounts.payer),
       getAccountMeta('liquidityOwner', accounts.liquidityOwner),
       getAccountMeta('token0Mint', accounts.token0Mint),
@@ -450,7 +426,6 @@ export async function getCreateSpotPoolInstructionAsync<
   } as CreateSpotPoolInstruction<
     TProgramAddress,
     TAccountCpmmConfig,
-    TAccountAdmin,
     TAccountPayer,
     TAccountLiquidityOwner,
     TAccountToken0Mint,
@@ -475,7 +450,6 @@ export async function getCreateSpotPoolInstructionAsync<
 
 export type CreateSpotPoolInput<
   TAccountCpmmConfig extends string = string,
-  TAccountAdmin extends string = string,
   TAccountPayer extends string = string,
   TAccountLiquidityOwner extends string = string,
   TAccountToken0Mint extends string = string,
@@ -497,7 +471,6 @@ export type CreateSpotPoolInput<
   TAccountRent extends string = string,
 > = {
   cpmmConfig: Address<TAccountCpmmConfig>;
-  admin: TransactionSigner<TAccountAdmin>;
   payer: TransactionSigner<TAccountPayer>;
   liquidityOwner: TransactionSigner<TAccountLiquidityOwner>;
   token0Mint: Address<TAccountToken0Mint>;
@@ -517,9 +490,7 @@ export type CreateSpotPoolInput<
   token1Program: Address<TAccountToken1Program>;
   systemProgram?: Address<TAccountSystemProgram>;
   rent?: Address<TAccountRent>;
-  initialSwapFeeBps: CreateSpotPoolInstructionDataArgs['initialSwapFeeBps'];
-  initialFeeSplitBps: CreateSpotPoolInstructionDataArgs['initialFeeSplitBps'];
-  liquidityMeasureTokenIndex: CreateSpotPoolInstructionDataArgs['liquidityMeasureTokenIndex'];
+  swapFeeBps: CreateSpotPoolInstructionDataArgs['swapFeeBps'];
   positionId: CreateSpotPoolInstructionDataArgs['positionId'];
   amount0Max: CreateSpotPoolInstructionDataArgs['amount0Max'];
   amount1Max: CreateSpotPoolInstructionDataArgs['amount1Max'];
@@ -528,7 +499,6 @@ export type CreateSpotPoolInput<
 
 export function getCreateSpotPoolInstruction<
   TAccountCpmmConfig extends string,
-  TAccountAdmin extends string,
   TAccountPayer extends string,
   TAccountLiquidityOwner extends string,
   TAccountToken0Mint extends string,
@@ -552,7 +522,6 @@ export function getCreateSpotPoolInstruction<
 >(
   input: CreateSpotPoolInput<
     TAccountCpmmConfig,
-    TAccountAdmin,
     TAccountPayer,
     TAccountLiquidityOwner,
     TAccountToken0Mint,
@@ -577,7 +546,6 @@ export function getCreateSpotPoolInstruction<
 ): CreateSpotPoolInstruction<
   TProgramAddress,
   TAccountCpmmConfig,
-  TAccountAdmin,
   TAccountPayer,
   TAccountLiquidityOwner,
   TAccountToken0Mint,
@@ -605,7 +573,6 @@ export function getCreateSpotPoolInstruction<
   // Original accounts.
   const originalAccounts = {
     cpmmConfig: { value: input.cpmmConfig ?? null, isWritable: false },
-    admin: { value: input.admin ?? null, isWritable: false },
     payer: { value: input.payer ?? null, isWritable: true },
     liquidityOwner: { value: input.liquidityOwner ?? null, isWritable: false },
     token0Mint: { value: input.token0Mint ?? null, isWritable: false },
@@ -661,7 +628,6 @@ export function getCreateSpotPoolInstruction<
   return Object.freeze({
     accounts: [
       getAccountMeta('cpmmConfig', accounts.cpmmConfig),
-      getAccountMeta('admin', accounts.admin),
       getAccountMeta('payer', accounts.payer),
       getAccountMeta('liquidityOwner', accounts.liquidityOwner),
       getAccountMeta('token0Mint', accounts.token0Mint),
@@ -689,7 +655,6 @@ export function getCreateSpotPoolInstruction<
   } as CreateSpotPoolInstruction<
     TProgramAddress,
     TAccountCpmmConfig,
-    TAccountAdmin,
     TAccountPayer,
     TAccountLiquidityOwner,
     TAccountToken0Mint,
@@ -719,26 +684,25 @@ export type ParsedCreateSpotPoolInstruction<
   programAddress: Address<TProgram>;
   accounts: {
     cpmmConfig: TAccountMetas[0];
-    admin: TAccountMetas[1];
-    payer: TAccountMetas[2];
-    liquidityOwner: TAccountMetas[3];
-    token0Mint: TAccountMetas[4];
-    token1Mint: TAccountMetas[5];
-    pool: TAccountMetas[6];
-    poolAuthority: TAccountMetas[7];
-    poolVault0: TAccountMetas[8];
-    poolVault1: TAccountMetas[9];
-    protocolFeeOwner: TAccountMetas[10];
-    protocolFeePosition: TAccountMetas[11];
-    position: TAccountMetas[12];
-    user0: TAccountMetas[13];
-    user1: TAccountMetas[14];
-    cpmmProgram: TAccountMetas[15];
-    migrationAuthority: TAccountMetas[16];
-    token0Program: TAccountMetas[17];
-    token1Program: TAccountMetas[18];
-    systemProgram: TAccountMetas[19];
-    rent: TAccountMetas[20];
+    payer: TAccountMetas[1];
+    liquidityOwner: TAccountMetas[2];
+    token0Mint: TAccountMetas[3];
+    token1Mint: TAccountMetas[4];
+    pool: TAccountMetas[5];
+    poolAuthority: TAccountMetas[6];
+    poolVault0: TAccountMetas[7];
+    poolVault1: TAccountMetas[8];
+    protocolFeeOwner: TAccountMetas[9];
+    protocolFeePosition: TAccountMetas[10];
+    position: TAccountMetas[11];
+    user0: TAccountMetas[12];
+    user1: TAccountMetas[13];
+    cpmmProgram: TAccountMetas[14];
+    migrationAuthority: TAccountMetas[15];
+    token0Program: TAccountMetas[16];
+    token1Program: TAccountMetas[17];
+    systemProgram: TAccountMetas[18];
+    rent: TAccountMetas[19];
   };
   data: CreateSpotPoolInstructionData;
 };
@@ -751,12 +715,12 @@ export function parseCreateSpotPoolInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedCreateSpotPoolInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 21) {
+  if (instruction.accounts.length < 20) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 21,
+        expectedAccountMetas: 20,
       },
     );
   }
@@ -770,7 +734,6 @@ export function parseCreateSpotPoolInstruction<
     programAddress: instruction.programAddress,
     accounts: {
       cpmmConfig: getNextAccount(),
-      admin: getNextAccount(),
       payer: getNextAccount(),
       liquidityOwner: getNextAccount(),
       token0Mint: getNextAccount(),

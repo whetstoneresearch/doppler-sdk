@@ -16,17 +16,13 @@ import {
   getU16Encoder,
   getU64Decoder,
   getU64Encoder,
-  getU8Decoder,
-  getU8Encoder,
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
 } from '@solana/kit';
 
 export type CreateSpotPoolArgs = {
-  initialSwapFeeBps: number;
-  initialFeeSplitBps: number;
-  liquidityMeasureTokenIndex: number;
+  swapFeeBps: number;
   positionId: bigint;
   amount0Max: bigint;
   amount1Max: bigint;
@@ -34,9 +30,7 @@ export type CreateSpotPoolArgs = {
 };
 
 export type CreateSpotPoolArgsArgs = {
-  initialSwapFeeBps: number;
-  initialFeeSplitBps: number;
-  liquidityMeasureTokenIndex: number;
+  swapFeeBps: number;
   positionId: number | bigint;
   amount0Max: number | bigint;
   amount1Max: number | bigint;
@@ -45,9 +39,7 @@ export type CreateSpotPoolArgsArgs = {
 
 export function getCreateSpotPoolArgsEncoder(): FixedSizeEncoder<CreateSpotPoolArgsArgs> {
   return getStructEncoder([
-    ['initialSwapFeeBps', getU16Encoder()],
-    ['initialFeeSplitBps', getU16Encoder()],
-    ['liquidityMeasureTokenIndex', getU8Encoder()],
+    ['swapFeeBps', getU16Encoder()],
     ['positionId', getU64Encoder()],
     ['amount0Max', getU64Encoder()],
     ['amount1Max', getU64Encoder()],
@@ -57,9 +49,7 @@ export function getCreateSpotPoolArgsEncoder(): FixedSizeEncoder<CreateSpotPoolA
 
 export function getCreateSpotPoolArgsDecoder(): FixedSizeDecoder<CreateSpotPoolArgs> {
   return getStructDecoder([
-    ['initialSwapFeeBps', getU16Decoder()],
-    ['initialFeeSplitBps', getU16Decoder()],
-    ['liquidityMeasureTokenIndex', getU8Decoder()],
+    ['swapFeeBps', getU16Decoder()],
     ['positionId', getU64Decoder()],
     ['amount0Max', getU64Decoder()],
     ['amount1Max', getU64Decoder()],

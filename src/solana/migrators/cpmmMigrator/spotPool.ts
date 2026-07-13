@@ -21,8 +21,8 @@ import {
   CPMM_PROGRAM_ID,
   SEED_AUTHORITY,
   SEED_CONFIG,
-  SEED_POOL,
   SEED_POSITION,
+  getSpotPoolAddress,
   sortMints,
 } from '../../core/index.js';
 import {
@@ -47,6 +47,7 @@ const PROTOCOL_FEE_POSITION_ID = 0n;
 export type DeriveSpotPoolAccountsInput = {
   tokenAMint: Address;
   tokenBMint: Address;
+  swapFeeBps: number;
   liquidityOwner: Address;
   tokenAProgram?: Address;
   tokenBProgram?: Address;
@@ -81,16 +82,13 @@ export type AddressOrSigner = Address | TransactionSigner;
 
 export type CreateSpotPoolInstructionInput = Omit<
   DeriveSpotPoolAccountsInput,
-  'liquidityOwner'
+  'liquidityOwner' | 'swapFeeBps'
 > & {
-  admin: AddressOrSigner;
+  payer: AddressOrSigner;
   tokenAAmount: CreateSpotPoolInstructionDataArgs['amount0Max'];
   tokenBAmount: CreateSpotPoolInstructionDataArgs['amount1Max'];
-  initialSwapFeeBps: CreateSpotPoolInstructionDataArgs['initialSwapFeeBps'];
-  initialFeeSplitBps: CreateSpotPoolInstructionDataArgs['initialFeeSplitBps'];
-  liquidityMeasureTokenIndex?: CreateSpotPoolInstructionDataArgs['liquidityMeasureTokenIndex'];
+  swapFeeBps: CreateSpotPoolInstructionDataArgs['swapFeeBps'];
   minSharesOut?: CreateSpotPoolInstructionDataArgs['minSharesOut'];
-  payer?: AddressOrSigner;
   liquidityOwner?: AddressOrSigner;
   systemProgram?: Address;
   rent?: Address;
@@ -153,6 +151,7 @@ function accountMeta(
 export async function deriveSpotPoolAccounts({
   tokenAMint,
   tokenBMint,
+  swapFeeBps,
   liquidityOwner,
   tokenAProgram = TOKEN_PROGRAM_ADDRESS,
   tokenBProgram = TOKEN_PROGRAM_ADDRESS,
@@ -184,11 +183,12 @@ export async function deriveSpotPoolAccounts({
   const user1 =
     token1Account ??
     (token0IsA ? (tokenBAccount ?? userB) : (tokenAAccount ?? userA));
-  const pool = await pda(cpmmProgram, [
-    seed(SEED_POOL),
-    addressSeed(token0Mint),
-    addressSeed(token1Mint),
-  ]);
+  const [pool] = await getSpotPoolAddress(
+    token0Mint,
+    token1Mint,
+    swapFeeBps,
+    cpmmProgram,
+  );
   const protocolFeeOwner = await pda(cpmmProgram, [
     seed(SEED_PROTOCOL_FEE_OWNER),
     addressSeed(pool),
@@ -231,7 +231,7 @@ export async function deriveSpotPoolAccounts({
 export async function createSpotPoolInstruction(
   input: CreateSpotPoolInstructionInput,
 ): Promise<CreateSpotPoolInstruction> {
-  const payer = input.payer ?? input.admin;
+  const payer = input.payer;
   const liquidityOwner = input.liquidityOwner ?? payer;
   const positionId = input.positionId ?? 0n;
   const cpmmProgram = input.cpmmProgram ?? CPMM_PROGRAM_ID;
@@ -250,7 +250,6 @@ export async function createSpotPoolInstruction(
     programAddress: cpmmMigratorProgram,
     accounts: [
       { address: accounts.cpmmConfig, role: AccountRole.READONLY },
-      accountMeta(input.admin, AccountRole.READONLY_SIGNER),
       accountMeta(payer, AccountRole.WRITABLE_SIGNER),
       accountMeta(liquidityOwner, AccountRole.READONLY_SIGNER),
       { address: accounts.token0Mint, role: AccountRole.READONLY },
@@ -278,9 +277,7 @@ export async function createSpotPoolInstruction(
       },
     ],
     data: getCreateSpotPoolInstructionDataEncoder().encode({
-      initialSwapFeeBps: input.initialSwapFeeBps,
-      initialFeeSplitBps: input.initialFeeSplitBps,
-      liquidityMeasureTokenIndex: input.liquidityMeasureTokenIndex ?? 0,
+      swapFeeBps: input.swapFeeBps,
       positionId,
       amount0Max: token0IsA ? input.tokenAAmount : input.tokenBAmount,
       amount1Max: token0IsA ? input.tokenBAmount : input.tokenAAmount,

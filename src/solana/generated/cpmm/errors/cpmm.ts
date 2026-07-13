@@ -72,6 +72,8 @@ export const CPMM_ERROR__INVALID_MINT = 0x178c; // 6028
 export const CPMM_ERROR__INVALID_INPUT = 0x178d; // 6029
 /** UseCollectProtocolFees: Protocol fee position must be claimed via collect_protocol_fees */
 export const CPMM_ERROR__USE_COLLECT_PROTOCOL_FEES = 0x1790; // 6032
+/** ImmutableSpotPoolPolicy: Spot pool fee and hook policy is immutable */
+export const CPMM_ERROR__IMMUTABLE_SPOT_POOL_POLICY = 0x1791; // 6033
 
 export type CpmmError =
   | typeof CPMM_ERROR__AMOUNT_ZERO
@@ -82,6 +84,7 @@ export type CpmmError =
   | typeof CPMM_ERROR__HOOK_REJECTED
   | typeof CPMM_ERROR__HOOK_RETURN_DATA_INVALID
   | typeof CPMM_ERROR__HOOK_RETURN_DATA_MISSING
+  | typeof CPMM_ERROR__IMMUTABLE_SPOT_POOL_POLICY
   | typeof CPMM_ERROR__INSUFFICIENT_LIQUIDITY
   | typeof CPMM_ERROR__INVALID_FEE
   | typeof CPMM_ERROR__INVALID_FEE_SPLIT
@@ -115,6 +118,7 @@ if (process.env.NODE_ENV !== 'production') {
     [CPMM_ERROR__HOOK_REJECTED]: `Hook rejected`,
     [CPMM_ERROR__HOOK_RETURN_DATA_INVALID]: `Hook return data invalid length or could not deserialize`,
     [CPMM_ERROR__HOOK_RETURN_DATA_MISSING]: `Hook return data missing or wrong program id`,
+    [CPMM_ERROR__IMMUTABLE_SPOT_POOL_POLICY]: `Spot pool fee and hook policy is immutable`,
     [CPMM_ERROR__INSUFFICIENT_LIQUIDITY]: `Insufficient liquidity`,
     [CPMM_ERROR__INVALID_FEE]: `Invalid fee`,
     [CPMM_ERROR__INVALID_FEE_SPLIT]: `Invalid fee split`,
