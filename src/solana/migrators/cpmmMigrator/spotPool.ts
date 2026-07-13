@@ -117,12 +117,16 @@ function addressSeed(value: Address): ReadonlyUint8Array {
   return addressCodec.encode(value);
 }
 
-function u64Seed(value: number | bigint): Uint8Array {
+export function assertSafeInteger(name: string, value: number | bigint): void {
   if (typeof value === 'number' && !Number.isSafeInteger(value)) {
     throw new RangeError(
-      'u64 position IDs provided as numbers must be safe integers; use bigint for values above Number.MAX_SAFE_INTEGER',
+      `${name} must be a safe integer when provided as a number; use bigint for values above Number.MAX_SAFE_INTEGER`,
     );
   }
+}
+
+function u64Seed(value: number | bigint): Uint8Array {
+  assertSafeInteger('positionId', value);
 
   const bigintValue = BigInt(value);
   if (bigintValue < 0n || bigintValue > U64_MAX) {
@@ -234,6 +238,11 @@ export async function createSpotPoolInstruction(
   const payer = input.payer;
   const liquidityOwner = input.liquidityOwner ?? payer;
   const positionId = input.positionId ?? 0n;
+  const minSharesOut = input.minSharesOut ?? 1n;
+  assertSafeInteger('positionId', positionId);
+  assertSafeInteger('tokenAAmount', input.tokenAAmount);
+  assertSafeInteger('tokenBAmount', input.tokenBAmount);
+  assertSafeInteger('minSharesOut', minSharesOut);
   const cpmmProgram = input.cpmmProgram ?? CPMM_PROGRAM_ID;
   const cpmmMigratorProgram =
     input.cpmmMigratorProgram ?? CPMM_MIGRATOR_PROGRAM_ID;
@@ -281,7 +290,7 @@ export async function createSpotPoolInstruction(
       positionId,
       amount0Max: token0IsA ? input.tokenAAmount : input.tokenBAmount,
       amount1Max: token0IsA ? input.tokenBAmount : input.tokenAAmount,
-      minSharesOut: input.minSharesOut ?? 1n,
+      minSharesOut,
     }),
   };
 }

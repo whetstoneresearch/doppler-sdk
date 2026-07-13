@@ -8,6 +8,7 @@ import {
   type CreateSpotPoolArgsArgs,
 } from '../../generated/cpmmMigrator/index.js';
 import { CPMM_MIGRATOR_INSTRUCTION_DISCRIMINATORS } from './constants.js';
+import { assertSafeInteger } from './spotPool.js';
 
 export {
   CPMM_MIGRATOR_PROGRAM_ID,
@@ -90,6 +91,10 @@ export type RegisterLaunchPayloadArgs = Omit<
 export function encodeCreateSpotPoolPayload(
   args: CreateSpotPoolArgsArgs,
 ): Uint8Array {
+  assertSafeInteger('positionId', args.positionId);
+  assertSafeInteger('amount0Max', args.amount0Max);
+  assertSafeInteger('amount1Max', args.amount1Max);
+  assertSafeInteger('minSharesOut', args.minSharesOut);
   const encoded = new Uint8Array(getCreateSpotPoolArgsEncoder().encode(args));
   return mergeBytes([
     CPMM_MIGRATOR_INSTRUCTION_DISCRIMINATORS.createSpotPool,

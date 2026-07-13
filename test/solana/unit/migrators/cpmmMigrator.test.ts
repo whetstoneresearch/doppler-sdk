@@ -51,6 +51,58 @@ describe('cpmmMigrator payload encoders', () => {
       expect(view.getBigUint64(34, true)).toBe(10n);
       expect(view.getBigUint64(42, true)).toBe(1n);
     });
+
+    it('accepts safe numeric u64 and u128 values', () => {
+      const result = cpmmMigrator.encodeCreateSpotPoolPayload({
+        swapFeeBps: 30,
+        positionId: 7,
+        amount0Max: 700_000,
+        amount1Max: 300_000,
+        minSharesOut: 1,
+      });
+      const view = new DataView(result.buffer, result.byteOffset);
+
+      expect(view.getBigUint64(10, true)).toBe(7n);
+      expect(view.getBigUint64(18, true)).toBe(700_000n);
+      expect(view.getBigUint64(26, true)).toBe(300_000n);
+      expect(view.getBigUint64(34, true)).toBe(1n);
+    });
+
+    it('rejects unsafe numeric u64 and u128 values', () => {
+      const args = {
+        swapFeeBps: 30,
+        positionId: 0n,
+        amount0Max: 700_000n,
+        amount1Max: 300_000n,
+        minSharesOut: 1n,
+      };
+      const unsafeNumber = Number.MAX_SAFE_INTEGER + 1;
+
+      expect(() =>
+        cpmmMigrator.encodeCreateSpotPoolPayload({
+          ...args,
+          positionId: unsafeNumber,
+        }),
+      ).toThrow('positionId must be a safe integer');
+      expect(() =>
+        cpmmMigrator.encodeCreateSpotPoolPayload({
+          ...args,
+          amount0Max: unsafeNumber,
+        }),
+      ).toThrow('amount0Max must be a safe integer');
+      expect(() =>
+        cpmmMigrator.encodeCreateSpotPoolPayload({
+          ...args,
+          amount1Max: unsafeNumber,
+        }),
+      ).toThrow('amount1Max must be a safe integer');
+      expect(() =>
+        cpmmMigrator.encodeCreateSpotPoolPayload({
+          ...args,
+          minSharesOut: unsafeNumber,
+        }),
+      ).toThrow('minSharesOut must be a safe integer');
+    });
   });
 
   describe('encodeRegisterLaunchPayload', () => {
@@ -273,7 +325,38 @@ describe('cpmmMigrator spot pool helpers', () => {
         liquidityOwner: TEST_WALLET,
         positionId: Number.MAX_SAFE_INTEGER + 1,
       }),
-    ).rejects.toThrow('safe integers');
+    ).rejects.toThrow('positionId must be a safe integer');
+  });
+
+  it('rejects unsafe numeric create instruction amounts', async () => {
+    const input = {
+      payer: TEST_SIGNER,
+      tokenAMint: TEST_MINT_A,
+      tokenBMint: TEST_MINT_B,
+      tokenAAmount: 700_000n,
+      tokenBAmount: 300_000n,
+      swapFeeBps: 30,
+    };
+    const unsafeNumber = Number.MAX_SAFE_INTEGER + 1;
+
+    await expect(
+      cpmmMigrator.createSpotPoolInstruction({
+        ...input,
+        tokenAAmount: unsafeNumber,
+      }),
+    ).rejects.toThrow('tokenAAmount must be a safe integer');
+    await expect(
+      cpmmMigrator.createSpotPoolInstruction({
+        ...input,
+        tokenBAmount: unsafeNumber,
+      }),
+    ).rejects.toThrow('tokenBAmount must be a safe integer');
+    await expect(
+      cpmmMigrator.createSpotPoolInstruction({
+        ...input,
+        minSharesOut: unsafeNumber,
+      }),
+    ).rejects.toThrow('minSharesOut must be a safe integer');
   });
 
   it('builds a createSpotPool instruction with canonical amounts', async () => {
