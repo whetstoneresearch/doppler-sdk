@@ -26,6 +26,11 @@ import {
   sortMints,
 } from '../../core/index.js';
 import {
+  SEED_PROTOCOL_FEE_OWNER,
+  SEED_VAULT0,
+  SEED_VAULT1,
+} from '../../core/constants.js';
+import {
   getCreateSpotPoolInstructionDataEncoder,
   type CreateSpotPoolInstructionDataArgs,
 } from '../../generated/cpmmMigrator/index.js';
@@ -36,9 +41,7 @@ import {
 
 const addressCodec = getAddressCodec();
 const textEncoder = new TextEncoder();
-const SEED_VAULT0 = 'vault0';
-const SEED_VAULT1 = 'vault1';
-const SEED_PROTOCOL_FEE_OWNER = 'protocol_fee_owner';
+const U64_MAX = (1n << 64n) - 1n;
 const PROTOCOL_FEE_POSITION_ID = 0n;
 
 export type DeriveSpotPoolAccountsInput = {
@@ -117,8 +120,19 @@ function addressSeed(value: Address): ReadonlyUint8Array {
 }
 
 function u64Seed(value: number | bigint): Uint8Array {
+  if (typeof value === 'number' && !Number.isSafeInteger(value)) {
+    throw new RangeError(
+      'u64 position IDs provided as numbers must be safe integers; use bigint for values above Number.MAX_SAFE_INTEGER',
+    );
+  }
+
+  const bigintValue = BigInt(value);
+  if (bigintValue < 0n || bigintValue > U64_MAX) {
+    throw new RangeError('u64 position ID must be between 0 and 2^64 - 1');
+  }
+
   const bytes = new Uint8Array(8);
-  new DataView(bytes.buffer).setBigUint64(0, BigInt(value), true);
+  new DataView(bytes.buffer).setBigUint64(0, bigintValue, true);
   return bytes;
 }
 
