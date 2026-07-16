@@ -8,8 +8,7 @@ import {
   createLaunch,
   initializer,
   cpmmMigrator,
-  cosignerHook,
-  dynamicFeeHook,
+  cpmmHook,
 } from '@/solana/index.js';
 import { getInitializeLaunchInstructionDataDecoder } from '@/solana/generated/initializer/instructions/initializeLaunch.js';
 import {
@@ -345,7 +344,7 @@ describe('initializer instructions', () => {
     expect(ix.accounts![5].address).toBe(baseVault.address);
     expect(ix.accounts![6].address).toBe(quoteVault.address);
     expect(ix.accounts![7].address).toBe(expectedLaunchFeeState);
-    expect(ix.accounts![10].address).toBe(initializer.CPMM_HOOK_PROGRAM_ID);
+    expect(ix.accounts![10].address).toBe(cpmmHook.CPMM_HOOK_PROGRAM_ID);
     expect(ix.accounts![11].address).toBe(
       cpmmMigrator.CPMM_MIGRATOR_PROGRAM_ID,
     );
@@ -360,9 +359,19 @@ describe('initializer instructions', () => {
       expectedCpmmMigratorState,
     );
     expect(prepared.cpmmMigration!.recipientAtas).toEqual([]);
+
+    if (!ix.data) {
+      throw new Error('initialize launch instruction data missing');
+    }
+    const data = getInitializeLaunchInstructionDataDecoder().decode(ix.data);
+    expect(data.hookFlags).toBe(initializer.HF_BEFORE_SWAP);
+    expect(data.hookPayload).toHaveLength(0);
+    expect(data.hookRemainingAccountsHash).toEqual(
+      initializer.computeRemainingAccountsHash([namespace]),
+    );
   });
 
-  it('uses the native cosigner hook when a cosigner is provided', async () => {
+  it('enables cosigning through the CPMM hook when a cosigner is provided', async () => {
     const baseMint = await generateKeyPairSigner();
     const baseVault = await generateKeyPairSigner();
     const quoteVault = await generateKeyPairSigner();
@@ -372,9 +381,9 @@ describe('initializer instructions', () => {
     const quoteMint = address('DtCGbAhmf5R6Fjuo3zJqCS9Ep5wePTmxHzK8ri8E5nhb');
     const launchId = initializer.launchIdFromU64(6n);
     const [config] = await initializer.getConfigAddress();
-    const [cosignerConfig] = await cosignerHook.getCosignerHookConfigAddress();
+    const [cpmmHookConfig] = await cpmmHook.getCpmmHookConfigAddress();
     const [expectedLaunch] = await initializer.getLaunchAddress(
-      cosignerConfig,
+      SYSTEM_PROGRAM_ADDRESS,
       launchId,
     );
 
@@ -407,13 +416,13 @@ describe('initializer instructions', () => {
       metadata: null,
     });
 
-    expect(prepared.namespace).toBe(cosignerConfig);
+    expect(prepared.namespace).toBe(SYSTEM_PROGRAM_ADDRESS);
     expect(prepared.addresses.launch).toBe(expectedLaunch);
 
     const ix = prepared.instruction;
     expect(ix.accounts).toHaveLength(20);
     expect(ix.accounts![10].address).toBe(
-      cosignerHook.COSIGNER_HOOK_PROGRAM_ID,
+      cpmmHook.CPMM_HOOK_PROGRAM_ID,
     );
     expect(ix.accounts![11].address).toBe(
       cpmmMigrator.CPMM_MIGRATOR_PROGRAM_ID,
@@ -422,9 +431,25 @@ describe('initializer instructions', () => {
       prepared.cpmmMigration!.cpmmMigrationState,
     );
     expect(ix.accounts![19].address).toBe(prepared.cpmmMigration!.cpmmConfig);
+
+    if (!ix.data) {
+      throw new Error('initialize launch instruction data missing');
+    }
+    const data = getInitializeLaunchInstructionDataDecoder().decode(ix.data);
+    expect(data.hookFlags).toBe(
+      initializer.HF_BEFORE_SWAP | initializer.HF_FORWARD_READONLY_SIGNERS,
+    );
+    expect(data.hookPayload).toHaveLength(0);
+    expect(data.hookRemainingAccountsHash).toEqual(
+      initializer.computeRemainingAccountsHash([
+        SYSTEM_PROGRAM_ADDRESS,
+        cpmmHookConfig,
+        cosigner.address,
+      ]),
+    );
   });
 
-  it('uses the dynamic fee hook when a dynamic fee schedule is provided', async () => {
+  it('enables dynamic fees through the CPMM hook', async () => {
     const baseMint = await generateKeyPairSigner();
     const baseVault = await generateKeyPairSigner();
     const quoteVault = await generateKeyPairSigner();
@@ -475,16 +500,16 @@ describe('initializer instructions', () => {
     expect(prepared.namespace).toBe(admin.address);
     expect(ix.accounts).toHaveLength(18);
     expect(ix.accounts![10].address).toBe(
-      dynamicFeeHook.DYNAMIC_FEE_HOOK_PROGRAM_ID,
+      cpmmHook.CPMM_HOOK_PROGRAM_ID,
     );
     expect(ix.accounts![11].address).toBe(initializer.INITIALIZER_PROGRAM_ID);
     expect(data.hookFlags).toBe(
       initializer.HF_BEFORE_CREATE | initializer.HF_BEFORE_SWAP,
     );
     expect(data.hookPayload).toHaveLength(
-      dynamicFeeHook.DYNAMIC_FEE_SCHEDULE_LEN,
+      cpmmHook.DYNAMIC_FEE_SCHEDULE_LEN,
     );
-    expect(dynamicFeeHook.isDynamicFeeSchedulePayload(data.hookPayload)).toBe(
+    expect(cpmmHook.isDynamicFeeSchedulePayload(data.hookPayload)).toBe(
       true,
     );
     expect(data.hookCreateRemainingAccountsHash).toEqual(
@@ -495,7 +520,7 @@ describe('initializer instructions', () => {
     );
   });
 
-  it('uses the dynamic fee hook with cosigner remaining-account commitments', async () => {
+  it('combines dynamic fees and cosigning through the CPMM hook', async () => {
     const baseMint = await generateKeyPairSigner();
     const baseVault = await generateKeyPairSigner();
     const quoteVault = await generateKeyPairSigner();
@@ -504,8 +529,8 @@ describe('initializer instructions', () => {
 
     const quoteMint = address('DtCGbAhmf5R6Fjuo3zJqCS9Ep5wePTmxHzK8ri8E5nhb');
     const launchId = initializer.launchIdFromU64(8n);
-    const [dynamicFeeConfig] =
-      await dynamicFeeHook.getDynamicFeeHookConfigAddress();
+    const [cpmmHookConfig] =
+      await cpmmHook.getCpmmHookConfigAddress();
 
     const prepared = await createLaunch({
       launchId,
@@ -549,7 +574,7 @@ describe('initializer instructions', () => {
     expect(prepared.namespace).toBe(SYSTEM_PROGRAM_ADDRESS);
     expect(ix.accounts).toHaveLength(18);
     expect(ix.accounts![10].address).toBe(
-      dynamicFeeHook.DYNAMIC_FEE_HOOK_PROGRAM_ID,
+      cpmmHook.CPMM_HOOK_PROGRAM_ID,
     );
     expect(data.hookFlags).toBe(
       initializer.HF_BEFORE_CREATE |
@@ -557,20 +582,20 @@ describe('initializer instructions', () => {
         initializer.HF_FORWARD_READONLY_SIGNERS,
     );
     expect(data.hookPayload).toHaveLength(
-      dynamicFeeHook.DYNAMIC_FEE_SCHEDULE_LEN +
-        cosignerHook.GATE_EXPIRY_PAYLOAD_LEN,
+      cpmmHook.DYNAMIC_FEE_SCHEDULE_LEN +
+        cpmmHook.GATE_EXPIRY_PAYLOAD_LEN,
     );
     expect(
-      dynamicFeeHook.isDynamicFeeSchedulePayload(
-        data.hookPayload.slice(0, dynamicFeeHook.DYNAMIC_FEE_SCHEDULE_LEN),
+      cpmmHook.isDynamicFeeSchedulePayload(
+        data.hookPayload.slice(0, cpmmHook.DYNAMIC_FEE_SCHEDULE_LEN),
       ),
     ).toBe(true);
     expect(
-      cosignerHook.decodeCosignerGateExpiryPayload(
-        data.hookPayload.slice(dynamicFeeHook.DYNAMIC_FEE_SCHEDULE_LEN),
+      cpmmHook.decodeCosignerGateExpiryPayload(
+        data.hookPayload.slice(cpmmHook.DYNAMIC_FEE_SCHEDULE_LEN),
       ),
     ).toEqual({
-      mode: cosignerHook.GATE_EXPIRY_UNIX_TIMESTAMP,
+      mode: cpmmHook.GATE_EXPIRY_UNIX_TIMESTAMP,
       value: 1_000n,
       cosigner: cosigner.address,
     });
@@ -580,7 +605,7 @@ describe('initializer instructions', () => {
     expect(data.hookRemainingAccountsHash).toEqual(
       initializer.computeRemainingAccountsHash([
         SYSTEM_PROGRAM_ADDRESS,
-        dynamicFeeConfig,
+        cpmmHookConfig,
         cosigner.address,
       ]),
     );
@@ -617,14 +642,13 @@ describe('initializer instructions', () => {
         curveVirtualQuote: 200_000n,
         swapFeeBps: 100,
       },
-      hook: false,
       migration: false,
       metadata: null,
     });
 
     const ix = prepared.instruction;
     expect(ix.accounts).toHaveLength(18);
-    expect(ix.accounts![10].address).toBe(initializer.INITIALIZER_PROGRAM_ID);
+    expect(ix.accounts![10].address).toBe(cpmmHook.CPMM_HOOK_PROGRAM_ID);
     expect(ix.accounts![11].address).toBe(initializer.INITIALIZER_PROGRAM_ID);
   });
 

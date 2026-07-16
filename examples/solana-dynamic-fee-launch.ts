@@ -1,7 +1,7 @@
 /**
- * Example: Dynamic Fee Hook Launch (Solana)
+ * Example: Dynamic-Fee CPMM Launch (Solana)
  *
- * Creates a WSOL XYK launch that uses the Doppler dynamic fee hook. The
+ * Creates a WSOL XYK launch that uses the CPMM hook's dynamic fees. The
  * schedule is stored in the launch hook payload and normalized by the hook's
  * BEFORE_CREATE path during initialize_launch.
  */
@@ -13,11 +13,7 @@ import {
   type ReadonlyUint8Array,
 } from '@solana/kit';
 
-import {
-  createLaunch,
-  dynamicFeeHook,
-  initializer,
-} from '../src/solana/index.js';
+import { createLaunch, cpmmHook, initializer } from '../src/solana/index.js';
 import {
   WSOL_MINT,
   assertSolanaExampleNetwork,
@@ -44,7 +40,7 @@ function getStoredHookPayload(bytes: {
 }
 
 function assertStoredDynamicFeeSchedule(payload: Uint8Array): bigint {
-  if (!dynamicFeeHook.isDynamicFeeSchedulePayload(payload)) {
+  if (!cpmmHook.isDynamicFeeSchedulePayload(payload)) {
     throw new Error(
       'Launch hook payload does not contain a dynamic fee schedule',
     );
@@ -115,8 +111,8 @@ async function main(): Promise<void> {
     baseMint,
   });
 
-  console.log('Creating dynamic fee hook launch...');
-  console.log('  Dynamic fee hook:', deployment.dynamicFeeHookProgram);
+  console.log('Creating dynamic-fee launch...');
+  console.log('  CPMM hook:       ', deployment.cpmmHookProgram);
   console.log('  Start fee:       ', START_FEE_BPS, 'bps');
   console.log('  End fee:         ', END_FEE_BPS, 'bps');
   console.log('  Duration:        ', DURATION_SECONDS.toString(), 'seconds');
@@ -190,9 +186,9 @@ async function main(): Promise<void> {
   const hookPayload = getStoredHookPayload(launchAccount.hookPayload);
   const expectedHookFlags =
     initializer.HF_BEFORE_CREATE | initializer.HF_BEFORE_SWAP;
-  if (launchAccount.hookProgram !== deployment.dynamicFeeHookProgram) {
+  if (launchAccount.hookProgram !== deployment.cpmmHookProgram) {
     throw new Error(
-      `Unexpected hook program ${launchAccount.hookProgram}; expected ${deployment.dynamicFeeHookProgram}`,
+      `Unexpected hook program ${launchAccount.hookProgram}; expected ${deployment.cpmmHookProgram}`,
     );
   }
   if (launchAccount.hookFlags !== expectedHookFlags) {

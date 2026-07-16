@@ -18,6 +18,7 @@ import { SYSVAR_RENT_ADDRESS } from '@solana/sysvars';
 
 import {
   cpmm,
+  cpmmHook,
   cpmmMigrator,
   initializer,
   predictionMigrator,
@@ -145,7 +146,7 @@ async function setupContext(
     minMigrationPriceQ64Opt: null,
     migratedPoolHookConfig: migratedPoolHookConfig
       ? {
-          hookProgram: initializer.CPMM_HOOK_PROGRAM_ID,
+          hookProgram: cpmmHook.CPMM_HOOK_PROGRAM_ID,
           hookFlags: cpmm.HF_BEFORE_SWAP | cpmm.HF_FORWARD_READONLY_SIGNERS,
         }
       : null,

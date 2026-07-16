@@ -2,12 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { address } from '@solana/kit';
 
 import {
-  cosignerHook,
   cpmm,
+  cpmmHook,
   cpmmMigrator,
   DOPPLER_SOLANA_DEVNET_PROGRAM_ADDRESSES,
   deriveSolanaCpmmDeployment,
-  dynamicFeeHook,
   initializer,
   type SolanaCpmmProgramAddresses,
 } from '../../src/solana/index.js';
@@ -17,8 +16,6 @@ const CUSTOM_PROGRAMS: SolanaCpmmProgramAddresses = {
   initializerProgram: address('BPFLoaderUpgradeab1e11111111111111111111111'),
   cpmmMigratorProgram: address('AddressLookupTab1e1111111111111111111111111'),
   cpmmHookProgram: address('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr'),
-  cosignerHookProgram: address('Sysvar1nstructions1111111111111111111111111'),
-  dynamicFeeHookProgram: address('SysvarC1ock11111111111111111111111111111111'),
 };
 
 describe('Solana deployment helpers', () => {
@@ -26,12 +23,7 @@ describe('Solana deployment helpers', () => {
     const deployment = await deriveSolanaCpmmDeployment();
 
     expect(deployment).toMatchObject(DOPPLER_SOLANA_DEVNET_PROGRAM_ADDRESSES);
-    expect(deployment.cosignerHookProgram).toBe(
-      cosignerHook.DOPPLER_NATIVE_COSIGNER_HOOK_PROGRAM_ID,
-    );
-    expect(deployment.dynamicFeeHookProgram).toBe(
-      dynamicFeeHook.DYNAMIC_FEE_HOOK_PROGRAM_ID,
-    );
+    expect(deployment.cpmmHookProgram).toBe(cpmmHook.CPMM_HOOK_PROGRAM_ID);
     expect(deployment.cpmmConfig).toBeDefined();
     expect(deployment.initializerConfig).toBeDefined();
   });

@@ -26,7 +26,7 @@ import {
 
 import {
   DOPPLER_SOLANA_DEVNET_PROGRAM_ADDRESSES,
-  cosignerHook,
+  cpmmHook,
   deriveSolanaCpmmDeployment,
   initializer,
   type SolanaCpmmDeployment,
@@ -108,8 +108,6 @@ const CUSTOM_CPMM_PROGRAM_ENV = {
   initializerProgram: 'SOLANA_INITIALIZER_PROGRAM_ID',
   cpmmMigratorProgram: 'SOLANA_CPMM_MIGRATOR_PROGRAM_ID',
   cpmmHookProgram: 'SOLANA_CPMM_HOOK_PROGRAM_ID',
-  cosignerHookProgram: 'SOLANA_COSIGNER_HOOK_PROGRAM_ID',
-  dynamicFeeHookProgram: 'SOLANA_DYNAMIC_FEE_HOOK_PROGRAM_ID',
 } as const satisfies Record<keyof SolanaCpmmProgramAddresses, string>;
 
 function requiredAddressFromEnv(name: string): Address {
@@ -131,12 +129,6 @@ export function getSolanaCpmmProgramAddressesFromEnv(): SolanaCpmmProgramAddress
     ),
     cpmmHookProgram: requiredAddressFromEnv(
       CUSTOM_CPMM_PROGRAM_ENV.cpmmHookProgram,
-    ),
-    cosignerHookProgram: requiredAddressFromEnv(
-      CUSTOM_CPMM_PROGRAM_ENV.cosignerHookProgram,
-    ),
-    dynamicFeeHookProgram: requiredAddressFromEnv(
-      CUSTOM_CPMM_PROGRAM_ENV.dynamicFeeHookProgram,
     ),
   };
 }
@@ -506,29 +498,29 @@ export async function loadCosigner(): Promise<TransactionSigner> {
 
 export async function fetchActiveCosigners({
   rpc,
-  cosignerHookProgram,
-  cosignerConfig,
+  cpmmHookProgram,
+  cpmmHookConfig,
 }: {
   rpc: SolanaClients['rpc'];
-  cosignerHookProgram: Address;
-  cosignerConfig: Address;
+  cpmmHookProgram: Address;
+  cpmmHookConfig: Address;
 }): Promise<Set<string>> {
-  const configAccount = await cosignerHook.fetchMaybeCosignerConfig(
+  const configAccount = await cpmmHook.fetchMaybeCosignerConfig(
     rpc,
-    cosignerConfig,
+    cpmmHookConfig,
     { commitment: 'confirmed' },
   );
   if (!configAccount.exists) {
-    throw new Error('Cosigner config does not exist: ' + cosignerConfig);
+    throw new Error('CPMM hook config does not exist: ' + cpmmHookConfig);
   }
-  if (configAccount.programAddress !== cosignerHookProgram) {
+  if (configAccount.programAddress !== cpmmHookProgram) {
     throw new Error(
-      'Cosigner config ' +
-        cosignerConfig +
+      'CPMM hook config ' +
+        cpmmHookConfig +
         ' is owned by ' +
         configAccount.programAddress +
         ', expected ' +
-        cosignerHookProgram,
+        cpmmHookProgram,
     );
   }
 
@@ -541,26 +533,26 @@ export async function fetchActiveCosigners({
 
 export async function assertCosignerRegistered({
   rpc,
-  cosignerHookProgram,
-  cosignerConfig,
+  cpmmHookProgram,
+  cpmmHookConfig,
   cosigner,
 }: {
   rpc: SolanaClients['rpc'];
-  cosignerHookProgram: Address;
-  cosignerConfig: Address;
+  cpmmHookProgram: Address;
+  cpmmHookConfig: Address;
   cosigner: TransactionSigner;
 }): Promise<void> {
   const activeCosigners = await fetchActiveCosigners({
     rpc,
-    cosignerHookProgram,
-    cosignerConfig,
+    cpmmHookProgram,
+    cpmmHookConfig,
   });
   if (!activeCosigners.has(cosigner.address.toString())) {
     throw new Error(
       'Cosigner ' +
         cosigner.address +
         ' is not active in config ' +
-        cosignerConfig,
+        cpmmHookConfig,
     );
   }
 }

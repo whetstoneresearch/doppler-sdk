@@ -23,7 +23,12 @@ import {
   type TransactionSigner,
 } from '@solana/kit';
 
-import { cpmm, cpmmMigrator, initializer } from '../src/solana/index.js';
+import {
+  cpmm,
+  cpmmHook,
+  cpmmMigrator,
+  initializer,
+} from '../src/solana/index.js';
 import { PREDICTION_MIGRATOR_PROGRAM_ADDRESS } from '../src/solana/generated/predictionMigrator/programs/predictionMigrator.js';
 
 const DEFAULT_RPC_URL = 'http://127.0.0.1:8899';
@@ -222,7 +227,7 @@ async function setupInitializerConfig(
     PREDICTION_MIGRATOR_PROGRAM_ADDRESS,
   ];
   const expectedHooks = [
-    initializer.CPMM_HOOK_PROGRAM_ID,
+    cpmmHook.CPMM_HOOK_PROGRAM_ID,
     initializer.PREDICTION_HOOK_PROGRAM_ID,
   ];
 
@@ -272,7 +277,7 @@ async function setupInitializerConfig(
 async function setupCpmmConfig(rpc: LocalTestRpc, payer: TransactionSigner) {
   const [config] = await cpmm.getConfigAddress();
   const programData = await getProgramDataAddress(cpmm.CPMM_PROGRAM_ID);
-  const expectedHooks = [initializer.CPMM_HOOK_PROGRAM_ID];
+  const expectedHooks = [cpmmHook.CPMM_HOOK_PROGRAM_ID];
 
   const existing = await fetchAccountBytes(rpc, config);
   if (!existing) {

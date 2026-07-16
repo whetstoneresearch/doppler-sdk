@@ -14,16 +14,6 @@ export const BPF_LOADER_UPGRADEABLE_PROGRAM_ID: Address = address(
 );
 
 /**
- * Hook program for CPMM-migrated launches.
- * Invoked during bonding curve swaps and previews as a pre/post-swap hook.
- *
- * Source of truth: programs/cpmm_hook/src/lib.rs
- */
-export const CPMM_HOOK_PROGRAM_ID: Address = address(
-  '2vJ1c62knEwZbxp3XdHB4RSmCfz55pA6tRkCho63gW7u',
-);
-
-/**
  * Hook program for prediction market launches.
  * Invoked during bonding curve swaps and previews as a pre/post-swap hook.
  *

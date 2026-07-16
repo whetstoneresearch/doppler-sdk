@@ -13,7 +13,7 @@
  *   7. Discover the graduated CPMM pool and read spot price
  *   8. Execute a CPMM swap without a cosigner
  *
- * Uses the cosigner_hook deployment to reject pre-migration swaps unless a
+ * Uses the canonical CPMM hook to reject pre-migration swaps unless a
  * configured readonly cosigner signs the transaction.
  */
 import './env.js';
@@ -22,7 +22,7 @@ import { SYSTEM_PROGRAM_ADDRESS } from '@solana-program/system';
 import { generateKeyPairSigner } from '@solana/kit';
 
 import {
-  cosignerHook,
+  cpmmHook,
   cpmm,
   cpmmMigrator,
   createLaunch,
@@ -57,23 +57,23 @@ async function main() {
   const { rpc, rpcSubscriptions, network } = createSolanaClientsFromEnv();
   assertSolanaExampleNetwork(network, ['devnet', 'custom']);
   const deployment = await getSolanaCpmmDeploymentFromEnv(network);
-  const [cosignerConfig] = await cosignerHook.getCosignerHookConfigAddress(
-    deployment.cosignerHookProgram,
+  const [cpmmHookConfig] = await cpmmHook.getCpmmHookConfigAddress(
+    deployment.cpmmHookProgram,
   );
   const cosigner = await loadCosigner();
 
-  console.log('Checking cosigner hook config...');
+  console.log('Checking CPMM hook config...');
   const activeCosigners = await fetchActiveCosigners({
     rpc,
-    cosignerHookProgram: deployment.cosignerHookProgram,
-    cosignerConfig,
+    cpmmHookProgram: deployment.cpmmHookProgram,
+    cpmmHookConfig,
   });
   if (!activeCosigners.has(cosigner.address.toString())) {
     throw new Error(
-      `COSIGNER_KEYPAIR resolves to ${cosigner.address}, which is not registered in cosigner hook config ${cosignerConfig}`,
+      `COSIGNER_KEYPAIR resolves to ${cosigner.address}, which is not registered in CPMM hook config ${cpmmHookConfig}`,
     );
   }
-  console.log('  Cosigner hook config verified');
+  console.log('  CPMM hook config verified');
   console.log('');
 
   // ── Token supply ─────────────────────────────────────────────────────────
@@ -120,10 +120,10 @@ async function main() {
   const quoteVault = await generateKeyPairSigner();
   const metadata = DEFAULT_TEST_METADATA;
 
-  const namespace = cosignerConfig;
+  const namespace = cpmmHookConfig;
   const launchId = initializer.launchIdFromU64(BigInt(Date.now()));
   const { signedHookRemainingAccounts, unsignedHookRemainingAccounts } =
-    cosignerHook.getCosignerHookRemainingAccounts({ namespace, cosigner });
+    cpmmHook.getCpmmHookRemainingAccounts({ namespace, cosigner });
   const cosignGateExpiresAt = BigInt(
     Math.floor(Date.now() / 1_000) + COSIGN_GATE_SECONDS,
   );
@@ -194,8 +194,8 @@ async function main() {
     console.log('  Initializer program:', deployment.initializerProgram);
     console.log('  CPMM program:       ', deployment.cpmmProgram);
     console.log('  CPMM migrator:      ', deployment.cpmmMigratorProgram);
-    console.log('  Cosigner hook:      ', deployment.cosignerHookProgram);
-    console.log('  Cosigner config:    ', cosignerConfig);
+    console.log('  CPMM hook:          ', deployment.cpmmHookProgram);
+    console.log('  CPMM hook config:   ', cpmmHookConfig);
     console.log(
       '  Active cosigners:   ',
       Array.from(activeCosigners).join(', '),
@@ -229,7 +229,7 @@ async function main() {
         launchFeeState,
         baseVault: baseVault.address,
         quoteVault: quoteVault.address,
-        hookProgram: deployment.cosignerHookProgram,
+        hookProgram: deployment.cpmmHookProgram,
         remainingAccounts: signedHookRemainingAccounts,
       },
       {
@@ -285,7 +285,6 @@ async function main() {
       amountIn: BUY_AMOUNT_IN,
       minAmountOut: 1n,
       tradeDirection: initializer.TRADE_DIRECTION_BUY,
-      hookProgram: deployment.cosignerHookProgram,
     } as const;
     const signedBuy = await curveSwapExactIn({
       ...swapBaseInput,

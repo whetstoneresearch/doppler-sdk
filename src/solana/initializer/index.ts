@@ -2,7 +2,6 @@
 export {
   INITIALIZER_PROGRAM_ID,
   BPF_LOADER_UPGRADEABLE_PROGRAM_ID,
-  CPMM_HOOK_PROGRAM_ID,
   PREDICTION_HOOK_PROGRAM_ID,
   SEED_CONFIG,
   SEED_LAUNCH,
@@ -123,7 +122,6 @@ export type {
   CreateLaunchAddresses,
   CreateLaunchCpmmMigrationConfig,
   CreateLaunchCustomMigrationConfig,
-  CreateLaunchHookMode,
   CreateLaunchInput,
   CreateLaunchMigrationConfig,
   CreateLaunchResult,

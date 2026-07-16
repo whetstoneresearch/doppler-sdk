@@ -1,7 +1,7 @@
 /**
  * Example: USDC Cosigner-Gated Bonding Curve Buy (Solana)
  *
- * Creates a CPMM-migratable launch with the cosigner hook enabled for
+ * Creates a CPMM-migratable launch with CPMM hook cosigning enabled for
  * pre-migration swaps, proves an unsigned buy fails, executes one cosigned
  * bonding-curve buy with devnet USDC, migrates, then performs an ungated CPMM swap.
  *
@@ -22,7 +22,7 @@ import { generateKeyPairSigner } from '@solana/kit';
 
 import {
   assertMigrationQuoteThreshold,
-  cosignerHook,
+  cpmmHook,
   cpmm,
   createLaunch,
   curveSwapExactIn,
@@ -56,15 +56,15 @@ async function main() {
   const { rpc, rpcSubscriptions, network } = createSolanaClientsFromEnv();
   assertSolanaExampleNetwork(network, ['devnet', 'custom']);
   const deployment = await getSolanaCpmmDeploymentFromEnv(network);
-  const [cosignerConfig] = await cosignerHook.getCosignerHookConfigAddress(
-    deployment.cosignerHookProgram,
+  const [cpmmHookConfig] = await cpmmHook.getCpmmHookConfigAddress(
+    deployment.cpmmHookProgram,
   );
 
-  console.log('Checking cosigner hook config...');
+  console.log('Checking CPMM hook config...');
   await assertCosignerRegistered({
     rpc,
-    cosignerHookProgram: deployment.cosignerHookProgram,
-    cosignerConfig,
+    cpmmHookProgram: deployment.cpmmHookProgram,
+    cpmmHookConfig,
     cosigner,
   });
 
@@ -107,7 +107,7 @@ async function main() {
   const quoteVault = await generateKeyPairSigner();
   const metadata = DEFAULT_TEST_METADATA;
 
-  const namespace = cosignerConfig;
+  const namespace = cpmmHookConfig;
   const launchId = initializer.launchIdFromU64(BigInt(Date.now()));
   const launchAddresses = await initializer.deriveCreateLaunchAddresses({
     deployment,
@@ -131,13 +131,13 @@ async function main() {
   });
 
   const { signedHookRemainingAccounts, unsignedHookRemainingAccounts } =
-    cosignerHook.getCosignerHookRemainingAccounts({ namespace, cosigner });
+    cpmmHook.getCpmmHookRemainingAccounts({ namespace, cosigner });
 
   console.log('Creating cosigner-gated launch...');
   console.log('  Launch:            ', launch);
   console.log('  Base mint:         ', baseMint.address);
-  console.log('  Cosigner hook:     ', deployment.cosignerHookProgram);
-  console.log('  Cosigner config:   ', cosignerConfig);
+  console.log('  CPMM hook:         ', deployment.cpmmHookProgram);
+  console.log('  CPMM hook config:  ', cpmmHookConfig);
   console.log('  Signing cosigner:  ', cosigner.address);
   console.log('  Buy amount atoms:  ', BUY_AMOUNT_IN.toString());
   console.log('  Migration threshold atoms:', minRaiseQuote.toString());
@@ -212,7 +212,6 @@ async function main() {
     amountIn: BUY_AMOUNT_IN,
     minAmountOut: 1n,
     tradeDirection: initializer.TRADE_DIRECTION_BUY,
-    hookProgram: deployment.cosignerHookProgram,
   } as const;
 
   const unsignedBuy = await curveSwapExactIn({
