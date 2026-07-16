@@ -215,6 +215,7 @@ async function main() {
         baseVault: baseVault.address,
         quoteVault: quoteVault.address,
         hookProgram: deployment.cpmmHookProgram,
+        remainingAccounts: [namespace],
       },
       {
         amountIn: BUY_AMOUNT_IN,
@@ -271,7 +272,7 @@ async function main() {
       amountIn: BUY_AMOUNT_IN,
       minAmountOut: 1n, // accept any amount for the example; use preview.amountOut in prod
       tradeDirection: initializer.TRADE_DIRECTION_BUY,
-      hookProgram: deployment.cpmmHookProgram,
+      remainingAccounts: [namespace],
     });
 
     {

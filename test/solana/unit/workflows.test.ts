@@ -5,6 +5,7 @@ import { generateKeyPairSigner } from '@solana/signers';
 import {
   assertMigrationQuoteThreshold,
   cpmm,
+  cpmmHook,
   cpmmMigrator,
   curveSwapExactIn,
   getMigrationQuoteProgress,
@@ -94,7 +95,6 @@ describe('Solana workflow helpers', () => {
       amountIn: 100_000n,
       minAmountOut: 1n,
       tradeDirection: initializer.TRADE_DIRECTION_BUY,
-      hookProgram: initializer.CPMM_HOOK_PROGRAM_ID,
       remainingAccounts: [cosigner],
     });
 
@@ -113,6 +113,9 @@ describe('Solana workflow helpers', () => {
     );
     expect(prepared.swapInstruction.accounts![5].address).toBe(
       prepared.userQuoteAccount,
+    );
+    expect(prepared.swapInstruction.accounts![9].address).toBe(
+      cpmmHook.CPMM_HOOK_PROGRAM_ID,
     );
     expect(prepared.swapInstruction.accounts!.at(-1)?.address).toBe(
       cosigner.address,

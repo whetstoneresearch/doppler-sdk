@@ -1,8 +1,8 @@
 /**
  * Example: Cosigner-Gated Bonding Curve Buy With Token-2022 Base (Solana)
  *
- * Creates a CPMM-migratable Token-2022 base launch with the cosigner hook enabled for
- * pre-migration swaps, proves an unsigned buy fails, executes one cosigned
+ * Creates a CPMM-migratable Token-2022 base launch with CPMM hook cosigning
+ * enabled for pre-migration swaps, proves an unsigned buy fails, executes one cosigned
  * bonding-curve buy, migrates, then performs an ungated CPMM swap.
  *
  * Configure two launch beneficiaries with:
@@ -19,7 +19,7 @@ import { generateKeyPairSigner } from '@solana/kit';
 
 import {
   assertMigrationQuoteThreshold,
-  cosignerHook,
+  cpmmHook,
   cpmm,
   createLaunch,
   curveSwapExactIn,
@@ -54,15 +54,15 @@ async function main() {
   const { rpc, rpcSubscriptions, network } = createSolanaClientsFromEnv();
   assertSolanaExampleNetwork(network, ['devnet', 'custom']);
   const deployment = await getSolanaCpmmDeploymentFromEnv(network);
-  const [cosignerConfig] = await cosignerHook.getCosignerHookConfigAddress(
-    deployment.cosignerHookProgram,
+  const [cpmmHookConfig] = await cpmmHook.getCpmmHookConfigAddress(
+    deployment.cpmmHookProgram,
   );
 
-  console.log('Checking cosigner hook config...');
+  console.log('Checking CPMM hook config...');
   await assertCosignerRegistered({
     rpc,
-    cosignerHookProgram: deployment.cosignerHookProgram,
-    cosignerConfig,
+    cpmmHookProgram: deployment.cpmmHookProgram,
+    cpmmHookConfig,
     cosigner,
   });
 
@@ -103,7 +103,7 @@ async function main() {
   const quoteVault = await generateKeyPairSigner();
   const metadata = DEFAULT_TEST_METADATA;
 
-  const namespace = cosignerConfig;
+  const namespace = cpmmHookConfig;
   const launchId = initializer.launchIdFromU64(BigInt(Date.now()));
   const launchAddresses = await initializer.deriveCreateLaunchAddresses({
     deployment,
@@ -115,13 +115,13 @@ async function main() {
   const { launch, launchAuthority, launchFeeState } = launchAddresses;
 
   const { signedHookRemainingAccounts, unsignedHookRemainingAccounts } =
-    cosignerHook.getCosignerHookRemainingAccounts({ namespace, cosigner });
+    cpmmHook.getCpmmHookRemainingAccounts({ namespace, cosigner });
 
   console.log('Creating Token-2022 cosigner-gated launch...');
   console.log('  Launch:            ', launch);
   console.log('  Base mint:         ', baseMint.address);
-  console.log('  Cosigner hook:     ', deployment.cosignerHookProgram);
-  console.log('  Cosigner config:   ', cosignerConfig);
+  console.log('  CPMM hook:         ', deployment.cpmmHookProgram);
+  console.log('  CPMM hook config:  ', cpmmHookConfig);
   console.log('  Signing cosigner:  ', cosigner.address);
   console.log('  Buy amount atoms:  ', BUY_AMOUNT_IN.toString());
   console.log('  Migration threshold atoms:', minRaiseQuote.toString());
@@ -197,7 +197,6 @@ async function main() {
     amountIn: BUY_AMOUNT_IN,
     minAmountOut: 1n,
     tradeDirection: initializer.TRADE_DIRECTION_BUY,
-    hookProgram: deployment.cosignerHookProgram,
     baseTokenProgram: TOKEN_2022_PROGRAM_ADDRESS,
     quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
   } as const;

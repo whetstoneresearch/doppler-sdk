@@ -21,6 +21,7 @@ import { getSwapQuote } from './core/math.js';
 import { getPoolByMints, type PoolWithAddress } from './client/index.js';
 import { createSwapInstruction } from './instructions/index.js';
 import type { SolanaCpmmDeployment } from './deployment.js';
+import { CPMM_HOOK_PROGRAM_ID } from './cpmmHook/index.js';
 import {
   INITIALIZER_PROGRAM_ID,
   TRADE_DIRECTION_BUY,
@@ -52,7 +53,6 @@ export type CurveSwapExactInInput = {
   amountIn: bigint;
   minAmountOut: bigint;
   tradeDirection: 0 | 1;
-  hookProgram?: Address;
   remainingAccounts?: ReadonlyArray<SolanaRemainingAccount>;
   baseTokenProgram?: Address;
   quoteTokenProgram?: Address;
@@ -238,7 +238,7 @@ export async function curveSwapExactIn(
     baseMint: input.baseMint,
     quoteMint: input.quoteMint,
     user,
-    hookProgram: input.hookProgram ?? input.deployment?.cpmmHookProgram,
+    hookProgram: input.deployment?.cpmmHookProgram ?? CPMM_HOOK_PROGRAM_ID,
     baseTokenProgram,
     quoteTokenProgram,
     remainingAccounts: input.remainingAccounts
