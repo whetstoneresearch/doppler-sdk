@@ -80,41 +80,50 @@ export type InitConfigArgs = {
 
 /** Gets the encoder for {@link InitConfigArgs} account data. */
 export function getInitConfigEncoder(): FixedSizeEncoder<InitConfigArgs> {
-  return transformEncoder(
-    getStructEncoder([
-      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['admin', getAddressEncoder()],
-      ['migratorAllowlistLen', getU8Encoder()],
-      ['migratorAllowlist', getArrayEncoder(getAddressEncoder(), { size: 32 })],
-      ['hookAllowlistLen', getU8Encoder()],
-      ['hookAllowlist', getArrayEncoder(getAddressEncoder(), { size: 32 })],
-      ['bump', getU8Encoder()],
-      ['version', getU8Encoder()],
-      ['protocolFeeBps', getU16Encoder()],
-      ['minSwapFeeBps', getU16Encoder()],
-      ['maxSwapFeeBps', getU16Encoder()],
-      ['reserved', fixEncoderSize(getBytesEncoder(), 24)],
-    ]),
-    (value) => ({ ...value, discriminator: INIT_CONFIG_DISCRIMINATOR }),
+  return fixEncoderSize(
+    transformEncoder(
+      getStructEncoder([
+        ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+        ['admin', getAddressEncoder()],
+        ['migratorAllowlistLen', getU8Encoder()],
+        [
+          'migratorAllowlist',
+          getArrayEncoder(getAddressEncoder(), { size: 32 }),
+        ],
+        ['hookAllowlistLen', getU8Encoder()],
+        ['hookAllowlist', getArrayEncoder(getAddressEncoder(), { size: 32 })],
+        ['bump', getU8Encoder()],
+        ['version', getU8Encoder()],
+        ['protocolFeeBps', getU16Encoder()],
+        ['minSwapFeeBps', getU16Encoder()],
+        ['maxSwapFeeBps', getU16Encoder()],
+        ['reserved', fixEncoderSize(getBytesEncoder(), 24)],
+      ]),
+      (value) => ({ ...value, discriminator: INIT_CONFIG_DISCRIMINATOR }),
+    ),
+    2123,
   );
 }
 
 /** Gets the decoder for {@link InitConfig} account data. */
 export function getInitConfigDecoder(): FixedSizeDecoder<InitConfig> {
-  return getStructDecoder([
-    ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['admin', getAddressDecoder()],
-    ['migratorAllowlistLen', getU8Decoder()],
-    ['migratorAllowlist', getArrayDecoder(getAddressDecoder(), { size: 32 })],
-    ['hookAllowlistLen', getU8Decoder()],
-    ['hookAllowlist', getArrayDecoder(getAddressDecoder(), { size: 32 })],
-    ['bump', getU8Decoder()],
-    ['version', getU8Decoder()],
-    ['protocolFeeBps', getU16Decoder()],
-    ['minSwapFeeBps', getU16Decoder()],
-    ['maxSwapFeeBps', getU16Decoder()],
-    ['reserved', fixDecoderSize(getBytesDecoder(), 24)],
-  ]);
+  return fixDecoderSize(
+    getStructDecoder([
+      ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+      ['admin', getAddressDecoder()],
+      ['migratorAllowlistLen', getU8Decoder()],
+      ['migratorAllowlist', getArrayDecoder(getAddressDecoder(), { size: 32 })],
+      ['hookAllowlistLen', getU8Decoder()],
+      ['hookAllowlist', getArrayDecoder(getAddressDecoder(), { size: 32 })],
+      ['bump', getU8Decoder()],
+      ['version', getU8Decoder()],
+      ['protocolFeeBps', getU16Decoder()],
+      ['minSwapFeeBps', getU16Decoder()],
+      ['maxSwapFeeBps', getU16Decoder()],
+      ['reserved', fixDecoderSize(getBytesDecoder(), 24)],
+    ]),
+    2123,
+  );
 }
 
 /** Gets the codec for {@link InitConfig} account data. */
