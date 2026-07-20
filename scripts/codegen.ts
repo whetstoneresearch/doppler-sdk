@@ -8,7 +8,7 @@
  * Usage:
  *   pnpm generate:codecs
  */
-import { createFromRoot } from 'codama';
+import { createFromRoot, fixedSizeTypeNode, type RootNode } from 'codama';
 import { rootNodeFromAnchor } from '@codama/nodes-from-anchor';
 import { renderVisitor } from '@codama/renderers-js';
 import * as fs from 'fs';
@@ -32,6 +32,52 @@ const PROGRAMS = [
   { idl_name: 'prediction_migrator', out_dir: 'predictionMigrator' },
   { idl_name: 'trusted_oracle', out_dir: 'trustedOracle' },
 ] as const;
+
+type ProgramIdlName = (typeof PROGRAMS)[number]['idl_name'];
+
+// InitConfig retains its original 2,123-byte allocation even though its typed
+// fields now occupy 2,122 bytes. Model that retained byte in the outer account
+// codec so every generated size API agrees with the on-chain allocation.
+const ACCOUNT_ALLOCATION_OVERRIDES: Partial<
+  Record<ProgramIdlName, Readonly<Record<string, number>>>
+> = {
+  cpmm_migrator: { initConfig: 2_123 },
+  initializer: { initConfig: 2_123 },
+  prediction_migrator: { initConfig: 2_123 },
+};
+
+function applyAccountAllocationOverrides(
+  root: RootNode,
+  overrides: Readonly<Record<string, number>> | undefined,
+): RootNode {
+  if (!overrides) return root;
+
+  const missingAccountNames = new Set(Object.keys(overrides));
+  const accounts = root.program.accounts.map((account) => {
+    const allocationSize = overrides[account.name];
+    if (allocationSize === undefined) return account;
+
+    missingAccountNames.delete(account.name);
+    return {
+      ...account,
+      size: allocationSize,
+      data: fixedSizeTypeNode(account.data, allocationSize),
+    };
+  });
+
+  if (missingAccountNames.size > 0) {
+    throw new Error(
+      `Account allocation overrides did not match generated accounts: ${[
+        ...missingAccountNames,
+      ].join(', ')}`,
+    );
+  }
+
+  return {
+    ...root,
+    program: { ...root.program, accounts },
+  };
+}
 
 fs.mkdirSync(IDL_DIR, { recursive: true });
 fs.rmSync(GENERATED_DIR, { recursive: true, force: true });
@@ -90,7 +136,11 @@ for (const program of PROGRAMS) {
       : raw_idl;
   const idl = flattenIdlInstructionArgs(sdk_idl);
 
-  const codama = createFromRoot(rootNodeFromAnchor(idl));
+  const root = applyAccountAllocationOverrides(
+    rootNodeFromAnchor(idl),
+    ACCOUNT_ALLOCATION_OVERRIDES[program.idl_name],
+  );
+  const codama = createFromRoot(root);
   await codama.accept(
     renderVisitor(output_dir, {
       deleteFolderBeforeRendering: true,
@@ -111,8 +161,7 @@ const generated_index = `/**
  */
 
 ${PROGRAMS.map(
-  ({ out_dir }) =>
-    `export * as ${out_dir} from './${out_dir}/index.js';`,
+  ({ out_dir }) => `export * as ${out_dir} from './${out_dir}/index.js';`,
 ).join('\n')}
 `;
 fs.writeFileSync(path.join(GENERATED_DIR, 'index.ts'), generated_index);
@@ -189,31 +238,6 @@ for (const { file, type, fns } of CONFLICTING_EVENTS) {
 fs.writeFileSync(cpmm_types_index_path, cpmm_types_index);
 console.log(
   '  ✓ patched cpmm/types/index.ts (resolved CPMM event/args naming collisions)',
-);
-
-// Anchor's IDL sizing does not include the trailing repr(C) padding byte on the
-// initializer InitConfig zero-copy account. Keep the public size helper aligned
-// with the on-chain account space used by the program.
-const init_config_paths = [
-  path.join(GENERATED_DIR, 'initializer', 'accounts', 'initConfig.ts'),
-  path.join(GENERATED_DIR, 'cpmmMigrator', 'accounts', 'initConfig.ts'),
-  path.join(GENERATED_DIR, 'predictionMigrator', 'accounts', 'initConfig.ts'),
-];
-for (const init_config_path of init_config_paths) {
-  let init_config = fs.readFileSync(init_config_path, 'utf-8');
-  init_config = init_config.replace(
-    /export function getInitConfigSize\(\): number {\n  return \d+;\n}/,
-    'export function getInitConfigSize(): number {\n  return 2123;\n}',
-  );
-  if (!init_config.includes('return 2123;')) {
-    throw new Error(
-      `Failed to patch InitConfig account size in ${init_config_path}`,
-    );
-  }
-  fs.writeFileSync(init_config_path, init_config);
-}
-console.log(
-  '  ✓ patched InitConfig account sizes (preserved on-chain zero-copy size)',
 );
 
 console.log('\nCodegen complete.');

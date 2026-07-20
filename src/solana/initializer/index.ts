@@ -57,6 +57,7 @@ export {
   getInitConfigDecoder,
   getInitConfigEncoder,
   getInitConfigCodec,
+  getInitConfigSize,
   getLaunchDecoder,
   getLaunchEncoder,
   getLaunchCodec,
