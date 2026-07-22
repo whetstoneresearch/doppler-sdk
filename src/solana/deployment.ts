@@ -1,4 +1,4 @@
-import { type Address } from '@solana/kit';
+import { address, type Address } from '@solana/kit';
 
 import {
   CPMM_PROGRAM_ID,
@@ -29,6 +29,16 @@ export const DOPPLER_SOLANA_DEVNET_PROGRAM_ADDRESSES: SolanaCpmmProgramAddresses
     initializerProgram: INITIALIZER_PROGRAM_ID,
     cpmmMigratorProgram: CPMM_MIGRATOR_PROGRAM_ID,
     cpmmHookProgram: CPMM_HOOK_PROGRAM_ID,
+  };
+
+export const DOPPLER_SOLANA_MAINNET_PROGRAM_ADDRESSES: SolanaCpmmProgramAddresses =
+  {
+    cpmmProgram: address('5pXzd9UiWrVxATCYWmgo5EbfxzXqHYhfSKGdCPXPz7vK'),
+    initializerProgram: address('4carc9eePfE7jKUXdCAYMhcPf4awEFpZPrz1sTykdss1'),
+    cpmmMigratorProgram: address(
+      'H71WD4tsiCCipro4urykWHySH1ryvLTmqEdNbHTGwb3o',
+    ),
+    cpmmHookProgram: address('BeyqffXEVgLpM3fQ1zjk8YnZzQN9sMVrCKtNKwSxNATr'),
   };
 
 export async function deriveSolanaCpmmDeployment(
