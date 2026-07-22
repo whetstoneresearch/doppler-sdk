@@ -5,9 +5,15 @@ import { address, type Address } from '@solana/kit';
  *
  * Source of truth: programs/initializer/src/lib.rs
  */
-export const INITIALIZER_PROGRAM_ID: Address = address(
+export const DEVNET_INITIALIZER_PROGRAM_ID: Address = address(
   '4h3Dqyo5qmteJoMxXt3tdtfXELDB6pdRTPU9mWruiKp1',
 );
+
+export const MAINNET_INITIALIZER_PROGRAM_ID: Address = address(
+  '4carc9eePfE7jKUXdCAYMhcPf4awEFpZPrz1sTykdss1',
+);
+
+export const INITIALIZER_PROGRAM_ID = DEVNET_INITIALIZER_PROGRAM_ID;
 
 export const BPF_LOADER_UPGRADEABLE_PROGRAM_ID: Address = address(
   'BPFLoaderUpgradeab1e11111111111111111111111',

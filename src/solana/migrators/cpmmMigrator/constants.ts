@@ -1,9 +1,15 @@
 import { address, type Address } from '@solana/kit';
 
 // Source of truth: programs/cpmm_migrator/src/lib.rs
-export const CPMM_MIGRATOR_PROGRAM_ID: Address = address(
+export const DEVNET_CPMM_MIGRATOR_PROGRAM_ID: Address = address(
   '7WMUTNC41eMCo6eGH5Sy2xbgE3AycvLbFPo95AU9CSUd',
 );
+
+export const MAINNET_CPMM_MIGRATOR_PROGRAM_ID: Address = address(
+  'H71WD4tsiCCipro4urykWHySH1ryvLTmqEdNbHTGwb3o',
+);
+
+export const CPMM_MIGRATOR_PROGRAM_ID = DEVNET_CPMM_MIGRATOR_PROGRAM_ID;
 
 export const SEED_STATE = 'state';
 export const SEED_MIGRATION_AUTHORITY = 'migration_authority';

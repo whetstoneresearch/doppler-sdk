@@ -44,15 +44,23 @@ describe('Solana deployment helpers', () => {
   });
 
   it('exports the mainnet CPMM deployment program IDs', () => {
+    expect(cpmm.MAINNET_CPMM_PROGRAM_ID).toBe(
+      address('5pXzd9UiWrVxATCYWmgo5EbfxzXqHYhfSKGdCPXPz7vK'),
+    );
+    expect(initializer.MAINNET_INITIALIZER_PROGRAM_ID).toBe(
+      address('4carc9eePfE7jKUXdCAYMhcPf4awEFpZPrz1sTykdss1'),
+    );
+    expect(cpmmMigrator.MAINNET_CPMM_MIGRATOR_PROGRAM_ID).toBe(
+      address('H71WD4tsiCCipro4urykWHySH1ryvLTmqEdNbHTGwb3o'),
+    );
+    expect(cpmmHook.MAINNET_CPMM_HOOK_PROGRAM_ID).toBe(
+      address('BeyqffXEVgLpM3fQ1zjk8YnZzQN9sMVrCKtNKwSxNATr'),
+    );
     expect(DOPPLER_SOLANA_MAINNET_PROGRAM_ADDRESSES).toEqual({
-      cpmmProgram: address('5pXzd9UiWrVxATCYWmgo5EbfxzXqHYhfSKGdCPXPz7vK'),
-      initializerProgram: address(
-        '4carc9eePfE7jKUXdCAYMhcPf4awEFpZPrz1sTykdss1',
-      ),
-      cpmmMigratorProgram: address(
-        'H71WD4tsiCCipro4urykWHySH1ryvLTmqEdNbHTGwb3o',
-      ),
-      cpmmHookProgram: address('BeyqffXEVgLpM3fQ1zjk8YnZzQN9sMVrCKtNKwSxNATr'),
+      cpmmProgram: cpmm.MAINNET_CPMM_PROGRAM_ID,
+      initializerProgram: initializer.MAINNET_INITIALIZER_PROGRAM_ID,
+      cpmmMigratorProgram: cpmmMigrator.MAINNET_CPMM_MIGRATOR_PROGRAM_ID,
+      cpmmHookProgram: cpmmHook.MAINNET_CPMM_HOOK_PROGRAM_ID,
     });
   });
 });

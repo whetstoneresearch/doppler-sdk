@@ -5,6 +5,10 @@ export const DEVNET_CPMM_HOOK_PROGRAM_ID: Address = address(
   'HVsPNZh98TgChUXHwKrUG47SUqvGQHxUy5wZwcQLFD4i',
 );
 
+export const MAINNET_CPMM_HOOK_PROGRAM_ID: Address = address(
+  'BeyqffXEVgLpM3fQ1zjk8YnZzQN9sMVrCKtNKwSxNATr',
+);
+
 export const CPMM_HOOK_PROGRAM_ID = DEVNET_CPMM_HOOK_PROGRAM_ID;
 
 export const SEED_CPMM_HOOK_CONFIG = 'cosigner_hook_config';

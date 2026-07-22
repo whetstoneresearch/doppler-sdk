@@ -20,6 +20,10 @@ export const DEVNET_CPMM_PROGRAM_ID: Address = address(
   '9PSxVPoPfnbZ8Q1uQhgS6ZxvBjFboZtebNsu34umxkgQ',
 );
 
+export const MAINNET_CPMM_PROGRAM_ID: Address = address(
+  '5pXzd9UiWrVxATCYWmgo5EbfxzXqHYhfSKGdCPXPz7vK',
+);
+
 /**
  * @deprecated Use DEVNET_CPMM_PROGRAM_ID or pass an explicit deployment.
  */
