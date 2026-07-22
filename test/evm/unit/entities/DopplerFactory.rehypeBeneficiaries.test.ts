@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { decodeAbiParameters, getAddress, parseEther } from 'viem';
+import { CHAIN_IDS } from '../../../../src/evm/addresses';
 import { DopplerFactory } from '../../../../src/evm/entities/DopplerFactory';
 import {
   RehypeFeeRoutingMode,
@@ -27,10 +28,12 @@ describe('DopplerFactory RehypeDopplerHookInitializer beneficiary encoding', () 
   let factory: DopplerFactory;
 
   beforeEach(() => {
+    // TODO(PR #170): TEMPORARY Base Sepolia pin while it is the only deployment
+    // that accepts the Rehype fee-beneficiary tuple.
     factory = new DopplerFactory(
       createMockPublicClient(),
       createMockWalletClient(),
-      1,
+      CHAIN_IDS.BASE_SEPOLIA,
     );
   });
 

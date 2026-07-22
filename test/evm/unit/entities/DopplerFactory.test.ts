@@ -37,6 +37,7 @@ import {
   DECAY_MAX_START_FEE,
   ZERO_ADDRESS,
 } from '../../../../src/evm/constants';
+import { CHAIN_IDS } from '../../../../src/evm/addresses';
 
 vi.mock('../../../../src/evm/addresses', async (importOriginal) => {
   const actual =
@@ -503,6 +504,13 @@ describe('DopplerFactory', () => {
     });
 
     it('encodes rehype initialization calldata using the new hook InitData layout', () => {
+      // TODO(PR #170): TEMPORARY Base Sepolia factory while it is the only
+      // deployment using the fee-beneficiary InitData tuple.
+      const baseSepoliaFactory = new DopplerFactory(
+        publicClient,
+        walletClient,
+        CHAIN_IDS.BASE_SEPOLIA,
+      );
       const params = multicurveParams();
       params.initializer = {
         type: 'rehype',
@@ -533,7 +541,8 @@ describe('DopplerFactory', () => {
           '0x7100000000000000000000000000000000000011' as Address,
       };
 
-      const createParams = factory.encodeCreateMulticurveParams(params);
+      const createParams =
+        baseSepoliaFactory.encodeCreateMulticurveParams(params);
       const [decodedPoolInitData] = decodeAbiParameters(
         [
           {
