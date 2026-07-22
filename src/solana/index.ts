@@ -46,6 +46,7 @@ export {
 
 export {
   DOPPLER_SOLANA_DEVNET_PROGRAM_ADDRESSES,
+  DOPPLER_SOLANA_MAINNET_PROGRAM_ADDRESSES,
   deriveSolanaCpmmDeployment,
   type SolanaCpmmDeployment,
   type SolanaCpmmProgramAddresses,

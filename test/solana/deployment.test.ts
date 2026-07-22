@@ -6,6 +6,7 @@ import {
   cpmmHook,
   cpmmMigrator,
   DOPPLER_SOLANA_DEVNET_PROGRAM_ADDRESSES,
+  DOPPLER_SOLANA_MAINNET_PROGRAM_ADDRESSES,
   deriveSolanaCpmmDeployment,
   initializer,
   type SolanaCpmmProgramAddresses,
@@ -40,6 +41,19 @@ describe('Solana deployment helpers', () => {
     expect(deployment).toMatchObject(CUSTOM_PROGRAMS);
     expect(deployment.cpmmConfig).toBe(expectedCpmmConfig);
     expect(deployment.initializerConfig).toBe(expectedInitializerConfig);
+  });
+
+  it('exports the mainnet CPMM deployment program IDs', () => {
+    expect(DOPPLER_SOLANA_MAINNET_PROGRAM_ADDRESSES).toEqual({
+      cpmmProgram: address('5pXzd9UiWrVxATCYWmgo5EbfxzXqHYhfSKGdCPXPz7vK'),
+      initializerProgram: address(
+        '4carc9eePfE7jKUXdCAYMhcPf4awEFpZPrz1sTykdss1',
+      ),
+      cpmmMigratorProgram: address(
+        'H71WD4tsiCCipro4urykWHySH1ryvLTmqEdNbHTGwb3o',
+      ),
+      cpmmHookProgram: address('BeyqffXEVgLpM3fQ1zjk8YnZzQN9sMVrCKtNKwSxNATr'),
+    });
   });
 });
 
