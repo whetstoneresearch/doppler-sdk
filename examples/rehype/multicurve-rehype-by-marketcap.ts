@@ -148,7 +148,7 @@ async function main() {
     })
     // Configure fee distribution (must sum to 100%)
     // graduationMarketCap uses numerairePrice from withCurves() for tick conversion
-    .withRehypeDopplerHook({
+    .withRehypeDopplerHookInitializer({
       hookAddress: REHYPE_DOPPLER_HOOK_INITIALIZER_ADDRESS,
       buybackDestination: BUYBACK_DESTINATION,
       startFee: 3000, // 0.3% swap fee

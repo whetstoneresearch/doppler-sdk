@@ -960,23 +960,17 @@ export enum RehypeFeeRoutingMode {
   RouteToBeneficiaryFees = 1,
 }
 
-// Initializer-side RehypeDopplerHook configuration.
-// Supports both the current API and deprecated legacy fields for compatibility.
-export interface RehypeDopplerHookConfig {
-  // The hook contract address (must be whitelisted in the initializer)
-  hookAddress: Address;
-  // Destination address for buyback tokens / beneficiary fee claims
-  buybackDestination: Address;
+type RehypeFeeRoutingModeInput =
+  | RehypeFeeRoutingMode
+  | 'directBuyback'
+  | 'routeToBeneficiaryFees';
 
-  // Current fee schedule API
+type RehypeDopplerHookInitializerCommonConfig = {
+  hookAddress: Address;
   startFee?: number;
   endFee?: number;
   durationSeconds?: number | bigint;
   startingTime?: number | bigint | Date;
-  feeRoutingMode?:
-    | RehypeFeeRoutingMode
-    | 'directBuyback'
-    | 'routeToBeneficiaryFees';
   feeDistributionInfo?: RehypeFeeDistributionInfo;
 
   /**
@@ -1011,7 +1005,28 @@ export interface RehypeDopplerHookConfig {
   numerairePrice?: number;
   // Direct tick value for graduation threshold. Use graduationMarketCap for USD-based config.
   farTick?: number;
-}
+};
+
+type RehypeBuybackDestinationConfig = {
+  buybackDestination: Address;
+  feeBeneficiaries?: never;
+  feeRoutingMode?: RehypeFeeRoutingModeInput;
+};
+
+type RehypeFeeBeneficiariesConfig = {
+  buybackDestination?: never;
+  feeBeneficiaries: [BeneficiaryData, ...BeneficiaryData[]];
+  feeRoutingMode?:
+    | RehypeFeeRoutingMode.RouteToBeneficiaryFees
+    | 'routeToBeneficiaryFees';
+};
+
+export type RehypeDopplerHookInitializerConfig =
+  RehypeDopplerHookInitializerCommonConfig &
+    (RehypeBuybackDestinationConfig | RehypeFeeBeneficiariesConfig);
+
+/** @deprecated Use RehypeDopplerHookInitializerConfig instead. */
+export type RehypeDopplerHookConfig = RehypeDopplerHookInitializerConfig;
 
 // Decay fee schedule state for multicurve pools using a dynamic-fee hook
 export interface MulticurveDecayFeeSchedule {
@@ -1031,7 +1046,7 @@ export type MulticurveInitializerConfig =
       startFee: number;
       durationSeconds: number;
     }
-  | { type: 'rehype'; config: RehypeDopplerHookConfig };
+  | { type: 'rehype'; config: RehypeDopplerHookInitializerConfig };
 
 // Create Multicurve initializer parameters
 export interface CreateMulticurveParams<

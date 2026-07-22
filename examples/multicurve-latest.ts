@@ -154,7 +154,7 @@ async function main(): Promise<void> {
       ],
     })
     .withVesting({ allocations: vestingAllocations })
-    .withRehypeDopplerHook({
+    .withRehypeDopplerHookInitializer({
       hookAddress: rehypeDopplerHookInitializer,
       buybackDestination: account.address,
       startFee: 3000,

@@ -299,7 +299,7 @@ async function main() {
       beneficiaries,
     })
     // graduationMarketCap uses numerairePrice from withCurves() for tick conversion
-    .withRehypeDopplerHook({
+    .withRehypeDopplerHookInitializer({
       hookAddress: rehypeDopplerHookInitializerAddress,
       buybackDestination,
       startFee: REHYPE_START_FEE,

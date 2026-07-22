@@ -1,6 +1,11 @@
+import { feesManagerAbi } from './multicurve/feeClaimsAbi';
+
 // Core contract ABIs needed for static and dynamic auctions
 
-export { feeClaimsInitializerAbi } from './multicurve/feeClaimsAbi';
+export {
+  feeClaimsInitializerAbi,
+  feesManagerAbi,
+} from './multicurve/feeClaimsAbi';
 
 export const topUpDistributorAbi = [
   {
@@ -4651,7 +4656,8 @@ export const weth9Abi = [
   },
 ] as const;
 
-export const rehypeDopplerHookAbi = [
+export const rehypeDopplerHookInitializerAbi = [
+  ...feesManagerAbi,
   {
     type: 'function',
     name: 'INITIALIZER',
@@ -4794,10 +4800,172 @@ export const rehypeDopplerHookAbi = [
     outputs: [{ name: '', type: 'address', internalType: 'contract Quoter' }],
     stateMutability: 'view',
   },
+  {
+    type: 'event',
+    name: 'AirlockOwnerFeesClaimed',
+    inputs: [
+      {
+        name: 'poolId',
+        type: 'bytes32',
+        indexed: true,
+        internalType: 'PoolId',
+      },
+      {
+        name: 'airlockOwner',
+        type: 'address',
+        indexed: true,
+        internalType: 'address',
+      },
+      {
+        name: 'fees0',
+        type: 'uint128',
+        indexed: false,
+        internalType: 'uint128',
+      },
+      {
+        name: 'fees1',
+        type: 'uint128',
+        indexed: false,
+        internalType: 'uint128',
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'FeeBeneficiariesSet',
+    inputs: [
+      {
+        name: 'poolId',
+        type: 'bytes32',
+        indexed: true,
+        internalType: 'PoolId',
+      },
+      {
+        name: 'beneficiaries',
+        type: 'tuple[]',
+        indexed: false,
+        internalType: 'struct BeneficiaryData[]',
+        components: [
+          {
+            name: 'beneficiary',
+            type: 'address',
+            internalType: 'address',
+          },
+          { name: 'shares', type: 'uint96', internalType: 'uint96' },
+        ],
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'FeeScheduleSet',
+    inputs: [
+      {
+        name: 'poolId',
+        type: 'bytes32',
+        indexed: true,
+        internalType: 'PoolId',
+      },
+      {
+        name: 'startingTime',
+        type: 'uint32',
+        indexed: false,
+        internalType: 'uint32',
+      },
+      {
+        name: 'startFee',
+        type: 'uint24',
+        indexed: false,
+        internalType: 'uint24',
+      },
+      {
+        name: 'endFee',
+        type: 'uint24',
+        indexed: false,
+        internalType: 'uint24',
+      },
+      {
+        name: 'durationSeconds',
+        type: 'uint32',
+        indexed: false,
+        internalType: 'uint32',
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'FeeUpdated',
+    inputs: [
+      {
+        name: 'poolId',
+        type: 'bytes32',
+        indexed: true,
+        internalType: 'PoolId',
+      },
+      {
+        name: 'fee',
+        type: 'uint24',
+        indexed: false,
+        internalType: 'uint24',
+      },
+    ],
+    anonymous: false,
+  },
+  { type: 'error', name: 'FeeBeneficiariesNotConfigured', inputs: [] },
+  {
+    type: 'error',
+    name: 'FeeBeneficiariesNotSupportedInDirectBuyback',
+    inputs: [],
+  },
   { type: 'error', name: 'FeeDistributionMustAddUpToWAD', inputs: [] },
+  {
+    type: 'error',
+    name: 'FeeTooHigh',
+    inputs: [{ name: 'fee', type: 'uint24', internalType: 'uint24' }],
+  },
+  { type: 'error', name: 'InsufficientFeeCurrency', inputs: [] },
+  {
+    type: 'error',
+    name: 'InvalidDurationSeconds',
+    inputs: [
+      {
+        name: 'durationSeconds',
+        type: 'uint32',
+        internalType: 'uint32',
+      },
+    ],
+  },
+  {
+    type: 'error',
+    name: 'InvalidFeeRange',
+    inputs: [
+      { name: 'startFee', type: 'uint24', internalType: 'uint24' },
+      { name: 'endFee', type: 'uint24', internalType: 'uint24' },
+    ],
+  },
+  { type: 'error', name: 'InvalidProtocolOwnerBeneficiary', inputs: [] },
+  {
+    type: 'error',
+    name: 'InvalidProtocolOwnerShares',
+    inputs: [
+      { name: 'required', type: 'uint96', internalType: 'uint96' },
+      { name: 'provided', type: 'uint96', internalType: 'uint96' },
+    ],
+  },
+  { type: 'error', name: 'InvalidShares', inputs: [] },
+  { type: 'error', name: 'InvalidTotalShares', inputs: [] },
+  { type: 'error', name: 'PoolAlreadyInitialized', inputs: [] },
+  { type: 'error', name: 'Reentrancy', inputs: [] },
   { type: 'error', name: 'SenderNotAirlockOwner', inputs: [] },
   { type: 'error', name: 'SenderNotInitializer', inputs: [] },
+  { type: 'error', name: 'UnorderedBeneficiaries', inputs: [] },
 ] as const;
+
+/** @deprecated Use rehypeDopplerHookInitializerAbi instead. */
+export const rehypeDopplerHookAbi = rehypeDopplerHookInitializerAbi;
 
 export const rehypeDopplerHookMigratorAbi = [
   {

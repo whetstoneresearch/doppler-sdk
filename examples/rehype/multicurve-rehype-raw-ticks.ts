@@ -127,7 +127,7 @@ async function main() {
       beneficiaries,
     })
     // All percentages must sum to exactly WAD (1e18 = 100%)
-    .withRehypeDopplerHook({
+    .withRehypeDopplerHookInitializer({
       hookAddress: REHYPE_DOPPLER_HOOK_INITIALIZER_ADDRESS,
       buybackDestination: BUYBACK_DESTINATION,
       startFee: 3000, // 0.3% swap fee

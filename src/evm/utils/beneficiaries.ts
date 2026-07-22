@@ -1,4 +1,5 @@
-import type { Address } from 'viem';
+import { isAddress, zeroAddress, type Address } from 'viem';
+import { WAD } from '../constants';
 
 /**
  * Sort beneficiaries by address (ascending) as required by the pool contract,
@@ -42,4 +43,42 @@ export function sortBeneficiaries<T extends { beneficiary: Address }>(
   }
 
   return sorted;
+}
+
+export function normalizeBeneficiaries<
+  T extends { beneficiary: Address; shares: bigint },
+>(beneficiaries: readonly T[], label: string): [T, ...T[]] {
+  const sorted = sortBeneficiaries(beneficiaries);
+  if (!isNonEmpty(sorted)) {
+    throw new Error(`${label} list must not be empty`);
+  }
+
+  let totalShares = 0n;
+
+  for (const beneficiary of sorted) {
+    if (!isAddress(beneficiary.beneficiary, { strict: false })) {
+      throw new Error(
+        `${label} address is invalid: ${beneficiary.beneficiary}`,
+      );
+    }
+    if (beneficiary.beneficiary.toLowerCase() === zeroAddress) {
+      throw new Error(`${label} address cannot be the zero address`);
+    }
+    if (beneficiary.shares <= 0n) {
+      throw new Error(`${label} shares must be positive`);
+    }
+    totalShares += beneficiary.shares;
+  }
+
+  if (totalShares !== WAD) {
+    throw new Error(
+      `${label} shares must sum to ${WAD} (100%), but got ${totalShares}`,
+    );
+  }
+
+  return sorted;
+}
+
+function isNonEmpty<T>(values: T[]): values is [T, ...T[]] {
+  return values.length > 0;
 }

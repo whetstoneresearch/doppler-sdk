@@ -316,7 +316,7 @@ async function main() {
       beneficiaries,
     })
     // graduationMarketCap uses numerairePrice from withCurves() for tick conversion
-    .withRehypeDopplerHook({
+    .withRehypeDopplerHookInitializer({
       hookAddress: rehypeDopplerHookInitializerAddress,
       buybackDestination: claimableNumeraireRecipient,
       startFee: REHYPE_START_FEE,
@@ -524,11 +524,13 @@ async function main() {
       params.token.symbol,
     );
 
-    const rehypeHook = await sdk.getRehypeDopplerHook(
+    const rehypeHookInitializer = await sdk.getRehypeDopplerHookInitializer(
       rehypeDopplerHookInitializerAddress,
     );
-    const routingMode = await rehypeHook.getFeeRoutingMode(result.poolId);
-    const hookFees = await rehypeHook.getHookFees(result.poolId);
+    const routingMode = await rehypeHookInitializer.getFeeRoutingMode(
+      result.poolId,
+    );
+    const hookFees = await rehypeHookInitializer.getHookFees(result.poolId);
     const claimableWeth = wethIsCurrency0
       ? hookFees.beneficiaryFees0
       : hookFees.beneficiaryFees1;
@@ -547,7 +549,9 @@ async function main() {
     );
 
     if (claimableWeth > 0n || claimableToken > 0n) {
-      const collection = await rehypeHook.collectFees(result.tokenAddress);
+      const collection = await rehypeHookInitializer.collectFees(
+        result.tokenAddress,
+      );
       const collectedWeth = wethIsCurrency0
         ? collection.amount0
         : collection.amount1;

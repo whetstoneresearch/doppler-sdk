@@ -65,7 +65,13 @@ export { resolveGasEstimate } from './gasEstimate';
 
 export { isToken0Expected } from './isToken0Expected';
 
-export { sortBeneficiaries } from './beneficiaries';
+export { normalizeBeneficiaries, sortBeneficiaries } from './beneficiaries';
+
+export {
+  normalizeRehypeDopplerHookInitializerConfig,
+  type NormalizedRehypeDopplerHookInitializerConfig,
+} from './rehypeDopplerHookInitializer';
+export { encodeRehypeDopplerHookInitializerData } from './rehypeDopplerHookInitializerEncoding';
 
 export { encodeRehypeDopplerHookMigratorCalldata } from './dopplerHookMigrator';
 

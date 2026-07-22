@@ -3,7 +3,7 @@
  *
  * This example demonstrates:
  * - Using withCurves() with market cap ranges (no tick math required)
- * - Setting graduationMarketCap in withRehypeDopplerHook() to define when the pool can graduate
+ * - Setting graduationMarketCap in withRehypeDopplerHookInitializer() to define when the pool can graduate
  * - Live ETH price fetching for accurate market cap calculations
  *
  * IMPORTANT: graduationMarketCap is only available for rehype pools.
@@ -153,7 +153,7 @@ async function main() {
     })
     // Configure rehype with graduationMarketCap
     // graduationMarketCap is rehype-only - it uses numerairePrice from withCurves()
-    .withRehypeDopplerHook({
+    .withRehypeDopplerHookInitializer({
       hookAddress: REHYPE_DOPPLER_HOOK_INITIALIZER_ADDRESS,
       buybackDestination: BUYBACK_DESTINATION,
       startFee: 3000, // 0.3%
