@@ -13,6 +13,7 @@ import {
   StaticAuction,
   DynamicAuction,
   MulticurvePool,
+  RehypeDopplerHookInitializer,
   RehypeDopplerHook,
   RehypeDopplerHookMigrator,
   OpeningAuction,
@@ -125,15 +126,22 @@ export class DopplerSDK<C extends SupportedChainId = SupportedChainId> {
   }
 
   /**
-   * Get a RehypeDopplerHook instance for interacting with initializer-side rehype hook state.
+   * Get a RehypeDopplerHookInitializer instance.
    * @param hookAddress The address of the RehypeDopplerHookInitializer
    */
-  async getRehypeDopplerHook(hookAddress: Address): Promise<RehypeDopplerHook> {
-    return new RehypeDopplerHook(
+  async getRehypeDopplerHookInitializer(
+    hookAddress: Address,
+  ): Promise<RehypeDopplerHookInitializer> {
+    return new RehypeDopplerHookInitializer(
       this.publicClient,
       this.walletClient,
       hookAddress,
     );
+  }
+
+  /** @deprecated Use getRehypeDopplerHookInitializer instead. */
+  async getRehypeDopplerHook(hookAddress: Address): Promise<RehypeDopplerHook> {
+    return this.getRehypeDopplerHookInitializer(hookAddress);
   }
 
   /**

@@ -22,6 +22,7 @@ import {
   parseEther,
   decodeAbiParameters,
   encodeAbiParameters,
+  getAddress,
   keccak256,
   type Address,
 } from 'viem';
@@ -36,6 +37,7 @@ import {
   DECAY_MAX_START_FEE,
   ZERO_ADDRESS,
 } from '../../../../src/evm/constants';
+import { CHAIN_IDS } from '../../../../src/evm/addresses';
 
 vi.mock('../../../../src/evm/addresses', async (importOriginal) => {
   const actual =
@@ -322,9 +324,13 @@ describe('DopplerFactory', () => {
 
       const numeraire = params.sale.numeraire;
       const currency0 =
-        mockTokenAddress < numeraire ? mockTokenAddress : numeraire;
+        BigInt(mockTokenAddress) < BigInt(numeraire)
+          ? mockTokenAddress
+          : numeraire;
       const currency1 =
-        mockTokenAddress < numeraire ? numeraire : mockTokenAddress;
+        BigInt(mockTokenAddress) < BigInt(numeraire)
+          ? numeraire
+          : mockTokenAddress;
       const expectedPoolId = keccak256(
         encodeAbiParameters(
           [
@@ -380,9 +386,13 @@ describe('DopplerFactory', () => {
 
       const numeraire = params.sale.numeraire;
       const currency0 =
-        mockTokenAddress < numeraire ? mockTokenAddress : numeraire;
+        BigInt(mockTokenAddress) < BigInt(numeraire)
+          ? mockTokenAddress
+          : numeraire;
       const currency1 =
-        mockTokenAddress < numeraire ? numeraire : mockTokenAddress;
+        BigInt(mockTokenAddress) < BigInt(numeraire)
+          ? numeraire
+          : mockTokenAddress;
       const expectedPoolId = keccak256(
         encodeAbiParameters(
           [
@@ -406,6 +416,52 @@ describe('DopplerFactory', () => {
       expect(publicClient.readContract).not.toHaveBeenCalled();
     });
 
+    it('orders checksummed multicurve currencies like Solidity when computing poolId', async () => {
+      // Given
+      const tokenAddress = getAddress(
+        '0xa000000000000000000000000000000000000000',
+      );
+      const numeraire = getAddress(
+        '0xb000000000000000000000000000000000000000',
+      );
+      const dopplerHookInitializer = getAddress(
+        '0x7100000000000000000000000000000000000011',
+      );
+      const params = multicurveParams();
+      params.sale.numeraire = numeraire;
+      params.modules = { dopplerHookInitializer };
+
+      // When
+      const poolId = await factory['computeMulticurvePoolId'](
+        params,
+        tokenAddress,
+      );
+
+      // Then
+      const expectedPoolId = keccak256(
+        encodeAbiParameters(
+          [
+            { type: 'address' },
+            { type: 'address' },
+            { type: 'uint24' },
+            { type: 'int24' },
+            { type: 'address' },
+          ],
+          [
+            tokenAddress,
+            numeraire,
+            params.pool.fee,
+            params.pool.tickSpacing,
+            dopplerHookInitializer,
+          ],
+        ),
+      );
+
+      expect(tokenAddress).toBe('0xa000000000000000000000000000000000000000');
+      expect(numeraire).toBe('0xB000000000000000000000000000000000000000');
+      expect(poolId).toBe(expectedPoolId);
+    });
+
     it('computes doppler-hook initializer poolId without a rehype hook using the static pool fee', async () => {
       const params = multicurveParams();
       params.modules = {
@@ -417,9 +473,13 @@ describe('DopplerFactory', () => {
 
       const numeraire = params.sale.numeraire;
       const currency0 =
-        mockTokenAddress < numeraire ? mockTokenAddress : numeraire;
+        BigInt(mockTokenAddress) < BigInt(numeraire)
+          ? mockTokenAddress
+          : numeraire;
       const currency1 =
-        mockTokenAddress < numeraire ? numeraire : mockTokenAddress;
+        BigInt(mockTokenAddress) < BigInt(numeraire)
+          ? numeraire
+          : mockTokenAddress;
       const expectedPoolId = keccak256(
         encodeAbiParameters(
           [
@@ -444,6 +504,13 @@ describe('DopplerFactory', () => {
     });
 
     it('encodes rehype initialization calldata using the new hook InitData layout', () => {
+      // TODO(PR #170): TEMPORARY Base Sepolia factory while it is the only
+      // deployment using the fee-beneficiary InitData tuple.
+      const baseSepoliaFactory = new DopplerFactory(
+        publicClient,
+        walletClient,
+        CHAIN_IDS.BASE_SEPOLIA,
+      );
       const params = multicurveParams();
       params.initializer = {
         type: 'rehype',
@@ -474,7 +541,8 @@ describe('DopplerFactory', () => {
           '0x7100000000000000000000000000000000000011' as Address,
       };
 
-      const createParams = factory.encodeCreateMulticurveParams(params);
+      const createParams =
+        baseSepoliaFactory.encodeCreateMulticurveParams(params);
       const [decodedPoolInitData] = decodeAbiParameters(
         [
           {
@@ -542,6 +610,14 @@ describe('DopplerFactory', () => {
                   { name: 'numeraireFeesToLpWad', type: 'uint256' },
                 ],
               },
+              {
+                name: 'feeBeneficiaries',
+                type: 'tuple[]',
+                components: [
+                  { name: 'beneficiary', type: 'address' },
+                  { name: 'shares', type: 'uint96' },
+                ],
+              },
             ],
           },
         ],
@@ -557,6 +633,7 @@ describe('DopplerFactory', () => {
       expect(Number(decodedHookInitData.durationSeconds)).toBe(3600);
       expect(Number(decodedHookInitData.startingTime)).toBe(1_800_000_000);
       expect(Number(decodedHookInitData.feeRoutingMode)).toBe(1);
+      expect(decodedHookInitData.feeBeneficiaries).toEqual([]);
       expect(
         decodedHookInitData.feeDistributionInfo.assetFeesToNumeraireBuybackWad,
       ).toBe(parseEther('0.3'));
@@ -634,9 +711,13 @@ describe('DopplerFactory', () => {
 
       const numeraire = params.sale.numeraire;
       const currency0 =
-        mockTokenAddress < numeraire ? mockTokenAddress : numeraire;
+        BigInt(mockTokenAddress) < BigInt(numeraire)
+          ? mockTokenAddress
+          : numeraire;
       const currency1 =
-        mockTokenAddress < numeraire ? numeraire : mockTokenAddress;
+        BigInt(mockTokenAddress) < BigInt(numeraire)
+          ? numeraire
+          : mockTokenAddress;
       const expectedPoolId = keccak256(
         encodeAbiParameters(
           [
@@ -700,8 +781,7 @@ describe('DopplerFactory', () => {
       // The pool contract requires strictly ascending beneficiary addresses and
       // reverts with UnorderedBeneficiaries() on duplicates. The encode layer
       // should surface this as a readable error before broadcasting.
-      const duplicate =
-        '0x0000000000000000000000000000000000000001' as Address;
+      const duplicate = '0x0000000000000000000000000000000000000001' as Address;
       const params = multicurveParams();
       params.pool.beneficiaries = [
         { beneficiary: duplicate, shares: parseEther('0.5') },

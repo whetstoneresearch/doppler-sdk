@@ -33,8 +33,7 @@ import type {
   MulticurveBundleExactInResult,
   MulticurveBundleExactOutResult,
   V4PoolKey,
-  RehypeFeeDistributionInfo,
-  RehypeDopplerHookConfig,
+  RehypeDopplerHookInitializerConfig,
   OpeningAuctionState,
   OpeningAuctionCreateResult,
   OpeningAuctionCompleteResult,
@@ -43,7 +42,6 @@ import type {
   StreamableFeesConfig,
 } from '../types';
 import { hasDopplerERC20V1OnlyTokenConfigFields } from '../builders/shared';
-import { RehypeFeeRoutingMode } from '../types';
 import type { ModuleAddressOverrides } from '../types';
 import { getAddresses } from '../addresses';
 import {
@@ -82,6 +80,8 @@ import {
   MAX_TICK,
   isToken0Expected,
   sortBeneficiaries,
+  encodeRehypeDopplerHookInitializerData,
+  normalizeRehypeDopplerHookInitializerConfig,
 } from '../utils';
 import { normalizeRehypeDopplerHookMigratorConfig } from '../utils/dopplerHookMigrator';
 import {
@@ -134,20 +134,10 @@ type ResolvedMulticurveInitializerMode =
       startFee: number;
       durationSeconds: number;
     }
-  | { type: 'rehype'; hookConfig?: RehypeDopplerHookConfig };
-
-type NormalizedRehypeHookConfig = {
-  hookAddress: Address;
-  buybackDestination: Address;
-  startFee: number;
-  endFee: number;
-  durationSeconds: number;
-  startingTime: number;
-  feeRoutingMode: RehypeFeeRoutingMode;
-  feeDistributionInfo: RehypeFeeDistributionInfo;
-  graduationCalldata?: `0x${string}`;
-  farTick?: number;
-};
+  | {
+      type: 'rehype';
+      hookConfig?: RehypeDopplerHookInitializerConfig;
+    };
 
 type StandardTokenFactoryMode = 'legacy' | 'v2';
 type TokenFactoryVariant =
@@ -3950,98 +3940,6 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     return normalized;
   }
 
-  private normalizeRehypeStartingTime(
-    value: RehypeDopplerHookConfig['startingTime'],
-    label: string,
-  ): number {
-    if (value === undefined) return 0;
-    if (value instanceof Date) {
-      return this.normalizeUint32(Math.floor(value.getTime() / 1000), label);
-    }
-    return this.normalizeUint32(value, label);
-  }
-
-  private normalizeRehypeFeeRoutingMode(
-    mode: RehypeDopplerHookConfig['feeRoutingMode'],
-  ): RehypeFeeRoutingMode {
-    if (mode === undefined || mode === RehypeFeeRoutingMode.DirectBuyback) {
-      return RehypeFeeRoutingMode.DirectBuyback;
-    }
-    if (mode === RehypeFeeRoutingMode.RouteToBeneficiaryFees) {
-      return RehypeFeeRoutingMode.RouteToBeneficiaryFees;
-    }
-    if (mode === 'directBuyback') {
-      return RehypeFeeRoutingMode.DirectBuyback;
-    }
-    if (mode === 'routeToBeneficiaryFees') {
-      return RehypeFeeRoutingMode.RouteToBeneficiaryFees;
-    }
-    throw new Error(
-      'Rehype feeRoutingMode must be DirectBuyback/directBuyback or RouteToBeneficiaryFees/routeToBeneficiaryFees',
-    );
-  }
-
-  private resolveRehypeFeeDistributionInfo(
-    config: RehypeDopplerHookConfig,
-  ): RehypeFeeDistributionInfo {
-    if (config.feeDistributionInfo) {
-      return config.feeDistributionInfo;
-    }
-
-    const assetBuyback = config.assetBuybackPercentWad;
-    const numeraireBuyback = config.numeraireBuybackPercentWad;
-    const beneficiary = config.beneficiaryPercentWad;
-    const lp = config.lpPercentWad;
-
-    if (
-      assetBuyback === undefined ||
-      numeraireBuyback === undefined ||
-      beneficiary === undefined ||
-      lp === undefined
-    ) {
-      throw new Error(
-        'Rehype feeDistributionInfo is required, or provide all deprecated legacy percentages.',
-      );
-    }
-
-    return {
-      assetFeesToAssetBuybackWad: assetBuyback,
-      assetFeesToNumeraireBuybackWad: numeraireBuyback,
-      assetFeesToBeneficiaryWad: beneficiary,
-      assetFeesToLpWad: lp,
-      numeraireFeesToAssetBuybackWad: assetBuyback,
-      numeraireFeesToNumeraireBuybackWad: numeraireBuyback,
-      numeraireFeesToBeneficiaryWad: beneficiary,
-      numeraireFeesToLpWad: lp,
-    };
-  }
-
-  private validateRehypeFeeDistributionInfo(
-    feeDistributionInfo: RehypeFeeDistributionInfo,
-  ): void {
-    const assetRowTotal =
-      feeDistributionInfo.assetFeesToAssetBuybackWad +
-      feeDistributionInfo.assetFeesToNumeraireBuybackWad +
-      feeDistributionInfo.assetFeesToBeneficiaryWad +
-      feeDistributionInfo.assetFeesToLpWad;
-    if (assetRowTotal !== WAD) {
-      throw new Error(
-        `Rehype asset fee distribution must sum to ${WAD} (100%), but got ${assetRowTotal}`,
-      );
-    }
-
-    const numeraireRowTotal =
-      feeDistributionInfo.numeraireFeesToAssetBuybackWad +
-      feeDistributionInfo.numeraireFeesToNumeraireBuybackWad +
-      feeDistributionInfo.numeraireFeesToBeneficiaryWad +
-      feeDistributionInfo.numeraireFeesToLpWad;
-    if (numeraireRowTotal !== WAD) {
-      throw new Error(
-        `Rehype numeraire fee distribution must sum to ${WAD} (100%), but got ${numeraireRowTotal}`,
-      );
-    }
-  }
-
   private validateV4StreamableFeesConfig(
     streamableFees: StreamableFeesConfig | undefined,
     label: string,
@@ -4104,84 +4002,6 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
         `${label} proceeds split share cannot exceed ${MAX_PROCEEDS_SPLIT_SHARE}`,
       );
     }
-  }
-
-  private normalizeRehypeHookConfig(
-    config: RehypeDopplerHookConfig,
-  ): NormalizedRehypeHookConfig {
-    const MAX_REHYPE_FEE = 1_000_000;
-
-    const startFeeRaw = config.startFee ?? config.customFee;
-    if (startFeeRaw === undefined) {
-      throw new Error(
-        'Rehype startFee is required, or provide deprecated customFee.',
-      );
-    }
-    const endFeeRaw = config.endFee ?? startFeeRaw;
-
-    const startFee = Number(startFeeRaw);
-    const endFee = Number(endFeeRaw);
-
-    if (
-      !Number.isInteger(startFee) ||
-      startFee < 0 ||
-      startFee > MAX_REHYPE_FEE
-    ) {
-      throw new Error(
-        `Rehype startFee must be an integer between 0 and ${MAX_REHYPE_FEE}`,
-      );
-    }
-    if (!Number.isInteger(endFee) || endFee < 0 || endFee > MAX_REHYPE_FEE) {
-      throw new Error(
-        `Rehype endFee must be an integer between 0 and ${MAX_REHYPE_FEE}`,
-      );
-    }
-    if (startFee < endFee) {
-      throw new Error(
-        `Rehype startFee (${startFee}) must be greater than or equal to endFee (${endFee})`,
-      );
-    }
-
-    const durationRaw =
-      config.durationSeconds ?? (startFee === endFee ? 0 : undefined);
-    if (durationRaw === undefined) {
-      throw new Error(
-        'Rehype durationSeconds must be provided when startFee is greater than endFee.',
-      );
-    }
-
-    const durationSeconds = this.normalizeUint32(
-      durationRaw,
-      'Rehype durationSeconds',
-    );
-    if (startFee > endFee && durationSeconds <= 0) {
-      throw new Error(
-        'Rehype durationSeconds must be greater than 0 when startFee is greater than endFee.',
-      );
-    }
-
-    const startingTime = this.normalizeRehypeStartingTime(
-      config.startingTime,
-      'Rehype startingTime',
-    );
-    const feeRoutingMode = this.normalizeRehypeFeeRoutingMode(
-      config.feeRoutingMode,
-    );
-    const feeDistributionInfo = this.resolveRehypeFeeDistributionInfo(config);
-    this.validateRehypeFeeDistributionInfo(feeDistributionInfo);
-
-    return {
-      hookAddress: config.hookAddress,
-      buybackDestination: config.buybackDestination,
-      startFee,
-      endFee,
-      durationSeconds,
-      startingTime,
-      feeRoutingMode,
-      feeDistributionInfo,
-      graduationCalldata: config.graduationCalldata,
-      farTick: config.farTick,
-    };
   }
 
   private resolveMulticurveInitializerMode(
@@ -4363,7 +4183,9 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     const useDopplerHookInitializer = initializerMode.type === 'rehype';
     const normalizedRehypeHookConfig =
       initializerMode.type === 'rehype' && initializerMode.hookConfig
-        ? this.normalizeRehypeHookConfig(initializerMode.hookConfig)
+        ? normalizeRehypeDopplerHookInitializerConfig(
+            initializerMode.hookConfig,
+          )
         : undefined;
 
     // Shared curve and beneficiary component definitions for ABI encoding
@@ -4435,47 +4257,14 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       if (hookConfig) {
         dopplerHookAddress = hookConfig.hookAddress;
 
-        const feeDistributionComponents = [
-          { name: 'assetFeesToAssetBuybackWad', type: 'uint256' },
-          { name: 'assetFeesToNumeraireBuybackWad', type: 'uint256' },
-          { name: 'assetFeesToBeneficiaryWad', type: 'uint256' },
-          { name: 'assetFeesToLpWad', type: 'uint256' },
-          { name: 'numeraireFeesToAssetBuybackWad', type: 'uint256' },
-          { name: 'numeraireFeesToNumeraireBuybackWad', type: 'uint256' },
-          { name: 'numeraireFeesToBeneficiaryWad', type: 'uint256' },
-          { name: 'numeraireFeesToLpWad', type: 'uint256' },
-        ];
-
-        const rehypeInitDataComponents = [
-          { name: 'numeraire', type: 'address' },
-          { name: 'buybackDst', type: 'address' },
-          { name: 'startFee', type: 'uint24' },
-          { name: 'endFee', type: 'uint24' },
-          { name: 'durationSeconds', type: 'uint32' },
-          { name: 'startingTime', type: 'uint32' },
-          { name: 'feeRoutingMode', type: 'uint8' },
-          {
-            name: 'feeDistributionInfo',
-            type: 'tuple',
-            components: feeDistributionComponents,
-          },
-        ];
-
-        onInitializationDopplerHookCalldata = encodeAbiParameters(
-          [{ type: 'tuple', components: rehypeInitDataComponents }],
-          [
-            {
-              numeraire: params.sale.numeraire,
-              buybackDst: hookConfig.buybackDestination,
-              startFee: hookConfig.startFee,
-              endFee: hookConfig.endFee,
-              durationSeconds: hookConfig.durationSeconds,
-              startingTime: hookConfig.startingTime,
-              feeRoutingMode: hookConfig.feeRoutingMode,
-              feeDistributionInfo: hookConfig.feeDistributionInfo,
-            },
-          ],
-        );
+        // TODO(PR #170): TEMPORARY chain selection for mixed Rehype deployments;
+        // revert the dedicated compatibility commit after the mainnet rollout.
+        onInitializationDopplerHookCalldata =
+          encodeRehypeDopplerHookInitializerData(
+            params.sale.numeraire,
+            hookConfig,
+            this.chainId,
+          );
         graduationDopplerHookCalldata = hookConfig.graduationCalldata ?? '0x';
       }
 
@@ -6580,8 +6369,9 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
 
     // Construct the pool key and compute poolId
     const numeraire = params.sale.numeraire;
-    const currency0 = tokenAddress < numeraire ? tokenAddress : numeraire;
-    const currency1 = tokenAddress < numeraire ? numeraire : tokenAddress;
+    const tokenIsCurrency0 = BigInt(tokenAddress) < BigInt(numeraire);
+    const currency0 = tokenIsCurrency0 ? tokenAddress : numeraire;
+    const currency1 = tokenIsCurrency0 ? numeraire : tokenAddress;
     const fee =
       initializerMode.type === 'decay' ||
       (initializerMode.type === 'rehype' && initializerMode.hookConfig)

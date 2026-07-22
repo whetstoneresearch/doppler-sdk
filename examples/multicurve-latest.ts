@@ -91,7 +91,7 @@ async function main(): Promise<void> {
   const sdk = new DopplerSDK({ publicClient, walletClient, chainId });
 
   const airlockBeneficiary = await sdk.getAirlockBeneficiary(WAD / 20n);
-  const feeBeneficiaries = [
+  const poolFeeBeneficiaries = [
     airlockBeneficiary,
     { beneficiary: account.address, shares: WAD - airlockBeneficiary.shares },
   ];
@@ -134,7 +134,7 @@ async function main(): Promise<void> {
     .withCurves({
       numerairePrice,
       fee: FEE_TIERS.LOW,
-      beneficiaries: feeBeneficiaries,
+      beneficiaries: poolFeeBeneficiaries,
       curves: [
         {
           marketCap: { start: 500_000, end: 2_000_000 },
@@ -154,21 +154,24 @@ async function main(): Promise<void> {
       ],
     })
     .withVesting({ allocations: vestingAllocations })
-    .withRehypeDopplerHook({
+    // TODO(PR #170): TEMPORARY legacy Robinhood config until its initializer
+    // accepts fee beneficiaries; revert the dedicated compatibility commit.
+    .withRehypeDopplerHookInitializer({
       hookAddress: rehypeDopplerHookInitializer,
       buybackDestination: account.address,
       startFee: 3000,
       endFee: 3000,
       durationSeconds: 0,
       feeRoutingMode: RehypeFeeRoutingMode.RouteToBeneficiaryFees,
+      // Send all fees to beneficiaries in numeraire
       feeDistributionInfo: {
         assetFeesToAssetBuybackWad: 0n,
         assetFeesToNumeraireBuybackWad: WAD,
         assetFeesToBeneficiaryWad: 0n,
         assetFeesToLpWad: 0n,
         numeraireFeesToAssetBuybackWad: 0n,
-        numeraireFeesToNumeraireBuybackWad: WAD,
-        numeraireFeesToBeneficiaryWad: 0n,
+        numeraireFeesToNumeraireBuybackWad: 0n,
+        numeraireFeesToBeneficiaryWad: WAD,
         numeraireFeesToLpWad: 0n,
       },
     })

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest'
-import { parseEther } from 'viem'
+import { getAddress, parseEther } from 'viem'
 import { DopplerSDK, getAddresses, CHAIN_IDS, airlockAbi, WAD } from '../../../../src/evm'
 import { getTestClient, hasRpcUrl, getRpcEnvVar } from '../../utils'
 import { dopplerHookWhitelistAbi, ModuleState } from '../../utils/whitelisting'
@@ -244,6 +244,99 @@ describe('Multicurve with RehypeDopplerHook (Base Sepolia) test', () => {
     console.log('Pool:', poolId)
     console.log('Gas estimate:', gasEstimate?.toString())
     
+    expect(tokenAddress).toMatch(/^0x[a-fA-F0-9]{40}$/)
+    expect(poolId).toMatch(/^0x[a-fA-F0-9]{64}$/)
+  })
+
+  it('can simulate create() with three Rehype fee beneficiaries', { timeout: 60000 }, async () => {
+    expect(states.tokenFactory).toBe(1)
+    expect(states.governanceFactory).toBe(2)
+    expect(states.initializer).toBe(3)
+    expect(states.migrator).toBe(4)
+    expect(states.rehypeInitializerAirlock).toBe(ModuleState.NotWhitelisted)
+    expect(isRehypeHookEnabled).toBe(true)
+
+    if (!airlockOwner) {
+      throw new Error('Expected the Airlock owner to be available')
+    }
+    const dopplerHookInitializer = addresses.dopplerHookInitializer
+    const noOpMigrator = addresses.noOpMigrator
+    if (!dopplerHookInitializer || !noOpMigrator) {
+      throw new Error('Expected multicurve deployment addresses to be available')
+    }
+
+    const firstBeneficiary = getAddress('0x0000000000000000000000000000000000000007')
+    const secondBeneficiary = getAddress('0x0000000000000000000000000000000000000008')
+    const thirdBeneficiary = getAddress('0x0000000000000000000000000000000000000009')
+
+    const params = sdk
+      .buildMulticurveAuction()
+      .tokenConfig({
+        type: 'standard',
+        name: 'RehypeBeneficiaries3',
+        symbol: 'RHB3',
+        tokenURI: 'ipfs://rehype-beneficiaries-3-test'
+      })
+      .saleConfig({
+        initialSupply: parseEther('1000000000'),
+        numTokensToSell: parseEther('1000000000'),
+        numeraire: addresses.weth
+      })
+      .poolConfig({
+        fee: 0,
+        tickSpacing: 8,
+        curves: Array.from({ length: 10 }, (_, i) => ({
+          tickLower: i * 16_000,
+          tickUpper: 240_000,
+          numPositions: 10,
+          shares: WAD / 10n,
+        })),
+        beneficiaries: [
+          { beneficiary: airlockOwner, shares: WAD / 20n },
+          { beneficiary: firstBeneficiary, shares: WAD - WAD / 20n },
+        ],
+      })
+      .withRehypeDopplerHookInitializer({
+        hookAddress: REHYPE_DOPPLER_HOOK_ADDRESS,
+        feeBeneficiaries: [
+          { beneficiary: firstBeneficiary, shares: WAD / 2n },
+          { beneficiary: secondBeneficiary, shares: (WAD * 3n) / 10n },
+          { beneficiary: thirdBeneficiary, shares: WAD / 5n },
+        ],
+        startFee: 3000,
+        endFee: 3000,
+        durationSeconds: 0,
+        feeDistributionInfo: {
+          assetFeesToAssetBuybackWad: 0n,
+          assetFeesToNumeraireBuybackWad: 0n,
+          assetFeesToBeneficiaryWad: WAD,
+          assetFeesToLpWad: 0n,
+          numeraireFeesToAssetBuybackWad: 0n,
+          numeraireFeesToNumeraireBuybackWad: 0n,
+          numeraireFeesToBeneficiaryWad: WAD,
+          numeraireFeesToLpWad: 0n,
+        },
+        farTick: 200_000,
+      })
+      .withGovernance({ type: 'noOp' })
+      .withMigration({ type: 'noOp' })
+      .withUserAddress(addresses.airlock)
+      .withDopplerHookInitializer(dopplerHookInitializer)
+      .withNoOpMigrator(noOpMigrator)
+      .build()
+
+    expect(params.initializer?.type).toBe('rehype')
+    if (params.initializer?.type !== 'rehype') {
+      throw new Error('Expected RehypeDopplerHookInitializer config')
+    }
+    expect(params.initializer.config.feeBeneficiaries).toHaveLength(3)
+
+    const { tokenAddress, poolId, gasEstimate } = await sdk.factory.simulateCreateMulticurve(params)
+
+    console.log('Asset:', tokenAddress)
+    console.log('Pool:', poolId)
+    console.log('Gas estimate:', gasEstimate?.toString())
+
     expect(tokenAddress).toMatch(/^0x[a-fA-F0-9]{40}$/)
     expect(poolId).toMatch(/^0x[a-fA-F0-9]{64}$/)
   })

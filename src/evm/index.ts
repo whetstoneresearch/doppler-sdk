@@ -17,6 +17,7 @@ export {
   DynamicAuction,
   MulticurvePool,
   MulticurveFees,
+  RehypeDopplerHookInitializer,
   RehypeDopplerHook,
   RehypeDopplerHookMigrator,
   OpeningAuction,
@@ -126,7 +127,8 @@ export type {
   MulticurvePoolState,
   MulticurveMarketCapPreset,
 
-  // DopplerHook types (e.g., RehypeDopplerHook)
+  // DopplerHook types
+  RehypeDopplerHookInitializerConfig,
   RehypeDopplerHookConfig,
   RehypeFeeDistributionInfo,
   RehypeDopplerHookMigratorConfig,

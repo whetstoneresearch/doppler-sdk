@@ -8,6 +8,7 @@ export type {
   MulticurvePendingFeesOptions,
   MulticurveTokenPendingFees,
 } from './MulticurveFees';
+export { RehypeDopplerHookInitializer } from './RehypeDopplerHookInitializer';
 export { RehypeDopplerHook } from './RehypeDopplerHook';
 export { RehypeDopplerHookMigrator } from './RehypeDopplerHookMigrator';
 export { OpeningAuction } from './OpeningAuction';
