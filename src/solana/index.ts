@@ -5,7 +5,7 @@
  */
 
 export * as cpmm from './cpmm/index.js';
-export * as cpmmHook from './cpmmHook/index.js';
+export * as dopplerLaunchHookV1 from './dopplerLaunchHookV1/index.js';
 export * as initializer from './initializer/index.js';
 export * as cpmmMigrator from './migrators/cpmmMigrator/index.js';
 export * as predictionMigrator from './migrators/predictionMigrator/index.js';

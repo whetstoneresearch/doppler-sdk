@@ -100,6 +100,30 @@ For runnable Solana flows, configure `examples/.env` and run with `pnpm tsx`, fo
 - [examples/solana-prediction-market.ts](./examples/solana-prediction-market.ts)
 - [examples/solana-swap.ts](./examples/solana-swap.ts)
 
+Resolve managed swap cosigning before constructing a launch:
+
+```typescript
+const cosignerGate = await dopplerLaunchHookV1.resolveManagedCosignerGate(rpc, {
+  programId: deployment.dopplerLaunchHookV1Program,
+  expiresAt,
+});
+
+const launch = await createLaunch({ ...input, cosignerGate });
+```
+
+The resolver verifies the hook's singleton config and selects its first active
+Doppler-managed signer. `createLaunch` then pins that signer in the launch's
+immutable remaining-account commitment without performing an RPC read. Launch
+creators do not provide or register a cosigner key through this high-level
+flow. Low-level hook payload and remaining-account helpers accept a cosigner
+only to reconstruct an already-authorized launch commitment.
+
+Cosigning through Doppler launch hook v1 is a Doppler-managed service.
+Integrators that require their own cosigner must deploy and use a separate hook
+program approved by the protocol. Passing a different cosigner to low-level
+payload or remaining-account helpers does not authorize or register that key
+with the Doppler-managed hook.
+
 ## Creating Auctions
 
 ### Static Auction (Fixed Price Range)

@@ -24,9 +24,8 @@ const PROGRAMS = [
   { idl_name: 'cpmm', out_dir: 'cpmm' },
   { idl_name: 'cpmm_migrator', out_dir: 'cpmmMigrator' },
   {
-    idl_name: 'dynamic_fee_hook',
-    out_dir: 'cpmmHook',
-    sdk_name: 'cpmm_hook',
+    idl_name: 'doppler_launch_hook_v1',
+    out_dir: 'dopplerLaunchHookV1',
   },
   { idl_name: 'initializer', out_dir: 'initializer' },
   { idl_name: 'prediction_migrator', out_dir: 'predictionMigrator' },
@@ -127,14 +126,7 @@ for (const program of PROGRAMS) {
   // Pre-flatten struct args in the IDL JSON so each field becomes a top-level
   // instruction arg, matching what `flattenInstructionDataArgumentsVisitor`
   // would do post-parse if the error didn't fire first.
-  const sdk_idl =
-    'sdk_name' in program
-      ? {
-          ...raw_idl,
-          metadata: { ...raw_idl.metadata, name: program.sdk_name },
-        }
-      : raw_idl;
-  const idl = flattenIdlInstructionArgs(sdk_idl);
+  const idl = flattenIdlInstructionArgs(raw_idl);
 
   const root = applyAccountAllocationOverrides(
     rootNodeFromAnchor(idl),

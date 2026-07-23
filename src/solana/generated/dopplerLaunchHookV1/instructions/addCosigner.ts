@@ -38,7 +38,7 @@ import {
   getAccountMetaFactory,
   type ResolvedInstructionAccount,
 } from '@solana/program-client-core';
-import { CPMM_HOOK_PROGRAM_ADDRESS } from '../programs';
+import { DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ADDRESS } from '../programs';
 
 export const ADD_COSIGNER_DISCRIMINATOR = new Uint8Array([
   17, 34, 183, 119, 202, 255, 218, 233,
@@ -51,7 +51,7 @@ export function getAddCosignerDiscriminatorBytes() {
 }
 
 export type AddCosignerInstruction<
-  TProgram extends string = typeof CPMM_HOOK_PROGRAM_ADDRESS,
+  TProgram extends string = typeof DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ADDRESS,
   TAccountAdminAuthority extends string | AccountMeta<string> = string,
   TAccountConfig extends string | AccountMeta<string> = string,
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
@@ -116,7 +116,8 @@ export type AddCosignerAsyncInput<
 export async function getAddCosignerInstructionAsync<
   TAccountAdminAuthority extends string,
   TAccountConfig extends string,
-  TProgramAddress extends Address = typeof CPMM_HOOK_PROGRAM_ADDRESS,
+  TProgramAddress extends Address =
+    typeof DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ADDRESS,
 >(
   input: AddCosignerAsyncInput<TAccountAdminAuthority, TAccountConfig>,
   config?: { programAddress?: TProgramAddress },
@@ -128,7 +129,8 @@ export async function getAddCosignerInstructionAsync<
   >
 > {
   // Program address.
-  const programAddress = config?.programAddress ?? CPMM_HOOK_PROGRAM_ADDRESS;
+  const programAddress =
+    config?.programAddress ?? DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ADDRESS;
 
   // Original accounts.
   const originalAccounts = {
@@ -187,7 +189,8 @@ export type AddCosignerInput<
 export function getAddCosignerInstruction<
   TAccountAdminAuthority extends string,
   TAccountConfig extends string,
-  TProgramAddress extends Address = typeof CPMM_HOOK_PROGRAM_ADDRESS,
+  TProgramAddress extends Address =
+    typeof DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ADDRESS,
 >(
   input: AddCosignerInput<TAccountAdminAuthority, TAccountConfig>,
   config?: { programAddress?: TProgramAddress },
@@ -197,7 +200,8 @@ export function getAddCosignerInstruction<
   TAccountConfig
 > {
   // Program address.
-  const programAddress = config?.programAddress ?? CPMM_HOOK_PROGRAM_ADDRESS;
+  const programAddress =
+    config?.programAddress ?? DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ADDRESS;
 
   // Original accounts.
   const originalAccounts = {
@@ -230,7 +234,7 @@ export function getAddCosignerInstruction<
 }
 
 export type ParsedAddCosignerInstruction<
-  TProgram extends string = typeof CPMM_HOOK_PROGRAM_ADDRESS,
+  TProgram extends string = typeof DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ADDRESS,
   TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
   programAddress: Address<TProgram>;

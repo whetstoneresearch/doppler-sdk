@@ -12,14 +12,15 @@ import {
   TOKEN_METADATA_PROGRAM_ID,
 } from '../core/constants.js';
 import {
-  CPMM_HOOK_PROGRAM_ID,
+  DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ID,
   GATE_EXPIRY_UNIX_TIMESTAMP,
-  encodeCpmmHookPayload,
-  getCpmmHookConfigAddress,
-  getCpmmHookRemainingAccounts,
-  type CpmmHookPayloadArgs,
+  encodeDopplerLaunchHookV1Payload,
+  getDopplerLaunchHookV1RemainingAccounts,
+  isResolvedManagedCosignerGate,
+  type DopplerLaunchHookV1PayloadArgs,
   type DynamicFeeScheduleArgs,
-} from '../cpmmHook/index.js';
+  type ResolvedManagedCosignerGate,
+} from '../dopplerLaunchHookV1/index.js';
 import type { SolanaCpmmDeployment } from '../deployment.js';
 import {
   buildCpmmMigrationRemainingAccounts,
@@ -161,7 +162,7 @@ export type CreateLaunchInput = {
     Partial<
       Pick<
         SolanaCpmmDeployment,
-        'cpmmMigratorProgram' | 'cpmmProgram' | 'cpmmHookProgram'
+        'cpmmMigratorProgram' | 'cpmmProgram' | 'dopplerLaunchHookV1Program'
       >
     >;
   programId?: Address;
@@ -175,8 +176,11 @@ export type CreateLaunchInput = {
   supply: LaunchSupply;
   curve: XykCurveConfig;
   tokenPrograms?: Partial<LaunchTokenPrograms>;
-  cosigner?: AddressOrSigner;
-  cosignGateExpiresAt?: bigint | number | null;
+  /**
+   * Enables the Doppler-managed cosigner gate. Resolve this value with
+   * `dopplerLaunchHookV1.resolveManagedCosignerGate` before constructing the launch.
+   */
+  cosignerGate?: ResolvedManagedCosignerGate | null;
   dynamicFee?: DynamicFeeScheduleArgs | null;
   migration?: boolean | CreateLaunchMigrationConfig | null;
   metadata?: LaunchMetadata | null;
@@ -194,6 +198,7 @@ export type CreateLaunchResult = {
   addresses: CreateLaunchAddresses;
   instruction: Instruction;
   cpmmMigration?: CpmmMigrationRemainingAccounts;
+  cosignerGate?: ResolvedManagedCosignerGate;
 };
 
 type ResolvedCreateLaunchMigration = {
@@ -210,7 +215,7 @@ type ResolvedCreateLaunchMigration = {
 
 type CreateLaunchHookContext = {
   program: Address;
-  config?: Address;
+  cosignerGate?: ResolvedManagedCosignerGate;
 };
 
 type ResolvedCreateLaunchHook = {
@@ -288,38 +293,45 @@ function isCustomMigrationConfig(
   return migration.kind === 'custom';
 }
 
-async function getCreateLaunchHookContext(
+function getCreateLaunchHookContext(
   input: CreateLaunchInput,
-): Promise<CreateLaunchHookContext> {
-  const program = input.deployment?.cpmmHookProgram ?? CPMM_HOOK_PROGRAM_ID;
-  if (input.cosignGateExpiresAt != null && !input.cosigner) {
-    throw new Error('cosigner is required when cosignGateExpiresAt is set');
-  }
-  if (!input.cosigner) {
+): CreateLaunchHookContext {
+  const program =
+    input.deployment?.dopplerLaunchHookV1Program ??
+    DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ID;
+  if (!input.cosignerGate) {
     return { program };
   }
+  if (!isResolvedManagedCosignerGate(input.cosignerGate)) {
+    throw new Error(
+      'cosignerGate must be returned by dopplerLaunchHookV1.resolveManagedCosignerGate',
+    );
+  }
+  if (input.cosignerGate.programId !== program) {
+    throw new Error(
+      `managed cosigner gate was resolved for ${input.cosignerGate.programId}, expected ${program}`,
+    );
+  }
 
-  const [config] = await getCpmmHookConfigAddress(program);
-  return { program, config };
+  return { program, cosignerGate: input.cosignerGate };
 }
 
-function resolveCpmmHookPayload(input: CreateLaunchInput): ReadonlyUint8Array {
-  let gateExpiry: CpmmHookPayloadArgs['gateExpiry'] = null;
-  if (
-    input.cosignGateExpiresAt !== undefined &&
-    input.cosignGateExpiresAt !== null
-  ) {
-    if (!input.cosigner) {
-      throw new Error('cosigner is required when cosignGateExpiresAt is set');
-    }
+function resolveDopplerLaunchHookV1Payload(
+  input: CreateLaunchInput,
+  hookContext: CreateLaunchHookContext,
+): ReadonlyUint8Array {
+  let gateExpiry: DopplerLaunchHookV1PayloadArgs['gateExpiry'] = null;
+  const cosignerGate = hookContext.cosignerGate;
+  const expiresAt = cosignerGate?.expiresAt;
+  if (cosignerGate && expiresAt !== undefined && expiresAt !== null) {
     gateExpiry = {
       mode: GATE_EXPIRY_UNIX_TIMESTAMP,
-      value: input.cosignGateExpiresAt,
-      cosigner: getSignerAddress(input.cosigner),
+      value: expiresAt,
+      cosigner: cosignerGate.cosigner,
     };
   }
 
-  return encodeCpmmHookPayload({
+  return encodeDopplerLaunchHookV1Payload({
     schedule: input.dynamicFee ?? null,
     gateExpiry,
   });
@@ -334,12 +346,12 @@ function resolveCreateLaunchHook({
   namespace: Address;
   hookContext: CreateLaunchHookContext;
 }): ResolvedCreateLaunchHook {
-  const hasCosigner = Boolean(input.cosigner);
+  const hasCosigner = hookContext.cosignerGate !== undefined;
   const hasSchedule = Boolean(input.dynamicFee);
-  const remainingAccounts = getCpmmHookRemainingAccounts({
+  const remainingAccounts = getDopplerLaunchHookV1RemainingAccounts({
     namespace,
-    config: hookContext.config,
-    cosigner: input.cosigner,
+    config: hookContext.cosignerGate?.config,
+    cosigner: hookContext.cosignerGate?.cosigner,
   });
 
   return {
@@ -348,7 +360,7 @@ function resolveCreateLaunchHook({
       HF_BEFORE_SWAP |
       (hasSchedule ? HF_BEFORE_CREATE : 0) |
       (hasCosigner ? HF_FORWARD_READONLY_SIGNERS : 0),
-    payload: resolveCpmmHookPayload(input),
+    payload: resolveDopplerLaunchHookV1Payload(input, hookContext),
     remainingAccountsHash: remainingAccounts.hookRemainingAccountsHash,
   };
 }
@@ -530,7 +542,7 @@ export async function createLaunch(
 ): Promise<CreateLaunchResult> {
   const programId = getInitializerProgramId(input);
   const launchId = input.launchId ?? createLaunchId();
-  const hookContext = await getCreateLaunchHookContext(input);
+  const hookContext = getCreateLaunchHookContext(input);
   const namespace = input.namespace ?? SYSTEM_PROGRAM_ADDRESS;
   const tokenPrograms = {
     ...launchTokenPrograms.splToken(),
@@ -636,5 +648,8 @@ export async function createLaunch(
     addresses,
     instruction: preparedInstruction,
     cpmmMigration: migration?.cpmmMigration,
+    ...(hookContext.cosignerGate
+      ? { cosignerGate: hookContext.cosignerGate }
+      : {}),
   };
 }

@@ -2,7 +2,7 @@
  * Example: Minimal XYK Token Launch (Solana)
  *
  * Demonstrates the smallest practical createLaunch flow: fixed curve numbers,
- * default CPMM hook, default CPMM migrator, derived launch addresses, and no
+ * default Doppler launch hook v1, default CPMM migrator, derived launch addresses, and no
  * token metadata.
  */
 import './env.js';

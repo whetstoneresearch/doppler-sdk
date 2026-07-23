@@ -13,7 +13,7 @@
  *   7. Discover the graduated CPMM pool and read spot price
  *   8. Execute a CPMM swap without a cosigner
  *
- * Uses the canonical CPMM hook to reject pre-migration swaps unless a
+ * Uses the canonical Doppler launch hook v1 to reject pre-migration swaps unless a
  * configured readonly cosigner signs the transaction.
  */
 import './env.js';
@@ -22,7 +22,7 @@ import { SYSTEM_PROGRAM_ADDRESS } from '@solana-program/system';
 import { generateKeyPairSigner } from '@solana/kit';
 
 import {
-  cpmmHook,
+  dopplerLaunchHookV1,
   cpmm,
   cpmmMigrator,
   createLaunch,
@@ -38,7 +38,6 @@ import {
   assertSimulationRejected,
   assertSolanaExampleNetwork,
   createSolanaClientsFromEnv,
-  fetchActiveCosigners,
   getSolPriceUsd,
   getSolanaCpmmDeploymentFromEnv,
   loadCosigner,
@@ -57,24 +56,7 @@ async function main() {
   const { rpc, rpcSubscriptions, network } = createSolanaClientsFromEnv();
   assertSolanaExampleNetwork(network, ['devnet', 'custom']);
   const deployment = await getSolanaCpmmDeploymentFromEnv(network);
-  const [cpmmHookConfig] = await cpmmHook.getCpmmHookConfigAddress(
-    deployment.cpmmHookProgram,
-  );
   const cosigner = await loadCosigner();
-
-  console.log('Checking CPMM hook config...');
-  const activeCosigners = await fetchActiveCosigners({
-    rpc,
-    cpmmHookProgram: deployment.cpmmHookProgram,
-    cpmmHookConfig,
-  });
-  if (!activeCosigners.has(cosigner.address.toString())) {
-    throw new Error(
-      `COSIGNER_KEYPAIR resolves to ${cosigner.address}, which is not registered in CPMM hook config ${cpmmHookConfig}`,
-    );
-  }
-  console.log('  CPMM hook config verified');
-  console.log('');
 
   // ── Token supply ─────────────────────────────────────────────────────────
   const BASE_DECIMALS = 6;
@@ -120,13 +102,22 @@ async function main() {
   const quoteVault = await generateKeyPairSigner();
   const metadata = DEFAULT_TEST_METADATA;
 
-  const namespace = cpmmHookConfig;
-  const launchId = initializer.launchIdFromU64(BigInt(Date.now()));
-  const { signedHookRemainingAccounts, unsignedHookRemainingAccounts } =
-    cpmmHook.getCpmmHookRemainingAccounts({ namespace, cosigner });
   const cosignGateExpiresAt = BigInt(
     Math.floor(Date.now() / 1_000) + COSIGN_GATE_SECONDS,
   );
+  const managedCosignerGate =
+    await dopplerLaunchHookV1.resolveManagedCosignerGate(rpc, {
+      programId: deployment.dopplerLaunchHookV1Program,
+      expiresAt: cosignGateExpiresAt,
+    });
+  const dopplerLaunchHookV1Config = managedCosignerGate.config;
+  if (cosigner.address !== managedCosignerGate.cosigner) {
+    throw new Error(
+      `COSIGNER_KEYPAIR resolves to ${cosigner.address}, but this launch requires managed cosigner ${managedCosignerGate.cosigner}`,
+    );
+  }
+  const namespace = dopplerLaunchHookV1Config;
+  const launchId = initializer.launchIdFromU64(BigInt(Date.now()));
 
   const launchAddresses = await initializer.deriveCreateLaunchAddresses({
     deployment,
@@ -169,8 +160,7 @@ async function main() {
         curveVirtualQuote: start.curveVirtualQuote,
         swapFeeBps: SWAP_FEE_BPS,
       },
-      cosigner,
-      cosignGateExpiresAt,
+      cosignerGate: managedCosignerGate,
       migration: {
         recipients,
         minRaiseQuote,
@@ -181,6 +171,12 @@ async function main() {
     if (!cpmmMigration) {
       throw new Error('CPMM migration accounts were not prepared');
     }
+    const { signedHookRemainingAccounts, unsignedHookRemainingAccounts } =
+      dopplerLaunchHookV1.getDopplerLaunchHookV1RemainingAccounts({
+        namespace,
+        config: managedCosignerGate.config,
+        cosigner,
+      });
     const migrationAccounts = cpmmMigration;
     const cpmmConfig = migrationAccounts.cpmmConfig;
     const cpmmMigrationState = migrationAccounts.cpmmMigrationState;
@@ -194,11 +190,17 @@ async function main() {
     console.log('  Initializer program:', deployment.initializerProgram);
     console.log('  CPMM program:       ', deployment.cpmmProgram);
     console.log('  CPMM migrator:      ', deployment.cpmmMigratorProgram);
-    console.log('  CPMM hook:          ', deployment.cpmmHookProgram);
-    console.log('  CPMM hook config:   ', cpmmHookConfig);
+    console.log(
+      '  Doppler launch hook v1:          ',
+      deployment.dopplerLaunchHookV1Program,
+    );
+    console.log(
+      '  Doppler launch hook v1 config:   ',
+      dopplerLaunchHookV1Config,
+    );
     console.log(
       '  Active cosigners:   ',
-      Array.from(activeCosigners).join(', '),
+      managedCosignerGate.activeCosigners.join(', '),
     );
     console.log('  Signing cosigner:   ', cosigner.address);
     console.log('  Cosign gate expiry: ', cosignGateExpiresAt.toString());
@@ -229,7 +231,7 @@ async function main() {
         launchFeeState,
         baseVault: baseVault.address,
         quoteVault: quoteVault.address,
-        hookProgram: deployment.cpmmHookProgram,
+        hookProgram: deployment.dopplerLaunchHookV1Program,
         remainingAccounts: signedHookRemainingAccounts,
       },
       {
@@ -418,7 +420,7 @@ async function main() {
           pool.hookFlags !== 0
         ) {
           throw new Error(
-            `Migrated pool hook mismatch: got program ${pool.hookProgram} flags ${pool.hookFlags}, expected no CPMM hook`,
+            `Migrated pool hook mismatch: got program ${pool.hookProgram} flags ${pool.hookFlags}, expected no Doppler launch hook v1`,
           );
         }
         console.log('  Spot price0:  ', price0.toFixed(8), '(base/WSOL)');

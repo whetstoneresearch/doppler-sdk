@@ -5,7 +5,7 @@ import { generateKeyPairSigner } from '@solana/signers';
 import {
   assertMigrationQuoteThreshold,
   cpmm,
-  cpmmHook,
+  dopplerLaunchHookV1,
   cpmmMigrator,
   curveSwapExactIn,
   getMigrationQuoteProgress,
@@ -115,7 +115,7 @@ describe('Solana workflow helpers', () => {
       prepared.userQuoteAccount,
     );
     expect(prepared.swapInstruction.accounts![9].address).toBe(
-      cpmmHook.CPMM_HOOK_PROGRAM_ID,
+      dopplerLaunchHookV1.DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ID,
     );
     expect(prepared.swapInstruction.accounts!.at(-1)?.address).toBe(
       cosigner.address,

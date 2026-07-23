@@ -1,35 +1,39 @@
 import { describe, expect, it } from 'vitest';
 import type { Address } from '@solana/kit';
-import { cpmmHook } from '@/solana/index.js';
+import { dopplerLaunchHookV1 } from '@/solana/index.js';
 
-describe('CPMM hook gate payload helpers', () => {
+describe('Doppler launch hook v1 gate payload helpers', () => {
   const cosigner = 'So11111111111111111111111111111111111111112' as Address;
 
   it('encodes a per-launch unix timestamp expiry payload with a cosigner hint', () => {
-    const payload = cpmmHook.encodeCosignerGateExpiryPayload({
-      mode: cpmmHook.GATE_EXPIRY_UNIX_TIMESTAMP,
+    const payload = dopplerLaunchHookV1.encodeCosignerGateExpiryPayload({
+      mode: dopplerLaunchHookV1.GATE_EXPIRY_UNIX_TIMESTAMP,
       value: 300n,
       cosigner,
     });
 
-    expect(payload).toHaveLength(cpmmHook.GATE_EXPIRY_PAYLOAD_LEN);
-    expect(cpmmHook.decodeCosignerGateExpiryPayload(payload)).toEqual({
-      mode: cpmmHook.GATE_EXPIRY_UNIX_TIMESTAMP,
+    expect(payload).toHaveLength(dopplerLaunchHookV1.GATE_EXPIRY_PAYLOAD_LEN);
+    expect(
+      dopplerLaunchHookV1.decodeCosignerGateExpiryPayload(payload),
+    ).toEqual({
+      mode: dopplerLaunchHookV1.GATE_EXPIRY_UNIX_TIMESTAMP,
       value: 300n,
       cosigner,
     });
   });
 
   it('encodes a per-launch slot expiry payload with a cosigner hint', () => {
-    const payload = cpmmHook.encodeCosignerGateExpiryPayload({
-      mode: cpmmHook.GATE_EXPIRY_SLOT,
+    const payload = dopplerLaunchHookV1.encodeCosignerGateExpiryPayload({
+      mode: dopplerLaunchHookV1.GATE_EXPIRY_SLOT,
       value: 20n,
       cosigner,
     });
 
-    expect(payload).toHaveLength(cpmmHook.GATE_EXPIRY_PAYLOAD_LEN);
-    expect(cpmmHook.decodeCosignerGateExpiryPayload(payload)).toEqual({
-      mode: cpmmHook.GATE_EXPIRY_SLOT,
+    expect(payload).toHaveLength(dopplerLaunchHookV1.GATE_EXPIRY_PAYLOAD_LEN);
+    expect(
+      dopplerLaunchHookV1.decodeCosignerGateExpiryPayload(payload),
+    ).toEqual({
+      mode: dopplerLaunchHookV1.GATE_EXPIRY_SLOT,
       value: 20n,
       cosigner,
     });
@@ -37,56 +41,59 @@ describe('CPMM hook gate payload helpers', () => {
 
   it('encodes disabled gates as empty payloads', () => {
     expect(
-      cpmmHook.encodeCosignerGateExpiryPayload({
-        mode: cpmmHook.GATE_EXPIRY_DISABLED,
+      dopplerLaunchHookV1.encodeCosignerGateExpiryPayload({
+        mode: dopplerLaunchHookV1.GATE_EXPIRY_DISABLED,
         value: 0n,
       }),
     ).toHaveLength(0);
   });
 
   it('reports whether timestamp and slot expiries still enforce the gate', () => {
-    const timestampPayload = cpmmHook.encodeCosignerGateExpiryPayload({
-      mode: cpmmHook.GATE_EXPIRY_UNIX_TIMESTAMP,
-      value: 1_000n,
-      cosigner,
-    });
-    const slotPayload = cpmmHook.encodeCosignerGateExpiryPayload({
-      mode: cpmmHook.GATE_EXPIRY_SLOT,
+    const timestampPayload =
+      dopplerLaunchHookV1.encodeCosignerGateExpiryPayload({
+        mode: dopplerLaunchHookV1.GATE_EXPIRY_UNIX_TIMESTAMP,
+        value: 1_000n,
+        cosigner,
+      });
+    const slotPayload = dopplerLaunchHookV1.encodeCosignerGateExpiryPayload({
+      mode: dopplerLaunchHookV1.GATE_EXPIRY_SLOT,
       value: 20n,
       cosigner,
     });
 
     expect(
-      cpmmHook.getCosignerGateStatus(timestampPayload, {
+      dopplerLaunchHookV1.getCosignerGateStatus(timestampPayload, {
         unixTimestamp: 999n,
       }),
     ).toMatchObject({ gateEnforced: true, reason: 'timestamp_pending' });
     expect(
-      cpmmHook.getCosignerGateStatus(timestampPayload, {
+      dopplerLaunchHookV1.getCosignerGateStatus(timestampPayload, {
         unixTimestamp: 1_000n,
       }),
     ).toMatchObject({ gateEnforced: false, reason: 'timestamp_expired' });
     expect(
-      cpmmHook.getCosignerGateStatus(slotPayload, { slot: 19n }),
+      dopplerLaunchHookV1.getCosignerGateStatus(slotPayload, { slot: 19n }),
     ).toMatchObject({ gateEnforced: true, reason: 'slot_pending' });
     expect(
-      cpmmHook.getCosignerGateStatus(slotPayload, { slot: 20n }),
+      dopplerLaunchHookV1.getCosignerGateStatus(slotPayload, { slot: 20n }),
     ).toMatchObject({ gateEnforced: false, reason: 'slot_expired' });
   });
 
   it('keeps the gate enforced for empty or invalid payloads', () => {
-    expect(cpmmHook.getCosignerGateStatus(new Uint8Array())).toMatchObject({
+    expect(
+      dopplerLaunchHookV1.getCosignerGateStatus(new Uint8Array()),
+    ).toMatchObject({
       gateEnforced: true,
       reason: 'expiry_disabled',
     });
     expect(
-      cpmmHook.getCosignerGateStatus(new Uint8Array([1, 9, 0])),
+      dopplerLaunchHookV1.getCosignerGateStatus(new Uint8Array([1, 9, 0])),
     ).toMatchObject({
       gateEnforced: true,
       reason: 'invalid_expiry_payload',
     });
     expect(
-      cpmmHook.getCosignerGateStatus(
+      dopplerLaunchHookV1.getCosignerGateStatus(
         new Uint8Array([1, 2, 20, 0, 0, 0, 0, 0, 0, 0]),
       ),
     ).toMatchObject({
@@ -94,9 +101,9 @@ describe('CPMM hook gate payload helpers', () => {
       reason: 'invalid_expiry_payload',
     });
     expect(
-      cpmmHook.getCosignerGateStatus(
-        cpmmHook.encodeCosignerGateExpiryPayload({
-          mode: cpmmHook.GATE_EXPIRY_SLOT,
+      dopplerLaunchHookV1.getCosignerGateStatus(
+        dopplerLaunchHookV1.encodeCosignerGateExpiryPayload({
+          mode: dopplerLaunchHookV1.GATE_EXPIRY_SLOT,
           value: 20n,
           cosigner,
         }),
@@ -106,7 +113,7 @@ describe('CPMM hook gate payload helpers', () => {
 
   it('rejects invalid expiry args before encoding', () => {
     const encodeUnchecked =
-      cpmmHook.encodeCosignerGateExpiryPayload as (expiry: {
+      dopplerLaunchHookV1.encodeCosignerGateExpiryPayload as (expiry: {
         mode: number;
         value: bigint | number;
         cosigner?: Address;
@@ -116,28 +123,28 @@ describe('CPMM hook gate payload helpers', () => {
       /Invalid cosigner gate expiry mode/,
     );
     expect(() =>
-      cpmmHook.encodeCosignerGateExpiryPayload({
-        mode: cpmmHook.GATE_EXPIRY_SLOT,
+      dopplerLaunchHookV1.encodeCosignerGateExpiryPayload({
+        mode: dopplerLaunchHookV1.GATE_EXPIRY_SLOT,
         value: -1n,
         cosigner,
       }),
     ).toThrow(/Invalid cosigner gate expiry value/);
     expect(() =>
-      cpmmHook.encodeCosignerGateExpiryPayload({
-        mode: cpmmHook.GATE_EXPIRY_SLOT,
+      dopplerLaunchHookV1.encodeCosignerGateExpiryPayload({
+        mode: dopplerLaunchHookV1.GATE_EXPIRY_SLOT,
         value: 1n << 64n,
         cosigner,
       }),
     ).toThrow(/Invalid cosigner gate expiry value/);
     expect(() =>
       encodeUnchecked({
-        mode: cpmmHook.GATE_EXPIRY_SLOT,
+        mode: dopplerLaunchHookV1.GATE_EXPIRY_SLOT,
         value: 20n,
       }),
     ).toThrow(/Cosigner hint is required/);
     expect(() =>
       encodeUnchecked({
-        mode: cpmmHook.GATE_EXPIRY_DISABLED,
+        mode: dopplerLaunchHookV1.GATE_EXPIRY_DISABLED,
         value: 0n,
         cosigner,
       }),

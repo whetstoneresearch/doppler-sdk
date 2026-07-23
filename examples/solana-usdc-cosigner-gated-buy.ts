@@ -1,7 +1,7 @@
 /**
  * Example: USDC Cosigner-Gated Bonding Curve Buy (Solana)
  *
- * Creates a CPMM-migratable launch with CPMM hook cosigning enabled for
+ * Creates a CPMM-migratable launch with Doppler launch hook v1 cosigning enabled for
  * pre-migration swaps, proves an unsigned buy fails, executes one cosigned
  * bonding-curve buy with devnet USDC, migrates, then performs an ungated CPMM swap.
  *
@@ -22,7 +22,7 @@ import { generateKeyPairSigner } from '@solana/kit';
 
 import {
   assertMigrationQuoteThreshold,
-  cpmmHook,
+  dopplerLaunchHookV1,
   cpmm,
   createLaunch,
   curveSwapExactIn,
@@ -35,7 +35,6 @@ import {
   DEFAULT_SWAP_FEE_BPS,
   DEFAULT_TEST_METADATA,
   DEVNET_USDC_MINT as USDC_MINT,
-  assertCosignerRegistered,
   assertSimulationRejected,
   assertSolanaExampleNetwork,
   assertTokenBalance,
@@ -56,17 +55,16 @@ async function main() {
   const { rpc, rpcSubscriptions, network } = createSolanaClientsFromEnv();
   assertSolanaExampleNetwork(network, ['devnet', 'custom']);
   const deployment = await getSolanaCpmmDeploymentFromEnv(network);
-  const [cpmmHookConfig] = await cpmmHook.getCpmmHookConfigAddress(
-    deployment.cpmmHookProgram,
-  );
-
-  console.log('Checking CPMM hook config...');
-  await assertCosignerRegistered({
-    rpc,
-    cpmmHookProgram: deployment.cpmmHookProgram,
-    cpmmHookConfig,
-    cosigner,
-  });
+  const managedCosignerGate =
+    await dopplerLaunchHookV1.resolveManagedCosignerGate(rpc, {
+      programId: deployment.dopplerLaunchHookV1Program,
+    });
+  const dopplerLaunchHookV1Config = managedCosignerGate.config;
+  if (cosigner.address !== managedCosignerGate.cosigner) {
+    throw new Error(
+      `COSIGNER_KEYPAIR resolves to ${cosigner.address}, but this launch requires managed cosigner ${managedCosignerGate.cosigner}`,
+    );
+  }
 
   const BASE_DECIMALS = 6;
   const BASE_TOTAL_SUPPLY = 1_000_000_000n * 10n ** BigInt(BASE_DECIMALS);
@@ -107,7 +105,7 @@ async function main() {
   const quoteVault = await generateKeyPairSigner();
   const metadata = DEFAULT_TEST_METADATA;
 
-  const namespace = cpmmHookConfig;
+  const namespace = dopplerLaunchHookV1Config;
   const launchId = initializer.launchIdFromU64(BigInt(Date.now()));
   const launchAddresses = await initializer.deriveCreateLaunchAddresses({
     deployment,
@@ -130,14 +128,14 @@ async function main() {
     amount: BUY_AMOUNT_IN,
   });
 
-  const { signedHookRemainingAccounts, unsignedHookRemainingAccounts } =
-    cpmmHook.getCpmmHookRemainingAccounts({ namespace, cosigner });
-
   console.log('Creating cosigner-gated launch...');
   console.log('  Launch:            ', launch);
   console.log('  Base mint:         ', baseMint.address);
-  console.log('  CPMM hook:         ', deployment.cpmmHookProgram);
-  console.log('  CPMM hook config:  ', cpmmHookConfig);
+  console.log(
+    '  Doppler launch hook v1:         ',
+    deployment.dopplerLaunchHookV1Program,
+  );
+  console.log('  Doppler launch hook v1 config:  ', dopplerLaunchHookV1Config);
   console.log('  Signing cosigner:  ', cosigner.address);
   console.log('  Buy amount atoms:  ', BUY_AMOUNT_IN.toString());
   console.log('  Migration threshold atoms:', minRaiseQuote.toString());
@@ -176,7 +174,7 @@ async function main() {
         curveVirtualQuote: start.curveVirtualQuote,
         swapFeeBps: SWAP_FEE_BPS,
       },
-      cosigner,
+      cosignerGate: managedCosignerGate,
       migration: {
         recipients: launchBeneficiaries.recipients,
         minRaiseQuote,
@@ -188,6 +186,12 @@ async function main() {
   if (!cpmmMigration) {
     throw new Error('CPMM migration accounts were not prepared');
   }
+  const { signedHookRemainingAccounts, unsignedHookRemainingAccounts } =
+    dopplerLaunchHookV1.getDopplerLaunchHookV1RemainingAccounts({
+      namespace,
+      config: managedCosignerGate.config,
+      cosigner,
+    });
   const migrationAccounts = cpmmMigration;
 
   const launchSignature = await sendInitializeLaunchWithLookupTable({
@@ -312,7 +316,7 @@ async function main() {
   const { account: pool } = poolResult;
   if (pool.hookProgram !== SYSTEM_PROGRAM_ADDRESS || pool.hookFlags !== 0) {
     throw new Error(
-      `Migrated pool hook mismatch: got program ${pool.hookProgram} flags ${pool.hookFlags}, expected no CPMM hook`,
+      `Migrated pool hook mismatch: got program ${pool.hookProgram} flags ${pool.hookFlags}, expected no Doppler launch hook v1`,
     );
   }
 

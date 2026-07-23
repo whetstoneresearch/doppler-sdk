@@ -33,12 +33,12 @@ export type DynamicFeeScheduleArgs = {
   durationSeconds: bigint | number;
 };
 
-export type CpmmHookPayloadArgs = {
+export type DopplerLaunchHookV1PayloadArgs = {
   schedule?: DynamicFeeScheduleArgs | null;
   gateExpiry?: CosignerGateExpiryArgs | null;
 };
 
-export type CpmmHookRemainingAccounts = {
+export type DopplerLaunchHookV1RemainingAccounts = {
   signedHookRemainingAccounts: RemainingAccount[];
   unsignedHookRemainingAccounts: Address[];
   hookRemainingAccountsHash: Uint8Array;
@@ -117,8 +117,8 @@ export function encodeDynamicFeeSchedule(
   return payload;
 }
 
-export function encodeCpmmHookPayload(
-  args: CpmmHookPayloadArgs = {},
+export function encodeDopplerLaunchHookV1Payload(
+  args: DopplerLaunchHookV1PayloadArgs = {},
 ): Uint8Array {
   const schedulePayload = args.schedule
     ? encodeDynamicFeeSchedule(args.schedule)
@@ -141,7 +141,7 @@ export function encodeDynamicFeeCosignerGatePayload(args: {
   return encodeCosignerGateExpiryPayload(args);
 }
 
-export function getCpmmHookRemainingAccounts({
+export function getDopplerLaunchHookV1RemainingAccounts({
   namespace,
   config,
   cosigner,
@@ -149,7 +149,7 @@ export function getCpmmHookRemainingAccounts({
   namespace: Address;
   config?: Address;
   cosigner?: AddressOrTransactionSigner;
-}): CpmmHookRemainingAccounts {
+}): DopplerLaunchHookV1RemainingAccounts {
   const signedHookRemainingAccounts: RemainingAccount[] = [namespace];
   if (config && config !== namespace) {
     signedHookRemainingAccounts.push(config);
@@ -171,7 +171,7 @@ export function getCpmmHookRemainingAccounts({
   };
 }
 
-export function getCpmmHookRemainingAccountAddresses({
+export function getDopplerLaunchHookV1RemainingAccountAddresses({
   namespace,
   config,
   cosigner,
@@ -180,7 +180,7 @@ export function getCpmmHookRemainingAccountAddresses({
   config?: Address;
   cosigner?: AddressOrTransactionSigner;
 }): Address[] {
-  return getCpmmHookRemainingAccounts({
+  return getDopplerLaunchHookV1RemainingAccounts({
     namespace,
     config,
     cosigner,

@@ -164,11 +164,11 @@ The Solana examples use `@whetstone-research/doppler-sdk/solana`. Set `SOLANA_NE
 
 - [`solana-minimal-launch.ts`](./solana-minimal-launch.ts): smallest practical WSOL XYK launch using `createLaunch` defaults.
 - [`solana-launch-by-marketcap.ts`](./solana-launch-by-marketcap.ts): WSOL XYK launch with CPMM migration configured from market cap inputs.
-- [`solana-dynamic-fee-launch.ts`](./solana-dynamic-fee-launch.ts): WSOL XYK launch using the CPMM hook with a decaying fee schedule.
+- [`solana-dynamic-fee-launch.ts`](./solana-dynamic-fee-launch.ts): WSOL XYK launch using the Doppler launch hook v1 with a decaying fee schedule.
 - [`solana-adv-launch.ts`](./solana-adv-launch.ts): WSOL launch with custom allocations, recipients, fees, and migration price floor.
 - [`solana-adv-e2e-launch.ts`](./solana-adv-e2e-launch.ts): create, buy, migrate, and inspect a graduated WSOL CPMM pool.
 - [`solana-usdc-e2e-launch.ts`](./solana-usdc-e2e-launch.ts): same lifecycle with devnet USDC and fee arithmetic checks.
-- [`solana-cosigner-gated-launch.ts`](./solana-cosigner-gated-launch.ts): E2E launch with bonding-curve swaps gated through the configured CPMM hook.
+- [`solana-cosigner-gated-launch.ts`](./solana-cosigner-gated-launch.ts): E2E launch with bonding-curve swaps gated through the configured Doppler launch hook v1.
 - [`solana-cosigner-gated-buy.ts`](./solana-cosigner-gated-buy.ts): cosigner-gated WSOL buy flow with env-configured fee beneficiaries.
 - [`solana-cosigner-gated-buy-token-2022.ts`](./solana-cosigner-gated-buy-token-2022.ts): same cosigner-gated WSOL flow with a Token-2022 base mint and Metaplex metadata.
 - [`solana-usdc-cosigner-gated-buy.ts`](./solana-usdc-cosigner-gated-buy.ts): cosigner-gated devnet USDC buy flow.
@@ -191,10 +191,10 @@ For a custom deployment, also set:
 export SOLANA_CPMM_PROGRAM_ID=...
 export SOLANA_INITIALIZER_PROGRAM_ID=...
 export SOLANA_CPMM_MIGRATOR_PROGRAM_ID=...
-export SOLANA_CPMM_HOOK_PROGRAM_ID=...
+export SOLANA_DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ID=...
 ```
 
-The high-level launch helper uses the deployment's CPMM hook automatically. Set `dynamicFee`, `cosigner`, or both in the helper params to enable those features; omit both for static fees without cosigning. Provide `COSIGNER_KEYPAIR_PATH` or `COSIGNER_KEYPAIR` for one of the cosigners registered in its config when running a cosigner-gated example.
+The high-level launch helper uses the deployment's Doppler launch hook v1 automatically. Set `dynamicFee`, a gate returned by `dopplerLaunchHookV1.resolveManagedCosignerGate`, or both in the helper params to enable those features; omit both for static fees without cosigning. The resolver fetches the hook's singleton on-chain config and selects its first active Doppler-managed signer, while `createLaunch` remains an offline instruction builder that pins the resolved signer. Launch creators cannot register or select a cosigner through this flow. Integrators that require their own cosigner must use a separate hook program approved by the protocol; passing a key to the low-level hook helpers does not authorize or register it with the Doppler-managed hook. The gated swap examples require `COSIGNER_KEYPAIR_PATH` or `COSIGNER_KEYPAIR` to match that selected signer because they execute the managed cosigned swap themselves.
 
 The launch examples use ALTs where possible. ALTs reduce account-key bytes, but they do not compress instruction data, so long `metadataName`, `metadataSymbol`, or `metadataUri` values can still exceed Solana's 1232-byte transaction limit.
 

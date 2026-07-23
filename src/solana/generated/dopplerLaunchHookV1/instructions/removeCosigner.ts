@@ -38,20 +38,20 @@ import {
   getAccountMetaFactory,
   type ResolvedInstructionAccount,
 } from '@solana/program-client-core';
-import { CPMM_HOOK_PROGRAM_ADDRESS } from '../programs';
+import { DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ADDRESS } from '../programs';
 
-export const SET_AUTHORITY_DISCRIMINATOR = new Uint8Array([
-  133, 250, 37, 21, 110, 163, 26, 121,
+export const REMOVE_COSIGNER_DISCRIMINATOR = new Uint8Array([
+  174, 11, 171, 252, 179, 99, 220, 27,
 ]);
 
-export function getSetAuthorityDiscriminatorBytes() {
+export function getRemoveCosignerDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    SET_AUTHORITY_DISCRIMINATOR,
+    REMOVE_COSIGNER_DISCRIMINATOR,
   );
 }
 
-export type SetAuthorityInstruction<
-  TProgram extends string = typeof CPMM_HOOK_PROGRAM_ADDRESS,
+export type RemoveCosignerInstruction<
+  TProgram extends string = typeof DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ADDRESS,
   TAccountAdminAuthority extends string | AccountMeta<string> = string,
   TAccountConfig extends string | AccountMeta<string> = string,
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
@@ -70,65 +70,67 @@ export type SetAuthorityInstruction<
     ]
   >;
 
-export type SetAuthorityInstructionData = {
+export type RemoveCosignerInstructionData = {
   discriminator: ReadonlyUint8Array;
-  adminAuthority: Address;
+  cosigner: Address;
 };
 
-export type SetAuthorityInstructionDataArgs = { adminAuthority: Address };
+export type RemoveCosignerInstructionDataArgs = { cosigner: Address };
 
-export function getSetAuthorityInstructionDataEncoder(): FixedSizeEncoder<SetAuthorityInstructionDataArgs> {
+export function getRemoveCosignerInstructionDataEncoder(): FixedSizeEncoder<RemoveCosignerInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['adminAuthority', getAddressEncoder()],
+      ['cosigner', getAddressEncoder()],
     ]),
-    (value) => ({ ...value, discriminator: SET_AUTHORITY_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: REMOVE_COSIGNER_DISCRIMINATOR }),
   );
 }
 
-export function getSetAuthorityInstructionDataDecoder(): FixedSizeDecoder<SetAuthorityInstructionData> {
+export function getRemoveCosignerInstructionDataDecoder(): FixedSizeDecoder<RemoveCosignerInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['adminAuthority', getAddressDecoder()],
+    ['cosigner', getAddressDecoder()],
   ]);
 }
 
-export function getSetAuthorityInstructionDataCodec(): FixedSizeCodec<
-  SetAuthorityInstructionDataArgs,
-  SetAuthorityInstructionData
+export function getRemoveCosignerInstructionDataCodec(): FixedSizeCodec<
+  RemoveCosignerInstructionDataArgs,
+  RemoveCosignerInstructionData
 > {
   return combineCodec(
-    getSetAuthorityInstructionDataEncoder(),
-    getSetAuthorityInstructionDataDecoder(),
+    getRemoveCosignerInstructionDataEncoder(),
+    getRemoveCosignerInstructionDataDecoder(),
   );
 }
 
-export type SetAuthorityAsyncInput<
+export type RemoveCosignerAsyncInput<
   TAccountAdminAuthority extends string = string,
   TAccountConfig extends string = string,
 > = {
   adminAuthority: TransactionSigner<TAccountAdminAuthority>;
   config?: Address<TAccountConfig>;
-  adminAuthorityArg: SetAuthorityInstructionDataArgs['adminAuthority'];
+  cosigner: RemoveCosignerInstructionDataArgs['cosigner'];
 };
 
-export async function getSetAuthorityInstructionAsync<
+export async function getRemoveCosignerInstructionAsync<
   TAccountAdminAuthority extends string,
   TAccountConfig extends string,
-  TProgramAddress extends Address = typeof CPMM_HOOK_PROGRAM_ADDRESS,
+  TProgramAddress extends Address =
+    typeof DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ADDRESS,
 >(
-  input: SetAuthorityAsyncInput<TAccountAdminAuthority, TAccountConfig>,
+  input: RemoveCosignerAsyncInput<TAccountAdminAuthority, TAccountConfig>,
   config?: { programAddress?: TProgramAddress },
 ): Promise<
-  SetAuthorityInstruction<
+  RemoveCosignerInstruction<
     TProgramAddress,
     TAccountAdminAuthority,
     TAccountConfig
   >
 > {
   // Program address.
-  const programAddress = config?.programAddress ?? CPMM_HOOK_PROGRAM_ADDRESS;
+  const programAddress =
+    config?.programAddress ?? DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ADDRESS;
 
   // Original accounts.
   const originalAccounts = {
@@ -141,7 +143,7 @@ export async function getSetAuthorityInstructionAsync<
   >;
 
   // Original args.
-  const args = { ...input, adminAuthority: input.adminAuthorityArg };
+  const args = { ...input };
 
   // Resolve default values.
   if (!accounts.config.value) {
@@ -164,40 +166,42 @@ export async function getSetAuthorityInstructionAsync<
       getAccountMeta('adminAuthority', accounts.adminAuthority),
       getAccountMeta('config', accounts.config),
     ],
-    data: getSetAuthorityInstructionDataEncoder().encode(
-      args as SetAuthorityInstructionDataArgs,
+    data: getRemoveCosignerInstructionDataEncoder().encode(
+      args as RemoveCosignerInstructionDataArgs,
     ),
     programAddress,
-  } as SetAuthorityInstruction<
+  } as RemoveCosignerInstruction<
     TProgramAddress,
     TAccountAdminAuthority,
     TAccountConfig
   >);
 }
 
-export type SetAuthorityInput<
+export type RemoveCosignerInput<
   TAccountAdminAuthority extends string = string,
   TAccountConfig extends string = string,
 > = {
   adminAuthority: TransactionSigner<TAccountAdminAuthority>;
   config: Address<TAccountConfig>;
-  adminAuthorityArg: SetAuthorityInstructionDataArgs['adminAuthority'];
+  cosigner: RemoveCosignerInstructionDataArgs['cosigner'];
 };
 
-export function getSetAuthorityInstruction<
+export function getRemoveCosignerInstruction<
   TAccountAdminAuthority extends string,
   TAccountConfig extends string,
-  TProgramAddress extends Address = typeof CPMM_HOOK_PROGRAM_ADDRESS,
+  TProgramAddress extends Address =
+    typeof DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ADDRESS,
 >(
-  input: SetAuthorityInput<TAccountAdminAuthority, TAccountConfig>,
+  input: RemoveCosignerInput<TAccountAdminAuthority, TAccountConfig>,
   config?: { programAddress?: TProgramAddress },
-): SetAuthorityInstruction<
+): RemoveCosignerInstruction<
   TProgramAddress,
   TAccountAdminAuthority,
   TAccountConfig
 > {
   // Program address.
-  const programAddress = config?.programAddress ?? CPMM_HOOK_PROGRAM_ADDRESS;
+  const programAddress =
+    config?.programAddress ?? DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ADDRESS;
 
   // Original accounts.
   const originalAccounts = {
@@ -210,7 +214,7 @@ export function getSetAuthorityInstruction<
   >;
 
   // Original args.
-  const args = { ...input, adminAuthority: input.adminAuthorityArg };
+  const args = { ...input };
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
@@ -218,19 +222,19 @@ export function getSetAuthorityInstruction<
       getAccountMeta('adminAuthority', accounts.adminAuthority),
       getAccountMeta('config', accounts.config),
     ],
-    data: getSetAuthorityInstructionDataEncoder().encode(
-      args as SetAuthorityInstructionDataArgs,
+    data: getRemoveCosignerInstructionDataEncoder().encode(
+      args as RemoveCosignerInstructionDataArgs,
     ),
     programAddress,
-  } as SetAuthorityInstruction<
+  } as RemoveCosignerInstruction<
     TProgramAddress,
     TAccountAdminAuthority,
     TAccountConfig
   >);
 }
 
-export type ParsedSetAuthorityInstruction<
-  TProgram extends string = typeof CPMM_HOOK_PROGRAM_ADDRESS,
+export type ParsedRemoveCosignerInstruction<
+  TProgram extends string = typeof DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ADDRESS,
   TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
   programAddress: Address<TProgram>;
@@ -238,17 +242,17 @@ export type ParsedSetAuthorityInstruction<
     adminAuthority: TAccountMetas[0];
     config: TAccountMetas[1];
   };
-  data: SetAuthorityInstructionData;
+  data: RemoveCosignerInstructionData;
 };
 
-export function parseSetAuthorityInstruction<
+export function parseRemoveCosignerInstruction<
   TProgram extends string,
   TAccountMetas extends readonly AccountMeta[],
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
-): ParsedSetAuthorityInstruction<TProgram, TAccountMetas> {
+): ParsedRemoveCosignerInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 2) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
@@ -267,6 +271,6 @@ export function parseSetAuthorityInstruction<
   return {
     programAddress: instruction.programAddress,
     accounts: { adminAuthority: getNextAccount(), config: getNextAccount() },
-    data: getSetAuthorityInstructionDataDecoder().decode(instruction.data),
+    data: getRemoveCosignerInstructionDataDecoder().decode(instruction.data),
   };
 }
