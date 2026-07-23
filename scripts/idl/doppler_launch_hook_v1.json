@@ -1,15 +1,24 @@
 {
   "address": "HVsPNZh98TgChUXHwKrUG47SUqvGQHxUy5wZwcQLFD4i",
   "metadata": {
-    "name": "dynamic_fee_hook",
+    "name": "doppler_launch_hook_v1",
     "version": "0.1.0",
     "spec": "0.1.0",
-    "description": "Doppler dynamic fee hook for initializer launch swaps"
+    "description": "Doppler launch hook v1 for initializer launch swaps"
   },
   "instructions": [
     {
       "name": "add_cosigner",
-      "discriminator": [17, 34, 183, 119, 202, 255, 218, 233],
+      "discriminator": [
+        17,
+        34,
+        183,
+        119,
+        202,
+        255,
+        218,
+        233
+      ],
       "accounts": [
         {
           "name": "admin_authority",
@@ -23,8 +32,26 @@
               {
                 "kind": "const",
                 "value": [
-                  99, 111, 115, 105, 103, 110, 101, 114, 95, 104, 111, 111,
-                  107, 95, 99, 111, 110, 102, 105, 103
+                  99,
+                  111,
+                  115,
+                  105,
+                  103,
+                  110,
+                  101,
+                  114,
+                  95,
+                  104,
+                  111,
+                  111,
+                  107,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
                 ]
               }
             ]
@@ -44,7 +71,16 @@
     },
     {
       "name": "initialize_config",
-      "discriminator": [208, 127, 21, 1, 194, 190, 196, 70],
+      "discriminator": [
+        208,
+        127,
+        21,
+        1,
+        194,
+        190,
+        196,
+        70
+      ],
       "accounts": [
         {
           "name": "payer",
@@ -63,8 +99,26 @@
               {
                 "kind": "const",
                 "value": [
-                  99, 111, 115, 105, 103, 110, 101, 114, 95, 104, 111, 111,
-                  107, 95, 99, 111, 110, 102, 105, 103
+                  99,
+                  111,
+                  115,
+                  105,
+                  103,
+                  110,
+                  101,
+                  114,
+                  95,
+                  104,
+                  111,
+                  111,
+                  107,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
                 ]
               }
             ]
@@ -91,7 +145,16 @@
     },
     {
       "name": "remove_cosigner",
-      "discriminator": [174, 11, 171, 252, 179, 99, 220, 27],
+      "discriminator": [
+        174,
+        11,
+        171,
+        252,
+        179,
+        99,
+        220,
+        27
+      ],
       "accounts": [
         {
           "name": "admin_authority",
@@ -105,8 +168,26 @@
               {
                 "kind": "const",
                 "value": [
-                  99, 111, 115, 105, 103, 110, 101, 114, 95, 104, 111, 111,
-                  107, 95, 99, 111, 110, 102, 105, 103
+                  99,
+                  111,
+                  115,
+                  105,
+                  103,
+                  110,
+                  101,
+                  114,
+                  95,
+                  104,
+                  111,
+                  111,
+                  107,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
                 ]
               }
             ]
@@ -126,7 +207,16 @@
     },
     {
       "name": "set_authority",
-      "discriminator": [133, 250, 37, 21, 110, 163, 26, 121],
+      "discriminator": [
+        133,
+        250,
+        37,
+        21,
+        110,
+        163,
+        26,
+        121
+      ],
       "accounts": [
         {
           "name": "admin_authority",
@@ -140,8 +230,26 @@
               {
                 "kind": "const",
                 "value": [
-                  99, 111, 115, 105, 103, 110, 101, 114, 95, 104, 111, 111,
-                  107, 95, 99, 111, 110, 102, 105, 103
+                  99,
+                  111,
+                  115,
+                  105,
+                  103,
+                  110,
+                  101,
+                  114,
+                  95,
+                  104,
+                  111,
+                  111,
+                  107,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
                 ]
               }
             ]
@@ -163,7 +271,16 @@
   "accounts": [
     {
       "name": "CosignerConfig",
-      "discriminator": [133, 227, 177, 74, 145, 74, 247, 183]
+      "discriminator": [
+        133,
+        227,
+        177,
+        74,
+        145,
+        74,
+        247,
+        183
+      ]
     }
   ],
   "errors": [
@@ -260,13 +377,19 @@
           {
             "name": "_reserved",
             "type": {
-              "array": ["u8", 37]
+              "array": [
+                "u8",
+                37
+              ]
             }
           },
           {
             "name": "cosigners",
             "type": {
-              "array": ["pubkey", 32]
+              "array": [
+                "pubkey",
+                32
+              ]
             }
           }
         ]

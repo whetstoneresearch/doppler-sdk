@@ -42,7 +42,7 @@ import {
   getAccountMetaFactory,
   type ResolvedInstructionAccount,
 } from '@solana/program-client-core';
-import { CPMM_HOOK_PROGRAM_ADDRESS } from '../programs';
+import { DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ADDRESS } from '../programs';
 
 export const INITIALIZE_CONFIG_DISCRIMINATOR = new Uint8Array([
   208, 127, 21, 1, 194, 190, 196, 70,
@@ -55,7 +55,7 @@ export function getInitializeConfigDiscriminatorBytes() {
 }
 
 export type InitializeConfigInstruction<
-  TProgram extends string = typeof CPMM_HOOK_PROGRAM_ADDRESS,
+  TProgram extends string = typeof DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ADDRESS,
   TAccountPayer extends string | AccountMeta<string> = string,
   TAccountAdminAuthority extends string | AccountMeta<string> = string,
   TAccountConfig extends string | AccountMeta<string> = string,
@@ -143,7 +143,8 @@ export async function getInitializeConfigInstructionAsync<
   TAccountConfig extends string,
   TAccountProgramData extends string,
   TAccountSystemProgram extends string,
-  TProgramAddress extends Address = typeof CPMM_HOOK_PROGRAM_ADDRESS,
+  TProgramAddress extends Address =
+    typeof DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ADDRESS,
 >(
   input: InitializeConfigAsyncInput<
     TAccountPayer,
@@ -164,7 +165,8 @@ export async function getInitializeConfigInstructionAsync<
   >
 > {
   // Program address.
-  const programAddress = config?.programAddress ?? CPMM_HOOK_PROGRAM_ADDRESS;
+  const programAddress =
+    config?.programAddress ?? DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ADDRESS;
 
   // Original accounts.
   const originalAccounts = {
@@ -245,7 +247,8 @@ export function getInitializeConfigInstruction<
   TAccountConfig extends string,
   TAccountProgramData extends string,
   TAccountSystemProgram extends string,
-  TProgramAddress extends Address = typeof CPMM_HOOK_PROGRAM_ADDRESS,
+  TProgramAddress extends Address =
+    typeof DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ADDRESS,
 >(
   input: InitializeConfigInput<
     TAccountPayer,
@@ -264,7 +267,8 @@ export function getInitializeConfigInstruction<
   TAccountSystemProgram
 > {
   // Program address.
-  const programAddress = config?.programAddress ?? CPMM_HOOK_PROGRAM_ADDRESS;
+  const programAddress =
+    config?.programAddress ?? DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ADDRESS;
 
   // Original accounts.
   const originalAccounts = {
@@ -312,7 +316,7 @@ export function getInitializeConfigInstruction<
 }
 
 export type ParsedInitializeConfigInstruction<
-  TProgram extends string = typeof CPMM_HOOK_PROGRAM_ADDRESS,
+  TProgram extends string = typeof DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ADDRESS,
   TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
   programAddress: Address<TProgram>;

@@ -1,9 +1,12 @@
 import type { Address, GetAccountInfoApi, Rpc } from '@solana/kit';
 import { SYSTEM_PROGRAM_ADDRESS } from '@solana-program/system';
 
-import { fetchMaybeCosignerConfig } from '../generated/cpmmHook/index.js';
-import { CPMM_HOOK_PROGRAM_ID, MAX_COSIGNERS } from './constants.js';
-import { getCpmmHookConfigAddress } from './pda.js';
+import { fetchMaybeCosignerConfig } from '../generated/dopplerLaunchHookV1/index.js';
+import {
+  DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ID,
+  MAX_COSIGNERS,
+} from './constants.js';
+import { getDopplerLaunchHookV1ConfigAddress } from './pda.js';
 
 const resolvedManagedCosignerGateBrand: unique symbol = Symbol(
   'resolvedManagedCosignerGate',
@@ -50,8 +53,9 @@ export async function resolveManagedCosignerGate(
   rpc: Rpc<GetAccountInfoApi>,
   input: ResolveManagedCosignerGateInput = {},
 ): Promise<ResolvedManagedCosignerGate> {
-  const programId = input.programId ?? CPMM_HOOK_PROGRAM_ID;
-  const [config, expectedBump] = await getCpmmHookConfigAddress(programId);
+  const programId = input.programId ?? DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ID;
+  const [config, expectedBump] =
+    await getDopplerLaunchHookV1ConfigAddress(programId);
   const configAccount = await fetchMaybeCosignerConfig(rpc, config, {
     commitment: 'confirmed',
   });

@@ -3,7 +3,7 @@ import { address } from '@solana/kit';
 
 import {
   cpmm,
-  cpmmHook,
+  dopplerLaunchHookV1,
   cpmmMigrator,
   DOPPLER_SOLANA_DEVNET_PROGRAM_ADDRESSES,
   DOPPLER_SOLANA_MAINNET_PROGRAM_ADDRESSES,
@@ -16,7 +16,9 @@ const CUSTOM_PROGRAMS: SolanaCpmmProgramAddresses = {
   cpmmProgram: address('ComputeBudget111111111111111111111111111111'),
   initializerProgram: address('BPFLoaderUpgradeab1e11111111111111111111111'),
   cpmmMigratorProgram: address('AddressLookupTab1e1111111111111111111111111'),
-  cpmmHookProgram: address('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr'),
+  dopplerLaunchHookV1Program: address(
+    'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr',
+  ),
 };
 
 describe('Solana deployment helpers', () => {
@@ -24,7 +26,9 @@ describe('Solana deployment helpers', () => {
     const deployment = await deriveSolanaCpmmDeployment();
 
     expect(deployment).toMatchObject(DOPPLER_SOLANA_DEVNET_PROGRAM_ADDRESSES);
-    expect(deployment.cpmmHookProgram).toBe(cpmmHook.CPMM_HOOK_PROGRAM_ID);
+    expect(deployment.dopplerLaunchHookV1Program).toBe(
+      dopplerLaunchHookV1.DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ID,
+    );
     expect(deployment.cpmmConfig).toBeDefined();
     expect(deployment.initializerConfig).toBeDefined();
   });
@@ -52,7 +56,9 @@ describe('Solana deployment helpers', () => {
       cpmmMigratorProgram: address(
         'H71WD4tsiCCipro4urykWHySH1ryvLTmqEdNbHTGwb3o',
       ),
-      cpmmHookProgram: address('BeyqffXEVgLpM3fQ1zjk8YnZzQN9sMVrCKtNKwSxNATr'),
+      dopplerLaunchHookV1Program: address(
+        'BeyqffXEVgLpM3fQ1zjk8YnZzQN9sMVrCKtNKwSxNATr',
+      ),
     });
   });
 });
@@ -131,7 +137,7 @@ describe('CPMM migrator custom deployment helpers', () => {
         payer: address('SysvarFees111111111111111111111111111111111'),
         authority: address('SysvarFees111111111111111111111111111111111'),
         migratorProgram: CUSTOM_PROGRAMS.cpmmMigratorProgram,
-        hookProgram: CUSTOM_PROGRAMS.cpmmHookProgram,
+        hookProgram: CUSTOM_PROGRAMS.dopplerLaunchHookV1Program,
         cpmmConfig,
         rent: address('SysvarRent111111111111111111111111111111111'),
       },

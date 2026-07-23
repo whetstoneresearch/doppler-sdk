@@ -13,7 +13,7 @@ import {
   createLaunch,
   initializer,
   cpmmMigrator,
-  cpmmHook,
+  dopplerLaunchHookV1,
 } from '@/solana/index.js';
 import { getInitializeLaunchInstructionDataDecoder } from '@/solana/generated/initializer/instructions/initializeLaunch.js';
 import {
@@ -29,17 +29,18 @@ const SYSVAR_RENT_PUBKEY = address(
 
 async function createManagedCosignerRpc(
   cosigners: readonly Address[],
-  programId: Address = cpmmHook.CPMM_HOOK_PROGRAM_ID,
+  programId: Address = dopplerLaunchHookV1.DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ID,
 ): Promise<Rpc<GetAccountInfoApi>> {
-  const [, bump] = await cpmmHook.getCpmmHookConfigAddress(programId);
+  const [, bump] =
+    await dopplerLaunchHookV1.getDopplerLaunchHookV1ConfigAddress(programId);
   const paddedCosigners = [
     ...cosigners,
     ...Array.from(
-      { length: cpmmHook.MAX_COSIGNERS - cosigners.length },
+      { length: dopplerLaunchHookV1.MAX_COSIGNERS - cosigners.length },
       () => SYSTEM_PROGRAM_ADDRESS,
     ),
   ];
-  const encodedConfig = cpmmHook.getCosignerConfigEncoder().encode({
+  const encodedConfig = dopplerLaunchHookV1.getCosignerConfigEncoder().encode({
     adminAuthority: SYSTEM_PROGRAM_ADDRESS,
     cosignerCount: cosigners.length,
     bump,
@@ -387,7 +388,9 @@ describe('initializer instructions', () => {
     expect(ix.accounts![5].address).toBe(baseVault.address);
     expect(ix.accounts![6].address).toBe(quoteVault.address);
     expect(ix.accounts![7].address).toBe(expectedLaunchFeeState);
-    expect(ix.accounts![10].address).toBe(cpmmHook.CPMM_HOOK_PROGRAM_ID);
+    expect(ix.accounts![10].address).toBe(
+      dopplerLaunchHookV1.DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ID,
+    );
     expect(ix.accounts![11].address).toBe(
       cpmmMigrator.CPMM_MIGRATOR_PROGRAM_ID,
     );
@@ -414,19 +417,21 @@ describe('initializer instructions', () => {
     );
   });
 
-  it('enables cosigning with the managed CPMM hook config', async () => {
+  it('enables cosigning with the managed Doppler launch hook v1 config', async () => {
     const baseMint = await generateKeyPairSigner();
     const baseVault = await generateKeyPairSigner();
     const quoteVault = await generateKeyPairSigner();
     const admin = await generateKeyPairSigner();
     const cosigner = await generateKeyPairSigner();
     const rpc = await createManagedCosignerRpc([cosigner.address]);
-    const managedCosignerGate = await cpmmHook.resolveManagedCosignerGate(rpc);
+    const managedCosignerGate =
+      await dopplerLaunchHookV1.resolveManagedCosignerGate(rpc);
 
     const quoteMint = address('DtCGbAhmf5R6Fjuo3zJqCS9Ep5wePTmxHzK8ri8E5nhb');
     const launchId = initializer.launchIdFromU64(6n);
     const [config] = await initializer.getConfigAddress();
-    const [cpmmHookConfig] = await cpmmHook.getCpmmHookConfigAddress();
+    const [dopplerLaunchHookV1Config] =
+      await dopplerLaunchHookV1.getDopplerLaunchHookV1ConfigAddress();
     const [expectedLaunch] = await initializer.getLaunchAddress(
       SYSTEM_PROGRAM_ADDRESS,
       launchId,
@@ -466,9 +471,12 @@ describe('initializer instructions', () => {
       [cosigner.address],
       foreignProgram,
     );
-    const foreignGate = await cpmmHook.resolveManagedCosignerGate(foreignRpc, {
-      programId: foreignProgram,
-    });
+    const foreignGate = await dopplerLaunchHookV1.resolveManagedCosignerGate(
+      foreignRpc,
+      {
+        programId: foreignProgram,
+      },
+    );
 
     await expect(
       createLaunch({
@@ -476,7 +484,7 @@ describe('initializer instructions', () => {
         cosignerGate: {} as never,
       }),
     ).rejects.toThrow(
-      'cosignerGate must be returned by cpmmHook.resolveManagedCosignerGate',
+      'cosignerGate must be returned by dopplerLaunchHookV1.resolveManagedCosignerGate',
     );
 
     await expect(
@@ -494,15 +502,17 @@ describe('initializer instructions', () => {
     expect(prepared.namespace).toBe(SYSTEM_PROGRAM_ADDRESS);
     expect(prepared.addresses.launch).toBe(expectedLaunch);
     expect(prepared.cosignerGate).toEqual({
-      programId: cpmmHook.CPMM_HOOK_PROGRAM_ID,
-      config: cpmmHookConfig,
+      programId: dopplerLaunchHookV1.DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ID,
+      config: dopplerLaunchHookV1Config,
       cosigner: cosigner.address,
       activeCosigners: [cosigner.address],
     });
 
     const ix = prepared.instruction;
     expect(ix.accounts).toHaveLength(20);
-    expect(ix.accounts![10].address).toBe(cpmmHook.CPMM_HOOK_PROGRAM_ID);
+    expect(ix.accounts![10].address).toBe(
+      dopplerLaunchHookV1.DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ID,
+    );
     expect(ix.accounts![11].address).toBe(
       cpmmMigrator.CPMM_MIGRATOR_PROGRAM_ID,
     );
@@ -522,13 +532,13 @@ describe('initializer instructions', () => {
     expect(data.hookRemainingAccountsHash).toEqual(
       initializer.computeRemainingAccountsHash([
         SYSTEM_PROGRAM_ADDRESS,
-        cpmmHookConfig,
+        dopplerLaunchHookV1Config,
         cosigner.address,
       ]),
     );
   });
 
-  it('enables dynamic fees through the CPMM hook', async () => {
+  it('enables dynamic fees through the Doppler launch hook v1', async () => {
     const baseMint = await generateKeyPairSigner();
     const baseVault = await generateKeyPairSigner();
     const quoteVault = await generateKeyPairSigner();
@@ -577,13 +587,19 @@ describe('initializer instructions', () => {
 
     expect(prepared.namespace).toBe(admin.address);
     expect(ix.accounts).toHaveLength(18);
-    expect(ix.accounts![10].address).toBe(cpmmHook.CPMM_HOOK_PROGRAM_ID);
+    expect(ix.accounts![10].address).toBe(
+      dopplerLaunchHookV1.DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ID,
+    );
     expect(ix.accounts![11].address).toBe(initializer.INITIALIZER_PROGRAM_ID);
     expect(data.hookFlags).toBe(
       initializer.HF_BEFORE_CREATE | initializer.HF_BEFORE_SWAP,
     );
-    expect(data.hookPayload).toHaveLength(cpmmHook.DYNAMIC_FEE_SCHEDULE_LEN);
-    expect(cpmmHook.isDynamicFeeSchedulePayload(data.hookPayload)).toBe(true);
+    expect(data.hookPayload).toHaveLength(
+      dopplerLaunchHookV1.DYNAMIC_FEE_SCHEDULE_LEN,
+    );
+    expect(
+      dopplerLaunchHookV1.isDynamicFeeSchedulePayload(data.hookPayload),
+    ).toBe(true);
     expect(data.hookCreateRemainingAccountsHash).toEqual(
       initializer.EMPTY_REMAINING_ACCOUNTS_HASH,
     );
@@ -592,20 +608,22 @@ describe('initializer instructions', () => {
     );
   });
 
-  it('combines dynamic fees and cosigning through the CPMM hook', async () => {
+  it('combines dynamic fees and cosigning through the Doppler launch hook v1', async () => {
     const baseMint = await generateKeyPairSigner();
     const baseVault = await generateKeyPairSigner();
     const quoteVault = await generateKeyPairSigner();
     const admin = await generateKeyPairSigner();
     const cosigner = await generateKeyPairSigner();
     const rpc = await createManagedCosignerRpc([cosigner.address]);
-    const managedCosignerGate = await cpmmHook.resolveManagedCosignerGate(rpc, {
-      expiresAt: 1_000n,
-    });
+    const managedCosignerGate =
+      await dopplerLaunchHookV1.resolveManagedCosignerGate(rpc, {
+        expiresAt: 1_000n,
+      });
 
     const quoteMint = address('DtCGbAhmf5R6Fjuo3zJqCS9Ep5wePTmxHzK8ri8E5nhb');
     const launchId = initializer.launchIdFromU64(8n);
-    const [cpmmHookConfig] = await cpmmHook.getCpmmHookConfigAddress();
+    const [dopplerLaunchHookV1Config] =
+      await dopplerLaunchHookV1.getDopplerLaunchHookV1ConfigAddress();
 
     const prepared = await createLaunch({
       launchId,
@@ -647,26 +665,29 @@ describe('initializer instructions', () => {
 
     expect(prepared.namespace).toBe(SYSTEM_PROGRAM_ADDRESS);
     expect(ix.accounts).toHaveLength(18);
-    expect(ix.accounts![10].address).toBe(cpmmHook.CPMM_HOOK_PROGRAM_ID);
+    expect(ix.accounts![10].address).toBe(
+      dopplerLaunchHookV1.DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ID,
+    );
     expect(data.hookFlags).toBe(
       initializer.HF_BEFORE_CREATE |
         initializer.HF_BEFORE_SWAP |
         initializer.HF_FORWARD_READONLY_SIGNERS,
     );
     expect(data.hookPayload).toHaveLength(
-      cpmmHook.DYNAMIC_FEE_SCHEDULE_LEN + cpmmHook.GATE_EXPIRY_PAYLOAD_LEN,
+      dopplerLaunchHookV1.DYNAMIC_FEE_SCHEDULE_LEN +
+        dopplerLaunchHookV1.GATE_EXPIRY_PAYLOAD_LEN,
     );
     expect(
-      cpmmHook.isDynamicFeeSchedulePayload(
-        data.hookPayload.slice(0, cpmmHook.DYNAMIC_FEE_SCHEDULE_LEN),
+      dopplerLaunchHookV1.isDynamicFeeSchedulePayload(
+        data.hookPayload.slice(0, dopplerLaunchHookV1.DYNAMIC_FEE_SCHEDULE_LEN),
       ),
     ).toBe(true);
     expect(
-      cpmmHook.decodeCosignerGateExpiryPayload(
-        data.hookPayload.slice(cpmmHook.DYNAMIC_FEE_SCHEDULE_LEN),
+      dopplerLaunchHookV1.decodeCosignerGateExpiryPayload(
+        data.hookPayload.slice(dopplerLaunchHookV1.DYNAMIC_FEE_SCHEDULE_LEN),
       ),
     ).toEqual({
-      mode: cpmmHook.GATE_EXPIRY_UNIX_TIMESTAMP,
+      mode: dopplerLaunchHookV1.GATE_EXPIRY_UNIX_TIMESTAMP,
       value: 1_000n,
       cosigner: cosigner.address,
     });
@@ -676,7 +697,7 @@ describe('initializer instructions', () => {
     expect(data.hookRemainingAccountsHash).toEqual(
       initializer.computeRemainingAccountsHash([
         SYSTEM_PROGRAM_ADDRESS,
-        cpmmHookConfig,
+        dopplerLaunchHookV1Config,
         cosigner.address,
       ]),
     );
@@ -719,7 +740,9 @@ describe('initializer instructions', () => {
 
     const ix = prepared.instruction;
     expect(ix.accounts).toHaveLength(18);
-    expect(ix.accounts![10].address).toBe(cpmmHook.CPMM_HOOK_PROGRAM_ID);
+    expect(ix.accounts![10].address).toBe(
+      dopplerLaunchHookV1.DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ID,
+    );
     expect(ix.accounts![11].address).toBe(initializer.INITIALIZER_PROGRAM_ID);
   });
 

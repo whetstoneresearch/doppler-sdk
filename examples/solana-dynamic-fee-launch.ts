@@ -1,7 +1,7 @@
 /**
  * Example: Dynamic-Fee CPMM Launch (Solana)
  *
- * Creates a WSOL XYK launch that uses the CPMM hook's dynamic fees. The
+ * Creates a WSOL XYK launch that uses the Doppler launch hook v1's dynamic fees. The
  * schedule is stored in the launch hook payload and normalized by the hook's
  * BEFORE_CREATE path during initialize_launch.
  */
@@ -13,7 +13,11 @@ import {
   type ReadonlyUint8Array,
 } from '@solana/kit';
 
-import { createLaunch, cpmmHook, initializer } from '../src/solana/index.js';
+import {
+  createLaunch,
+  dopplerLaunchHookV1,
+  initializer,
+} from '../src/solana/index.js';
 import {
   WSOL_MINT,
   assertSolanaExampleNetwork,
@@ -40,7 +44,7 @@ function getStoredHookPayload(bytes: {
 }
 
 function assertStoredDynamicFeeSchedule(payload: Uint8Array): bigint {
-  if (!cpmmHook.isDynamicFeeSchedulePayload(payload)) {
+  if (!dopplerLaunchHookV1.isDynamicFeeSchedulePayload(payload)) {
     throw new Error(
       'Launch hook payload does not contain a dynamic fee schedule',
     );
@@ -112,7 +116,10 @@ async function main(): Promise<void> {
   });
 
   console.log('Creating dynamic-fee launch...');
-  console.log('  CPMM hook:       ', deployment.cpmmHookProgram);
+  console.log(
+    '  Doppler launch hook v1:       ',
+    deployment.dopplerLaunchHookV1Program,
+  );
   console.log('  Start fee:       ', START_FEE_BPS, 'bps');
   console.log('  End fee:         ', END_FEE_BPS, 'bps');
   console.log('  Duration:        ', DURATION_SECONDS.toString(), 'seconds');
@@ -186,9 +193,9 @@ async function main(): Promise<void> {
   const hookPayload = getStoredHookPayload(launchAccount.hookPayload);
   const expectedHookFlags =
     initializer.HF_BEFORE_CREATE | initializer.HF_BEFORE_SWAP;
-  if (launchAccount.hookProgram !== deployment.cpmmHookProgram) {
+  if (launchAccount.hookProgram !== deployment.dopplerLaunchHookV1Program) {
     throw new Error(
-      `Unexpected hook program ${launchAccount.hookProgram}; expected ${deployment.cpmmHookProgram}`,
+      `Unexpected hook program ${launchAccount.hookProgram}; expected ${deployment.dopplerLaunchHookV1Program}`,
     );
   }
   if (launchAccount.hookFlags !== expectedHookFlags) {

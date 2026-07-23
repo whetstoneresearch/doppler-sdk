@@ -1,13 +1,15 @@
-import { address, type Address } from '@solana/kit';
+import type { Address } from '@solana/kit';
 
-/** Default Doppler CPMM hook program for devnet deployments. */
-export const DEVNET_CPMM_HOOK_PROGRAM_ID: Address = address(
-  'HVsPNZh98TgChUXHwKrUG47SUqvGQHxUy5wZwcQLFD4i',
-);
+import { DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ADDRESS } from '../generated/dopplerLaunchHookV1/index.js';
 
-export const CPMM_HOOK_PROGRAM_ID = DEVNET_CPMM_HOOK_PROGRAM_ID;
+/** Default Doppler launch hook v1 program for devnet deployments. */
+export const DEVNET_DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ID: Address =
+  DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ADDRESS;
 
-export const SEED_CPMM_HOOK_CONFIG = 'cosigner_hook_config';
+export const DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ID =
+  DEVNET_DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ID;
+
+export const SEED_DOPPLER_LAUNCH_HOOK_V1_CONFIG = 'cosigner_hook_config';
 export const MAX_COSIGNERS = 32;
 
 export const GATE_EXPIRY_DISABLED = 0;

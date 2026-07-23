@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { AccountRole, address, type TransactionSigner } from '@solana/kit';
 import {
   cpmm,
-  cpmmHook,
+  dopplerLaunchHookV1,
   cpmmMigrator,
   initializer,
 } from '@/solana/index.js';
@@ -167,7 +167,7 @@ describe('cpmmMigrator payload encoders', () => {
         minRaiseQuote: 500_000n,
         minMigrationPriceQ64Opt: null,
         migratedPoolHookConfig: {
-          hookProgram: cpmmHook.CPMM_HOOK_PROGRAM_ID,
+          hookProgram: dopplerLaunchHookV1.DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ID,
           hookFlags: cpmm.HF_BEFORE_SWAP | cpmm.HF_FORWARD_READONLY_SIGNERS,
         },
       });

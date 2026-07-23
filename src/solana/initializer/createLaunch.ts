@@ -12,15 +12,15 @@ import {
   TOKEN_METADATA_PROGRAM_ID,
 } from '../core/constants.js';
 import {
-  CPMM_HOOK_PROGRAM_ID,
+  DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ID,
   GATE_EXPIRY_UNIX_TIMESTAMP,
-  encodeCpmmHookPayload,
-  getCpmmHookRemainingAccounts,
+  encodeDopplerLaunchHookV1Payload,
+  getDopplerLaunchHookV1RemainingAccounts,
   isResolvedManagedCosignerGate,
-  type CpmmHookPayloadArgs,
+  type DopplerLaunchHookV1PayloadArgs,
   type DynamicFeeScheduleArgs,
   type ResolvedManagedCosignerGate,
-} from '../cpmmHook/index.js';
+} from '../dopplerLaunchHookV1/index.js';
 import type { SolanaCpmmDeployment } from '../deployment.js';
 import {
   buildCpmmMigrationRemainingAccounts,
@@ -162,7 +162,7 @@ export type CreateLaunchInput = {
     Partial<
       Pick<
         SolanaCpmmDeployment,
-        'cpmmMigratorProgram' | 'cpmmProgram' | 'cpmmHookProgram'
+        'cpmmMigratorProgram' | 'cpmmProgram' | 'dopplerLaunchHookV1Program'
       >
     >;
   programId?: Address;
@@ -178,7 +178,7 @@ export type CreateLaunchInput = {
   tokenPrograms?: Partial<LaunchTokenPrograms>;
   /**
    * Enables the Doppler-managed cosigner gate. Resolve this value with
-   * `cpmmHook.resolveManagedCosignerGate` before constructing the launch.
+   * `dopplerLaunchHookV1.resolveManagedCosignerGate` before constructing the launch.
    */
   cosignerGate?: ResolvedManagedCosignerGate | null;
   dynamicFee?: DynamicFeeScheduleArgs | null;
@@ -296,13 +296,15 @@ function isCustomMigrationConfig(
 function getCreateLaunchHookContext(
   input: CreateLaunchInput,
 ): CreateLaunchHookContext {
-  const program = input.deployment?.cpmmHookProgram ?? CPMM_HOOK_PROGRAM_ID;
+  const program =
+    input.deployment?.dopplerLaunchHookV1Program ??
+    DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ID;
   if (!input.cosignerGate) {
     return { program };
   }
   if (!isResolvedManagedCosignerGate(input.cosignerGate)) {
     throw new Error(
-      'cosignerGate must be returned by cpmmHook.resolveManagedCosignerGate',
+      'cosignerGate must be returned by dopplerLaunchHookV1.resolveManagedCosignerGate',
     );
   }
   if (input.cosignerGate.programId !== program) {
@@ -314,11 +316,11 @@ function getCreateLaunchHookContext(
   return { program, cosignerGate: input.cosignerGate };
 }
 
-function resolveCpmmHookPayload(
+function resolveDopplerLaunchHookV1Payload(
   input: CreateLaunchInput,
   hookContext: CreateLaunchHookContext,
 ): ReadonlyUint8Array {
-  let gateExpiry: CpmmHookPayloadArgs['gateExpiry'] = null;
+  let gateExpiry: DopplerLaunchHookV1PayloadArgs['gateExpiry'] = null;
   const cosignerGate = hookContext.cosignerGate;
   const expiresAt = cosignerGate?.expiresAt;
   if (cosignerGate && expiresAt !== undefined && expiresAt !== null) {
@@ -329,7 +331,7 @@ function resolveCpmmHookPayload(
     };
   }
 
-  return encodeCpmmHookPayload({
+  return encodeDopplerLaunchHookV1Payload({
     schedule: input.dynamicFee ?? null,
     gateExpiry,
   });
@@ -346,7 +348,7 @@ function resolveCreateLaunchHook({
 }): ResolvedCreateLaunchHook {
   const hasCosigner = hookContext.cosignerGate !== undefined;
   const hasSchedule = Boolean(input.dynamicFee);
-  const remainingAccounts = getCpmmHookRemainingAccounts({
+  const remainingAccounts = getDopplerLaunchHookV1RemainingAccounts({
     namespace,
     config: hookContext.cosignerGate?.config,
     cosigner: hookContext.cosignerGate?.cosigner,
@@ -358,7 +360,7 @@ function resolveCreateLaunchHook({
       HF_BEFORE_SWAP |
       (hasSchedule ? HF_BEFORE_CREATE : 0) |
       (hasCosigner ? HF_FORWARD_READONLY_SIGNERS : 0),
-    payload: resolveCpmmHookPayload(input, hookContext),
+    payload: resolveDopplerLaunchHookV1Payload(input, hookContext),
     remainingAccountsHash: remainingAccounts.hookRemainingAccountsHash,
   };
 }

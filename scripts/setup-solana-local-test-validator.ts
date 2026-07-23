@@ -25,7 +25,7 @@ import {
 
 import {
   cpmm,
-  cpmmHook,
+  dopplerLaunchHookV1,
   cpmmMigrator,
   initializer,
 } from '../src/solana/index.js';
@@ -227,7 +227,7 @@ async function setupInitializerConfig(
     PREDICTION_MIGRATOR_PROGRAM_ADDRESS,
   ];
   const expectedHooks = [
-    cpmmHook.CPMM_HOOK_PROGRAM_ID,
+    dopplerLaunchHookV1.DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ID,
     initializer.PREDICTION_HOOK_PROGRAM_ID,
   ];
 
@@ -277,7 +277,7 @@ async function setupInitializerConfig(
 async function setupCpmmConfig(rpc: LocalTestRpc, payer: TransactionSigner) {
   const [config] = await cpmm.getConfigAddress();
   const programData = await getProgramDataAddress(cpmm.CPMM_PROGRAM_ID);
-  const expectedHooks = [cpmmHook.CPMM_HOOK_PROGRAM_ID];
+  const expectedHooks = [dopplerLaunchHookV1.DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ID];
 
   const existing = await fetchAccountBytes(rpc, config);
   if (!existing) {

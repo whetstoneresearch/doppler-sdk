@@ -197,7 +197,7 @@ async function main() {
         launchFeeState,
         baseVault: baseVault.address,
         quoteVault: quoteVault.address,
-        hookProgram: deployment.cpmmHookProgram,
+        hookProgram: deployment.dopplerLaunchHookV1Program,
         remainingAccounts: [namespace],
       },
       {

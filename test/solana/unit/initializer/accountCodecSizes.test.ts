@@ -1,7 +1,7 @@
 import { address } from '@solana/kit';
 import { describe, expect, it } from 'vitest';
 import * as cpmmAccounts from '@/solana/generated/cpmm/accounts/index.js';
-import * as cpmmHookAccounts from '@/solana/generated/cpmmHook/accounts/index.js';
+import * as dopplerLaunchHookV1Accounts from '@/solana/generated/dopplerLaunchHookV1/accounts/index.js';
 import * as cpmmMigratorAccounts from '@/solana/generated/cpmmMigrator/accounts/index.js';
 import * as initializerAccounts from '@/solana/generated/initializer/accounts/index.js';
 import * as predictionMigratorAccounts from '@/solana/generated/predictionMigrator/accounts/index.js';
@@ -11,7 +11,7 @@ import type { InitConfigArgs } from '@/solana/initializer/index.js';
 
 const GENERATED_ACCOUNT_MODULES = [
   { name: 'cpmm', exports: cpmmAccounts },
-  { name: 'cpmmHook', exports: cpmmHookAccounts },
+  { name: 'dopplerLaunchHookV1', exports: dopplerLaunchHookV1Accounts },
   { name: 'cpmmMigrator', exports: cpmmMigratorAccounts },
   { name: 'initializer', exports: initializerAccounts },
   { name: 'predictionMigrator', exports: predictionMigratorAccounts },

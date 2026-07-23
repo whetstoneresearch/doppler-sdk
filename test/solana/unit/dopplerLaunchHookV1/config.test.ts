@@ -7,7 +7,7 @@ import {
 } from '@solana/kit';
 import { SYSTEM_PROGRAM_ADDRESS } from '@solana-program/system';
 
-import { cpmmHook } from '@/solana/index.js';
+import { dopplerLaunchHookV1 } from '@/solana/index.js';
 import { bytesToBase64 } from '@/solana/core/accounts.js';
 
 type MockConfig = {
@@ -22,13 +22,14 @@ async function createConfigRpc({
   bump: bumpOverride,
   cosigners = [],
   exists = true,
-  owner = cpmmHook.CPMM_HOOK_PROGRAM_ID,
+  owner = dopplerLaunchHookV1.DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ID,
   version = 1,
 }: MockConfig): Promise<Rpc<GetAccountInfoApi>> {
-  const [, derivedBump] = await cpmmHook.getCpmmHookConfigAddress(
-    cpmmHook.CPMM_HOOK_PROGRAM_ID,
-  );
-  const encodedConfig = cpmmHook.getCosignerConfigEncoder().encode({
+  const [, derivedBump] =
+    await dopplerLaunchHookV1.getDopplerLaunchHookV1ConfigAddress(
+      dopplerLaunchHookV1.DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ID,
+    );
+  const encodedConfig = dopplerLaunchHookV1.getCosignerConfigEncoder().encode({
     adminAuthority: SYSTEM_PROGRAM_ADDRESS,
     cosignerCount: cosigners.length,
     bump: bumpOverride ?? derivedBump,
@@ -37,7 +38,7 @@ async function createConfigRpc({
     cosigners: [
       ...cosigners,
       ...Array.from(
-        { length: cpmmHook.MAX_COSIGNERS - cosigners.length },
+        { length: dopplerLaunchHookV1.MAX_COSIGNERS - cosigners.length },
         () => SYSTEM_PROGRAM_ADDRESS,
       ),
     ],
@@ -61,19 +62,23 @@ async function createConfigRpc({
   } as unknown as Rpc<GetAccountInfoApi>;
 }
 
-describe('managed CPMM hook cosigner resolution', () => {
+describe('managed Doppler launch hook v1 cosigner resolution', () => {
   it('selects the first active config cosigner for new launches', async () => {
     const first = address('BPFLoaderUpgradeab1e11111111111111111111111');
     const second = address('ComputeBudget111111111111111111111111111111');
     const rpc = await createConfigRpc({ cosigners: [first, second] });
-    const [config] = await cpmmHook.getCpmmHookConfigAddress();
+    const [config] =
+      await dopplerLaunchHookV1.getDopplerLaunchHookV1ConfigAddress();
 
-    const resolvedGate = await cpmmHook.resolveManagedCosignerGate(rpc, {
-      expiresAt: 1_000n,
-    });
+    const resolvedGate = await dopplerLaunchHookV1.resolveManagedCosignerGate(
+      rpc,
+      {
+        expiresAt: 1_000n,
+      },
+    );
 
     expect(resolvedGate).toEqual({
-      programId: cpmmHook.CPMM_HOOK_PROGRAM_ID,
+      programId: dopplerLaunchHookV1.DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ID,
       config,
       cosigner: first,
       activeCosigners: [first, second],
@@ -86,9 +91,9 @@ describe('managed CPMM hook cosigner resolution', () => {
   it('rejects a missing managed config', async () => {
     const rpc = await createConfigRpc({ exists: false });
 
-    await expect(cpmmHook.resolveManagedCosignerGate(rpc)).rejects.toThrow(
-      /does not exist/,
-    );
+    await expect(
+      dopplerLaunchHookV1.resolveManagedCosignerGate(rpc),
+    ).rejects.toThrow(/does not exist/);
   });
 
   it('rejects a config owned by another program', async () => {
@@ -97,29 +102,30 @@ describe('managed CPMM hook cosigner resolution', () => {
       owner: SYSTEM_PROGRAM_ADDRESS,
     });
 
-    await expect(cpmmHook.resolveManagedCosignerGate(rpc)).rejects.toThrow(
-      /is owned by/,
-    );
+    await expect(
+      dopplerLaunchHookV1.resolveManagedCosignerGate(rpc),
+    ).rejects.toThrow(/is owned by/);
   });
 
   it('rejects a config without an active cosigner', async () => {
     const rpc = await createConfigRpc({ cosigners: [] });
 
-    await expect(cpmmHook.resolveManagedCosignerGate(rpc)).rejects.toThrow(
-      /no valid active cosigner/,
-    );
+    await expect(
+      dopplerLaunchHookV1.resolveManagedCosignerGate(rpc),
+    ).rejects.toThrow(/no valid active cosigner/);
   });
 
   it('rejects a config with the wrong PDA bump', async () => {
-    const [, bump] = await cpmmHook.getCpmmHookConfigAddress();
+    const [, bump] =
+      await dopplerLaunchHookV1.getDopplerLaunchHookV1ConfigAddress();
     const rpc = await createConfigRpc({
       bump: (bump + 1) & 0xff,
       cosigners: [address('ComputeBudget111111111111111111111111111111')],
     });
 
-    await expect(cpmmHook.resolveManagedCosignerGate(rpc)).rejects.toThrow(
-      /no valid active cosigner/,
-    );
+    await expect(
+      dopplerLaunchHookV1.resolveManagedCosignerGate(rpc),
+    ).rejects.toThrow(/no valid active cosigner/);
   });
 
   it('rejects invalid active cosigner keys', async () => {
@@ -132,10 +138,10 @@ describe('managed CPMM hook cosigner resolution', () => {
     });
 
     await expect(
-      cpmmHook.resolveManagedCosignerGate(defaultKeyRpc),
+      dopplerLaunchHookV1.resolveManagedCosignerGate(defaultKeyRpc),
     ).rejects.toThrow(/contains invalid active cosigners/);
     await expect(
-      cpmmHook.resolveManagedCosignerGate(duplicateKeyRpc),
+      dopplerLaunchHookV1.resolveManagedCosignerGate(duplicateKeyRpc),
     ).rejects.toThrow(/contains invalid active cosigners/);
   });
 });

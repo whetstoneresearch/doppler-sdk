@@ -56,16 +56,16 @@ import {
   type SetAuthorityAsyncInput,
 } from '../instructions';
 
-export const CPMM_HOOK_PROGRAM_ADDRESS =
+export const DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ADDRESS =
   'HVsPNZh98TgChUXHwKrUG47SUqvGQHxUy5wZwcQLFD4i' as Address<'HVsPNZh98TgChUXHwKrUG47SUqvGQHxUy5wZwcQLFD4i'>;
 
-export enum CpmmHookAccount {
+export enum DopplerLaunchHookV1Account {
   CosignerConfig,
 }
 
-export function identifyCpmmHookAccount(
+export function identifyDopplerLaunchHookV1Account(
   account: { data: ReadonlyUint8Array } | ReadonlyUint8Array,
-): CpmmHookAccount {
+): DopplerLaunchHookV1Account {
   const data = 'data' in account ? account.data : account;
   if (
     containsBytes(
@@ -76,24 +76,24 @@ export function identifyCpmmHookAccount(
       0,
     )
   ) {
-    return CpmmHookAccount.CosignerConfig;
+    return DopplerLaunchHookV1Account.CosignerConfig;
   }
   throw new SolanaError(
     SOLANA_ERROR__PROGRAM_CLIENTS__FAILED_TO_IDENTIFY_ACCOUNT,
-    { accountData: data, programName: 'cpmmHook' },
+    { accountData: data, programName: 'dopplerLaunchHookV1' },
   );
 }
 
-export enum CpmmHookInstruction {
+export enum DopplerLaunchHookV1Instruction {
   AddCosigner,
   InitializeConfig,
   RemoveCosigner,
   SetAuthority,
 }
 
-export function identifyCpmmHookInstruction(
+export function identifyDopplerLaunchHookV1Instruction(
   instruction: { data: ReadonlyUint8Array } | ReadonlyUint8Array,
-): CpmmHookInstruction {
+): DopplerLaunchHookV1Instruction {
   const data = 'data' in instruction ? instruction.data : instruction;
   if (
     containsBytes(
@@ -104,7 +104,7 @@ export function identifyCpmmHookInstruction(
       0,
     )
   ) {
-    return CpmmHookInstruction.AddCosigner;
+    return DopplerLaunchHookV1Instruction.AddCosigner;
   }
   if (
     containsBytes(
@@ -115,7 +115,7 @@ export function identifyCpmmHookInstruction(
       0,
     )
   ) {
-    return CpmmHookInstruction.InitializeConfig;
+    return DopplerLaunchHookV1Instruction.InitializeConfig;
   }
   if (
     containsBytes(
@@ -126,7 +126,7 @@ export function identifyCpmmHookInstruction(
       0,
     )
   ) {
-    return CpmmHookInstruction.RemoveCosigner;
+    return DopplerLaunchHookV1Instruction.RemoveCosigner;
   }
   if (
     containsBytes(
@@ -137,82 +137,85 @@ export function identifyCpmmHookInstruction(
       0,
     )
   ) {
-    return CpmmHookInstruction.SetAuthority;
+    return DopplerLaunchHookV1Instruction.SetAuthority;
   }
   throw new SolanaError(
     SOLANA_ERROR__PROGRAM_CLIENTS__FAILED_TO_IDENTIFY_INSTRUCTION,
-    { instructionData: data, programName: 'cpmmHook' },
+    { instructionData: data, programName: 'dopplerLaunchHookV1' },
   );
 }
 
-export type ParsedCpmmHookInstruction<
+export type ParsedDopplerLaunchHookV1Instruction<
   TProgram extends string = 'HVsPNZh98TgChUXHwKrUG47SUqvGQHxUy5wZwcQLFD4i',
 > =
   | ({
-      instructionType: CpmmHookInstruction.AddCosigner;
+      instructionType: DopplerLaunchHookV1Instruction.AddCosigner;
     } & ParsedAddCosignerInstruction<TProgram>)
   | ({
-      instructionType: CpmmHookInstruction.InitializeConfig;
+      instructionType: DopplerLaunchHookV1Instruction.InitializeConfig;
     } & ParsedInitializeConfigInstruction<TProgram>)
   | ({
-      instructionType: CpmmHookInstruction.RemoveCosigner;
+      instructionType: DopplerLaunchHookV1Instruction.RemoveCosigner;
     } & ParsedRemoveCosignerInstruction<TProgram>)
   | ({
-      instructionType: CpmmHookInstruction.SetAuthority;
+      instructionType: DopplerLaunchHookV1Instruction.SetAuthority;
     } & ParsedSetAuthorityInstruction<TProgram>);
 
-export function parseCpmmHookInstruction<TProgram extends string>(
+export function parseDopplerLaunchHookV1Instruction<TProgram extends string>(
   instruction: Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array>,
-): ParsedCpmmHookInstruction<TProgram> {
-  const instructionType = identifyCpmmHookInstruction(instruction);
+): ParsedDopplerLaunchHookV1Instruction<TProgram> {
+  const instructionType = identifyDopplerLaunchHookV1Instruction(instruction);
   switch (instructionType) {
-    case CpmmHookInstruction.AddCosigner: {
+    case DopplerLaunchHookV1Instruction.AddCosigner: {
       assertIsInstructionWithAccounts(instruction);
       return {
-        instructionType: CpmmHookInstruction.AddCosigner,
+        instructionType: DopplerLaunchHookV1Instruction.AddCosigner,
         ...parseAddCosignerInstruction(instruction),
       };
     }
-    case CpmmHookInstruction.InitializeConfig: {
+    case DopplerLaunchHookV1Instruction.InitializeConfig: {
       assertIsInstructionWithAccounts(instruction);
       return {
-        instructionType: CpmmHookInstruction.InitializeConfig,
+        instructionType: DopplerLaunchHookV1Instruction.InitializeConfig,
         ...parseInitializeConfigInstruction(instruction),
       };
     }
-    case CpmmHookInstruction.RemoveCosigner: {
+    case DopplerLaunchHookV1Instruction.RemoveCosigner: {
       assertIsInstructionWithAccounts(instruction);
       return {
-        instructionType: CpmmHookInstruction.RemoveCosigner,
+        instructionType: DopplerLaunchHookV1Instruction.RemoveCosigner,
         ...parseRemoveCosignerInstruction(instruction),
       };
     }
-    case CpmmHookInstruction.SetAuthority: {
+    case DopplerLaunchHookV1Instruction.SetAuthority: {
       assertIsInstructionWithAccounts(instruction);
       return {
-        instructionType: CpmmHookInstruction.SetAuthority,
+        instructionType: DopplerLaunchHookV1Instruction.SetAuthority,
         ...parseSetAuthorityInstruction(instruction),
       };
     }
     default:
       throw new SolanaError(
         SOLANA_ERROR__PROGRAM_CLIENTS__UNRECOGNIZED_INSTRUCTION_TYPE,
-        { instructionType: instructionType as string, programName: 'cpmmHook' },
+        {
+          instructionType: instructionType as string,
+          programName: 'dopplerLaunchHookV1',
+        },
       );
   }
 }
 
-export type CpmmHookPlugin = {
-  accounts: CpmmHookPluginAccounts;
-  instructions: CpmmHookPluginInstructions;
+export type DopplerLaunchHookV1Plugin = {
+  accounts: DopplerLaunchHookV1PluginAccounts;
+  instructions: DopplerLaunchHookV1PluginInstructions;
 };
 
-export type CpmmHookPluginAccounts = {
+export type DopplerLaunchHookV1PluginAccounts = {
   cosignerConfig: ReturnType<typeof getCosignerConfigCodec> &
     SelfFetchFunctions<CosignerConfigArgs, CosignerConfig>;
 };
 
-export type CpmmHookPluginInstructions = {
+export type DopplerLaunchHookV1PluginInstructions = {
   addCosigner: (
     input: AddCosignerAsyncInput,
   ) => ReturnType<typeof getAddCosignerInstructionAsync> &
@@ -231,18 +234,18 @@ export type CpmmHookPluginInstructions = {
     SelfPlanAndSendFunctions;
 };
 
-export type CpmmHookPluginRequirements = ClientWithRpc<
+export type DopplerLaunchHookV1PluginRequirements = ClientWithRpc<
   GetAccountInfoApi & GetMultipleAccountsApi
 > &
   ClientWithPayer &
   ClientWithTransactionPlanning &
   ClientWithTransactionSending;
 
-export function cpmmHookProgram() {
-  return <T extends CpmmHookPluginRequirements>(client: T) => {
+export function dopplerLaunchHookV1Program() {
+  return <T extends DopplerLaunchHookV1PluginRequirements>(client: T) => {
     return {
       ...client,
-      cpmmHook: <CpmmHookPlugin>{
+      dopplerLaunchHookV1: <DopplerLaunchHookV1Plugin>{
         accounts: {
           cosignerConfig: addSelfFetchFunctions(
             client,

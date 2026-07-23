@@ -21,7 +21,7 @@ import { getSwapQuote } from './core/math.js';
 import { getPoolByMints, type PoolWithAddress } from './client/index.js';
 import { createSwapInstruction } from './instructions/index.js';
 import type { SolanaCpmmDeployment } from './deployment.js';
-import { CPMM_HOOK_PROGRAM_ID } from './cpmmHook/index.js';
+import { DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ID } from './dopplerLaunchHookV1/index.js';
 import {
   INITIALIZER_PROGRAM_ID,
   TRADE_DIRECTION_BUY,
@@ -39,7 +39,7 @@ type AddressOrSigner = Address | TransactionSigner;
 
 export type CurveSwapExactInInput = {
   deployment?: Pick<SolanaCpmmDeployment, 'initializerProgram'> &
-    Partial<Pick<SolanaCpmmDeployment, 'cpmmHookProgram'>>;
+    Partial<Pick<SolanaCpmmDeployment, 'dopplerLaunchHookV1Program'>>;
   programId?: Address;
   launch: Address;
   launchAuthority: Address;
@@ -238,7 +238,9 @@ export async function curveSwapExactIn(
     baseMint: input.baseMint,
     quoteMint: input.quoteMint,
     user,
-    hookProgram: input.deployment?.cpmmHookProgram ?? CPMM_HOOK_PROGRAM_ID,
+    hookProgram:
+      input.deployment?.dopplerLaunchHookV1Program ??
+      DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ID,
     baseTokenProgram,
     quoteTokenProgram,
     remainingAccounts: input.remainingAccounts

@@ -1,4 +1,4 @@
-export * from '../generated/cpmmHook/index.js';
+export * from '../generated/dopplerLaunchHookV1/index.js';
 export * from './config.js';
 export * from './constants.js';
 export * from './gate.js';
