@@ -194,7 +194,7 @@ export SOLANA_CPMM_MIGRATOR_PROGRAM_ID=...
 export SOLANA_CPMM_HOOK_PROGRAM_ID=...
 ```
 
-The high-level launch helper uses the deployment's CPMM hook automatically. Set `dynamicFee`, `cosigner`, or both in the helper params to enable those features; omit both for static fees without cosigning. Provide `COSIGNER_KEYPAIR_PATH` or `COSIGNER_KEYPAIR` for one of the cosigners registered in its config when running a cosigner-gated example.
+The high-level launch helper uses the deployment's CPMM hook automatically. Set `dynamicFee`, a gate returned by `cpmmHook.resolveManagedCosignerGate`, or both in the helper params to enable those features; omit both for static fees without cosigning. The resolver fetches the hook's singleton on-chain config and selects its first active Doppler-managed signer, while `createLaunch` remains an offline instruction builder that pins the resolved signer. Launch creators cannot register or select a cosigner through this flow. The gated swap examples require `COSIGNER_KEYPAIR_PATH` or `COSIGNER_KEYPAIR` to match that selected signer because they execute the managed cosigned swap themselves.
 
 The launch examples use ALTs where possible. ALTs reduce account-key bytes, but they do not compress instruction data, so long `metadataName`, `metadataSymbol`, or `metadataUri` values can still exceed Solana's 1232-byte transaction limit.
 

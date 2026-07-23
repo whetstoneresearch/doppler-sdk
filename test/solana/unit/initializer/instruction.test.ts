@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { address } from '@solana/addresses';
 import { generateKeyPairSigner } from '@solana/signers';
-import { AccountRole } from '@solana/kit';
+import {
+  AccountRole,
+  type Address,
+  type GetAccountInfoApi,
+  type Rpc,
+} from '@solana/kit';
 import { SYSTEM_PROGRAM_ADDRESS } from '@solana-program/system';
 import { TOKEN_PROGRAM_ADDRESS } from '@solana-program/token';
 import {
@@ -16,10 +21,48 @@ import {
   TOKEN_2022_PROGRAM_ADDRESS,
   TOKEN_METADATA_PROGRAM_ID,
 } from '@/solana/core/constants.js';
+import { bytesToBase64 } from '@/solana/core/accounts.js';
 
 const SYSVAR_RENT_PUBKEY = address(
   'SysvarRent111111111111111111111111111111111',
 );
+
+async function createManagedCosignerRpc(
+  cosigners: readonly Address[],
+  programId: Address = cpmmHook.CPMM_HOOK_PROGRAM_ID,
+): Promise<Rpc<GetAccountInfoApi>> {
+  const [, bump] = await cpmmHook.getCpmmHookConfigAddress(programId);
+  const paddedCosigners = [
+    ...cosigners,
+    ...Array.from(
+      { length: cpmmHook.MAX_COSIGNERS - cosigners.length },
+      () => SYSTEM_PROGRAM_ADDRESS,
+    ),
+  ];
+  const encodedConfig = cpmmHook.getCosignerConfigEncoder().encode({
+    adminAuthority: SYSTEM_PROGRAM_ADDRESS,
+    cosignerCount: cosigners.length,
+    bump,
+    version: 1,
+    reserved: new Uint8Array(37),
+    cosigners: paddedCosigners,
+  });
+
+  return {
+    getAccountInfo: () => ({
+      send: async () => ({
+        value: {
+          data: [bytesToBase64(encodedConfig), 'base64'],
+          executable: false,
+          lamports: 1n,
+          owner: programId,
+          rentEpoch: 0n,
+          space: encodedConfig.length,
+        },
+      }),
+    }),
+  } as unknown as Rpc<GetAccountInfoApi>;
+}
 
 describe('initializer instructions', () => {
   it('builds initializeConfig with programData account in the correct position', async () => {
@@ -371,12 +414,14 @@ describe('initializer instructions', () => {
     );
   });
 
-  it('enables cosigning through the CPMM hook when a cosigner is provided', async () => {
+  it('enables cosigning with the managed CPMM hook config', async () => {
     const baseMint = await generateKeyPairSigner();
     const baseVault = await generateKeyPairSigner();
     const quoteVault = await generateKeyPairSigner();
     const admin = await generateKeyPairSigner();
     const cosigner = await generateKeyPairSigner();
+    const rpc = await createManagedCosignerRpc([cosigner.address]);
+    const managedCosignerGate = await cpmmHook.resolveManagedCosignerGate(rpc);
 
     const quoteMint = address('DtCGbAhmf5R6Fjuo3zJqCS9Ep5wePTmxHzK8ri8E5nhb');
     const launchId = initializer.launchIdFromU64(6n);
@@ -387,7 +432,7 @@ describe('initializer instructions', () => {
       launchId,
     );
 
-    const prepared = await createLaunch({
+    const launchInput = {
       deployment: {
         initializerConfig: config,
         initializerProgram: initializer.INITIALIZER_PROGRAM_ID,
@@ -412,18 +457,52 @@ describe('initializer instructions', () => {
         curveVirtualQuote: 200_000n,
         swapFeeBps: 100,
       },
-      cosigner,
       metadata: null,
+    };
+    const foreignProgram = address(
+      'BPFLoaderUpgradeab1e11111111111111111111111',
+    );
+    const foreignRpc = await createManagedCosignerRpc(
+      [cosigner.address],
+      foreignProgram,
+    );
+    const foreignGate = await cpmmHook.resolveManagedCosignerGate(foreignRpc, {
+      programId: foreignProgram,
+    });
+
+    await expect(
+      createLaunch({
+        ...launchInput,
+        cosignerGate: {} as never,
+      }),
+    ).rejects.toThrow(
+      'cosignerGate must be returned by cpmmHook.resolveManagedCosignerGate',
+    );
+
+    await expect(
+      createLaunch({
+        ...launchInput,
+        cosignerGate: foreignGate,
+      }),
+    ).rejects.toThrow(/managed cosigner gate was resolved for/);
+
+    const prepared = await createLaunch({
+      ...launchInput,
+      cosignerGate: managedCosignerGate,
     });
 
     expect(prepared.namespace).toBe(SYSTEM_PROGRAM_ADDRESS);
     expect(prepared.addresses.launch).toBe(expectedLaunch);
+    expect(prepared.cosignerGate).toEqual({
+      programId: cpmmHook.CPMM_HOOK_PROGRAM_ID,
+      config: cpmmHookConfig,
+      cosigner: cosigner.address,
+      activeCosigners: [cosigner.address],
+    });
 
     const ix = prepared.instruction;
     expect(ix.accounts).toHaveLength(20);
-    expect(ix.accounts![10].address).toBe(
-      cpmmHook.CPMM_HOOK_PROGRAM_ID,
-    );
+    expect(ix.accounts![10].address).toBe(cpmmHook.CPMM_HOOK_PROGRAM_ID);
     expect(ix.accounts![11].address).toBe(
       cpmmMigrator.CPMM_MIGRATOR_PROGRAM_ID,
     );
@@ -486,7 +565,6 @@ describe('initializer instructions', () => {
         endFeeBps: 120,
         durationSeconds: 600n,
       },
-      cosignGateExpiresAt: null,
       migration: false,
       metadata: null,
     });
@@ -499,19 +577,13 @@ describe('initializer instructions', () => {
 
     expect(prepared.namespace).toBe(admin.address);
     expect(ix.accounts).toHaveLength(18);
-    expect(ix.accounts![10].address).toBe(
-      cpmmHook.CPMM_HOOK_PROGRAM_ID,
-    );
+    expect(ix.accounts![10].address).toBe(cpmmHook.CPMM_HOOK_PROGRAM_ID);
     expect(ix.accounts![11].address).toBe(initializer.INITIALIZER_PROGRAM_ID);
     expect(data.hookFlags).toBe(
       initializer.HF_BEFORE_CREATE | initializer.HF_BEFORE_SWAP,
     );
-    expect(data.hookPayload).toHaveLength(
-      cpmmHook.DYNAMIC_FEE_SCHEDULE_LEN,
-    );
-    expect(cpmmHook.isDynamicFeeSchedulePayload(data.hookPayload)).toBe(
-      true,
-    );
+    expect(data.hookPayload).toHaveLength(cpmmHook.DYNAMIC_FEE_SCHEDULE_LEN);
+    expect(cpmmHook.isDynamicFeeSchedulePayload(data.hookPayload)).toBe(true);
     expect(data.hookCreateRemainingAccountsHash).toEqual(
       initializer.EMPTY_REMAINING_ACCOUNTS_HASH,
     );
@@ -526,11 +598,14 @@ describe('initializer instructions', () => {
     const quoteVault = await generateKeyPairSigner();
     const admin = await generateKeyPairSigner();
     const cosigner = await generateKeyPairSigner();
+    const rpc = await createManagedCosignerRpc([cosigner.address]);
+    const managedCosignerGate = await cpmmHook.resolveManagedCosignerGate(rpc, {
+      expiresAt: 1_000n,
+    });
 
     const quoteMint = address('DtCGbAhmf5R6Fjuo3zJqCS9Ep5wePTmxHzK8ri8E5nhb');
     const launchId = initializer.launchIdFromU64(8n);
-    const [cpmmHookConfig] =
-      await cpmmHook.getCpmmHookConfigAddress();
+    const [cpmmHookConfig] = await cpmmHook.getCpmmHookConfigAddress();
 
     const prepared = await createLaunch({
       launchId,
@@ -553,8 +628,7 @@ describe('initializer instructions', () => {
         curveVirtualQuote: 200_000n,
         swapFeeBps: 100,
       },
-      cosigner,
-      cosignGateExpiresAt: 1_000n,
+      cosignerGate: managedCosignerGate,
       dynamicFee: {
         startingTime: 0n,
         startFeeBps: 8_000,
@@ -573,17 +647,14 @@ describe('initializer instructions', () => {
 
     expect(prepared.namespace).toBe(SYSTEM_PROGRAM_ADDRESS);
     expect(ix.accounts).toHaveLength(18);
-    expect(ix.accounts![10].address).toBe(
-      cpmmHook.CPMM_HOOK_PROGRAM_ID,
-    );
+    expect(ix.accounts![10].address).toBe(cpmmHook.CPMM_HOOK_PROGRAM_ID);
     expect(data.hookFlags).toBe(
       initializer.HF_BEFORE_CREATE |
         initializer.HF_BEFORE_SWAP |
         initializer.HF_FORWARD_READONLY_SIGNERS,
     );
     expect(data.hookPayload).toHaveLength(
-      cpmmHook.DYNAMIC_FEE_SCHEDULE_LEN +
-        cpmmHook.GATE_EXPIRY_PAYLOAD_LEN,
+      cpmmHook.DYNAMIC_FEE_SCHEDULE_LEN + cpmmHook.GATE_EXPIRY_PAYLOAD_LEN,
     );
     expect(
       cpmmHook.isDynamicFeeSchedulePayload(

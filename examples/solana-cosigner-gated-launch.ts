@@ -38,7 +38,6 @@ import {
   assertSimulationRejected,
   assertSolanaExampleNetwork,
   createSolanaClientsFromEnv,
-  fetchActiveCosigners,
   getSolPriceUsd,
   getSolanaCpmmDeploymentFromEnv,
   loadCosigner,
@@ -57,24 +56,7 @@ async function main() {
   const { rpc, rpcSubscriptions, network } = createSolanaClientsFromEnv();
   assertSolanaExampleNetwork(network, ['devnet', 'custom']);
   const deployment = await getSolanaCpmmDeploymentFromEnv(network);
-  const [cpmmHookConfig] = await cpmmHook.getCpmmHookConfigAddress(
-    deployment.cpmmHookProgram,
-  );
   const cosigner = await loadCosigner();
-
-  console.log('Checking CPMM hook config...');
-  const activeCosigners = await fetchActiveCosigners({
-    rpc,
-    cpmmHookProgram: deployment.cpmmHookProgram,
-    cpmmHookConfig,
-  });
-  if (!activeCosigners.has(cosigner.address.toString())) {
-    throw new Error(
-      `COSIGNER_KEYPAIR resolves to ${cosigner.address}, which is not registered in CPMM hook config ${cpmmHookConfig}`,
-    );
-  }
-  console.log('  CPMM hook config verified');
-  console.log('');
 
   // ── Token supply ─────────────────────────────────────────────────────────
   const BASE_DECIMALS = 6;
@@ -120,13 +102,21 @@ async function main() {
   const quoteVault = await generateKeyPairSigner();
   const metadata = DEFAULT_TEST_METADATA;
 
-  const namespace = cpmmHookConfig;
-  const launchId = initializer.launchIdFromU64(BigInt(Date.now()));
-  const { signedHookRemainingAccounts, unsignedHookRemainingAccounts } =
-    cpmmHook.getCpmmHookRemainingAccounts({ namespace, cosigner });
   const cosignGateExpiresAt = BigInt(
     Math.floor(Date.now() / 1_000) + COSIGN_GATE_SECONDS,
   );
+  const managedCosignerGate = await cpmmHook.resolveManagedCosignerGate(rpc, {
+    programId: deployment.cpmmHookProgram,
+    expiresAt: cosignGateExpiresAt,
+  });
+  const cpmmHookConfig = managedCosignerGate.config;
+  if (cosigner.address !== managedCosignerGate.cosigner) {
+    throw new Error(
+      `COSIGNER_KEYPAIR resolves to ${cosigner.address}, but this launch requires managed cosigner ${managedCosignerGate.cosigner}`,
+    );
+  }
+  const namespace = cpmmHookConfig;
+  const launchId = initializer.launchIdFromU64(BigInt(Date.now()));
 
   const launchAddresses = await initializer.deriveCreateLaunchAddresses({
     deployment,
@@ -169,8 +159,7 @@ async function main() {
         curveVirtualQuote: start.curveVirtualQuote,
         swapFeeBps: SWAP_FEE_BPS,
       },
-      cosigner,
-      cosignGateExpiresAt,
+      cosignerGate: managedCosignerGate,
       migration: {
         recipients,
         minRaiseQuote,
@@ -181,6 +170,12 @@ async function main() {
     if (!cpmmMigration) {
       throw new Error('CPMM migration accounts were not prepared');
     }
+    const { signedHookRemainingAccounts, unsignedHookRemainingAccounts } =
+      cpmmHook.getCpmmHookRemainingAccounts({
+        namespace,
+        config: managedCosignerGate.config,
+        cosigner,
+      });
     const migrationAccounts = cpmmMigration;
     const cpmmConfig = migrationAccounts.cpmmConfig;
     const cpmmMigrationState = migrationAccounts.cpmmMigrationState;
@@ -198,7 +193,7 @@ async function main() {
     console.log('  CPMM hook config:   ', cpmmHookConfig);
     console.log(
       '  Active cosigners:   ',
-      Array.from(activeCosigners).join(', '),
+      managedCosignerGate.activeCosigners.join(', '),
     );
     console.log('  Signing cosigner:   ', cosigner.address);
     console.log('  Cosign gate expiry: ', cosignGateExpiresAt.toString());

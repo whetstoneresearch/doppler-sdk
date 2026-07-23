@@ -33,7 +33,6 @@ import {
   DEFAULT_SWAP_FEE_BPS,
   DEFAULT_TEST_METADATA,
   WSOL_MINT,
-  assertCosignerRegistered,
   assertSimulationRejected,
   assertSolanaExampleNetwork,
   createSolanaClientsFromEnv,
@@ -54,17 +53,15 @@ async function main() {
   const { rpc, rpcSubscriptions, network } = createSolanaClientsFromEnv();
   assertSolanaExampleNetwork(network, ['devnet', 'custom']);
   const deployment = await getSolanaCpmmDeploymentFromEnv(network);
-  const [cpmmHookConfig] = await cpmmHook.getCpmmHookConfigAddress(
-    deployment.cpmmHookProgram,
-  );
-
-  console.log('Checking CPMM hook config...');
-  await assertCosignerRegistered({
-    rpc,
-    cpmmHookProgram: deployment.cpmmHookProgram,
-    cpmmHookConfig,
-    cosigner,
+  const managedCosignerGate = await cpmmHook.resolveManagedCosignerGate(rpc, {
+    programId: deployment.cpmmHookProgram,
   });
+  const cpmmHookConfig = managedCosignerGate.config;
+  if (cosigner.address !== managedCosignerGate.cosigner) {
+    throw new Error(
+      `COSIGNER_KEYPAIR resolves to ${cosigner.address}, but this launch requires managed cosigner ${managedCosignerGate.cosigner}`,
+    );
+  }
 
   const BASE_DECIMALS = 6;
   const BASE_TOTAL_SUPPLY = 1_000_000_000n * 10n ** BigInt(BASE_DECIMALS);
@@ -114,9 +111,6 @@ async function main() {
   });
   const { launch, launchAuthority, launchFeeState } = launchAddresses;
 
-  const { signedHookRemainingAccounts, unsignedHookRemainingAccounts } =
-    cpmmHook.getCpmmHookRemainingAccounts({ namespace, cosigner });
-
   console.log('Creating Token-2022 cosigner-gated launch...');
   console.log('  Launch:            ', launch);
   console.log('  Base mint:         ', baseMint.address);
@@ -161,7 +155,7 @@ async function main() {
         swapFeeBps: SWAP_FEE_BPS,
       },
       tokenPrograms: initializer.launchTokenPrograms.token2022Base(),
-      cosigner,
+      cosignerGate: managedCosignerGate,
       migration: {
         recipients: launchBeneficiaries.recipients,
         minRaiseQuote,
@@ -173,6 +167,12 @@ async function main() {
   if (!cpmmMigration) {
     throw new Error('CPMM migration accounts were not prepared');
   }
+  const { signedHookRemainingAccounts, unsignedHookRemainingAccounts } =
+    cpmmHook.getCpmmHookRemainingAccounts({
+      namespace,
+      config: managedCosignerGate.config,
+      cosigner,
+    });
   const migrationAccounts = cpmmMigration;
 
   const launchSignature = await sendInitializeLaunchWithLookupTable({

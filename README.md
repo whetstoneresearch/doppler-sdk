@@ -100,6 +100,24 @@ For runnable Solana flows, configure `examples/.env` and run with `pnpm tsx`, fo
 - [examples/solana-prediction-market.ts](./examples/solana-prediction-market.ts)
 - [examples/solana-swap.ts](./examples/solana-swap.ts)
 
+Resolve managed swap cosigning before constructing a launch:
+
+```typescript
+const cosignerGate = await cpmmHook.resolveManagedCosignerGate(rpc, {
+  programId: deployment.cpmmHookProgram,
+  expiresAt,
+});
+
+const launch = await createLaunch({ ...input, cosignerGate });
+```
+
+The resolver verifies the hook's singleton config and selects its first active
+Doppler-managed signer. `createLaunch` then pins that signer in the launch's
+immutable remaining-account commitment without performing an RPC read. Launch
+creators do not provide or register a cosigner key through this high-level
+flow. Low-level hook payload and remaining-account helpers accept a cosigner
+only to reconstruct an already-authorized launch commitment.
+
 ## Creating Auctions
 
 ### Static Auction (Fixed Price Range)
