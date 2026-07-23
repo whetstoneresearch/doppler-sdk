@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "include": ["examples/solana-*.ts", "examples/solanaExampleHelpers.ts"],
+  "exclude": ["node_modules", "dist"],
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": ".",
+    "types": ["node"]
+  }
+}

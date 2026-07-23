@@ -71,6 +71,12 @@ jobs:
       - name: Run type check
         run: pnpm typecheck
 
+      - name: Compile examples
+        run: pnpm check:examples
+
+      - name: Type-check Solana examples
+        run: pnpm typecheck:solana-examples
+
       - name: Run linting
         run: pnpm lint
 
@@ -179,9 +185,9 @@ jobs:
         run: pnpm test:solana
 
   solana-mainnet-fork:
-    name: Solana Mainnet Fork
+    name: Solana Mainnet Fork Examples
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     env:
       AGAVE_VERSION: v4.1.0-rc.1
     steps:
@@ -217,7 +223,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Run Solana mainnet fork examples
-        run: pnpm test:solana:fork:doppler-launch-hook-v1
+        run: pnpm test:solana:fork:examples
 
   # Summary job for branch protection
   test-summary:

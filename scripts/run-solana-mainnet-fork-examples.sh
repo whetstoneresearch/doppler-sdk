@@ -11,7 +11,9 @@ LEDGER_DIR="$RUN_DIR/ledger"
 VALIDATOR_LOG="$RUN_DIR/validator.log"
 PAYER_KEYPAIR="$RUN_DIR/payer.json"
 COSIGNER_KEYPAIR="$RUN_DIR/cosigner.json"
+SWAP_BASE_MINT_KEYPAIR="$RUN_DIR/swap-base-mint.json"
 HOOK_CONFIG_FIXTURE="$RUN_DIR/hook-config.json"
+PAYER_USDC_FIXTURE="$RUN_DIR/payer-usdc.json"
 FORK_MANIFEST="$RUN_DIR/fork-manifest.json"
 VALIDATOR_PID=""
 
@@ -51,15 +53,22 @@ solana-keygen new \
   --no-bip39-passphrase \
   --silent \
   --outfile "$COSIGNER_KEYPAIR"
+solana-keygen new \
+  --no-bip39-passphrase \
+  --silent \
+  --outfile "$SWAP_BASE_MINT_KEYPAIR"
 
 PAYER_ADDRESS="$(solana-keygen pubkey "$PAYER_KEYPAIR")"
 COSIGNER_ADDRESS="$(solana-keygen pubkey "$COSIGNER_KEYPAIR")"
+SWAP_BASE_MINT_ADDRESS="$(solana-keygen pubkey "$SWAP_BASE_MINT_KEYPAIR")"
 
 cd "$ROOT_DIR"
 pnpm exec tsx scripts/prepare-solana-mainnet-fork.ts \
   --rpc-url "$MAINNET_RPC_URL" \
+  --payer "$PAYER_ADDRESS" \
   --cosigner "$COSIGNER_ADDRESS" \
-  --account-output "$HOOK_CONFIG_FIXTURE" \
+  --hook-config-output "$HOOK_CONFIG_FIXTURE" \
+  --payer-usdc-output "$PAYER_USDC_FIXTURE" \
   --manifest-output "$FORK_MANIFEST"
 
 read_manifest() {
@@ -81,6 +90,8 @@ TOKEN_METADATA_PROGRAM="$(read_manifest programs.tokenMetadataProgram)"
 CPMM_CONFIG="$(read_manifest accounts.cpmmConfig)"
 INITIALIZER_CONFIG="$(read_manifest accounts.initializerConfig)"
 HOOK_CONFIG="$(read_manifest accounts.hookConfig)"
+MAINNET_USDC_MINT="$(read_manifest accounts.mainnetUsdcMint)"
+PAYER_USDC_ACCOUNT="$(read_manifest accounts.payerUsdcAccount)"
 
 validator_args=(
   --ledger "$LEDGER_DIR"
@@ -98,7 +109,9 @@ validator_args=(
   --clone-upgradeable-program "$TOKEN_METADATA_PROGRAM"
   --clone "$CPMM_CONFIG"
   --clone "$INITIALIZER_CONFIG"
+  --clone "$MAINNET_USDC_MINT"
   --account "$HOOK_CONFIG" "$HOOK_CONFIG_FIXTURE"
+  --account "$PAYER_USDC_ACCOUNT" "$PAYER_USDC_FIXTURE"
 )
 
 echo "Starting disposable mainnet fork at $RPC_URL"
@@ -126,22 +139,59 @@ export SOLANA_RPC_URL="$RPC_URL"
 export SOLANA_WS_URL="$WS_URL"
 export SOLANA_KEYPAIR_PATH="$PAYER_KEYPAIR"
 export COSIGNER_KEYPAIR_PATH="$COSIGNER_KEYPAIR"
+export SOLANA_BASE_MINT_KEYPAIR_PATH="$SWAP_BASE_MINT_KEYPAIR"
 export SOLANA_CPMM_PROGRAM_ID="$CPMM_PROGRAM"
 export SOLANA_INITIALIZER_PROGRAM_ID="$INITIALIZER_PROGRAM"
 export SOLANA_CPMM_MIGRATOR_PROGRAM_ID="$CPMM_MIGRATOR_PROGRAM"
 export SOLANA_DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ID="$LAUNCH_HOOK_PROGRAM"
+export SOLANA_USDC_MINT="$MAINNET_USDC_MINT"
 export SOL_PRICE_USD="${SOL_PRICE_USD:-150}"
 export SOLANA_COSIGNER_BUY_AMOUNT_SOL="${SOLANA_COSIGNER_BUY_AMOUNT_SOL:-0.2}"
+export SOLANA_COSIGNER_BUY_AMOUNT_USDC="${SOLANA_COSIGNER_BUY_AMOUNT_USDC:-0.2}"
 export SOLANA_FEE_BENEFICIARY_1_WALLET="${SOLANA_FEE_BENEFICIARY_1_WALLET:-$PAYER_ADDRESS}"
 export SOLANA_FEE_BENEFICIARY_1_BASE_AMOUNT="${SOLANA_FEE_BENEFICIARY_1_BASE_AMOUNT:-140000000}"
 export SOLANA_FEE_BENEFICIARY_1_SHARE_BPS="${SOLANA_FEE_BENEFICIARY_1_SHARE_BPS:-7000}"
 export SOLANA_FEE_BENEFICIARY_2_WALLET="${SOLANA_FEE_BENEFICIARY_2_WALLET:-$COSIGNER_ADDRESS}"
 export SOLANA_FEE_BENEFICIARY_2_BASE_AMOUNT="${SOLANA_FEE_BENEFICIARY_2_BASE_AMOUNT:-60000000}"
 export SOLANA_FEE_BENEFICIARY_2_SHARE_BPS="${SOLANA_FEE_BENEFICIARY_2_SHARE_BPS:-3000}"
+export MINT_0="$SWAP_BASE_MINT_ADDRESS"
+export MINT_1="So11111111111111111111111111111111111111112"
+export SWAP_INPUT_MINT="$SWAP_BASE_MINT_ADDRESS"
 
-echo "Running dynamic-fee launch example"
-pnpm exec tsx examples/solana-dynamic-fee-launch.ts
+runtime_examples=(
+  examples/solana-minimal-launch.ts
+  examples/solana-launch-by-marketcap.ts
+  examples/solana-dynamic-fee-launch.ts
+  examples/solana-adv-launch.ts
+  examples/solana-adv-e2e-launch.ts
+  examples/solana-swap.ts
+  examples/solana-cosigner-gated-launch.ts
+  examples/solana-cosigner-gated-buy.ts
+  examples/solana-cosigner-gated-buy-token-2022.ts
+  examples/solana-usdc-e2e-launch.ts
+  examples/solana-usdc-cosigner-gated-buy.ts
+)
+compile_only_examples=(
+  examples/solana-prediction-market.ts
+)
+
+declare -A classified_examples=()
+for example in "${runtime_examples[@]}" "${compile_only_examples[@]}"; do
+  classified_examples["$example"]=1
+done
+for path in "$ROOT_DIR"/examples/solana-*.ts; do
+  example="examples/${path##*/}"
+  if [[ -z "${classified_examples[$example]:-}" ]]; then
+    echo "Solana example is not classified for CI: $example" >&2
+    exit 1
+  fi
+done
+
+for example in "${runtime_examples[@]}"; do
+  echo
+  echo "Running $example"
+  pnpm exec tsx "$example"
+done
 
 echo
-echo "Running managed-cosigner launch example"
-pnpm exec tsx examples/solana-cosigner-gated-buy.ts
+echo "Compile-only on a mainnet fork: ${compile_only_examples[*]}"

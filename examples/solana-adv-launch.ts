@@ -18,6 +18,7 @@
  */
 import './env.js';
 
+import { SYSTEM_PROGRAM_ADDRESS } from '@solana-program/system';
 import { generateKeyPairSigner } from '@solana/kit';
 
 import { cpmm, createLaunch, initializer } from '../src/solana/index.js';
@@ -87,7 +88,7 @@ async function main() {
   const quoteVault = await generateKeyPairSigner();
   const metadata = DEFAULT_TEST_METADATA;
 
-  const namespace = payer.address;
+  const namespace = SYSTEM_PROGRAM_ADDRESS;
   const launchId = initializer.launchIdFromU64(BigInt(Date.now()));
   const launchAddresses = await initializer.deriveCreateLaunchAddresses({
     deployment,

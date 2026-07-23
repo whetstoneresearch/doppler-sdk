@@ -7,6 +7,7 @@
  */
 import './env.js';
 
+import { SYSTEM_PROGRAM_ADDRESS } from '@solana-program/system';
 import {
   generateKeyPairSigner,
   type Address,
@@ -106,7 +107,7 @@ async function main(): Promise<void> {
   const baseMint = await generateKeyPairSigner();
   const baseVault = await generateKeyPairSigner();
   const quoteVault = await generateKeyPairSigner();
-  const namespace = payer.address;
+  const namespace = SYSTEM_PROGRAM_ADDRESS;
   const launchId = initializer.launchIdFromU64(BigInt(Date.now()));
   const launchAddresses = await initializer.deriveCreateLaunchAddresses({
     deployment,

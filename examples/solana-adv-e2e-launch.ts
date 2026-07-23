@@ -14,6 +14,7 @@
  */
 import './env.js';
 
+import { SYSTEM_PROGRAM_ADDRESS } from '@solana-program/system';
 import { generateKeyPairSigner } from '@solana/kit';
 
 import {
@@ -87,12 +88,20 @@ async function main() {
   // ── Step 1: Create launch ─────────────────────────────────────────────────
   console.log('Step 1: Creating XYK token launch...');
 
-  const baseMint = await generateKeyPairSigner();
+  const baseMint =
+    process.env.SOLANA_BASE_MINT_KEYPAIR_PATH ||
+    process.env.SOLANA_BASE_MINT_KEYPAIR
+      ? await loadKeypairSignerFromEnv({
+          pathEnv: 'SOLANA_BASE_MINT_KEYPAIR_PATH',
+          jsonEnv: 'SOLANA_BASE_MINT_KEYPAIR',
+          label: 'SOLANA_BASE_MINT_KEYPAIR',
+        })
+      : await generateKeyPairSigner();
   const baseVault = await generateKeyPairSigner();
   const quoteVault = await generateKeyPairSigner();
   const metadata = DEFAULT_TEST_METADATA;
 
-  const namespace = payer.address;
+  const namespace = SYSTEM_PROGRAM_ADDRESS;
   const launchId = initializer.launchIdFromU64(BigInt(Date.now()));
   const launchAddresses = await initializer.deriveCreateLaunchAddresses({
     deployment,
