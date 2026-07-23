@@ -29,7 +29,9 @@ export type {
   MulticurveFeesOptions,
   MulticurvePendingFees,
   MulticurvePendingFeesOptions,
+  MulticurveTokenPendingFeeBreakdown,
   MulticurveTokenPendingFees,
+  RehypePendingFees,
 } from './entities/auction';
 
 // Export quoter

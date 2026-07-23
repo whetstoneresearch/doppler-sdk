@@ -84,7 +84,7 @@ export async function getPendingFeesForMulticurveTokens({
   });
 }
 
-async function discoverMulticurveFeePoolContexts(
+export async function discoverMulticurveFeePoolContexts(
   client: MulticurvePendingFeesClient,
   tokenAddresses: readonly Address[],
 ): Promise<readonly InitializerDiscoveryResult[]> {
