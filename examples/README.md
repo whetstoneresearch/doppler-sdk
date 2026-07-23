@@ -198,6 +198,19 @@ The high-level launch helper uses the deployment's Doppler launch hook v1 automa
 
 The launch examples use ALTs where possible. ALTs reduce account-key bytes, but they do not compress instruction data, so long `metadataName`, `metadataSymbol`, or `metadataUri` values can still exceed Solana's 1232-byte transaction limit.
 
+Run the dynamic-fee and managed-cosigner launch examples against a disposable
+local fork of the current mainnet deployment:
+
+```bash
+pnpm test:solana:fork:doppler-launch-hook-v1
+```
+
+The command clones the deployed programs and protocol configs, then uses
+ephemeral payer and cosigner keys. The forked hook config is rewritten to
+authorize only the ephemeral cosigner; no production key or mainnet write is
+required. Set `SOLANA_MAINNET_RPC_URL` to override the public RPC used for
+cloning.
+
 For larger CPMM launch metadata, use a launch-specific ALT:
 
 1. Build the `initialize_launch` instruction.

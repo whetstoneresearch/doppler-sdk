@@ -178,11 +178,52 @@ jobs:
       - name: Run Solana unit tests
         run: pnpm test:solana
 
+  solana-mainnet-fork:
+    name: Solana Mainnet Fork
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      AGAVE_VERSION: v4.1.0-rc.1
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Cache Agave CLI
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/solana/install
+          key: agave-${{ runner.os }}-${{ env.AGAVE_VERSION }}
+
+      - name: Install Agave CLI
+        run: |
+          if [ ! -x "$HOME/.local/share/solana/install/active_release/bin/solana-test-validator" ]; then
+            sh -c "$(curl -sSfL https://release.anza.xyz/${AGAVE_VERSION}/install)"
+          fi
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
+
+      - name: Verify Agave CLI
+        run: solana-test-validator --version
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Solana mainnet fork examples
+        run: pnpm test:solana:fork:doppler-launch-hook-v1
+
   # Summary job for branch protection
   test-summary:
     name: Test Summary
     runs-on: ubuntu-latest
-    needs: [unit-tests, solana-tests]
+    needs: [unit-tests, solana-tests, solana-mainnet-fork]
     if: always()
     steps:
       - name: Check test results
@@ -193,6 +234,10 @@ jobs:
           fi
           if [ "${{ needs.solana-tests.result }}" != "success" ]; then
             echo "Solana tests failed"
+            exit 1
+          fi
+          if [ "${{ needs.solana-mainnet-fork.result }}" != "success" ]; then
+            echo "Solana mainnet fork tests failed"
             exit 1
           fi
           echo "All required tests passed"
