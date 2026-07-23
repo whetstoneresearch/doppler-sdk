@@ -36,6 +36,7 @@
     "test:live": "LIVE_TEST_ENABLED=true vitest run --config vitest.live.config.ts",
     "test:whitelisting": "LIVE_TEST_ENABLED=true vitest run --config vitest.live.config.ts test/evm/e2e/whitelisting.test.ts",
     "test:solana": "vitest run --config vitest.solana.config.ts",
+    "test:solana:fork:doppler-launch-hook-v1": "bash scripts/run-solana-doppler-launch-hook-v1-fork-examples.sh",
     "test:watch": "vitest watch --config vitest.unit.config.ts",
     "test:coverage": "vitest run --coverage --config vitest.unit.config.ts",
     "build": "tsup",
