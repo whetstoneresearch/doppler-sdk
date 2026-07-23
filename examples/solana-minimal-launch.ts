@@ -7,6 +7,7 @@
  */
 import './env.js';
 
+import { SYSTEM_PROGRAM_ADDRESS } from '@solana-program/system';
 import { generateKeyPairSigner } from '@solana/kit';
 
 import { createLaunch, initializer } from '../src/solana/index.js';
@@ -29,6 +30,7 @@ async function main(): Promise<void> {
   const { rpc, rpcSubscriptions, network } = createSolanaClientsFromEnv();
   assertSolanaExampleNetwork(network, ['devnet', 'custom']);
   const deployment = await getSolanaCpmmDeploymentFromEnv(network);
+  const namespace = SYSTEM_PROGRAM_ADDRESS;
 
   const baseMint = await generateKeyPairSigner();
   const baseVault = await generateKeyPairSigner();
@@ -36,6 +38,7 @@ async function main(): Promise<void> {
 
   const { instruction, addresses, cpmmMigration } = await createLaunch({
     deployment,
+    namespace,
     launchAccounts: {
       baseMint,
       quoteMint: WSOL_MINT,
@@ -57,6 +60,7 @@ async function main(): Promise<void> {
     migration: {
       minRaiseQuote: LAMPORTS_PER_SOL,
     },
+    feeBeneficiaries: [{ wallet: payer.address, shareBps: 10_000 }],
   });
 
   if (!cpmmMigration) {
@@ -81,6 +85,7 @@ async function main(): Promise<void> {
   console.log('  Transaction:', signature);
 
   const launchAccount = await initializer.fetchLaunch(rpc, addresses.launch, {
+    commitment: 'confirmed',
     programId: deployment.initializerProgram,
   });
 

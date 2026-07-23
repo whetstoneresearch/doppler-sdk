@@ -14,6 +14,7 @@
  */
 import './env.js';
 
+import { SYSTEM_PROGRAM_ADDRESS } from '@solana-program/system';
 import {
   TOKEN_PROGRAM_ADDRESS,
   findAssociatedTokenPda,
@@ -34,12 +35,12 @@ import { fetchLaunchFeeState } from '../src/solana/generated/initializer/account
 import {
   DEFAULT_SWAP_FEE_BPS,
   DEFAULT_TEST_METADATA,
-  DEVNET_USDC_MINT as USDC_MINT,
   assertBigintEqual,
   assertSolanaExampleNetwork,
   assertTokenBalance,
   createSolanaClientsFromEnv,
   getSolanaCpmmDeploymentFromEnv,
+  getSolanaUsdcMintFromEnv,
   loadKeypairSignerFromEnv,
   sendInitializeLaunchWithLookupTable,
   sendInstructions,
@@ -55,6 +56,7 @@ async function main() {
   const { rpc, rpcSubscriptions, network } = createSolanaClientsFromEnv();
   assertSolanaExampleNetwork(network, ['devnet', 'custom']);
   const deployment = await getSolanaCpmmDeploymentFromEnv(network);
+  const USDC_MINT = getSolanaUsdcMintFromEnv(network);
 
   // ── Token supply ─────────────────────────────────────────────────────────
   const BASE_DECIMALS = 6;
@@ -98,7 +100,7 @@ async function main() {
   const quoteVault = await generateKeyPairSigner();
   const metadata = DEFAULT_TEST_METADATA;
 
-  const namespace = payer.address;
+  const namespace = SYSTEM_PROGRAM_ADDRESS;
   const launchId = initializer.launchIdFromU64(BigInt(Date.now()));
   const launchAddresses = await initializer.deriveCreateLaunchAddresses({
     deployment,

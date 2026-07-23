@@ -9,7 +9,7 @@ import './env.js';
 
 import { address, type Address } from '@solana/kit';
 
-import { swapExactIn } from '../src/solana/index.js';
+import { cpmm, swapExactIn } from '../src/solana/index.js';
 import {
   assertSolanaExampleNetwork,
   createSolanaClientsFromEnv,
@@ -38,32 +38,53 @@ async function main() {
   assertSolanaExampleNetwork(network, ['devnet', 'custom']);
   const deployment = await getSolanaCpmmDeploymentFromEnv(network);
 
+  const poolResult = await cpmm.getPoolByMints(rpc, MINT_0, MINT_1, {
+    commitment: 'confirmed',
+    programId: deployment.cpmmProgram,
+  });
+  if (!poolResult) {
+    throw new Error(`No pool found for ${MINT_0} / ${MINT_1}`);
+  }
+
   // ── Quote the swap ───────────────────────────────────────────────────────
-  // tradeDirection 0 = token0→token1, tradeDirection 1 = token1→token0.
-  const tradeDirection = (process.env.SWAP_DIRECTION === '1' ? 1 : 0) as 0 | 1;
+  // SWAP_INPUT_MINT is less error-prone than reasoning about canonical token
+  // ordering. SWAP_DIRECTION remains available for direct direction testing.
+  const configuredInputMint = process.env.SWAP_INPUT_MINT
+    ? address(process.env.SWAP_INPUT_MINT)
+    : undefined;
+  let tradeDirection: 0 | 1;
+  if (!configuredInputMint) {
+    tradeDirection = process.env.SWAP_DIRECTION === '1' ? 1 : 0;
+  } else if (poolResult.account.token0Mint === configuredInputMint) {
+    tradeDirection = 0;
+  } else if (poolResult.account.token1Mint === configuredInputMint) {
+    tradeDirection = 1;
+  } else {
+    throw new Error(
+      `SWAP_INPUT_MINT ${configuredInputMint} is not in the pool`,
+    );
+  }
   const AMOUNT_IN = BigInt(process.env.AMOUNT_IN ?? '1000000');
   const SLIPPAGE_BPS = 50n; // 0.5%
 
   console.log('Preparing exact-in swap...');
   const swap = await swapExactIn({
-    rpc,
     deployment,
+    pool: poolResult,
     payer,
-    mintA: MINT_0,
-    mintB: MINT_1,
     amountIn: AMOUNT_IN,
     tradeDirection,
     slippageBps: SLIPPAGE_BPS,
   });
 
-  const { address: poolAddress, account: pool } = swap.pool;
+  const { address: poolAddress, account: poolState } = swap.pool;
 
   console.log('  Pool address:  ', poolAddress);
-  console.log('  token0 mint:   ', pool.token0Mint);
-  console.log('  token1 mint:   ', pool.token1Mint);
-  console.log('  reserve0:      ', pool.reserve0.toString());
-  console.log('  reserve1:      ', pool.reserve1.toString());
-  console.log('  Swap fee:      ', pool.swapFeeBps, 'bps');
+  console.log('  token0 mint:   ', poolState.token0Mint);
+  console.log('  token1 mint:   ', poolState.token1Mint);
+  console.log('  reserve0:      ', poolState.reserve0.toString());
+  console.log('  reserve1:      ', poolState.reserve1.toString());
+  console.log('  Swap fee:      ', poolState.swapFeeBps, 'bps');
   console.log('');
 
   console.log(

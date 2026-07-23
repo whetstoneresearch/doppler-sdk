@@ -3,7 +3,7 @@
  *
  * Creates a CPMM-migratable launch with Doppler launch hook v1 cosigning enabled for
  * pre-migration swaps, proves an unsigned buy fails, executes one cosigned
- * bonding-curve buy with devnet USDC, migrates, then performs an ungated CPMM swap.
+ * bonding-curve buy with USDC, migrates, then performs an ungated CPMM swap.
  *
  * Configure two launch beneficiaries with:
  *   SOLANA_FEE_BENEFICIARY_1_WALLET / _BASE_AMOUNT / _SHARE_BPS
@@ -34,12 +34,12 @@ import {
 import {
   DEFAULT_SWAP_FEE_BPS,
   DEFAULT_TEST_METADATA,
-  DEVNET_USDC_MINT as USDC_MINT,
   assertSimulationRejected,
   assertSolanaExampleNetwork,
   assertTokenBalance,
   createSolanaClientsFromEnv,
   getSolanaCpmmDeploymentFromEnv,
+  getSolanaUsdcMintFromEnv,
   loadCosigner,
   loadKeypairSignerFromEnv,
   loadLaunchBeneficiaries,
@@ -55,6 +55,7 @@ async function main() {
   const { rpc, rpcSubscriptions, network } = createSolanaClientsFromEnv();
   assertSolanaExampleNetwork(network, ['devnet', 'custom']);
   const deployment = await getSolanaCpmmDeploymentFromEnv(network);
+  const USDC_MINT = getSolanaUsdcMintFromEnv(network);
   const managedCosignerGate =
     await dopplerLaunchHookV1.resolveManagedCosignerGate(rpc, {
       programId: deployment.dopplerLaunchHookV1Program,

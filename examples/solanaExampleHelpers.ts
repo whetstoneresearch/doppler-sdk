@@ -144,6 +144,22 @@ export async function getSolanaCpmmDeploymentFromEnv(
   return deriveSolanaCpmmDeployment(programs);
 }
 
+export function getSolanaUsdcMintFromEnv(
+  network: SolanaExampleNetwork = parseSolanaNetwork(
+    process.env.SOLANA_NETWORK ?? DEFAULT_SOLANA_EXAMPLE_NETWORK,
+  ),
+): Address {
+  const configuredMint = process.env.SOLANA_USDC_MINT?.trim();
+  if (configuredMint) {
+    return address(configuredMint);
+  }
+  if (network === 'devnet') {
+    return DEVNET_USDC_MINT;
+  }
+
+  throw new Error('SOLANA_USDC_MINT is required when SOLANA_NETWORK=custom');
+}
+
 export async function loadKeypairSignerFromEnv({
   pathEnv = 'SOLANA_KEYPAIR_PATH',
   jsonEnv = 'SOLANA_KEYPAIR',
