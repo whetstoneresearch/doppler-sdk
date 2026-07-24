@@ -1,5 +1,10 @@
 import type { Address, WalletClient } from 'viem';
 import type { SupportedPublicClient } from '../../types';
+import {
+  getPendingFeeBreakdownForMulticurveTokens,
+  type MulticurveTokenPendingFeeBreakdown,
+  type RehypePendingFees,
+} from './multicurve/multicurvePendingFeeBreakdown';
 import type { MulticurveTokenPendingFees } from './multicurve/multicurvePendingFees';
 import { getPendingFeesForMulticurveTokens } from './multicurve/multicurvePendingFeeReader';
 
@@ -79,6 +84,63 @@ export class MulticurveFees {
 
     return pendingFees;
   }
+
+  getPendingFeeBreakdown(
+    beneficiary: Address,
+  ): Promise<readonly MulticurveTokenPendingFeeBreakdown[]>;
+  getPendingFeeBreakdown(
+    beneficiary: Address,
+    options: MulticurveFeesOptions,
+  ): Promise<readonly MulticurveTokenPendingFeeBreakdown[]>;
+  getPendingFeeBreakdown(
+    beneficiary: Address,
+    tokenAddresses: readonly Address[],
+  ): Promise<readonly MulticurveTokenPendingFeeBreakdown[]>;
+  getPendingFeeBreakdown(
+    beneficiary: Address,
+    tokenAddresses: readonly Address[],
+    options: MulticurveFeesOptions,
+  ): Promise<readonly MulticurveTokenPendingFeeBreakdown[]>;
+  async getPendingFeeBreakdown(
+    beneficiary: Address,
+    tokenAddressesOrOptions?: readonly Address[] | MulticurveFeesOptions,
+    options?: MulticurveFeesOptions,
+  ): Promise<readonly MulticurveTokenPendingFeeBreakdown[]> {
+    const hasTokenAddressOverride = isTokenAddressList(tokenAddressesOrOptions);
+    const tokenAddresses = hasTokenAddressOverride
+      ? tokenAddressesOrOptions
+      : this.tokenAddresses;
+    const callOptions = hasTokenAddressOverride
+      ? options
+      : tokenAddressesOrOptions;
+    const tokenBatchSize = getTokenBatchSize(
+      callOptions?.tokenBatchSize ?? this.options.tokenBatchSize,
+    );
+
+    if (!tokenBatchSize || tokenAddresses.length <= tokenBatchSize) {
+      return getPendingFeeBreakdownForMulticurveTokens({
+        client: this.client,
+        beneficiary,
+        tokenAddresses,
+      });
+    }
+
+    let pendingFees: readonly MulticurveTokenPendingFeeBreakdown[] = [];
+    for (
+      let index = 0;
+      index < tokenAddresses.length;
+      index += tokenBatchSize
+    ) {
+      const batchPendingFees = await getPendingFeeBreakdownForMulticurveTokens({
+        client: this.client,
+        beneficiary,
+        tokenAddresses: tokenAddresses.slice(index, index + tokenBatchSize),
+      });
+      pendingFees = [...pendingFees, ...batchPendingFees];
+    }
+
+    return pendingFees;
+  }
 }
 
 function isTokenAddressList(
@@ -100,6 +162,8 @@ function getTokenBatchSize(tokenBatchSize: number | undefined) {
 }
 
 export type {
+  MulticurveTokenPendingFeeBreakdown,
   MulticurveTokenPendingFees,
   MulticurveFeesOptions as MulticurvePendingFeesOptions,
+  RehypePendingFees,
 };

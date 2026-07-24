@@ -4257,13 +4257,10 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       if (hookConfig) {
         dopplerHookAddress = hookConfig.hookAddress;
 
-        // TODO(PR #170): TEMPORARY chain selection for mixed Rehype deployments;
-        // revert the dedicated compatibility commit after the mainnet rollout.
         onInitializationDopplerHookCalldata =
           encodeRehypeDopplerHookInitializerData(
             params.sale.numeraire,
             hookConfig,
-            this.chainId,
           );
         graduationDopplerHookCalldata = hookConfig.graduationCalldata ?? '0x';
       }

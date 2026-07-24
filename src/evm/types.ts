@@ -1015,10 +1015,6 @@ type RehypeBuybackDestinationConfig = {
 
 type RehypeFeeBeneficiariesConfig = {
   buybackDestination?: never;
-  /**
-   * TODO(PR #170): TEMPORARY Base Sepolia-only deployment support. Remove this
-   * notice by reverting the dedicated compatibility commit after rollout.
-   */
   feeBeneficiaries: [BeneficiaryData, ...BeneficiaryData[]];
   feeRoutingMode?:
     | RehypeFeeRoutingMode.RouteToBeneficiaryFees

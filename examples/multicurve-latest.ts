@@ -10,6 +10,8 @@
  * - CLAIM_FEES=1
  * - CLAIM_VESTING=partial | full
  * - SCHEDULE_ID=0 applies CLAIM_VESTING to one schedule
+ * - REHYPE_FEE_BENEFICIARY_2 and REHYPE_FEE_BENEFICIARY_3 are required
+ *   when EXECUTE=1
  */
 import './env';
 
@@ -17,10 +19,9 @@ import {
   CHAIN_IDS,
   DAY_SECONDS,
   DopplerSDK,
-  FEE_TIERS,
-  RehypeFeeRoutingMode,
   WAD,
   getAddresses,
+  type BeneficiaryData,
 } from '../src/evm';
 import {
   createPublicClient,
@@ -61,6 +62,13 @@ async function main(): Promise<void> {
     throw new Error('RehypeDopplerHookInitializer is not configured');
   }
   const shouldExecute = process.env.EXECUTE === '1';
+  const rehypeFeeBeneficiary2 = readOptionalAddress('REHYPE_FEE_BENEFICIARY_2');
+  const rehypeFeeBeneficiary3 = readOptionalAddress('REHYPE_FEE_BENEFICIARY_3');
+  if (shouldExecute && (!rehypeFeeBeneficiary2 || !rehypeFeeBeneficiary3)) {
+    throw new Error(
+      'REHYPE_FEE_BENEFICIARY_2 and REHYPE_FEE_BENEFICIARY_3 are required when EXECUTE=1',
+    );
+  }
   const shouldClaimFees = process.env.CLAIM_FEES === '1';
   const vestingClaimMode = process.env.CLAIM_VESTING;
   if (
@@ -90,10 +98,23 @@ async function main(): Promise<void> {
   });
   const sdk = new DopplerSDK({ publicClient, walletClient, chainId });
 
-  const airlockBeneficiary = await sdk.getAirlockBeneficiary(WAD / 20n);
-  const poolFeeBeneficiaries = [
-    airlockBeneficiary,
-    { beneficiary: account.address, shares: WAD - airlockBeneficiary.shares },
+  const poolFeeBeneficiaries = [await sdk.getAirlockBeneficiary(WAD)];
+  const rehypeFeeBeneficiaries: [BeneficiaryData, ...BeneficiaryData[]] = [
+    // Airlock owner is not included in rehype fee beneficiaries, unlike pool beneficiaries
+    // Airlock's 5% fee is applied automatically within the rehype hook, before routing to the beneficiaries
+    { beneficiary: account.address, shares: WAD / 5n },
+    {
+      beneficiary:
+        rehypeFeeBeneficiary2 ??
+        getAddress('0x0000000000000000000000000000000000000001'),
+      shares: (WAD * 3n) / 10n,
+    },
+    {
+      beneficiary:
+        rehypeFeeBeneficiary3 ??
+        getAddress('0x0000000000000000000000000000000000000002'),
+      shares: WAD / 2n,
+    },
   ];
   const day = BigInt(DAY_SECONDS);
   const vestingAllocations = [
@@ -133,7 +154,8 @@ async function main(): Promise<void> {
     })
     .withCurves({
       numerairePrice,
-      fee: FEE_TIERS.LOW,
+      fee: 0,
+      tickSpacing: 8,
       beneficiaries: poolFeeBeneficiaries,
       curves: [
         {
@@ -154,15 +176,12 @@ async function main(): Promise<void> {
       ],
     })
     .withVesting({ allocations: vestingAllocations })
-    // TODO(PR #170): TEMPORARY legacy Robinhood config until its initializer
-    // accepts fee beneficiaries; revert the dedicated compatibility commit.
     .withRehypeDopplerHookInitializer({
       hookAddress: rehypeDopplerHookInitializer,
-      buybackDestination: account.address,
-      startFee: 3000,
-      endFee: 3000,
+      feeBeneficiaries: rehypeFeeBeneficiaries,
+      startFee: 12_000,
+      endFee: 12_000,
       durationSeconds: 0,
-      feeRoutingMode: RehypeFeeRoutingMode.RouteToBeneficiaryFees,
       // Send all fees to beneficiaries in numeraire
       feeDistributionInfo: {
         assetFeesToAssetBuybackWad: 0n,
@@ -182,7 +201,7 @@ async function main(): Promise<void> {
 
   console.log('Multicurve latest example');
   console.log('Deployer:', account.address);
-  console.log('Rehype numeraire fee recipient:', account.address);
+  console.log('Rehype fee beneficiaries:', rehypeFeeBeneficiaries);
 
   const simulation = await sdk.factory.simulateCreateMulticurve(params);
   console.log('Simulation OK');

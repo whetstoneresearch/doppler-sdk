@@ -6,7 +6,9 @@ export type { MulticurvePendingFees } from './MulticurvePool';
 export type {
   MulticurveFeesOptions,
   MulticurvePendingFeesOptions,
+  MulticurveTokenPendingFeeBreakdown,
   MulticurveTokenPendingFees,
+  RehypePendingFees,
 } from './MulticurveFees';
 export { RehypeDopplerHookInitializer } from './RehypeDopplerHookInitializer';
 export { RehypeDopplerHook } from './RehypeDopplerHook';

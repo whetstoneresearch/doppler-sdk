@@ -15,6 +15,8 @@ import type { MulticurvePoolState, V4PoolKey } from '../../../types';
 
 export interface InitializerDiscoveryResult {
   initializerAddress: Address;
+  initializerKind: MulticurveInitializerKind;
+  dopplerHookAddress: Address;
   state: MulticurvePoolState;
 }
 
@@ -43,6 +45,7 @@ interface ParsedInitializerState {
   status: number;
   poolKey: V4PoolKey;
   farTick: number;
+  dopplerHookAddress: Address;
 }
 
 const ABSENT_POOL_ERROR_ABI = [
@@ -187,9 +190,12 @@ export function parseMulticurveInitializerDiscoveryResult({
       ? parseDopplerHookInitializerState(stateData)
       : parseStandardInitializerState(stateData);
 
-  const { numeraire, status, poolKey, farTick } = parsedState;
+  const { numeraire, status, poolKey, farTick, dopplerHookAddress } =
+    parsedState;
   return {
     initializerAddress,
+    initializerKind: kind,
+    dopplerHookAddress,
     state: {
       asset: tokenAddress,
       numeraire,
@@ -237,6 +243,7 @@ function parseStandardInitializerState(
     status: Number(state.status ?? state[1]),
     poolKey: parseMulticurvePoolKey(state.poolKey ?? state[2]),
     farTick: Number(state.farTick ?? state[3]),
+    dopplerHookAddress: zeroAddress,
   };
 }
 
@@ -249,6 +256,7 @@ function parseDopplerHookInitializerState(
     status: Number(state.status ?? state[4]),
     poolKey: parseMulticurvePoolKey(state.poolKey ?? state[5]),
     farTick: Number(state.farTick ?? state[6]),
+    dopplerHookAddress: (state.dopplerHook ?? state[2]) as Address,
   };
 }
 
