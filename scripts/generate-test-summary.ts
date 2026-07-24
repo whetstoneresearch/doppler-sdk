@@ -17,6 +17,7 @@ const CHAIN_NAMES: Record<number, string> = {
   1301: 'Unichain Sepolia',
   10143: 'Monad Testnet',
   143: 'Monad Mainnet',
+  4663: 'Robinhood',
 };
 
 // Module name extraction from test titles

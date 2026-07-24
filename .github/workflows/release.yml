@@ -138,7 +138,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        chain: [base, base-sepolia, mainnet, monad-mainnet]
+        chain: [base, base-sepolia, mainnet, monad-mainnet, robinhood]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
