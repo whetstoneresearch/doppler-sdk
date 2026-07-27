@@ -263,6 +263,7 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       CHAIN_IDS.BASE,
       'DopplerERC20V1',
     ),
+    doppler404Factory: getGeneratedAddress(CHAIN_IDS.BASE, 'DN404Factory'),
     v3Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
       .UniswapV3Initializer as Address,
     v3Quoter: '0x3d4e44Eb1374240CE5F1B871ab261CD16335B76a' as Address,
@@ -348,7 +349,10 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       CHAIN_IDS.BASE_SEPOLIA,
       'DopplerERC20V1',
     ),
-    doppler404Factory: '0xdd8cea2890f1b3498436f19ec8da8fecc2cb7af7' as Address,
+    doppler404Factory: getGeneratedAddress(
+      CHAIN_IDS.BASE_SEPOLIA,
+      'DN404Factory',
+    ),
     v3Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
       .UniswapV3Initializer as Address,
     v3Quoter: '0xC5290058841028F1614F3A6F0F5816cAd0df5E27' as Address,

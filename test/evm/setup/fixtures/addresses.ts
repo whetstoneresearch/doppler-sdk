@@ -20,6 +20,9 @@ export const mockAddresses: ChainAddresses = {
   dopplerERC20V1Implementation: getAddress(
     '0x2000000000000000000000000000000000000006',
   ) as Address,
+  doppler404Factory: getAddress(
+    '0x2000000000000000000000000000000000000007',
+  ) as Address,
   v3Initializer: getAddress(
     '0x3000000000000000000000000000000000000003',
   ) as Address,

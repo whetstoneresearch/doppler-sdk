@@ -1,7 +1,14 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
-import { type Address } from 'viem'
+import {
+  concatHex,
+  encodeAbiParameters,
+  getAddress,
+  keccak256,
+} from 'viem'
 import {
   DopplerSDK,
+  DopplerDN404BaseSepoliaBytecode,
+  DopplerDN404Bytecode,
   getAddresses,
   CHAIN_IDS,
   WAD,
@@ -15,16 +22,6 @@ import {
   isAnvilForkEnabled,
   delay,
 } from '../../utils'
-
-const erc20MetadataAbi = [
-  {
-    name: 'name',
-    type: 'function',
-    inputs: [],
-    outputs: [{ name: '', type: 'string' }],
-    stateMutability: 'view',
-  },
-] as const
 
 describe('Multicurve + NoOp (no migration) + Doppler404 (Base Sepolia fork)', () => {
   if (!isAnvilForkEnabled()) {
@@ -128,12 +125,10 @@ describe('Multicurve + NoOp (no migration) + Doppler404 (Base Sepolia fork)', ()
         name: tokenName,
         symbol: 'FD404',
         baseURI: 'ipfs://example/',
-        // Critical: when using WAD-based 18-decimal supplies, unit must be scaled.
-        unit: 1000n * WAD,
       })
       .saleConfig({
-        initialSupply: 1_000_000n * WAD,
-        numTokensToSell: 900_000n * WAD,
+        initialSupply: 1_000n * WAD,
+        numTokensToSell: 900n * WAD,
         numeraire: addresses.weth,
       })
       .withMarketCapPresets({
@@ -148,6 +143,42 @@ describe('Multicurve + NoOp (no migration) + Doppler404 (Base Sepolia fork)', ()
     const sim = await sdk.factory.simulateCreateMulticurve(params)
     expect(sim.tokenAddress).toMatch(/^0x[a-fA-F0-9]{40}$/)
     expect(sim.poolId).toMatch(/^0x[a-fA-F0-9]{64}$/)
+    const constructorData = encodeAbiParameters(
+      [
+        { type: 'string' },
+        { type: 'string' },
+        { type: 'uint256' },
+        { type: 'address' },
+        { type: 'address' },
+        { type: 'string' },
+        { type: 'uint256' },
+      ],
+      [
+        tokenName,
+        'FD404',
+        1_000n * WAD,
+        addresses.airlock,
+        addresses.airlock,
+        'ipfs://example/',
+        WAD,
+      ],
+    )
+    const predictTokenAddress = (creationBytecode: `0x${string}`) =>
+      getAddress(
+        `0x${keccak256(
+          concatHex([
+            '0xff',
+            sim.createParams.tokenFactory,
+            sim.createParams.salt,
+            keccak256(concatHex([creationBytecode, constructorData])),
+          ]),
+        ).slice(-40)}`,
+      )
+
+    expect(
+      predictTokenAddress(DopplerDN404BaseSepoliaBytecode),
+    ).toBe(sim.tokenAddress)
+    expect(predictTokenAddress(DopplerDN404Bytecode)).not.toBe(sim.tokenAddress)
 
     // The SDK waits for 2 confirmations; keep mining blocks while awaiting it.
     let mining = true
@@ -167,20 +198,20 @@ describe('Multicurve + NoOp (no migration) + Doppler404 (Base Sepolia fork)', ()
       expect(res.poolId).toMatch(/^0x[a-fA-F0-9]{64}$/)
 
       const bytecode = await publicClient.getBytecode({
-        address: res.tokenAddress as Address,
+        address: res.tokenAddress,
       })
       expect(bytecode && bytecode !== '0x').toBe(true)
 
-      const deployedName = await publicClient.readContract({
-        address: res.tokenAddress as Address,
-        abi: erc20MetadataAbi,
-        functionName: 'name',
-      })
-      expect(deployedName).toBe(tokenName)
+      const token = sdk.getDopplerDN404(res.tokenAddress)
+      await expect(token.getName()).resolves.toBe(tokenName)
+      await expect(token.getUnit()).resolves.toBe(WAD)
+      await expect(token.getTotalSupply()).resolves.toBe(1_000n * WAD)
+      expect(await token.getMirrorERC721()).not.toBe(
+        '0x0000000000000000000000000000000000000000',
+      )
     } finally {
       mining = false
       await miner
     }
   }, 120_000)
 })
-
