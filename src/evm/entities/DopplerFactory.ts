@@ -90,12 +90,12 @@ import {
   DERC20Bytecode,
   DERC2080Bytecode,
   DopplerBytecode,
-  DopplerDN404Bytecode,
   OpeningAuctionBytecode,
   v4MulticurveInitializerAbi,
   openingAuctionAbi,
   openingAuctionInitializerAbi,
 } from '../abis';
+import { getDopplerDN404Bytecode } from '../utils/tokenAddressMiner';
 
 // Type definition for the custom migration encoder function
 export type MigrationEncoder = (config: MigrationConfig) => Hex;
@@ -932,6 +932,26 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     }
   }
 
+  private assertDoppler404Compatibility(args: {
+    token: TokenConfig;
+    vesting?: VestingConfig;
+    configuredFactory?: Address;
+  }): void {
+    if (!this.isDoppler404Token(args.token)) {
+      return;
+    }
+
+    if (!args.configuredFactory || args.configuredFactory === ZERO_ADDRESS) {
+      throw new Error(
+        'Doppler404 factory address not configured for this chain',
+      );
+    }
+
+    if (args.vesting !== undefined) {
+      throw new Error('Doppler404 tokens do not support vesting');
+    }
+  }
+
   private buildStandardTokenFactoryData(args: {
     token: StandardTokenConfig;
     sale: SaleConfig;
@@ -1172,6 +1192,11 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     this.validateStaticAuctionParams(params);
 
     const addresses = getAddresses(this.chainId);
+    this.assertDoppler404Compatibility({
+      token: params.token,
+      vesting: params.vesting,
+      configuredFactory: addresses.doppler404Factory,
+    });
 
     // Check if beneficiaries are provided - this determines which initializer to use
     const hasBeneficiaries =
@@ -1315,7 +1340,7 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     if (this.isDoppler404Token(params.token)) {
       const token404 = params.token;
       const baseURI = token404.baseURI;
-      const unit = token404.unit !== undefined ? BigInt(token404.unit) : 1000n;
+      const unit = token404.unit !== undefined ? BigInt(token404.unit) : WAD;
       tokenFactoryData = encodeAbiParameters(
         [
           { type: 'string' },
@@ -1801,6 +1826,11 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     this.validateDynamicAuctionParams(params);
 
     const addresses = getAddresses(this.chainId);
+    this.assertDoppler404Compatibility({
+      token: params.token,
+      vesting: params.vesting,
+      configuredFactory: addresses.doppler404Factory,
+    });
 
     // 1. Calculate gamma if not provided
     const gamma =
@@ -1849,17 +1879,6 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     };
 
     // 4. Prepare token parameters (standard vs Doppler404)
-    if (this.isDoppler404Token(params.token)) {
-      if (
-        !addresses.doppler404Factory ||
-        addresses.doppler404Factory === ZERO_ADDRESS
-      ) {
-        throw new Error(
-          'Doppler404 factory address not configured for this chain',
-        );
-      }
-    }
-
     const resolvedTokenFactoryDyn: Address | undefined =
       params.modules?.tokenFactory ??
       (this.isDoppler404Token(params.token)
@@ -1904,7 +1923,7 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
             name: t.name,
             symbol: t.symbol,
             baseURI: t.baseURI,
-            unit: t.unit !== undefined ? BigInt(t.unit) : 1000n,
+            unit: t.unit !== undefined ? BigInt(t.unit) : WAD,
           };
         })()
       : this.isDopplerERC20V1Token(params.token)
@@ -2251,6 +2270,11 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
   }> {
     this.validateOpeningAuctionParams(params);
     const addresses = getAddresses(this.chainId);
+    this.assertDoppler404Compatibility({
+      token: params.token,
+      vesting: params.vesting,
+      configuredFactory: addresses.doppler404Factory,
+    });
 
     const openingAuctionInitializer =
       this.resolveOpeningAuctionInitializerAddress(params.modules, addresses);
@@ -2372,17 +2396,6 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       ],
     );
 
-    if (this.isDoppler404Token(params.token)) {
-      if (
-        !addresses.doppler404Factory ||
-        addresses.doppler404Factory === ZERO_ADDRESS
-      ) {
-        throw new Error(
-          'Doppler404 factory address not configured for this chain',
-        );
-      }
-    }
-
     const resolvedTokenFactory: Address | undefined =
       params.modules?.tokenFactory ??
       (this.isDoppler404Token(params.token)
@@ -2420,7 +2433,7 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
             name: t.name,
             symbol: t.symbol,
             baseURI: t.baseURI,
-            unit: t.unit !== undefined ? BigInt(t.unit) : 1000n,
+            unit: t.unit !== undefined ? BigInt(t.unit) : WAD,
           };
         })()
       : this.isDopplerERC20V1Token(params.token)
@@ -3555,7 +3568,7 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
                 { type: 'string' },
                 { type: 'uint256' },
               ],
-              [t.name, t.symbol, t.baseURI, t.unit ?? 1000n],
+              [t.name, t.symbol, t.baseURI, t.unit ?? WAD],
             );
           })()
         : params.tokenVariant === 'dopplerERC20V1'
@@ -3572,6 +3585,7 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
         name: string;
         symbol: string;
         baseURI: string;
+        unit?: bigint;
       };
       const initData = encodeAbiParameters(
         [
@@ -3581,6 +3595,7 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
           { type: 'address' },
           { type: 'address' },
           { type: 'string' },
+          { type: 'uint256' },
         ],
         [
           t.name,
@@ -3589,12 +3604,18 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
           params.airlock,
           params.airlock,
           t.baseURI,
+          t.unit ?? WAD,
         ],
       );
       tokenInitHash = keccak256(
         encodePacked(
           ['bytes', 'bytes'],
-          [DopplerDN404Bytecode as Hex, initData],
+          [
+            getDopplerDN404Bytecode(
+              params.addresses?.doppler404Factory ?? params.tokenFactory,
+            ),
+            initData,
+          ],
         ),
       );
     } else if (params.tokenVariant === 'dopplerERC20V1') {
@@ -4386,6 +4407,12 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       );
     }
 
+    this.assertDoppler404Compatibility({
+      token: params.token,
+      vesting: params.vesting,
+      configuredFactory: addresses.doppler404Factory,
+    });
+
     const resolvedTokenFactory: Address | undefined =
       params.modules?.tokenFactory ??
       (this.isDoppler404Token(params.token)
@@ -4412,7 +4439,7 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     let tokenFactoryData: Hex | undefined = undefined;
     if (this.isDoppler404Token(params.token)) {
       const token404 = params.token;
-      const unit = token404.unit !== undefined ? BigInt(token404.unit) : 1000n;
+      const unit = token404.unit !== undefined ? BigInt(token404.unit) : WAD;
       tokenFactoryData = encodeAbiParameters(
         [
           { type: 'string' },
@@ -6025,7 +6052,7 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
                 { type: 'string' },
                 { type: 'uint256' },
               ],
-              [t.name, t.symbol, t.baseURI, t.unit ?? 1000n],
+              [t.name, t.symbol, t.baseURI, t.unit ?? WAD],
             );
           })()
         : params.tokenVariant === 'dopplerERC20V1'
@@ -6039,14 +6066,13 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     // Compute token init hash; use DN404 bytecode if tokenVariant is doppler404
     let tokenInitHash: Hash | undefined;
     if (params.tokenVariant === 'doppler404') {
-      const { name, symbol, baseURI } = params.tokenFactoryData as {
+      const { name, symbol, baseURI, unit } = params.tokenFactoryData as {
         name: string;
         symbol: string;
         baseURI: string;
         unit?: bigint;
       };
       const { airlock, initialSupply } = params;
-      // DN404 constructor: (name, symbol, initialSupply, recipient, owner, baseURI)
       const initHashData = encodeAbiParameters(
         [
           { type: 'string' },
@@ -6055,13 +6081,19 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
           { type: 'address' },
           { type: 'address' },
           { type: 'string' },
+          { type: 'uint256' },
         ],
-        [name, symbol, initialSupply, airlock, airlock, baseURI],
+        [name, symbol, initialSupply, airlock, airlock, baseURI, unit ?? WAD],
       );
       tokenInitHash = keccak256(
         encodePacked(
           ['bytes', 'bytes'],
-          [DopplerDN404Bytecode as Hex, initHashData],
+          [
+            getDopplerDN404Bytecode(
+              params.addresses?.doppler404Factory ?? params.tokenFactory,
+            ),
+            initHashData,
+          ],
         ),
       );
     } else if (params.tokenVariant === 'dopplerERC20V1') {

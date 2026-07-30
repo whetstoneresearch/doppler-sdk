@@ -22,7 +22,12 @@ import {
   OpeningAuctionPositionManager,
 } from './entities/auction';
 import { Quoter } from './entities/quoter';
-import { Derc20, Derc20V2, DopplerERC20V1 } from './entities/token';
+import {
+  Derc20,
+  Derc20V2,
+  DopplerDN404,
+  DopplerERC20V1,
+} from './entities/token';
 import { TopUpDistributor } from './entities/TopUpDistributor';
 import {
   StaticAuctionBuilder,
@@ -284,6 +289,14 @@ export class DopplerSDK<C extends SupportedChainId = SupportedChainId> {
       this.walletClient,
       tokenAddress,
     );
+  }
+
+  /**
+   * Get a Doppler DN404 token instance for hybrid ERC-20/ERC-721 interaction.
+   * @param tokenAddress The address of the Doppler DN404 token
+   */
+  getDopplerDN404(tokenAddress: Address): DopplerDN404 {
+    return new DopplerDN404(this.publicClient, this.walletClient, tokenAddress);
   }
 
   /**

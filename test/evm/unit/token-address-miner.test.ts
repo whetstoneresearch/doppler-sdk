@@ -13,6 +13,7 @@ import {
   DERC20Bytecode,
   DERC2080Bytecode,
   DopplerDN404Bytecode,
+  DopplerDN404BaseSepoliaBytecode,
 } from '../../../src/evm/abis';
 
 const TOKEN_FACTORY = '0x0000000000000000000000000000000000000fac' as Address;
@@ -447,6 +448,7 @@ describe('mineTokenAddress', () => {
         { type: 'address' },
         { type: 'address' },
         { type: 'string' },
+        { type: 'uint256' },
       ],
       [
         'Vanity404',
@@ -455,6 +457,7 @@ describe('mineTokenAddress', () => {
         RECIPIENT,
         OWNER,
         'ipfs://metadata',
+        1000n,
       ],
     );
     const initHash = keccak256(
@@ -469,6 +472,59 @@ describe('mineTokenAddress', () => {
       TOKEN_FACTORY,
     );
     expect(manualAddress).toBe(result.tokenAddress);
+  });
+
+  it('uses the Base Sepolia Doppler404 deployment bytecode', () => {
+    const tokenFactory =
+      '0x98b0Aa2e0f134dbB3eb157b5646D387E6D55243a' as Address;
+    const initialSupply = 42_000n;
+    const unit = 25n * 10n ** 18n;
+    const tokenData = encodeAbiParameters(DOPPLER404_TOKEN_ABI, [
+      'Vanity404',
+      'VNY404',
+      'ipfs://metadata',
+      unit,
+    ]);
+
+    const result = mineTokenAddress({
+      prefix: '1',
+      tokenFactory,
+      initialSupply,
+      recipient: RECIPIENT,
+      owner: OWNER,
+      tokenData,
+      tokenVariant: 'doppler404',
+    });
+    const initHashData = encodeAbiParameters(
+      [
+        { type: 'string' },
+        { type: 'string' },
+        { type: 'uint256' },
+        { type: 'address' },
+        { type: 'address' },
+        { type: 'string' },
+        { type: 'uint256' },
+      ],
+      [
+        'Vanity404',
+        'VNY404',
+        initialSupply,
+        RECIPIENT,
+        OWNER,
+        'ipfs://metadata',
+        unit,
+      ],
+    );
+    const initHash = keccak256(
+      encodePacked(
+        ['bytes', 'bytes'],
+        [DopplerDN404BaseSepoliaBytecode as Hex, initHashData],
+      ),
+    ) as Hash;
+
+    expect(computeCreate2Address(result.salt, initHash, tokenFactory)).toBe(
+      result.tokenAddress,
+    );
   });
 
   it('returns hook address when hook configuration is provided', () => {

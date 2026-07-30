@@ -12,6 +12,7 @@ import {
   DERC20Bytecode,
   DERC2080Bytecode,
   DopplerDN404Bytecode,
+  DopplerDN404BaseSepoliaBytecode,
 } from '../abis';
 
 const DEFAULT_MAX_ITERATIONS = 1_000_000;
@@ -25,9 +26,18 @@ export type TokenVariant =
 // TokenFactory80 has the same deterministic CREATE2 address across all chains where it is deployed.
 const TOKEN_FACTORY_80_ADDRESS =
   '0xf0B5141dD9096254B2ca624dff26024f46087229' as const;
+const BASE_SEPOLIA_DOPPLER404_FACTORY =
+  '0x98b0Aa2e0f134dbB3eb157b5646D387E6D55243a' as const;
 
 function isTokenFactory80(tokenFactory: Address): boolean {
   return tokenFactory.toLowerCase() === TOKEN_FACTORY_80_ADDRESS.toLowerCase();
+}
+
+export function getDopplerDN404Bytecode(tokenFactory: Address): Hex {
+  return tokenFactory.toLowerCase() ===
+    BASE_SEPOLIA_DOPPLER404_FACTORY.toLowerCase()
+    ? DopplerDN404BaseSepoliaBytecode
+    : DopplerDN404Bytecode;
 }
 
 export interface TokenAddressHookConfig {
@@ -243,10 +253,10 @@ function buildTokenInitHash(params: {
   } = params;
 
   if (variant === 'doppler404') {
-    const [name, symbol, baseURI] = decodeAbiParameters(
+    const [name, symbol, baseURI, unit] = decodeAbiParameters(
       DOPPLER404_TOKEN_DATA_ABI,
       tokenData,
-    ) as readonly [string, string, string, bigint | undefined];
+    );
 
     const initHashData = encodeAbiParameters(
       [
@@ -256,14 +266,15 @@ function buildTokenInitHash(params: {
         { type: 'address' },
         { type: 'address' },
         { type: 'string' },
+        { type: 'uint256' },
       ],
-      [name, symbol, initialSupply, recipient, owner, baseURI],
+      [name, symbol, initialSupply, recipient, owner, baseURI, unit],
     );
 
     return keccak256(
       encodePacked(
         ['bytes', 'bytes'],
-        [customBytecode ?? (DopplerDN404Bytecode as Hex), initHashData],
+        [customBytecode ?? getDopplerDN404Bytecode(tokenFactory), initHashData],
       ),
     ) as Hash;
   }

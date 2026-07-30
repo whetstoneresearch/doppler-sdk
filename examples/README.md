@@ -22,7 +22,7 @@ Create a multicurve auction with fee streaming to multiple beneficiaries. Uses N
 
 ### 4a. [Multicurve No-Migration + Doppler404 (DN404-style)](./multicurve-noop-doppler404.ts)
 
-Create a multicurve auction on Base Sepolia using NoOp migration (no liquidity migration) and a Doppler404 token. Defaults to simulation-only; set `EXECUTE=1` to broadcast.
+Create a multicurve auction on Base Sepolia using NoOp migration (no liquidity migration) and a Doppler404 token. Demonstrates the default one-token-per-NFT unit and post-launch access through `sdk.getDopplerDN404(...)`. Defaults to simulation-only; set `EXECUTE=1` to broadcast.
 
 ### 5. [Multicurve Fee Collection](./multicurve-collect-fees.ts)
 

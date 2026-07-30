@@ -1,5 +1,6 @@
 export { default as DopplerBytecode } from './bytecodes/doppler';
 export { default as DopplerDN404Bytecode } from './bytecodes/dopplerDN404';
+export { default as DopplerDN404BaseSepoliaBytecode } from './bytecodes/dopplerDN404BaseSepolia';
 export { default as OpeningAuctionBytecode } from './bytecodes/openingAuction';
 export { default as DERC20Bytecode } from './bytecodes/derc20';
 export { default as DERC2080Bytecode } from './bytecodes/derc2080';

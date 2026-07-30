@@ -65,15 +65,12 @@ async function main() {
       symbol: 'D404',
       // This should be a baseURI that resolves tokenIds -> metadata (e.g. IPFS folder CID).
       baseURI: 'ipfs://REPLACE_WITH_YOUR_BASE_URI/',
-      // IMPORTANT:
-      // Doppler404/DN404-style tokens have a "unit" used for the ERC20 <-> ERC721 relationship.
-      // When using 18-decimal token amounts (we do, via `WAD`), set unit in the same base units.
-      // Example: 1000 whole tokens per NFT => 1000 * 1e18.
-      unit: 1000n * WAD,
+      // `unit` defaults to WAD: one full ERC-20 token per NFT.
+      // Set it explicitly to change the ratio, for example `unit: 25n * WAD`.
     })
     .saleConfig({
-      initialSupply: 1_000_000n * WAD,
-      numTokensToSell: 900_000n * WAD,
+      initialSupply: 1_000n * WAD,
+      numTokensToSell: 900n * WAD,
       numeraire: addresses.weth, // WETH on Base Sepolia
     })
     .withMarketCapPresets({
@@ -121,6 +118,10 @@ async function main() {
   console.log('  Token address:', result.tokenAddress);
   console.log('  Pool ID:', result.poolId);
   console.log('  Transaction:', result.transactionHash);
+
+  const token = sdk.getDopplerDN404(result.tokenAddress);
+  console.log('  DN404 unit:', (await token.getUnit()).toString());
+  console.log('  ERC721 mirror:', await token.getMirrorERC721());
 }
 
 main().catch((err) => {

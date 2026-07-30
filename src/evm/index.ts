@@ -38,7 +38,13 @@ export type {
 export { Quoter } from './entities/quoter';
 
 // Export token entities
-export { Derc20, Derc20V2, DopplerERC20V1, Eth } from './entities/token';
+export {
+  Derc20,
+  Derc20V2,
+  DopplerDN404,
+  DopplerERC20V1,
+  Eth,
+} from './entities/token';
 
 // Export builders and common interface
 export {

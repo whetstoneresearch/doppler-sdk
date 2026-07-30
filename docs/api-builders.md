@@ -574,7 +574,10 @@ const { tokenAddress: token4, openingAuctionHookAddress } = await sdk.factory.cr
 ```
 
 Notes:
-- For doppler404 tokens, ensure `doppler404Factory` is configured on your target chain (see `src/addresses.ts`).
-- Doppler404 tokenConfig supports optional `unit?: bigint` which defaults to `1000` when omitted.
+- Doppler404 launches require a configured `doppler404Factory`. They are currently supported on Robinhood, Base, and Base Sepolia. A generic `withTokenFactory(address)` override does not enable Doppler404 on another chain.
+- Doppler404 tokenConfig supports optional `unit?: bigint`. It defaults to `WAD` (`1e18`), so one full 18-decimal ERC-20 token corresponds to one NFT. Set `unit` explicitly to choose another ERC-20 base-unit threshold.
+- Size `initialSupply` and `unit` together: the maximum NFT count is approximately `initialSupply / unit`. Very large NFT counts can make launch transfers exceed practical gas limits.
+- Doppler404 does not support vesting. The factory rejects any Doppler404 launch with `withVesting(...)`.
+- After launch, use `sdk.getDopplerDN404(tokenAddress)` to read ERC-20 state, `unit`, `baseURI`, the ERC-721 mirror, NFT supply, and skip-NFT preferences, or to approve, transfer, and update the caller's skip-NFT preference.
 - `integrator` defaults to zero address when omitted.
 - `withTime` is relevant to dynamic and opening-auction builders.

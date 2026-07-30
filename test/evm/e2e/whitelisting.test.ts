@@ -120,8 +120,13 @@ type StreamableFeesLockerCase = {
 const SKIPPED_AIRLOCK_MODULES_BY_CHAIN: Partial<
   Record<SupportedChainId, readonly string[]>
 > = {
-  [CHAIN_IDS.MAINNET]: ['UniswapV2MigratorSplit', 'UniswapV4MigratorSplit'],
+  [CHAIN_IDS.MAINNET]: [
+    'DN404Factory',
+    'UniswapV2MigratorSplit',
+    'UniswapV4MigratorSplit',
+  ],
   [CHAIN_IDS.MONAD_MAINNET]: [
+    'DN404Factory',
     'UniswapV2MigratorSplit',
     'UniswapV4MigratorSplit',
   ],
@@ -373,6 +378,12 @@ describe('Airlock Module Whitelisting', () => {
           title: `DopplerERC20V1Factory (${addresses.dopplerERC20V1Factory}) whitelisted`,
           module: 'DopplerERC20V1Factory',
           address: addresses.dopplerERC20V1Factory,
+          expectedState: ModuleState.TokenFactory,
+        },
+        {
+          title: `DN404Factory (${addresses.doppler404Factory}) whitelisted`,
+          module: 'DN404Factory',
+          address: addresses.doppler404Factory,
           expectedState: ModuleState.TokenFactory,
         },
         {

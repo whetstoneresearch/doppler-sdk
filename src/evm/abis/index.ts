@@ -2,6 +2,7 @@ import { feesManagerAbi } from './multicurve/feeClaimsAbi';
 
 // Core contract ABIs needed for static and dynamic auctions
 
+export { dopplerDN404Abi } from './dopplerDN404';
 export {
   feeClaimsInitializerAbi,
   feesManagerAbi,
@@ -5153,6 +5154,7 @@ export {
   DERC2080Bytecode,
   DopplerBytecode,
   DopplerDN404Bytecode,
+  DopplerDN404BaseSepoliaBytecode,
   OpeningAuctionBytecode,
   StateViewBytecode,
 } from './bytecodes';

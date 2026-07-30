@@ -47,7 +47,7 @@ export interface Doppler404TokenConfig {
   name: string;
   symbol: string;
   baseURI: string;
-  // Optional unit for DN404 factory (uint256). Defaults to 1000 when omitted.
+  // Optional base-unit threshold per NFT. Defaults to WAD (1e18), or one full token.
   unit?: bigint;
 }
 
