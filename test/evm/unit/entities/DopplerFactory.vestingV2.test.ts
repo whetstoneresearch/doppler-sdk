@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { decodeAbiParameters, getAddress, parseEther, type Address } from 'viem';
+import {
+  decodeAbiParameters,
+  getAddress,
+  parseEther,
+  type Address,
+} from 'viem';
 import { DAY_SECONDS, WAD } from '../../../../src/evm/constants';
 import {
   DynamicAuctionBuilder,
@@ -73,6 +78,7 @@ describe('DopplerFactory V2 cliff vesting', () => {
   it('uses the V2 factory for static auctions with cliffs', async () => {
     const params = StaticAuctionBuilder.forChain(1)
       .tokenConfig({
+        type: 'standard',
         name: 'Static Cliff',
         symbol: 'STCL',
         tokenURI: 'ipfs://static-cliff',
@@ -105,7 +111,10 @@ describe('DopplerFactory V2 cliff vesting', () => {
     expect(decoded[0]).toBe('Static Cliff');
     expect(decoded[1]).toBe('STCL');
     expect(decoded[3]).toEqual([
-      { cliff: 90n * BigInt(DAY_SECONDS), duration: 180n * BigInt(DAY_SECONDS) },
+      {
+        cliff: 90n * BigInt(DAY_SECONDS),
+        duration: 180n * BigInt(DAY_SECONDS),
+      },
     ]);
     expect(decoded[4]).toEqual([
       getAddress(userAddress),
@@ -118,6 +127,7 @@ describe('DopplerFactory V2 cliff vesting', () => {
   it('uses the V2 factory for dynamic auctions with cliffs', async () => {
     const params = DynamicAuctionBuilder.forChain(1)
       .tokenConfig({
+        type: 'standard',
         name: 'Dynamic Cliff',
         symbol: 'DYCL',
         tokenURI: 'ipfs://dynamic-cliff',
@@ -148,14 +158,16 @@ describe('DopplerFactory V2 cliff vesting', () => {
       .withUserAddress(userAddress)
       .build();
 
-    const { createParams } = await factory.encodeCreateDynamicAuctionParams(
-      params,
-    );
+    const { createParams } =
+      await factory.encodeCreateDynamicAuctionParams(params);
     const decoded = decodeV2TokenFactoryData(createParams.tokenFactoryData);
 
     expect(createParams.tokenFactory).toBe(mockAddresses.derc20V2Factory);
     expect(decoded[3]).toEqual([
-      { cliff: 90n * BigInt(DAY_SECONDS), duration: 180n * BigInt(DAY_SECONDS) },
+      {
+        cliff: 90n * BigInt(DAY_SECONDS),
+        duration: 180n * BigInt(DAY_SECONDS),
+      },
     ]);
     expect(decoded[4]).toEqual([userAddress]);
     expect(decoded[5]).toEqual([0n]);
@@ -165,6 +177,7 @@ describe('DopplerFactory V2 cliff vesting', () => {
   it('assigns one custom schedule per allocation', async () => {
     const params = StaticAuctionBuilder.forChain(1)
       .tokenConfig({
+        type: 'standard',
         name: 'Scheduled Cliff',
         symbol: 'SCFL',
         tokenURI: 'ipfs://scheduled-cliff',
@@ -209,8 +222,14 @@ describe('DopplerFactory V2 cliff vesting', () => {
 
     expect(createParams.tokenFactory).toBe(mockAddresses.derc20V2Factory);
     expect(decoded[3]).toEqual([
-      { cliff: 30n * BigInt(DAY_SECONDS), duration: 180n * BigInt(DAY_SECONDS) },
-      { cliff: 90n * BigInt(DAY_SECONDS), duration: 365n * BigInt(DAY_SECONDS) },
+      {
+        cliff: 30n * BigInt(DAY_SECONDS),
+        duration: 180n * BigInt(DAY_SECONDS),
+      },
+      {
+        cliff: 90n * BigInt(DAY_SECONDS),
+        duration: 365n * BigInt(DAY_SECONDS),
+      },
     ]);
     expect(decoded[4]).toEqual([
       getAddress(userAddress),
@@ -223,6 +242,7 @@ describe('DopplerFactory V2 cliff vesting', () => {
   it('dedupes identical allocation schedules across recipients', () => {
     const params = MulticurveBuilder.forChain(1)
       .tokenConfig({
+        type: 'standard',
         name: 'Mapped Schedules',
         symbol: 'MAP',
         tokenURI: 'ipfs://mapped-schedules',
@@ -281,7 +301,10 @@ describe('DopplerFactory V2 cliff vesting', () => {
     const decoded = decodeV2TokenFactoryData(createParams.tokenFactoryData);
 
     expect(decoded[3]).toEqual([
-      { cliff: 30n * BigInt(DAY_SECONDS), duration: 180n * BigInt(DAY_SECONDS) },
+      {
+        cliff: 30n * BigInt(DAY_SECONDS),
+        duration: 180n * BigInt(DAY_SECONDS),
+      },
       {
         cliff: 120n * BigInt(DAY_SECONDS),
         duration: 365n * BigInt(DAY_SECONDS),
@@ -304,6 +327,7 @@ describe('DopplerFactory V2 cliff vesting', () => {
 
     const params = OpeningAuctionBuilder.forChain(1)
       .tokenConfig({
+        type: 'standard',
         name: 'Opening Cliff',
         symbol: 'OPCL',
         tokenURI: 'ipfs://opening-cliff',
@@ -343,14 +367,16 @@ describe('DopplerFactory V2 cliff vesting', () => {
       .withOpeningAuctionInitializer(mockAddresses.v4Initializer)
       .build();
 
-    const { createParams } = await factory.encodeCreateOpeningAuctionParams(
-      params,
-    );
+    const { createParams } =
+      await factory.encodeCreateOpeningAuctionParams(params);
     const decoded = decodeV2TokenFactoryData(createParams.tokenFactoryData);
 
     expect(createParams.tokenFactory).toBe(mockAddresses.derc20V2Factory);
     expect(decoded[3]).toEqual([
-      { cliff: 90n * BigInt(DAY_SECONDS), duration: 180n * BigInt(DAY_SECONDS) },
+      {
+        cliff: 90n * BigInt(DAY_SECONDS),
+        duration: 180n * BigInt(DAY_SECONDS),
+      },
     ]);
     expect(decoded[4]).toEqual([userAddress]);
     expect(decoded[5]).toEqual([0n]);
@@ -360,6 +386,7 @@ describe('DopplerFactory V2 cliff vesting', () => {
   it('uses the V2 factory for multicurve auctions with cliffs', () => {
     const params = MulticurveBuilder.forChain(1)
       .tokenConfig({
+        type: 'standard',
         name: 'Multicurve Cliff',
         symbol: 'MUCL',
         tokenURI: 'ipfs://multicurve-cliff',
@@ -395,7 +422,10 @@ describe('DopplerFactory V2 cliff vesting', () => {
 
     expect(createParams.tokenFactory).toBe(mockAddresses.derc20V2Factory);
     expect(decoded[3]).toEqual([
-      { cliff: 90n * BigInt(DAY_SECONDS), duration: 180n * BigInt(DAY_SECONDS) },
+      {
+        cliff: 90n * BigInt(DAY_SECONDS),
+        duration: 180n * BigInt(DAY_SECONDS),
+      },
     ]);
     expect(decoded[4]).toEqual([userAddress]);
     expect(decoded[5]).toEqual([0n]);
@@ -405,6 +435,7 @@ describe('DopplerFactory V2 cliff vesting', () => {
   it('rejects cliff durations greater than the vesting duration', () => {
     const params = MulticurveBuilder.forChain(1)
       .tokenConfig({
+        type: 'standard',
         name: 'Bad Cliff',
         symbol: 'BAD',
         tokenURI: 'ipfs://bad-cliff',
@@ -443,6 +474,7 @@ describe('DopplerFactory V2 cliff vesting', () => {
   it('rejects cliff vesting durations shorter than one day', () => {
     const params = MulticurveBuilder.forChain(1)
       .tokenConfig({
+        type: 'standard',
         name: 'Short Cliff',
         symbol: 'SHRT',
         tokenURI: 'ipfs://short-cliff',
@@ -481,6 +513,7 @@ describe('DopplerFactory V2 cliff vesting', () => {
   it('rejects direct factory caller input that mixes allocations with shared vesting fields', () => {
     const params = MulticurveBuilder.forChain(1)
       .tokenConfig({
+        type: 'standard',
         name: 'Mixed Schedules',
         symbol: 'MIX',
         tokenURI: 'ipfs://mixed-schedules',
@@ -531,6 +564,7 @@ describe('DopplerFactory V2 cliff vesting', () => {
   it('rejects empty allocation arrays', () => {
     const params = MulticurveBuilder.forChain(1)
       .tokenConfig({
+        type: 'standard',
         name: 'Empty Allocations',
         symbol: 'EMPTY',
         tokenURI: 'ipfs://empty-allocations',
@@ -568,6 +602,7 @@ describe('DopplerFactory V2 cliff vesting', () => {
   it('rejects non-integer allocation schedule values for direct factory callers', () => {
     const params = MulticurveBuilder.forChain(1)
       .tokenConfig({
+        type: 'standard',
         name: 'Fractional Schedule',
         symbol: 'FRACT',
         tokenURI: 'ipfs://fractional-schedule',
@@ -616,6 +651,7 @@ describe('DopplerFactory V2 cliff vesting', () => {
   it('rejects non-safe allocation schedule values for direct factory callers', () => {
     const params = MulticurveBuilder.forChain(1)
       .tokenConfig({
+        type: 'standard',
         name: 'Unsafe Schedule',
         symbol: 'UNSAFE',
         tokenURI: 'ipfs://unsafe-schedule',
@@ -665,6 +701,7 @@ describe('DopplerFactory V2 cliff vesting', () => {
   it('rejects legacy tokenFactory overrides when cliffs are requested', async () => {
     const params = StaticAuctionBuilder.forChain(1)
       .tokenConfig({
+        type: 'standard',
         name: 'Legacy Override',
         symbol: 'LEGO',
         tokenURI: 'ipfs://legacy-override',
@@ -689,7 +726,9 @@ describe('DopplerFactory V2 cliff vesting', () => {
       .withTokenFactory(mockAddresses.tokenFactory)
       .build();
 
-    await expect(factory.encodeCreateStaticAuctionParams(params)).rejects.toThrow(
+    await expect(
+      factory.encodeCreateStaticAuctionParams(params),
+    ).rejects.toThrow(
       'Cliff vesting requires the DERC20 V2 factory. Remove the tokenFactory override or point it at the chain DERC20 V2 factory.',
     );
   });

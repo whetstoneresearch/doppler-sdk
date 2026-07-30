@@ -496,8 +496,8 @@ export class MulticurveBuilder<
     const currentType = this.initializer?.type;
     if (
       currentType === undefined ||
-      currentType === 'standard' ||
-      currentType === nextType
+      currentType === nextType ||
+      (currentType === 'dopplerHookInitializer' && nextType === 'rehype')
     ) {
       return;
     }
@@ -520,7 +520,7 @@ export class MulticurveBuilder<
   }): this {
     if (!params) {
       if (this.initializer?.type === 'decay') {
-        this.initializer = { type: 'standard' };
+        this.initializer = undefined;
       }
       return this;
     }
@@ -569,7 +569,7 @@ export class MulticurveBuilder<
   withSchedule(params?: { startTime: number | bigint | Date }): this {
     if (!params) {
       if (this.initializer?.type === 'scheduled') {
-        this.initializer = { type: 'standard' };
+        this.initializer = undefined;
       }
       this.schedule = undefined;
       return this;
@@ -628,6 +628,8 @@ export class MulticurveBuilder<
     return this.overrideModule('airlock', address);
   }
   withV4MulticurveInitializer(address: Address): this {
+    this.assertCanSetInitializer('standard');
+    this.initializer = { type: 'standard' };
     return this.overrideModule('v4MulticurveInitializer', address);
   }
   withV4ScheduledMulticurveInitializer(address: Address): this {
@@ -657,6 +659,10 @@ export class MulticurveBuilder<
     return this.overrideModule('noOpMigrator', address);
   }
   withDopplerHookInitializer(address: Address): this {
+    if (this.initializer?.type !== 'rehype') {
+      this.assertCanSetInitializer('dopplerHookInitializer');
+      this.initializer = { type: 'dopplerHookInitializer' };
+    }
     return this.overrideModule('dopplerHookInitializer', address);
   }
 
@@ -844,7 +850,7 @@ export class MulticurveBuilder<
             ? { type: 'rehype', config: dopplerHook }
             : this.schedule
               ? { type: 'scheduled', startTime: this.schedule.startTime }
-              : { type: 'standard' }));
+              : { type: 'dopplerHookInitializer' }));
 
     if (initializer.type === 'scheduled' && dopplerHook) {
       throw new Error(

@@ -5,8 +5,11 @@ import {
   DopplerFactory,
   type MigrationEncoder,
 } from '../../../../src/evm/entities/DopplerFactory';
-import { CHAIN_IDS } from '../../../../src/evm/addresses';
-import type { MigrationConfig, CreateStaticAuctionParams } from '../../../../src/evm/types';
+import { CHAIN_IDS, getAddresses } from '../../../../src/evm/addresses';
+import type {
+  MigrationConfig,
+  CreateStaticAuctionParams,
+} from '../../../../src/evm/types';
 import type { SupportedPublicClient } from '../../../../src/evm/types';
 import { TICK_SPACINGS } from '../../../../src/evm/constants';
 
@@ -78,6 +81,27 @@ describe('DopplerFactory Custom Migration Encoder', () => {
     expect(customEncoder).toHaveBeenCalledTimes(1);
 
     // Verify the result contains our custom migration data
+    expect(result.liquidityMigratorData).toBe(`0x${'custom'.padEnd(64, '0')}`);
+  });
+
+  it('preserves custom encoding when uniswapV2 resolves to V2Split', async () => {
+    const robinhoodFactory = new DopplerFactory(
+      publicClient,
+      undefined,
+      CHAIN_IDS.ROBINHOOD,
+    ).withCustomMigrationEncoder(customEncoder);
+
+    const result = await robinhoodFactory.encodeCreateStaticAuctionParams({
+      ...mockCreateParams,
+      modules: {
+        v3Initializer: getAddresses(CHAIN_IDS.BASE_SEPOLIA).v3Initializer,
+      },
+    });
+
+    expect(customEncoder).toHaveBeenCalledWith(mockCreateParams.migration);
+    expect(result.liquidityMigrator).toBe(
+      getAddresses(CHAIN_IDS.ROBINHOOD).v2MigratorSplit,
+    );
     expect(result.liquidityMigratorData).toBe(`0x${'custom'.padEnd(64, '0')}`);
   });
 

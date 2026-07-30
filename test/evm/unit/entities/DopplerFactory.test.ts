@@ -18,6 +18,10 @@ import type {
   CreateDynamicAuctionParams,
   CreateMulticurveParams,
 } from '../../../../src/evm/types';
+import type {
+  DopplerHookMigrationConfig,
+  DopplerHookMigratorConfig,
+} from '../../../../src/evm';
 import {
   parseEther,
   decodeAbiParameters,
@@ -97,6 +101,7 @@ describe('DopplerFactory', () => {
   describe('encodeCreateMulticurveParams', () => {
     const multicurveParams = (): CreateMulticurveParams => ({
       token: {
+        type: 'standard',
         name: 'MC Token',
         symbol: 'MCT',
         tokenURI: 'https://example.com/mc-token',
@@ -124,9 +129,40 @@ describe('DopplerFactory', () => {
           },
         ],
       },
+      initializer: { type: 'standard' },
       governance: { type: 'default' },
       migration: { type: 'uniswapV2' },
       userAddress: '0x1234567890123456789012345678901234567890' as Address,
+    });
+
+    it('uses LTS token and multicurve initializer defaults', () => {
+      const params = multicurveParams();
+      params.token = {
+        name: 'Default LTS Token',
+        symbol: 'LTS',
+        tokenURI: 'https://example.com/lts-token',
+      };
+      params.initializer = undefined;
+
+      const createParams = factory.encodeCreateMulticurveParams(params);
+
+      expect(createParams.tokenFactory).toBe(
+        mockAddresses.dopplerERC20V1Factory,
+      );
+      expect(createParams.poolInitializer).toBe(
+        mockAddresses.dopplerHookInitializer,
+      );
+    });
+
+    it('accepts the legacy dopplerHook initializer discriminator', () => {
+      const params = multicurveParams();
+      params.initializer = { type: 'dopplerHook' };
+
+      const createParams = factory.encodeCreateMulticurveParams(params);
+
+      expect(createParams.poolInitializer).toBe(
+        mockAddresses.dopplerHookInitializer,
+      );
     });
 
     it('appends a fallback curve when shares total less than 100%', () => {
@@ -249,6 +285,20 @@ describe('DopplerFactory', () => {
 
       // Non-positive ticks are valid - tick sign depends on price ratio
       expect(() => factory.encodeCreateMulticurveParams(params)).not.toThrow();
+    });
+
+    it('uses the scheduled multicurve initializer contract', () => {
+      const params = multicurveParams();
+      params.initializer = {
+        type: 'scheduled',
+        startTime: 1_800_000_000,
+      };
+
+      const createParams = factory.encodeCreateMulticurveParams(params);
+
+      expect(createParams.poolInitializer).toBe(
+        mockAddresses.v4ScheduledMulticurveInitializer,
+      );
     });
 
     it('encodes decay multicurve params with decay initializer', () => {
@@ -747,10 +797,10 @@ describe('DopplerFactory', () => {
       );
     });
 
-    it('rejects dopplerHook migration for multicurve auctions', () => {
+    it('rejects dopplerHookMigrator migration for multicurve auctions', () => {
       const params = multicurveParams();
       params.migration = {
-        type: 'dopplerHook',
+        type: 'dopplerHookMigrator',
         fee: 3000,
         tickSpacing: 60,
         lockDuration: 30 * DAY_SECONDS,
@@ -764,7 +814,7 @@ describe('DopplerFactory', () => {
       };
 
       expect(() => factory.encodeCreateMulticurveParams(params)).toThrow(
-        'dopplerHook migration is only supported for dynamic auctions',
+        'dopplerHookMigrator migration is only supported for dynamic auctions',
       );
     });
 
@@ -849,11 +899,11 @@ describe('DopplerFactory', () => {
       );
     });
 
-    it('rejects dopplerHook migration for static auctions', async () => {
+    it('rejects dopplerHookMigrator migration for static auctions', async () => {
       const invalidParams = {
         ...validParams,
         migration: {
-          type: 'dopplerHook' as const,
+          type: 'dopplerHookMigrator' as const,
           fee: 3000,
           tickSpacing: 60,
           lockDuration: 30 * DAY_SECONDS,
@@ -868,7 +918,7 @@ describe('DopplerFactory', () => {
       };
 
       await expect(factory.createStaticAuction(invalidParams)).rejects.toThrow(
-        'dopplerHook migration is only supported for dynamic auctions',
+        'dopplerHookMigrator migration is only supported for dynamic auctions',
       );
     });
 
@@ -1189,39 +1239,41 @@ describe('DopplerFactory', () => {
       expect(gasEstimate).toBe(12_250_000n);
     });
 
-    it('encodes dopplerHook migration with rehype helper for dynamic auctions', async () => {
-      const marketCapParams = DynamicAuctionBuilder.forChain(1)
-        .tokenConfig({
-          name: 'Test Token',
-          symbol: 'TEST',
-          tokenURI: 'https://example.com/token',
-        })
-        .saleConfig({
-          initialSupply: parseEther('1000000'),
-          numTokensToSell: parseEther('500000'),
-          numeraire: mockAddresses.weth,
-        })
-        .withMarketCapRange({
-          marketCap: { start: 500_000, min: 50_000 },
-          numerairePrice: 3000,
-          minProceeds: parseEther('100'),
-          maxProceeds: parseEther('10000'),
-          fee: 3000,
-          tickSpacing: 10,
-          duration: 7 * DAY_SECONDS,
-          epochLength: 3600,
-        })
-        .withGovernance({ type: 'noOp' })
-        .withMigration({ type: 'uniswapV4', fee: 3000, tickSpacing: 10 })
-        .withUserAddress(
-          '0x1234567890123456789012345678901234567890' as Address,
-        )
-        .build();
+    it.each(['dopplerHookMigrator', 'dopplerHook'] as const)(
+      'encodes %s migration with rehype helper for dynamic auctions',
+      async (migrationType) => {
+        const marketCapParams = DynamicAuctionBuilder.forChain(1)
+          .tokenConfig({
+            name: 'Test Token',
+            symbol: 'TEST',
+            tokenURI: 'https://example.com/token',
+          })
+          .saleConfig({
+            initialSupply: parseEther('1000000'),
+            numTokensToSell: parseEther('500000'),
+            numeraire: mockAddresses.weth,
+          })
+          .withMarketCapRange({
+            marketCap: { start: 500_000, min: 50_000 },
+            numerairePrice: 3000,
+            minProceeds: parseEther('100'),
+            maxProceeds: parseEther('10000'),
+            fee: 3000,
+            tickSpacing: 10,
+            duration: 7 * DAY_SECONDS,
+            epochLength: 3600,
+          })
+          .withGovernance({ type: 'noOp' })
+          .withMigration({ type: 'uniswapV4', fee: 3000, tickSpacing: 10 })
+          .withUserAddress(
+            '0x1234567890123456789012345678901234567890' as Address,
+          )
+          .build();
 
-      const params: CreateDynamicAuctionParams = {
-        ...marketCapParams,
-        migration: {
-          type: 'dopplerHook',
+        const migration:
+          | DopplerHookMigratorConfig
+          | DopplerHookMigrationConfig = {
+          type: migrationType,
           fee: 3000,
           tickSpacing: 10,
           lockDuration: 30 * DAY_SECONDS,
@@ -1248,103 +1300,107 @@ describe('DopplerFactory', () => {
               numeraireFeesToLpWad: parseEther('0.25'),
             },
           },
-        },
-      };
+        };
+        const params: CreateDynamicAuctionParams = {
+          ...marketCapParams,
+          migration,
+        };
 
-      const { createParams } =
-        await factory.encodeCreateDynamicAuctionParams(params);
+        const { createParams } =
+          await factory.encodeCreateDynamicAuctionParams(params);
 
-      expect(createParams.liquidityMigrator).toBe(
-        mockAddresses.dopplerHookMigrator,
-      );
+        expect(createParams.liquidityMigrator).toBe(
+          mockAddresses.dopplerHookMigrator,
+        );
 
-      const decoded = decodeAbiParameters(
-        [
-          { type: 'uint24' },
-          { type: 'bool' },
-          { type: 'int24' },
-          { type: 'uint32' },
-          {
-            type: 'tuple[]',
-            components: [
-              { type: 'address', name: 'beneficiary' },
-              { type: 'uint96', name: 'shares' },
-            ],
-          },
-          { type: 'address' },
-          { type: 'bytes' },
-          { type: 'address' },
-          { type: 'uint256' },
-        ],
-        createParams.liquidityMigratorData,
-      ) as readonly [
-        number,
-        boolean,
-        number,
-        number,
-        readonly { beneficiary: Address; shares: bigint }[],
-        Address,
-        `0x${string}`,
-        Address,
-        bigint,
-      ];
+        const decoded = decodeAbiParameters(
+          [
+            { type: 'uint24' },
+            { type: 'bool' },
+            { type: 'int24' },
+            { type: 'uint32' },
+            {
+              type: 'tuple[]',
+              components: [
+                { type: 'address', name: 'beneficiary' },
+                { type: 'uint96', name: 'shares' },
+              ],
+            },
+            { type: 'address' },
+            { type: 'bytes' },
+            { type: 'address' },
+            { type: 'uint256' },
+          ],
+          createParams.liquidityMigratorData,
+        ) as readonly [
+          number,
+          boolean,
+          number,
+          number,
+          readonly { beneficiary: Address; shares: bigint }[],
+          Address,
+          `0x${string}`,
+          Address,
+          bigint,
+        ];
 
-      expect(decoded[0]).toBe(3000);
-      expect(decoded[1]).toBe(false);
-      expect(decoded[2]).toBe(10);
-      expect(decoded[3]).toBe(30 * DAY_SECONDS);
-      expect(decoded[4]).toHaveLength(1);
-      expect(decoded[5]).toBe(mockAddresses.rehypeDopplerHookMigrator);
-      expect(decoded[7]).toBe(ZERO_ADDRESS);
-      expect(decoded[8]).toBe(0n);
+        expect(decoded[0]).toBe(3000);
+        expect(decoded[1]).toBe(false);
+        expect(decoded[2]).toBe(10);
+        expect(decoded[3]).toBe(30 * DAY_SECONDS);
+        expect(decoded[4]).toHaveLength(1);
+        expect(decoded[5]).toBe(mockAddresses.rehypeDopplerHookMigrator);
+        expect(decoded[7]).toBe(ZERO_ADDRESS);
+        expect(decoded[8]).toBe(0n);
 
-      const [rehypeInit] = decodeAbiParameters(
-        [
-          {
-            type: 'tuple',
-            components: [
-              { name: 'numeraire', type: 'address' },
-              { name: 'buybackDst', type: 'address' },
-              { name: 'customFee', type: 'uint24' },
-              { name: 'feeRoutingMode', type: 'uint8' },
-              {
-                name: 'feeDistributionInfo',
-                type: 'tuple',
-                components: [
-                  { name: 'assetFeesToAssetBuybackWad', type: 'uint256' },
-                  { name: 'assetFeesToNumeraireBuybackWad', type: 'uint256' },
-                  { name: 'assetFeesToBeneficiaryWad', type: 'uint256' },
-                  { name: 'assetFeesToLpWad', type: 'uint256' },
-                  { name: 'numeraireFeesToAssetBuybackWad', type: 'uint256' },
-                  {
-                    name: 'numeraireFeesToNumeraireBuybackWad',
-                    type: 'uint256',
-                  },
-                  { name: 'numeraireFeesToBeneficiaryWad', type: 'uint256' },
-                  { name: 'numeraireFeesToLpWad', type: 'uint256' },
-                ],
-              },
-            ],
-          },
-        ],
-        decoded[6],
-      ) as any;
+        const [rehypeInit] = decodeAbiParameters(
+          [
+            {
+              type: 'tuple',
+              components: [
+                { name: 'numeraire', type: 'address' },
+                { name: 'buybackDst', type: 'address' },
+                { name: 'customFee', type: 'uint24' },
+                { name: 'feeRoutingMode', type: 'uint8' },
+                {
+                  name: 'feeDistributionInfo',
+                  type: 'tuple',
+                  components: [
+                    { name: 'assetFeesToAssetBuybackWad', type: 'uint256' },
+                    { name: 'assetFeesToNumeraireBuybackWad', type: 'uint256' },
+                    { name: 'assetFeesToBeneficiaryWad', type: 'uint256' },
+                    { name: 'assetFeesToLpWad', type: 'uint256' },
+                    { name: 'numeraireFeesToAssetBuybackWad', type: 'uint256' },
+                    {
+                      name: 'numeraireFeesToNumeraireBuybackWad',
+                      type: 'uint256',
+                    },
+                    { name: 'numeraireFeesToBeneficiaryWad', type: 'uint256' },
+                    { name: 'numeraireFeesToLpWad', type: 'uint256' },
+                  ],
+                },
+              ],
+            },
+          ],
+          decoded[6],
+        ) as any;
 
-      expect(rehypeInit.numeraire).toBe(marketCapParams.sale.numeraire);
-      expect(rehypeInit.buybackDst).toBe(
-        '0x1234567890123456789012345678901234567890',
-      );
-      expect(Number(rehypeInit.customFee)).toBe(3000);
-      expect(Number(rehypeInit.feeRoutingMode)).toBe(1);
-      expect(rehypeInit.feeDistributionInfo.assetFeesToBeneficiaryWad).toBe(
-        parseEther('0.35'),
-      );
-      expect(rehypeInit.feeDistributionInfo.numeraireFeesToLpWad).toBe(
-        parseEther('0.25'),
-      );
-    });
+        expect(rehypeInit.numeraire).toBe(marketCapParams.sale.numeraire);
+        expect(rehypeInit.buybackDst).toBe(
+          '0x1234567890123456789012345678901234567890',
+        );
+        expect(Number(rehypeInit.customFee)).toBe(3000);
+        expect(Number(rehypeInit.feeRoutingMode)).toBe(1);
+        expect(rehypeInit.feeDistributionInfo.assetFeesToBeneficiaryWad).toBe(
+          parseEther('0.35'),
+        );
+        expect(rehypeInit.feeDistributionInfo.numeraireFeesToLpWad).toBe(
+          parseEther('0.25'),
+        );
+      },
+    );
 
-    it('normalizes legacy dopplerHook rehype migration fields into the new migrator layout', async () => {
+    it('normalizes legacy RehypeDopplerHookMigrator fields into the new migrator layout', async () => {
       const marketCapParams = DynamicAuctionBuilder.forChain(1)
         .tokenConfig({
           name: 'Test Token',
@@ -1376,7 +1432,7 @@ describe('DopplerFactory', () => {
       const params: CreateDynamicAuctionParams = {
         ...marketCapParams,
         migration: {
-          type: 'dopplerHook',
+          type: 'dopplerHookMigrator',
           fee: 3000,
           tickSpacing: 10,
           lockDuration: 30 * DAY_SECONDS,
@@ -1476,7 +1532,7 @@ describe('DopplerFactory', () => {
       );
     });
 
-    it('rejects dopplerHook rehype migration configs where a distribution row does not sum to WAD', async () => {
+    it('rejects RehypeDopplerHookMigrator configs where a distribution row does not sum to WAD', async () => {
       const marketCapParams = DynamicAuctionBuilder.forChain(1)
         .tokenConfig({
           name: 'Test Token',
@@ -1508,7 +1564,7 @@ describe('DopplerFactory', () => {
       const params: CreateDynamicAuctionParams = {
         ...marketCapParams,
         migration: {
-          type: 'dopplerHook',
+          type: 'dopplerHookMigrator',
           fee: 3000,
           tickSpacing: 10,
           lockDuration: 30 * DAY_SECONDS,
@@ -1542,7 +1598,7 @@ describe('DopplerFactory', () => {
       ).rejects.toThrow('Rehype asset fee distribution must sum');
     });
 
-    it('encodes dopplerHook migration with generic hook + proceeds split', async () => {
+    it('encodes dopplerHookMigrator migration with generic hook + proceeds split', async () => {
       const genericHook =
         '0x9999999999999999999999999999999999999999' as Address;
       const proceedsRecipient =
@@ -1579,7 +1635,7 @@ describe('DopplerFactory', () => {
       const params: CreateDynamicAuctionParams = {
         ...marketCapParams,
         migration: {
-          type: 'dopplerHook',
+          type: 'dopplerHookMigrator',
           fee: 500,
           useDynamicFee: true,
           tickSpacing: 20,

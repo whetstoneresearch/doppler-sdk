@@ -126,6 +126,7 @@ export type {
   UniswapV2SplitMigrationConfig,
   UniswapV4MigrationConfig,
   UniswapV4SplitMigrationConfig,
+  DopplerHookMigratorConfig,
   DopplerHookMigrationConfig,
   BeneficiaryData,
 

@@ -41,8 +41,14 @@ export const mockAddresses: ChainAddresses = {
   v4MulticurveInitializer: getAddress(
     '0x7100000000000000000000000000000000000007',
   ) as Address,
+  v4ScheduledMulticurveInitializer: getAddress(
+    '0x7150000000000000000000000000000000000007',
+  ) as Address,
   v4DecayMulticurveInitializer: getAddress(
     '0x7200000000000000000000000000000000000007',
+  ) as Address,
+  dopplerHookInitializer: getAddress(
+    '0x7250000000000000000000000000000000000007',
   ) as Address,
   rehypeDopplerHookInitializer: getAddress(
     '0x7300000000000000000000000000000000000007',

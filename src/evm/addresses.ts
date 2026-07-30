@@ -162,6 +162,8 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       .UniswapV4Migrator as Address,
     v4MigratorSplit: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MAINNET]
       .UniswapV4MigratorSplit as Address,
+    v4MigratorHook: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MAINNET]
+      .UniswapV4MigratorHook as Address,
     dopplerHookMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MAINNET]
       .DopplerHookMigrator as Address,
     rehypeDopplerHookMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MAINNET]
@@ -286,11 +288,12 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     dopplerDeployer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
       .DopplerDeployer as Address,
     poolManager: '0x498581ff718922c3f8e6a244956af099b2652b2b' as Address,
-    rehypeDopplerHookInitializer:
-      '0xBF4195ab0B03e1eB3345dd1e83BeD7650b1ed123' as Address,
-    rehypeDopplerHook: '0xBF4195ab0B03e1eB3345dd1e83BeD7650b1ed123' as Address,
-    dopplerHookInitializer:
-      '0xBDF938149ac6a781F94FAa0ed45E6A0e984c6544' as Address,
+    rehypeDopplerHookInitializer: getRehypeDopplerHookInitializerAddress(
+      CHAIN_IDS.BASE,
+    ),
+    rehypeDopplerHook: getRehypeDopplerHookInitializerAddress(CHAIN_IDS.BASE),
+    dopplerHookInitializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
+      .DopplerHookInitializer as Address,
     v2Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
       .UniswapV2Migrator as Address,
     v2MigratorSplit: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
@@ -299,6 +302,8 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       .UniswapV4Migrator as Address,
     v4MigratorSplit: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
       .UniswapV4MigratorSplit as Address,
+    v4MigratorHook: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
+      .UniswapV4MigratorHook as Address,
     dopplerHookMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
       .DopplerHookMigrator as Address,
     rehypeDopplerHookMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
@@ -349,10 +354,8 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       CHAIN_IDS.BASE_SEPOLIA,
       'DopplerERC20V1',
     ),
-    doppler404Factory: getGeneratedAddress(
-      CHAIN_IDS.BASE_SEPOLIA,
-      'DN404Factory',
-    ),
+    doppler404Factory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
+      .DN404Factory as Address,
     v3Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
       .UniswapV3Initializer as Address,
     v3Quoter: '0xC5290058841028F1614F3A6F0F5816cAd0df5E27' as Address,
@@ -407,8 +410,8 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       .NoOpMigrator as Address,
     governanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
       .GovernanceFactory as Address,
-    noOpGovernanceFactory:
-      '0x916b8987e4ad325c10d58ed8dc2036a6ff5eb228' as Address,
+    noOpGovernanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
+      .NoOpGovernanceFactory as Address,
     launchpadGovernanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[
       CHAIN_IDS.BASE_SEPOLIA
     ].LaunchpadGovernanceFactory as Address,
@@ -424,7 +427,8 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     univ2Router02: '0x1689E7B1F10000AE47eBfE339a4f69dECd19F602' as Address,
     uniswapV2Factory: '0x7Ae58f10f7849cA6F5fB71b7f45CB416c9204b1e' as Address,
     permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3' as Address,
-    bundler: '0x69DB7c20cDdA49Bed2bFb21e16Fa218330C50661' as Address,
+    bundler: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
+      .Bundler as Address,
     weth: '0x4200000000000000000000000000000000000006' as Address,
     uniswapV3Factory: '0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24' as Address,
     uniswapV4Quoter: '0x4A6513c898fe1B2d0E78d3b0e0A4a151589B1cBa' as Address,
@@ -677,7 +681,8 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     v4Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_MAINNET]
       .UniswapV4Initializer as Address,
     dopplerLens: ZERO_ADDRESS,
-    dopplerDeployer: ZERO_ADDRESS,
+    dopplerDeployer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_MAINNET]
+      .DopplerDeployer as Address,
     poolManager: '0x188d586ddcf52439676ca21a244753fa19f9ea8e' as Address,
     v2Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_MAINNET]
       .UniswapV2Migrator as Address,
@@ -687,6 +692,8 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       .UniswapV4Migrator as Address,
     v4MigratorSplit: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_MAINNET]
       .UniswapV4MigratorSplit as Address,
+    v4MigratorHook: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_MAINNET]
+      .UniswapV4MigratorHook as Address,
     noOpMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_MAINNET]
       .NoOpMigrator as Address,
     governanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_MAINNET]
@@ -711,7 +718,8 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     rehypeDopplerHook: getRehypeDopplerHookInitializerAddress(
       CHAIN_IDS.MONAD_MAINNET,
     ),
-    streamableFeesLocker: ZERO_ADDRESS, // Not yet deployed
+    streamableFeesLocker: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_MAINNET]
+      .StreamableFeesLocker as Address,
     streamableFeesLockerV2: getGeneratedAddress(
       CHAIN_IDS.MONAD_MAINNET,
       'StreamableFeesLockerV2',

@@ -79,7 +79,7 @@ const params = StaticAuctionBuilder.forChain(baseSepolia.id)
 const simulation = await sdk.factory.simulateCreateStaticAuction(params);
 console.log('Predicted token:', simulation.asset);
 console.log('Predicted pool:', simulation.pool);
-console.log('Template-specific fields selected dopplerERC20V1 automatically.');
+console.log('Using the default DopplerERC20V1 token template.');
 
 if (process.env.EXECUTE === '1') {
   if (!walletClient) {

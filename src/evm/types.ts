@@ -24,7 +24,7 @@ export type SupportedPublicClient = unknown;
 // Core configuration types
 // Token configuration
 export interface StandardTokenConfig {
-  type?: 'standard'; // default behavior (backwards compatible)
+  type: 'standard';
   name: string;
   symbol: string;
   tokenURI: string;
@@ -37,10 +37,6 @@ export type DopplerERC20V1OnlyTokenConfigFields = {
   controller?: Address;
   excludedFromBalanceLimit?: Address[];
 };
-
-type RequireAtLeastOne<T> = {
-  [K in keyof T]-?: Required<Pick<T, K>> & Partial<Omit<T, K>>;
-}[keyof T];
 
 export interface Doppler404TokenConfig {
   type: 'doppler404';
@@ -63,7 +59,7 @@ export type InferredDopplerERC20V1TokenConfig = {
   name: string;
   symbol: string;
   tokenURI: string;
-} & RequireAtLeastOne<DopplerERC20V1OnlyTokenConfigFields>;
+} & DopplerERC20V1OnlyTokenConfigFields;
 
 export type TokenConfig =
   | StandardTokenConfig
@@ -310,8 +306,8 @@ export interface RehypeDopplerHookMigratorConfig {
   lpPercentWad?: bigint;
 }
 
-export interface DopplerHookMigrationConfig {
-  type: 'dopplerHook';
+export interface DopplerHookMigratorConfig {
+  type: 'dopplerHookMigrator';
   // Fee for fixed-fee pools, or initial LP fee when useDynamicFee=true.
   fee: number;
   // Use dynamic LP fees on the migrated V4 pool.
@@ -335,6 +331,17 @@ export interface DopplerHookMigrationConfig {
     share: bigint;
   };
 }
+
+/**
+ * @deprecated Use DopplerHookMigratorConfig with
+ * `type: 'dopplerHookMigrator'` instead.
+ */
+export type DopplerHookMigrationConfig = Omit<
+  DopplerHookMigratorConfig,
+  'type'
+> & {
+  type: 'dopplerHook';
+};
 
 export interface ProceedsSplitConfig {
   recipient: Address;
@@ -382,7 +389,8 @@ export type MigrationConfig =
   | UniswapV2SplitMigrationConfig // V2 migration with proceeds split + TopUpDistributor support
   | UniswapV4MigrationConfig
   | UniswapV4SplitMigrationConfig
-  | DopplerHookMigrationConfig // Dynamic-only: migration via DopplerHookMigrator
+  | DopplerHookMigratorConfig // Dynamic-only: migration via DopplerHookMigrator
+  | DopplerHookMigrationConfig // Deprecated DopplerHookMigrator discriminator
   | { type: 'noOp' }; // No migration - used with lockable beneficiaries
 
 // Create Static Auction parameters
@@ -1038,6 +1046,11 @@ export interface MulticurveDecayFeeSchedule {
 }
 
 export type MulticurveInitializerConfig =
+  | { type: 'dopplerHookInitializer' }
+  | {
+      /** @deprecated Use 'dopplerHookInitializer' instead. */
+      type: 'dopplerHook';
+    }
   | { type: 'standard' }
   | { type: 'scheduled'; startTime: number }
   | {
@@ -1068,7 +1081,7 @@ export interface CreateMulticurveParams<
     beneficiaries?: BeneficiaryData[];
   };
 
-  // Preferred initializer configuration. Defaults to { type: 'standard' }.
+  // Preferred initializer configuration. Defaults to DopplerHookInitializer.
   initializer?: MulticurveInitializerConfig;
 
   /**

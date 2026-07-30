@@ -11,7 +11,6 @@ import {
 import { MAX_TICK, MIN_TICK } from '../utils';
 import type {
   Doppler404TokenConfig,
-  DopplerERC20V1TokenConfig,
   PriceRange,
   TickRange,
   MulticurveMarketCapPreset,
@@ -49,43 +48,10 @@ export type BuilderVestingInput =
       allocations: BuilderVestingAllocationInput[];
     };
 
-export function hasDopplerERC20V1OnlyTokenConfigFields(
-  params: object,
-): boolean {
-  return (
-    'maxBalanceLimit' in params ||
-    'balanceLimitEnd' in params ||
-    'controller' in params ||
-    'excludedFromBalanceLimit' in params
-  );
-}
-
-export function isDopplerERC20V1TokenConfig(
-  params: TokenConfig,
-): params is DopplerERC20V1TokenConfig {
-  return (
-    params.type === 'dopplerERC20V1' ||
-    hasDopplerERC20V1OnlyTokenConfigFields(params)
-  );
-}
-
 export function normalizeBuilderTokenConfig(
   params: TokenConfig,
   defaultYearlyMintRate: bigint,
 ): TokenConfig {
-  if (isDopplerERC20V1TokenConfig(params)) {
-    return {
-      type: 'dopplerERC20V1',
-      name: params.name,
-      symbol: params.symbol,
-      tokenURI: params.tokenURI,
-      maxBalanceLimit: params.maxBalanceLimit,
-      balanceLimitEnd: params.balanceLimitEnd,
-      controller: params.controller,
-      excludedFromBalanceLimit: params.excludedFromBalanceLimit,
-    };
-  }
-
   if (params.type === 'doppler404') {
     const token = params as Doppler404TokenConfig;
     return {
@@ -97,13 +63,26 @@ export function normalizeBuilderTokenConfig(
     };
   }
 
-  const token = params as StandardTokenConfig;
+  if (params.type === 'standard') {
+    const token = params as StandardTokenConfig;
+    return {
+      type: 'standard',
+      name: token.name,
+      symbol: token.symbol,
+      tokenURI: token.tokenURI,
+      yearlyMintRate: token.yearlyMintRate ?? defaultYearlyMintRate,
+    };
+  }
+
   return {
-    type: 'standard',
-    name: token.name,
-    symbol: token.symbol,
-    tokenURI: token.tokenURI,
-    yearlyMintRate: token.yearlyMintRate ?? defaultYearlyMintRate,
+    type: 'dopplerERC20V1',
+    name: params.name,
+    symbol: params.symbol,
+    tokenURI: params.tokenURI,
+    maxBalanceLimit: params.maxBalanceLimit,
+    balanceLimitEnd: params.balanceLimitEnd,
+    controller: params.controller,
+    excludedFromBalanceLimit: params.excludedFromBalanceLimit,
   };
 }
 
@@ -155,7 +134,7 @@ export interface BaseAuctionBuilder<C extends SupportedChainId> {
 
   /**
    * Configure post-auction liquidity migration.
-   * @param migration - Migration target (uniswapV2, uniswapV4, dopplerHook, or noOp)
+   * @param migration - Migration target (uniswapV2, uniswapV4, dopplerHookMigrator, or noOp)
    */
   withMigration(migration: MigrationConfig): this;
 

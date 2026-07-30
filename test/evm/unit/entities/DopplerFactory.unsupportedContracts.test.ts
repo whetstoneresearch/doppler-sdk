@@ -122,15 +122,18 @@ describe('DopplerFactory unsupported contract guards', () => {
     ).rejects.toThrow('Lockable V3 initializer address not configured');
   });
 
-  it('rejects V2 migration when the V2 migrator is not configured', async () => {
+  it('rejects V2 migration when neither V2 migrator is configured', async () => {
     vi.mocked(getAddresses).mockReturnValue({
       ...mockAddresses,
       v2Migrator: ZERO_ADDRESS,
+      v2MigratorSplit: ZERO_ADDRESS,
     });
 
     await expect(
       factory.encodeCreateStaticAuctionParams(staticParams),
-    ).rejects.toThrow('UniswapV2Migrator not deployed');
+    ).rejects.toThrow(
+      'Neither UniswapV2Migrator nor UniswapV2MigratorSplit is deployed',
+    );
   });
 
   it('rejects dynamic auctions when V4 initializer is not configured', async () => {

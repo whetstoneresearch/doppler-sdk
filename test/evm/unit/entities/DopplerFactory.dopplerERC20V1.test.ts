@@ -350,7 +350,9 @@ describe('DopplerFactory DopplerERC20V1 token routing', () => {
     const createParams = await factory.encodeCreateStaticAuctionParams(params);
     const decoded = decodeV1TokenFactoryData(createParams.tokenFactoryData);
 
-    expect(createParams.governanceFactory).toBe(mockAddresses.governanceFactory);
+    expect(createParams.governanceFactory).toBe(
+      mockAddresses.governanceFactory,
+    );
     expect(decoded[10]).toContain(mockTimelockAddress);
   });
 
@@ -383,7 +385,9 @@ describe('DopplerFactory DopplerERC20V1 token routing', () => {
     const createParams = await factory.encodeCreateStaticAuctionParams(params);
     const decoded = decodeV1TokenFactoryData(createParams.tokenFactoryData);
 
-    expect(createParams.governanceFactory).toBe(mockAddresses.governanceFactory);
+    expect(createParams.governanceFactory).toBe(
+      mockAddresses.governanceFactory,
+    );
     expect(decoded[10]).toContain(mockTimelockAddress);
   });
 
@@ -459,6 +463,7 @@ describe('DopplerFactory DopplerERC20V1 token routing', () => {
   it('keeps standard cliff vesting on the DERC20 V2 route without DopplerERC20V1-specific fields', async () => {
     const params = StaticAuctionBuilder.forChain(1)
       .tokenConfig({
+        type: 'standard',
         name: 'Static Cliff',
         symbol: 'STCL',
         tokenURI: 'ipfs://static-cliff',
@@ -742,7 +747,7 @@ describe('DopplerFactory DopplerERC20V1 token routing', () => {
       })
       .withGovernance({ type: 'noOp' })
       .withMigration({
-        type: 'dopplerHook',
+        type: 'dopplerHookMigrator',
         fee: 3000,
         tickSpacing: 10,
         lockDuration: 30 * DAY_SECONDS,

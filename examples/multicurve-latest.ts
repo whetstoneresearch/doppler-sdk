@@ -1,7 +1,5 @@
 /**
- * Example: Multicurve launch with DopplerERC20V1 using intended configuration
- * This example also showcases manually defining the Robinhood chain as it is
- * not yet supported by viem.
+ * Example: Base multicurve launch using the current SDK defaults.
  *
  * Simulates by default. Set EXECUTE=1 to deploy, or ASSET_ADDRESS=0x...
  * to run post-launch reads/claims against an existing token.
@@ -16,7 +14,6 @@
 import './env';
 
 import {
-  CHAIN_IDS,
   DAY_SECONDS,
   DopplerSDK,
   WAD,
@@ -26,7 +23,6 @@ import {
 import {
   createPublicClient,
   createWalletClient,
-  defineChain,
   formatUnits,
   getAddress,
   http,
@@ -36,26 +32,19 @@ import {
   type Address,
 } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
+import { base } from 'viem/chains';
 
 const tokenDecimals = 18;
-const defaultRobinhoodRpcUrl = 'https://rpc.mainnet.chain.robinhood.com';
-
-const robinhoodChain = defineChain({
-  id: CHAIN_IDS.ROBINHOOD,
-  name: 'Robinhood Chain',
-  nativeCurrency: { decimals: tokenDecimals, name: 'Ether', symbol: 'ETH' },
-  rpcUrls: { default: { http: [defaultRobinhoodRpcUrl] } },
-});
 
 async function main(): Promise<void> {
   const privateKey = process.env.PRIVATE_KEY;
   if (!privateKey || !isHex(privateKey)) {
     throw new Error('PRIVATE_KEY must be a 0x-prefixed hex string');
   }
-  const rpcUrl = process.env.RPC_URL || defaultRobinhoodRpcUrl;
+  const rpcUrl = process.env.RPC_URL ?? base.rpcUrls.default.http[0];
 
   const account = privateKeyToAccount(privateKey);
-  const chainId = CHAIN_IDS.ROBINHOOD;
+  const chainId = base.id;
   const addresses = getAddresses(chainId);
   const rehypeDopplerHookInitializer = addresses.rehypeDopplerHookInitializer;
   if (!rehypeDopplerHookInitializer) {
@@ -88,11 +77,11 @@ async function main(): Promise<void> {
   }
 
   const publicClient = createPublicClient({
-    chain: robinhoodChain,
+    chain: base,
     transport: http(rpcUrl),
   });
   const walletClient = createWalletClient({
-    chain: robinhoodChain,
+    chain: base,
     transport: http(rpcUrl),
     account,
   });
@@ -100,8 +89,7 @@ async function main(): Promise<void> {
 
   const poolFeeBeneficiaries = [await sdk.getAirlockBeneficiary(WAD)];
   const rehypeFeeBeneficiaries: [BeneficiaryData, ...BeneficiaryData[]] = [
-    // Airlock owner is not included in rehype fee beneficiaries, unlike pool beneficiaries
-    // Airlock's 5% fee is applied automatically within the rehype hook, before routing to the beneficiaries
+    // Airlock's protocol fee is applied before Rehype routes the remaining fees.
     { beneficiary: account.address, shares: WAD / 5n },
     {
       beneficiary:
@@ -138,7 +126,6 @@ async function main(): Promise<void> {
   const params = sdk
     .buildMulticurveAuction()
     .tokenConfig({
-      type: 'dopplerERC20V1',
       name: 'Multicurve Latest',
       symbol: 'MLT',
       tokenURI: 'ipfs://multicurve-latest.json',
@@ -182,7 +169,7 @@ async function main(): Promise<void> {
       startFee: 12_000,
       endFee: 12_000,
       durationSeconds: 0,
-      // Send all fees to beneficiaries in numeraire
+      // Convert asset fees to numeraire, then route all numeraire fees.
       feeDistributionInfo: {
         assetFeesToAssetBuybackWad: 0n,
         assetFeesToNumeraireBuybackWad: WAD,

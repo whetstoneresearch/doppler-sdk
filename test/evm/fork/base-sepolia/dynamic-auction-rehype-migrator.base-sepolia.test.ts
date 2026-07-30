@@ -139,7 +139,7 @@ describe('Dynamic auction with RehypeDopplerHookMigrator (Base Sepolia fork)', (
       })
       .withGovernance({ type: 'default' })
       .withMigration({
-        type: 'dopplerHook',
+        type: 'dopplerHookMigrator',
         fee: 3000,
         useDynamicFee: false,
         tickSpacing: 10,
