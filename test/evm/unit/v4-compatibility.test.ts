@@ -34,6 +34,7 @@ describe('V4 SDK Compatibility', () => {
     // Create params matching the V4 SDK example
     const params: CreateDynamicAuctionParams = {
       token: {
+        type: 'standard',
         name: 'TestToken',
         symbol: 'TEST',
         tokenURI: 'https://example.com/token.json',

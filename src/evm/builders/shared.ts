@@ -48,10 +48,21 @@ export type BuilderVestingInput =
       allocations: BuilderVestingAllocationInput[];
     };
 
+export function assertTokenConfigSupportsYearlyMintRate(
+  params: TokenConfig,
+): void {
+  if ('yearlyMintRate' in params && params.type !== 'standard') {
+    throw new Error(
+      "yearlyMintRate is only supported with token type 'standard'; DopplerERC20V1 does not support yearly minting.",
+    );
+  }
+}
+
 export function normalizeBuilderTokenConfig(
   params: TokenConfig,
   defaultYearlyMintRate: bigint,
 ): TokenConfig {
+  assertTokenConfigSupportsYearlyMintRate(params);
   if (params.type === 'doppler404') {
     const token = params as Doppler404TokenConfig;
     return {

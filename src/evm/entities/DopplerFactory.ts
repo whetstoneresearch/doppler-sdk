@@ -43,6 +43,7 @@ import type {
   StreamableFeesConfig,
 } from '../types';
 import type { ModuleAddressOverrides } from '../types';
+import { assertTokenConfigSupportsYearlyMintRate } from '../builders/shared';
 import { getAddresses } from '../addresses';
 import {
   ZERO_ADDRESS,
@@ -3743,6 +3744,7 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
   private isDopplerERC20V1Token(
     token: TokenConfig,
   ): token is DopplerERC20V1TokenConfig | InferredDopplerERC20V1TokenConfig {
+    assertTokenConfigSupportsYearlyMintRate(token);
     return token.type !== 'standard' && token.type !== 'doppler404';
   }
 

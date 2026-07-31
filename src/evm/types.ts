@@ -52,6 +52,11 @@ export type DopplerERC20V1TokenConfig = {
   name: string;
   symbol: string;
   tokenURI: string;
+  /**
+   * DopplerERC20V1 does not support yearly minting.
+   * Set `type: 'standard'` to configure `yearlyMintRate`.
+   */
+  yearlyMintRate?: never;
 } & DopplerERC20V1OnlyTokenConfigFields;
 
 export type InferredDopplerERC20V1TokenConfig = {
@@ -59,6 +64,11 @@ export type InferredDopplerERC20V1TokenConfig = {
   name: string;
   symbol: string;
   tokenURI: string;
+  /**
+   * DopplerERC20V1 does not support yearly minting.
+   * Set `type: 'standard'` to configure `yearlyMintRate`.
+   */
+  yearlyMintRate?: never;
 } & DopplerERC20V1OnlyTokenConfigFields;
 
 export type TokenConfig =

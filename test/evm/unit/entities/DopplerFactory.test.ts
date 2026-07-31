@@ -17,6 +17,7 @@ import type {
   CreateStaticAuctionParams,
   CreateDynamicAuctionParams,
   CreateMulticurveParams,
+  TokenConfig,
 } from '../../../../src/evm/types';
 import type {
   DopplerHookMigrationConfig,
@@ -151,6 +152,20 @@ describe('DopplerFactory', () => {
       );
       expect(createParams.poolInitializer).toBe(
         mockAddresses.dopplerHookInitializer,
+      );
+    });
+
+    it('rejects yearlyMintRate on the inferred DopplerERC20V1 path', () => {
+      const params = multicurveParams();
+      params.token = {
+        name: 'Invalid LTS Token',
+        symbol: 'INVALID',
+        tokenURI: 'https://example.com/invalid-lts-token',
+        yearlyMintRate: 0n,
+      } as unknown as TokenConfig;
+
+      expect(() => factory.encodeCreateMulticurveParams(params)).toThrow(
+        "yearlyMintRate is only supported with token type 'standard'",
       );
     });
 

@@ -14,6 +14,7 @@ import {
   WAD,
   ZERO_ADDRESS,
 } from '../../../../src/evm/constants';
+import type { TokenConfig } from '../../../../src/evm/types';
 
 // WETH on Base - token will be token1
 const WETH_BASE: Address = '0x4200000000000000000000000000000000000006';
@@ -73,6 +74,19 @@ describe('MulticurveBuilder', () => {
 
     expect(params.token.type).toBe('standard');
     expect(params.initializer).toEqual({ type: 'dopplerHookInitializer' });
+  });
+
+  it('rejects yearlyMintRate without an explicit standard token type', () => {
+    const token = {
+      name: 'InvalidToken',
+      symbol: 'INVALID',
+      tokenURI: 'ipfs://invalid',
+      yearlyMintRate: 0n,
+    } as unknown as TokenConfig;
+
+    expect(() => createDefaultBuilder().tokenConfig(token)).toThrow(
+      "yearlyMintRate is only supported with token type 'standard'",
+    );
   });
 
   it('preserves an explicit DopplerHookInitializer override', () => {
