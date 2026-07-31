@@ -62,6 +62,15 @@ describe('MulticurveBuilder', () => {
     expect(params.initializer).toEqual({ type: 'dopplerHookInitializer' });
   });
 
+  it('stores and clears an explicit salt', () => {
+    const salt =
+      '0x1111111111111111111111111111111111111111111111111111111111111111' as const;
+    const builder = createDefaultBuilder().withSalt(salt);
+
+    expect(builder.build().salt).toBe(salt);
+    expect(builder.withSalt(undefined).build().salt).toBeUndefined();
+  });
+
   it('requires an explicit standard token type', () => {
     const params = createDefaultBuilder()
       .tokenConfig({

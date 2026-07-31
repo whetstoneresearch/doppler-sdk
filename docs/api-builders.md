@@ -312,6 +312,10 @@ Methods (chainable):
   - Supports `uniswapV2`, `uniswapV2Split`, `uniswapV4`, `uniswapV4Split`, and `noOp`
 - withUserAddress(address)
 - withIntegrator(address?)
+- withSalt(salt?: Hex)
+  - Uses the exact 32-byte salt for deterministic multicurve `CreateParams`, token prediction, and pool identity
+  - Reuse the same salt and otherwise identical inputs across independent preview and create operations
+  - Pass `undefined` to clear it and restore generated-salt behavior
 - Address overrides (optional):
   - withAirlock(address)
   - withTokenFactory(address)
@@ -328,6 +332,7 @@ Validation highlights:
 - `initialSupply > 0`, `numTokensToSell > 0`, and `numTokensToSell <= initialSupply`
 - Governance selection is required
 - SDK sorts beneficiaries by address as required on-chain when encoding
+- Explicit salts must be `0x` followed by exactly 64 hexadecimal characters; invalid values fail before RPC or wallet work
 
 Examples:
 ```ts
@@ -567,7 +572,7 @@ console.log('withdraw tx:', transactionHash)
 
 - Static: `CreateStaticAuctionParams` with fields: `token`, `sale`, `pool`, optional `vesting`, `governance`, `migration`, `integrator`, `userAddress`
 - Dynamic: `CreateDynamicAuctionParams` with fields: `token`, `sale`, `auction`, `pool`, optional `vesting`, `governance`, `migration`, `integrator`, `userAddress`, optional `startTimeOffset`, optional `blockTimestamp`
-- Multicurve: `CreateMulticurveParams` with fields: `token`, `sale`, `pool` (with `curves`), optional `vesting`, `governance`, `migration`, `integrator`, `userAddress`
+- Multicurve: `CreateMulticurveParams` with fields: `token`, `sale`, `pool` (with `curves`), optional `vesting`, `governance`, `migration`, `integrator`, `userAddress`, optional `salt`
 - Opening auction: `CreateOpeningAuctionParams` with fields: `token`, `sale`, `openingAuction`, `doppler`, optional `vesting`, `governance`, `migration`, `integrator`, `userAddress`, optional `startTimeOffset`, optional `startingTime`, optional `blockTimestamp`, optional module overrides
 
 Pass the built object directly to the factory:

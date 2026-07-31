@@ -9,7 +9,7 @@ import {
 import { CHAIN_IDS, type SupportedChainId } from './addresses';
 // Re-export SupportedChainId so consumers can import from this module
 export { type SupportedChainId } from './addresses';
-import type { Address, WalletClient } from 'viem';
+import type { Address, Hex, WalletClient } from 'viem';
 
 export type SupportedChain =
   | typeof mainnet
@@ -1121,6 +1121,9 @@ export interface CreateMulticurveParams<
   // Integrator details
   integrator?: Address;
   userAddress: Address;
+
+  // Optional deterministic salt for CREATE2 token address selection
+  salt?: Hex;
 
   // Optional address overrides for on-chain modules used during encoding/creation
   modules?: ModuleAddressOverrides;
