@@ -61,7 +61,9 @@ describe('C1: Runtime values must not be exported as type-only', () => {
 describe('C2: INK Airlock address should match generated deployment', () => {
   it('INK airlock address should match GENERATED_DOPPLER_DEPLOYMENTS', () => {
     const inkAddresses = ADDRESSES[CHAIN_IDS.INK];
-    const generatedInk = (GENERATED_DOPPLER_DEPLOYMENTS as Record<string, Record<string, string>>)[String(CHAIN_IDS.INK)];
+    const generatedInk = (
+      GENERATED_DOPPLER_DEPLOYMENTS as Record<string, Record<string, string>>
+    )[String(CHAIN_IDS.INK)];
 
     // The hardcoded INK airlock is 0x014E... but the generated one is 0x660e...
     // 0x014E... is actually INK's UniswapV4Initializer
@@ -72,7 +74,9 @@ describe('C2: INK Airlock address should match generated deployment', () => {
 
   it('INK airlock should NOT be the UniswapV4Initializer address', () => {
     const inkAddresses = ADDRESSES[CHAIN_IDS.INK];
-    const generatedInk = (GENERATED_DOPPLER_DEPLOYMENTS as Record<string, Record<string, string>>)[String(CHAIN_IDS.INK)];
+    const generatedInk = (
+      GENERATED_DOPPLER_DEPLOYMENTS as Record<string, Record<string, string>>
+    )[String(CHAIN_IDS.INK)];
 
     expect(inkAddresses.airlock.toLowerCase()).not.toBe(
       generatedInk.UniswapV4Initializer.toLowerCase(),
@@ -87,7 +91,8 @@ describe('H2: Fallback curve should not have tickLower >= tickUpper', () => {
   it('fallback curve generated when user curve tickUpper equals roundMaxTickDown', async () => {
     // Import DopplerFactory to test normalizeMulticurveCurves (it's private,
     // so we test the observable behavior through the public API)
-    const { DopplerFactory } = await import('../../../src/evm/entities/DopplerFactory');
+    const { DopplerFactory } =
+      await import('../../../src/evm/entities/DopplerFactory');
     const { MAX_TICK } = await import('../../../src/evm/utils');
     const { WAD } = await import('../../../src/evm/constants');
 
@@ -119,7 +124,11 @@ describe('H2: Fallback curve should not have tickLower >= tickUpper', () => {
       account: { address: '0x0000000000000000000000000000000000000001' },
       writeContract: vi.fn(),
     };
-    const factory = new DopplerFactory(mockPublicClient as any, mockWalletClient as any, 84532);
+    const factory = new DopplerFactory(
+      mockPublicClient as any,
+      mockWalletClient as any,
+      84532,
+    );
 
     expect(() =>
       (factory as any).normalizeMulticurveCurves(curves, tickSpacing, WAD),
@@ -130,7 +139,7 @@ describe('H2: Fallback curve should not have tickLower >= tickUpper', () => {
 // ============================================================================
 // H3: encodeMigrationData for opening auctions missing numeraire
 // ============================================================================
-describe('H3: Opening auction encodeMigrationData should pass numeraire for dopplerHook migration', () => {
+describe('H3: Opening auction encodeMigrationData should pass numeraire for dopplerHookMigrator migration', () => {
   it('opening auction path passes options to encodeMigrationData', async () => {
     // The static auction path at line 257 passes { numeraire, overrides }
     // The opening auction path at line 1405 passes NO options argument.
@@ -143,12 +152,19 @@ describe('H3: Opening auction encodeMigrationData should pass numeraire for dopp
     );
 
     // Find the encodeCreateOpeningAuctionParams method and check for encodeMigrationData call
-    const methodStart = factorySource.indexOf('async encodeCreateOpeningAuctionParams');
-    const methodEnd = factorySource.indexOf('async createOpeningAuction', methodStart);
+    const methodStart = factorySource.indexOf(
+      'async encodeCreateOpeningAuctionParams',
+    );
+    const methodEnd = factorySource.indexOf(
+      'async createOpeningAuction',
+      methodStart,
+    );
     const methodBody = factorySource.slice(methodStart, methodEnd);
 
     // Find the encodeMigrationData call in this method
-    const migrationCallMatch = methodBody.match(/this\.encodeMigrationData\(([^)]+)\)/);
+    const migrationCallMatch = methodBody.match(
+      /this\.encodeMigrationData\(([^)]+)\)/,
+    );
     expect(migrationCallMatch).toBeTruthy();
 
     // The call should include a second argument with numeraire, like the static auction path:
@@ -177,12 +193,22 @@ describe('H5: completeOpeningAuction should not return zeroAddress when dopplerS
     );
 
     // Find the pattern: dopplerHookAddress: zeroAddress in the dopplerSalt branch
-    const completeMethod = factorySource.indexOf('async completeOpeningAuction');
-    const afterComplete = factorySource.indexOf('async simulateCompleteOpeningAuction', completeMethod);
-    const methodBody = factorySource.slice(completeMethod, afterComplete > completeMethod ? afterComplete : undefined);
+    const completeMethod = factorySource.indexOf(
+      'async completeOpeningAuction',
+    );
+    const afterComplete = factorySource.indexOf(
+      'async simulateCompleteOpeningAuction',
+      completeMethod,
+    );
+    const methodBody = factorySource.slice(
+      completeMethod,
+      afterComplete > completeMethod ? afterComplete : undefined,
+    );
 
     // Check if there's a code path that sets dopplerHookAddress to zeroAddress
-    const hasZeroAddressFallback = methodBody.includes('dopplerHookAddress: zeroAddress');
+    const hasZeroAddressFallback = methodBody.includes(
+      'dopplerHookAddress: zeroAddress',
+    );
     // This should NOT happen — the bug means it does
     expect(hasZeroAddressFallback).toBe(false);
   });
@@ -200,7 +226,9 @@ describe('H6: Unichain Sepolia v2Migrator and v4Migrator should be different', (
   });
 
   it('v2Migrator should match generated deployment', () => {
-    const generated = (GENERATED_DOPPLER_DEPLOYMENTS as Record<string, Record<string, string>>)[String(CHAIN_IDS.UNICHAIN_SEPOLIA)];
+    const generated = (
+      GENERATED_DOPPLER_DEPLOYMENTS as Record<string, Record<string, string>>
+    )[String(CHAIN_IDS.UNICHAIN_SEPOLIA)];
     const addresses = ADDRESSES[CHAIN_IDS.UNICHAIN_SEPOLIA];
     expect(addresses.v2Migrator.toLowerCase()).toBe(
       generated.UniswapV2Migrator.toLowerCase(),
@@ -208,7 +236,9 @@ describe('H6: Unichain Sepolia v2Migrator and v4Migrator should be different', (
   });
 
   it('v4Migrator should match generated deployment', () => {
-    const generated = (GENERATED_DOPPLER_DEPLOYMENTS as Record<string, Record<string, string>>)[String(CHAIN_IDS.UNICHAIN_SEPOLIA)];
+    const generated = (
+      GENERATED_DOPPLER_DEPLOYMENTS as Record<string, Record<string, string>>
+    )[String(CHAIN_IDS.UNICHAIN_SEPOLIA)];
     const addresses = ADDRESSES[CHAIN_IDS.UNICHAIN_SEPOLIA];
     expect(addresses.v4Migrator.toLowerCase()).toBe(
       generated.UniswapV4Migrator.toLowerCase(),
@@ -233,7 +263,8 @@ describe('H7: Timestamp byte extraction should not lose entropy for bits > 32', 
     const methodBody = source.slice(methodStart, methodEnd);
 
     // Should use BigInt for timestamp extraction
-    const usesBigInt = methodBody.includes('BigInt(') || methodBody.includes('bigTimestamp');
+    const usesBigInt =
+      methodBody.includes('BigInt(') || methodBody.includes('bigTimestamp');
     expect(usesBigInt).toBe(true);
 
     // Should NOT use the broken >> operator for timestamp bytes
@@ -248,7 +279,7 @@ describe('H7: Timestamp byte extraction should not lose entropy for bits > 32', 
 
     const timestampBytes = new Uint8Array(8);
     for (let i = 0; i < 8; i++) {
-      timestampBytes[i] = Number((bigTimestamp >> BigInt(i * 8)) & 0xFFn);
+      timestampBytes[i] = Number((bigTimestamp >> BigInt(i * 8)) & 0xffn);
     }
 
     // With BigInt, bytes 4-7 should carry the upper bits of the timestamp
@@ -282,12 +313,17 @@ describe('H1: mineTokenOrder should handle isToken0=true for high numeraire addr
 
     // Find mineTokenOrder method
     const methodStart = factorySource.indexOf('private async mineTokenOrder');
-    const methodEnd = factorySource.indexOf('async encodeCreateDynamicAuctionParams', methodStart);
+    const methodEnd = factorySource.indexOf(
+      'async encodeCreateDynamicAuctionParams',
+      methodStart,
+    );
     const methodBody = factorySource.slice(methodStart, methodEnd);
 
     // Check if it handles both directions using isToken0Expected
     // The fix uses: isToken0Expected + wantToken0 logic instead of a single > check
-    const usesIsToken0Expected = methodBody.includes('isToken0Expected') || methodBody.includes('wantToken0');
+    const usesIsToken0Expected =
+      methodBody.includes('isToken0Expected') ||
+      methodBody.includes('wantToken0');
 
     // If the bug exists, neither isToken0Expected nor wantToken0 appears
     expect(usesIsToken0Expected).toBe(true);
@@ -309,9 +345,13 @@ describe('M5: Builder should validate tick values against int24 bounds', () => {
     const methodBody = builderSource.slice(buildStart);
 
     // Check if it validates ticks against int24 bounds
-    const checksInt24 = methodBody.includes('INT24_MIN') || methodBody.includes('INT24_MAX') ||
-                         methodBody.includes('-8388608') || methodBody.includes('8388607') ||
-                         methodBody.includes('-8_388_608') || methodBody.includes('8_388_607');
+    const checksInt24 =
+      methodBody.includes('INT24_MIN') ||
+      methodBody.includes('INT24_MAX') ||
+      methodBody.includes('-8388608') ||
+      methodBody.includes('8388607') ||
+      methodBody.includes('-8_388_608') ||
+      methodBody.includes('8_388_607');
 
     // If the bug exists, no int24 validation is performed
     expect(checksInt24).toBe(true);
@@ -323,14 +363,19 @@ describe('M5: Builder should validate tick values against int24 bounds', () => {
       'utf-8',
     );
 
-    const methodStart = factorySource.indexOf('private validateOpeningAuctionParams');
+    const methodStart = factorySource.indexOf(
+      'private validateOpeningAuctionParams',
+    );
     const nextMethod = factorySource.indexOf('\n  private ', methodStart + 1);
     const methodBody = factorySource.slice(methodStart, nextMethod);
 
     // Check if it validates ticks against int24 bounds
-    const checksInt24 = methodBody.includes('INT24') ||
-                         methodBody.includes('-8388608') || methodBody.includes('8388607') ||
-                         methodBody.includes('-8_388_608') || methodBody.includes('8_388_607');
+    const checksInt24 =
+      methodBody.includes('INT24') ||
+      methodBody.includes('-8388608') ||
+      methodBody.includes('8388607') ||
+      methodBody.includes('-8_388_608') ||
+      methodBody.includes('8_388_607');
 
     expect(checksInt24).toBe(true);
   });
@@ -346,7 +391,9 @@ describe('M9: incentiveShareBps + shareToAuctionBps should not exceed 10_000', (
       'utf-8',
     );
 
-    const methodStart = factorySource.indexOf('private validateOpeningAuctionParams');
+    const methodStart = factorySource.indexOf(
+      'private validateOpeningAuctionParams',
+    );
     const nextMethod = factorySource.indexOf('\n  private ', methodStart + 1);
     const methodBody = factorySource.slice(methodStart, nextMethod);
 
@@ -383,7 +430,8 @@ describe('H4: CreateOpeningAuctionParams types should be consistent', () => {
     // The builder version uses ResolvedOpeningAuctionDopplerConfig (gamma required)
     // The types.ts version uses OpeningAuctionDopplerConfig (gamma optional)
     // Verify by checking that the builder's gamma is required
-    const { OpeningAuctionBuilder } = await import('../../../src/evm/builders/OpeningAuctionBuilder');
+    const { OpeningAuctionBuilder } =
+      await import('../../../src/evm/builders/OpeningAuctionBuilder');
 
     const builder = new OpeningAuctionBuilder(84532);
     builder.tokenConfig({
@@ -416,7 +464,9 @@ describe('H4: CreateOpeningAuctionParams types should be consistent', () => {
     });
     builder.withMigration({ type: 'uniswapV2' });
     builder.withGovernance({ type: 'noOp' });
-    builder.withUserAddress('0x1234567890123456789012345678901234567890' as Address);
+    builder.withUserAddress(
+      '0x1234567890123456789012345678901234567890' as Address,
+    );
 
     const params = builder.build();
 
@@ -456,7 +506,10 @@ describe('T1: Phase constant values should match their semantic names', () => {
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       // Look for mockResolvedValueOnce(2) with comment about "Active"
-      if (line.includes('mockResolvedValueOnce(2)') && line.includes('Active')) {
+      if (
+        line.includes('mockResolvedValueOnce(2)') &&
+        line.includes('Active')
+      ) {
         foundMislabeled = true;
         break;
       }
@@ -473,9 +526,8 @@ describe('T1: Phase constant values should match their semantic names', () => {
 // ============================================================================
 describe('T2: decodeDelta should correctly decode negative (signed) int128 values', () => {
   it('decodes negative amount0 from a BalanceDelta', async () => {
-    const { OpeningAuctionPositionManager } = await import(
-      '../../../src/evm/entities/auction/OpeningAuctionPositionManager'
-    );
+    const { OpeningAuctionPositionManager } =
+      await import('../../../src/evm/entities/auction/OpeningAuctionPositionManager');
 
     // Encode a negative amount0 (-5) and positive amount1 (7) into a BalanceDelta
     // BalanceDelta is packed as: (int128(amount0) << 128) | uint128(amount1)
@@ -491,9 +543,8 @@ describe('T2: decodeDelta should correctly decode negative (signed) int128 value
   });
 
   it('decodes negative amount1 from a BalanceDelta', async () => {
-    const { OpeningAuctionPositionManager } = await import(
-      '../../../src/evm/entities/auction/OpeningAuctionPositionManager'
-    );
+    const { OpeningAuctionPositionManager } =
+      await import('../../../src/evm/entities/auction/OpeningAuctionPositionManager');
 
     const posFive = 5n;
     const negSeven = -7n;
@@ -506,9 +557,8 @@ describe('T2: decodeDelta should correctly decode negative (signed) int128 value
   });
 
   it('decodes both negative amounts from a BalanceDelta', async () => {
-    const { OpeningAuctionPositionManager } = await import(
-      '../../../src/evm/entities/auction/OpeningAuctionPositionManager'
-    );
+    const { OpeningAuctionPositionManager } =
+      await import('../../../src/evm/entities/auction/OpeningAuctionPositionManager');
 
     const negThree = -3n;
     const negNine = -9n;
@@ -544,9 +594,13 @@ describe('L2: getLiquidityAtTick should use INT24_MIN/INT24_MAX constants', () =
     const methodBody = source.slice(methodStart, methodEnd);
 
     // Check if it uses hardcoded values instead of constants
-    const usesHardcoded = methodBody.includes('-8_388_608') || methodBody.includes('8_388_607') ||
-                          methodBody.includes('-8388608') || methodBody.includes('8388607');
-    const usesConstants = methodBody.includes('INT24_MIN') || methodBody.includes('INT24_MAX');
+    const usesHardcoded =
+      methodBody.includes('-8_388_608') ||
+      methodBody.includes('8_388_607') ||
+      methodBody.includes('-8388608') ||
+      methodBody.includes('8388607');
+    const usesConstants =
+      methodBody.includes('INT24_MIN') || methodBody.includes('INT24_MAX');
 
     // The method should use constants, not hardcoded values
     expect(usesConstants).toBe(true);
@@ -567,7 +621,9 @@ describe('L11: Dead private methods should not exist', () => {
     // Count occurrences of getAirlockAddress
     // The definition is `private getAirlockAddress()` — we exclude that
     const allOccurrences = source.split('getAirlockAddress').length - 1;
-    const definitionOccurrences = source.includes('private getAirlockAddress') ? 1 : 0;
+    const definitionOccurrences = source.includes('private getAirlockAddress')
+      ? 1
+      : 0;
     const callOccurrences = allOccurrences - definitionOccurrences;
 
     // If it's dead code, there should be 0 calls
@@ -581,7 +637,11 @@ describe('L11: Dead private methods should not exist', () => {
     );
 
     const allOccurrences = source.split('getInitializerAddress').length - 1;
-    const definitionOccurrences = source.includes('private getInitializerAddress') ? 1 : 0;
+    const definitionOccurrences = source.includes(
+      'private getInitializerAddress',
+    )
+      ? 1
+      : 0;
     const callOccurrences = allOccurrences - definitionOccurrences;
 
     expect(callOccurrences).toBe(0);
@@ -610,9 +670,8 @@ describe('L11: Dead private methods should not exist', () => {
 // ============================================================================
 describe('L12: Multicurve should use DEFAULT_V4_YEARLY_MINT_RATE', () => {
   it('both constants have the same value currently', async () => {
-    const { DEFAULT_V3_YEARLY_MINT_RATE, DEFAULT_V4_YEARLY_MINT_RATE } = await import(
-      '../../../src/evm/constants'
-    );
+    const { DEFAULT_V3_YEARLY_MINT_RATE, DEFAULT_V4_YEARLY_MINT_RATE } =
+      await import('../../../src/evm/constants');
     // This test documents that they are currently equal.
     // If they diverge, the multicurve path would silently use the wrong rate.
     expect(DEFAULT_V3_YEARLY_MINT_RATE).toBe(DEFAULT_V4_YEARLY_MINT_RATE);
@@ -645,12 +704,14 @@ describe('L13: Should use consistent zero address constant', () => {
     );
 
     // Check for both imports
-    const importsViemZeroAddress = source.includes("zeroAddress") &&
+    const importsViemZeroAddress =
+      source.includes('zeroAddress') &&
       (source.includes("from 'viem'") || source.includes('from "viem"'));
     const importsConstantsZeroAddress = source.includes('ZERO_ADDRESS');
 
     // Both should not be used in the same file — pick one
-    const usesBothInCode = importsViemZeroAddress && importsConstantsZeroAddress;
+    const usesBothInCode =
+      importsViemZeroAddress && importsConstantsZeroAddress;
 
     // If the bug exists, both are used
     expect(usesBothInCode).toBe(false);
@@ -679,8 +740,14 @@ describe('M10: Transaction receipt confirmation counts should be consistent', ()
     for (const methodSig of createMethods) {
       const methodStart = source.indexOf(methodSig);
       // Find the next method after this one
-      const nextMethodIdx = source.indexOf('\n  async ', methodStart + methodSig.length);
-      const methodBody = source.slice(methodStart, nextMethodIdx > methodStart ? nextMethodIdx : undefined);
+      const nextMethodIdx = source.indexOf(
+        '\n  async ',
+        methodStart + methodSig.length,
+      );
+      const methodBody = source.slice(
+        methodStart,
+        nextMethodIdx > methodStart ? nextMethodIdx : undefined,
+      );
 
       // Each should have waitForTransactionReceipt with confirmations
       if (methodBody.includes('waitForTransactionReceipt')) {
@@ -694,7 +761,7 @@ describe('M10: Transaction receipt confirmation counts should be consistent', ()
 // M8: validateOpeningAuctionParams doesn't validate migration type
 // ============================================================================
 describe('M8: Opening auction should validate migration type compatibility', () => {
-  it('dopplerHook migration type should be explicitly handled or rejected', async () => {
+  it('dopplerHookMigrator migration type should be explicitly handled or rejected', async () => {
     const source = fs.readFileSync(
       path.resolve(process.cwd(), 'src/evm/entities/DopplerFactory.ts'),
       'utf-8',
@@ -708,7 +775,8 @@ describe('M8: Opening auction should validate migration type compatibility', () 
     // Check if migration type is validated
     const checksMigrationType =
       methodBody.includes('migration.type') ||
-      methodBody.includes('migration') && methodBody.includes('dopplerHook');
+      (methodBody.includes('migration') &&
+        methodBody.includes('dopplerHookMigrator'));
 
     // If the bug exists, the method does NOT check migration type
     expect(checksMigrationType).toBe(true);
@@ -743,12 +811,14 @@ describe('D1: Examples README should list all example files', () => {
 // ============================================================================
 describe('L5: encodeOwnerHookData packed format should produce valid hex', () => {
   it('packed format should return a valid 42-char hex address', async () => {
-    const { OpeningAuctionPositionManager } = await import(
-      '../../../src/evm/entities/auction/OpeningAuctionPositionManager'
-    );
+    const { OpeningAuctionPositionManager } =
+      await import('../../../src/evm/entities/auction/OpeningAuctionPositionManager');
 
     const testAddress = '0x1234567890123456789012345678901234567890' as Address;
-    const result = OpeningAuctionPositionManager.encodeOwnerHookData(testAddress, 'packed');
+    const result = OpeningAuctionPositionManager.encodeOwnerHookData(
+      testAddress,
+      'packed',
+    );
 
     // Should be a valid hex string starting with 0x
     expect(result.startsWith('0x')).toBe(true);
@@ -757,12 +827,14 @@ describe('L5: encodeOwnerHookData packed format should produce valid hex', () =>
   });
 
   it('abi format should produce ABI-encoded address (66 chars)', async () => {
-    const { OpeningAuctionPositionManager } = await import(
-      '../../../src/evm/entities/auction/OpeningAuctionPositionManager'
-    );
+    const { OpeningAuctionPositionManager } =
+      await import('../../../src/evm/entities/auction/OpeningAuctionPositionManager');
 
     const testAddress = '0x1234567890123456789012345678901234567890' as Address;
-    const result = OpeningAuctionPositionManager.encodeOwnerHookData(testAddress, 'abi');
+    const result = OpeningAuctionPositionManager.encodeOwnerHookData(
+      testAddress,
+      'abi',
+    );
 
     // ABI-encoded address is 32 bytes = 64 hex chars + 0x prefix = 66 chars
     expect(result.startsWith('0x')).toBe(true);
@@ -798,8 +870,11 @@ describe('M1: isInRange should check both tick bounds', () => {
     const checksLowerBound = methodBody.includes('position.tickLower');
     const checksUpperBound = methodBody.includes('position.tickUpper');
     // Should contain a single return with both bounds
-    const hasCombinedCheck = methodBody.includes('tickLower') && methodBody.includes('tickUpper') &&
-                              methodBody.includes('refTick >=') && methodBody.includes('refTick <');
+    const hasCombinedCheck =
+      methodBody.includes('tickLower') &&
+      methodBody.includes('tickUpper') &&
+      methodBody.includes('refTick >=') &&
+      methodBody.includes('refTick <');
 
     expect(checksLowerBound).toBe(true);
     expect(checksUpperBound).toBe(true);
@@ -819,7 +894,8 @@ describe('M7: MulticurveBuilder fee validation should reject negative fees', () 
     );
 
     // Should check for negative fee anywhere in the file
-    const checksNegativeFee = source.includes('fee < 0') || source.includes('fee cannot be negative');
+    const checksNegativeFee =
+      source.includes('fee < 0') || source.includes('fee cannot be negative');
     expect(checksNegativeFee).toBe(true);
   });
 });
@@ -858,16 +934,23 @@ describe('M6: Factory should resolve startingTime from top-level params, not par
     );
 
     // Find the opening auction start time resolution
-    const encodeMethod = source.indexOf('async encodeCreateOpeningAuctionParams');
-    const nextMethod = source.indexOf('async createOpeningAuction', encodeMethod);
+    const encodeMethod = source.indexOf(
+      'async encodeCreateOpeningAuctionParams',
+    );
+    const nextMethod = source.indexOf(
+      'async createOpeningAuction',
+      encodeMethod,
+    );
     const methodBody = source.slice(encodeMethod, nextMethod);
 
     // The factory should read startTimeOffset from params (top-level),
     // not from params.doppler.startTimeOffset (which builder doesn't populate)
-    const readsFromDopplerSubfield = methodBody.includes('params.doppler.startTimeOffset') ||
-                                      methodBody.includes('params.doppler.startingTime');
-    const readsFromTopLevel = methodBody.includes('params.startTimeOffset') ||
-                               methodBody.includes('params.startingTime');
+    const readsFromDopplerSubfield =
+      methodBody.includes('params.doppler.startTimeOffset') ||
+      methodBody.includes('params.doppler.startingTime');
+    const readsFromTopLevel =
+      methodBody.includes('params.startTimeOffset') ||
+      methodBody.includes('params.startingTime');
 
     // Both patterns existing is OK (fallback chain), but if ONLY the doppler subfield
     // is checked, it will always be undefined for builder-created params

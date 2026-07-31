@@ -71,6 +71,7 @@ async function main() {
   const params = sdk
     .buildMulticurveAuction()
     .tokenConfig({
+      type: 'standard',
       name: 'Scheduled ETH Sepolia Token',
       symbol: 'SETS',
       tokenURI: 'ipfs://scheduled-eth-sepolia.json',

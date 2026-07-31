@@ -11,8 +11,8 @@ All types referenced are exported from `src/types.ts`.
 ## Common Concepts
 
 - Token specification:
-  - `standard` (default): legacy DERC20 factory path with optional vesting and yearly mint rate
-  - `dopplerERC20V1`: newer DopplerERC20V1 template with schedule vesting and balance-limit settings; selected explicitly with `type: 'dopplerERC20V1'` or automatically when template-specific fields are present
+  - `dopplerERC20V1` (default): DopplerERC20V1 template with schedule vesting and balance-limit settings; selected when `type` is omitted or explicitly set to `'dopplerERC20V1'`
+  - `standard`: legacy DERC20 factory path with optional vesting and yearly mint rate; requires explicit `type: 'standard'`
 - Governance is required:
   - Call `withGovernance(...)` in all cases.
   - Use `withGovernance({ type: 'default' })` for standard governance defaults.
@@ -20,6 +20,9 @@ All types referenced are exported from `src/types.ts`.
   - Use `withGovernance({ type: 'launchpad', multisig })` on launchpad-enabled chains.
   - Or provide `withGovernance({ type: 'custom', initialVotingDelay, initialVotingPeriod, initialProposalThreshold })`.
 - Fee tiers and tick spacing: 100→1, 500→10, 3000→60, 10000→200
+- DopplerHook compatibility:
+  - Migration config should use `DopplerHookMigratorConfig` with `type: 'dopplerHookMigrator'`; the deprecated `DopplerHookMigrationConfig` and `type: 'dopplerHook'` remain accepted.
+  - Multicurve initializer params should use `type: 'dopplerHookInitializer'`; the deprecated initializer discriminator `type: 'dopplerHook'` remains accepted.
 
 Price → Ticks conversion used by builders:
 ```
@@ -36,10 +39,10 @@ Recommended for fixed price range launches with Uniswap V3.
 Methods (chainable):
 
 - tokenConfig(params)
-  - Standard: `{ name, symbol, tokenURI, yearlyMintRate? }`
-    - Defaults: `yearlyMintRate = DEFAULT_V3_YEARLY_MINT_RATE (0.02e18)`
+  - Standard: `{ type: 'standard', name, symbol, tokenURI, yearlyMintRate? }`
+    - Legacy opt-in. Defaults: `yearlyMintRate = DEFAULT_V3_YEARLY_MINT_RATE (0.02e18)`
   - DopplerERC20V1: `{ type?: 'dopplerERC20V1', name, symbol, tokenURI, maxBalanceLimit?, balanceLimitEnd?, controller?, excludedFromBalanceLimit? }`
-    - Uses `dopplerERC20V1Factory` by default when `type: 'dopplerERC20V1'` is explicit or when specific fields (`maxBalanceLimit`, `balanceLimitEnd`, `controller`, `excludedFromBalanceLimit`) are present. `withTokenFactory(address)` is a generic factory override and takes precedence, but it must point to a factory compatible with the selected token path and token data ABI. DopplerERC20V1 does not encode `yearlyMintRate`; `controller` defaults to the zero address, so set it only if early balance-limit disable should be possible. Keep explicit `type: 'dopplerERC20V1'` when there are no template-specific fields.
+    - Default when `type` is omitted or explicitly set to `dopplerERC20V1`. Uses `dopplerERC20V1Factory`; `withTokenFactory(address)` takes precedence but must point to a compatible factory. DopplerERC20V1 does not encode `yearlyMintRate`; `controller` defaults to the zero address.
     - `excludedFromBalanceLimit` is encoded only at deployment. On the default DopplerERC20V1 path, `simulateCreate*` and `create*` add user-supplied exclusions plus determinable protocol recipients for the selected auction path, and standard GovernanceFactory timelocks are auto-excluded when governance is `default` or `custom`. Custom `withTokenFactory(address)` paths receive only the `excludedFromBalanceLimit` entries supplied in `tokenConfig`, while `withGovernanceFactory(address)` skips standard-governance timelock auto-exclusion. If you submit encoded params manually via `encodeCreate*Params`, simulation-derived timelocks are not included; use `simulateCreate*`/`create*` or pass explicit exclusions yourself.
 - saleConfig({ initialSupply, numTokensToSell, numeraire })
 - Price specification methods (use one, not multiple):
@@ -57,7 +60,7 @@ Methods (chainable):
     - @deprecated: Use `withMarketCapRange()` instead for more intuitive configuration
 - withVesting({ duration?, cliffDuration?, recipients?, amounts?, allocations? } | undefined)
   - Omit to disable vesting. Default duration if provided but undefined is `DEFAULT_V3_VESTING_DURATION`.
-  - `cliffDuration > 0` or `allocations` automatically routes standard tokens through the legacy DERC20 V2 factory (`CloneDERC20VotesV2Factory`). With explicit `type: 'dopplerERC20V1'` or template-specific fields, shared schedules using `duration` plus `cliffDuration` and per-beneficiary `allocations` stay on the DopplerERC20V1 factory path.
+  - Explicit `type: 'standard'` tokens with `cliffDuration > 0` or `allocations` route through the legacy DERC20 V2 factory (`CloneDERC20VotesV2Factory`).
   - Cliff vesting requires `duration >= 1 day` and `cliffDuration <= duration`.
   - `recipients`: Optional array of addresses to receive vested tokens. Defaults to `[userAddress]` if not provided.
   - `amounts`: Optional array of token amounts corresponding to each recipient. Must match `recipients` length if provided. Defaults to all unsold tokens to `userAddress` if not provided.
@@ -85,7 +88,7 @@ Validation highlights:
 - `initialSupply > 0`, `numTokensToSell > 0`, and `numTokensToSell <= initialSupply`
 - If vesting set, there must be tokens reserved (`initialSupply - numTokensToSell > 0`)
 - For V4 migration config (if chosen), beneficiary percentages must sum to 10000
-- Use `sdk.getDerc20V2(tokenAddress)` for schedule-aware reads and release flows on cliffed / multi-schedule tokens
+- Use `sdk.getDerc20V2(tokenAddress)` for schedule-aware reads and release flows on explicit `type: 'standard'` cliffed or multi-schedule tokens
 
 Examples:
 ```ts
@@ -105,7 +108,7 @@ const params = sdk.buildStaticAuction()
 
 // Example 2: Single vesting beneficiary with price range (legacy)
 const paramsLegacy = new StaticAuctionBuilder(chainId)
-  .tokenConfig({ name: 'My Token', symbol: 'MTK', tokenURI: 'https://example.com/mtk.json' })
+  .tokenConfig({ type: 'standard', name: 'My Token', symbol: 'MTK', tokenURI: 'https://example.com/mtk.json' })
   .saleConfig({ initialSupply: parseEther('1_000_000_000'), numTokensToSell: parseEther('900_000_000'), numeraire: weth })
   .poolByPriceRange({ priceRange: { startPrice: 0.0001, endPrice: 0.001 }, fee: 3000 })
   .withVesting({ duration: BigInt(365*24*60*60) }) // All unsold tokens vest to userAddress
@@ -135,7 +138,7 @@ const paramsMultiVest = new StaticAuctionBuilder(chainId)
 
 // Example 4: Per-beneficiary vesting schedules (DERC20 V2)
 const paramsPerSchedule = new StaticAuctionBuilder(chainId)
-  .tokenConfig({ name: 'My Token', symbol: 'MTK', tokenURI: 'https://example.com/mtk.json' })
+  .tokenConfig({ type: 'standard', name: 'My Token', symbol: 'MTK', tokenURI: 'https://example.com/mtk.json' })
   .saleConfig({ initialSupply: parseEther('1_000_000_000'), numTokensToSell: parseEther('900_000_000'), numeraire: weth })
   .withMarketCapRange({
     marketCap: { start: 50_000, end: 5_000_000 },
@@ -175,10 +178,10 @@ Recommended for Dutch auctions where price moves over epochs using Uniswap V4 ho
 Methods (chainable):
 
 - tokenConfig(params)
-  - Standard: `{ name, symbol, tokenURI, yearlyMintRate? }`
-    - Defaults: `yearlyMintRate = DEFAULT_V4_YEARLY_MINT_RATE (0.02e18)`
+  - Standard: `{ type: 'standard', name, symbol, tokenURI, yearlyMintRate? }`
+    - Legacy opt-in. Defaults: `yearlyMintRate = DEFAULT_V4_YEARLY_MINT_RATE (0.02e18)`
   - DopplerERC20V1: `{ type?: 'dopplerERC20V1', name, symbol, tokenURI, maxBalanceLimit?, balanceLimitEnd?, controller?, excludedFromBalanceLimit? }`
-    - Uses `dopplerERC20V1Factory` by default when `type: 'dopplerERC20V1'` is explicit or when specific fields (`maxBalanceLimit`, `balanceLimitEnd`, `controller`, `excludedFromBalanceLimit`) are present. `withTokenFactory(address)` is a generic factory override and takes precedence, but it must point to a factory compatible with the selected token path and token data ABI. DopplerERC20V1 does not encode `yearlyMintRate`; `controller` defaults to the zero address, so set it only if early balance-limit disable should be possible. Keep explicit `type: 'dopplerERC20V1'` when there are no template-specific fields.
+    - Default when `type` is omitted or explicitly set to `dopplerERC20V1`. Uses `dopplerERC20V1Factory`; `withTokenFactory(address)` takes precedence but must point to a compatible factory. DopplerERC20V1 does not encode `yearlyMintRate`; `controller` defaults to the zero address.
     - `excludedFromBalanceLimit` is encoded only at deployment. On the default DopplerERC20V1 path, `simulateCreate*` and `create*` add user-supplied exclusions plus determinable protocol recipients for the selected auction path, and standard GovernanceFactory timelocks are auto-excluded when governance is `default` or `custom`. Custom `withTokenFactory(address)` paths receive only the `excludedFromBalanceLimit` entries supplied in `tokenConfig`, while `withGovernanceFactory(address)` skips standard-governance timelock auto-exclusion. If you submit encoded params manually via `encodeCreate*Params`, simulation-derived timelocks are not included; use `simulateCreate*`/`create*` or pass explicit exclusions yourself.
 - saleConfig({ initialSupply, numTokensToSell, numeraire? })
   - Defaults: `numeraire = ZERO_ADDRESS` (token is paired against ETH)
@@ -201,7 +204,7 @@ Methods (chainable):
     - @deprecated: Use `withMarketCapRange()` instead for more intuitive configuration
 - withVesting({ duration?, cliffDuration?, recipients?, amounts?, allocations? } | undefined)
   - Omit to disable vesting. Default duration if provided but undefined is `0` for dynamic auctions.
-  - Standard tokens with `cliffDuration > 0` or `allocations` route through legacy DERC20 V2. With explicit `type: 'dopplerERC20V1'` or template-specific fields, shared schedules using `duration` plus `cliffDuration` and per-beneficiary `allocations` stay on the DopplerERC20V1 factory path.
+  - Explicit `type: 'standard'` tokens with `cliffDuration > 0` or `allocations` route through legacy DERC20 V2.
   - `recipients`: Optional array of addresses to receive vested tokens. Defaults to `[userAddress]` if not provided.
   - `amounts`: Optional array of token amounts corresponding to each recipient. Must match `recipients` length if provided. Defaults to all unsold tokens to `userAddress` if not provided.
 - withGovernance(GovernanceOption)
@@ -274,10 +277,10 @@ Recommended when you want to seed a Uniswap V4 pool with multiple curves in a si
 Methods (chainable):
 
 - tokenConfig(params)
-  - Standard: `{ name, symbol, tokenURI, yearlyMintRate? }`
-    - Defaults: `yearlyMintRate = DEFAULT_V4_YEARLY_MINT_RATE (0.02e18)`
+  - Standard: `{ type: 'standard', name, symbol, tokenURI, yearlyMintRate? }`
+    - Legacy opt-in. Defaults: `yearlyMintRate = DEFAULT_V4_YEARLY_MINT_RATE (0.02e18)`
   - DopplerERC20V1: `{ type?: 'dopplerERC20V1', name, symbol, tokenURI, maxBalanceLimit?, balanceLimitEnd?, controller?, excludedFromBalanceLimit? }`
-    - Uses `dopplerERC20V1Factory` by default when `type: 'dopplerERC20V1'` is explicit or when specific fields (`maxBalanceLimit`, `balanceLimitEnd`, `controller`, `excludedFromBalanceLimit`) are present. `withTokenFactory(address)` is a generic factory override and takes precedence, but it must point to a factory compatible with the selected token path and token data ABI. DopplerERC20V1 does not encode `yearlyMintRate`; `controller` defaults to the zero address, so set it only if early balance-limit disable should be possible. Keep explicit `type: 'dopplerERC20V1'` when there are no template-specific fields.
+    - Default when `type` is omitted or explicitly set to `dopplerERC20V1`. Uses `dopplerERC20V1Factory`; `withTokenFactory(address)` takes precedence but must point to a compatible factory. DopplerERC20V1 does not encode `yearlyMintRate`; `controller` defaults to the zero address.
     - `excludedFromBalanceLimit` is encoded only at deployment. On the default DopplerERC20V1 path, `simulateCreate*` and `create*` add user-supplied exclusions plus determinable protocol recipients for the selected auction path, and standard GovernanceFactory timelocks are auto-excluded when governance is `default` or `custom`. Custom `withTokenFactory(address)` paths receive only the `excludedFromBalanceLimit` entries supplied in `tokenConfig`, while `withGovernanceFactory(address)` skips standard-governance timelock auto-exclusion. If you submit encoded params manually via `encodeCreate*Params`, simulation-derived timelocks are not included; use `simulateCreate*`/`create*` or pass explicit exclusions yourself.
 - saleConfig({ initialSupply, numTokensToSell, numeraire })
 - Curve configuration methods (use one, not multiple):
@@ -298,6 +301,8 @@ Methods (chainable):
     - Defaults: `fee = FEE_TIERS.LOW (500)`, `tickSpacing` inferred, and all three presets selected
     - `overrides` (per preset) let you tweak ticks, numPositions, or shares while preserving tier ordering
     - Automatically appends a filler curve when the selected presets sum to < 100%, keeping total shares at exactly 1e18
+- Initializer configuration defaults to `{ type: 'dopplerHookInitializer' }`.
+  - Use `withV4MulticurveInitializer(address)` to select the legacy `{ type: 'standard' }` initializer.
 - withVesting({ duration?, cliffDuration?, recipients?, amounts?, allocations? } | undefined)
   - `recipients`: Optional array of addresses to receive vested tokens. Defaults to `[userAddress]` if not provided.
   - `amounts`: Optional array of token amounts corresponding to each recipient. Must match `recipients` length if provided. Defaults to all unsold tokens to `userAddress` if not provided.
@@ -406,9 +411,9 @@ Use this builder when launch liquidity starts in an OpeningAuction hook and then
 Methods (chainable):
 
 - tokenConfig(params)
-  - Standard: `{ name, symbol, tokenURI, yearlyMintRate? }`
+  - Standard: `{ type: 'standard', name, symbol, tokenURI, yearlyMintRate? }`
   - DopplerERC20V1: `{ type?: 'dopplerERC20V1', name, symbol, tokenURI, maxBalanceLimit?, balanceLimitEnd?, controller?, excludedFromBalanceLimit? }`
-    - Uses `dopplerERC20V1Factory` by default when `type: 'dopplerERC20V1'` is explicit or when specific fields (`maxBalanceLimit`, `balanceLimitEnd`, `controller`, `excludedFromBalanceLimit`) are present. `withTokenFactory(address)` is a generic factory override and takes precedence, but it must point to a factory compatible with the selected token path and token data ABI. DopplerERC20V1 does not encode `yearlyMintRate`; `controller` defaults to the zero address, so set it only if early balance-limit disable should be possible. Keep explicit `type: 'dopplerERC20V1'` when there are no template-specific fields.
+    - Default when `type` is omitted or explicitly set to `dopplerERC20V1`. Uses `dopplerERC20V1Factory`; `withTokenFactory(address)` takes precedence but must point to a compatible factory. DopplerERC20V1 does not encode `yearlyMintRate`; `controller` defaults to the zero address.
     - `excludedFromBalanceLimit` is encoded only at deployment. On the default DopplerERC20V1 path, `simulateCreate*` and `create*` add user-supplied exclusions plus determinable protocol recipients for the selected auction path, and standard GovernanceFactory timelocks are auto-excluded when governance is `default` or `custom`. Custom `withTokenFactory(address)` paths receive only the `excludedFromBalanceLimit` entries supplied in `tokenConfig`, while `withGovernanceFactory(address)` skips standard-governance timelock auto-exclusion. If you submit encoded params manually via `encodeCreate*Params`, simulation-derived timelocks are not included; use `simulateCreate*`/`create*` or pass explicit exclusions yourself.
   - Doppler404: `{ type: 'doppler404', name, symbol, baseURI, unit? }`
 - saleConfig({ initialSupply, numTokensToSell, numeraire })

@@ -1,15 +1,81 @@
 import { describe, expect, it } from 'vitest';
 import { isAddress, type Address, zeroAddress } from 'viem';
-import { ADDRESSES, CHAIN_IDS, getAddresses } from '../../../src/evm/addresses';
+import {
+  ADDRESSES,
+  CHAIN_IDS,
+  getAddresses,
+  type ChainAddresses,
+} from '../../../src/evm/addresses';
 import { GENERATED_DOPPLER_DEPLOYMENTS } from '../../../src/evm/deployments.generated';
 
-const dopplerERC20V1TargetChains = [
+const generatedAddressTargetChains = [
   { name: 'mainnet', chainId: CHAIN_IDS.MAINNET },
   { name: 'base', chainId: CHAIN_IDS.BASE },
   { name: 'base-sepolia', chainId: CHAIN_IDS.BASE_SEPOLIA },
   { name: 'robinhood', chainId: CHAIN_IDS.ROBINHOOD },
   { name: 'monad-mainnet', chainId: CHAIN_IDS.MONAD_MAINNET },
 ] as const;
+
+const generatedTokenFactoryTargetChains = [
+  {
+    name: 'mainnet',
+    chainId: CHAIN_IDS.MAINNET,
+    deploymentKey: 'CloneERC20Factory',
+  },
+  {
+    name: 'base',
+    chainId: CHAIN_IDS.BASE,
+    deploymentKey: 'TokenFactory80',
+  },
+  {
+    name: 'base-sepolia',
+    chainId: CHAIN_IDS.BASE_SEPOLIA,
+    deploymentKey: 'TokenFactory80',
+  },
+  {
+    name: 'monad-mainnet',
+    chainId: CHAIN_IDS.MONAD_MAINNET,
+    deploymentKey: 'TokenFactory80',
+  },
+] as const;
+
+const generatedAddressMappings = [
+  ['airlock', 'Airlock'],
+  ['derc20V2Factory', 'CloneDERC20VotesV2Factory'],
+  ['derc20V2Implementation', 'CloneDERC20VotesV2'],
+  ['dopplerERC20V1Factory', 'DopplerERC20V1Factory'],
+  ['dopplerERC20V1Implementation', 'DopplerERC20V1'],
+  ['doppler404Factory', 'DN404Factory'],
+  ['v3Initializer', 'UniswapV3Initializer'],
+  ['lockableV3Initializer', 'LockableUniswapV3Initializer'],
+  ['v4Initializer', 'UniswapV4Initializer'],
+  ['v4MulticurveInitializer', 'UniswapV4MulticurveInitializer'],
+  [
+    'v4ScheduledMulticurveInitializer',
+    'UniswapV4ScheduledMulticurveInitializer',
+  ],
+  ['v4DecayMulticurveInitializer', 'DecayMulticurveInitializer'],
+  ['dopplerHookInitializer', 'DopplerHookInitializer'],
+  ['rehypeDopplerHookInitializer', 'RehypeDopplerHookInitializer'],
+  ['rehypeDopplerHook', 'RehypeDopplerHookInitializer'],
+  ['dopplerLens', 'DopplerLensQuoter'],
+  ['dopplerDeployer', 'DopplerDeployer'],
+  ['v2Migrator', 'UniswapV2Migrator'],
+  ['v2MigratorSplit', 'UniswapV2MigratorSplit'],
+  ['v4Migrator', 'UniswapV4Migrator'],
+  ['v4MigratorSplit', 'UniswapV4MigratorSplit'],
+  ['v4MigratorHook', 'UniswapV4MigratorHook'],
+  ['dopplerHookMigrator', 'DopplerHookMigrator'],
+  ['rehypeDopplerHookMigrator', 'RehypeDopplerHookMigrator'],
+  ['noOpMigrator', 'NoOpMigrator'],
+  ['governanceFactory', 'GovernanceFactory'],
+  ['noOpGovernanceFactory', 'NoOpGovernanceFactory'],
+  ['launchpadGovernanceFactory', 'LaunchpadGovernanceFactory'],
+  ['streamableFeesLocker', 'StreamableFeesLocker'],
+  ['streamableFeesLockerV2', 'StreamableFeesLockerV2'],
+  ['topUpDistributor', 'TopUpDistributor'],
+  ['bundler', 'Bundler'],
+] as const satisfies readonly (readonly [keyof ChainAddresses, string])[];
 
 function expectConfiguredAddress(address: Address | undefined): Address {
   expect(address).toBeDefined();
@@ -22,7 +88,7 @@ function expectConfiguredAddress(address: Address | undefined): Address {
 }
 
 describe('address configuration', () => {
-  it.each(dopplerERC20V1TargetChains)(
+  it.each(generatedAddressTargetChains)(
     'returns generated DopplerERC20V1 addresses for $name',
     ({ chainId }) => {
       const addresses = getAddresses(chainId);
@@ -39,6 +105,34 @@ describe('address configuration', () => {
       expect(ADDRESSES[chainId].dopplerERC20V1Implementation).toBe(
         implementation,
       );
+    },
+  );
+
+  it.each(generatedTokenFactoryTargetChains)(
+    'returns the generated token factory for $name',
+    ({ chainId, deploymentKey }) => {
+      const generated = GENERATED_DOPPLER_DEPLOYMENTS[
+        chainId
+      ] as unknown as Record<string, Address>;
+
+      expect(getAddresses(chainId).tokenFactory).toBe(generated[deploymentKey]);
+    },
+  );
+
+  it.each(generatedAddressTargetChains)(
+    'uses generated Doppler contract addresses for $name',
+    ({ chainId }) => {
+      const addresses = getAddresses(chainId);
+      const generated = GENERATED_DOPPLER_DEPLOYMENTS[
+        chainId
+      ] as unknown as Record<string, Address | undefined>;
+
+      for (const [property, deploymentKey] of generatedAddressMappings) {
+        const generatedAddress = generated[deploymentKey];
+        if (generatedAddress !== undefined) {
+          expect(addresses[property]).toBe(generatedAddress);
+        }
+      }
     },
   );
 });

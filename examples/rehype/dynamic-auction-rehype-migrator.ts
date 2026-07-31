@@ -73,7 +73,7 @@ async function main() {
       maxProceeds: parseEther('0.0002'),
     })
     .withMigration({
-      type: 'dopplerHook',
+      type: 'dopplerHookMigrator',
       fee: 3000,
       useDynamicFee: false,
       tickSpacing: 10,
@@ -107,7 +107,7 @@ async function main() {
     .build();
 
   console.log(
-    'Creating dynamic auction with dopplerHook migration (onchain tx)...',
+    'Creating dynamic auction with dopplerHookMigrator migration (onchain tx)...',
   );
   console.log('Token:', params.token.name, `(${params.token.symbol})`);
   console.log('Selling:', formatEther(params.sale.numTokensToSell), 'tokens');

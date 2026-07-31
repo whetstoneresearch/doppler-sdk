@@ -511,7 +511,7 @@ export class DynamicAuctionBuilder<
     if (this.migration.type === 'noOp') {
       throw new Error(
         'noOp migration is not supported for dynamic auctions. ' +
-          'Use uniswapV2, uniswapV4, or dopplerHook migration instead.',
+          'Use uniswapV2, uniswapV4, or dopplerHookMigrator migration instead.',
       );
     }
 

@@ -14,11 +14,117 @@ import {
   WAD,
   ZERO_ADDRESS,
 } from '../../../../src/evm/constants';
+import type { TokenConfig } from '../../../../src/evm/types';
 
 // WETH on Base - token will be token1
 const WETH_BASE: Address = '0x4200000000000000000000000000000000000006';
 
+const USER_ADDRESS = '0x00000000000000000000000000000000000000AA' as Address;
+const DOPPLER_HOOK_INITIALIZER =
+  '0x00000000000000000000000000000000000000BB' as Address;
+const LEGACY_MULTICURVE_INITIALIZER =
+  '0x00000000000000000000000000000000000000CC' as Address;
+
+function createDefaultBuilder() {
+  return MulticurveBuilder.forChain(CHAIN_IDS.BASE)
+    .tokenConfig({
+      name: 'DefaultToken',
+      symbol: 'DFT',
+      tokenURI: 'ipfs://default',
+    })
+    .saleConfig({
+      initialSupply: 1_000n * WAD,
+      numTokensToSell: 500n * WAD,
+      numeraire: WETH_BASE,
+    })
+    .poolConfig({
+      fee: 3000,
+      tickSpacing: 60,
+      curves: [
+        {
+          tickLower: -120_000,
+          tickUpper: -90_000,
+          numPositions: 8,
+          shares: WAD,
+        },
+      ],
+    })
+    .withGovernance({ type: 'noOp' })
+    .withMigration({ type: 'uniswapV2' })
+    .withUserAddress(USER_ADDRESS);
+}
+
 describe('MulticurveBuilder', () => {
+  it('defaults to DopplerERC20V1 and DopplerHookInitializer', () => {
+    const params = createDefaultBuilder().build();
+
+    expect(params.token.type).toBe('dopplerERC20V1');
+    expect(params.initializer).toEqual({ type: 'dopplerHookInitializer' });
+  });
+
+  it('requires an explicit standard token type', () => {
+    const params = createDefaultBuilder()
+      .tokenConfig({
+        type: 'standard',
+        name: 'LegacyToken',
+        symbol: 'LEG',
+        tokenURI: 'ipfs://legacy',
+      })
+      .build();
+
+    expect(params.token.type).toBe('standard');
+    expect(params.initializer).toEqual({ type: 'dopplerHookInitializer' });
+  });
+
+  it('rejects yearlyMintRate without an explicit standard token type', () => {
+    const token = {
+      name: 'InvalidToken',
+      symbol: 'INVALID',
+      tokenURI: 'ipfs://invalid',
+      yearlyMintRate: 0n,
+    } as unknown as TokenConfig;
+
+    expect(() => createDefaultBuilder().tokenConfig(token)).toThrow(
+      "yearlyMintRate is only supported with token type 'standard'",
+    );
+  });
+
+  it('preserves an explicit DopplerHookInitializer override', () => {
+    const params = createDefaultBuilder()
+      .withDopplerHookInitializer(DOPPLER_HOOK_INITIALIZER)
+      .build();
+
+    expect(params.initializer).toEqual({ type: 'dopplerHookInitializer' });
+    expect(params.modules?.dopplerHookInitializer).toBe(
+      DOPPLER_HOOK_INITIALIZER,
+    );
+  });
+
+  it('selects the legacy initializer with withV4MulticurveInitializer', () => {
+    const params = createDefaultBuilder()
+      .withV4MulticurveInitializer(LEGACY_MULTICURVE_INITIALIZER)
+      .build();
+
+    expect(params.initializer).toEqual({ type: 'standard' });
+    expect(params.modules?.v4MulticurveInitializer).toBe(
+      LEGACY_MULTICURVE_INITIALIZER,
+    );
+  });
+
+  it('rejects conflicting explicit initializer overrides in either order', () => {
+    expect(() =>
+      createDefaultBuilder()
+        .withV4MulticurveInitializer(LEGACY_MULTICURVE_INITIALIZER)
+        .withDopplerHookInitializer(DOPPLER_HOOK_INITIALIZER),
+    ).toThrow('Cannot set multicurve initializer');
+
+    expect(() =>
+      createDefaultBuilder()
+        .withDopplerHookInitializer(DOPPLER_HOOK_INITIALIZER)
+        .withV4MulticurveInitializer(LEGACY_MULTICURVE_INITIALIZER),
+    ).toThrow('Cannot set multicurve initializer');
+  });
+
   it('sorts lockable beneficiaries by address during build', () => {
     const beneficiaries = [
       {
@@ -243,6 +349,16 @@ describe('MulticurveBuilder', () => {
         );
     }
 
+    it('builds scheduled initializer config', () => {
+      const startTime = Math.floor(Date.now() / 1000) + 600;
+      const params = buildBaseBuilder().withSchedule({ startTime }).build();
+
+      expect(params.initializer).toEqual({
+        type: 'scheduled',
+        startTime,
+      });
+    });
+
     it('builds decay initializer config and keeps pool.fee as terminal fee', () => {
       const startTime = Math.floor(Date.now() / 1000) + 600;
       const params = buildBaseBuilder()
@@ -275,6 +391,31 @@ describe('MulticurveBuilder', () => {
         startTime: 0,
         startFee: 3000,
         durationSeconds: 3600,
+      });
+    });
+
+    it('returns to the default initializer after clearing decay', () => {
+      const params = buildBaseBuilder()
+        .withDecay({
+          startFee: 3000,
+          durationSeconds: 3600,
+        })
+        .withDecay(undefined)
+        .build();
+
+      expect(params.initializer).toEqual({
+        type: 'dopplerHookInitializer',
+      });
+    });
+
+    it('returns to the default initializer after clearing a schedule', () => {
+      const params = buildBaseBuilder()
+        .withSchedule({ startTime: 1 })
+        .withSchedule(undefined)
+        .build();
+
+      expect(params.initializer).toEqual({
+        type: 'dopplerHookInitializer',
       });
     });
 
@@ -319,12 +460,11 @@ describe('MulticurveBuilder', () => {
     });
 
     it('prevents combining decay and scheduled initializers', () => {
-      const builder = buildBaseBuilder()
-        .withDecay({
-          startTime: Math.floor(Date.now() / 1000) + 600,
-          startFee: 3000,
-          durationSeconds: 3600,
-        });
+      const builder = buildBaseBuilder().withDecay({
+        startTime: Math.floor(Date.now() / 1000) + 600,
+        startFee: 3000,
+        durationSeconds: 3600,
+      });
 
       expect(() =>
         builder.withSchedule({
@@ -346,7 +486,9 @@ describe('MulticurveBuilder', () => {
         .withV4DecayMulticurveInitializer(decayInitializer)
         .build();
 
-      expect(params.modules?.v4DecayMulticurveInitializer).toBe(decayInitializer);
+      expect(params.modules?.v4DecayMulticurveInitializer).toBe(
+        decayInitializer,
+      );
     });
 
     it('builds rehype initializer config with fee schedule and distribution matrix', () => {
@@ -374,7 +516,8 @@ describe('MulticurveBuilder', () => {
         .build();
 
       expect(params.initializer?.type).toBe('rehype');
-      const rehype = (params.initializer as { type: 'rehype'; config: any }).config;
+      const rehype = (params.initializer as { type: 'rehype'; config: any })
+        .config;
       expect(rehype.startFee).toBe(6000);
       expect(rehype.endFee).toBe(3000);
       expect(rehype.durationSeconds).toBe(3600);
@@ -401,7 +544,8 @@ describe('MulticurveBuilder', () => {
 
         const params = buildBaseBuilder()
           .withRehypeDopplerHook({
-            hookAddress: '0x9999999999999999999999999999999999999999' as Address,
+            hookAddress:
+              '0x9999999999999999999999999999999999999999' as Address,
             buybackDestination:
               '0x8888888888888888888888888888888888888888' as Address,
             startFee: 3000,
@@ -421,7 +565,12 @@ describe('MulticurveBuilder', () => {
           })
           .build();
 
-        const rehype = (params.initializer as { type: 'rehype'; config: { startingTime: number } }).config;
+        const rehype = (
+          params.initializer as {
+            type: 'rehype';
+            config: { startingTime: number };
+          }
+        ).config;
         expect(rehype.startingTime).toBe(expectedStartingTime);
       },
     );
@@ -570,7 +719,8 @@ describe('MulticurveBuilder', () => {
         })
         .build();
 
-      const rehype = (params.initializer as { type: 'rehype'; config: any }).config;
+      const rehype = (params.initializer as { type: 'rehype'; config: any })
+        .config;
       expect(rehype.startFee).toBe(3000);
       expect(rehype.endFee).toBe(3000);
       expect(rehype.durationSeconds).toBe(0);

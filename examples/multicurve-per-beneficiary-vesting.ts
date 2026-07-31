@@ -83,6 +83,7 @@ async function main() {
   const params = sdk
     .buildMulticurveAuction()
     .tokenConfig({
+      type: 'standard',
       name: 'Per Schedule Vesting Token',
       symbol: 'PSVT',
       tokenURI: 'ipfs://per-schedule-vesting.json',

@@ -46,6 +46,7 @@ const customMigrationEncoder: MigrationEncoder = (config: MigrationConfig) => {
     case 'uniswapV2Split':
     case 'uniswapV4Split':
     case 'dopplerHook':
+    case 'dopplerHookMigrator':
     case 'noOp':
       throw new Error(`This example encoder does not handle ${config.type}`);
 

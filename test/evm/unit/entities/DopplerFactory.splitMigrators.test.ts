@@ -1,12 +1,18 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { privateKeyToAccount } from 'viem/accounts';
-import { decodeAbiParameters, parseEther, type Address } from 'viem';
+import {
+  decodeAbiParameters,
+  parseEther,
+  zeroAddress,
+  type Address,
+} from 'viem';
 import { DopplerFactory } from '../../../../src/evm/entities/DopplerFactory';
 import { CHAIN_IDS, getAddresses } from '../../../../src/evm/addresses';
 import type {
   CreateDynamicAuctionParams,
   CreateStaticAuctionParams,
   SupportedPublicClient,
+  CreateMulticurveParams,
 } from '../../../../src/evm/types';
 import { isToken0Expected } from '../../../../src/evm/utils';
 
@@ -79,6 +85,51 @@ describe('DopplerFactory split migrator support', () => {
 
     expect(decoded[0]).toBe(proceedsRecipient);
     expect(decoded[1]).toBe(parseEther('0.1'));
+  });
+
+  it('falls back to V2Split when V2 is unavailable', () => {
+    const addresses = getAddresses(CHAIN_IDS.ROBINHOOD);
+    const robinhoodFactory = new DopplerFactory(
+      publicClient,
+      undefined,
+      CHAIN_IDS.ROBINHOOD,
+    );
+    const params: CreateMulticurveParams<typeof CHAIN_IDS.ROBINHOOD> = {
+      token: {
+        name: 'Robinhood LTS Token',
+        symbol: 'RHLTS',
+        tokenURI: 'https://example.com/robinhood-lts.json',
+      },
+      sale: {
+        initialSupply: parseEther('1000000'),
+        numTokensToSell: parseEther('900000'),
+        numeraire: addresses.weth,
+      },
+      pool: {
+        fee: 3000,
+        tickSpacing: 60,
+        curves: [
+          {
+            tickLower: -120000,
+            tickUpper: -90000,
+            numPositions: 8,
+            shares: parseEther('1'),
+          },
+        ],
+      },
+      governance: { type: 'noOp' },
+      migration: { type: 'uniswapV2' },
+      userAddress: account.address,
+    };
+
+    const result = robinhoodFactory.encodeCreateMulticurveParams(params);
+    const decoded = decodeAbiParameters(
+      [{ type: 'address' }, { type: 'uint256' }],
+      result.liquidityMigratorData,
+    );
+
+    expect(result.liquidityMigrator).toBe(addresses.v2MigratorSplit);
+    expect(decoded).toEqual([zeroAddress, 0n]);
   });
 
   it('encodes uniswapV4Split migration and sorts beneficiaries', async () => {

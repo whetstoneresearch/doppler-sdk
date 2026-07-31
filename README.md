@@ -31,7 +31,11 @@ Use network-specific entrypoints:
 
 ```typescript
 import { DopplerSDK } from '@whetstone-research/doppler-sdk/evm';
-import { initializer, cpmm, cpmmMigrator } from '@whetstone-research/doppler-sdk/solana';
+import {
+  initializer,
+  cpmm,
+  cpmmMigrator,
+} from '@whetstone-research/doppler-sdk/solana';
 import { DopplerSolanaProvider } from '@whetstone-research/doppler-sdk/solana/react';
 ```
 
@@ -136,6 +140,7 @@ import { base } from 'viem/chains';
 
 const params = new StaticAuctionBuilder(base.id)
   .tokenConfig({
+    type: 'standard',
     name: 'My Token',
     symbol: 'MTK',
     tokenURI: 'https://example.com/metadata.json',
@@ -179,7 +184,7 @@ console.log('Pool address:', result.poolAddress);
 console.log('Token address:', result.tokenAddress);
 ```
 
-If you set `cliffDuration > 0` or provide `allocations`, the SDK automatically uses the DERC20 V2 factory and exposes schedule-aware token reads via `sdk.getDerc20V2(tokenAddress)`. When `allocations` is provided, the SDK dedupes identical schedules internally and maps each recipient to the correct on-chain schedule.
+Explicit `type: 'standard'` tokens with `cliffDuration > 0` or `allocations` use the legacy DERC20 V2 factory and expose schedule-aware reads via `sdk.getDerc20V2(tokenAddress)`. When `allocations` is provided, the SDK dedupes identical schedules internally and maps each recipient to the correct onchain schedule.
 
 For a runnable example, see [examples/multicurve-per-beneficiary-vesting.ts](./examples/multicurve-per-beneficiary-vesting.ts).
 
@@ -316,6 +321,7 @@ console.log('Token address:', result.tokenAddress);
 ### Opening Auction (Lifecycle + Bid Management)
 
 Support includes:
+
 - `sdk.buildOpeningAuction()` for `CreateOpeningAuctionParams`
 - `sdk.factory.simulateCreateOpeningAuction(params)` and `sdk.factory.createOpeningAuction(params)`
 - `sdk.getOpeningAuction(hookAddress)` for hook reads + `settleAuction()` / `claimIncentives()`
@@ -359,21 +365,21 @@ const params = sdk
   .withMigration({ type: 'uniswapV4', fee: 3000, tickSpacing: 60 })
   .withUserAddress('0x...')
   .withOpeningAuctionInitializer('0x...') // required on Base until deployed
-  .build()
+  .build();
 
-const sim = await sdk.factory.simulateCreateOpeningAuction(params)
-const created = await sim.execute()
+const sim = await sdk.factory.simulateCreateOpeningAuction(params);
+const created = await sim.execute();
 
-const opening = await sdk.getOpeningAuction(created.openingAuctionHookAddress)
-await opening.getPhase()
+const opening = await sdk.getOpeningAuction(created.openingAuctionHookAddress);
+await opening.getPhase();
 
-const lifecycle = await sdk.getOpeningAuctionLifecycle('0x...')
-await lifecycle.getState(created.tokenAddress)
+const lifecycle = await sdk.getOpeningAuctionLifecycle('0x...');
+await lifecycle.getState(created.tokenAddress);
 
 await sdk.factory.completeOpeningAuction({
   asset: created.tokenAddress,
   initializerAddress: '0x...',
-})
+});
 ```
 
 `completeOpeningAuction` auto-settles and auto-mines `dopplerSalt` when omitted; because completion mining can race with block timestamps/state changes, the SDK may re-mine and retry a few times if needed. `simulateCompleteOpeningAuction` requires the opening auction to already be settled.
@@ -384,9 +390,9 @@ See [examples/opening-auction-lifecycle.ts](./examples/opening-auction-lifecycle
 
 ### Multicurve Auction (V4 Multicurve Initializer)
 
-Multicurve auctions use a Uniswap V4-style initializer that seeds liquidity across multiple curves in a single pool. This enables richer distributions and can be combined with any supported migration path (V2, V3, V4, or NoOp). Multicurve initializer modes are modeled as a typed variant (`standard`, `scheduled`, `decay`, `rehype`) so new hook/initializer variations can be added without breaking existing integrations.
+Multicurve auctions use `DopplerHookInitializer` by default to seed liquidity across multiple curves in a single Uniswap V4 pool. The typed initializer modes are `dopplerHookInitializer`, `standard`, `scheduled`, `decay`, and `rehype`; use `withV4MulticurveInitializer(address)` when explicitly targeting the legacy standard initializer.
 
-**Standard Multicurve with Migration:**
+**Multicurve with Migration:**
 
 ```typescript
 import { MulticurveBuilder } from '@whetstone-research/doppler-sdk/evm';
@@ -436,7 +442,10 @@ console.log('Token address:', result.tokenAddress);
 **Market Cap Presets (Low / Medium / High):**
 
 ```typescript
-import { MulticurveBuilder, FEE_TIERS } from '@whetstone-research/doppler-sdk/evm';
+import {
+  MulticurveBuilder,
+  FEE_TIERS,
+} from '@whetstone-research/doppler-sdk/evm';
 import { parseEther } from 'viem';
 import { base } from 'viem/chains';
 
@@ -942,7 +951,7 @@ For a runnable release-focused example covering legacy DERC20, DERC20 V2 schedul
 
 ### DopplerERC20V1 Tokens
 
-Use the newer DopplerERC20V1 token template by either setting `type: 'dopplerERC20V1'` explicitly or by passing fields such as `maxBalanceLimit` with `balanceLimitEnd`, `controller`, or `excludedFromBalanceLimit`. When selected, the SDK uses the configured `dopplerERC20V1Factory` by default. `withTokenFactory(address)` is a generic factory override and takes precedence, but it must point to a factory compatible with the selected token path and token data ABI. `controller` is optional and defaults to the zero address, set it only if early balance-limit disable should be possible. Standard configs without the specific fields still use the legacy `standard` path, where cliff/allocation vesting routes to legacy DERC20 V2. Keep explicit `type: 'dopplerERC20V1'` when you want its behavior but have no specific fields to infer from.
+DopplerERC20V1 is the default token template when `type` is omitted. Set `type: 'dopplerERC20V1'` to make that choice explicit, or set `type: 'standard'` to use the legacy token path, where cliff/allocation vesting routes to the legacy DERC20 template. The SDK uses the configured `dopplerERC20V1Factory` by default; `withTokenFactory(address)` takes precedence but must point to a factory compatible with the selected token path and token data ABI. `controller` is optional and defaults to the zero address, so set it only if early balance-limit disable should be possible.
 
 When balance limiting is enabled on the default DopplerERC20V1 integration, the SDK encodes user exclusions plus determinable protocol recipients for the selected auction path into deployment-time `excludedFromBalanceLimit`, including initializers, hooks, PoolManager, migrators, known migration pools, no-op governance, launchpad governance multisigs, and standard GovernanceFactory timelocks for `default` or `custom` governance. Custom `withTokenFactory(address)` paths receive only the `excludedFromBalanceLimit` entries supplied in `tokenConfig`, so custom token factory users must provide any required deployment-time exclusions themselves. Custom `withGovernanceFactory(address)` paths skip standard-governance timelock auto-exclusion, so custom governance factory users must provide any required timelock exclusions themselves. Exclusions cannot be added later through the controller or governance.
 
@@ -1321,7 +1330,7 @@ const params = sdk
     tickSpacing: 10,
   })
   .withMigration({
-    type: 'dopplerHook',
+    type: 'dopplerHookMigrator',
     fee: 3000,
     tickSpacing: 10,
     lockDuration: 30 * 24 * 60 * 60,
@@ -1349,14 +1358,19 @@ const params = sdk
   .build();
 ```
 
-Note: `dopplerHook` migrator beneficiaries must include the current Airlock owner
+Note: `dopplerHookMigrator` beneficiaries must include the current Airlock owner
 with at least 5% shares, and total shares must sum to `1e18`.
 Unlike initializer-side Rehype pools, migrator-side Rehype uses a static
 `customFee`; there is no fee decay schedule in this mode.
+For backwards compatibility, the deprecated `DopplerHookMigrationConfig` type
+and its `type: 'dopplerHook'` discriminator remain accepted. New code should use
+`DopplerHookMigratorConfig` with `type: 'dopplerHookMigrator'`. Multicurve
+initializer params similarly accept the deprecated `type: 'dopplerHook'`
+discriminator, which resolves to `dopplerHookInitializer`.
 
 ```typescript
 migration: {
-  type: 'dopplerHook',
+  type: 'dopplerHookMigrator',
   fee: 3000,
   useDynamicFee: false,
   tickSpacing: 10,
