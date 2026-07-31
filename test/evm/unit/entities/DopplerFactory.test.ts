@@ -30,6 +30,7 @@ import {
   getAddress,
   keccak256,
   type Address,
+  type PublicClient,
 } from 'viem';
 import {
   MAX_TICK,
@@ -134,6 +135,150 @@ describe('DopplerFactory', () => {
       governance: { type: 'default' },
       migration: { type: 'uniswapV2' },
       userAddress: '0x1234567890123456789012345678901234567890' as Address,
+    });
+
+    const explicitSalt =
+      '0x1111111111111111111111111111111111111111111111111111111111111111' as const;
+
+    const getRecordedCreateParams = (call: unknown) => {
+      if (
+        typeof call !== 'object' ||
+        call === null ||
+        !('args' in call) ||
+        !Array.isArray(call.args) ||
+        typeof call.args[0] !== 'object' ||
+        call.args[0] === null ||
+        !('salt' in call.args[0]) ||
+        !('tokenFactoryData' in call.args[0])
+      ) {
+        throw new Error('Expected a recorded Airlock create call');
+      }
+      return call.args[0];
+    };
+
+    it('encodes the same complete params for the same explicit salt', () => {
+      const params = { ...multicurveParams(), salt: explicitSalt };
+
+      const first = factory.encodeCreateMulticurveParams(params);
+      const second = factory.encodeCreateMulticurveParams(params);
+
+      expect(first).toEqual(second);
+      expect(first.salt).toBe(explicitSalt);
+
+      const zeroSalt =
+        '0x0000000000000000000000000000000000000000000000000000000000000000' as const;
+      expect(
+        factory.encodeCreateMulticurveParams({
+          ...multicurveParams(),
+          salt: zeroSalt,
+        }).salt,
+      ).toBe(zeroSalt);
+    });
+
+    it.each([
+      ['a missing 0x prefix', '11'.repeat(32)],
+      ['fewer than 32 bytes', `0x${'11'.repeat(31)}`],
+      ['more than 32 bytes', `0x${'11'.repeat(33)}`],
+      ['non-hex characters', `0x${'gg'.repeat(32)}`],
+      ['a non-string value', 123],
+    ])('rejects %s before RPC or wallet work', async (_label, salt) => {
+      const params = {
+        ...multicurveParams(),
+        salt,
+      } as unknown as CreateMulticurveParams;
+      const client = publicClient as PublicClient;
+
+      await expect(factory.simulateCreateMulticurve(params)).rejects.toThrow(
+        'Multicurve salt must be exactly 32 bytes',
+      );
+      expect(client.simulateContract).not.toHaveBeenCalled();
+      expect(walletClient.writeContract).not.toHaveBeenCalled();
+    });
+
+    it('uses the generated-salt path only when salt is omitted', () => {
+      const entropy = 0x11;
+      const getRandomValues = vi
+        .spyOn(globalThis.crypto, 'getRandomValues')
+        .mockImplementation((array) => {
+          (array as Uint8Array).fill(entropy);
+          return array;
+        });
+
+      try {
+        const params = multicurveParams();
+        const generated = factory.encodeCreateMulticurveParams(params);
+        const expectedBytes = new Uint8Array(32).fill(entropy);
+        const addressBytes = params.userAddress.slice(2);
+        for (let i = 0; i < 20; i++) {
+          expectedBytes[i] ^=
+            Number.parseInt(addressBytes.slice(i * 2, (i + 1) * 2), 16);
+        }
+        const expectedSalt = `0x${Array.from(expectedBytes)
+          .map((byte) => byte.toString(16).padStart(2, '0'))
+          .join('')}`;
+
+        expect(generated.salt).toBe(expectedSalt);
+        expect(getRandomValues).toHaveBeenCalledOnce();
+
+        const explicit = factory.encodeCreateMulticurveParams({
+          ...params,
+          salt: explicitSalt,
+        });
+        expect(explicit.salt).toBe(explicitSalt);
+        expect(getRandomValues).toHaveBeenCalledOnce();
+      } finally {
+        getRandomValues.mockRestore();
+      }
+    });
+
+    it('preserves explicit salt through enrichment and execute', async () => {
+      const params = multicurveParams();
+      params.token = {
+        name: 'Limited MC Token',
+        symbol: 'LMCT',
+        tokenURI: 'https://example.com/limited-mc-token',
+        maxBalanceLimit: parseEther('10000'),
+        balanceLimitEnd: Math.floor(Date.now() / 1000) + 86_400,
+      };
+      params.salt = explicitSalt;
+      const client = publicClient as PublicClient;
+
+      vi.mocked(client.readContract).mockResolvedValue(mockPoolAddress);
+      const receipt = createMockTransactionReceiptWithCreateEvent();
+      vi.mocked(walletClient.writeContract).mockResolvedValue(
+        receipt.transactionHash,
+      );
+      vi.mocked(client.waitForTransactionReceipt).mockResolvedValue(
+        receipt,
+      );
+
+      const simulation = await factory.simulateCreateMulticurve(params);
+      const initialCreateCall = vi
+        .mocked(client.simulateContract)
+        .mock.calls.find(([call]) => call.functionName === 'create')?.[0];
+      const initialCreateParams = getRecordedCreateParams(initialCreateCall);
+
+      expect(initialCreateParams.salt).toBe(explicitSalt);
+      expect(simulation.createParams.salt).toBe(explicitSalt);
+      expect(simulation.createParams.tokenFactoryData).not.toBe(
+        initialCreateParams.tokenFactoryData,
+      );
+
+      await simulation.execute();
+
+      const createCalls = vi
+        .mocked(client.simulateContract)
+        .mock.calls.filter(([call]) => call.functionName === 'create');
+      const executeCreateParams = getRecordedCreateParams(createCalls[1]?.[0]);
+      const submittedCreateParams = getRecordedCreateParams(
+        vi.mocked(walletClient.writeContract).mock.calls[0]?.[0],
+      );
+
+      expect(createCalls).toHaveLength(2);
+      expect(executeCreateParams.salt).toBe(explicitSalt);
+      expect(submittedCreateParams.salt).toBe(explicitSalt);
+      expect(executeCreateParams).toEqual(simulation.createParams);
+      expect(submittedCreateParams).toEqual(simulation.createParams);
     });
 
     it('uses LTS token and multicurve initializer defaults', () => {

@@ -1,4 +1,4 @@
-import type { Address } from 'viem';
+import type { Address, Hex } from 'viem';
 import {
   DEFAULT_V3_YEARLY_MINT_RATE,
   DECAY_MAX_START_FEE,
@@ -55,6 +55,7 @@ export class MulticurveBuilder<
   private migration?: MigrationConfig;
   private integrator?: Address;
   private userAddress?: Address;
+  private salt?: Hex;
   private moduleAddresses?: ModuleAddressOverrides;
   private gasLimit?: bigint;
   // Stored from withCurves() for graduationMarketCap conversion in build()
@@ -605,6 +606,11 @@ export class MulticurveBuilder<
     return this;
   }
 
+  withSalt(salt?: Hex): this {
+    this.salt = salt;
+    return this;
+  }
+
   withGasLimit(gas?: bigint): this {
     this.gasLimit = gas;
     return this;
@@ -914,6 +920,7 @@ export class MulticurveBuilder<
       migration: this.migration,
       integrator: this.integrator ?? ZERO_ADDRESS,
       userAddress: this.userAddress,
+      salt: this.salt,
       modules: this.moduleAddresses,
       gas: this.gasLimit,
     };

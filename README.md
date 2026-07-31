@@ -439,6 +439,31 @@ console.log('Pool address:', result.poolAddress);
 console.log('Token address:', result.tokenAddress);
 ```
 
+**Deterministic preview/create identities:**
+
+By default, each independent multicurve assembly generates a new salt and may
+predict a different token and pool identity. Supply an explicit 32-byte salt
+when separate preview and create operations must assemble the same
+`CreateParams`:
+
+```typescript
+import type { Hex } from 'viem';
+
+const salt =
+  '0x1111111111111111111111111111111111111111111111111111111111111111' satisfies Hex;
+
+const deterministicParams = { ...params, salt };
+const preview =
+  await sdk.factory.simulateCreateMulticurve(deterministicParams);
+```
+
+Persist and reuse the salt with otherwise identical inputs for a later
+independent create operation. Builder users can call `.withSalt(salt)` before
+`.build()`. Omitting the salt, or clearing it with `.withSalt(undefined)`,
+preserves the generated-salt behavior. Explicit salts must be `0x` followed by
+exactly 64 hexadecimal characters.
+
+
 **Market Cap Presets (Low / Medium / High):**
 
 ```typescript

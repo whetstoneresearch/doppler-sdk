@@ -4528,7 +4528,7 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     })();
 
     // Resolve module addresses
-    const salt = this.generateRandomSalt(params.userAddress);
+    const salt = params.salt ?? this.generateRandomSalt(params.userAddress);
 
     const resolvedInitializer: Address | undefined = (() => {
       if (useDopplerHookInitializer) {
@@ -5469,6 +5469,14 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
    * Validate multicurve auction parameters
    */
   private validateMulticurveParams(params: CreateMulticurveParams<C>): void {
+    if (
+      params.salt !== undefined &&
+      (typeof params.salt !== 'string' ||
+        !/^0x[0-9a-fA-F]{64}$/.test(params.salt))
+    ) {
+      throw new Error('Multicurve salt must be exactly 32 bytes');
+    }
+
     // Validate token parameters
     if (!params.token.name || params.token.name.trim().length === 0) {
       throw new Error('Token name is required');
