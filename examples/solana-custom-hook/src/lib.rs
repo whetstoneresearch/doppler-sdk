@@ -1,11 +1,3 @@
-// ============================================================
-// Program: Solana Custom Hook Example
-// Framework: Anchor
-// Testing: Rust unit tests
-// Risk Level: Medium
-// Security: See security-checklist.md
-// ============================================================
-
 #![allow(unexpected_cfgs)]
 
 use anchor_lang::{prelude::*, solana_program::program::set_return_data};
