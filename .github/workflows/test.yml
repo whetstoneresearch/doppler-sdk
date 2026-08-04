@@ -184,6 +184,9 @@ jobs:
       - name: Run Solana unit tests
         run: pnpm test:solana
 
+      - name: Test custom hook example
+        run: cargo test --manifest-path examples/solana-custom-hook/Cargo.toml
+
   solana-mainnet-fork:
     name: Solana Mainnet Fork Examples
     runs-on: ubuntu-latest

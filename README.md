@@ -104,6 +104,10 @@ For runnable Solana flows, configure `examples/.env` and run with `pnpm tsx`, fo
 - [examples/solana-prediction-market.ts](./examples/solana-prediction-market.ts)
 - [examples/solana-swap.ts](./examples/solana-swap.ts)
 
+To implement an independently deployed callback program, see
+[Building a custom Solana hook](./docs/solana-custom-hooks.md) and the
+[minimal Anchor example](./examples/solana-custom-hook/).
+
 Resolve managed swap cosigning before constructing a launch:
 
 ```typescript

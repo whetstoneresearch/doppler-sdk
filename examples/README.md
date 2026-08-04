@@ -174,6 +174,7 @@ The Solana examples use `@whetstone-research/doppler-sdk/solana`. Set `SOLANA_NE
 - [`solana-usdc-cosigner-gated-buy.ts`](./solana-usdc-cosigner-gated-buy.ts): cosigner-gated devnet USDC buy flow.
 - [`solana-prediction-market.ts`](./solana-prediction-market.ts): create a two-outcome prediction market with trusted oracle and prediction migrator.
 - [`solana-swap.ts`](./solana-swap.ts): quote and submit an exact-in CPMM swap.
+- [`solana-custom-hook/`](./solana-custom-hook/): minimal Anchor implementation of the Solana hook callback ABI. See the [custom hook guide](../docs/solana-custom-hooks.md) for deployment and SDK wiring.
 
 Quick run:
 
