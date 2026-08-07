@@ -1,4 +1,7 @@
 import {
+  BaseError,
+  ContractFunctionRevertedError,
+  ExecutionRevertedError,
   type Address,
   type Hex,
   type Hash,
@@ -6,6 +9,7 @@ import {
   type WalletClient,
   type Account,
   encodeAbiParameters,
+  encodeFunctionData,
   encodePacked,
   keccak256,
   getAddress,
@@ -41,6 +45,12 @@ import type {
   GovernanceOption,
   ProceedsSplitConfig,
   StreamableFeesConfig,
+} from '../types';
+import type {
+  MulticurveCreateGasEstimate,
+  MulticurveCreatePrediction,
+  PrepareCreateMulticurveOptions,
+  PreparedMulticurveCreate,
 } from '../types';
 import type { ModuleAddressOverrides } from '../types';
 import { assertTokenConfigSupportsYearlyMintRate } from '../builders/shared';
@@ -80,6 +90,7 @@ import {
   MIN_TICK,
   MAX_TICK,
   isToken0Expected,
+  parseAirlockCreateReceipt,
   sortBeneficiaries,
   encodeRehypeDopplerHookInitializerData,
   normalizeRehypeDopplerHookInitializerConfig,
@@ -147,6 +158,11 @@ type ResolvedMulticurveInitializerMode =
     };
 
 type StandardTokenFactoryMode = 'legacy' | 'v2';
+
+type InternalCreateGasEstimate =
+  | { status: 'estimated'; gas: bigint }
+  | { status: 'unavailable' }
+  | { status: 'reverted'; error: unknown };
 type TokenFactoryVariant =
   | 'standard'
   | 'standard-v2'
@@ -3701,38 +3717,71 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     throw new Error('Unable to mine opening auction salt');
   }
 
+  private isCreateGasRevert(error: unknown): boolean {
+    if (
+      error instanceof ContractFunctionRevertedError ||
+      error instanceof ExecutionRevertedError
+    ) {
+      return true;
+    }
+    if (!(error instanceof BaseError)) return false;
+
+    return Boolean(
+      error.walk(
+        (cause) =>
+          cause instanceof ContractFunctionRevertedError ||
+          cause instanceof ExecutionRevertedError,
+      ),
+    );
+  }
+
+  private async resolveInternalCreateGasEstimate(args: {
+    request?: unknown;
+    address: Address;
+    createParams: CreateParams;
+    account?: Address | Account;
+  }): Promise<InternalCreateGasEstimate> {
+    const { request, address, createParams, account } = args;
+    let gasFromRequest: bigint | undefined;
+    if (
+      request &&
+      typeof request === 'object' &&
+      'gas' in request &&
+      typeof request.gas === 'bigint'
+    ) {
+      gasFromRequest = request.gas;
+    }
+
+    if (gasFromRequest !== undefined) {
+      return { status: 'estimated', gas: gasFromRequest };
+    }
+
+    try {
+      const gas = await (this.publicClient as PublicClient).estimateContractGas(
+        {
+          address,
+          abi: airlockAbi,
+          functionName: 'create',
+          args: [{ ...createParams }],
+          account,
+        },
+      );
+      return { status: 'estimated', gas };
+    } catch (error) {
+      return this.isCreateGasRevert(error)
+        ? { status: 'reverted', error }
+        : { status: 'unavailable' };
+    }
+  }
+
   private async resolveCreateGasEstimate(args: {
     request?: unknown;
     address: Address;
     createParams: CreateParams;
     account?: Address | Account;
   }): Promise<bigint | undefined> {
-    const { request, address, createParams, account } = args;
-    const gasFromRequest =
-      request &&
-      typeof request === 'object' &&
-      'gas' in (request as Record<string, unknown>)
-        ? (request as { gas?: bigint }).gas
-        : undefined;
-
-    if (gasFromRequest) {
-      return gasFromRequest;
-    }
-
-    try {
-      const estimated = await (
-        this.publicClient as PublicClient
-      ).estimateContractGas({
-        address,
-        abi: airlockAbi,
-        functionName: 'create',
-        args: [{ ...createParams }],
-        account,
-      });
-      return estimated;
-    } catch {
-      return undefined;
-    }
+    const estimate = await this.resolveInternalCreateGasEstimate(args);
+    return estimate.status === 'estimated' ? estimate.gas : undefined;
   }
 
   private isDoppler404Token(
@@ -4690,6 +4739,133 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     return createParams;
   }
 
+  private async resolveFinalMulticurveCreate(args: {
+    params: CreateMulticurveParams<C>;
+    simulationAccount?: Address | Account;
+    createParams?: CreateParams;
+  }) {
+    const { params, simulationAccount } = args;
+    const addresses = getAddresses(this.chainId);
+    const airlock = params.modules?.airlock ?? addresses.airlock;
+    const initialCreateParams =
+      args.createParams ?? this.encodeCreateMulticurveParams(params);
+    const initialSimulation = await (
+      this.publicClient as PublicClient
+    ).simulateContract({
+      address: airlock,
+      abi: airlockAbi,
+      functionName: 'create',
+      args: [{ ...initialCreateParams }],
+      account: simulationAccount,
+    });
+    const initialResult = initialSimulation.result as
+      | readonly unknown[]
+      | undefined;
+    if (
+      !initialResult ||
+      !Array.isArray(initialResult) ||
+      initialResult.length < 5
+    ) {
+      throw new Error('Failed to simulate multicurve create');
+    }
+
+    let createParams = initialCreateParams;
+    let request = initialSimulation.request;
+    let result = initialResult;
+    if (!args.createParams) {
+      const enrichedCreateParams =
+        this.withSimulationGovernanceTimelockExclusion({
+          createParams,
+          simResult: initialResult,
+          token: params.token,
+          governance: params.governance,
+          modules: params.modules,
+          addresses,
+        });
+
+      if (
+        enrichedCreateParams.tokenFactoryData !== createParams.tokenFactoryData
+      ) {
+        createParams = enrichedCreateParams;
+        const finalSimulation = await (
+          this.publicClient as PublicClient
+        ).simulateContract({
+          address: airlock,
+          abi: airlockAbi,
+          functionName: 'create',
+          args: [{ ...createParams }],
+          account: simulationAccount,
+        });
+        const finalResult = finalSimulation.result as
+          | readonly unknown[]
+          | undefined;
+        if (
+          !finalResult ||
+          !Array.isArray(finalResult) ||
+          finalResult.length < 5
+        ) {
+          throw new Error('Failed to simulate enriched multicurve create');
+        }
+        request = finalSimulation.request;
+        result = finalResult;
+      }
+    }
+
+    const tokenAddress = result[0] as Address;
+    const poolIdentity = await this.computeMulticurvePoolIdentity(
+      params,
+      tokenAddress,
+    );
+    const prediction: MulticurveCreatePrediction = {
+      tokenAddress,
+      poolOrHookAddress: result[1] as Address,
+      governanceAddress: result[2] as Address,
+      timelockAddress: result[3] as Address,
+      migrationPoolAddress: result[4] as Address,
+      ...poolIdentity,
+    };
+
+    return { airlock, createParams, prediction, request };
+  }
+
+  async prepareCreateMulticurve(
+    params: CreateMulticurveParams<C>,
+    options: PrepareCreateMulticurveOptions,
+  ): Promise<PreparedMulticurveCreate<C>> {
+    const resolved = await this.resolveFinalMulticurveCreate({
+      params,
+      simulationAccount: options.account,
+    });
+    const internalGasEstimate = await this.resolveInternalCreateGasEstimate({
+      request: resolved.request,
+      address: resolved.airlock,
+      createParams: resolved.createParams,
+      account: options.account,
+    });
+    if (internalGasEstimate.status === 'reverted') {
+      throw internalGasEstimate.error;
+    }
+    const gasEstimate: MulticurveCreateGasEstimate = internalGasEstimate;
+
+    return {
+      chainId: this.chainId,
+      account: options.account,
+      airlock: resolved.airlock,
+      createParams: resolved.createParams,
+      prediction: resolved.prediction,
+      transaction: {
+        to: resolved.airlock,
+        data: encodeFunctionData({
+          abi: airlockAbi,
+          functionName: 'create',
+          args: [{ ...resolved.createParams }],
+        }),
+        value: 0n,
+      },
+      gasEstimate,
+    };
+  }
+
   async simulateCreateMulticurve(params: CreateMulticurveParams<C>): Promise<{
     createParams: CreateParams;
     tokenAddress: Address;
@@ -4702,51 +4878,25 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       transactionHash: string;
     }>;
   }> {
-    const addresses = getAddresses(this.chainId);
-    const createParams = this.encodeCreateMulticurveParams(params);
-    const airlockAddress = params.modules?.airlock ?? addresses.airlock;
-    const { request, result } = await (
-      this.publicClient as PublicClient
-    ).simulateContract({
-      address: airlockAddress,
-      abi: airlockAbi,
-      functionName: 'create',
-      args: [{ ...createParams }],
-      account: this.walletClient?.account,
+    const resolved = await this.resolveFinalMulticurveCreate({
+      params,
+      simulationAccount: this.walletClient?.account,
     });
-    const simResult = result as readonly unknown[] | undefined;
     const gasEstimate = await this.resolveCreateGasEstimate({
-      request,
-      address: airlockAddress,
-      createParams,
+      request: resolved.request,
+      address: resolved.airlock,
+      createParams: resolved.createParams,
       account: this.walletClient?.account ?? params.userAddress,
     });
-    if (!simResult || !Array.isArray(simResult) || simResult.length < 2) {
-      throw new Error('Failed to simulate multicurve create');
-    }
-
-    // simResult[0] is "asset" in contract terminology, we call it tokenAddress for SDK consistency
-    const tokenAddress = simResult[0] as Address;
-    const poolId = await this.computeMulticurvePoolId(params, tokenAddress);
-
-    const createParamsWithTimelock =
-      this.withSimulationGovernanceTimelockExclusion({
-        createParams,
-        simResult,
-        token: params.token,
-        governance: params.governance,
-        modules: params.modules,
-        addresses,
-      });
 
     return {
-      createParams: createParamsWithTimelock,
-      tokenAddress,
-      poolId,
+      createParams: resolved.createParams,
+      tokenAddress: resolved.prediction.tokenAddress,
+      poolId: resolved.prediction.poolId,
       gasEstimate,
       execute: () =>
         this.createMulticurve(params, {
-          _createParams: createParamsWithTimelock,
+          _createParams: resolved.createParams,
         }),
     };
   }
@@ -4755,65 +4905,54 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     params: CreateMulticurveParams<C>,
     options?: { _createParams?: CreateParams },
   ): Promise<{ tokenAddress: Address; poolId: Hex; transactionHash: string }> {
-    const addresses = getAddresses(this.chainId);
-    if (!this.walletClient)
+    if (!this.walletClient) {
       throw new Error('Wallet client required for write operations');
+    }
 
-    // Use provided createParams (from simulate) or auto-simulate to get consistent params
-    const createParams =
-      options?._createParams ??
-      (await this.simulateCreateMulticurve(params)).createParams;
-    const airlockAddress = params.modules?.airlock ?? addresses.airlock;
-    const { request, result } = await (
-      this.publicClient as PublicClient
-    ).simulateContract({
-      address: airlockAddress,
-      abi: airlockAbi,
-      functionName: 'create',
-      args: [{ ...createParams }],
-      account: this.walletClient.account,
+    const resolved = await this.resolveFinalMulticurveCreate({
+      params,
+      simulationAccount: this.walletClient.account,
+      createParams: options?._createParams,
     });
-    const simResult = result as readonly unknown[] | undefined;
     const gasEstimate = await this.resolveCreateGasEstimate({
-      request,
-      address: airlockAddress,
-      createParams,
+      request: resolved.request,
+      address: resolved.airlock,
+      createParams: resolved.createParams,
       account: this.walletClient.account,
     });
     const gas = params.gas ?? gasEstimate ?? DEFAULT_CREATE_GAS_LIMIT;
-    const hash = await this.walletClient.writeContract({ ...request, gas });
+    const hash = await this.walletClient.writeContract({
+      ...resolved.request,
+      gas,
+    });
     const receipt = await (
       this.publicClient as PublicClient
     ).waitForTransactionReceipt({ hash, confirmations: 2 });
-
-    // Always extract actual addresses from event logs (source of truth)
-    const actualAddresses = this.extractAddressesFromCreateEvent(receipt);
-
-    if (!actualAddresses) {
+    const createResult = parseAirlockCreateReceipt({
+      receipt,
+      expectedAirlock: resolved.airlock,
+    });
+    if (!createResult) {
       throw new Error(
         'Failed to extract token address from Create event in transaction logs',
       );
     }
 
-    const actualTokenAddress = actualAddresses.tokenAddress;
-
-    // Warn if simulation predicted different address (helps debugging state divergence)
-    if (simResult && Array.isArray(simResult) && simResult.length >= 1) {
-      const simulatedToken = simResult[0] as Address;
-      if (simulatedToken.toLowerCase() !== actualTokenAddress.toLowerCase()) {
-        console.warn(
-          `[DopplerSDK] Simulation predicted token ${simulatedToken} but actual is ${actualTokenAddress}. ` +
-            `This may indicate state divergence between simulation and execution.`,
-        );
-      }
+    const actualTokenAddress = createResult.tokenAddress;
+    if (
+      resolved.prediction.tokenAddress.toLowerCase() !==
+      actualTokenAddress.toLowerCase()
+    ) {
+      console.warn(
+        `[DopplerSDK] Simulation predicted token ${resolved.prediction.tokenAddress} but actual is ${actualTokenAddress}. ` +
+          `This may indicate state divergence between simulation and execution.`,
+      );
     }
 
-    // Compute poolId from the PoolKey using actual token address
-    const poolId = await this.computeMulticurvePoolId(
+    const { poolId } = await this.computeMulticurvePoolIdentity(
       params,
       actualTokenAddress,
     );
-
     return { tokenAddress: actualTokenAddress, poolId, transactionHash: hash };
   }
 
@@ -6395,20 +6534,24 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
   }
 
   /**
-   * Compute the V4 poolId for a multicurve pool from the same pool-key fields
-   * the initializer will register on-chain.
+   * Compute the complete V4 multicurve pool identity from the same pool-key
+   * fields the initializer will register on-chain.
    */
-  private async computeMulticurvePoolId(
+  private async computeMulticurvePoolIdentity(
     params: CreateMulticurveParams<C>,
     tokenAddress: Address,
-  ): Promise<Hex> {
+  ): Promise<{
+    poolKey: V4PoolKey;
+    poolId: Hex;
+    tokenIsCurrency0: boolean;
+  }> {
     const addresses = getAddresses(this.chainId);
-
     const initializerMode = this.resolveMulticurveInitializerMode(params);
     let hookAddress: Address;
+
     if (initializerMode.type === 'rehype') {
       // DopplerHookInitializer pools are registered on Uniswap with the
-      // initializer itself as poolKey.hooks. The rehype hook lives separately
+      // initializer itself as poolKey.hooks. The Rehype hook lives separately
       // in the encoded init payload and is not part of the Uniswap pool key.
       hookAddress =
         params.modules?.dopplerHookInitializer ??
@@ -6441,7 +6584,6 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
         throw new Error('Multicurve initializer address not configured');
       }
 
-      // Standard/scheduled/decay initializers expose HOOK() directly.
       hookAddress = (await (this.publicClient as PublicClient).readContract({
         address: initializerAddress,
         abi: v4MulticurveInitializerAbi,
@@ -6449,24 +6591,25 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       })) as Address;
     }
 
-    // Construct the pool key and compute poolId
     const numeraire = params.sale.numeraire;
     const tokenIsCurrency0 = BigInt(tokenAddress) < BigInt(numeraire);
-    const currency0 = tokenIsCurrency0 ? tokenAddress : numeraire;
-    const currency1 = tokenIsCurrency0 ? numeraire : tokenAddress;
-    const fee =
-      initializerMode.type === 'decay' ||
-      (initializerMode.type === 'rehype' && initializerMode.hookConfig)
-        ? DYNAMIC_FEE_FLAG
-        : params.pool.fee;
-
-    return this.computePoolId({
-      currency0,
-      currency1,
-      fee,
+    const poolKey: V4PoolKey = {
+      currency0: tokenIsCurrency0 ? tokenAddress : numeraire,
+      currency1: tokenIsCurrency0 ? numeraire : tokenAddress,
+      fee:
+        initializerMode.type === 'decay' ||
+        (initializerMode.type === 'rehype' && initializerMode.hookConfig)
+          ? DYNAMIC_FEE_FLAG
+          : params.pool.fee,
       tickSpacing: params.pool.tickSpacing,
       hooks: hookAddress,
-    }) as Hex;
+    };
+
+    return {
+      poolKey,
+      poolId: this.computePoolId(poolKey) as Hex,
+      tokenIsCurrency0,
+    };
   }
 
   private async ensureMulticurveBundlerSupport(

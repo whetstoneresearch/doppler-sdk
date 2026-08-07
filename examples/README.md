@@ -104,6 +104,10 @@ Create and simulate a Base multicurve launch using the default DopplerERC20V1 an
 
 Build a Base multicurve configuration using the `dopplerERC20V1` token template, standard governance, and per-allocation vesting schedules. Includes multiple unique vesting schedules and one recipient with two vesting allocations on different schedules.
 
+### 12e. [Wallet-Independent Multicurve External Executor](./multicurve-custom-executor.ts)
+
+Prepare an exact unsigned Base Sepolia DopplerERC20V1/Rehype/no-op multicurve create with a public-client-only SDK, then submit it through a separately owned wallet client. The example uses `verifyPreparedCreateExecution()` to perform the receipt checks and retrieve the mined transaction to verify its exact input and value; integrators that only have a receipt can instead use synchronous `verifyPreparedCreateReceipt()`. Set a Base Sepolia `RPC_URL` and funded `PRIVATE_KEY`; add `EXECUTE_TRANSACTION=true` to broadcast. Without that explicit opt-in, the example prepares and prints predictions but does not submit. The application remains responsible for signer authorization, nonce allocation, signed-transaction persistence, retries, replacements, and confirmation policy.
+
 ### 13. [Multicurve Vanity Launch (Market Cap)](./multicurve-vanity-by-marketcap.ts)
 
 Create a multicurve pool and mine a salt so the deployed token address ends with a chosen hex suffix (identifier). Launches on-chain (requires RPC + PRIVATE_KEY).

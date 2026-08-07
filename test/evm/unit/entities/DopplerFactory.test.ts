@@ -269,12 +269,14 @@ describe('DopplerFactory', () => {
       const createCalls = vi
         .mocked(client.simulateContract)
         .mock.calls.filter(([call]) => call.functionName === 'create');
-      const executeCreateParams = getRecordedCreateParams(createCalls[1]?.[0]);
+      const enrichedCreateParams = getRecordedCreateParams(createCalls[1]?.[0]);
+      const executeCreateParams = getRecordedCreateParams(createCalls[2]?.[0]);
       const submittedCreateParams = getRecordedCreateParams(
         vi.mocked(walletClient.writeContract).mock.calls[0]?.[0],
       );
 
-      expect(createCalls).toHaveLength(2);
+      expect(createCalls).toHaveLength(3);
+      expect(enrichedCreateParams).toEqual(simulation.createParams);
       expect(executeCreateParams.salt).toBe(explicitSalt);
       expect(submittedCreateParams.salt).toBe(explicitSalt);
       expect(executeCreateParams).toEqual(simulation.createParams);
@@ -641,7 +643,7 @@ describe('DopplerFactory', () => {
       params.modules = { dopplerHookInitializer };
 
       // When
-      const poolId = await factory['computeMulticurvePoolId'](
+      const { poolId } = await factory['computeMulticurvePoolIdentity'](
         params,
         tokenAddress,
       );

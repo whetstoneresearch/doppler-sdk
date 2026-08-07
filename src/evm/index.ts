@@ -154,7 +154,10 @@ export type {
   OpeningAuctionState,
   OpeningAuctionCreateResult,
   OpeningAuctionCompleteResult,
-
+  PrepareCreateMulticurveOptions,
+  MulticurveCreateGasEstimate,
+  MulticurveCreatePrediction,
+  PreparedMulticurveCreate,
   // Configuration types
   DopplerSDKConfig,
 
