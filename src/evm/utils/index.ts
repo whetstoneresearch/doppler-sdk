@@ -75,6 +75,19 @@ export { encodeRehypeDopplerHookInitializerData } from './rehypeDopplerHookIniti
 
 export { encodeRehypeDopplerHookMigratorCalldata } from './dopplerHookMigrator';
 
+export {
+  AirlockCreateReceiptError,
+  parseAirlockCreateReceipt,
+  verifyPreparedCreateReceipt,
+} from './airlockCreateReceipt';
+export type {
+  AirlockCreateReceiptErrorCode,
+  AirlockCreateResult,
+  ParseAirlockCreateReceiptParams,
+  PreparedMulticurveIdentity,
+  VerifiedMulticurveCreate,
+} from './airlockCreateReceipt';
+
 // Re-export market cap conversion utilities
 export {
   // Core conversion functions (pure math)

@@ -1,8 +1,7 @@
 import { createPublicClient, createWalletClient, http } from 'viem';
 import { mainnet } from 'viem/chains';
 import { vi } from 'vitest';
-import type { Address, WalletClient } from 'viem';
-import type { SupportedPublicClient } from '../../../../src/evm/types';
+import type { Address, PublicClient, WalletClient } from 'viem';
 import {
   mockAddresses,
   mockGovernanceAddress,
@@ -13,8 +12,8 @@ import {
   mockV2PoolAddress,
 } from './addresses';
 
-type MockedPublicClient = Omit<
-  ReturnType<typeof createPublicClient>,
+export type MockedPublicClient = Omit<
+  PublicClient,
   | 'call'
   | 'estimateContractGas'
   | 'getBalance'
@@ -54,7 +53,7 @@ type MockSimulationCall = {
 };
 
 // Mock viem clients for testing
-export const createMockPublicClient = (): SupportedPublicClient => {
+export const createMockPublicClient = (): MockedPublicClient => {
   const defaultCreateResult: readonly Address[] = [
     mockTokenAddress,
     mockPoolAddress,

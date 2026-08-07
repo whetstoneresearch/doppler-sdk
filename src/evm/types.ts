@@ -1149,6 +1149,41 @@ export interface CreateParams {
   salt: `0x${string}`;
 }
 
+export interface PrepareCreateMulticurveOptions {
+  account: Address;
+}
+
+export type MulticurveCreateGasEstimate =
+  | { status: 'estimated'; gas: bigint }
+  | { status: 'unavailable' };
+
+export interface MulticurveCreatePrediction {
+  tokenAddress: Address;
+  poolOrHookAddress: Address;
+  governanceAddress: Address;
+  timelockAddress: Address;
+  migrationPoolAddress: Address;
+  poolKey: V4PoolKey;
+  poolId: Hex;
+  tokenIsCurrency0: boolean;
+}
+
+export interface PreparedMulticurveCreate<
+  C extends SupportedChainId = SupportedChainId,
+> {
+  chainId: C;
+  account: Address;
+  airlock: Address;
+  createParams: CreateParams;
+  prediction: MulticurveCreatePrediction;
+  transaction: {
+    to: Address;
+    data: Hex;
+    value: 0n;
+  };
+  gasEstimate: MulticurveCreateGasEstimate;
+}
+
 // Optional per-call module address overrides. When provided, these take precedence
 // over chain defaults resolved via getAddresses(chainId).
 export interface ModuleAddressOverrides {
