@@ -1,10 +1,12 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { getAddress, type Address, type TransactionReceipt } from 'viem';
 import {
   AirlockCreateReceiptError,
   parseAirlockCreateReceipt,
   verifyPreparedCreateReceipt,
+  verifyPreparedCreateExecution,
   type AirlockCreateReceiptErrorCode,
+  type PreparedCreateTransactionClient,
 } from '../../../../src/evm/utils/airlockCreateReceipt';
 import type { PreparedMulticurveCreate } from '../../../../src/evm/types';
 import {
@@ -26,14 +28,16 @@ const poolInitializer = getAddress(
   '0x7100000000000000000000000000000000000007',
 );
 
-function createLog(options: {
-  emitter?: Address;
-  token?: Address;
-  numeraire?: Address;
-  initializer?: Address;
-  poolOrHook?: Address;
-  logIndex?: number;
-} = {}) {
+function createLog(
+  options: {
+    emitter?: Address;
+    token?: Address;
+    numeraire?: Address;
+    initializer?: Address;
+    poolOrHook?: Address;
+    logIndex?: number;
+  } = {},
+) {
   return {
     ...createMockCreateEventLog(
       options.token ?? mockTokenAddress,
@@ -108,6 +112,20 @@ function expectReceiptError(
 ): void {
   try {
     run();
+    throw new Error(`Expected ${code}`);
+  } catch (error) {
+    expect(error).toBeInstanceOf(AirlockCreateReceiptError);
+    if (!(error instanceof AirlockCreateReceiptError)) throw error;
+    expect(error.code).toBe(code);
+  }
+}
+
+async function expectAsyncReceiptError(
+  run: () => Promise<unknown>,
+  code: AirlockCreateReceiptErrorCode,
+): Promise<void> {
+  try {
+    await run();
     throw new Error(`Expected ${code}`);
   } catch (error) {
     expect(error).toBeInstanceOf(AirlockCreateReceiptError);
@@ -271,8 +289,7 @@ describe('verifyPreparedCreateReceipt', () => {
       },
       prediction: {
         ...prepared.prediction,
-        tokenAddress:
-          prepared.prediction.tokenAddress.toLowerCase() as Address,
+        tokenAddress: prepared.prediction.tokenAddress.toLowerCase() as Address,
         poolOrHookAddress:
           prepared.prediction.poolOrHookAddress.toLowerCase() as Address,
       },
@@ -289,4 +306,98 @@ describe('verifyPreparedCreateReceipt', () => {
       }).receiptIdentity.tokenAddress,
     ).toBe(mockTokenAddress);
   });
+});
+
+describe('verifyPreparedCreateExecution', () => {
+  function createClient(
+    receipt: TransactionReceipt,
+    overrides: Partial<{
+      hash: `0x${string}`;
+      from: Address;
+      to: Address | null;
+      input: `0x${string}`;
+      value: bigint;
+    }> = {},
+  ) {
+    const getTransaction = vi.fn().mockResolvedValue({
+      hash: receipt.transactionHash,
+      from: prepared.account,
+      to: prepared.transaction.to,
+      input: prepared.transaction.data,
+      value: prepared.transaction.value,
+      ...overrides,
+    });
+    return {
+      getTransaction,
+      publicClient: {
+        getTransaction,
+      } satisfies PreparedCreateTransactionClient,
+    };
+  }
+
+  it('fetches and verifies the mined transaction after receipt verification', async () => {
+    const receipt = createReceipt();
+    const { publicClient, getTransaction } = createClient(receipt);
+
+    const verified = await verifyPreparedCreateExecution({
+      prepared,
+      receipt,
+      publicClient,
+    });
+
+    expect(getTransaction).toHaveBeenCalledWith({
+      hash: receipt.transactionHash,
+    });
+    expect(verified.receiptIdentity.transactionHash).toBe(
+      receipt.transactionHash,
+    );
+    expect(verified.preparedIdentity).toEqual({
+      chainId: 1,
+      ...prepared.prediction,
+    });
+  });
+
+  it('rejects an invalid receipt before retrieving the transaction', async () => {
+    const receipt = createReceipt(undefined, { status: 'reverted' });
+    const { publicClient, getTransaction } = createClient(receipt);
+
+    await expectAsyncReceiptError(
+      () =>
+        verifyPreparedCreateExecution({
+          prepared,
+          receipt,
+          publicClient,
+        }),
+      'RECEIPT_FAILED',
+    );
+    expect(getTransaction).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [
+      'hash',
+      { hash: `0x${'33'.repeat(32)}` as const },
+      'TRANSACTION_HASH_MISMATCH',
+    ],
+    ['target', { to: wrongAddress }, 'WRONG_TRANSACTION_TARGET'],
+    ['sender', { from: wrongAddress }, 'WRONG_TRANSACTION_SENDER'],
+    ['input', { input: '0xabcd' as const }, 'TRANSACTION_INPUT_MISMATCH'],
+    ['value', { value: 1n }, 'TRANSACTION_VALUE_MISMATCH'],
+  ] as const)(
+    'rejects a mismatched transaction %s',
+    async (_field, overrides, code) => {
+      const receipt = createReceipt();
+      const { publicClient } = createClient(receipt, overrides);
+
+      await expectAsyncReceiptError(
+        () =>
+          verifyPreparedCreateExecution({
+            prepared,
+            receipt,
+            publicClient,
+          }),
+        code,
+      );
+    },
+  );
 });

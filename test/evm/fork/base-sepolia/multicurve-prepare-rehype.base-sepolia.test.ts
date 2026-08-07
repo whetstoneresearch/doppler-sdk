@@ -5,7 +5,7 @@ import {
   DopplerSDK,
   WAD,
   getAddresses,
-  verifyPreparedCreateReceipt,
+  verifyPreparedCreateExecution,
 } from '../../../../src/evm';
 import {
   getAnvilManager,
@@ -123,7 +123,11 @@ describe('prepared Rehype multicurve create (Base Sepolia fork)', () => {
       const receipt = await clients.publicClient.waitForTransactionReceipt({
         hash,
       });
-      const verified = verifyPreparedCreateReceipt({ prepared, receipt });
+      const verified = await verifyPreparedCreateExecution({
+        prepared,
+        receipt,
+        publicClient: clients.publicClient,
+      });
       console.log('Prepared Rehype fork transaction:', receipt.transactionHash);
 
       expect(verified.receiptIdentity.tokenAddress).toBe(

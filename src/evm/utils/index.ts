@@ -79,11 +79,13 @@ export {
   AirlockCreateReceiptError,
   parseAirlockCreateReceipt,
   verifyPreparedCreateReceipt,
+  verifyPreparedCreateExecution,
 } from './airlockCreateReceipt';
 export type {
   AirlockCreateReceiptErrorCode,
   AirlockCreateResult,
   ParseAirlockCreateReceiptParams,
+  PreparedCreateTransactionClient,
   PreparedMulticurveIdentity,
   VerifiedMulticurveCreate,
 } from './airlockCreateReceipt';

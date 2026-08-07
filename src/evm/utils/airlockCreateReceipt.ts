@@ -1,7 +1,9 @@
 import {
   decodeEventLog,
+  keccak256,
   type Address,
   type Hash,
+  type Hex,
   type TransactionReceipt,
 } from 'viem';
 import { airlockAbi } from '../abis';
@@ -36,7 +38,10 @@ export type AirlockCreateReceiptErrorCode =
   | 'TOKEN_MISMATCH'
   | 'NUMERAIRE_MISMATCH'
   | 'INITIALIZER_MISMATCH'
-  | 'POOL_OR_HOOK_MISMATCH';
+  | 'POOL_OR_HOOK_MISMATCH'
+  | 'TRANSACTION_HASH_MISMATCH'
+  | 'TRANSACTION_INPUT_MISMATCH'
+  | 'TRANSACTION_VALUE_MISMATCH';
 
 export class AirlockCreateReceiptError extends Error {
   readonly code: AirlockCreateReceiptErrorCode;
@@ -151,6 +156,16 @@ export interface VerifiedMulticurveCreate<
   preparedIdentity: PreparedMulticurveIdentity<C>;
 }
 
+export type PreparedCreateTransactionClient = {
+  getTransaction(parameters: { hash: Hash }): Promise<{
+    hash: Hash;
+    from: Address;
+    to: Address | null;
+    input: Hex;
+    value: bigint;
+  }>;
+};
+
 function assertAddressMatch(
   code: AirlockCreateReceiptErrorCode,
   expected: Address,
@@ -161,6 +176,13 @@ function assertAddressMatch(
   }
 }
 
+/**
+ * Verifies only facts available in a mined receipt: success, sender, target,
+ * one matching Airlock Create event, and its emitted deployment identity.
+ *
+ * This synchronous check does not retrieve or verify the transaction input or
+ * value. Prepared-only predictions remain separate from receipt-derived facts.
+ */
 export function verifyPreparedCreateReceipt<C extends SupportedChainId>({
   prepared,
   receipt,
@@ -231,4 +253,65 @@ export function verifyPreparedCreateReceipt<C extends SupportedChainId>({
       tokenIsCurrency0: prepared.prediction.tokenIsCurrency0,
     },
   };
+}
+
+/**
+ * Performs the receipt checks in {@link verifyPreparedCreateReceipt}, then
+ * retrieves the mined transaction. Its hash must match the receipt, while its
+ * sender, target, input, and value must match the prepared unsigned transaction.
+ *
+ * This stronger check requires one additional RPC request. It proves that the
+ * prepared protocol call was mined, but does not turn simulation-only
+ * predictions into receipt-derived facts.
+ */
+export async function verifyPreparedCreateExecution<
+  C extends SupportedChainId,
+>({
+  prepared,
+  receipt,
+  publicClient,
+}: {
+  prepared: PreparedMulticurveCreate<C>;
+  receipt: TransactionReceipt;
+  publicClient: PreparedCreateTransactionClient;
+}): Promise<VerifiedMulticurveCreate<C>> {
+  const verified = verifyPreparedCreateReceipt({ prepared, receipt });
+  const transaction = await publicClient.getTransaction({
+    hash: receipt.transactionHash,
+  });
+
+  if (
+    transaction.hash.toLowerCase() !== receipt.transactionHash.toLowerCase()
+  ) {
+    throw new AirlockCreateReceiptError('TRANSACTION_HASH_MISMATCH', {
+      expected: receipt.transactionHash,
+      actual: transaction.hash,
+    });
+  }
+  assertAddressMatch(
+    'WRONG_TRANSACTION_TARGET',
+    prepared.transaction.to,
+    transaction.to,
+  );
+  assertAddressMatch(
+    'WRONG_TRANSACTION_SENDER',
+    prepared.account,
+    transaction.from,
+  );
+  if (
+    transaction.input.toLowerCase() !== prepared.transaction.data.toLowerCase()
+  ) {
+    throw new AirlockCreateReceiptError('TRANSACTION_INPUT_MISMATCH', {
+      expected: keccak256(prepared.transaction.data),
+      actual: keccak256(transaction.input),
+    });
+  }
+  if (transaction.value !== prepared.transaction.value) {
+    throw new AirlockCreateReceiptError('TRANSACTION_VALUE_MISMATCH', {
+      expected: prepared.transaction.value.toString(),
+      actual: transaction.value.toString(),
+    });
+  }
+
+  return verified;
 }

@@ -106,7 +106,7 @@ Build a Base multicurve configuration using the `dopplerERC20V1` token template,
 
 ### 12e. [Wallet-Independent Multicurve External Executor](./multicurve-custom-executor.ts)
 
-Prepare an exact unsigned Base Sepolia DopplerERC20V1/Rehype/no-op multicurve create with a public-client-only SDK, then submit it through a separately owned wallet client and verify the mined Airlock receipt. Set a Base Sepolia `RPC_URL` and funded `PRIVATE_KEY`; add `EXECUTE_TRANSACTION=true` to broadcast. Without that explicit opt-in, the example prepares and prints predictions but does not submit. The application remains responsible for signer authorization, nonce allocation, signed-transaction persistence, retries, replacements, and confirmation policy.
+Prepare an exact unsigned Base Sepolia DopplerERC20V1/Rehype/no-op multicurve create with a public-client-only SDK, then submit it through a separately owned wallet client. The example uses `verifyPreparedCreateExecution()` to perform the receipt checks and retrieve the mined transaction to verify its exact input and value; integrators that only have a receipt can instead use synchronous `verifyPreparedCreateReceipt()`. Set a Base Sepolia `RPC_URL` and funded `PRIVATE_KEY`; add `EXECUTE_TRANSACTION=true` to broadcast. Without that explicit opt-in, the example prepares and prints predictions but does not submit. The application remains responsible for signer authorization, nonce allocation, signed-transaction persistence, retries, replacements, and confirmation policy.
 
 ### 13. [Multicurve Vanity Launch (Market Cap)](./multicurve-vanity-by-marketcap.ts)
 

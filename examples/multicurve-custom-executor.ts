@@ -6,7 +6,7 @@ import {
   DopplerSDK,
   WAD,
   getAddresses,
-  verifyPreparedCreateReceipt,
+  verifyPreparedCreateExecution,
 } from '../src/evm';
 import { createPublicClient, createWalletClient, http, toHex } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
@@ -18,9 +18,9 @@ const shouldExecute = process.env.EXECUTE_TRANSACTION === 'true';
 
 if (!rpcUrl) throw new Error('RPC_URL must be set to a Base Sepolia endpoint');
 if (!privateKey) throw new Error('PRIVATE_KEY must be set');
+const account = privateKeyToAccount(privateKey);
 
 async function main(): Promise<void> {
-  const account = privateKeyToAccount(privateKey);
   const publicClient = createPublicClient({
     chain: baseSepolia,
     transport: http(rpcUrl),
@@ -125,7 +125,13 @@ async function main(): Promise<void> {
       : {}),
   });
   const receipt = await publicClient.waitForTransactionReceipt({ hash });
-  const verified = verifyPreparedCreateReceipt({ prepared, receipt });
+  // The execution verifier includes receipt checks and also retrieves the
+  // mined transaction to confirm its exact input and value.
+  const verified = await verifyPreparedCreateExecution({
+    prepared,
+    receipt,
+    publicClient,
+  });
 
   console.log('Transaction hash:', receipt.transactionHash);
   console.log('Block number:', receipt.blockNumber.toString());
