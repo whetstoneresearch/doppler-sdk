@@ -757,4 +757,34 @@ describe('cpmmMigrator hooked spot pool helpers', () => {
     expect(payload).toHaveLength(86);
     expect(view.getUint32(82, true)).toBe(HF_AFTER_SWAP);
   });
+
+  it('canonicalizes amounts when tokenA sorts after tokenB', async () => {
+    // TEST_MINT_B (0xc1...) sorts after TEST_MINT_A (0x06...), so passing B as
+    // tokenA forces token0IsA === false and the amounts must swap.
+    const ix = await cpmmMigrator.createSpotPoolInstruction({
+      payer: TEST_SIGNER,
+      tokenAMint: TEST_MINT_B,
+      tokenBMint: TEST_MINT_A,
+      tokenAAmount: 700_000n,
+      tokenBAmount: 300_000n,
+      swapFeeBps: 30,
+      hookProgram: TEST_HOOK_PROGRAM,
+      hookFlags: HF_BEFORE_SWAP,
+    });
+    const accounts = await cpmmMigrator.deriveSpotPoolAccounts({
+      tokenAMint: TEST_MINT_B,
+      tokenBMint: TEST_MINT_A,
+      swapFeeBps: 30,
+      liquidityOwner: TEST_WALLET,
+      hookProgram: TEST_HOOK_PROGRAM,
+      hookFlags: HF_BEFORE_SWAP,
+    });
+    const view = new DataView(ix.data.buffer, ix.data.byteOffset);
+
+    expect(accounts.token0Mint).toBe(TEST_MINT_A);
+    // amount0 follows token0 (== tokenB here), not tokenA.
+    expect(view.getBigUint64(18, true)).toBe(300_000n);
+    expect(view.getBigUint64(26, true)).toBe(700_000n);
+    expect(ix.accounts).toHaveLength(21);
+  });
 });

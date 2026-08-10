@@ -74,6 +74,11 @@ export type DeriveSpotPoolAccountsInput = {
    * Swap-phase hook flags, only meaningful alongside `hookProgram`. A hooked
    * pool requires a non-zero subset of `SPOT_HOOK_FLAG_MASK`; a hookless pool
    * requires `0` (the default).
+   *
+   * Derivation is deliberately unvalidated, so that the address of an existing
+   * pool can always be recomputed. Flags outside `SPOT_HOOK_FLAG_MASK` yield an
+   * address the program will refuse to create; `createSpotPoolInstruction`
+   * rejects those combinations up front.
    */
   hookFlags?: number;
 };
@@ -180,6 +185,10 @@ function accountMeta(
 /**
  * Mirror the on-chain hook guards so misconfiguration fails locally with an
  * actionable message instead of as an opaque program error.
+ *
+ * The two config-dependent guards are not mirrored, because both require
+ * reading the on-chain AmmConfig: `swap_fee_bps <= config.max_swap_fee_bps`,
+ * and hook-allowlist membership when the config declares a non-empty allowlist.
  */
 function assertValidHookConfig(
   hookProgram: Address,
