@@ -12,7 +12,16 @@
       "docs": [
         "Permissionlessly create an immutable-fee, hookless spot CPMM pool."
       ],
-      "discriminator": [13, 137, 16, 26, 40, 36, 110, 26],
+      "discriminator": [
+        13,
+        137,
+        16,
+        26,
+        40,
+        36,
+        110,
+        26
+      ],
       "accounts": [
         {
           "name": "cpmm_config"
@@ -77,8 +86,25 @@
               {
                 "kind": "const",
                 "value": [
-                  109, 105, 103, 114, 97, 116, 105, 111, 110, 95, 97, 117, 116,
-                  104, 111, 114, 105, 116, 121
+                  109,
+                  105,
+                  103,
+                  114,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
                 ]
               }
             ]
@@ -124,7 +150,16 @@
         "Migrate a launch to a CPMM pool.",
         "Called by initializer during migrate_launch."
       ],
-      "discriminator": [155, 234, 231, 146, 236, 158, 162, 30],
+      "discriminator": [
+        155,
+        234,
+        231,
+        146,
+        236,
+        158,
+        162,
+        30
+      ],
       "accounts": [
         {
           "name": "initializer_config"
@@ -152,17 +187,23 @@
         },
         {
           "name": "base_vault",
-          "docs": ["Base token vault owned by launch_authority"],
+          "docs": [
+            "Base token vault owned by launch_authority"
+          ],
           "writable": true
         },
         {
           "name": "quote_vault",
-          "docs": ["Quote token vault owned by launch_authority"],
+          "docs": [
+            "Quote token vault owned by launch_authority"
+          ],
           "writable": true
         },
         {
           "name": "payer",
-          "docs": ["Payer for account creation"],
+          "docs": [
+            "Payer for account creation"
+          ],
           "writable": true,
           "signer": true
         },
@@ -182,13 +223,21 @@
         },
         {
           "name": "cpmm_migration_state",
-          "docs": ["The CpmmMigratorState PDA."],
+          "docs": [
+            "The CpmmMigratorState PDA."
+          ],
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "const",
-                "value": [115, 116, 97, 116, 101]
+                "value": [
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
               },
               {
                 "kind": "account",
@@ -247,8 +296,25 @@
               {
                 "kind": "const",
                 "value": [
-                  109, 105, 103, 114, 97, 116, 105, 111, 110, 95, 97, 117, 116,
-                  104, 111, 114, 105, 116, 121
+                  109,
+                  105,
+                  103,
+                  114,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
                 ]
               }
             ]
@@ -290,7 +356,16 @@
         "Register a launch with this migrator.",
         "Called by initializer during initialize_launch as the init hook."
       ],
-      "discriminator": [114, 114, 67, 23, 41, 70, 0, 225],
+      "discriminator": [
+        114,
+        114,
+        67,
+        23,
+        41,
+        70,
+        0,
+        225
+      ],
       "accounts": [
         {
           "name": "initializer_config"
@@ -304,23 +379,33 @@
         },
         {
           "name": "base_mint",
-          "docs": ["Base token mint"]
+          "docs": [
+            "Base token mint"
+          ]
         },
         {
           "name": "quote_mint",
-          "docs": ["Quote token mint"]
+          "docs": [
+            "Quote token mint"
+          ]
         },
         {
           "name": "base_vault",
-          "docs": ["Base token vault owned by launch_authority"]
+          "docs": [
+            "Base token vault owned by launch_authority"
+          ]
         },
         {
           "name": "quote_vault",
-          "docs": ["Quote token vault owned by launch_authority"]
+          "docs": [
+            "Quote token vault owned by launch_authority"
+          ]
         },
         {
           "name": "payer",
-          "docs": ["Payer for account creation"],
+          "docs": [
+            "Payer for account creation"
+          ],
           "writable": true,
           "signer": true
         },
@@ -340,13 +425,21 @@
         },
         {
           "name": "cpmm_migration_state",
-          "docs": ["The CpmmMigratorState PDA to create."],
+          "docs": [
+            "The CpmmMigratorState PDA to create."
+          ],
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "const",
-                "value": [115, 116, 97, 116, 101]
+                "value": [
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
               },
               {
                 "kind": "account",
@@ -374,33 +467,96 @@
   "accounts": [
     {
       "name": "AmmConfig",
-      "discriminator": [218, 244, 33, 104, 203, 203, 43, 111]
+      "discriminator": [
+        218,
+        244,
+        33,
+        104,
+        203,
+        203,
+        43,
+        111
+      ]
     },
     {
       "name": "CpmmMigratorState",
-      "discriminator": [169, 86, 255, 187, 37, 248, 11, 176]
+      "discriminator": [
+        169,
+        86,
+        255,
+        187,
+        37,
+        248,
+        11,
+        176
+      ]
     },
     {
       "name": "InitConfig",
-      "discriminator": [97, 166, 35, 7, 20, 2, 164, 126]
+      "discriminator": [
+        97,
+        166,
+        35,
+        7,
+        20,
+        2,
+        164,
+        126
+      ]
     },
     {
       "name": "Launch",
-      "discriminator": [144, 51, 51, 163, 206, 85, 213, 38]
+      "discriminator": [
+        144,
+        51,
+        51,
+        163,
+        206,
+        85,
+        213,
+        38
+      ]
     }
   ],
   "events": [
     {
       "name": "LaunchMigrated",
-      "discriminator": [135, 27, 61, 35, 85, 170, 159, 33]
+      "discriminator": [
+        135,
+        27,
+        61,
+        35,
+        85,
+        170,
+        159,
+        33
+      ]
     },
     {
       "name": "LaunchRegistered",
-      "discriminator": [158, 211, 66, 169, 249, 238, 122, 253]
+      "discriminator": [
+        158,
+        211,
+        66,
+        169,
+        249,
+        238,
+        122,
+        253
+      ]
     },
     {
       "name": "SpotPoolCreated",
-      "discriminator": [161, 251, 13, 232, 166, 81, 52, 162]
+      "discriminator": [
+        161,
+        251,
+        13,
+        232,
+        166,
+        81,
+        52,
+        162
+      ]
     }
   ],
   "errors": [
@@ -546,7 +702,10 @@
           {
             "name": "hook_allowlist",
             "type": {
-              "array": ["pubkey", 32]
+              "array": [
+                "pubkey",
+                32
+              ]
             }
           },
           {
@@ -572,7 +731,10 @@
           {
             "name": "_reserved",
             "type": {
-              "array": ["u8", 7]
+              "array": [
+                "u8",
+                7
+              ]
             }
           }
         ]
@@ -589,7 +751,9 @@
         "fields": [
           {
             "name": "launch",
-            "docs": ["The launch this state is associated with"],
+            "docs": [
+              "The launch this state is associated with"
+            ],
             "type": "pubkey"
           },
           {
@@ -601,39 +765,56 @@
           },
           {
             "name": "cpmm_config",
-            "docs": ["CPMM config to use for pool initialization"],
+            "docs": [
+              "CPMM config to use for pool initialization"
+            ],
             "type": "pubkey"
           },
           {
             "name": "initial_swap_fee_bps",
-            "docs": ["Initial swap fee for the CPMM pool (basis points)"],
+            "docs": [
+              "Initial swap fee for the CPMM pool (basis points)"
+            ],
             "type": "u16"
           },
           {
             "name": "initial_fee_split_bps",
-            "docs": ["Initial fee split for the CPMM pool (basis points)"],
+            "docs": [
+              "Initial fee split for the CPMM pool (basis points)"
+            ],
             "type": "u16"
           },
           {
             "name": "_pad0",
-            "docs": ["Padding for alignment"],
+            "docs": [
+              "Padding for alignment"
+            ],
             "type": {
-              "array": ["u8", 4]
+              "array": [
+                "u8",
+                4
+              ]
             }
           },
           {
             "name": "migrated_pool_hook_program",
-            "docs": ["Hook program to set on the migrated CPMM pool"],
+            "docs": [
+              "Hook program to set on the migrated CPMM pool"
+            ],
             "type": "pubkey"
           },
           {
             "name": "migrated_pool_hook_flags",
-            "docs": ["Hook flags to set on the migrated CPMM pool"],
+            "docs": [
+              "Hook flags to set on the migrated CPMM pool"
+            ],
             "type": "u32"
           },
           {
             "name": "recipients",
-            "docs": ["Recipients for base token distribution at migration"],
+            "docs": [
+              "Recipients for base token distribution at migration"
+            ],
             "type": {
               "array": [
                 {
@@ -647,31 +828,44 @@
           },
           {
             "name": "min_raise_quote",
-            "docs": ["Minimum quote tokens required to migrate"],
+            "docs": [
+              "Minimum quote tokens required to migrate"
+            ],
             "type": "u64"
           },
           {
             "name": "min_migration_price_q64_opt",
-            "docs": ["Optional minimum price floor (Q64 fixed point)"],
+            "docs": [
+              "Optional minimum price floor (Q64 fixed point)"
+            ],
             "type": {
               "option": "u128"
             }
           },
           {
             "name": "is_migrated",
-            "docs": ["Whether this launch has been migrated"],
+            "docs": [
+              "Whether this launch has been migrated"
+            ],
             "type": "bool"
           },
           {
             "name": "bump",
-            "docs": ["Bump seed for this PDA"],
+            "docs": [
+              "Bump seed for this PDA"
+            ],
             "type": "u8"
           },
           {
             "name": "_reserved",
-            "docs": ["Reserved for future use"],
+            "docs": [
+              "Reserved for future use"
+            ],
             "type": {
-              "array": ["u8", 14]
+              "array": [
+                "u8",
+                14
+              ]
             }
           }
         ]
@@ -720,7 +914,9 @@
     },
     {
       "name": "InitConfig",
-      "docs": ["Initializer configuration account."],
+      "docs": [
+        "Initializer configuration account."
+      ],
       "serialization": "bytemuckunsafe",
       "repr": {
         "kind": "c"
@@ -739,7 +935,10 @@
           {
             "name": "migrator_allowlist",
             "type": {
-              "array": ["pubkey", 32]
+              "array": [
+                "pubkey",
+                32
+              ]
             }
           },
           {
@@ -749,7 +948,10 @@
           {
             "name": "hook_allowlist",
             "type": {
-              "array": ["pubkey", 32]
+              "array": [
+                "pubkey",
+                32
+              ]
             }
           },
           {
@@ -775,7 +977,10 @@
           {
             "name": "_reserved",
             "type": {
-              "array": ["u8", 24]
+              "array": [
+                "u8",
+                24
+              ]
             }
           }
         ]
@@ -783,7 +988,9 @@
     },
     {
       "name": "Launch",
-      "docs": ["Launch state account."],
+      "docs": [
+        "Launch state account."
+      ],
       "serialization": "bytemuckunsafe",
       "repr": {
         "kind": "c"
@@ -802,7 +1009,10 @@
           {
             "name": "launch_id",
             "type": {
-              "array": ["u8", 32]
+              "array": [
+                "u8",
+                32
+              ]
             }
           },
           {
@@ -820,7 +1030,10 @@
           {
             "name": "_pad0",
             "type": {
-              "array": ["u8", 5]
+              "array": [
+                "u8",
+                5
+              ]
             }
           },
           {
@@ -870,7 +1083,10 @@
           {
             "name": "_pad1",
             "type": {
-              "array": ["u8", 6]
+              "array": [
+                "u8",
+                6
+              ]
             }
           },
           {
@@ -884,7 +1100,10 @@
           {
             "name": "_pad2",
             "type": {
-              "array": ["u8", 6]
+              "array": [
+                "u8",
+                6
+              ]
             }
           },
           {
@@ -898,7 +1117,10 @@
           {
             "name": "_pad3",
             "type": {
-              "array": ["u8", 4]
+              "array": [
+                "u8",
+                4
+              ]
             }
           },
           {
@@ -940,7 +1162,10 @@
           {
             "name": "_pad4",
             "type": {
-              "array": ["u8", 6]
+              "array": [
+                "u8",
+                6
+              ]
             }
           },
           {
@@ -958,7 +1183,10 @@
           {
             "name": "_reserved",
             "type": {
-              "array": ["u8", 64]
+              "array": [
+                "u8",
+                64
+              ]
             }
           }
         ]
@@ -1023,12 +1251,16 @@
         "fields": [
           {
             "name": "base_for_distribution",
-            "docs": ["Base tokens reserved for distribution to recipients"],
+            "docs": [
+              "Base tokens reserved for distribution to recipients"
+            ],
             "type": "u64"
           },
           {
             "name": "base_for_liquidity",
-            "docs": ["Base tokens reserved for CPMM liquidity"],
+            "docs": [
+              "Base tokens reserved for CPMM liquidity"
+            ],
             "type": "u64"
           }
         ]
@@ -1052,7 +1284,9 @@
     },
     {
       "name": "PayloadBuf",
-      "docs": ["Variable-length payload buffer."],
+      "docs": [
+        "Variable-length payload buffer."
+      ],
       "repr": {
         "kind": "c"
       },
@@ -1066,7 +1300,10 @@
           {
             "name": "bytes",
             "type": {
-              "array": ["u8", 256]
+              "array": [
+                "u8",
+                256
+              ]
             }
           }
         ]
