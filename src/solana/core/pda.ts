@@ -15,6 +15,10 @@ import {
   SEED_POSITION,
   SEED_ORACLE,
   SEED_PROTOCOL_FEE_OWNER,
+  HF_BEFORE_SWAP,
+  HF_AFTER_SWAP,
+  SPOT_HOOK_FLAG_MASK,
+  SYSTEM_PROGRAM_ADDRESS,
 } from './constants.js';
 
 const addressCodec = getAddressCodec();
@@ -28,6 +32,36 @@ function u16Seed(value: number): Uint8Array {
   const bytes = new Uint8Array(2);
   new DataView(bytes.buffer).setUint16(0, value, true);
   return bytes;
+}
+
+function u32Seed(value: number): Uint8Array {
+  if (!Number.isInteger(value) || value < 0 || value > 0xffffffff) {
+    throw new RangeError('u32 value must be between 0 and 4294967295');
+  }
+
+  const bytes = new Uint8Array(4);
+  new DataView(bytes.buffer).setUint32(0, value, true);
+  return bytes;
+}
+
+function assertHookedSpotPoolConfig(
+  hookProgram: Address,
+  hookFlags: number,
+): void {
+  if (hookProgram === SYSTEM_PROGRAM_ADDRESS) {
+    throw new Error('hookProgram must identify a non-default program');
+  }
+
+  u32Seed(hookFlags);
+  if (
+    hookFlags !== HF_BEFORE_SWAP &&
+    hookFlags !== HF_AFTER_SWAP &&
+    hookFlags !== SPOT_HOOK_FLAG_MASK
+  ) {
+    throw new Error(
+      'hookFlags must enable before-swap, after-swap, or both for a spot pool',
+    );
+  }
 }
 
 // ============================================================================
@@ -132,6 +166,37 @@ export async function getSpotPoolAddress(
       addressCodec.encode(token0),
       addressCodec.encode(token1),
       u16Seed(swapFeeBps),
+    ],
+  });
+}
+
+/**
+ * Derive the hooked spot Pool PDA for a token pair, fee tier, and immutable
+ * swap-hook configuration.
+ * Seeds: ['spot_pool', token0_mint, token1_mint, swap_fee_bps_le, hook_program, hook_flags_le]
+ *
+ * Note: Mints will be automatically sorted if not in canonical order.
+ */
+export async function getHookedSpotPoolAddress(
+  mint0: Address,
+  mint1: Address,
+  swapFeeBps: number,
+  hookProgram: Address,
+  hookFlags: number,
+  programId: Address = CPMM_PROGRAM_ID,
+): Promise<ProgramDerivedAddress> {
+  const [token0, token1] = sortMints(mint0, mint1);
+  assertHookedSpotPoolConfig(hookProgram, hookFlags);
+
+  return getProgramDerivedAddress({
+    programAddress: programId,
+    seeds: [
+      textEncoder.encode(SEED_SPOT_POOL),
+      addressCodec.encode(token0),
+      addressCodec.encode(token1),
+      u16Seed(swapFeeBps),
+      addressCodec.encode(hookProgram),
+      u32Seed(hookFlags),
     ],
   });
 }

@@ -14,6 +14,8 @@ import {
   getStructEncoder,
   getU16Decoder,
   getU16Encoder,
+  getU32Decoder,
+  getU32Encoder,
   getU64Decoder,
   getU64Encoder,
   type Address,
@@ -30,6 +32,8 @@ export type SpotPoolCreated = {
   amount0Max: bigint;
   amount1Max: bigint;
   swapFeeBps: number;
+  hookProgram: Address;
+  hookFlags: number;
 };
 
 export type SpotPoolCreatedArgs = {
@@ -40,6 +44,8 @@ export type SpotPoolCreatedArgs = {
   amount0Max: number | bigint;
   amount1Max: number | bigint;
   swapFeeBps: number;
+  hookProgram: Address;
+  hookFlags: number;
 };
 
 export function getSpotPoolCreatedEncoder(): FixedSizeEncoder<SpotPoolCreatedArgs> {
@@ -51,6 +57,8 @@ export function getSpotPoolCreatedEncoder(): FixedSizeEncoder<SpotPoolCreatedArg
     ['amount0Max', getU64Encoder()],
     ['amount1Max', getU64Encoder()],
     ['swapFeeBps', getU16Encoder()],
+    ['hookProgram', getAddressEncoder()],
+    ['hookFlags', getU32Encoder()],
   ]);
 }
 
@@ -63,6 +71,8 @@ export function getSpotPoolCreatedDecoder(): FixedSizeDecoder<SpotPoolCreated> {
     ['amount0Max', getU64Decoder()],
     ['amount1Max', getU64Decoder()],
     ['swapFeeBps', getU16Decoder()],
+    ['hookProgram', getAddressDecoder()],
+    ['hookFlags', getU32Decoder()],
   ]);
 }
 

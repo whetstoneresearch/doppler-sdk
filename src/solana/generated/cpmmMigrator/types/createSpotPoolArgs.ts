@@ -8,14 +8,19 @@
 
 import {
   combineCodec,
+  getAddressDecoder,
+  getAddressEncoder,
   getStructDecoder,
   getStructEncoder,
   getU128Decoder,
   getU128Encoder,
   getU16Decoder,
   getU16Encoder,
+  getU32Decoder,
+  getU32Encoder,
   getU64Decoder,
   getU64Encoder,
+  type Address,
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
@@ -27,6 +32,13 @@ export type CreateSpotPoolArgs = {
   amount0Max: bigint;
   amount1Max: bigint;
   minSharesOut: bigint;
+  /**
+   * `Pubkey::default()` creates a hookless spot pool (unchanged legacy path).
+   * Any other value creates a hooked spot pool whose address commits to the
+   * hook program and flags.
+   */
+  hookProgram: Address;
+  hookFlags: number;
 };
 
 export type CreateSpotPoolArgsArgs = {
@@ -35,6 +47,13 @@ export type CreateSpotPoolArgsArgs = {
   amount0Max: number | bigint;
   amount1Max: number | bigint;
   minSharesOut: number | bigint;
+  /**
+   * `Pubkey::default()` creates a hookless spot pool (unchanged legacy path).
+   * Any other value creates a hooked spot pool whose address commits to the
+   * hook program and flags.
+   */
+  hookProgram: Address;
+  hookFlags: number;
 };
 
 export function getCreateSpotPoolArgsEncoder(): FixedSizeEncoder<CreateSpotPoolArgsArgs> {
@@ -44,6 +63,8 @@ export function getCreateSpotPoolArgsEncoder(): FixedSizeEncoder<CreateSpotPoolA
     ['amount0Max', getU64Encoder()],
     ['amount1Max', getU64Encoder()],
     ['minSharesOut', getU128Encoder()],
+    ['hookProgram', getAddressEncoder()],
+    ['hookFlags', getU32Encoder()],
   ]);
 }
 
@@ -54,6 +75,8 @@ export function getCreateSpotPoolArgsDecoder(): FixedSizeDecoder<CreateSpotPoolA
     ['amount0Max', getU64Decoder()],
     ['amount1Max', getU64Decoder()],
     ['minSharesOut', getU128Decoder()],
+    ['hookProgram', getAddressDecoder()],
+    ['hookFlags', getU32Decoder()],
   ]);
 }
 

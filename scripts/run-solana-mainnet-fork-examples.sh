@@ -173,6 +173,7 @@ runtime_examples=(
 )
 compile_only_examples=(
   examples/solana-prediction-market.ts
+  examples/solana-create-spot-pool.ts
 )
 
 declare -A classified_examples=()
