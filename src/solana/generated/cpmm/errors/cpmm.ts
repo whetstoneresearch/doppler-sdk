@@ -74,6 +74,8 @@ export const CPMM_ERROR__INVALID_INPUT = 0x178d; // 6029
 export const CPMM_ERROR__USE_COLLECT_PROTOCOL_FEES = 0x1790; // 6032
 /** ImmutableSpotPoolPolicy: Spot pool fee and hook policy is immutable */
 export const CPMM_ERROR__IMMUTABLE_SPOT_POOL_POLICY = 0x1791; // 6033
+/** SpotHookFlagsNotAllowed: Hook flags not permitted for a spot pool */
+export const CPMM_ERROR__SPOT_HOOK_FLAGS_NOT_ALLOWED = 0x1792; // 6034
 
 export type CpmmError =
   | typeof CPMM_ERROR__AMOUNT_ZERO
@@ -102,6 +104,7 @@ export type CpmmError =
   | typeof CPMM_ERROR__POSITION_NOT_EMPTY
   | typeof CPMM_ERROR__SAME_MINT_PAIR
   | typeof CPMM_ERROR__SLIPPAGE_EXCEEDED
+  | typeof CPMM_ERROR__SPOT_HOOK_FLAGS_NOT_ALLOWED
   | typeof CPMM_ERROR__TOTAL_SHARES_ZERO
   | typeof CPMM_ERROR__UNAUTHORIZED
   | typeof CPMM_ERROR__USE_COLLECT_PROTOCOL_FEES
@@ -136,6 +139,7 @@ if (process.env.NODE_ENV !== 'production') {
     [CPMM_ERROR__POSITION_NOT_EMPTY]: `Position not empty`,
     [CPMM_ERROR__SAME_MINT_PAIR]: `Cannot create pool with same token for both sides`,
     [CPMM_ERROR__SLIPPAGE_EXCEEDED]: `Slippage exceeded`,
+    [CPMM_ERROR__SPOT_HOOK_FLAGS_NOT_ALLOWED]: `Hook flags not permitted for a spot pool`,
     [CPMM_ERROR__TOTAL_SHARES_ZERO]: `Total shares zero`,
     [CPMM_ERROR__UNAUTHORIZED]: `Unauthorized`,
     [CPMM_ERROR__USE_COLLECT_PROTOCOL_FEES]: `Protocol fee position must be claimed via collect_protocol_fees`,

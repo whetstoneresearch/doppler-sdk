@@ -123,6 +123,14 @@
         {
           "name": "rent",
           "address": "SysvarRent111111111111111111111111111111111"
+        },
+        {
+          "name": "hook_program",
+          "docs": [
+            "Omit it entirely for a hookless pool. When present it must equal",
+            "`args.hook_program`; CPMM additionally requires it to be executable."
+          ],
+          "optional": true
         }
       ],
       "args": [
@@ -666,6 +674,11 @@
       "code": 6023,
       "name": "InvalidFee",
       "msg": "Invalid fee"
+    },
+    {
+      "code": 6024,
+      "name": "InvalidHookProgram",
+      "msg": "Missing or mismatched hook program account"
     }
   ],
   "types": [
@@ -882,6 +895,19 @@
           {
             "name": "min_shares_out",
             "type": "u128"
+          },
+          {
+            "name": "hook_program",
+            "docs": [
+              "`Pubkey::default()` creates a hookless spot pool (unchanged legacy path).",
+              "Any other value creates a hooked spot pool whose address commits to the",
+              "hook program and flags."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "hook_flags",
+            "type": "u32"
           }
         ]
       }
@@ -1385,6 +1411,14 @@
           {
             "name": "swap_fee_bps",
             "type": "u16"
+          },
+          {
+            "name": "hook_program",
+            "type": "pubkey"
+          },
+          {
+            "name": "hook_flags",
+            "type": "u32"
           }
         ]
       }

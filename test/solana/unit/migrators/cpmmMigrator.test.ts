@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { AccountRole, address, type TransactionSigner } from '@solana/kit';
+import {
+  AccountRole,
+  address,
+  getAddressEncoder,
+  type TransactionSigner,
+} from '@solana/kit';
 import {
   cpmm,
   dopplerLaunchHookV1,
@@ -21,6 +26,8 @@ const TEST_MINT_A = address('So11111111111111111111111111111111111111112');
 const TEST_MINT_B = address('E45nSdnfANtYhCy6qZXo2a7qAWCU6pYjpqsby1bbkaiL');
 const TEST_USDC_MINT = address('4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU');
 const TEST_VAULT = address('5B6PDEnK92XgKdTec5NJtoAeFqfAZQfuyxiuF4nGK5KQ');
+const TEST_HOOK_PROGRAM =
+  dopplerLaunchHookV1.DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ID;
 const TEST_SIGNER = { address: TEST_WALLET } as TransactionSigner;
 
 describe('cpmmMigrator payload encoders', () => {
@@ -55,6 +62,28 @@ describe('cpmmMigrator payload encoders', () => {
       expect(view.getBigUint64(26, true)).toBe(300_000n);
       expect(view.getBigUint64(34, true)).toBe(10n);
       expect(view.getBigUint64(42, true)).toBe(1n);
+      expect(result).toHaveLength(86);
+      expect([...result.slice(50, 82)]).toEqual(new Array(32).fill(0));
+      expect(view.getUint32(82, true)).toBe(0);
+    });
+
+    it('encodes hooked spot pool args', () => {
+      const result = cpmmMigrator.encodeCreateSpotPoolPayload({
+        swapFeeBps: 42,
+        positionId: 7n,
+        amount0Max: 700_000n,
+        amount1Max: 300_000n,
+        minSharesOut: 1n,
+        hookProgram: TEST_HOOK_PROGRAM,
+        hookFlags: cpmm.HF_BEFORE_SWAP | cpmm.HF_AFTER_SWAP,
+      });
+
+      expect([...result.slice(50, 82)]).toEqual([
+        ...getAddressEncoder().encode(TEST_HOOK_PROGRAM),
+      ]);
+      expect(
+        new DataView(result.buffer, result.byteOffset).getUint32(82, true),
+      ).toBe(cpmm.HF_BEFORE_SWAP | cpmm.HF_AFTER_SWAP);
     });
 
     it('accepts safe numeric u64 and u128 values', () => {
@@ -305,6 +334,39 @@ describe('cpmmMigrator spot pool helpers', () => {
     expect(launchPool).not.toBe(lowFeePool);
   });
 
+  it('keys hooked spot pools by pair, fee, hook program, and flags', async () => {
+    const [hookedPool] = await cpmm.getHookedSpotPoolAddress(
+      TEST_MINT_A,
+      TEST_MINT_B,
+      30,
+      TEST_HOOK_PROGRAM,
+      cpmm.HF_BEFORE_SWAP,
+    );
+    const [reversedPool] = await cpmm.getHookedSpotPoolAddress(
+      TEST_MINT_B,
+      TEST_MINT_A,
+      30,
+      TEST_HOOK_PROGRAM,
+      cpmm.HF_BEFORE_SWAP,
+    );
+    const [differentFlagsPool] = await cpmm.getHookedSpotPoolAddress(
+      TEST_MINT_A,
+      TEST_MINT_B,
+      30,
+      TEST_HOOK_PROGRAM,
+      cpmm.HF_BEFORE_SWAP | cpmm.HF_AFTER_SWAP,
+    );
+    const [hooklessPool] = await cpmm.getSpotPoolAddress(
+      TEST_MINT_A,
+      TEST_MINT_B,
+      30,
+    );
+
+    expect(reversedPool).toBe(hookedPool);
+    expect(differentFlagsPool).not.toBe(hookedPool);
+    expect(hooklessPool).not.toBe(hookedPool);
+  });
+
   it('matches the on-chain spot pool key derivation', async () => {
     const [pool] = await cpmm.getSpotPoolAddress(
       TEST_MINT_A,
@@ -393,7 +455,7 @@ describe('cpmmMigrator spot pool helpers', () => {
     expect([...ix.data.slice(0, 8)]).toEqual([
       ...CREATE_SPOT_POOL_DISCRIMINATOR,
     ]);
-    expect(ix.data).toHaveLength(50);
+    expect(ix.data).toHaveLength(86);
     expect(ix.accounts).toHaveLength(20);
     expect(ix.accounts![0].address).toBe(accounts.cpmmConfig);
     expect(ix.accounts![1].address).toBe(TEST_WALLET);
@@ -402,6 +464,66 @@ describe('cpmmMigrator spot pool helpers', () => {
     expect(view.getUint16(8, true)).toBe(30);
     expect(view.getBigUint64(18, true)).toBe(token0IsA ? 700_000n : 300_000n);
     expect(view.getBigUint64(26, true)).toBe(token0IsA ? 300_000n : 700_000n);
+    expect([...ix.data.slice(50, 82)]).toEqual(new Array(32).fill(0));
+    expect(view.getUint32(82, true)).toBe(0);
+  });
+
+  it('builds a hooked spot pool instruction with the committed pool key', async () => {
+    const hookFlags = cpmm.HF_BEFORE_SWAP | cpmm.HF_AFTER_SWAP;
+    const ix = await cpmmMigrator.createSpotPoolInstruction({
+      payer: TEST_SIGNER,
+      tokenAMint: TEST_MINT_A,
+      tokenBMint: TEST_MINT_B,
+      tokenAAmount: 700_000n,
+      tokenBAmount: 300_000n,
+      swapFeeBps: 30,
+      hookProgram: TEST_HOOK_PROGRAM,
+      hookFlags,
+    });
+    const [expectedPool] = await cpmm.getHookedSpotPoolAddress(
+      TEST_MINT_A,
+      TEST_MINT_B,
+      30,
+      TEST_HOOK_PROGRAM,
+      hookFlags,
+    );
+    const view = new DataView(ix.data.buffer, ix.data.byteOffset);
+
+    expect(ix.accounts).toHaveLength(21);
+    expect(ix.accounts[5].address).toBe(expectedPool);
+    expect(ix.accounts[20]).toEqual({
+      address: TEST_HOOK_PROGRAM,
+      role: AccountRole.READONLY,
+    });
+    expect([...ix.data.slice(50, 82)]).toEqual([
+      ...getAddressEncoder().encode(TEST_HOOK_PROGRAM),
+    ]);
+    expect(view.getUint32(82, true)).toBe(hookFlags);
+  });
+
+  it('rejects invalid spot pool hook configurations before instruction creation', async () => {
+    const input = {
+      payer: TEST_SIGNER,
+      tokenAMint: TEST_MINT_A,
+      tokenBMint: TEST_MINT_B,
+      tokenAAmount: 700_000n,
+      tokenBAmount: 300_000n,
+      swapFeeBps: 30,
+    };
+
+    await expect(
+      cpmmMigrator.createSpotPoolInstruction({
+        ...input,
+        hookFlags: cpmm.HF_BEFORE_SWAP,
+      }),
+    ).rejects.toThrow('hookFlags must be zero');
+    await expect(
+      cpmmMigrator.createSpotPoolInstruction({
+        ...input,
+        hookProgram: TEST_HOOK_PROGRAM,
+        hookFlags: cpmm.HF_BEFORE_ADD_LIQ,
+      }),
+    ).rejects.toThrow('hookFlags must enable before-swap');
   });
 
   it('includes signer objects for local signer inputs', async () => {

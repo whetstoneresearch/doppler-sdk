@@ -15,6 +15,7 @@ export * from './initializeConfig';
 export * from './initializeOracle';
 export * from './initializePool';
 export * from './initializeSpotPool';
+export * from './initializeSpotPoolWithHook';
 export * from './oracleConsult';
 export * from './oracleUpdate';
 export * from './pause';

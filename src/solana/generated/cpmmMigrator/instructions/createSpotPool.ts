@@ -10,6 +10,8 @@ import {
   combineCodec,
   fixDecoderSize,
   fixEncoderSize,
+  getAddressDecoder,
+  getAddressEncoder,
   getBytesDecoder,
   getBytesEncoder,
   getProgramDerivedAddress,
@@ -19,6 +21,8 @@ import {
   getU128Encoder,
   getU16Decoder,
   getU16Encoder,
+  getU32Decoder,
+  getU32Encoder,
   getU64Decoder,
   getU64Encoder,
   SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
@@ -81,6 +85,7 @@ export type CreateSpotPoolInstruction<
     '11111111111111111111111111111111',
   TAccountRent extends string | AccountMeta<string> =
     'SysvarRent111111111111111111111111111111111',
+  TAccountHookProgram extends string | AccountMeta<string> = string,
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -148,6 +153,9 @@ export type CreateSpotPoolInstruction<
       TAccountRent extends string
         ? ReadonlyAccount<TAccountRent>
         : TAccountRent,
+      TAccountHookProgram extends string
+        ? ReadonlyAccount<TAccountHookProgram>
+        : TAccountHookProgram,
       ...TRemainingAccounts,
     ]
   >;
@@ -159,6 +167,13 @@ export type CreateSpotPoolInstructionData = {
   amount0Max: bigint;
   amount1Max: bigint;
   minSharesOut: bigint;
+  /**
+   * `Pubkey::default()` creates a hookless spot pool (unchanged legacy path).
+   * Any other value creates a hooked spot pool whose address commits to the
+   * hook program and flags.
+   */
+  hookProgram: Address;
+  hookFlags: number;
 };
 
 export type CreateSpotPoolInstructionDataArgs = {
@@ -167,6 +182,13 @@ export type CreateSpotPoolInstructionDataArgs = {
   amount0Max: number | bigint;
   amount1Max: number | bigint;
   minSharesOut: number | bigint;
+  /**
+   * `Pubkey::default()` creates a hookless spot pool (unchanged legacy path).
+   * Any other value creates a hooked spot pool whose address commits to the
+   * hook program and flags.
+   */
+  hookProgram: Address;
+  hookFlags: number;
 };
 
 export function getCreateSpotPoolInstructionDataEncoder(): FixedSizeEncoder<CreateSpotPoolInstructionDataArgs> {
@@ -178,6 +200,8 @@ export function getCreateSpotPoolInstructionDataEncoder(): FixedSizeEncoder<Crea
       ['amount0Max', getU64Encoder()],
       ['amount1Max', getU64Encoder()],
       ['minSharesOut', getU128Encoder()],
+      ['hookProgram', getAddressEncoder()],
+      ['hookFlags', getU32Encoder()],
     ]),
     (value) => ({ ...value, discriminator: CREATE_SPOT_POOL_DISCRIMINATOR }),
   );
@@ -191,6 +215,8 @@ export function getCreateSpotPoolInstructionDataDecoder(): FixedSizeDecoder<Crea
     ['amount0Max', getU64Decoder()],
     ['amount1Max', getU64Decoder()],
     ['minSharesOut', getU128Decoder()],
+    ['hookProgram', getAddressDecoder()],
+    ['hookFlags', getU32Decoder()],
   ]);
 }
 
@@ -225,6 +251,7 @@ export type CreateSpotPoolAsyncInput<
   TAccountToken1Program extends string = string,
   TAccountSystemProgram extends string = string,
   TAccountRent extends string = string,
+  TAccountHookProgram extends string = string,
 > = {
   cpmmConfig: Address<TAccountCpmmConfig>;
   payer: TransactionSigner<TAccountPayer>;
@@ -246,11 +273,18 @@ export type CreateSpotPoolAsyncInput<
   token1Program: Address<TAccountToken1Program>;
   systemProgram?: Address<TAccountSystemProgram>;
   rent?: Address<TAccountRent>;
+  /**
+   * Omit it entirely for a hookless pool. When present it must equal
+   * `args.hook_program`; CPMM additionally requires it to be executable.
+   */
+  hookProgram?: Address<TAccountHookProgram>;
   swapFeeBps: CreateSpotPoolInstructionDataArgs['swapFeeBps'];
   positionId: CreateSpotPoolInstructionDataArgs['positionId'];
   amount0Max: CreateSpotPoolInstructionDataArgs['amount0Max'];
   amount1Max: CreateSpotPoolInstructionDataArgs['amount1Max'];
   minSharesOut: CreateSpotPoolInstructionDataArgs['minSharesOut'];
+  hookProgramArg: CreateSpotPoolInstructionDataArgs['hookProgram'];
+  hookFlags: CreateSpotPoolInstructionDataArgs['hookFlags'];
 };
 
 export async function getCreateSpotPoolInstructionAsync<
@@ -274,6 +308,7 @@ export async function getCreateSpotPoolInstructionAsync<
   TAccountToken1Program extends string,
   TAccountSystemProgram extends string,
   TAccountRent extends string,
+  TAccountHookProgram extends string,
   TProgramAddress extends Address = typeof CPMM_MIGRATOR_PROGRAM_ADDRESS,
 >(
   input: CreateSpotPoolAsyncInput<
@@ -296,7 +331,8 @@ export async function getCreateSpotPoolInstructionAsync<
     TAccountToken0Program,
     TAccountToken1Program,
     TAccountSystemProgram,
-    TAccountRent
+    TAccountRent,
+    TAccountHookProgram
   >,
   config?: { programAddress?: TProgramAddress },
 ): Promise<
@@ -321,7 +357,8 @@ export async function getCreateSpotPoolInstructionAsync<
     TAccountToken0Program,
     TAccountToken1Program,
     TAccountSystemProgram,
-    TAccountRent
+    TAccountRent,
+    TAccountHookProgram
   >
 > {
   // Program address.
@@ -359,6 +396,7 @@ export async function getCreateSpotPoolInstructionAsync<
     token1Program: { value: input.token1Program ?? null, isWritable: false },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
     rent: { value: input.rent ?? null, isWritable: false },
+    hookProgram: { value: input.hookProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -366,7 +404,7 @@ export async function getCreateSpotPoolInstructionAsync<
   >;
 
   // Original args.
-  const args = { ...input };
+  const args = { ...input, hookProgram: input.hookProgramArg };
 
   // Resolve default values.
   if (!accounts.cpmmProgram.value) {
@@ -418,6 +456,7 @@ export async function getCreateSpotPoolInstructionAsync<
       getAccountMeta('token1Program', accounts.token1Program),
       getAccountMeta('systemProgram', accounts.systemProgram),
       getAccountMeta('rent', accounts.rent),
+      getAccountMeta('hookProgram', accounts.hookProgram),
     ],
     data: getCreateSpotPoolInstructionDataEncoder().encode(
       args as CreateSpotPoolInstructionDataArgs,
@@ -444,7 +483,8 @@ export async function getCreateSpotPoolInstructionAsync<
     TAccountToken0Program,
     TAccountToken1Program,
     TAccountSystemProgram,
-    TAccountRent
+    TAccountRent,
+    TAccountHookProgram
   >);
 }
 
@@ -469,6 +509,7 @@ export type CreateSpotPoolInput<
   TAccountToken1Program extends string = string,
   TAccountSystemProgram extends string = string,
   TAccountRent extends string = string,
+  TAccountHookProgram extends string = string,
 > = {
   cpmmConfig: Address<TAccountCpmmConfig>;
   payer: TransactionSigner<TAccountPayer>;
@@ -490,11 +531,18 @@ export type CreateSpotPoolInput<
   token1Program: Address<TAccountToken1Program>;
   systemProgram?: Address<TAccountSystemProgram>;
   rent?: Address<TAccountRent>;
+  /**
+   * Omit it entirely for a hookless pool. When present it must equal
+   * `args.hook_program`; CPMM additionally requires it to be executable.
+   */
+  hookProgram?: Address<TAccountHookProgram>;
   swapFeeBps: CreateSpotPoolInstructionDataArgs['swapFeeBps'];
   positionId: CreateSpotPoolInstructionDataArgs['positionId'];
   amount0Max: CreateSpotPoolInstructionDataArgs['amount0Max'];
   amount1Max: CreateSpotPoolInstructionDataArgs['amount1Max'];
   minSharesOut: CreateSpotPoolInstructionDataArgs['minSharesOut'];
+  hookProgramArg: CreateSpotPoolInstructionDataArgs['hookProgram'];
+  hookFlags: CreateSpotPoolInstructionDataArgs['hookFlags'];
 };
 
 export function getCreateSpotPoolInstruction<
@@ -518,6 +566,7 @@ export function getCreateSpotPoolInstruction<
   TAccountToken1Program extends string,
   TAccountSystemProgram extends string,
   TAccountRent extends string,
+  TAccountHookProgram extends string,
   TProgramAddress extends Address = typeof CPMM_MIGRATOR_PROGRAM_ADDRESS,
 >(
   input: CreateSpotPoolInput<
@@ -540,7 +589,8 @@ export function getCreateSpotPoolInstruction<
     TAccountToken0Program,
     TAccountToken1Program,
     TAccountSystemProgram,
-    TAccountRent
+    TAccountRent,
+    TAccountHookProgram
   >,
   config?: { programAddress?: TProgramAddress },
 ): CreateSpotPoolInstruction<
@@ -564,7 +614,8 @@ export function getCreateSpotPoolInstruction<
   TAccountToken0Program,
   TAccountToken1Program,
   TAccountSystemProgram,
-  TAccountRent
+  TAccountRent,
+  TAccountHookProgram
 > {
   // Program address.
   const programAddress =
@@ -601,6 +652,7 @@ export function getCreateSpotPoolInstruction<
     token1Program: { value: input.token1Program ?? null, isWritable: false },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
     rent: { value: input.rent ?? null, isWritable: false },
+    hookProgram: { value: input.hookProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -608,7 +660,7 @@ export function getCreateSpotPoolInstruction<
   >;
 
   // Original args.
-  const args = { ...input };
+  const args = { ...input, hookProgram: input.hookProgramArg };
 
   // Resolve default values.
   if (!accounts.cpmmProgram.value) {
@@ -647,6 +699,7 @@ export function getCreateSpotPoolInstruction<
       getAccountMeta('token1Program', accounts.token1Program),
       getAccountMeta('systemProgram', accounts.systemProgram),
       getAccountMeta('rent', accounts.rent),
+      getAccountMeta('hookProgram', accounts.hookProgram),
     ],
     data: getCreateSpotPoolInstructionDataEncoder().encode(
       args as CreateSpotPoolInstructionDataArgs,
@@ -673,7 +726,8 @@ export function getCreateSpotPoolInstruction<
     TAccountToken0Program,
     TAccountToken1Program,
     TAccountSystemProgram,
-    TAccountRent
+    TAccountRent,
+    TAccountHookProgram
   >);
 }
 
@@ -703,6 +757,11 @@ export type ParsedCreateSpotPoolInstruction<
     token1Program: TAccountMetas[17];
     systemProgram: TAccountMetas[18];
     rent: TAccountMetas[19];
+    /**
+     * Omit it entirely for a hookless pool. When present it must equal
+     * `args.hook_program`; CPMM additionally requires it to be executable.
+     */
+    hookProgram?: TAccountMetas[20] | undefined;
   };
   data: CreateSpotPoolInstructionData;
 };
@@ -715,12 +774,12 @@ export function parseCreateSpotPoolInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedCreateSpotPoolInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 20) {
+  if (instruction.accounts.length < 21) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 20,
+        expectedAccountMetas: 21,
       },
     );
   }
@@ -729,6 +788,12 @@ export function parseCreateSpotPoolInstruction<
     const accountMeta = (instruction.accounts as TAccountMetas)[accountIndex]!;
     accountIndex += 1;
     return accountMeta;
+  };
+  const getNextOptionalAccount = () => {
+    const accountMeta = getNextAccount();
+    return accountMeta.address === CPMM_MIGRATOR_PROGRAM_ADDRESS
+      ? undefined
+      : accountMeta;
   };
   return {
     programAddress: instruction.programAddress,
@@ -753,6 +818,7 @@ export function parseCreateSpotPoolInstruction<
       token1Program: getNextAccount(),
       systemProgram: getNextAccount(),
       rent: getNextAccount(),
+      hookProgram: getNextOptionalAccount(),
     },
     data: getCreateSpotPoolInstructionDataDecoder().decode(instruction.data),
   };

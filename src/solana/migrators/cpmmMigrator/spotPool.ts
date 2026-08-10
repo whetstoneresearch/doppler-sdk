@@ -22,6 +22,7 @@ import {
   SEED_AUTHORITY,
   SEED_CONFIG,
   SEED_POSITION,
+  getHookedSpotPoolAddress,
   getSpotPoolAddress,
   sortMints,
 } from '../../core/index.js';
@@ -56,6 +57,10 @@ export type DeriveSpotPoolAccountsInput = {
   token0Account?: Address;
   token1Account?: Address;
   positionId?: number | bigint;
+  /** Optional allowlisted hook program. Set hookFlags when provided. */
+  hookProgram?: Address;
+  /** Immutable swap-phase flags: HF_BEFORE_SWAP, HF_AFTER_SWAP, or both. */
+  hookFlags?: number;
   cpmmProgram?: Address;
   cpmmMigratorProgram?: Address;
 };
@@ -164,6 +169,8 @@ export async function deriveSpotPoolAccounts({
   token0Account,
   token1Account,
   positionId = 0n,
+  hookProgram = SYSTEM_PROGRAM_ADDRESS,
+  hookFlags = 0,
   cpmmProgram = CPMM_PROGRAM_ID,
   cpmmMigratorProgram = CPMM_MIGRATOR_PROGRAM_ID,
 }: DeriveSpotPoolAccountsInput): Promise<SpotPoolAccounts> {
@@ -187,12 +194,27 @@ export async function deriveSpotPoolAccounts({
   const user1 =
     token1Account ??
     (token0IsA ? (tokenBAccount ?? userB) : (tokenAAccount ?? userA));
-  const [pool] = await getSpotPoolAddress(
-    token0Mint,
-    token1Mint,
-    swapFeeBps,
-    cpmmProgram,
-  );
+  const hasHook = hookProgram !== SYSTEM_PROGRAM_ADDRESS;
+  if (!hasHook && hookFlags !== 0) {
+    throw new Error('hookFlags must be zero when hookProgram is not provided');
+  }
+  if (
+    hasHook &&
+    (hookProgram === token0Program || hookProgram === token1Program)
+  ) {
+    throw new Error('hookProgram cannot be one of the pool token programs');
+  }
+
+  const [pool] = hasHook
+    ? await getHookedSpotPoolAddress(
+        token0Mint,
+        token1Mint,
+        swapFeeBps,
+        hookProgram,
+        hookFlags,
+        cpmmProgram,
+      )
+    : await getSpotPoolAddress(token0Mint, token1Mint, swapFeeBps, cpmmProgram);
   const protocolFeeOwner = await pda(cpmmProgram, [
     seed(SEED_PROTOCOL_FEE_OWNER),
     addressSeed(pool),
@@ -254,6 +276,12 @@ export async function createSpotPoolInstruction(
     positionId,
   });
   const token0IsA = accounts.token0Mint === input.tokenAMint;
+  const hookProgram = input.hookProgram ?? SYSTEM_PROGRAM_ADDRESS;
+  const hookFlags = input.hookFlags ?? 0;
+  const hookProgramAccount =
+    hookProgram === SYSTEM_PROGRAM_ADDRESS
+      ? []
+      : [{ address: hookProgram, role: AccountRole.READONLY }];
 
   return {
     programAddress: cpmmMigratorProgram,
@@ -284,6 +312,7 @@ export async function createSpotPoolInstruction(
         address: input.rent ?? SYSVAR_RENT_ADDRESS,
         role: AccountRole.READONLY,
       },
+      ...hookProgramAccount,
     ],
     data: getCreateSpotPoolInstructionDataEncoder().encode({
       swapFeeBps: input.swapFeeBps,
@@ -291,6 +320,8 @@ export async function createSpotPoolInstruction(
       amount0Max: token0IsA ? input.tokenAAmount : input.tokenBAmount,
       amount1Max: token0IsA ? input.tokenBAmount : input.tokenAAmount,
       minSharesOut,
+      hookProgram,
+      hookFlags,
     }),
   };
 }

@@ -96,6 +96,9 @@ export const HF_BEFORE_SWAP = 1 << 0;
 /** Hook: called after swap */
 export const HF_AFTER_SWAP = 1 << 1;
 
+/** Hook flags supported by immutable spot pools */
+export const SPOT_HOOK_FLAG_MASK = HF_BEFORE_SWAP | HF_AFTER_SWAP;
+
 /** Hook: called before add liquidity */
 export const HF_BEFORE_ADD_LIQ = 1 << 2;
 

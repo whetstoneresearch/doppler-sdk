@@ -177,6 +177,7 @@ The Solana examples use `@whetstone-research/doppler-sdk/solana`. Set `SOLANA_NE
 - [`solana-cosigner-gated-buy-token-2022.ts`](./solana-cosigner-gated-buy-token-2022.ts): same cosigner-gated WSOL flow with a Token-2022 base mint and Metaplex metadata.
 - [`solana-usdc-cosigner-gated-buy.ts`](./solana-usdc-cosigner-gated-buy.ts): cosigner-gated devnet USDC buy flow.
 - [`solana-prediction-market.ts`](./solana-prediction-market.ts): create a two-outcome prediction market with trusted oracle and prediction migrator.
+- [`solana-create-spot-pool.ts`](./solana-create-spot-pool.ts): create a permissionless base-token/WSOL spot pool with an immutable fee tier and an optional allowlisted swap-phase hook.
 - [`solana-swap.ts`](./solana-swap.ts): quote and submit an exact-in CPMM swap.
 - [`solana-custom-hook/`](./solana-custom-hook/): minimal Anchor implementation of the Solana hook callback ABI. See the [custom hook guide](../docs/solana-custom-hooks.md) for deployment and SDK wiring.
 
@@ -214,8 +215,9 @@ The command clones the deployed programs and protocol configs, then uses
 ephemeral payer and cosigner keys. The forked hook config is rewritten to
 authorize only the ephemeral cosigner; no production key or mainnet write is
 required. Set `SOLANA_MAINNET_RPC_URL` to override the public RPC used for
-cloning. The prediction-market example is compile-checked but cannot execute in
-this suite because its hook and migrator do not have a mainnet deployment.
+cloning. The prediction-market and spot-pool examples are compile-checked but
+cannot execute in this suite because their required program revisions do not
+have a mainnet deployment.
 
 For larger CPMM launch metadata, use a launch-specific ALT:
 
