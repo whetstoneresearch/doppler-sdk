@@ -1,4 +1,5 @@
 import { mergeBytes } from '@solana/kit';
+import { NO_HOOK_PROGRAM } from '../../core/index.js';
 import {
   getRegisterLaunchArgsEncoder,
   getMigrateArgsEncoder,
@@ -88,14 +89,30 @@ export type RegisterLaunchPayloadArgs = Omit<
 > &
   Partial<Pick<RegisterLaunchArgsArgs, 'migratedPoolHookConfig'>>;
 
+/**
+ * Hook fields are optional at this boundary: omitting them encodes a hookless
+ * spot pool, matching the payload produced before hooked pools existed.
+ */
+export type CreateSpotPoolPayloadArgs = Omit<
+  CreateSpotPoolArgsArgs,
+  'hookProgram' | 'hookFlags'
+> &
+  Partial<Pick<CreateSpotPoolArgsArgs, 'hookProgram' | 'hookFlags'>>;
+
 export function encodeCreateSpotPoolPayload(
-  args: CreateSpotPoolArgsArgs,
+  args: CreateSpotPoolPayloadArgs,
 ): Uint8Array {
   assertSafeInteger('positionId', args.positionId);
   assertSafeInteger('amount0Max', args.amount0Max);
   assertSafeInteger('amount1Max', args.amount1Max);
   assertSafeInteger('minSharesOut', args.minSharesOut);
-  const encoded = new Uint8Array(getCreateSpotPoolArgsEncoder().encode(args));
+  const encoded = new Uint8Array(
+    getCreateSpotPoolArgsEncoder().encode({
+      ...args,
+      hookProgram: args.hookProgram ?? NO_HOOK_PROGRAM,
+      hookFlags: args.hookFlags ?? 0,
+    }),
+  );
   return mergeBytes([
     CPMM_MIGRATOR_INSTRUCTION_DISCRIMINATORS.createSpotPool,
     encoded,

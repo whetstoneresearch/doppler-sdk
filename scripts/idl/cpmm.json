@@ -9,30 +9,16 @@
   "instructions": [
     {
       "name": "add_liquidity",
-      "discriminator": [
-        181,
-        157,
-        89,
-        67,
-        143,
-        182,
-        52,
-        72
-      ],
+      "discriminator": [181, 157, 89, 67, 143, 182, 52, 72],
       "accounts": [
         {
           "name": "config",
-          "relations": [
-            "pool"
-          ]
+          "relations": ["pool"]
         },
         {
           "name": "pool",
           "writable": true,
-          "relations": [
-            "position",
-            "protocol_fee_position"
-          ]
+          "relations": ["position", "protocol_fee_position"]
         },
         {
           "name": "position",
@@ -52,17 +38,7 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
+                "value": [97, 117, 116, 104, 111, 114, 105, 116, 121]
               },
               {
                 "kind": "account",
@@ -118,22 +94,11 @@
     },
     {
       "name": "close_position",
-      "discriminator": [
-        123,
-        134,
-        81,
-        0,
-        49,
-        68,
-        98,
-        98
-      ],
+      "discriminator": [123, 134, 81, 0, 49, 68, 98, 98],
       "accounts": [
         {
           "name": "pool",
-          "relations": [
-            "position"
-          ]
+          "relations": ["position"]
         },
         {
           "name": "position",
@@ -152,23 +117,12 @@
     },
     {
       "name": "collect_fees",
-      "discriminator": [
-        164,
-        152,
-        207,
-        99,
-        30,
-        186,
-        19,
-        182
-      ],
+      "discriminator": [164, 152, 207, 99, 30, 186, 19, 182],
       "accounts": [
         {
           "name": "pool",
           "writable": true,
-          "relations": [
-            "position"
-          ]
+          "relations": ["position"]
         },
         {
           "name": "position",
@@ -184,17 +138,7 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
+                "value": [97, 117, 116, 104, 111, 114, 105, 116, 121]
               },
               {
                 "kind": "account",
@@ -245,29 +189,16 @@
     },
     {
       "name": "collect_protocol_fees",
-      "discriminator": [
-        22,
-        67,
-        23,
-        98,
-        150,
-        178,
-        70,
-        220
-      ],
+      "discriminator": [22, 67, 23, 98, 150, 178, 70, 220],
       "accounts": [
         {
           "name": "config",
-          "relations": [
-            "pool"
-          ]
+          "relations": ["pool"]
         },
         {
           "name": "pool",
           "writable": true,
-          "relations": [
-            "protocol_fee_position"
-          ]
+          "relations": ["protocol_fee_position"]
         },
         {
           "name": "protocol_fee_position",
@@ -283,17 +214,7 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
+                "value": [97, 117, 116, 104, 111, 114, 105, 116, 121]
               },
               {
                 "kind": "account",
@@ -344,16 +265,7 @@
     },
     {
       "name": "create_position",
-      "discriminator": [
-        48,
-        215,
-        197,
-        153,
-        96,
-        203,
-        180,
-        133
-      ],
+      "discriminator": [48, 215, 197, 153, 96, 203, 180, 133],
       "accounts": [
         {
           "name": "pool"
@@ -365,16 +277,7 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  115,
-                  105,
-                  116,
-                  105,
-                  111,
-                  110
-                ]
+                "value": [112, 111, 115, 105, 116, 105, 111, 110]
               },
               {
                 "kind": "account",
@@ -418,16 +321,7 @@
     },
     {
       "name": "initialize_config",
-      "discriminator": [
-        208,
-        127,
-        21,
-        1,
-        194,
-        190,
-        196,
-        70
-      ],
+      "discriminator": [208, 127, 21, 1, 194, 190, 196, 70],
       "accounts": [
         {
           "name": "config",
@@ -436,14 +330,7 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [
-                  99,
-                  111,
-                  110,
-                  102,
-                  105,
-                  103
-                ]
+                "value": [99, 111, 110, 102, 105, 103]
               }
             ]
           }
@@ -474,22 +361,11 @@
     },
     {
       "name": "initialize_oracle",
-      "discriminator": [
-        144,
-        223,
-        131,
-        120,
-        196,
-        253,
-        181,
-        99
-      ],
+      "discriminator": [144, 223, 131, 120, 196, 253, 181, 99],
       "accounts": [
         {
           "name": "config",
-          "relations": [
-            "pool"
-          ]
+          "relations": ["pool"]
         },
         {
           "name": "pool"
@@ -501,14 +377,7 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [
-                  111,
-                  114,
-                  97,
-                  99,
-                  108,
-                  101
-                ]
+                "value": [111, 114, 97, 99, 108, 101]
               },
               {
                 "kind": "account",
@@ -544,16 +413,7 @@
     },
     {
       "name": "initialize_pool",
-      "discriminator": [
-        95,
-        180,
-        10,
-        172,
-        84,
-        174,
-        232,
-        40
-      ],
+      "discriminator": [95, 180, 10, 172, 84, 174, 232, 40],
       "accounts": [
         {
           "name": "config"
@@ -565,12 +425,7 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  111,
-                  108
-                ]
+                "value": [112, 111, 111, 108]
               },
               {
                 "kind": "account",
@@ -590,16 +445,7 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  115,
-                  105,
-                  116,
-                  105,
-                  111,
-                  110
-                ]
+                "value": [112, 111, 115, 105, 116, 105, 111, 110]
               },
               {
                 "kind": "account",
@@ -611,16 +457,7 @@
               },
               {
                 "kind": "const",
-                "value": [
-                  0,
-                  0,
-                  0,
-                  0,
-                  0,
-                  0,
-                  0,
-                  0
-                ]
+                "value": [0, 0, 0, 0, 0, 0, 0, 0]
               }
             ]
           }
@@ -632,24 +469,8 @@
               {
                 "kind": "const",
                 "value": [
-                  112,
-                  114,
-                  111,
-                  116,
-                  111,
-                  99,
-                  111,
-                  108,
-                  95,
-                  102,
-                  101,
-                  101,
-                  95,
-                  111,
-                  119,
-                  110,
-                  101,
-                  114
+                  112, 114, 111, 116, 111, 99, 111, 108, 95, 102, 101, 101, 95,
+                  111, 119, 110, 101, 114
                 ]
               },
               {
@@ -665,17 +486,7 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
+                "value": [97, 117, 116, 104, 111, 114, 105, 116, 121]
               },
               {
                 "kind": "account",
@@ -691,14 +502,7 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [
-                  118,
-                  97,
-                  117,
-                  108,
-                  116,
-                  48
-                ]
+                "value": [118, 97, 117, 108, 116, 48]
               },
               {
                 "kind": "account",
@@ -714,14 +518,7 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [
-                  118,
-                  97,
-                  117,
-                  108,
-                  116,
-                  49
-                ]
+                "value": [118, 97, 117, 108, 116, 49]
               },
               {
                 "kind": "account",
@@ -778,16 +575,7 @@
     },
     {
       "name": "initialize_spot_pool",
-      "discriminator": [
-        254,
-        243,
-        84,
-        29,
-        237,
-        165,
-        241,
-        217
-      ],
+      "discriminator": [254, 243, 84, 29, 237, 165, 241, 217],
       "accounts": [
         {
           "name": "config"
@@ -799,17 +587,7 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [
-                  115,
-                  112,
-                  111,
-                  116,
-                  95,
-                  112,
-                  111,
-                  111,
-                  108
-                ]
+                "value": [115, 112, 111, 116, 95, 112, 111, 111, 108]
               },
               {
                 "kind": "account",
@@ -833,16 +611,7 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  115,
-                  105,
-                  116,
-                  105,
-                  111,
-                  110
-                ]
+                "value": [112, 111, 115, 105, 116, 105, 111, 110]
               },
               {
                 "kind": "account",
@@ -854,16 +623,7 @@
               },
               {
                 "kind": "const",
-                "value": [
-                  0,
-                  0,
-                  0,
-                  0,
-                  0,
-                  0,
-                  0,
-                  0
-                ]
+                "value": [0, 0, 0, 0, 0, 0, 0, 0]
               }
             ]
           }
@@ -875,24 +635,8 @@
               {
                 "kind": "const",
                 "value": [
-                  112,
-                  114,
-                  111,
-                  116,
-                  111,
-                  99,
-                  111,
-                  108,
-                  95,
-                  102,
-                  101,
-                  101,
-                  95,
-                  111,
-                  119,
-                  110,
-                  101,
-                  114
+                  112, 114, 111, 116, 111, 99, 111, 108, 95, 102, 101, 101, 95,
+                  111, 119, 110, 101, 114
                 ]
               },
               {
@@ -908,17 +652,7 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
+                "value": [97, 117, 116, 104, 111, 114, 105, 116, 121]
               },
               {
                 "kind": "account",
@@ -934,14 +668,7 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [
-                  118,
-                  97,
-                  117,
-                  108,
-                  116,
-                  48
-                ]
+                "value": [118, 97, 117, 108, 116, 48]
               },
               {
                 "kind": "account",
@@ -957,14 +684,7 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [
-                  118,
-                  97,
-                  117,
-                  108,
-                  116,
-                  49
-                ]
+                "value": [118, 97, 117, 108, 116, 49]
               },
               {
                 "kind": "account",
@@ -1015,17 +735,190 @@
       ]
     },
     {
-      "name": "oracle_consult",
-      "discriminator": [
-        239,
-        237,
-        255,
-        177,
-        142,
-        72,
-        96,
-        175
+      "name": "initialize_spot_pool_with_hook",
+      "discriminator": [98, 227, 206, 159, 252, 134, 77, 21],
+      "accounts": [
+        {
+          "name": "config"
+        },
+        {
+          "name": "pool",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [115, 112, 111, 116, 95, 112, 111, 111, 108]
+              },
+              {
+                "kind": "account",
+                "path": "token0_mint"
+              },
+              {
+                "kind": "account",
+                "path": "token1_mint"
+              },
+              {
+                "kind": "arg",
+                "path": "args.swap_fee_bps"
+              },
+              {
+                "kind": "arg",
+                "path": "args.hook_program"
+              },
+              {
+                "kind": "arg",
+                "path": "args.hook_flags"
+              }
+            ]
+          }
+        },
+        {
+          "name": "protocol_fee_position",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [112, 111, 115, 105, 116, 105, 111, 110]
+              },
+              {
+                "kind": "account",
+                "path": "pool"
+              },
+              {
+                "kind": "account",
+                "path": "protocol_fee_owner"
+              },
+              {
+                "kind": "const",
+                "value": [0, 0, 0, 0, 0, 0, 0, 0]
+              }
+            ]
+          }
+        },
+        {
+          "name": "protocol_fee_owner",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112, 114, 111, 116, 111, 99, 111, 108, 95, 102, 101, 101, 95,
+                  111, 119, 110, 101, 114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pool"
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [97, 117, 116, 104, 111, 114, 105, 116, 121]
+              },
+              {
+                "kind": "account",
+                "path": "pool"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault0",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [118, 97, 117, 108, 116, 48]
+              },
+              {
+                "kind": "account",
+                "path": "pool"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault1",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [118, 97, 117, 108, 116, 49]
+              },
+              {
+                "kind": "account",
+                "path": "pool"
+              }
+            ]
+          }
+        },
+        {
+          "name": "token0_mint"
+        },
+        {
+          "name": "token1_mint"
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token0_program"
+        },
+        {
+          "name": "token1_program"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        },
+        {
+          "name": "migration_authority",
+          "signer": true
+        },
+        {
+          "name": "hook_program",
+          "docs": [
+            "`args.hook_program` and required to be executable, which rules out the",
+            "common way of bricking an immutable pool: a typo'd address that is not a",
+            "program at all. It does NOT prove the program implements the hook ABI —",
+            "an executable that never `set_return_data`s a 32-byte `HookResultV1`",
+            "still fails every before-swap CPI with `HookReturnDataMissing`. The",
+            "handler additionally rejects the pool's own token programs, which",
+            "`swap_exact_in`'s denylist would otherwise skip before they could be",
+            "bound as the hook program account."
+          ]
+        }
       ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "InitializeSpotPoolWithHookArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "oracle_consult",
+      "discriminator": [239, 237, 255, 177, 142, 72, 96, 175],
       "accounts": [
         {
           "name": "pool"
@@ -1036,14 +929,7 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [
-                  111,
-                  114,
-                  97,
-                  99,
-                  108,
-                  101
-                ]
+                "value": [111, 114, 97, 99, 108, 101]
               },
               {
                 "kind": "account",
@@ -1066,16 +952,7 @@
     },
     {
       "name": "oracle_update",
-      "discriminator": [
-        85,
-        209,
-        248,
-        142,
-        186,
-        249,
-        120,
-        239
-      ],
+      "discriminator": [85, 209, 248, 142, 186, 249, 120, 239],
       "accounts": [
         {
           "name": "pool"
@@ -1087,14 +964,7 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [
-                  111,
-                  114,
-                  97,
-                  99,
-                  108,
-                  101
-                ]
+                "value": [111, 114, 97, 99, 108, 101]
               },
               {
                 "kind": "account",
@@ -1108,16 +978,7 @@
     },
     {
       "name": "pause",
-      "discriminator": [
-        211,
-        22,
-        221,
-        251,
-        74,
-        121,
-        193,
-        47
-      ],
+      "discriminator": [211, 22, 221, 251, 74, 121, 193, 47],
       "accounts": [
         {
           "name": "config",
@@ -1132,22 +993,11 @@
     },
     {
       "name": "preview_swap_exact_in",
-      "discriminator": [
-        50,
-        130,
-        31,
-        69,
-        147,
-        58,
-        222,
-        178
-      ],
+      "discriminator": [50, 130, 31, 69, 147, 58, 222, 178],
       "accounts": [
         {
           "name": "config",
-          "relations": [
-            "pool"
-          ]
+          "relations": ["pool"]
         },
         {
           "name": "pool"
@@ -1166,29 +1016,16 @@
     },
     {
       "name": "redeem_protocol_shares",
-      "discriminator": [
-        143,
-        253,
-        251,
-        77,
-        213,
-        178,
-        0,
-        225
-      ],
+      "discriminator": [143, 253, 251, 77, 213, 178, 0, 225],
       "accounts": [
         {
           "name": "config",
-          "relations": [
-            "pool"
-          ]
+          "relations": ["pool"]
         },
         {
           "name": "pool",
           "writable": true,
-          "relations": [
-            "protocol_fee_position"
-          ]
+          "relations": ["protocol_fee_position"]
         },
         {
           "name": "protocol_fee_position",
@@ -1204,17 +1041,7 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
+                "value": [97, 117, 116, 104, 111, 114, 105, 116, 121]
               },
               {
                 "kind": "account",
@@ -1265,30 +1092,16 @@
     },
     {
       "name": "remove_liquidity",
-      "discriminator": [
-        80,
-        85,
-        209,
-        72,
-        24,
-        206,
-        177,
-        108
-      ],
+      "discriminator": [80, 85, 209, 72, 24, 206, 177, 108],
       "accounts": [
         {
           "name": "config",
-          "relations": [
-            "pool"
-          ]
+          "relations": ["pool"]
         },
         {
           "name": "pool",
           "writable": true,
-          "relations": [
-            "position",
-            "protocol_fee_position"
-          ]
+          "relations": ["position", "protocol_fee_position"]
         },
         {
           "name": "position",
@@ -1308,17 +1121,7 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
+                "value": [97, 117, 116, 104, 111, 114, 105, 116, 121]
               },
               {
                 "kind": "account",
@@ -1374,22 +1177,11 @@
     },
     {
       "name": "set_fees",
-      "discriminator": [
-        137,
-        178,
-        49,
-        58,
-        0,
-        245,
-        242,
-        190
-      ],
+      "discriminator": [137, 178, 49, 58, 0, 245, 242, 190],
       "accounts": [
         {
           "name": "config",
-          "relations": [
-            "pool"
-          ]
+          "relations": ["pool"]
         },
         {
           "name": "pool",
@@ -1413,22 +1205,11 @@
     },
     {
       "name": "set_hook",
-      "discriminator": [
-        175,
-        16,
-        187,
-        252,
-        19,
-        54,
-        111,
-        221
-      ],
+      "discriminator": [175, 16, 187, 252, 19, 54, 111, 221],
       "accounts": [
         {
           "name": "config",
-          "relations": [
-            "pool"
-          ]
+          "relations": ["pool"]
         },
         {
           "name": "pool",
@@ -1452,22 +1233,11 @@
     },
     {
       "name": "swap_exact_in",
-      "discriminator": [
-        104,
-        104,
-        131,
-        86,
-        161,
-        189,
-        180,
-        216
-      ],
+      "discriminator": [104, 104, 131, 86, 161, 189, 180, 216],
       "accounts": [
         {
           "name": "config",
-          "relations": [
-            "pool"
-          ]
+          "relations": ["pool"]
         },
         {
           "name": "pool",
@@ -1479,17 +1249,7 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
+                "value": [97, 117, 116, 104, 111, 114, 105, 116, 121]
               },
               {
                 "kind": "account",
@@ -1549,16 +1309,7 @@
     },
     {
       "name": "transfer_admin",
-      "discriminator": [
-        42,
-        242,
-        66,
-        106,
-        228,
-        10,
-        111,
-        156
-      ],
+      "discriminator": [42, 242, 66, 106, 228, 10, 111, 156],
       "accounts": [
         {
           "name": "config",
@@ -1578,16 +1329,7 @@
     },
     {
       "name": "unpause",
-      "discriminator": [
-        169,
-        144,
-        4,
-        38,
-        10,
-        141,
-        188,
-        255
-      ],
+      "discriminator": [169, 144, 4, 38, 10, 141, 188, 255],
       "accounts": [
         {
           "name": "config",
@@ -1602,16 +1344,7 @@
     },
     {
       "name": "update_config",
-      "discriminator": [
-        29,
-        158,
-        252,
-        191,
-        10,
-        83,
-        219,
-        99
-      ],
+      "discriminator": [29, 158, 252, 191, 10, 83, 219, 99],
       "accounts": [
         {
           "name": "config",
@@ -1635,22 +1368,11 @@
     },
     {
       "name": "withdraw_vault_excess",
-      "discriminator": [
-        235,
-        197,
-        247,
-        177,
-        137,
-        72,
-        135,
-        113
-      ],
+      "discriminator": [235, 197, 247, 177, 137, 72, 135, 113],
       "accounts": [
         {
           "name": "config",
-          "relations": [
-            "pool"
-          ]
+          "relations": ["pool"]
         },
         {
           "name": "pool"
@@ -1665,17 +1387,7 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
+                "value": [97, 117, 116, 104, 111, 114, 105, 116, 121]
               },
               {
                 "kind": "account",
@@ -1719,38 +1431,9 @@
             "program": {
               "kind": "const",
               "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
+                140, 151, 37, 143, 78, 36, 137, 241, 187, 61, 16, 41, 20, 142,
+                13, 131, 11, 90, 19, 153, 218, 255, 16, 132, 4, 142, 123, 216,
+                219, 233, 248, 89
               ]
             }
           }
@@ -1776,38 +1459,9 @@
             "program": {
               "kind": "const",
               "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
+                140, 151, 37, 143, 78, 36, 137, 241, 187, 61, 16, 41, 20, 142,
+                13, 131, 11, 90, 19, 153, 218, 255, 16, 132, 4, 142, 123, 216,
+                219, 233, 248, 89
               ]
             }
           }
@@ -1825,317 +1479,101 @@
   "accounts": [
     {
       "name": "AmmConfig",
-      "discriminator": [
-        218,
-        244,
-        33,
-        104,
-        203,
-        203,
-        43,
-        111
-      ]
+      "discriminator": [218, 244, 33, 104, 203, 203, 43, 111]
     },
     {
       "name": "OracleState",
-      "discriminator": [
-        97,
-        156,
-        157,
-        189,
-        194,
-        73,
-        8,
-        15
-      ]
+      "discriminator": [97, 156, 157, 189, 194, 73, 8, 15]
     },
     {
       "name": "Pool",
-      "discriminator": [
-        241,
-        154,
-        109,
-        4,
-        17,
-        177,
-        109,
-        188
-      ]
+      "discriminator": [241, 154, 109, 4, 17, 177, 109, 188]
     },
     {
       "name": "Position",
-      "discriminator": [
-        170,
-        188,
-        143,
-        228,
-        122,
-        64,
-        247,
-        208
-      ]
+      "discriminator": [170, 188, 143, 228, 122, 64, 247, 208]
     }
   ],
   "events": [
     {
       "name": "AddLiquidity",
-      "discriminator": [
-        31,
-        94,
-        125,
-        90,
-        227,
-        52,
-        61,
-        186
-      ]
+      "discriminator": [31, 94, 125, 90, 227, 52, 61, 186]
     },
     {
       "name": "AdminTransferred",
-      "discriminator": [
-        255,
-        147,
-        182,
-        5,
-        199,
-        217,
-        38,
-        179
-      ]
+      "discriminator": [255, 147, 182, 5, 199, 217, 38, 179]
     },
     {
       "name": "CollectFees",
-      "discriminator": [
-        68,
-        188,
-        11,
-        82,
-        41,
-        135,
-        51,
-        12
-      ]
+      "discriminator": [68, 188, 11, 82, 41, 135, 51, 12]
     },
     {
       "name": "CollectProtocolFees",
-      "discriminator": [
-        78,
-        140,
-        208,
-        58,
-        10,
-        19,
-        107,
-        115
-      ]
+      "discriminator": [78, 140, 208, 58, 10, 19, 107, 115]
     },
     {
       "name": "ConfigUpdated",
-      "discriminator": [
-        40,
-        241,
-        230,
-        122,
-        11,
-        19,
-        198,
-        194
-      ]
+      "discriminator": [40, 241, 230, 122, 11, 19, 198, 194]
     },
     {
       "name": "FeesUpdated",
-      "discriminator": [
-        65,
-        34,
-        234,
-        59,
-        248,
-        242,
-        101,
-        118
-      ]
+      "discriminator": [65, 34, 234, 59, 248, 242, 101, 118]
     },
     {
       "name": "HookError",
-      "discriminator": [
-        166,
-        74,
-        208,
-        29,
-        244,
-        24,
-        8,
-        193
-      ]
+      "discriminator": [166, 74, 208, 29, 244, 24, 8, 193]
     },
     {
       "name": "HookInvoked",
-      "discriminator": [
-        201,
-        17,
-        232,
-        115,
-        114,
-        124,
-        20,
-        166
-      ]
+      "discriminator": [201, 17, 232, 115, 114, 124, 20, 166]
     },
     {
       "name": "HookUpdated",
-      "discriminator": [
-        74,
-        151,
-        74,
-        76,
-        69,
-        2,
-        223,
-        12
-      ]
+      "discriminator": [74, 151, 74, 76, 69, 2, 223, 12]
     },
     {
       "name": "OracleInitialized",
-      "discriminator": [
-        42,
-        87,
-        109,
-        208,
-        1,
-        105,
-        101,
-        142
-      ]
+      "discriminator": [42, 87, 109, 208, 1, 105, 101, 142]
     },
     {
       "name": "OracleUpdated",
-      "discriminator": [
-        138,
-        9,
-        51,
-        219,
-        228,
-        198,
-        11,
-        147
-      ]
+      "discriminator": [138, 9, 51, 219, 228, 198, 11, 147]
     },
     {
       "name": "Paused",
-      "discriminator": [
-        172,
-        248,
-        5,
-        253,
-        49,
-        255,
-        255,
-        232
-      ]
+      "discriminator": [172, 248, 5, 253, 49, 255, 255, 232]
     },
     {
       "name": "PoolInitialized",
-      "discriminator": [
-        100,
-        118,
-        173,
-        87,
-        12,
-        198,
-        254,
-        229
-      ]
+      "discriminator": [100, 118, 173, 87, 12, 198, 254, 229]
     },
     {
       "name": "PositionClosed",
-      "discriminator": [
-        157,
-        163,
-        227,
-        228,
-        13,
-        97,
-        138,
-        121
-      ]
+      "discriminator": [157, 163, 227, 228, 13, 97, 138, 121]
     },
     {
       "name": "PositionCreated",
-      "discriminator": [
-        63,
-        226,
-        54,
-        63,
-        141,
-        22,
-        31,
-        221
-      ]
+      "discriminator": [63, 226, 54, 63, 141, 22, 31, 221]
     },
     {
       "name": "RedeemProtocolShares",
-      "discriminator": [
-        134,
-        132,
-        218,
-        222,
-        35,
-        2,
-        35,
-        28
-      ]
+      "discriminator": [134, 132, 218, 222, 35, 2, 35, 28]
     },
     {
       "name": "RemoveLiquidity",
-      "discriminator": [
-        116,
-        244,
-        97,
-        232,
-        103,
-        31,
-        152,
-        58
-      ]
+      "discriminator": [116, 244, 97, 232, 103, 31, 152, 58]
     },
     {
       "name": "Swap",
-      "discriminator": [
-        81,
-        108,
-        227,
-        190,
-        205,
-        208,
-        10,
-        196
-      ]
+      "discriminator": [81, 108, 227, 190, 205, 208, 10, 196]
     },
     {
       "name": "Unpaused",
-      "discriminator": [
-        156,
-        150,
-        47,
-        174,
-        120,
-        216,
-        93,
-        117
-      ]
+      "discriminator": [156, 150, 47, 174, 120, 216, 93, 117]
     },
     {
       "name": "VaultExcessWithdrawn",
-      "discriminator": [
-        169,
-        144,
-        117,
-        254,
-        73,
-        106,
-        172,
-        37
-      ]
+      "discriminator": [169, 144, 117, 254, 73, 106, 172, 37]
     }
   ],
   "errors": [
@@ -2288,6 +1726,11 @@
       "code": 6033,
       "name": "ImmutableSpotPoolPolicy",
       "msg": "Spot pool fee and hook policy is immutable"
+    },
+    {
+      "code": 6034,
+      "name": "SpotHookFlagsNotAllowed",
+      "msg": "Hook flags not permitted for a spot pool"
     }
   ],
   "types": [
@@ -2379,10 +1822,7 @@
           {
             "name": "hook_allowlist",
             "type": {
-              "array": [
-                "pubkey",
-                32
-              ]
+              "array": ["pubkey", 32]
             }
           },
           {
@@ -2408,10 +1848,7 @@
           {
             "name": "_reserved",
             "type": {
-              "array": [
-                "u8",
-                7
-              ]
+              "array": ["u8", 7]
             }
           }
         ]
@@ -2760,6 +2197,34 @@
       }
     },
     {
+      "name": "InitializeSpotPoolWithHookArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint_a",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint_b",
+            "type": "pubkey"
+          },
+          {
+            "name": "swap_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "hook_program",
+            "type": "pubkey"
+          },
+          {
+            "name": "hook_flags",
+            "type": "u32"
+          }
+        ]
+      }
+    },
+    {
       "name": "Observation",
       "serialization": "bytemuck",
       "repr": {
@@ -2775,28 +2240,19 @@
           {
             "name": "_pad0",
             "type": {
-              "array": [
-                "u8",
-                4
-              ]
+              "array": ["u8", 4]
             }
           },
           {
             "name": "price0_cumulative",
             "type": {
-              "array": [
-                "u64",
-                4
-              ]
+              "array": ["u64", 4]
             }
           },
           {
             "name": "price1_cumulative",
             "type": {
-              "array": [
-                "u64",
-                4
-              ]
+              "array": ["u64", 4]
             }
           }
         ]
@@ -2874,19 +2330,13 @@
           {
             "name": "price0_cumulative",
             "type": {
-              "array": [
-                "u64",
-                4
-              ]
+              "array": ["u64", 4]
             }
           },
           {
             "name": "price1_cumulative",
             "type": {
-              "array": [
-                "u64",
-                4
-              ]
+              "array": ["u64", 4]
             }
           },
           {
@@ -2912,10 +2362,7 @@
           {
             "name": "_pad0",
             "type": {
-              "array": [
-                "u8",
-                2
-              ]
+              "array": ["u8", 2]
             }
           },
           {
@@ -2942,10 +2389,7 @@
           {
             "name": "_reserved",
             "type": {
-              "array": [
-                "u8",
-                6
-              ]
+              "array": ["u8", 6]
             }
           }
         ]
@@ -3090,10 +2534,7 @@
           {
             "name": "_reserved",
             "type": {
-              "array": [
-                "u8",
-                7
-              ]
+              "array": ["u8", 7]
             }
           }
         ]
@@ -3171,10 +2612,7 @@
           {
             "name": "_reserved",
             "type": {
-              "array": [
-                "u8",
-                7
-              ]
+              "array": ["u8", 7]
             }
           }
         ]

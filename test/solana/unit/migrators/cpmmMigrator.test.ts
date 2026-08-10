@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { AccountRole, address, type TransactionSigner } from '@solana/kit';
+import { TOKEN_PROGRAM_ADDRESS } from '@solana-program/token';
 import {
   cpmm,
   dopplerLaunchHookV1,
@@ -393,7 +394,7 @@ describe('cpmmMigrator spot pool helpers', () => {
     expect([...ix.data.slice(0, 8)]).toEqual([
       ...CREATE_SPOT_POOL_DISCRIMINATOR,
     ]);
-    expect(ix.data).toHaveLength(50);
+    expect(ix.data).toHaveLength(86);
     expect(ix.accounts).toHaveLength(20);
     expect(ix.accounts![0].address).toBe(accounts.cpmmConfig);
     expect(ix.accounts![1].address).toBe(TEST_WALLET);
@@ -402,6 +403,9 @@ describe('cpmmMigrator spot pool helpers', () => {
     expect(view.getUint16(8, true)).toBe(30);
     expect(view.getBigUint64(18, true)).toBe(token0IsA ? 700_000n : 300_000n);
     expect(view.getBigUint64(26, true)).toBe(token0IsA ? 300_000n : 700_000n);
+    // The hook tail must stay zeroed: a zero hook_program is what selects the
+    // legacy hookless path on-chain, and a hookless pool must send flags = 0.
+    expect([...ix.data.slice(50, 86)]).toEqual(new Array(36).fill(0));
   });
 
   it('includes signer objects for local signer inputs', async () => {
@@ -448,5 +452,309 @@ describe('cpmmMigrator spot pool helpers', () => {
     expect(ix.accounts[11].address).toBe(accounts.position);
     expect(ix.accounts[12].address).toBe(accounts.user0);
     expect(ix.accounts[13].address).toBe(accounts.user1);
+  });
+});
+
+describe('cpmmMigrator hooked spot pool helpers', () => {
+  // An arbitrary devnet-safe pubkey standing in for a third-party hook program.
+  const TEST_HOOK_PROGRAM = TEST_VAULT;
+  const {
+    HF_BEFORE_SWAP,
+    HF_AFTER_SWAP,
+    SPOT_HOOK_FLAG_MASK,
+    NO_HOOK_PROGRAM,
+  } = cpmm;
+
+  it('restricts the spot hook mask to swap-phase callbacks', () => {
+    expect(SPOT_HOOK_FLAG_MASK).toBe(HF_BEFORE_SWAP | HF_AFTER_SWAP);
+    expect(SPOT_HOOK_FLAG_MASK).toBe(3);
+    expect(NO_HOOK_PROGRAM).toBe(address('11111111111111111111111111111111'));
+  });
+
+  it('matches the on-chain hooked spot pool key derivation', async () => {
+    // Golden vectors derived independently of the SDK (raw sha256 PDA search
+    // over the 6-seed layout), pinning the u32 little-endian flag encoding.
+    const [beforeSwap] = await cpmm.getHookedSpotPoolAddress(
+      TEST_MINT_A,
+      TEST_USDC_MINT,
+      30,
+      TEST_HOOK_PROGRAM,
+      HF_BEFORE_SWAP,
+    );
+    const [afterSwap] = await cpmm.getHookedSpotPoolAddress(
+      TEST_MINT_A,
+      TEST_USDC_MINT,
+      30,
+      TEST_HOOK_PROGRAM,
+      HF_AFTER_SWAP,
+    );
+    const [bothPhases] = await cpmm.getHookedSpotPoolAddress(
+      TEST_MINT_A,
+      TEST_USDC_MINT,
+      30,
+      TEST_HOOK_PROGRAM,
+      SPOT_HOOK_FLAG_MASK,
+    );
+
+    expect(beforeSwap).toBe(
+      address('5v26ueqaMPkBigVZTAKhDfPrMm7DcqP1B6UPysDey3UY'),
+    );
+    expect(afterSwap).toBe(
+      address('FQHn5HWRDLx6BQ2DaNEGkTawqjVM2Qj2GVkGCmKf9LpS'),
+    );
+    expect(bothPhases).toBe(
+      address('GgGRt5GC2648AJmwuociFYi3WYiQFd3fGqpJKyB3AhBN'),
+    );
+  });
+
+  it('keys hooked pools by hook program and flags, disjoint from hookless', async () => {
+    const [hookless] = await cpmm.getSpotPoolAddress(
+      TEST_MINT_A,
+      TEST_USDC_MINT,
+      30,
+    );
+    const [hooked] = await cpmm.getHookedSpotPoolAddress(
+      TEST_MINT_A,
+      TEST_USDC_MINT,
+      30,
+      TEST_HOOK_PROGRAM,
+      HF_BEFORE_SWAP,
+    );
+    const [otherFlags] = await cpmm.getHookedSpotPoolAddress(
+      TEST_MINT_A,
+      TEST_USDC_MINT,
+      30,
+      TEST_HOOK_PROGRAM,
+      HF_AFTER_SWAP,
+    );
+    const [otherHook] = await cpmm.getHookedSpotPoolAddress(
+      TEST_MINT_A,
+      TEST_USDC_MINT,
+      30,
+      TEST_CONFIG,
+      HF_BEFORE_SWAP,
+    );
+    const [otherFee] = await cpmm.getHookedSpotPoolAddress(
+      TEST_MINT_A,
+      TEST_USDC_MINT,
+      100,
+      TEST_HOOK_PROGRAM,
+      HF_BEFORE_SWAP,
+    );
+    const [reversed] = await cpmm.getHookedSpotPoolAddress(
+      TEST_USDC_MINT,
+      TEST_MINT_A,
+      30,
+      TEST_HOOK_PROGRAM,
+      HF_BEFORE_SWAP,
+    );
+
+    expect(hooked).not.toBe(hookless);
+    expect(hooked).not.toBe(otherFlags);
+    expect(hooked).not.toBe(otherHook);
+    expect(hooked).not.toBe(otherFee);
+    expect(reversed).toBe(hooked);
+  });
+
+  it('rejects hook flags outside the u32 seed range', async () => {
+    await expect(
+      cpmm.getHookedSpotPoolAddress(
+        TEST_MINT_A,
+        TEST_MINT_B,
+        30,
+        TEST_HOOK_PROGRAM,
+        0x1_0000_0000,
+      ),
+    ).rejects.toThrow('u32');
+  });
+
+  it('derives hooked accounts from the 6-seed pool address', async () => {
+    const accounts = await cpmmMigrator.deriveSpotPoolAccounts({
+      tokenAMint: TEST_MINT_A,
+      tokenBMint: TEST_USDC_MINT,
+      swapFeeBps: 30,
+      liquidityOwner: TEST_WALLET,
+      hookProgram: TEST_HOOK_PROGRAM,
+      hookFlags: HF_BEFORE_SWAP,
+    });
+    const hookless = await cpmmMigrator.deriveSpotPoolAccounts({
+      tokenAMint: TEST_MINT_A,
+      tokenBMint: TEST_USDC_MINT,
+      swapFeeBps: 30,
+      liquidityOwner: TEST_WALLET,
+    });
+
+    expect(accounts.pool).toBe(
+      (
+        await cpmm.getHookedSpotPoolAddress(
+          TEST_MINT_A,
+          TEST_USDC_MINT,
+          30,
+          TEST_HOOK_PROGRAM,
+          HF_BEFORE_SWAP,
+        )
+      )[0],
+    );
+    expect(accounts.hookProgram).toBe(TEST_HOOK_PROGRAM);
+    // Every downstream PDA hangs off the pool, so all of them must move.
+    expect(accounts.poolAuthority).not.toBe(hookless.poolAuthority);
+    expect(accounts.poolVault0).not.toBe(hookless.poolVault0);
+    expect(accounts.protocolFeePosition).not.toBe(hookless.protocolFeePosition);
+    expect(accounts.position).not.toBe(hookless.position);
+    // Mints and user token accounts do not depend on the pool.
+    expect(accounts.user0).toBe(hookless.user0);
+  });
+
+  it('omits the hook program from hookless derivations', async () => {
+    const accounts = await cpmmMigrator.deriveSpotPoolAccounts({
+      tokenAMint: TEST_MINT_A,
+      tokenBMint: TEST_MINT_B,
+      swapFeeBps: 30,
+      liquidityOwner: TEST_WALLET,
+    });
+    const explicitSentinel = await cpmmMigrator.deriveSpotPoolAccounts({
+      tokenAMint: TEST_MINT_A,
+      tokenBMint: TEST_MINT_B,
+      swapFeeBps: 30,
+      liquidityOwner: TEST_WALLET,
+      hookProgram: NO_HOOK_PROGRAM,
+    });
+
+    expect(accounts.hookProgram).toBeUndefined();
+    expect(explicitSentinel).toEqual(accounts);
+  });
+
+  it('appends the hook program as a readonly 21st account', async () => {
+    const ix = await cpmmMigrator.createSpotPoolInstruction({
+      payer: TEST_SIGNER,
+      tokenAMint: TEST_MINT_A,
+      tokenBMint: TEST_MINT_B,
+      tokenAAmount: 700_000n,
+      tokenBAmount: 300_000n,
+      swapFeeBps: 30,
+      hookProgram: TEST_HOOK_PROGRAM,
+      hookFlags: SPOT_HOOK_FLAG_MASK,
+    });
+    const view = new DataView(ix.data.buffer, ix.data.byteOffset);
+
+    expect(ix.accounts).toHaveLength(21);
+    expect(ix.accounts![20]).toEqual({
+      address: TEST_HOOK_PROGRAM,
+      role: AccountRole.READONLY,
+    });
+    expect(ix.data).toHaveLength(86);
+    // hook_program occupies bytes 50..81, hook_flags is u32 LE at byte 82.
+    expect([...ix.data.slice(50, 82)]).not.toEqual(new Array(32).fill(0));
+    expect(view.getUint32(82, true)).toBe(SPOT_HOOK_FLAG_MASK);
+  });
+
+  it('keeps an explicit hookless request at 20 accounts', async () => {
+    const ix = await cpmmMigrator.createSpotPoolInstruction({
+      payer: TEST_SIGNER,
+      tokenAMint: TEST_MINT_A,
+      tokenBMint: TEST_MINT_B,
+      tokenAAmount: 700_000n,
+      tokenBAmount: 300_000n,
+      swapFeeBps: 30,
+      hookProgram: NO_HOOK_PROGRAM,
+      hookFlags: 0,
+    });
+
+    expect(ix.accounts).toHaveLength(20);
+    expect([...ix.data.slice(50, 86)]).toEqual(new Array(36).fill(0));
+  });
+
+  it('rejects hook configurations the program would reject', async () => {
+    const base = {
+      payer: TEST_SIGNER,
+      tokenAMint: TEST_MINT_A,
+      tokenBMint: TEST_MINT_B,
+      tokenAAmount: 700_000n,
+      tokenBAmount: 300_000n,
+      swapFeeBps: 30,
+    };
+
+    // Hookless pools always store flags = 0 on-chain (InvalidHookProgram).
+    await expect(
+      cpmmMigrator.createSpotPoolInstruction({
+        ...base,
+        hookFlags: HF_BEFORE_SWAP,
+      }),
+    ).rejects.toThrow('hookFlags must be 0 for a hookless spot pool');
+
+    // Non-swap-phase flags are outside SPOT_HOOK_FLAG_MASK.
+    await expect(
+      cpmmMigrator.createSpotPoolInstruction({
+        ...base,
+        hookProgram: TEST_HOOK_PROGRAM,
+        hookFlags: cpmm.HF_BEFORE_ADD_LIQ,
+      }),
+    ).rejects.toThrow('SPOT_HOOK_FLAG_MASK');
+
+    // An inert hook is rejected on-chain even though it clears the mask.
+    await expect(
+      cpmmMigrator.createSpotPoolInstruction({
+        ...base,
+        hookProgram: TEST_HOOK_PROGRAM,
+        hookFlags: 0,
+      }),
+    ).rejects.toThrow('at least one swap-phase bit');
+
+    // A hook equal to a token program would make the pool unswappable.
+    await expect(
+      cpmmMigrator.createSpotPoolInstruction({
+        ...base,
+        hookProgram: TOKEN_PROGRAM_ADDRESS,
+        hookFlags: HF_BEFORE_SWAP,
+      }),
+    ).rejects.toThrow('must not equal tokenAProgram or tokenBProgram');
+
+    // Flags must fit the u32 wire field.
+    await expect(
+      cpmmMigrator.createSpotPoolInstruction({
+        ...base,
+        hookProgram: TEST_HOOK_PROGRAM,
+        hookFlags: 1.5,
+      }),
+    ).rejects.toThrow(RangeError);
+  });
+
+  it('encodes hookless payloads when hook fields are omitted', () => {
+    const omitted = cpmmMigrator.encodeCreateSpotPoolPayload({
+      swapFeeBps: 30,
+      positionId: 0n,
+      amount0Max: 700_000n,
+      amount1Max: 300_000n,
+      minSharesOut: 1n,
+    });
+    const explicit = cpmmMigrator.encodeCreateSpotPoolPayload({
+      swapFeeBps: 30,
+      positionId: 0n,
+      amount0Max: 700_000n,
+      amount1Max: 300_000n,
+      minSharesOut: 1n,
+      hookProgram: NO_HOOK_PROGRAM,
+      hookFlags: 0,
+    });
+
+    expect(omitted).toHaveLength(86);
+    expect([...omitted.slice(50, 86)]).toEqual(new Array(36).fill(0));
+    expect([...omitted]).toEqual([...explicit]);
+  });
+
+  it('encodes hook fields into the payload when provided', () => {
+    const payload = cpmmMigrator.encodeCreateSpotPoolPayload({
+      swapFeeBps: 30,
+      positionId: 0n,
+      amount0Max: 700_000n,
+      amount1Max: 300_000n,
+      minSharesOut: 1n,
+      hookProgram: TEST_HOOK_PROGRAM,
+      hookFlags: HF_AFTER_SWAP,
+    });
+    const view = new DataView(payload.buffer, payload.byteOffset);
+
+    expect(payload).toHaveLength(86);
+    expect(view.getUint32(82, true)).toBe(HF_AFTER_SWAP);
   });
 });

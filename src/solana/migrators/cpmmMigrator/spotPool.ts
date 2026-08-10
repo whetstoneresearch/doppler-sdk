@@ -19,9 +19,12 @@ import {
 } from '@solana/kit';
 import {
   CPMM_PROGRAM_ID,
+  NO_HOOK_PROGRAM,
   SEED_AUTHORITY,
   SEED_CONFIG,
   SEED_POSITION,
+  SPOT_HOOK_FLAG_MASK,
+  getHookedSpotPoolAddress,
   getSpotPoolAddress,
   sortMints,
 } from '../../core/index.js';
@@ -42,6 +45,7 @@ import {
 const addressCodec = getAddressCodec();
 const textEncoder = new TextEncoder();
 const U64_MAX = (1n << 64n) - 1n;
+const U32_MAX = 0xffff_ffff;
 const PROTOCOL_FEE_POSITION_ID = 0n;
 
 export type DeriveSpotPoolAccountsInput = {
@@ -58,6 +62,20 @@ export type DeriveSpotPoolAccountsInput = {
   positionId?: number | bigint;
   cpmmProgram?: Address;
   cpmmMigratorProgram?: Address;
+  /**
+   * Hook program to attach to the pool. Defaults to `NO_HOOK_PROGRAM`, which
+   * creates a hookless pool using the legacy 4-seed derivation and keeps the
+   * instruction byte-identical to the pre-hook SDK. Any other value creates a
+   * hooked pool whose address additionally commits to the hook program and
+   * flags.
+   */
+  hookProgram?: Address;
+  /**
+   * Swap-phase hook flags, only meaningful alongside `hookProgram`. A hooked
+   * pool requires a non-zero subset of `SPOT_HOOK_FLAG_MASK`; a hookless pool
+   * requires `0` (the default).
+   */
+  hookFlags?: number;
 };
 
 export type SpotPoolAccounts = {
@@ -76,6 +94,13 @@ export type SpotPoolAccounts = {
   user0: Address;
   user1: Address;
   migrationAuthority: Address;
+  /**
+   * Resolved hook program, present only when the pool is hooked. Its presence
+   * is the hooked/hookless signal: when set, callers assembling the
+   * instruction themselves must append it as a readonly 21st account; when
+   * absent, the instruction takes exactly 20 accounts.
+   */
+  hookProgram?: Address;
 };
 
 export type AddressOrSigner = Address | TransactionSigner;
@@ -152,6 +177,57 @@ function accountMeta(
   return { address: value.address, role, signer: value };
 }
 
+/**
+ * Mirror the on-chain hook guards so misconfiguration fails locally with an
+ * actionable message instead of as an opaque program error.
+ */
+function assertValidHookConfig(
+  hookProgram: Address,
+  hookFlags: number,
+  tokenAProgram: Address,
+  tokenBProgram: Address,
+): void {
+  if (!Number.isInteger(hookFlags) || hookFlags < 0 || hookFlags > U32_MAX) {
+    throw new RangeError(
+      `hookFlags must be an integer between 0 and 2^32 - 1; received ${hookFlags}`,
+    );
+  }
+
+  if (hookProgram === NO_HOOK_PROGRAM) {
+    // cpmm_migrator rejects this combination with InvalidHookProgram (6024):
+    // a hookless pool always stores hook_flags = 0, so non-zero flags would
+    // advertise a hook configuration the pool provably does not have.
+    if (hookFlags !== 0) {
+      throw new Error(
+        `hookFlags must be 0 for a hookless spot pool; received ${hookFlags}. Set hookProgram to create a hooked pool.`,
+      );
+    }
+    return;
+  }
+
+  // Spot pools may only carry swap-phase hooks, so LPs can always exit.
+  if ((hookFlags & ~SPOT_HOOK_FLAG_MASK) !== 0) {
+    throw new Error(
+      `hookFlags must only set bits within SPOT_HOOK_FLAG_MASK (${SPOT_HOOK_FLAG_MASK}); received ${hookFlags}. Spot pools support swap-phase hooks only.`,
+    );
+  }
+
+  // An inert hook would fragment the pool address space while never running.
+  if ((hookFlags & SPOT_HOOK_FLAG_MASK) === 0) {
+    throw new Error(
+      'hookFlags must set at least one swap-phase bit for a hooked spot pool; an inert hook is rejected on-chain',
+    );
+  }
+
+  // A pool hooked to one of its own token programs could never swap, and a
+  // spot pool's hook is immutable, so it could never be repaired.
+  if (hookProgram === tokenAProgram || hookProgram === tokenBProgram) {
+    throw new Error(
+      `hookProgram must not equal tokenAProgram or tokenBProgram; received ${hookProgram}`,
+    );
+  }
+}
+
 export async function deriveSpotPoolAccounts({
   tokenAMint,
   tokenBMint,
@@ -166,6 +242,8 @@ export async function deriveSpotPoolAccounts({
   positionId = 0n,
   cpmmProgram = CPMM_PROGRAM_ID,
   cpmmMigratorProgram = CPMM_MIGRATOR_PROGRAM_ID,
+  hookProgram = NO_HOOK_PROGRAM,
+  hookFlags = 0,
 }: DeriveSpotPoolAccountsInput): Promise<SpotPoolAccounts> {
   const [token0Mint, token1Mint] = sortMints(tokenAMint, tokenBMint);
   const token0IsA = token0Mint === tokenAMint;
@@ -187,12 +265,19 @@ export async function deriveSpotPoolAccounts({
   const user1 =
     token1Account ??
     (token0IsA ? (tokenBAccount ?? userB) : (tokenAAccount ?? userA));
-  const [pool] = await getSpotPoolAddress(
-    token0Mint,
-    token1Mint,
-    swapFeeBps,
-    cpmmProgram,
-  );
+  // A hookless request keeps the legacy 4-seed derivation bit-identical; a
+  // hooked request commits the hook program and flags into the address.
+  const hooked = hookProgram !== NO_HOOK_PROGRAM;
+  const [pool] = hooked
+    ? await getHookedSpotPoolAddress(
+        token0Mint,
+        token1Mint,
+        swapFeeBps,
+        hookProgram,
+        hookFlags,
+        cpmmProgram,
+      )
+    : await getSpotPoolAddress(token0Mint, token1Mint, swapFeeBps, cpmmProgram);
   const protocolFeeOwner = await pda(cpmmProgram, [
     seed(SEED_PROTOCOL_FEE_OWNER),
     addressSeed(pool),
@@ -229,6 +314,10 @@ export async function deriveSpotPoolAccounts({
     migrationAuthority: await pda(cpmmMigratorProgram, [
       seed(SEED_MIGRATION_AUTHORITY),
     ]),
+    // Omitted entirely when hookless, so the returned shape stays identical to
+    // the pre-hook SDK and `accounts.hookProgram` alone decides whether a 21st
+    // account is required.
+    ...(hooked ? { hookProgram } : {}),
   };
 }
 
@@ -246,12 +335,23 @@ export async function createSpotPoolInstruction(
   const cpmmProgram = input.cpmmProgram ?? CPMM_PROGRAM_ID;
   const cpmmMigratorProgram =
     input.cpmmMigratorProgram ?? CPMM_MIGRATOR_PROGRAM_ID;
+  const hookProgram = input.hookProgram ?? NO_HOOK_PROGRAM;
+  const hookFlags = input.hookFlags ?? 0;
+  assertValidHookConfig(
+    hookProgram,
+    hookFlags,
+    input.tokenAProgram ?? TOKEN_PROGRAM_ADDRESS,
+    input.tokenBProgram ?? TOKEN_PROGRAM_ADDRESS,
+  );
+  const hooked = hookProgram !== NO_HOOK_PROGRAM;
   const accounts = await deriveSpotPoolAccounts({
     ...input,
     liquidityOwner: addressOf(liquidityOwner),
     cpmmProgram,
     cpmmMigratorProgram,
     positionId,
+    hookProgram,
+    hookFlags,
   });
   const token0IsA = accounts.token0Mint === input.tokenAMint;
 
@@ -284,6 +384,9 @@ export async function createSpotPoolInstruction(
         address: input.rent ?? SYSVAR_RENT_ADDRESS,
         role: AccountRole.READONLY,
       },
+      // The program is built with anchor's `allow-missing-optionals`, so a
+      // hookless pool omits this account entirely and stays at 20 accounts.
+      ...(hooked ? [{ address: hookProgram, role: AccountRole.READONLY }] : []),
     ],
     data: getCreateSpotPoolInstructionDataEncoder().encode({
       swapFeeBps: input.swapFeeBps,
@@ -291,6 +394,8 @@ export async function createSpotPoolInstruction(
       amount0Max: token0IsA ? input.tokenAAmount : input.tokenBAmount,
       amount1Max: token0IsA ? input.tokenBAmount : input.tokenAAmount,
       minSharesOut,
+      hookProgram,
+      hookFlags,
     }),
   };
 }

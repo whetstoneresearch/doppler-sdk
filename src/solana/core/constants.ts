@@ -65,7 +65,7 @@ export const SEED_CONFIG = 'config';
 /** Seed prefix for launch-migrated Pool PDA: ['pool', token0_mint, token1_mint] */
 export const SEED_POOL = 'pool';
 
-/** Seed prefix for spot Pool PDA: ['spot_pool', token0_mint, token1_mint, swap_fee_bps] */
+/** Seed prefix for spot Pool PDA: ['spot_pool', token0_mint, token1_mint, swap_fee_bps]; the hooked variant appends hook_program, hook_flags */
 export const SEED_SPOT_POOL = 'spot_pool';
 
 /** Seed prefix for pool authority PDA: ['authority', pool] */
@@ -113,6 +113,26 @@ export const HF_REQUIRE_ORACLE = 1 << 6;
 
 /** Preserve readonly signer metas when forwarding remaining accounts to hooks */
 export const HF_FORWARD_READONLY_SIGNERS = 1 << 7;
+
+/**
+ * Hook flags a permissionless spot pool may carry: swap-phase callbacks only.
+ *
+ * The program rejects everything outside this mask. Add- and remove-liquidity
+ * flags are excluded so a rejecting hook can never trap LP funds in a pool
+ * whose policy is immutable; HF_REQUIRE_ORACLE is excluded because oracle
+ * initialization is admin-gated, so a spot pool could never obtain one;
+ * HF_FORWARD_READONLY_SIGNERS is excluded because it would forward a user's
+ * signature into permissionlessly attached third-party code.
+ */
+export const SPOT_HOOK_FLAG_MASK = HF_BEFORE_SWAP | HF_AFTER_SWAP;
+
+/**
+ * Sentinel hook program meaning "hookless" (the all-zero pubkey).
+ * Spot pools without a hook use the shorter hookless seed derivation.
+ */
+export const NO_HOOK_PROGRAM: Address = address(
+  '11111111111111111111111111111111',
+);
 
 /** Hook return value indicating "no change" to fee parameter */
 export const HOOK_NO_CHANGE = 0xffff;

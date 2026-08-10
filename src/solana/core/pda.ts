@@ -30,6 +30,16 @@ function u16Seed(value: number): Uint8Array {
   return bytes;
 }
 
+function u32Seed(value: number): Uint8Array {
+  if (!Number.isInteger(value) || value < 0 || value > 0xffffffff) {
+    throw new RangeError('u32 value must be between 0 and 4294967295');
+  }
+
+  const bytes = new Uint8Array(4);
+  new DataView(bytes.buffer).setUint32(0, value, true);
+  return bytes;
+}
+
 // ============================================================================
 // Token Sorting
 // ============================================================================
@@ -132,6 +142,41 @@ export async function getSpotPoolAddress(
       addressCodec.encode(token0),
       addressCodec.encode(token1),
       u16Seed(swapFeeBps),
+    ],
+  });
+}
+
+/**
+ * Derive the hooked spot Pool PDA address for a token pair, immutable fee tier,
+ * and permissionlessly attached hook.
+ * Seeds: ['spot_pool', token0_mint, token1_mint, swap_fee_bps_le, hook_program,
+ * hook_flags_le]
+ *
+ * The address commits to both the hook program and its flags, so a pool's hook
+ * can never be swapped out after creation. Because the hookless derivation
+ * (getSpotPoolAddress) uses a shorter seed array, hooked and hookless spot
+ * pools occupy separate, non-colliding address namespaces.
+ *
+ * Note: Mints will be automatically sorted if not in canonical order.
+ */
+export async function getHookedSpotPoolAddress(
+  mint0: Address,
+  mint1: Address,
+  swapFeeBps: number,
+  hookProgram: Address,
+  hookFlags: number,
+  programId: Address = CPMM_PROGRAM_ID,
+): Promise<ProgramDerivedAddress> {
+  const [token0, token1] = sortMints(mint0, mint1);
+  return getProgramDerivedAddress({
+    programAddress: programId,
+    seeds: [
+      textEncoder.encode(SEED_SPOT_POOL),
+      addressCodec.encode(token0),
+      addressCodec.encode(token1),
+      u16Seed(swapFeeBps),
+      addressCodec.encode(hookProgram),
+      u32Seed(hookFlags),
     ],
   });
 }

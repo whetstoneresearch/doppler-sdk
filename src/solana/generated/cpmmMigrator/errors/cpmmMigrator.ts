@@ -60,6 +60,8 @@ export const CPMM_MIGRATOR_ERROR__INVALID_POOL_AUTHORITY = 0x1785; // 6021
 export const CPMM_MIGRATOR_ERROR__INVALID_POSITION = 0x1786; // 6022
 /** InvalidFee: Invalid fee */
 export const CPMM_MIGRATOR_ERROR__INVALID_FEE = 0x1787; // 6023
+/** InvalidHookProgram: Missing or mismatched hook program account */
+export const CPMM_MIGRATOR_ERROR__INVALID_HOOK_PROGRAM = 0x1788; // 6024
 
 export type CpmmMigratorError =
   | typeof CPMM_MIGRATOR_ERROR__ALREADY_MIGRATED
@@ -67,6 +69,7 @@ export type CpmmMigratorError =
   | typeof CPMM_MIGRATOR_ERROR__INVALID_AMOUNT
   | typeof CPMM_MIGRATOR_ERROR__INVALID_CONFIG
   | typeof CPMM_MIGRATOR_ERROR__INVALID_FEE
+  | typeof CPMM_MIGRATOR_ERROR__INVALID_HOOK_PROGRAM
   | typeof CPMM_MIGRATOR_ERROR__INVALID_LAUNCH
   | typeof CPMM_MIGRATOR_ERROR__INVALID_MINT
   | typeof CPMM_MIGRATOR_ERROR__INVALID_PHASE
@@ -94,6 +97,7 @@ if (process.env.NODE_ENV !== 'production') {
     [CPMM_MIGRATOR_ERROR__INVALID_AMOUNT]: `Invalid amount`,
     [CPMM_MIGRATOR_ERROR__INVALID_CONFIG]: `Invalid config`,
     [CPMM_MIGRATOR_ERROR__INVALID_FEE]: `Invalid fee`,
+    [CPMM_MIGRATOR_ERROR__INVALID_HOOK_PROGRAM]: `Missing or mismatched hook program account`,
     [CPMM_MIGRATOR_ERROR__INVALID_LAUNCH]: `Invalid launch`,
     [CPMM_MIGRATOR_ERROR__INVALID_MINT]: `Invalid mint`,
     [CPMM_MIGRATOR_ERROR__INVALID_PHASE]: `Invalid phase`,
