@@ -27,6 +27,14 @@ const PROGRAMS = [
     idl_name: 'doppler_launch_hook_v1',
     out_dir: 'dopplerLaunchHookV1',
   },
+  {
+    idl_name: 'doppler_launch_hook_v2',
+    out_dir: 'dopplerLaunchHookV2',
+  },
+  {
+    idl_name: 'doppler_rehype_router_v1',
+    out_dir: 'dopplerRehypeRouterV1',
+  },
   { idl_name: 'initializer', out_dir: 'initializer' },
   { idl_name: 'prediction_migrator', out_dir: 'predictionMigrator' },
   { idl_name: 'trusted_oracle', out_dir: 'trustedOracle' },

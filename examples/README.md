@@ -178,6 +178,8 @@ The Solana examples use `@whetstone-research/doppler-sdk/solana`. Set `SOLANA_NE
 - [`solana-usdc-cosigner-gated-buy.ts`](./solana-usdc-cosigner-gated-buy.ts): cosigner-gated devnet USDC buy flow.
 - [`solana-prediction-market.ts`](./solana-prediction-market.ts): create a two-outcome prediction market with trusted oracle and prediction migrator.
 - [`solana-create-spot-pool.ts`](./solana-create-spot-pool.ts): create a permissionless base-token/WSOL spot pool with an immutable fee tier and an optional allowlisted swap-phase hook.
+- [`solana-fee-rehypothecation-launch.ts`](./solana-fee-rehypothecation-launch.ts): create a non-migrating launch with selectable asset-only, numeraire-only, in-kind, or balanced fee routing.
+- [`solana-fee-rehypothecation-settle-and-claim.ts`](./solana-fee-rehypothecation-settle-and-claim.ts): settle routed fees with protected conversion quotes, then claim one beneficiary's proceeds.
 - [`solana-swap.ts`](./solana-swap.ts): quote and submit an exact-in CPMM swap.
 - [`solana-custom-hook/`](./solana-custom-hook/): minimal Anchor implementation of the Solana hook callback ABI. See the [custom hook guide](../docs/solana-custom-hooks.md) for deployment and SDK wiring.
 
@@ -198,7 +200,15 @@ export SOLANA_CPMM_PROGRAM_ID=...
 export SOLANA_INITIALIZER_PROGRAM_ID=...
 export SOLANA_CPMM_MIGRATOR_PROGRAM_ID=...
 export SOLANA_DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ID=...
+export SOLANA_DOPPLER_LAUNCH_HOOK_V2_PROGRAM_ID=...
+export SOLANA_DOPPLER_REHYPE_ROUTER_V1_PROGRAM_ID=...
 ```
+
+Fee rehypothecation launches initialize their routing state and launch in two
+transactions. The launch helper configures the router as the Initializer fee
+beneficiary; the router's beneficiary list and routing strategy control the
+eventual payouts. Settlement conversions use a 50 bps slippage tolerance by
+default and require the immutable settlement authority configured at creation.
 
 The high-level launch helper uses the deployment's Doppler launch hook v1 automatically. Set `dynamicFee`, a gate returned by `dopplerLaunchHookV1.resolveManagedCosignerGate`, or both in the helper params to enable those features; omit both for static fees without cosigning. The resolver fetches the hook's singleton on-chain config and selects its first active Doppler-managed signer, while `createLaunch` remains an offline instruction builder that pins the resolved signer. Launch creators cannot register or select a cosigner through this flow. Integrators that require their own cosigner must use a separate hook program approved by the protocol; passing a key to the low-level hook helpers does not authorize or register it with the Doppler-managed hook. The gated swap examples require `COSIGNER_KEYPAIR_PATH` or `COSIGNER_KEYPAIR` to match that selected signer because they execute the managed cosigned swap themselves.
 

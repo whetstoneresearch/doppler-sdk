@@ -174,6 +174,8 @@ runtime_examples=(
 compile_only_examples=(
   examples/solana-prediction-market.ts
   examples/solana-create-spot-pool.ts
+  examples/solana-fee-rehypothecation-launch.ts
+  examples/solana-fee-rehypothecation-settle-and-claim.ts
 )
 
 declare -A classified_examples=()

@@ -6,8 +6,10 @@ import {
   dopplerLaunchHookV1,
   cpmmMigrator,
   DOPPLER_SOLANA_DEVNET_PROGRAM_ADDRESSES,
+  DOPPLER_SOLANA_DEVNET_FEE_REHYPOTHECATION_PROGRAM_ADDRESSES,
   DOPPLER_SOLANA_MAINNET_PROGRAM_ADDRESSES,
   deriveSolanaCpmmDeployment,
+  deriveSolanaFeeRehypothecationDeployment,
   initializer,
   type SolanaCpmmProgramAddresses,
 } from '../../src/solana/index.js';
@@ -22,6 +24,22 @@ const CUSTOM_PROGRAMS: SolanaCpmmProgramAddresses = {
 };
 
 describe('Solana deployment helpers', () => {
+  it('derives the devnet fee rehypothecation deployment', async () => {
+    const deployment = await deriveSolanaFeeRehypothecationDeployment();
+
+    expect(deployment).toMatchObject(
+      DOPPLER_SOLANA_DEVNET_FEE_REHYPOTHECATION_PROGRAM_ADDRESSES,
+    );
+    expect(deployment.dopplerLaunchHookV2Program).toBe(
+      '7ZueM1Tef2QA5zrFtVJMDM8MFqkoeG8fog1mXPgmLGH1',
+    );
+    expect(deployment.dopplerRehypeRouterV1Program).toBe(
+      'BpHX6orJ73qCvsfKkSMARQtqJvSPfqXNUfoes5rMND1D',
+    );
+    expect(deployment.initializerConfig).toBeDefined();
+    expect(deployment.dopplerLaunchHookV2Config).toBeDefined();
+  });
+
   it('derives the default devnet CPMM deployment', async () => {
     const deployment = await deriveSolanaCpmmDeployment();
 

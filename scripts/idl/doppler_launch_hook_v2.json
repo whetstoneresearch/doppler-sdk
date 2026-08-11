@@ -1,0 +1,477 @@
+{
+  "address": "7ZueM1Tef2QA5zrFtVJMDM8MFqkoeG8fog1mXPgmLGH1",
+  "metadata": {
+    "name": "doppler_launch_hook_v2",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Doppler launch hook v2 with cosigning, dynamic fees, and Rehype"
+  },
+  "instructions": [
+    {
+      "name": "add_cosigner",
+      "discriminator": [
+        17,
+        34,
+        183,
+        119,
+        202,
+        255,
+        218,
+        233
+      ],
+      "accounts": [
+        {
+          "name": "admin_authority",
+          "signer": true
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  111,
+                  112,
+                  112,
+                  108,
+                  101,
+                  114,
+                  95,
+                  108,
+                  97,
+                  117,
+                  110,
+                  99,
+                  104,
+                  95,
+                  104,
+                  111,
+                  111,
+                  107,
+                  95,
+                  118,
+                  50
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "CosignerArg"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "initialize_config",
+      "discriminator": [
+        208,
+        127,
+        21,
+        1,
+        194,
+        190,
+        196,
+        70
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "admin_authority",
+          "signer": true
+        },
+        {
+          "name": "initializer_program"
+        },
+        {
+          "name": "rehype_router_program"
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  111,
+                  112,
+                  112,
+                  108,
+                  101,
+                  114,
+                  95,
+                  108,
+                  97,
+                  117,
+                  110,
+                  99,
+                  104,
+                  95,
+                  104,
+                  111,
+                  111,
+                  107,
+                  95,
+                  118,
+                  50
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program_data"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "InitializeConfigArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "remove_cosigner",
+      "discriminator": [
+        174,
+        11,
+        171,
+        252,
+        179,
+        99,
+        220,
+        27
+      ],
+      "accounts": [
+        {
+          "name": "admin_authority",
+          "signer": true
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  111,
+                  112,
+                  112,
+                  108,
+                  101,
+                  114,
+                  95,
+                  108,
+                  97,
+                  117,
+                  110,
+                  99,
+                  104,
+                  95,
+                  104,
+                  111,
+                  111,
+                  107,
+                  95,
+                  118,
+                  50
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "CosignerArg"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "set_authority",
+      "discriminator": [
+        133,
+        250,
+        37,
+        21,
+        110,
+        163,
+        26,
+        121
+      ],
+      "accounts": [
+        {
+          "name": "admin_authority",
+          "signer": true
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  111,
+                  112,
+                  112,
+                  108,
+                  101,
+                  114,
+                  95,
+                  108,
+                  97,
+                  117,
+                  110,
+                  99,
+                  104,
+                  95,
+                  104,
+                  111,
+                  111,
+                  107,
+                  95,
+                  118,
+                  50
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "SetAuthorityArgs"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "HookConfig",
+      "discriminator": [
+        137,
+        155,
+        101,
+        95,
+        138,
+        72,
+        8,
+        182
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "InvalidInstructionData",
+      "msg": "Invalid instruction data"
+    },
+    {
+      "code": 6001,
+      "name": "InvalidPayload",
+      "msg": "Invalid hook payload"
+    },
+    {
+      "code": 6002,
+      "name": "InvalidFeeSchedule",
+      "msg": "Invalid dynamic fee schedule"
+    },
+    {
+      "code": 6003,
+      "name": "InvalidFee",
+      "msg": "Invalid swap fee"
+    },
+    {
+      "code": 6004,
+      "name": "ArithmeticOverflow",
+      "msg": "Arithmetic overflow"
+    },
+    {
+      "code": 6005,
+      "name": "InvalidAuthority",
+      "msg": "Invalid hook authority"
+    },
+    {
+      "code": 6006,
+      "name": "InvalidConfig",
+      "msg": "Invalid hook config"
+    },
+    {
+      "code": 6007,
+      "name": "InvalidCosigner",
+      "msg": "Invalid cosigner"
+    },
+    {
+      "code": 6008,
+      "name": "CosignerAlreadyExists",
+      "msg": "Cosigner already exists"
+    },
+    {
+      "code": 6009,
+      "name": "CosignerNotFound",
+      "msg": "Cosigner not found"
+    },
+    {
+      "code": 6010,
+      "name": "CosignerListFull",
+      "msg": "Cosigner list is full"
+    },
+    {
+      "code": 6011,
+      "name": "MissingAccount",
+      "msg": "Missing hook account"
+    },
+    {
+      "code": 6012,
+      "name": "UnexpectedAccount",
+      "msg": "Unexpected hook account"
+    },
+    {
+      "code": 6013,
+      "name": "InvalidLaunchContext",
+      "msg": "Invalid initializer launch context"
+    },
+    {
+      "code": 6014,
+      "name": "InvalidRehypeState",
+      "msg": "Invalid Rehype state"
+    },
+    {
+      "code": 6015,
+      "name": "SettlementIncomplete",
+      "msg": "Rehype settlement is incomplete"
+    },
+    {
+      "code": 6016,
+      "name": "CosignerRequired",
+      "msg": "Cosigner approval is required"
+    }
+  ],
+  "types": [
+    {
+      "name": "CosignerArg",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "cosigner",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "HookConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin_authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "initializer_program",
+            "type": "pubkey"
+          },
+          {
+            "name": "rehype_router_program",
+            "type": "pubkey"
+          },
+          {
+            "name": "cosigner_count",
+            "type": "u8"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "version",
+            "type": "u8"
+          },
+          {
+            "name": "_reserved",
+            "type": {
+              "array": [
+                "u8",
+                29
+              ]
+            }
+          },
+          {
+            "name": "cosigners",
+            "type": {
+              "array": [
+                "pubkey",
+                32
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "InitializeConfigArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "cosigners",
+            "type": {
+              "vec": "pubkey"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "SetAuthorityArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin_authority",
+            "type": "pubkey"
+          }
+        ]
+      }
+    }
+  ]
+}
