@@ -1,5 +1,6 @@
 import type { Address, Hex } from 'viem';
 import {
+  DEAD_ADDRESS,
   DEFAULT_V3_YEARLY_MINT_RATE,
   DECAY_MAX_START_FEE,
   FEE_TIERS,
@@ -15,6 +16,7 @@ import {
   validateMarketCapParameters,
   getMaxLiquiditySafeMulticurveTickUpper,
   normalizeRehypeDopplerHookInitializerConfig,
+  resolveRehypeFeeDistributionController,
 } from '../utils';
 import {
   isNoOpEnabledChain,
@@ -58,6 +60,7 @@ export class MulticurveBuilder<
   private salt?: Hex;
   private moduleAddresses?: ModuleAddressOverrides;
   private gasLimit?: bigint;
+  private feeDistributionControllerAddress?: Address;
   // Stored from withCurves() for graduationMarketCap conversion in build()
   private numerairePrice?: number;
   private tokenDecimals?: number;
@@ -414,11 +417,21 @@ export class MulticurveBuilder<
       );
     }
 
-    const normalizedParams =
-      normalizeRehypeDopplerHookInitializerConfig(params);
+    if (
+      params.buybackDestination !== undefined &&
+      this.feeDistributionControllerAddress !== undefined
+    ) {
+      throw new Error(
+        'Rehype buybackDestination and withFeeDistributionController are mutually exclusive',
+      );
+    }
 
-    this.dopplerHook = normalizedParams;
-    this.initializer = { type: 'rehype', config: normalizedParams };
+    normalizeRehypeDopplerHookInitializerConfig(
+      params,
+      params.buybackDestination ?? DEAD_ADDRESS,
+    );
+    this.dopplerHook = params;
+    this.initializer = { type: 'rehype', config: params };
     return this;
   }
 
@@ -588,6 +601,24 @@ export class MulticurveBuilder<
 
   withGovernance(params: GovernanceOption<C>): this {
     this.governance = params;
+    return this;
+  }
+
+  /**
+   * Configure the address authorized to update a Rehype pool's fee
+   * distribution matrix.
+   *
+   * This sets the on-chain `buybackDst`, which also receives direct-buyback
+   * proceeds and legacy empty-beneficiary fees. It is mutually exclusive with
+   * `buybackDestination` and is only valid with a Rehype initializer.
+   */
+  withFeeDistributionController(address: Address): this {
+    if (this.dopplerHook?.buybackDestination !== undefined) {
+      throw new Error(
+        'Rehype buybackDestination and withFeeDistributionController are mutually exclusive',
+      );
+    }
+    this.feeDistributionControllerAddress = address;
     return this;
   }
 
@@ -800,8 +831,49 @@ export class MulticurveBuilder<
       }
     }
 
-    // Convert graduationMarketCap to farTick if using rehype
+    if (
+      this.feeDistributionControllerAddress !== undefined &&
+      this.dopplerHook === undefined
+    ) {
+      throw new Error(
+        'withFeeDistributionController requires a Rehype initializer configuration',
+      );
+    }
+
+    // Default governance: noOp on supported chains, default on others (e.g., Ink)
+    const governance =
+      this.governance ??
+      (isNoOpEnabledChain(this.chainId)
+        ? { type: 'noOp' as const }
+        : { type: 'default' as const });
+
+    if (
+      governance.type === 'launchpad' &&
+      !isLaunchpadEnabledChain(this.chainId)
+    ) {
+      throw new Error(
+        `Launchpad governance is not supported on chain ${this.chainId}. Use a supported chain or a different governance type.`,
+      );
+    }
+
+    // Resolve the on-chain buybackDst only after governance is known.
     let dopplerHook = this.dopplerHook;
+    if (dopplerHook) {
+      const controller = resolveRehypeFeeDistributionController(
+        dopplerHook,
+        governance,
+        {
+          controllerOverride: this.feeDistributionControllerAddress,
+          governanceFactoryOverride: this.moduleAddresses?.governanceFactory,
+        },
+      );
+      dopplerHook = normalizeRehypeDopplerHookInitializerConfig(
+        dopplerHook,
+        controller,
+      );
+    }
+
+    // Convert graduationMarketCap to farTick if using rehype
     if (dopplerHook?.graduationMarketCap !== undefined) {
       // Use numerairePrice from: 1) explicit in dopplerHook, 2) stored from withCurves()
       const numerairePrice = dopplerHook.numerairePrice ?? this.numerairePrice;
@@ -891,22 +963,6 @@ export class MulticurveBuilder<
         : undefined;
     dopplerHook =
       initializer.type === 'rehype' ? initializer.config : undefined;
-
-    // Default governance: noOp on supported chains, default on others (e.g., Ink)
-    const governance =
-      this.governance ??
-      (isNoOpEnabledChain(this.chainId)
-        ? { type: 'noOp' as const }
-        : { type: 'default' as const });
-
-    if (
-      governance.type === 'launchpad' &&
-      !isLaunchpadEnabledChain(this.chainId)
-    ) {
-      throw new Error(
-        `Launchpad governance is not supported on chain ${this.chainId}. Use a supported chain or a different governance type.`,
-      );
-    }
 
     return {
       token: this.token,

@@ -6,7 +6,7 @@ import {
   type CreateMulticurveParams,
   type RehypeDopplerHookInitializerConfig,
 } from '../../../../src/evm/types';
-import { WAD, ZERO_ADDRESS } from '../../../../src/evm/constants';
+import { DEAD_ADDRESS, WAD } from '../../../../src/evm/constants';
 import {
   createMockPublicClient,
   createMockWalletClient,
@@ -72,7 +72,7 @@ describe('DopplerFactory RehypeDopplerHookInitializer beneficiary encoding', () 
     expect(decoded.feeBeneficiaries).toEqual([]);
   });
 
-  it('encodes sorted beneficiaries, zero buybackDst, and inferred routing', () => {
+  it('encodes sorted beneficiaries and the no-op governance controller', () => {
     // Given
     const params = multicurveParams({
       hookAddress,
@@ -88,7 +88,7 @@ describe('DopplerFactory RehypeDopplerHookInitializer beneficiary encoding', () 
     const decoded = encodeAndDecode(factory, params);
 
     // Then
-    expect(decoded.buybackDst).toBe(ZERO_ADDRESS);
+    expect(decoded.buybackDst).toBe(DEAD_ADDRESS);
     expect(Number(decoded.feeRoutingMode)).toBe(
       RehypeFeeRoutingMode.RouteToBeneficiaryFees,
     );
@@ -98,9 +98,56 @@ describe('DopplerFactory RehypeDopplerHookInitializer beneficiary encoding', () 
     ]);
   });
 
-  it('zeroes buybackDst for a single beneficiary without adding an owner', () => {
+  it('uses a dead controller for complete LP reinvestment with a governance override', () => {
     const params = multicurveParams({
       hookAddress,
+      startFee: 3_000,
+      feeDistributionInfo: fullLpReinvestment(),
+    });
+    params.modules = {
+      ...params.modules,
+      governanceFactory: secondBeneficiary,
+    };
+
+    const decoded = encodeAndDecode(factory, params);
+
+    expect(decoded.buybackDst).toBe(DEAD_ADDRESS);
+    expect(decoded.feeBeneficiaries).toEqual([]);
+  });
+
+  it('rejects recipient omission when fees leave LP reinvestment', () => {
+    const params = multicurveParams({
+      hookAddress,
+      startFee: 3_000,
+      feeDistributionInfo: feeDistributionInfo(),
+    });
+
+    expect(() => factory.encodeCreateMulticurveParams(params)).toThrow(
+      'Rehype requires buybackDestination, withFeeDistributionController, or feeBeneficiaries unless fee distribution is 100% LP reinvestment',
+    );
+  });
+
+  it('rejects governance factory inference when the factory is overridden', () => {
+    const params = multicurveParams({
+      hookAddress,
+      feeBeneficiaries: [{ beneficiary: firstBeneficiary, shares: WAD }],
+      startFee: 3_000,
+      feeDistributionInfo: feeDistributionInfo(),
+    });
+    params.modules = {
+      ...params.modules,
+      governanceFactory: secondBeneficiary,
+    };
+
+    expect(() => factory.encodeCreateMulticurveParams(params)).toThrow(
+      'Rehype with a governanceFactory override requires buybackDestination or withFeeDistributionController',
+    );
+  });
+
+  it('preserves an explicit controller that is not a beneficiary', () => {
+    const params = multicurveParams({
+      hookAddress,
+      buybackDestination,
       feeBeneficiaries: [{ beneficiary: firstBeneficiary, shares: WAD }],
       startFee: 3_000,
       feeDistributionInfo: feeDistributionInfo(),
@@ -108,10 +155,28 @@ describe('DopplerFactory RehypeDopplerHookInitializer beneficiary encoding', () 
 
     const decoded = encodeAndDecode(factory, params);
 
-    expect(decoded.buybackDst).toBe(ZERO_ADDRESS);
+    expect(decoded.buybackDst).toBe(buybackDestination);
     expect(decoded.feeBeneficiaries).toEqual([
       { beneficiary: firstBeneficiary, shares: WAD },
     ]);
+  });
+
+  it('allows a governance factory override with an explicit destination', () => {
+    const params = multicurveParams({
+      hookAddress,
+      buybackDestination,
+      feeBeneficiaries: [{ beneficiary: firstBeneficiary, shares: WAD }],
+      startFee: 3_000,
+      feeDistributionInfo: feeDistributionInfo(),
+    });
+    params.modules = {
+      ...params.modules,
+      governanceFactory: secondBeneficiary,
+    };
+
+    const decoded = encodeAndDecode(factory, params);
+
+    expect(decoded.buybackDst).toBe(buybackDestination);
   });
 });
 
@@ -142,7 +207,7 @@ function multicurveParams(
       ],
     },
     initializer: { type: 'rehype', config },
-    governance: { type: 'default' },
+    governance: { type: 'noOp' },
     migration: { type: 'uniswapV2' },
     userAddress: getAddress('0x1234567890123456789012345678901234567890'),
     modules: {
@@ -179,6 +244,19 @@ function feeDistributionInfo() {
     numeraireFeesToNumeraireBuybackWad: 0n,
     numeraireFeesToBeneficiaryWad: WAD,
     numeraireFeesToLpWad: 0n,
+  };
+}
+
+function fullLpReinvestment() {
+  return {
+    assetFeesToAssetBuybackWad: 0n,
+    assetFeesToNumeraireBuybackWad: 0n,
+    assetFeesToBeneficiaryWad: 0n,
+    assetFeesToLpWad: WAD,
+    numeraireFeesToAssetBuybackWad: 0n,
+    numeraireFeesToNumeraireBuybackWad: 0n,
+    numeraireFeesToBeneficiaryWad: 0n,
+    numeraireFeesToLpWad: WAD,
   };
 }
 

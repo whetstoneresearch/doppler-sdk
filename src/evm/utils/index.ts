@@ -69,6 +69,7 @@ export { normalizeBeneficiaries, sortBeneficiaries } from './beneficiaries';
 
 export {
   normalizeRehypeDopplerHookInitializerConfig,
+  resolveRehypeFeeDistributionController,
   type NormalizedRehypeDopplerHookInitializerConfig,
 } from './rehypeDopplerHookInitializer';
 export { encodeRehypeDopplerHookInitializerData } from './rehypeDopplerHookInitializerEncoding';

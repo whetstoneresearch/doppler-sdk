@@ -145,6 +145,27 @@ describe('RehypeDopplerHookInitializer', () => {
     );
   });
 
+  it('passes a gas override when claiming fees', async () => {
+    publicClient.simulateContract.mockResolvedValueOnce({
+      request: {
+        address: hookAddress,
+        functionName: 'collectFees',
+        args: [poolId],
+      },
+      result: [11n, 22n],
+    });
+    vi.mocked(walletClient.writeContract).mockResolvedValueOnce(
+      transactionHash,
+    );
+    publicClient.waitForTransactionReceipt.mockResolvedValueOnce({});
+
+    await initializer.claimFees(poolId, { gas: 150_000n });
+
+    expect(walletClient.writeContract).toHaveBeenCalledWith(
+      expect.objectContaining({ gas: 150_000n }),
+    );
+  });
+
   it('decodes the missing-beneficiaries error when claiming a legacy pool', async () => {
     // Given
     const revertData = encodeErrorResult({
@@ -214,6 +235,39 @@ describe('RehypeDopplerHookInitializer', () => {
       expect.objectContaining({
         functionName: 'updateBeneficiary',
         args: [poolId, replacementBeneficiary],
+      }),
+    );
+  });
+
+  it('sets the complete fee distribution matrix', async () => {
+    const distribution = {
+      assetFeesToAssetBuybackWad: WAD / 10n,
+      assetFeesToNumeraireBuybackWad: (WAD * 2n) / 10n,
+      assetFeesToBeneficiaryWad: (WAD * 3n) / 10n,
+      assetFeesToLpWad: (WAD * 4n) / 10n,
+      numeraireFeesToAssetBuybackWad: (WAD * 4n) / 10n,
+      numeraireFeesToNumeraireBuybackWad: (WAD * 3n) / 10n,
+      numeraireFeesToBeneficiaryWad: (WAD * 2n) / 10n,
+      numeraireFeesToLpWad: WAD / 10n,
+    };
+    publicClient.simulateContract.mockResolvedValueOnce({
+      request: {
+        address: hookAddress,
+        functionName: 'setFeeDistribution',
+      },
+    });
+    vi.mocked(walletClient.writeContract).mockResolvedValueOnce(
+      transactionHash,
+    );
+    publicClient.waitForTransactionReceipt.mockResolvedValueOnce({});
+
+    await expect(
+      initializer.setFeeDistribution(poolId, distribution),
+    ).resolves.toEqual({ transactionHash });
+    expect(publicClient.simulateContract).toHaveBeenCalledWith(
+      expect.objectContaining({
+        functionName: 'setFeeDistribution',
+        args: [poolId, ...Object.values(distribution)],
       }),
     );
   });

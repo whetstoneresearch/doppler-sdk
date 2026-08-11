@@ -94,6 +94,7 @@ import {
   sortBeneficiaries,
   encodeRehypeDopplerHookInitializerData,
   normalizeRehypeDopplerHookInitializerConfig,
+  resolveRehypeFeeDistributionController,
 } from '../utils';
 import { normalizeRehypeDopplerHookMigratorConfig } from '../utils/dopplerHookMigrator';
 import {
@@ -4285,6 +4286,13 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
       initializerMode.type === 'rehype' && initializerMode.hookConfig
         ? normalizeRehypeDopplerHookInitializerConfig(
             initializerMode.hookConfig,
+            resolveRehypeFeeDistributionController(
+              initializerMode.hookConfig,
+              params.governance,
+              {
+                governanceFactoryOverride: params.modules?.governanceFactory,
+              },
+            ),
           )
         : undefined;
 

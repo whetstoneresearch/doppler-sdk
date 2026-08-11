@@ -6,7 +6,12 @@ import {
   type RehypeDopplerHookInitializerConfig,
   type RehypeFeeDistributionInfo,
 } from '../types';
-import { DECAY_MAX_START_FEE, ZERO_ADDRESS } from '../constants';
+import {
+  DEAD_ADDRESS,
+  DECAY_MAX_START_FEE,
+  WAD,
+  ZERO_ADDRESS,
+} from '../constants';
 import { normalizeBeneficiaries } from './beneficiaries';
 import { resolveRehypeFeeDistributionInfo } from './rehypeFeeDistribution';
 
@@ -30,7 +35,7 @@ type NormalizedBuybackConfig = NormalizedCommonConfig & {
 };
 
 type NormalizedBeneficiaryConfig = NormalizedCommonConfig & {
-  buybackDestination?: never;
+  buybackDestination: Address;
   feeBeneficiaries: [BeneficiaryData, ...BeneficiaryData[]];
   feeRoutingMode: RehypeFeeRoutingMode.RouteToBeneficiaryFees;
 };
@@ -39,20 +44,27 @@ export type NormalizedRehypeDopplerHookInitializerConfig =
   | NormalizedBuybackConfig
   | NormalizedBeneficiaryConfig;
 
+/**
+ * Normalize a Rehype configuration after its fee distribution controller has
+ * been resolved. Low-level callers must pass `fallbackBuybackDestination`
+ * whenever `config.buybackDestination` is omitted.
+ */
 export function normalizeRehypeDopplerHookInitializerConfig(
   config: RehypeDopplerHookInitializerConfig,
+  fallbackBuybackDestination?: Address,
 ): NormalizedRehypeDopplerHookInitializerConfig {
   assertNonZeroAddress(config.hookAddress, 'Rehype hookAddress');
 
-  const feeBeneficiaries = config.feeBeneficiaries;
-  if (
-    feeBeneficiaries !== undefined &&
-    config.buybackDestination !== undefined
-  ) {
+  const buybackDestination =
+    config.buybackDestination ?? fallbackBuybackDestination;
+  if (buybackDestination === undefined) {
     throw new Error(
-      'Rehype buybackDestination and feeBeneficiaries are mutually exclusive',
+      'Rehype requires buybackDestination or a fee distribution controller',
     );
   }
+  assertNonZeroAddress(buybackDestination, 'Rehype buybackDestination');
+
+  const feeBeneficiaries = config.feeBeneficiaries;
 
   const feeDistributionInfo = resolveRehypeFeeDistributionInfo(config);
   const { startFee, endFee, durationSeconds, startingTime } =
@@ -81,23 +93,87 @@ export function normalizeRehypeDopplerHookInitializerConfig(
 
     return {
       ...common,
+      buybackDestination,
       feeBeneficiaries: normalizedBeneficiaries,
       feeRoutingMode: RehypeFeeRoutingMode.RouteToBeneficiaryFees,
     };
   }
 
-  if (config.buybackDestination === undefined) {
-    throw new Error(
-      'Rehype requires either buybackDestination or feeBeneficiaries',
-    );
-  }
-  assertNonZeroAddress(config.buybackDestination, 'Rehype buybackDestination');
-
   return {
     ...common,
-    buybackDestination: config.buybackDestination,
+    buybackDestination,
     feeRoutingMode,
   };
+}
+
+/**
+ * Resolve the on-chain `buybackDst` used to authorize fee distribution
+ * updates. Canonical launchpad and no-op factories have known results.
+ * Configurations that reinvest both fee rows entirely into LPs may safely use
+ * the dead address when no controller can be inferred.
+ */
+export function resolveRehypeFeeDistributionController(
+  config: RehypeDopplerHookInitializerConfig,
+  governance:
+    | { type: 'default' | 'custom' }
+    | { type: 'noOp' }
+    | { type: 'launchpad'; multisig: Address },
+  options?: {
+    controllerOverride?: Address;
+    governanceFactoryOverride?: Address;
+  },
+): Address {
+  const controllerOverride = options?.controllerOverride;
+  if (
+    config.buybackDestination !== undefined &&
+    controllerOverride !== undefined
+  ) {
+    throw new Error(
+      'Rehype buybackDestination and withFeeDistributionController are mutually exclusive',
+    );
+  }
+
+  const explicit = config.buybackDestination ?? controllerOverride;
+  if (explicit !== undefined) {
+    assertNonZeroAddress(explicit, 'Rehype fee distribution controller');
+    return explicit;
+  }
+
+  const allFeesToLp =
+    config.feeBeneficiaries === undefined &&
+    isFullLpReinvestment(resolveRehypeFeeDistributionInfo(config));
+  if (config.feeBeneficiaries === undefined && !allFeesToLp) {
+    throw new Error(
+      'Rehype requires buybackDestination, withFeeDistributionController, or feeBeneficiaries unless fee distribution is 100% LP reinvestment',
+    );
+  }
+
+  if (options?.governanceFactoryOverride !== undefined) {
+    if (allFeesToLp) return DEAD_ADDRESS;
+    throw new Error(
+      'Rehype with a governanceFactory override requires buybackDestination or withFeeDistributionController',
+    );
+  }
+
+  if (governance.type === 'launchpad') return governance.multisig;
+  if (governance.type === 'noOp' || allFeesToLp) return DEAD_ADDRESS;
+
+  throw new Error(
+    'Standard governance requires buybackDestination or withFeeDistributionController',
+  );
+}
+
+function isFullLpReinvestment(info: RehypeFeeDistributionInfo): boolean {
+  return (
+    info.assetFeesToAssetBuybackWad === 0n &&
+    info.assetFeesToNumeraireBuybackWad === 0n &&
+    info.assetFeesToBeneficiaryWad === 0n &&
+    info.assetFeesToLpWad === WAD &&
+    info.numeraireFeesToAssetBuybackWad === 0n &&
+    info.numeraireFeesToNumeraireBuybackWad === 0n &&
+    info.numeraireFeesToBeneficiaryWad === 0n &&
+    info.numeraireFeesToLpWad === WAD
+  );
 }
 
 function assertNonZeroAddress(address: Address, label: string): void {

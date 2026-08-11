@@ -1026,19 +1026,40 @@ type RehypeDopplerHookInitializerCommonConfig = {
 };
 
 type RehypeBuybackDestinationConfig = {
-  buybackDestination: Address;
+  buybackDestination?: Address;
   feeBeneficiaries?: never;
   feeRoutingMode?: RehypeFeeRoutingModeInput;
 };
 
 type RehypeFeeBeneficiariesConfig = {
-  buybackDestination?: never;
+  buybackDestination?: Address;
   feeBeneficiaries: [BeneficiaryData, ...BeneficiaryData[]];
   feeRoutingMode?:
     | RehypeFeeRoutingMode.RouteToBeneficiaryFees
     | 'routeToBeneficiaryFees';
 };
 
+/**
+ * Rehype fee distribution controller requirements:
+ *
+ * `buybackDestination` is encoded as the hook's `buybackDst`: it is the only
+ * address authorized to call `setFeeDistribution` and also receives
+ * direct-buyback proceeds and legacy empty-beneficiary fees. Configured
+ * `feeBeneficiaries` control beneficiary fee recipients but do not grant that
+ * authority.
+ *
+ * Default and custom governance require an explicit `buybackDestination` or
+ * the builder's `withFeeDistributionController` for beneficiary configurations.
+ * Canonical launchpad and no-op governance can instead infer that controller
+ * as the launchpad multisig or dead address respectively. A governance factory
+ * override disables this inference.
+ *
+ * Both `buybackDestination` and `feeBeneficiaries` may be omitted only when
+ * both fee-distribution rows direct 100% of fees to LP reinvestment. In that
+ * case, governance modes without an inferable controller use the dead address.
+ * Unlike earlier SDK versions, a fee-beneficiary-only configuration is not
+ * sufficient when the controller cannot be inferred.
+ */
 export type RehypeDopplerHookInitializerConfig =
   RehypeDopplerHookInitializerCommonConfig &
     (RehypeBuybackDestinationConfig | RehypeFeeBeneficiariesConfig);
