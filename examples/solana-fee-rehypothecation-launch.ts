@@ -1,13 +1,13 @@
-/**
- * Creates a non-migrating Solana launch whose distributable swap fees are
- * routed through the fee rehypothecation programs.
- */
+/** Creates a non-migrating launch, settles one swap's fees, and claims them. */
 import './env.js';
 
-import { SYSTEM_PROGRAM_ADDRESS } from '@solana-program/system';
 import { generateKeyPairSigner } from '@solana/kit';
 
-import { feeRehypothecation } from '../src/solana/index.js';
+import {
+  curveSwapExactIn,
+  feeRehypothecation,
+  initializer,
+} from '../src/solana/index.js';
 import {
   DEFAULT_SWAP_FEE_BPS,
   DEFAULT_TEST_METADATA,
@@ -16,12 +16,14 @@ import {
   createSolanaClientsFromEnv,
   getSolanaFeeRehypothecationDeploymentFromEnv,
   loadKeypairSignerFromEnv,
+  sendInitializeLaunchWithLookupTable,
   sendInstructions,
 } from './solanaExampleHelpers.js';
 
 const BASE_DECIMALS = 6;
 const BASE_TOTAL_SUPPLY = 1_000_000_000n * 10n ** BigInt(BASE_DECIMALS);
 const LAMPORTS_PER_SOL = 1_000_000_000n;
+const BUY_AMOUNT = LAMPORTS_PER_SOL / 10n;
 
 const strategies = {
   asset: feeRehypothecation.allFeesToBeneficiariesInAsset,
@@ -55,7 +57,6 @@ async function main(): Promise<void> {
 
   const prepared = await feeRehypothecation.prepareLaunch({
     deployment,
-    namespace: SYSTEM_PROGRAM_ADDRESS,
     launchAccounts: {
       baseMint,
       quoteMint: WSOL_MINT,
@@ -91,19 +92,72 @@ async function main(): Promise<void> {
   });
 
   console.log('Creating launch...');
-  const launchSignature = await sendInstructions({
+  const launchSignature = await sendInitializeLaunchWithLookupTable({
     rpc,
     rpcSubscriptions,
     payer,
-    instructions: [prepared.initializeLaunchInstruction],
+    instruction: prepared.initializeLaunchInstruction,
+    metadata: DEFAULT_TEST_METADATA,
   });
 
-  console.log('Fee rehypothecation launch created:');
+  const swap = await curveSwapExactIn({
+    deployment,
+    launch: prepared.launchAddresses.launch,
+    launchAuthority: prepared.launchAddresses.launchAuthority,
+    launchFeeState: prepared.launchAddresses.launchFeeState,
+    baseMint: baseMint.address,
+    quoteMint: WSOL_MINT,
+    baseVault: baseVault.address,
+    quoteVault: quoteVault.address,
+    payer,
+    amountIn: BUY_AMOUNT,
+    minAmountOut: 1n,
+    tradeDirection: initializer.TRADE_DIRECTION_BUY,
+    hook: prepared.getSwapHook(),
+  });
+  const swapSignature = await sendInstructions({
+    rpc,
+    rpcSubscriptions,
+    payer,
+    instructions: swap.instructions,
+  });
+
+  const settlement = await feeRehypothecation.prepareSettlement({
+    rpc,
+    deployment,
+    launch: prepared.launchAddresses.launch,
+    settlementAuthority: payer,
+  });
+  const settlementSignature = await sendInstructions({
+    rpc,
+    rpcSubscriptions,
+    payer,
+    instructions: [settlement.instruction],
+  });
+
+  const claim = await feeRehypothecation.prepareClaim({
+    rpc,
+    deployment,
+    baseMint: baseMint.address,
+    beneficiary: payer.address,
+    payer,
+  });
+  const claimSignature = await sendInstructions({
+    rpc,
+    rpcSubscriptions,
+    payer,
+    instructions: [claim.instruction],
+  });
+
+  console.log('Fee rehypothecation flow complete:');
   console.log('  Launch:       ', prepared.launchAddresses.launch);
   console.log('  Base mint:    ', baseMint.address);
   console.log('  Router state: ', prepared.routingAddresses.state);
   console.log('  Routing tx:   ', routingSignature);
   console.log('  Launch tx:    ', launchSignature);
+  console.log('  Swap tx:      ', swapSignature);
+  console.log('  Settlement tx:', settlementSignature);
+  console.log('  Claim tx:     ', claimSignature);
 }
 
 main().catch((error: unknown) => {

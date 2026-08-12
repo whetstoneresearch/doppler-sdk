@@ -117,6 +117,12 @@ export function encodeDopplerLaunchHookV2Payload(
   }
 
   if (args.cosignerGate) {
+    if (
+      args.cosignerGate.mode !== DOPPLER_LAUNCH_HOOK_V2_GATE_UNIX_TIMESTAMP &&
+      args.cosignerGate.mode !== DOPPLER_LAUNCH_HOOK_V2_GATE_SLOT
+    ) {
+      throw new Error('invalid Doppler launch hook v2 cosigner gate mode');
+    }
     const gateValue = assertU64('cosigner gate value', args.cosignerGate.value);
     featureFlags |= DOPPLER_LAUNCH_HOOK_V2_FEATURE_COSIGN_GATE;
     payload[32] = args.cosignerGate.mode;

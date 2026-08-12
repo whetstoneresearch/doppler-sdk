@@ -129,6 +129,25 @@ describe('Doppler launch hook v2 payload helpers', () => {
     ).toThrow(/cosigner/);
   });
 
+  it('rejects invalid cosigner gate modes before encoding', async () => {
+    const cosigner = await generateKeyPairSigner();
+
+    for (const mode of [
+      dopplerLaunchHookV2.DOPPLER_LAUNCH_HOOK_V2_GATE_DISABLED,
+      257,
+    ]) {
+      expect(() =>
+        dopplerLaunchHookV2.encodeDopplerLaunchHookV2Payload({
+          cosignerGate: {
+            mode: mode as never,
+            value: 100n,
+            cosigner: cosigner.address,
+          },
+        }),
+      ).toThrow(/cosigner gate mode/);
+    }
+  });
+
   it('derives the router PDAs from the base mint', async () => {
     const baseMint = address('So11111111111111111111111111111111111111112');
     const addresses =

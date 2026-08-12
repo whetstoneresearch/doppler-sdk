@@ -182,9 +182,9 @@ function getMinAmountOut({
 export async function curveSwapExactIn(
   input: CurveSwapExactInInput,
 ): Promise<CurveSwapExactInResult> {
-  if (input.hook?.remainingAccounts && input.remainingAccounts) {
+  if (input.hook && input.remainingAccounts) {
     throw new Error(
-      'provide hook.remainingAccounts or remainingAccounts, not both',
+      'provide remaining accounts through hook.remainingAccounts when hook is set',
     );
   }
   const programId =

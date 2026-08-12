@@ -43,6 +43,43 @@ describe('fee rehypothecation strategies and math', () => {
     ).toThrow(/sum to 10000/);
   });
 
+  it('allows no beneficiaries when every fee remains an in-kind buyback', () => {
+    const directBuyback = {
+      routingMode:
+        feeRehypothecation.FEE_REHYPOTHECATION_ROUTING_MODE_DIRECT_BUYBACK,
+      feeRouting: {
+        assetFees: {
+          assetBuybackBps: 10_000,
+          numeraireBuybackBps: 0,
+          beneficiaryBps: 0,
+          lpBps: 0,
+        },
+        numeraireFees: {
+          assetBuybackBps: 0,
+          numeraireBuybackBps: 10_000,
+          beneficiaryBps: 0,
+          lpBps: 0,
+        },
+      },
+    } as const;
+
+    expect(
+      feeRehypothecation.feeRehypothecationRequiresBeneficiaries(directBuyback),
+    ).toBe(false);
+    expect(
+      feeRehypothecation.validateAndSortFeeRehypothecationBeneficiaries(
+        [],
+        directBuyback,
+      ),
+    ).toEqual([]);
+    expect(() =>
+      feeRehypothecation.validateAndSortFeeRehypothecationBeneficiaries(
+        [],
+        feeRehypothecation.balancedFourBucket(),
+      ),
+    ).toThrow(/between 1 and 8/);
+  });
+
   it('uses cumulative allocation so batching does not change bucket totals', () => {
     const route = feeRehypothecation.balancedFourBucket().feeRouting.assetFees;
     const once = feeRehypothecation.splitCumulativeFeeIncrement(route, 0n, 4n);

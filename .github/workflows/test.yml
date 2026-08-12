@@ -188,7 +188,7 @@ jobs:
         run: cargo test --manifest-path examples/solana-custom-hook/Cargo.toml
 
   solana-mainnet-fork:
-    name: Solana Mainnet Fork Examples
+    name: Solana Fork Examples
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -227,6 +227,9 @@ jobs:
 
       - name: Run Solana mainnet fork examples
         run: pnpm test:solana:fork:examples
+
+      - name: Run Solana rehypothecation devnet fork example
+        run: pnpm test:solana:fork:rehypothecation
 
   # Summary job for branch protection
   test-summary:

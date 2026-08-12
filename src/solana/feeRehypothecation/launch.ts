@@ -3,7 +3,6 @@ import {
   type Instruction,
   type TransactionSigner,
 } from '@solana/kit';
-import { SYSTEM_PROGRAM_ADDRESS } from '@solana-program/system';
 
 import type { DynamicFeeScheduleArgs } from '../dopplerLaunchHookV1/index.js';
 import {
@@ -83,6 +82,8 @@ export type PrepareFeeRehypothecationLaunchResult = {
   initializeRoutingInstruction: Instruction;
   initializeLaunchInstruction: Instruction;
   unsignedSwapHook: CurveSwapHook;
+  /** Pass the configured signer while the gate is active; omit it after expiry. */
+  getSwapHook(cosigner?: TransactionSigner): CurveSwapHook;
 };
 
 export async function prepareLaunch(
@@ -99,14 +100,15 @@ export async function prepareLaunch(
   validateFeeRehypothecationStrategy(input.strategy);
   const beneficiaries = validateAndSortFeeRehypothecationBeneficiaries(
     input.beneficiaries,
+    input.strategy,
   );
   const deployment =
     input.deployment ??
     (await deriveSolanaFeeRehypothecationDeployment(
       DOPPLER_SOLANA_DEVNET_FEE_REHYPOTHECATION_PROGRAM_ADDRESSES,
     ));
-  const namespace = input.namespace ?? SYSTEM_PROGRAM_ADDRESS;
   const launchId = input.launchId ?? createLaunchId();
+  const namespace = input.namespace ?? deployment.dopplerRehypeRouterV1Program;
   const routingAddresses = await deriveFeeRehypothecationAddresses(
     input.launchAccounts.baseMint.address,
     deployment.dopplerRehypeRouterV1Program,
@@ -202,6 +204,31 @@ export async function prepareLaunch(
     createRemainingAccounts: remainingAccounts.unsignedHookRemainingAccounts,
   });
 
+  const getSwapHook = (cosigner?: TransactionSigner): CurveSwapHook => {
+    if (cosigner && !gate) {
+      throw new Error('this launch does not have a cosigner gate');
+    }
+    if (cosigner && cosigner.address !== gate?.cosigner) {
+      throw new Error(
+        `cosigner ${cosigner.address} does not match the launch cosigner ${gate?.cosigner}`,
+      );
+    }
+    const swapAccounts = getDopplerLaunchHookV2RemainingAccounts({
+      namespace,
+      config: deployment.dopplerLaunchHookV2Config,
+      feeRehypothecationState: routingAddresses.state,
+      settlementSigner: routingAddresses.settlementSigner,
+      cosigner: cosigner ?? gate?.cosigner,
+    });
+    return {
+      program: deployment.dopplerLaunchHookV2Program,
+      remainingAccounts: cosigner
+        ? swapAccounts.signedHookRemainingAccounts
+        : swapAccounts.unsignedHookRemainingAccounts,
+    };
+  };
+  const unsignedSwapHook = getSwapHook();
+
   return {
     namespace,
     launchId,
@@ -209,9 +236,7 @@ export async function prepareLaunch(
     routingAddresses,
     initializeRoutingInstruction,
     initializeLaunchInstruction: launch.instruction,
-    unsignedSwapHook: {
-      program: deployment.dopplerLaunchHookV2Program,
-      remainingAccounts: remainingAccounts.unsignedHookRemainingAccounts,
-    },
+    unsignedSwapHook,
+    getSwapHook,
   };
 }

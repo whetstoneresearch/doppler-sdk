@@ -106,6 +106,22 @@ export function validateFeeRehypothecationStrategy(
   validateRoute('numeraire fee', strategy.feeRouting.numeraireFees);
 }
 
+export function feeRehypothecationRequiresBeneficiaries(
+  strategy: FeeRehypothecationStrategy,
+): boolean {
+  const { assetFees, numeraireFees } = strategy.feeRouting;
+  return (
+    strategy.routingMode ===
+      FEE_REHYPOTHECATION_ROUTING_MODE_TO_BENEFICIARIES ||
+    assetFees.beneficiaryBps > 0 ||
+    assetFees.numeraireBuybackBps > 0 ||
+    assetFees.lpBps > 0 ||
+    numeraireFees.beneficiaryBps > 0 ||
+    numeraireFees.assetBuybackBps > 0 ||
+    numeraireFees.lpBps > 0
+  );
+}
+
 function compareAddressBytes(left: Address, right: Address): number {
   const encoder = getAddressEncoder();
   const leftBytes = encoder.encode(left);
@@ -121,13 +137,18 @@ function compareAddressBytes(left: Address, right: Address): number {
 
 export function validateAndSortFeeRehypothecationBeneficiaries(
   beneficiaries: ReadonlyArray<RehypeBeneficiaryInputArgs>,
+  strategy?: FeeRehypothecationStrategy,
 ): RehypeBeneficiaryInputArgs[] {
+  const beneficiariesRequired =
+    strategy === undefined || feeRehypothecationRequiresBeneficiaries(strategy);
   if (
-    beneficiaries.length === 0 ||
+    (beneficiariesRequired && beneficiaries.length === 0) ||
     beneficiaries.length > MAX_FEE_REHYPOTHECATION_BENEFICIARIES
   ) {
     throw new Error(
-      'fee rehypothecation requires between 1 and 8 beneficiaries',
+      beneficiariesRequired
+        ? 'fee rehypothecation requires between 1 and 8 beneficiaries'
+        : 'fee rehypothecation supports at most 8 beneficiaries',
     );
   }
 
@@ -148,7 +169,10 @@ export function validateAndSortFeeRehypothecationBeneficiaries(
     }
     shareTotal += beneficiary.shareBps;
   }
-  if (shareTotal !== FEE_REHYPOTHECATION_BPS_DENOMINATOR) {
+  if (
+    beneficiaries.length > 0 &&
+    shareTotal !== FEE_REHYPOTHECATION_BPS_DENOMINATOR
+  ) {
     throw new Error('beneficiary shares must sum to 10000 bps');
   }
 

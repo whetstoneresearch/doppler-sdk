@@ -1,20 +1,23 @@
 import {
-  fetchEncodedAccount,
+  assertAccountsExist,
+  fetchEncodedAccounts,
   type Address,
   type GetAccountInfoApi,
+  type GetMultipleAccountsApi,
   type Instruction,
   type Rpc,
   type TransactionSigner,
 } from '@solana/kit';
-import { findAssociatedTokenPda } from '@solana-program/token';
+import { decodeToken, findAssociatedTokenPda } from '@solana-program/token';
 
 import { decodeDopplerLaunchHookV2Payload } from '../dopplerLaunchHookV2/index.js';
 import {
+  decodeLaunch,
+  decodeLaunchFeeState,
   fetchLaunch,
-  fetchLaunchFeeState,
 } from '../generated/initializer/index.js';
 import {
-  fetchRehypeState,
+  decodeRehypeState,
   getSettleFeesInstructionAsync,
 } from '../dopplerRehypeRouterV1/index.js';
 import {
@@ -38,12 +41,9 @@ import { deriveFeeRehypothecationAddresses } from './pda.js';
 
 type Commitment = 'processed' | 'confirmed' | 'finalized';
 
-export type FeeRehypothecationRpc = Rpc<GetAccountInfoApi> & {
-  getTokenAccountBalance(
-    address: Address,
-    config?: { commitment?: Commitment },
-  ): { send(): Promise<{ value: { amount: string } }> };
-};
+export type FeeRehypothecationRpc = Rpc<
+  GetAccountInfoApi & GetMultipleAccountsApi
+>;
 
 export type PrepareFeeRehypothecationSettlementInput = {
   rpc: FeeRehypothecationRpc;
@@ -85,18 +85,6 @@ function activeValues<T>(values: ReadonlyArray<T>, count: number): T[] {
   return values.slice(0, count);
 }
 
-async function getMintProgram(
-  rpc: Rpc<GetAccountInfoApi>,
-  mint: Address,
-  commitment: Commitment,
-): Promise<Address> {
-  const account = await fetchEncodedAccount(rpc, mint, { commitment });
-  if (!account.exists) {
-    throw new Error(`mint ${mint} does not exist`);
-  }
-  return account.programAddress;
-}
-
 export async function prepareSettlement(
   input: PrepareFeeRehypothecationSettlementInput,
 ): Promise<PrepareFeeRehypothecationSettlementResult> {
@@ -106,28 +94,13 @@ export async function prepareSettlement(
     (await deriveSolanaFeeRehypothecationDeployment(
       DOPPLER_SOLANA_DEVNET_FEE_REHYPOTHECATION_PROGRAM_ADDRESSES,
     ));
-  const launchAccount = await fetchLaunch(input.rpc, input.launch, {
+  const discoveredLaunch = await fetchLaunch(input.rpc, input.launch, {
     commitment,
   });
-  const launch = launchAccount.data;
-  if (
-    launch.phase !== PHASE_TRADING ||
-    launch.hookProgram !== deployment.dopplerLaunchHookV2Program
-  ) {
-    throw new Error('launch is not an active fee rehypothecation launch');
-  }
-
   const routingAddresses = await deriveFeeRehypothecationAddresses(
-    launch.baseMint,
+    discoveredLaunch.data.baseMint,
     deployment.dopplerRehypeRouterV1Program,
   );
-  const payload = decodeDopplerLaunchHookV2Payload(
-    launch.hookPayload.bytes.slice(0, launch.hookPayload.len),
-  );
-  if (payload.feeRehypothecationState !== routingAddresses.state) {
-    throw new Error('launch payload does not match its router state');
-  }
-
   const [launchFeeState] = await getLaunchFeeStateAddress(
     input.launch,
     deployment.initializerProgram,
@@ -137,19 +110,49 @@ export async function prepareSettlement(
     deployment.initializerProgram,
   );
 
+  const snapshot = await fetchEncodedAccounts(
+    input.rpc,
+    [
+      input.launch,
+      launchFeeState,
+      routingAddresses.state,
+      discoveredLaunch.data.baseMint,
+      discoveredLaunch.data.quoteMint,
+      discoveredLaunch.data.baseVault,
+      discoveredLaunch.data.quoteVault,
+    ],
+    { commitment },
+  );
+  assertAccountsExist(snapshot);
   const [
-    feeStateAccount,
-    routingStateAccount,
-    baseTokenProgram,
-    quoteTokenProgram,
-  ] = await Promise.all([
-    fetchLaunchFeeState(input.rpc, launchFeeState, {
-      commitment,
-    }),
-    fetchRehypeState(input.rpc, routingAddresses.state, { commitment }),
-    getMintProgram(input.rpc, launch.baseMint, commitment),
-    getMintProgram(input.rpc, launch.quoteMint, commitment),
-  ]);
+    launchAccount,
+    encodedFeeState,
+    encodedRoutingState,
+    baseMintAccount,
+    quoteMintAccount,
+    encodedBaseVault,
+    encodedQuoteVault,
+  ] = snapshot;
+  const launch = decodeLaunch(launchAccount).data;
+  const feeStateAccount = decodeLaunchFeeState(encodedFeeState);
+  const routingStateAccount = decodeRehypeState(encodedRoutingState);
+  const baseVaultAccount = decodeToken(encodedBaseVault);
+  const quoteVaultAccount = decodeToken(encodedQuoteVault);
+  const baseTokenProgram = baseMintAccount.programAddress;
+  const quoteTokenProgram = quoteMintAccount.programAddress;
+
+  if (
+    launch.phase !== PHASE_TRADING ||
+    launch.hookProgram !== deployment.dopplerLaunchHookV2Program
+  ) {
+    throw new Error('launch is not an active fee rehypothecation launch');
+  }
+  const payload = decodeDopplerLaunchHookV2Payload(
+    launch.hookPayload.bytes.slice(0, launch.hookPayload.len),
+  );
+  if (payload.feeRehypothecationState !== routingAddresses.state) {
+    throw new Error('launch payload does not match its router state');
+  }
   const feeState = feeStateAccount.data;
   const routingState = routingStateAccount.data;
   if (
@@ -161,7 +164,17 @@ export async function prepareSettlement(
     routingState.baseMint !== launch.baseMint ||
     routingState.quoteMint !== launch.quoteMint ||
     routingState.hookProgram !== launch.hookProgram ||
-    routingState.settlementAuthority !== input.settlementAuthority.address
+    routingState.settlementAuthority !== input.settlementAuthority.address ||
+    baseMintAccount.address !== launch.baseMint ||
+    quoteMintAccount.address !== launch.quoteMint ||
+    baseVaultAccount.address !== launch.baseVault ||
+    quoteVaultAccount.address !== launch.quoteVault ||
+    baseVaultAccount.programAddress !== baseTokenProgram ||
+    quoteVaultAccount.programAddress !== quoteTokenProgram ||
+    baseVaultAccount.data.mint !== launch.baseMint ||
+    quoteVaultAccount.data.mint !== launch.quoteMint ||
+    baseVaultAccount.data.owner !== launchAuthority ||
+    quoteVaultAccount.data.owner !== launchAuthority
   ) {
     throw new Error('fee rehypothecation state does not match the launch');
   }
@@ -216,16 +229,12 @@ export async function prepareSettlement(
       feeState.beneficiaryLen,
     ),
   });
-  const [baseVaultBalance, quoteVaultBalance] = await Promise.all([
-    input.rpc.getTokenAccountBalance(launch.baseVault, { commitment }).send(),
-    input.rpc.getTokenAccountBalance(launch.quoteVault, { commitment }).send(),
-  ]);
   let baseReserve =
-    BigInt(baseVaultBalance.value.amount) -
+    baseVaultAccount.data.amount -
     launch.baseForDistribution -
     launch.baseForLiquidity -
     pendingBaseFees;
-  let quoteReserve = BigInt(quoteVaultBalance.value.amount) - pendingQuoteFees;
+  let quoteReserve = quoteVaultAccount.data.amount - pendingQuoteFees;
   if (baseReserve < 0n || quoteReserve < 0n) {
     throw new Error('launch vault balances are inconsistent with fee state');
   }

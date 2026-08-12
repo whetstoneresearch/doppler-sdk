@@ -1,4 +1,5 @@
 import { address, type Address, type ReadonlyUint8Array } from '@solana/kit';
+import { AccountState, getTokenEncoder } from '@solana-program/token';
 import { generateKeyPairSigner } from '@solana/signers';
 import { describe, expect, it } from 'vitest';
 
@@ -238,19 +239,51 @@ describe('fee rehypothecation settlement preparation', () => {
         encodeRpcAccount(new Uint8Array(), TOKEN_PROGRAM_ADDRESS),
       ],
       [quoteMint, encodeRpcAccount(new Uint8Array(), TOKEN_PROGRAM_ADDRESS)],
+      [
+        baseVault,
+        encodeRpcAccount(
+          getTokenEncoder().encode({
+            mint: baseMint.address,
+            owner: launchAuthority,
+            amount: 1_100n,
+            delegate: null,
+            state: AccountState.Initialized,
+            isNative: null,
+            delegatedAmount: 0n,
+            closeAuthority: null,
+          }),
+          TOKEN_PROGRAM_ADDRESS,
+        ),
+      ],
+      [
+        quoteVault,
+        encodeRpcAccount(
+          getTokenEncoder().encode({
+            mint: quoteMint,
+            owner: launchAuthority,
+            amount: 2_200n,
+            delegate: null,
+            state: AccountState.Initialized,
+            isNative: null,
+            delegatedAmount: 0n,
+            closeAuthority: null,
+          }),
+          TOKEN_PROGRAM_ADDRESS,
+        ),
+      ],
     ]);
-    const balances = new Map<Address, string>([
-      [baseVault, '1100'],
-      [quoteVault, '2200'],
-    ]);
+    let snapshotFetches = 0;
     const rpc = {
       getAccountInfo: (account: Address) => ({
         send: async () => ({ value: accounts.get(account) ?? null }),
       }),
-      getTokenAccountBalance: (account: Address) => ({
-        send: async () => ({
-          value: { amount: balances.get(account) ?? '0' },
-        }),
+      getMultipleAccounts: (addresses: readonly Address[]) => ({
+        send: async () => {
+          snapshotFetches += 1;
+          return {
+            value: addresses.map((account) => accounts.get(account) ?? null),
+          };
+        },
       }),
     } as unknown as FeeRehypothecationRpc;
 
@@ -277,6 +310,7 @@ describe('fee rehypothecation settlement preparation', () => {
     expect(settlementData.minBaseToQuoteOut).toBe(173n);
     expect(settlementData.minQuoteToBaseOut).toBe(0n);
     expect(settlement.instruction.accounts![5].address).toBe(launchAuthority);
+    expect(snapshotFetches).toBe(1);
 
     const claim = await feeRehypothecation.prepareClaim({
       rpc,
