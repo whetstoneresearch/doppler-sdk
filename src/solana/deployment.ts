@@ -9,6 +9,11 @@ import {
   getConfigAddress as getInitializerConfigAddress,
 } from './initializer/index.js';
 import { DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ID } from './dopplerLaunchHookV1/index.js';
+import {
+  DOPPLER_LAUNCH_HOOK_V2_PROGRAM_ID,
+  getDopplerLaunchHookV2ConfigAddress,
+} from './dopplerLaunchHookV2/index.js';
+import { DOPPLER_REHYPE_ROUTER_V1_PROGRAM_ADDRESS } from './dopplerRehypeRouterV1/index.js';
 import { CPMM_MIGRATOR_PROGRAM_ID } from './migrators/cpmmMigrator/index.js';
 
 export interface SolanaCpmmProgramAddresses {
@@ -21,6 +26,17 @@ export interface SolanaCpmmProgramAddresses {
 export interface SolanaCpmmDeployment extends SolanaCpmmProgramAddresses {
   cpmmConfig: Address;
   initializerConfig: Address;
+}
+
+export interface SolanaFeeRehypothecationProgramAddresses {
+  initializerProgram: Address;
+  dopplerLaunchHookV2Program: Address;
+  dopplerRehypeRouterV1Program: Address;
+}
+
+export interface SolanaFeeRehypothecationDeployment extends SolanaFeeRehypothecationProgramAddresses {
+  initializerConfig: Address;
+  dopplerLaunchHookV2Config: Address;
 }
 
 export const DOPPLER_SOLANA_DEVNET_PROGRAM_ADDRESSES: SolanaCpmmProgramAddresses =
@@ -43,6 +59,13 @@ export const DOPPLER_SOLANA_MAINNET_PROGRAM_ADDRESSES: SolanaCpmmProgramAddresse
     ),
   };
 
+export const DOPPLER_SOLANA_DEVNET_FEE_REHYPOTHECATION_PROGRAM_ADDRESSES: SolanaFeeRehypothecationProgramAddresses =
+  {
+    initializerProgram: INITIALIZER_PROGRAM_ID,
+    dopplerLaunchHookV2Program: DOPPLER_LAUNCH_HOOK_V2_PROGRAM_ID,
+    dopplerRehypeRouterV1Program: DOPPLER_REHYPE_ROUTER_V1_PROGRAM_ADDRESS,
+  };
+
 export async function deriveSolanaCpmmDeployment(
   programs: SolanaCpmmProgramAddresses = DOPPLER_SOLANA_DEVNET_PROGRAM_ADDRESSES,
 ): Promise<SolanaCpmmDeployment> {
@@ -55,5 +78,22 @@ export async function deriveSolanaCpmmDeployment(
     ...programs,
     cpmmConfig,
     initializerConfig,
+  };
+}
+
+export async function deriveSolanaFeeRehypothecationDeployment(
+  programs: SolanaFeeRehypothecationProgramAddresses = DOPPLER_SOLANA_DEVNET_FEE_REHYPOTHECATION_PROGRAM_ADDRESSES,
+): Promise<SolanaFeeRehypothecationDeployment> {
+  const [initializerConfig] = await getInitializerConfigAddress(
+    programs.initializerProgram,
+  );
+  const [dopplerLaunchHookV2Config] = await getDopplerLaunchHookV2ConfigAddress(
+    programs.dopplerLaunchHookV2Program,
+  );
+
+  return {
+    ...programs,
+    initializerConfig,
+    dopplerLaunchHookV2Config,
   };
 }

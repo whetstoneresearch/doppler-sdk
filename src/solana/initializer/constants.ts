@@ -76,6 +76,7 @@ export const HF_AFTER_CREATE = 1 << 3;
 export const HF_BEFORE_MIGRATE = 1 << 4;
 export const HF_AFTER_MIGRATE = 1 << 5;
 export const HF_FORWARD_READONLY_SIGNERS = 1 << 6;
+export const HF_LAUNCH_CONTEXT_V2 = 1 << 7;
 
 export const HOOK_NO_CHANGE = 0xffff;
 

@@ -1,0 +1,2567 @@
+{
+  "address": "BpHX6orJ73qCvsfKkSMARQtqJvSPfqXNUfoes5rMND1D",
+  "metadata": {
+    "name": "doppler_rehype_router_v1",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Doppler Rehype Router v1 for Initializer launch fees"
+  },
+  "instructions": [
+    {
+      "name": "claim_fees",
+      "discriminator": [
+        82,
+        251,
+        233,
+        156,
+        12,
+        52,
+        184,
+        202
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "beneficiary"
+        },
+        {
+          "name": "rehype_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  104,
+                  121,
+                  112,
+                  101,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "base_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "rehype_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  104,
+                  121,
+                  112,
+                  101,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "rehype_state"
+              }
+            ]
+          }
+        },
+        {
+          "name": "base_mint"
+        },
+        {
+          "name": "quote_mint"
+        },
+        {
+          "name": "router_base_ata",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "rehype_authority"
+              },
+              {
+                "kind": "account",
+                "path": "base_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "base_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "router_quote_ata",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "rehype_authority"
+              },
+              {
+                "kind": "account",
+                "path": "quote_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "quote_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "beneficiary_base_ata",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "beneficiary"
+              },
+              {
+                "kind": "account",
+                "path": "base_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "base_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "beneficiary_quote_ata",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "beneficiary"
+              },
+              {
+                "kind": "account",
+                "path": "quote_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "quote_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "base_token_program"
+        },
+        {
+          "name": "quote_token_program"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "beneficiary_index",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "initialize_rehype",
+      "discriminator": [
+        52,
+        224,
+        165,
+        199,
+        71,
+        188,
+        192,
+        155
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "base_mint",
+          "docs": [
+            "Future launch mint. Its signature prevents another caller from claiming this state PDA."
+          ],
+          "signer": true
+        },
+        {
+          "name": "quote_mint"
+        },
+        {
+          "name": "hook_program"
+        },
+        {
+          "name": "initializer_program",
+          "address": "4h3Dqyo5qmteJoMxXt3tdtfXELDB6pdRTPU9mWruiKp1"
+        },
+        {
+          "name": "rehype_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  104,
+                  121,
+                  112,
+                  101,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "base_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "rehype_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  104,
+                  121,
+                  112,
+                  101,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "rehype_state"
+              }
+            ]
+          }
+        },
+        {
+          "name": "settlement_signer",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  101,
+                  116,
+                  116,
+                  108,
+                  101,
+                  109,
+                  101,
+                  110,
+                  116,
+                  95,
+                  115,
+                  105,
+                  103,
+                  110,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "rehype_state"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "InitializeRehypeArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "replace_beneficiary",
+      "discriminator": [
+        255,
+        125,
+        195,
+        81,
+        143,
+        176,
+        242,
+        22
+      ],
+      "accounts": [
+        {
+          "name": "current_beneficiary",
+          "signer": true
+        },
+        {
+          "name": "base_mint",
+          "docs": [
+            "Used to derive and validate the canonical Rehype state PDA."
+          ]
+        },
+        {
+          "name": "rehype_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  104,
+                  121,
+                  112,
+                  101,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "base_mint"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "new_wallet",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "settle_fees",
+      "discriminator": [
+        60,
+        221,
+        130,
+        229,
+        183,
+        234,
+        6,
+        159
+      ],
+      "accounts": [
+        {
+          "name": "settlement_authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "initializer_program",
+          "address": "4h3Dqyo5qmteJoMxXt3tdtfXELDB6pdRTPU9mWruiKp1"
+        },
+        {
+          "name": "initializer_config"
+        },
+        {
+          "name": "launch",
+          "writable": true
+        },
+        {
+          "name": "launch_fee_state",
+          "writable": true
+        },
+        {
+          "name": "launch_authority"
+        },
+        {
+          "name": "base_mint"
+        },
+        {
+          "name": "quote_mint"
+        },
+        {
+          "name": "base_vault",
+          "writable": true
+        },
+        {
+          "name": "quote_vault",
+          "writable": true
+        },
+        {
+          "name": "rehype_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  104,
+                  121,
+                  112,
+                  101,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "base_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "rehype_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  104,
+                  121,
+                  112,
+                  101,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "rehype_state"
+              }
+            ]
+          }
+        },
+        {
+          "name": "settlement_signer",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  101,
+                  116,
+                  116,
+                  108,
+                  101,
+                  109,
+                  101,
+                  110,
+                  116,
+                  95,
+                  115,
+                  105,
+                  103,
+                  110,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "rehype_state"
+              }
+            ]
+          }
+        },
+        {
+          "name": "router_base_ata",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "rehype_authority"
+              },
+              {
+                "kind": "account",
+                "path": "base_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "base_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "router_quote_ata",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "rehype_authority"
+              },
+              {
+                "kind": "account",
+                "path": "quote_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "quote_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "buyback_destination"
+        },
+        {
+          "name": "buyback_base_ata",
+          "writable": true
+        },
+        {
+          "name": "buyback_quote_ata",
+          "writable": true
+        },
+        {
+          "name": "namespace"
+        },
+        {
+          "name": "hook_config"
+        },
+        {
+          "name": "hook_program"
+        },
+        {
+          "name": "base_token_program"
+        },
+        {
+          "name": "quote_token_program"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "gate_cosigner",
+          "optional": true
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "SettleFeesArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "settle_migrated_fees",
+      "discriminator": [
+        73,
+        177,
+        82,
+        102,
+        67,
+        4,
+        231,
+        200
+      ],
+      "accounts": [
+        {
+          "name": "settlement_authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "initializer_program",
+          "address": "4h3Dqyo5qmteJoMxXt3tdtfXELDB6pdRTPU9mWruiKp1"
+        },
+        {
+          "name": "initializer_config"
+        },
+        {
+          "name": "launch",
+          "writable": true
+        },
+        {
+          "name": "launch_fee_state",
+          "writable": true
+        },
+        {
+          "name": "launch_authority"
+        },
+        {
+          "name": "base_mint"
+        },
+        {
+          "name": "quote_mint"
+        },
+        {
+          "name": "launch_base_vault",
+          "writable": true
+        },
+        {
+          "name": "launch_quote_vault",
+          "writable": true
+        },
+        {
+          "name": "rehype_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  104,
+                  121,
+                  112,
+                  101,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "base_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "rehype_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  104,
+                  121,
+                  112,
+                  101,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "rehype_state"
+              }
+            ]
+          }
+        },
+        {
+          "name": "router_base_ata",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "rehype_authority"
+              },
+              {
+                "kind": "account",
+                "path": "base_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "base_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "router_quote_ata",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "rehype_authority"
+              },
+              {
+                "kind": "account",
+                "path": "quote_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "quote_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "buyback_destination"
+        },
+        {
+          "name": "buyback_base_ata",
+          "writable": true
+        },
+        {
+          "name": "buyback_quote_ata",
+          "writable": true
+        },
+        {
+          "name": "cpmm_program",
+          "address": "9PSxVPoPfnbZ8Q1uQhgS6ZxvBjFboZtebNsu34umxkgQ"
+        },
+        {
+          "name": "cpmm_config"
+        },
+        {
+          "name": "pool",
+          "writable": true
+        },
+        {
+          "name": "pool_authority"
+        },
+        {
+          "name": "pool_vault0",
+          "writable": true
+        },
+        {
+          "name": "pool_vault1",
+          "writable": true
+        },
+        {
+          "name": "protocol_fee_position",
+          "writable": true
+        },
+        {
+          "name": "router_lp_position",
+          "writable": true
+        },
+        {
+          "name": "base_token_program"
+        },
+        {
+          "name": "quote_token_program"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "oracle",
+          "writable": true,
+          "optional": true
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "SettleMigratedFeesArgs"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "AmmConfig",
+      "discriminator": [
+        218,
+        244,
+        33,
+        104,
+        203,
+        203,
+        43,
+        111
+      ]
+    },
+    {
+      "name": "InitConfig",
+      "discriminator": [
+        97,
+        166,
+        35,
+        7,
+        20,
+        2,
+        164,
+        126
+      ]
+    },
+    {
+      "name": "Launch",
+      "discriminator": [
+        144,
+        51,
+        51,
+        163,
+        206,
+        85,
+        213,
+        38
+      ]
+    },
+    {
+      "name": "LaunchFeeState",
+      "discriminator": [
+        1,
+        106,
+        55,
+        241,
+        179,
+        18,
+        230,
+        232
+      ]
+    },
+    {
+      "name": "Pool",
+      "discriminator": [
+        241,
+        154,
+        109,
+        4,
+        17,
+        177,
+        109,
+        188
+      ]
+    },
+    {
+      "name": "Position",
+      "discriminator": [
+        170,
+        188,
+        143,
+        228,
+        122,
+        64,
+        247,
+        208
+      ]
+    },
+    {
+      "name": "RehypeState",
+      "discriminator": [
+        189,
+        101,
+        117,
+        1,
+        189,
+        167,
+        250,
+        225
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "RehypeBeneficiaryReplaced",
+      "discriminator": [
+        240,
+        249,
+        209,
+        168,
+        63,
+        108,
+        87,
+        140
+      ]
+    },
+    {
+      "name": "RehypeFeesClaimed",
+      "discriminator": [
+        146,
+        155,
+        252,
+        103,
+        137,
+        64,
+        22,
+        160
+      ]
+    },
+    {
+      "name": "RehypeInitialized",
+      "discriminator": [
+        226,
+        31,
+        92,
+        137,
+        86,
+        43,
+        70,
+        144
+      ]
+    },
+    {
+      "name": "RehypeSettled",
+      "discriminator": [
+        179,
+        209,
+        32,
+        9,
+        207,
+        155,
+        143,
+        230
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "InvalidConfig",
+      "msg": "Invalid Rehype configuration"
+    },
+    {
+      "code": 6001,
+      "name": "InvalidBeneficiary",
+      "msg": "Invalid Rehype beneficiary"
+    },
+    {
+      "code": 6002,
+      "name": "InvalidFeeRouting",
+      "msg": "Invalid fee routing matrix"
+    },
+    {
+      "code": 6003,
+      "name": "InvalidRoutingMode",
+      "msg": "Invalid routing mode"
+    },
+    {
+      "code": 6004,
+      "name": "InvalidLaunch",
+      "msg": "Invalid Initializer launch"
+    },
+    {
+      "code": 6005,
+      "name": "InvalidLaunchFeeState",
+      "msg": "Invalid launch fee state"
+    },
+    {
+      "code": 6006,
+      "name": "InvalidMint",
+      "msg": "Invalid mint"
+    },
+    {
+      "code": 6007,
+      "name": "InvalidTokenAccount",
+      "msg": "Invalid token account"
+    },
+    {
+      "code": 6008,
+      "name": "InvalidHookAccounts",
+      "msg": "Invalid hook remaining accounts"
+    },
+    {
+      "code": 6009,
+      "name": "ArithmeticOverflow",
+      "msg": "Arithmetic overflow"
+    },
+    {
+      "code": 6010,
+      "name": "NoFeesAvailable",
+      "msg": "No fees are available"
+    },
+    {
+      "code": 6011,
+      "name": "SettlementInProgress",
+      "msg": "Rehype settlement is already in progress"
+    },
+    {
+      "code": 6012,
+      "name": "QuoteMismatch",
+      "msg": "Internal swap quote mismatch"
+    },
+    {
+      "code": 6013,
+      "name": "BalanceMismatch",
+      "msg": "Internal swap balance mismatch"
+    },
+    {
+      "code": 6014,
+      "name": "InvalidPhase",
+      "msg": "Launch phase does not support this settlement"
+    },
+    {
+      "code": 6015,
+      "name": "UnclaimedFees",
+      "msg": "Beneficiary has unclaimed fees"
+    },
+    {
+      "code": 6016,
+      "name": "UnauthorizedSettlement",
+      "msg": "Only the configured settlement authority may settle fees"
+    },
+    {
+      "code": 6017,
+      "name": "SlippageProtectionRequired",
+      "msg": "A positive minimum output is required for a fillable conversion"
+    },
+    {
+      "code": 6018,
+      "name": "SlippageExceeded",
+      "msg": "Settlement conversion output is below the requested minimum"
+    },
+    {
+      "code": 6019,
+      "name": "InvalidPool",
+      "msg": "Invalid migrated CPMM pool accounts"
+    },
+    {
+      "code": 6020,
+      "name": "InvalidPosition",
+      "msg": "Invalid Router CPMM position"
+    },
+    {
+      "code": 6021,
+      "name": "InvalidLpRebalance",
+      "msg": "Invalid LP rebalance parameters"
+    },
+    {
+      "code": 6022,
+      "name": "LpRebalanceWorsened",
+      "msg": "LP rebalance reduced the amount of liquidity that can be added"
+    }
+  ],
+  "types": [
+    {
+      "name": "AmmConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "paused",
+            "type": "bool"
+          },
+          {
+            "name": "hook_allowlist_len",
+            "type": "u8"
+          },
+          {
+            "name": "hook_allowlist",
+            "type": {
+              "array": [
+                "pubkey",
+                32
+              ]
+            }
+          },
+          {
+            "name": "max_swap_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "max_fee_split_bps",
+            "type": "u16"
+          },
+          {
+            "name": "protocol_fee_enabled",
+            "type": "bool"
+          },
+          {
+            "name": "protocol_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "version",
+            "type": "u8"
+          },
+          {
+            "name": "_reserved",
+            "type": {
+              "array": [
+                "u8",
+                7
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "FeeBeneficiary",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "share_bps",
+            "type": "u16"
+          },
+          {
+            "name": "_pad",
+            "type": {
+              "array": [
+                "u8",
+                6
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "FeeRoute",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "asset_buyback_bps",
+            "type": "u16"
+          },
+          {
+            "name": "numeraire_buyback_bps",
+            "type": "u16"
+          },
+          {
+            "name": "beneficiary_bps",
+            "type": "u16"
+          },
+          {
+            "name": "lp_bps",
+            "type": "u16"
+          }
+        ]
+      }
+    },
+    {
+      "name": "FeeRoutingMatrix",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "asset_fees",
+            "type": {
+              "defined": {
+                "name": "FeeRoute"
+              }
+            }
+          },
+          {
+            "name": "numeraire_fees",
+            "type": {
+              "defined": {
+                "name": "FeeRoute"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "InitConfig",
+      "docs": [
+        "Initializer configuration account."
+      ],
+      "serialization": "bytemuckunsafe",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "migrator_allowlist_len",
+            "type": "u8"
+          },
+          {
+            "name": "migrator_allowlist",
+            "type": {
+              "array": [
+                "pubkey",
+                32
+              ]
+            }
+          },
+          {
+            "name": "hook_allowlist_len",
+            "type": "u8"
+          },
+          {
+            "name": "hook_allowlist",
+            "type": {
+              "array": [
+                "pubkey",
+                32
+              ]
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "version",
+            "type": "u8"
+          },
+          {
+            "name": "protocol_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "min_swap_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "max_swap_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "_reserved",
+            "type": {
+              "array": [
+                "u8",
+                24
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "InitializeRehypeArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "namespace",
+            "type": "pubkey"
+          },
+          {
+            "name": "launch_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "buyback_destination",
+            "type": "pubkey"
+          },
+          {
+            "name": "settlement_authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "routing_mode",
+            "type": "u8"
+          },
+          {
+            "name": "fee_routing",
+            "type": {
+              "defined": {
+                "name": "FeeRoutingMatrix"
+              }
+            }
+          },
+          {
+            "name": "beneficiaries",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "RehypeBeneficiaryInput"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Launch",
+      "docs": [
+        "Launch state account."
+      ],
+      "serialization": "bytemuckunsafe",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "namespace",
+            "type": "pubkey"
+          },
+          {
+            "name": "launch_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "phase",
+            "type": "u8"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "launch_authority_bump",
+            "type": "u8"
+          },
+          {
+            "name": "_pad0",
+            "type": {
+              "array": [
+                "u8",
+                5
+              ]
+            }
+          },
+          {
+            "name": "base_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "quote_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "base_vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "quote_vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "base_total_supply",
+            "type": "u64"
+          },
+          {
+            "name": "base_for_distribution",
+            "type": "u64"
+          },
+          {
+            "name": "base_for_liquidity",
+            "type": "u64"
+          },
+          {
+            "name": "base_for_curve",
+            "type": "u64"
+          },
+          {
+            "name": "curve_virtual_base",
+            "type": "u64"
+          },
+          {
+            "name": "curve_virtual_quote",
+            "type": "u64"
+          },
+          {
+            "name": "swap_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "_pad1",
+            "type": {
+              "array": [
+                "u8",
+                6
+              ]
+            }
+          },
+          {
+            "name": "allow_buy",
+            "type": "u8"
+          },
+          {
+            "name": "allow_sell",
+            "type": "u8"
+          },
+          {
+            "name": "_pad2",
+            "type": {
+              "array": [
+                "u8",
+                6
+              ]
+            }
+          },
+          {
+            "name": "hook_program",
+            "type": "pubkey"
+          },
+          {
+            "name": "hook_flags",
+            "type": "u32"
+          },
+          {
+            "name": "_pad3",
+            "type": {
+              "array": [
+                "u8",
+                4
+              ]
+            }
+          },
+          {
+            "name": "hook_payload",
+            "type": {
+              "defined": {
+                "name": "PayloadBuf"
+              }
+            }
+          },
+          {
+            "name": "migrator_program",
+            "type": "pubkey"
+          },
+          {
+            "name": "migrator_init_payload",
+            "type": {
+              "defined": {
+                "name": "PayloadBuf"
+              }
+            }
+          },
+          {
+            "name": "migrator_migrate_payload",
+            "type": {
+              "defined": {
+                "name": "PayloadBuf"
+              }
+            }
+          },
+          {
+            "name": "curve_kind",
+            "type": "u8"
+          },
+          {
+            "name": "swap_lock",
+            "type": "u8"
+          },
+          {
+            "name": "_pad4",
+            "type": {
+              "array": [
+                "u8",
+                6
+              ]
+            }
+          },
+          {
+            "name": "curve_params",
+            "type": {
+              "defined": {
+                "name": "PayloadBuf"
+              }
+            }
+          },
+          {
+            "name": "quote_deposited",
+            "type": "u64"
+          },
+          {
+            "name": "_reserved",
+            "type": {
+              "array": [
+                "u8",
+                64
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "LaunchFeeState",
+      "serialization": "bytemuckunsafe",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "launch",
+            "type": "pubkey"
+          },
+          {
+            "name": "beneficiary_len",
+            "type": "u8"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "protocol_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "swap_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "version",
+            "type": "u8"
+          },
+          {
+            "name": "_pad0",
+            "type": {
+              "array": [
+                "u8",
+                1
+              ]
+            }
+          },
+          {
+            "name": "beneficiaries",
+            "type": {
+              "array": [
+                {
+                  "defined": {
+                    "name": "FeeBeneficiary"
+                  }
+                },
+                8
+              ]
+            }
+          },
+          {
+            "name": "cumulated_base_fees",
+            "type": "u64"
+          },
+          {
+            "name": "cumulated_quote_fees",
+            "type": "u64"
+          },
+          {
+            "name": "distributed_protocol_base_fees",
+            "type": "u64"
+          },
+          {
+            "name": "distributed_protocol_quote_fees",
+            "type": "u64"
+          },
+          {
+            "name": "distributed_base_by_beneficiary",
+            "type": {
+              "array": [
+                "u64",
+                8
+              ]
+            }
+          },
+          {
+            "name": "distributed_quote_by_beneficiary",
+            "type": {
+              "array": [
+                "u64",
+                8
+              ]
+            }
+          },
+          {
+            "name": "_reserved",
+            "type": {
+              "array": [
+                "u8",
+                128
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "LpRebalanceArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "trade_direction",
+            "docs": [
+              "Uses Initializer semantics: buy is quote-to-base and sell is base-to-quote."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "amount_in",
+            "type": "u64"
+          },
+          {
+            "name": "min_amount_out",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PayloadBuf",
+      "docs": [
+        "Variable-length payload buffer."
+      ],
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "len",
+            "type": "u16"
+          },
+          {
+            "name": "bytes",
+            "type": {
+              "array": [
+                "u8",
+                256
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Pool",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "config",
+            "type": "pubkey"
+          },
+          {
+            "name": "token0_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "token1_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "vault0",
+            "type": "pubkey"
+          },
+          {
+            "name": "vault1",
+            "type": "pubkey"
+          },
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "reserve0",
+            "type": "u64"
+          },
+          {
+            "name": "reserve1",
+            "type": "u64"
+          },
+          {
+            "name": "total_shares",
+            "type": "u128"
+          },
+          {
+            "name": "swap_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "fee_split_bps",
+            "type": "u16"
+          },
+          {
+            "name": "fee_growth_global0_q64",
+            "type": "u128"
+          },
+          {
+            "name": "fee_growth_global1_q64",
+            "type": "u128"
+          },
+          {
+            "name": "fees_unclaimed0",
+            "type": "u64"
+          },
+          {
+            "name": "fees_unclaimed1",
+            "type": "u64"
+          },
+          {
+            "name": "hook_program",
+            "type": "pubkey"
+          },
+          {
+            "name": "hook_flags",
+            "type": "u32"
+          },
+          {
+            "name": "liquidity_measure_token_index",
+            "type": "u8"
+          },
+          {
+            "name": "k_last",
+            "type": "u128"
+          },
+          {
+            "name": "protocol_fee_position",
+            "type": "pubkey"
+          },
+          {
+            "name": "locked",
+            "type": "u8"
+          },
+          {
+            "name": "version",
+            "type": "u8"
+          },
+          {
+            "name": "_reserved",
+            "type": {
+              "array": [
+                "u8",
+                7
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Position",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "pool",
+            "type": "pubkey"
+          },
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "position_id",
+            "type": "u64"
+          },
+          {
+            "name": "shares",
+            "type": "u128"
+          },
+          {
+            "name": "fee_growth_last0_q64",
+            "type": "u128"
+          },
+          {
+            "name": "fee_growth_last1_q64",
+            "type": "u128"
+          },
+          {
+            "name": "fee_owed0",
+            "type": "u64"
+          },
+          {
+            "name": "fee_owed1",
+            "type": "u64"
+          },
+          {
+            "name": "version",
+            "type": "u8"
+          },
+          {
+            "name": "_reserved",
+            "type": {
+              "array": [
+                "u8",
+                7
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "RehypeBeneficiary",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "share_bps",
+            "type": "u16"
+          },
+          {
+            "name": "_padding",
+            "type": {
+              "array": [
+                "u8",
+                6
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "RehypeBeneficiaryInput",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "share_bps",
+            "type": "u16"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RehypeBeneficiaryReplaced",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "rehype_state",
+            "type": "pubkey"
+          },
+          {
+            "name": "current_wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "new_wallet",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RehypeFeesClaimed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "rehype_state",
+            "type": "pubkey"
+          },
+          {
+            "name": "beneficiary",
+            "type": "pubkey"
+          },
+          {
+            "name": "base_amount",
+            "type": "u64"
+          },
+          {
+            "name": "quote_amount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RehypeInitialized",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "rehype_state",
+            "type": "pubkey"
+          },
+          {
+            "name": "launch",
+            "type": "pubkey"
+          },
+          {
+            "name": "base_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "quote_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "hook_program",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RehypeSettled",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "rehype_state",
+            "type": "pubkey"
+          },
+          {
+            "name": "launch",
+            "type": "pubkey"
+          },
+          {
+            "name": "claimed_base",
+            "type": "u64"
+          },
+          {
+            "name": "claimed_quote",
+            "type": "u64"
+          },
+          {
+            "name": "beneficiary_base",
+            "type": "u64"
+          },
+          {
+            "name": "beneficiary_quote",
+            "type": "u64"
+          },
+          {
+            "name": "lp_base",
+            "type": "u64"
+          },
+          {
+            "name": "lp_quote",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RehypeState",
+      "serialization": "bytemuckunsafe",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "launch",
+            "type": "pubkey"
+          },
+          {
+            "name": "base_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "quote_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "hook_program",
+            "type": "pubkey"
+          },
+          {
+            "name": "buyback_destination",
+            "type": "pubkey"
+          },
+          {
+            "name": "fee_routing",
+            "type": {
+              "defined": {
+                "name": "FeeRoutingMatrix"
+              }
+            }
+          },
+          {
+            "name": "beneficiaries",
+            "type": {
+              "array": [
+                {
+                  "defined": {
+                    "name": "RehypeBeneficiary"
+                  }
+                },
+                8
+              ]
+            }
+          },
+          {
+            "name": "cumulative_beneficiary_base",
+            "type": "u64"
+          },
+          {
+            "name": "cumulative_beneficiary_quote",
+            "type": "u64"
+          },
+          {
+            "name": "distributed_base_by_beneficiary",
+            "type": {
+              "array": [
+                "u64",
+                8
+              ]
+            }
+          },
+          {
+            "name": "distributed_quote_by_beneficiary",
+            "type": {
+              "array": [
+                "u64",
+                8
+              ]
+            }
+          },
+          {
+            "name": "pending_cross_base",
+            "type": "u64"
+          },
+          {
+            "name": "pending_cross_quote",
+            "type": "u64"
+          },
+          {
+            "name": "pending_lp_base",
+            "type": "u64"
+          },
+          {
+            "name": "pending_lp_quote",
+            "type": "u64"
+          },
+          {
+            "name": "inflight_amount_in",
+            "type": "u64"
+          },
+          {
+            "name": "inflight_expected_amount_out",
+            "type": "u64"
+          },
+          {
+            "name": "version",
+            "type": "u8"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "authority_bump",
+            "type": "u8"
+          },
+          {
+            "name": "settlement_signer_bump",
+            "type": "u8"
+          },
+          {
+            "name": "routing_mode",
+            "type": "u8"
+          },
+          {
+            "name": "beneficiary_count",
+            "type": "u8"
+          },
+          {
+            "name": "inflight_kind",
+            "type": "u8"
+          },
+          {
+            "name": "inflight_direction",
+            "type": "u8"
+          },
+          {
+            "name": "settlement_authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "cumulative_routed_base_fees",
+            "type": "u64"
+          },
+          {
+            "name": "cumulative_routed_quote_fees",
+            "type": "u64"
+          },
+          {
+            "name": "_reserved",
+            "type": {
+              "array": [
+                "u8",
+                24
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "SettleFeesArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "min_base_to_quote_out",
+            "type": "u64"
+          },
+          {
+            "name": "min_quote_to_base_out",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SettleMigratedFeesArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "min_base_to_quote_out",
+            "type": "u64"
+          },
+          {
+            "name": "min_quote_to_base_out",
+            "type": "u64"
+          },
+          {
+            "name": "lp_rebalance",
+            "type": {
+              "option": {
+                "defined": {
+                  "name": "LpRebalanceArgs"
+                }
+              }
+            }
+          },
+          {
+            "name": "min_lp_shares_out",
+            "type": "u128"
+          }
+        ]
+      }
+    }
+  ]
+}

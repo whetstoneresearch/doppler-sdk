@@ -6,6 +6,9 @@
 
 export * as cpmm from './cpmm/index.js';
 export * as dopplerLaunchHookV1 from './dopplerLaunchHookV1/index.js';
+export * as dopplerLaunchHookV2 from './dopplerLaunchHookV2/index.js';
+export * as dopplerRehypeRouterV1 from './dopplerRehypeRouterV1/index.js';
+export * as feeRehypothecation from './feeRehypothecation/index.js';
 export * as initializer from './initializer/index.js';
 export * as cpmmMigrator from './migrators/cpmmMigrator/index.js';
 export * as predictionMigrator from './migrators/predictionMigrator/index.js';
@@ -31,6 +34,7 @@ export {
   swapExactIn,
   type CurveSwapExactInInput,
   type CurveSwapExactInResult,
+  type CurveSwapHook,
   type SolanaRemainingAccount,
   type SwapExactInInput,
   type SwapExactInResult,
@@ -46,8 +50,12 @@ export {
 
 export {
   DOPPLER_SOLANA_DEVNET_PROGRAM_ADDRESSES,
+  DOPPLER_SOLANA_DEVNET_FEE_REHYPOTHECATION_PROGRAM_ADDRESSES,
   DOPPLER_SOLANA_MAINNET_PROGRAM_ADDRESSES,
   deriveSolanaCpmmDeployment,
+  deriveSolanaFeeRehypothecationDeployment,
   type SolanaCpmmDeployment,
   type SolanaCpmmProgramAddresses,
+  type SolanaFeeRehypothecationDeployment,
+  type SolanaFeeRehypothecationProgramAddresses,
 } from './deployment.js';

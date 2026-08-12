@@ -35,6 +35,11 @@ export type SolanaRemainingAccount =
   | AccountSignerMeta
   | TransactionSigner;
 
+export type CurveSwapHook = {
+  program: Address;
+  remainingAccounts?: ReadonlyArray<SolanaRemainingAccount>;
+};
+
 type AddressOrSigner = Address | TransactionSigner;
 
 export type CurveSwapExactInInput = {
@@ -53,6 +58,7 @@ export type CurveSwapExactInInput = {
   amountIn: bigint;
   minAmountOut: bigint;
   tradeDirection: 0 | 1;
+  hook?: CurveSwapHook;
   remainingAccounts?: ReadonlyArray<SolanaRemainingAccount>;
   baseTokenProgram?: Address;
   quoteTokenProgram?: Address;
@@ -176,6 +182,11 @@ function getMinAmountOut({
 export async function curveSwapExactIn(
   input: CurveSwapExactInInput,
 ): Promise<CurveSwapExactInResult> {
+  if (input.hook && input.remainingAccounts) {
+    throw new Error(
+      'provide remaining accounts through hook.remainingAccounts when hook is set',
+    );
+  }
   const programId =
     input.programId ??
     input.deployment?.initializerProgram ??
@@ -239,13 +250,16 @@ export async function curveSwapExactIn(
     quoteMint: input.quoteMint,
     user,
     hookProgram:
+      input.hook?.program ??
       input.deployment?.dopplerLaunchHookV1Program ??
       DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ID,
     baseTokenProgram,
     quoteTokenProgram,
-    remainingAccounts: input.remainingAccounts
-      ? [...input.remainingAccounts]
-      : undefined,
+    remainingAccounts: input.hook?.remainingAccounts
+      ? [...input.hook.remainingAccounts]
+      : input.remainingAccounts
+        ? [...input.remainingAccounts]
+        : undefined,
   };
   const swapInstruction = createCurveSwapExactInInstruction(
     swapAccounts,

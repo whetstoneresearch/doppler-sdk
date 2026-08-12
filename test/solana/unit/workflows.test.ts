@@ -122,6 +122,62 @@ describe('Solana workflow helpers', () => {
     );
   });
 
+  it('uses an explicit launch hook and its remaining accounts', async () => {
+    const payer = await generateKeyPairSigner();
+    const hookProgram = address('ComputeBudget111111111111111111111111111111');
+    const hookAccount = address('Sysvar1nstructions1111111111111111111111111');
+    const prepared = await curveSwapExactIn({
+      launch: address('8h4Nw2m3qPH4tB3x3fcQADkHDzWr7TjapfxnY4LuRk7w'),
+      launchAuthority: address('5hX6e1cyWUFHMzLM5VGuxFHXU8Gykqa5R2rsJqnyqkyU'),
+      baseVault: address('5M6Ko42FUVA4ovM7EMERuhRdT49yYRaYtLuQ7jnhkBhC'),
+      quoteVault: address('7ZAv1WfVd2k9TtPGC82ZxPwpE2L8YB4Y3dByQNCXc9NL'),
+      launchFeeState: address('3x13Y2NkqGGLNxbh3Pcz9F4SNgtVtFU6fqfmbs36FxgY'),
+      baseMint: address('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'),
+      quoteMint: WSOL_MINT,
+      payer,
+      amountIn: 1n,
+      minAmountOut: 1n,
+      tradeDirection: initializer.TRADE_DIRECTION_BUY,
+      hook: { program: hookProgram, remainingAccounts: [hookAccount] },
+    });
+
+    expect(prepared.swapInstruction.accounts![9].address).toBe(hookProgram);
+    expect(prepared.swapInstruction.accounts!.at(-1)?.address).toBe(
+      hookAccount,
+    );
+  });
+
+  it('rejects remaining accounts outside an explicit hook', async () => {
+    const payer = await generateKeyPairSigner();
+    const hookAccount = address('Sysvar1nstructions1111111111111111111111111');
+
+    await expect(
+      curveSwapExactIn({
+        launch: address('8h4Nw2m3qPH4tB3x3fcQADkHDzWr7TjapfxnY4LuRk7w'),
+        launchAuthority: address(
+          '5hX6e1cyWUFHMzLM5VGuxFHXU8Gykqa5R2rsJqnyqkyU',
+        ),
+        baseVault: address(
+          '5M6Ko42FUVA4ovM7EMERuhRdT49yYRaYtLuQ7jnhkBhC',
+        ),
+        quoteVault: address(
+          '7ZAv1WfVd2k9TtPGC82ZxPwpE2L8YB4Y3dByQNCXc9NL',
+        ),
+        launchFeeState: address(
+          '3x13Y2NkqGGLNxbh3Pcz9F4SNgtVtFU6fqfmbs36FxgY',
+        ),
+        baseMint: address('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'),
+        quoteMint: WSOL_MINT,
+        payer,
+        amountIn: 1n,
+        minAmountOut: 1n,
+        tradeDirection: initializer.TRADE_DIRECTION_BUY,
+        hook: { program: COMPUTE_BUDGET_PROGRAM_ID },
+        remainingAccounts: [hookAccount],
+      }),
+    ).rejects.toThrow(/through hook\.remainingAccounts/);
+  });
+
   it('prepares a CPMM exact-in swap with quote, slippage, and token ATAs', async () => {
     const payer = await generateKeyPairSigner();
     const token0Mint = await generateKeyPairSigner();

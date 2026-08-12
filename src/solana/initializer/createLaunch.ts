@@ -218,11 +218,12 @@ type CreateLaunchHookContext = {
   cosignerGate?: ResolvedManagedCosignerGate;
 };
 
-type ResolvedCreateLaunchHook = {
+export type ResolvedCreateLaunchHook = {
   program: Address;
   flags: number;
   payload: ReadonlyUint8Array;
   remainingAccountsHash: ReadonlyUint8Array;
+  createRemainingAccounts?: ReadonlyArray<AddressOrSigner>;
 };
 
 let launchIdCounter = 0n;
@@ -540,9 +541,25 @@ async function getMigrationInitRemainingAccountsHash({
 export async function createLaunch(
   input: CreateLaunchInput,
 ): Promise<CreateLaunchResult> {
+  const hookContext = getCreateLaunchHookContext(input);
+  const namespace = input.namespace ?? SYSTEM_PROGRAM_ADDRESS;
+  const hook = resolveCreateLaunchHook({
+    input,
+    namespace,
+    hookContext,
+  });
+
+  return createLaunchWithResolvedHook(input, hook, hookContext.cosignerGate);
+}
+
+/** @internal Used by feature-specific launch builders after resolving a hook. */
+export async function createLaunchWithResolvedHook(
+  input: CreateLaunchInput,
+  hook: ResolvedCreateLaunchHook,
+  cosignerGate?: ResolvedManagedCosignerGate,
+): Promise<CreateLaunchResult> {
   const programId = getInitializerProgramId(input);
   const launchId = input.launchId ?? createLaunchId();
-  const hookContext = getCreateLaunchHookContext(input);
   const namespace = input.namespace ?? SYSTEM_PROGRAM_ADDRESS;
   const tokenPrograms = {
     ...launchTokenPrograms.splToken(),
@@ -563,11 +580,6 @@ export async function createLaunch(
     addresses,
     input,
     tokenPrograms,
-  });
-  const hook = resolveCreateLaunchHook({
-    input,
-    namespace,
-    hookContext,
   });
   const migratorInitRemainingAccountsHash =
     await getMigrationInitRemainingAccountsHash({
@@ -600,6 +612,7 @@ export async function createLaunch(
       rent: input.rent ?? SYSVAR_RENT_ADDRESS,
       metadataAccount: addresses.metadataAccount,
       metadataProgram: input.metadataProgram ?? TOKEN_METADATA_PROGRAM_ID,
+      hookCreateRemainingAccounts: hook.createRemainingAccounts,
     },
     {
       namespace,
@@ -648,8 +661,6 @@ export async function createLaunch(
     addresses,
     instruction: preparedInstruction,
     cpmmMigration: migration?.cpmmMigration,
-    ...(hookContext.cosignerGate
-      ? { cosignerGate: hookContext.cosignerGate }
-      : {}),
+    ...(cosignerGate ? { cosignerGate } : {}),
   };
 }

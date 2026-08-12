@@ -26,10 +26,14 @@ import {
 
 import {
   DOPPLER_SOLANA_DEVNET_PROGRAM_ADDRESSES,
+  DOPPLER_SOLANA_DEVNET_FEE_REHYPOTHECATION_PROGRAM_ADDRESSES,
   deriveSolanaCpmmDeployment,
+  deriveSolanaFeeRehypothecationDeployment,
   initializer,
   type SolanaCpmmDeployment,
   type SolanaCpmmProgramAddresses,
+  type SolanaFeeRehypothecationDeployment,
+  type SolanaFeeRehypothecationProgramAddresses,
 } from '../src/solana/index.js';
 
 export const SOLANA_NETWORK_ENDPOINTS = {
@@ -109,6 +113,15 @@ const CUSTOM_CPMM_PROGRAM_ENV = {
   dopplerLaunchHookV1Program: 'SOLANA_DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ID',
 } as const satisfies Record<keyof SolanaCpmmProgramAddresses, string>;
 
+const CUSTOM_FEE_REHYPOTHECATION_PROGRAM_ENV = {
+  initializerProgram: 'SOLANA_INITIALIZER_PROGRAM_ID',
+  dopplerLaunchHookV2Program: 'SOLANA_DOPPLER_LAUNCH_HOOK_V2_PROGRAM_ID',
+  dopplerRehypeRouterV1Program: 'SOLANA_DOPPLER_REHYPE_ROUTER_V1_PROGRAM_ID',
+} as const satisfies Record<
+  keyof SolanaFeeRehypothecationProgramAddresses,
+  string
+>;
+
 function requiredAddressFromEnv(name: string): Address {
   const value = process.env[name]?.trim();
   if (!value) {
@@ -142,6 +155,32 @@ export async function getSolanaCpmmDeploymentFromEnv(
       ? getSolanaCpmmProgramAddressesFromEnv()
       : DOPPLER_SOLANA_DEVNET_PROGRAM_ADDRESSES;
   return deriveSolanaCpmmDeployment(programs);
+}
+
+export function getSolanaFeeRehypothecationProgramAddressesFromEnv(): SolanaFeeRehypothecationProgramAddresses {
+  return {
+    initializerProgram: requiredAddressFromEnv(
+      CUSTOM_FEE_REHYPOTHECATION_PROGRAM_ENV.initializerProgram,
+    ),
+    dopplerLaunchHookV2Program: requiredAddressFromEnv(
+      CUSTOM_FEE_REHYPOTHECATION_PROGRAM_ENV.dopplerLaunchHookV2Program,
+    ),
+    dopplerRehypeRouterV1Program: requiredAddressFromEnv(
+      CUSTOM_FEE_REHYPOTHECATION_PROGRAM_ENV.dopplerRehypeRouterV1Program,
+    ),
+  };
+}
+
+export async function getSolanaFeeRehypothecationDeploymentFromEnv(
+  network: SolanaExampleNetwork = parseSolanaNetwork(
+    process.env.SOLANA_NETWORK ?? DEFAULT_SOLANA_EXAMPLE_NETWORK,
+  ),
+): Promise<SolanaFeeRehypothecationDeployment> {
+  const programs =
+    network === 'custom'
+      ? getSolanaFeeRehypothecationProgramAddressesFromEnv()
+      : DOPPLER_SOLANA_DEVNET_FEE_REHYPOTHECATION_PROGRAM_ADDRESSES;
+  return deriveSolanaFeeRehypothecationDeployment(programs);
 }
 
 export function getSolanaUsdcMintFromEnv(
