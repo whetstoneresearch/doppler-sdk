@@ -16,26 +16,26 @@ const generatedAddressTargetChains = [
   { name: 'monad-mainnet', chainId: CHAIN_IDS.MONAD_MAINNET },
 ] as const;
 
-const generatedTokenFactoryTargetChains = [
+const pinnedTokenFactoryTargetChains = [
   {
     name: 'mainnet',
     chainId: CHAIN_IDS.MAINNET,
-    deploymentKey: 'CloneERC20Factory',
+    expected: '0xe7Df2A4520C26a2D4Dedb3a7585BFBcd30eABA6e',
   },
   {
     name: 'base',
     chainId: CHAIN_IDS.BASE,
-    deploymentKey: 'TokenFactory80',
+    expected: '0xf0B5141dD9096254B2ca624dff26024f46087229',
   },
   {
     name: 'base-sepolia',
     chainId: CHAIN_IDS.BASE_SEPOLIA,
-    deploymentKey: 'TokenFactory80',
+    expected: '0xf0B5141dD9096254B2ca624dff26024f46087229',
   },
   {
     name: 'monad-mainnet',
     chainId: CHAIN_IDS.MONAD_MAINNET,
-    deploymentKey: 'TokenFactory80',
+    expected: '0xf0B5141dD9096254B2ca624dff26024f46087229',
   },
 ] as const;
 
@@ -108,14 +108,10 @@ describe('address configuration', () => {
     },
   );
 
-  it.each(generatedTokenFactoryTargetChains)(
-    'returns the generated token factory for $name',
-    ({ chainId, deploymentKey }) => {
-      const generated = GENERATED_DOPPLER_DEPLOYMENTS[
-        chainId
-      ] as unknown as Record<string, Address>;
-
-      expect(getAddresses(chainId).tokenFactory).toBe(generated[deploymentKey]);
+  it.each(pinnedTokenFactoryTargetChains)(
+    'returns the pinned deprecated token factory for $name',
+    ({ chainId, expected }) => {
+      expect(getAddresses(chainId).tokenFactory).toBe(expected);
     },
   );
 
