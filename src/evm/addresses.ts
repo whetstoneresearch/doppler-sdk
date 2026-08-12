@@ -115,16 +115,9 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
   [CHAIN_IDS.MAINNET]: {
     airlock: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MAINNET]
       .Airlock as Address,
-    tokenFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MAINNET]
-      .CloneERC20Factory as Address,
-    derc20V2Factory: getGeneratedAddress(
-      CHAIN_IDS.MAINNET,
-      'CloneDERC20VotesV2Factory',
-    ),
-    derc20V2Implementation: getGeneratedAddress(
-      CHAIN_IDS.MAINNET,
-      'CloneDERC20VotesV2',
-    ),
+    tokenFactory: '0xe7Df2A4520C26a2D4Dedb3a7585BFBcd30eABA6e' as Address,
+    derc20V2Factory: '0x16F5ACB64F4FA17296E942C51d3395aDC318f9e1',
+    derc20V2Implementation: '0x4BBfed1c27CDE12eF6638251D81ab4e3be7556b7',
     dopplerERC20V1Factory: getGeneratedAddress(
       CHAIN_IDS.MAINNET,
       'DopplerERC20V1Factory',
@@ -139,9 +132,8 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       .LockableUniswapV3Initializer as Address,
     v4Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MAINNET]
       .UniswapV4Initializer as Address,
-    v4ScheduledMulticurveInitializer: GENERATED_DOPPLER_DEPLOYMENTS[
-      CHAIN_IDS.MAINNET
-    ].UniswapV4ScheduledMulticurveInitializer as Address,
+    v4ScheduledMulticurveInitializer:
+      '0xF84378C9F39e0FF267f3101c88773359c5393876' as Address,
     dopplerHookInitializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MAINNET]
       .DopplerHookInitializer as Address,
     rehypeDopplerHookInitializer: getRehypeDopplerHookInitializerAddress(
@@ -154,16 +146,12 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     dopplerDeployer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MAINNET]
       .DopplerDeployer as Address,
     poolManager: '0x000000000004444c5dc75cB358380D2e3dE08A90' as Address,
-    v2Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MAINNET]
-      .UniswapV2Migrator as Address,
+    v2Migrator: '0x765875bff87614cE0581ee73B9fa663B71F3DfF2' as Address,
     v2MigratorSplit: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MAINNET]
       .UniswapV2MigratorSplit as Address,
-    v4Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MAINNET]
-      .UniswapV4Migrator as Address,
-    v4MigratorSplit: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MAINNET]
-      .UniswapV4MigratorSplit as Address,
-    v4MigratorHook: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MAINNET]
-      .UniswapV4MigratorHook as Address,
+    v4Migrator: '0x0820A4D0173C17Ece283f7bDaAF0f8876eB205f5' as Address,
+    v4MigratorSplit: '0xa1b06BE4f2fC347d194240D79EDa9F40CCAd9732' as Address,
+    v4MigratorHook: '0x4053D4fa966cbdCC20Ec62070aC8814De8bEE500' as Address,
     dopplerHookMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MAINNET]
       .DopplerHookMigrator as Address,
     rehypeDopplerHookMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MAINNET]
@@ -176,8 +164,8 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       .NoOpGovernanceFactory as Address,
     launchpadGovernanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MAINNET]
       .LaunchpadGovernanceFactory as Address,
-    streamableFeesLocker: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MAINNET]
-      .StreamableFeesLocker as Address,
+    streamableFeesLocker:
+      '0xe24FC2F7191e850e2D4514aBb4d39305b1871eC6' as Address,
     streamableFeesLockerV2: getGeneratedAddress(
       CHAIN_IDS.MAINNET,
       'StreamableFeesLockerV2',
@@ -193,53 +181,34 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     uniswapV4Quoter: '0x52f0e24d1c21c8a0cb1e5a5dd6198556bd9e1203' as Address,
   },
   [CHAIN_IDS.ETH_SEPOLIA]: {
-    airlock: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ETH_SEPOLIA]
-      .Airlock as Address,
-    tokenFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ETH_SEPOLIA]
-      .CloneERC20Factory as Address,
-    derc20V2Factory: getGeneratedAddress(
-      CHAIN_IDS.ETH_SEPOLIA,
-      'CloneDERC20VotesV2Factory',
-    ),
-    derc20V2Implementation: getGeneratedAddress(
-      CHAIN_IDS.ETH_SEPOLIA,
-      'CloneDERC20VotesV2',
-    ),
+    airlock: '0xDe3599a2eC440B296373a983C85C365DA55d9dFA' as Address,
+    tokenFactory: '0xe7Df2A4520C26a2D4Dedb3a7585BFBcd30eABA6e' as Address,
+    derc20V2Factory: '0x16F5ACB64F4FA17296E942C51d3395aDC318f9e1',
+    derc20V2Implementation: '0x4BBfed1c27CDE12eF6638251D81ab4e3be7556b7',
     v3Initializer: ZERO_ADDRESS,
     v3Quoter: ZERO_ADDRESS,
-    v4Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ETH_SEPOLIA]
-      .UniswapV4Initializer as Address,
-    v4ScheduledMulticurveInitializer: GENERATED_DOPPLER_DEPLOYMENTS[
-      CHAIN_IDS.ETH_SEPOLIA
-    ].UniswapV4ScheduledMulticurveInitializer as Address,
-    dopplerHookInitializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ETH_SEPOLIA]
-      .DopplerHookInitializer as Address,
-    rehypeDopplerHookInitializer: getRehypeDopplerHookInitializerAddress(
-      CHAIN_IDS.ETH_SEPOLIA,
-    ),
-    rehypeDopplerHook: getRehypeDopplerHookInitializerAddress(
-      CHAIN_IDS.ETH_SEPOLIA,
-    ),
+    v4Initializer: '0x53b4c21a6Cb61D64F636ABBfa6E8E90E6558e8ad' as Address,
+    v4ScheduledMulticurveInitializer:
+      '0xF84378C9F39e0FF267f3101c88773359c5393876' as Address,
+    dopplerHookInitializer:
+      '0xBDF938149ac6a781F94FAa0ed45E6A0e984c6544' as Address,
+    rehypeDopplerHookInitializer: '0xBF4195ab0B03e1eB3345dd1e83BeD7650b1ed123',
+    rehypeDopplerHook: '0xBF4195ab0B03e1eB3345dd1e83BeD7650b1ed123',
     dopplerLens: ZERO_ADDRESS,
-    dopplerDeployer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ETH_SEPOLIA]
-      .DopplerDeployer as Address,
+    dopplerDeployer: '0xb35469ee64A87Afd19B31615094fE3962d73e421' as Address,
     poolManager: '0xE03A1074c86CFeDd5C142C4F04F1a1536e203543' as Address,
-    v2Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ETH_SEPOLIA]
-      .UniswapV2Migrator as Address,
-    v4Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ETH_SEPOLIA]
-      .UniswapV4Migrator as Address,
-    dopplerHookMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ETH_SEPOLIA]
-      .DopplerHookMigrator as Address,
-    rehypeDopplerHookMigrator: GENERATED_DOPPLER_DEPLOYMENTS[
-      CHAIN_IDS.ETH_SEPOLIA
-    ].RehypeDopplerHookMigrator as Address,
-    noOpMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ETH_SEPOLIA]
-      .NoOpMigrator as Address,
+    v2Migrator: '0x765875bff87614cE0581ee73B9fa663B71F3DfF2' as Address,
+    v4Migrator: '0x0820A4D0173C17Ece283f7bDaAF0f8876eB205f5' as Address,
+    dopplerHookMigrator:
+      '0x1E40b0875DDa35f41E15cFB475403859B8c860c4' as Address,
+    rehypeDopplerHookMigrator:
+      '0xea95DfdF69B90c65C827070852F7039D6aF6Dd7b' as Address,
+    noOpMigrator: '0x233A71A7bB928b1357A1Ebf454298320989Ca5B5' as Address,
     governanceFactory: ZERO_ADDRESS,
-    noOpGovernanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ETH_SEPOLIA]
-      .NoOpGovernanceFactory as Address,
-    streamableFeesLocker: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ETH_SEPOLIA]
-      .StreamableFeesLocker as Address,
+    noOpGovernanceFactory:
+      '0xddAE8B3eD08184682f7Bc32B74d943cEEfEab638' as Address,
+    streamableFeesLocker:
+      '0xe24FC2F7191e850e2D4514aBb4d39305b1871eC6' as Address,
     universalRouter: '0x3A9D48AB9751398BbFa63ad67599Bb04e4BdF98b' as Address,
     permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3' as Address,
     weth: '0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14' as Address,
@@ -247,16 +216,9 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
   },
   [CHAIN_IDS.BASE]: {
     airlock: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE].Airlock as Address,
-    tokenFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
-      .TokenFactory80 as Address,
-    derc20V2Factory: getGeneratedAddress(
-      CHAIN_IDS.BASE,
-      'CloneDERC20VotesV2Factory',
-    ),
-    derc20V2Implementation: getGeneratedAddress(
-      CHAIN_IDS.BASE,
-      'CloneDERC20VotesV2',
-    ),
+    tokenFactory: '0xf0B5141dD9096254B2ca624dff26024f46087229' as Address,
+    derc20V2Factory: '0x16F5ACB64F4FA17296E942C51d3395aDC318f9e1',
+    derc20V2Implementation: '0x4BBfed1c27CDE12eF6638251D81ab4e3be7556b7',
     dopplerERC20V1Factory: getGeneratedAddress(
       CHAIN_IDS.BASE,
       'DopplerERC20V1Factory',
@@ -266,20 +228,18 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       'DopplerERC20V1',
     ),
     doppler404Factory: getGeneratedAddress(CHAIN_IDS.BASE, 'DN404Factory'),
-    v3Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
-      .UniswapV3Initializer as Address,
+    v3Initializer: '0xaA47D2977d622DBdFD33eeF6a8276727c52EB4e5' as Address,
     v3Quoter: '0x3d4e44Eb1374240CE5F1B871ab261CD16335B76a' as Address,
     lockableV3Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
       .LockableUniswapV3Initializer as Address,
     v4Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
       .UniswapV4Initializer as Address,
-    v4MulticurveInitializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
-      .UniswapV4MulticurveInitializer as Address, // From Doppler multicurve deployments (Base mainnet)
-    v4ScheduledMulticurveInitializer: GENERATED_DOPPLER_DEPLOYMENTS[
-      CHAIN_IDS.BASE
-    ].UniswapV4ScheduledMulticurveInitializer as Address, // From Doppler scheduled multicurve deployments (Base mainnet)
-    v4DecayMulticurveInitializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
-      .DecayMulticurveInitializer as Address, // From Doppler decay multicurve deployments (Base mainnet)
+    v4MulticurveInitializer:
+      '0x65dE470Da664A5be139A5D812bE5FDa0d76CC951' as Address, // From Doppler multicurve deployments (Base mainnet)
+    v4ScheduledMulticurveInitializer:
+      '0xA36715dA46Ddf4A769f3290f49AF58bF8132ED8E' as Address, // From Doppler scheduled multicurve deployments (Base mainnet)
+    v4DecayMulticurveInitializer:
+      '0xD59cE43E53D69F190E15d9822Fb4540dCcc91178' as Address, // From Doppler decay multicurve deployments (Base mainnet)
     // Opening auction slots reserved for phase-1 lifecycle support (not deployed on Base yet)
     openingAuctionInitializer: ZERO_ADDRESS,
     openingAuctionPositionManager: ZERO_ADDRESS,
@@ -294,16 +254,12 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     rehypeDopplerHook: getRehypeDopplerHookInitializerAddress(CHAIN_IDS.BASE),
     dopplerHookInitializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
       .DopplerHookInitializer as Address,
-    v2Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
-      .UniswapV2Migrator as Address,
+    v2Migrator: '0x5F3bA43D44375286296Cb85F1EA2EBfa25dde731' as Address,
     v2MigratorSplit: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
       .UniswapV2MigratorSplit as Address,
-    v4Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
-      .UniswapV4Migrator as Address,
-    v4MigratorSplit: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
-      .UniswapV4MigratorSplit as Address,
-    v4MigratorHook: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
-      .UniswapV4MigratorHook as Address,
+    v4Migrator: '0xd3B4cF7FD24381e90A4F012fC6c5976b87B9B3cE' as Address,
+    v4MigratorSplit: '0xa1b06BE4f2fC347d194240D79EDa9F40CCAd9732' as Address,
+    v4MigratorHook: '0xD6FECFF347c6203A41874e8D77dE669B54e7A500' as Address,
     dopplerHookMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
       .DopplerHookMigrator as Address,
     rehypeDopplerHookMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
@@ -316,8 +272,8 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       .NoOpGovernanceFactory as Address,
     launchpadGovernanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
       .LaunchpadGovernanceFactory as Address,
-    streamableFeesLocker: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
-      .StreamableFeesLocker as Address,
+    streamableFeesLocker:
+      '0x0A00775D71a42cd33D62780003035e7F5b47bD3A' as Address,
     streamableFeesLockerV2: getGeneratedAddress(
       CHAIN_IDS.BASE,
       'StreamableFeesLockerV2',
@@ -336,16 +292,9 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
   [CHAIN_IDS.BASE_SEPOLIA]: {
     airlock: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
       .Airlock as Address,
-    tokenFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
-      .TokenFactory80 as Address,
-    derc20V2Factory: getGeneratedAddress(
-      CHAIN_IDS.BASE_SEPOLIA,
-      'CloneDERC20VotesV2Factory',
-    ),
-    derc20V2Implementation: getGeneratedAddress(
-      CHAIN_IDS.BASE_SEPOLIA,
-      'CloneDERC20VotesV2',
-    ),
+    tokenFactory: '0xf0B5141dD9096254B2ca624dff26024f46087229' as Address,
+    derc20V2Factory: '0x16F5ACB64F4FA17296E942C51d3395aDC318f9e1',
+    derc20V2Implementation: '0x4BBfed1c27CDE12eF6638251D81ab4e3be7556b7',
     dopplerERC20V1Factory: getGeneratedAddress(
       CHAIN_IDS.BASE_SEPOLIA,
       'DopplerERC20V1Factory',
@@ -356,22 +305,18 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     ),
     doppler404Factory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
       .DN404Factory as Address,
-    v3Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
-      .UniswapV3Initializer as Address,
+    v3Initializer: '0x4C3062B9ccFdbCB10353F57C1B59a29d4c5CFa47' as Address,
     v3Quoter: '0xC5290058841028F1614F3A6F0F5816cAd0df5E27' as Address,
     lockableV3Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
       .LockableUniswapV3Initializer as Address,
     v4Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
       .UniswapV4Initializer as Address,
-    v4MulticurveInitializer: GENERATED_DOPPLER_DEPLOYMENTS[
-      CHAIN_IDS.BASE_SEPOLIA
-    ].UniswapV4MulticurveInitializer as Address,
-    v4ScheduledMulticurveInitializer: GENERATED_DOPPLER_DEPLOYMENTS[
-      CHAIN_IDS.BASE_SEPOLIA
-    ].UniswapV4ScheduledMulticurveInitializer as Address, // From Doppler scheduled multicurve deployments (Base Sepolia)
-    v4DecayMulticurveInitializer: GENERATED_DOPPLER_DEPLOYMENTS[
-      CHAIN_IDS.BASE_SEPOLIA
-    ].DecayMulticurveInitializer as Address, // From Doppler decay multicurve deployments (Base Sepolia)
+    v4MulticurveInitializer:
+      '0x1718405E58c61425cDc0083262bC9f72198F5232' as Address,
+    v4ScheduledMulticurveInitializer:
+      '0xF84378C9F39e0FF267f3101c88773359c5393876' as Address, // From Doppler scheduled multicurve deployments (Base Sepolia)
+    v4DecayMulticurveInitializer:
+      '0xD59cE43E53D69F190E15d9822Fb4540dCcc91178' as Address, // From Doppler decay multicurve deployments (Base Sepolia)
     // Opening Auction contracts (deployed Feb 2025)
     openingAuctionInitializer:
       '0x3dCd35945Dc86a9FaA80846B06CB4676961d0AEa' as Address,
@@ -391,21 +336,17 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     dopplerDeployer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
       .DopplerDeployer as Address,
     poolManager: '0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408' as Address,
-    v2Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
-      .UniswapV2Migrator as Address,
+    v2Migrator: '0x04a898f3722c38F9Def707bD17DC78920EFA977C' as Address,
     v2MigratorSplit: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
       .UniswapV2MigratorSplit as Address,
-    v4Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
-      .UniswapV4Migrator as Address,
-    v4MigratorSplit: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
-      .UniswapV4MigratorSplit as Address,
+    v4Migrator: '0xEEe0eCCb54398ce371CAACBCEf076d3Ed597DDb3' as Address,
+    v4MigratorSplit: '0xa1b06BE4f2fC347d194240D79EDa9F40CCAd9732' as Address,
     dopplerHookMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
       .DopplerHookMigrator as Address,
     rehypeDopplerHookMigrator: GENERATED_DOPPLER_DEPLOYMENTS[
       CHAIN_IDS.BASE_SEPOLIA
     ].RehypeDopplerHookMigrator as Address,
-    v4MigratorHook: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
-      .UniswapV4MigratorHook as Address,
+    v4MigratorHook: '0x127cAAAd598Ffa97577940b0a5c3b6150019E500' as Address,
     noOpMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
       .NoOpMigrator as Address,
     governanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
@@ -415,8 +356,8 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     launchpadGovernanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[
       CHAIN_IDS.BASE_SEPOLIA
     ].LaunchpadGovernanceFactory as Address,
-    streamableFeesLocker: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE_SEPOLIA]
-      .StreamableFeesLocker as Address,
+    streamableFeesLocker:
+      '0x3345E557c5C0b474bE1eb4693264008B8562Aa9c' as Address,
     streamableFeesLockerV2: getGeneratedAddress(
       CHAIN_IDS.BASE_SEPOLIA,
       'StreamableFeesLockerV2',
@@ -434,9 +375,8 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     uniswapV4Quoter: '0x4A6513c898fe1B2d0E78d3b0e0A4a151589B1cBa' as Address,
   },
   [CHAIN_IDS.INK]: {
-    airlock: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.INK].Airlock as Address,
-    tokenFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.INK]
-      .TokenFactory as Address,
+    airlock: '0x660eAaEdEBc968f8f3694354FA8EC0b4c5Ba8D12' as Address,
+    tokenFactory: '0xFAafdE6a5b658684cC5eb0C5c2c755B00A246F45' as Address,
     derc20V2Factory: getGeneratedAddress(
       CHAIN_IDS.INK,
       'CloneDERC20VotesV2Factory',
@@ -445,25 +385,21 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       CHAIN_IDS.INK,
       'CloneDERC20VotesV2',
     ),
-    v3Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.INK]
-      .UniswapV3Initializer as Address,
+    v3Initializer: '0xaA47D2977d622DBdFD33eeF6a8276727c52EB4e5' as Address,
     v3Quoter: '0x96b572D2d880cf2Fa2563651BD23ADE6f5516652' as Address,
     v4Initializer: '0xC99b485499f78995C6F1640dbB1413c57f8BA684' as Address,
     dopplerLens: '0x3972c00f7ed4885e145823eb7c655375d275a1c5' as Address,
-    dopplerDeployer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.INK]
-      .DopplerDeployer as Address,
+    dopplerDeployer: '0xa82c66b6ddEb92089015C3565E05B5c9750b2d4B' as Address,
     poolManager: '0x360e68faccca8ca495c1b759fd9eee466db9fb32' as Address,
-    v2Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.INK]
-      .UniswapV2Migrator as Address,
+    v2Migrator: '0x5F3bA43D44375286296Cb85F1EA2EBfa25dde731' as Address,
     v4Migrator: ZERO_ADDRESS,
-    governanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.INK]
-      .GovernanceFactory as Address,
+    governanceFactory: '0xb4deE32EB70A5E55f3D2d861F49Fb3D79f7a14d9' as Address,
     noOpGovernanceFactory: ZERO_ADDRESS, // Not yet deployed
     streamableFeesLocker: ZERO_ADDRESS, // Not yet deployed
     universalRouter: '0x112908dac86e20e7241b0927479ea3bf935d1fa0' as Address,
     univ2Router02: '0xB3FB126ACDd5AdCA2f50Ac644a7a2303745f18b4' as Address,
     permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3' as Address,
-    bundler: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.INK].Bundler as Address,
+    bundler: '0x136191B46478cAB023cbC01a36160C4Aad81677a' as Address,
     weth: '0x4200000000000000000000000000000000000006' as Address,
     uniswapV4Quoter: '0x3972c00f7ed4885e145823eb7c655375d275a1c5' as Address,
   },
@@ -534,10 +470,8 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     uniswapV4Quoter: '0x8dc178efb8111bb0973dd9d722ebeff267c98f94' as Address,
   },
   [CHAIN_IDS.UNICHAIN]: {
-    airlock: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.UNICHAIN]
-      .Airlock as Address,
-    tokenFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.UNICHAIN]
-      .TokenFactory as Address,
+    airlock: '0x77EbfBAE15AD200758E9E2E61597c0B07d731254' as Address,
+    tokenFactory: '0x43d0D97EC9241A8F05A264f94B82A1d2E600f2B3' as Address,
     derc20V2Factory: getGeneratedAddress(
       CHAIN_IDS.UNICHAIN,
       'CloneDERC20VotesV2Factory',
@@ -546,37 +480,30 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       CHAIN_IDS.UNICHAIN,
       'CloneDERC20VotesV2',
     ),
-    v3Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.UNICHAIN]
-      .UniswapV3Initializer as Address,
+    v3Initializer: '0x9F4e56be80f08ba1A2445645EFa6d231E27b43ec' as Address,
     v3Quoter: '0x385A5cf5F83e99f7BB2852b6A19C3538b9FA7658' as Address,
     v4Initializer: '0x2F2BAcd46d3F5c9EE052Ab392b73711dB89129DB' as Address,
     dopplerLens: '0x333e3c607b141b18ff6de9f258db6e77fe7491e0' as Address,
     dopplerDeployer: '0x06FEFD02F0b6d9f57F52cfacFc113665Dfa20F0f' as Address,
     poolManager: '0x1f98400000000000000000000000000000000004' as Address,
-    v2Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.UNICHAIN]
-      .UniswapV2Migrator as Address,
-    v4Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.UNICHAIN]
-      .UniswapV4Migrator as Address,
-    noOpMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.UNICHAIN]
-      .NoOpMigrator as Address,
-    governanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.UNICHAIN]
-      .GovernanceFactory as Address,
-    noOpGovernanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.UNICHAIN]
-      .NoOpGovernanceFactory as Address,
+    v2Migrator: '0xf6023127f6E937091D5B605680056A6D27524bad' as Address,
+    v4Migrator: '0x49F3fBB2dFF7f3d03B622e3b2a6d3F2E6fdB2a5A' as Address,
+    noOpMigrator: '0x917da361072ce968acD810BbfC9B64079426ebf0' as Address,
+    governanceFactory: '0x99C94B9Df930E1E21a4E4a2c105dBff21bF5c5aE' as Address,
+    noOpGovernanceFactory:
+      '0x3AD727ee0FBBb8Ee0920933FdB96F23fD56f1299' as Address,
     streamableFeesLocker: ZERO_ADDRESS, // Not yet deployed
     universalRouter: '0xef740bf23acae26f6492b10de645d6b98dc8eaf3' as Address,
     univ2Router02: '0x284f11109359a7e1306c3e447ef14d38400063ff' as Address,
     uniswapV2Factory: '0x1f98400000000000000000000000000000000002' as Address,
     permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3' as Address,
-    bundler: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.UNICHAIN]
-      .Bundler as Address,
+    bundler: '0x91231cDdD8d6C86Df602070a3081478e074b97b7' as Address,
     weth: '0x4200000000000000000000000000000000000006' as Address,
     uniswapV4Quoter: '0x333e3c607b141b18ff6de9f258db6e77fe7491e0' as Address,
   },
   [CHAIN_IDS.UNICHAIN_SEPOLIA]: {
     airlock: '0x651ab94B4777e2e4cdf96082d90C65bd947b73A4' as Address,
-    tokenFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.UNICHAIN_SEPOLIA]
-      .TokenFactory as Address,
+    tokenFactory: '0x82Ac010C67f70BACf7655cd8948a4AD92A173CAC' as Address,
     derc20V2Factory: getGeneratedAddress(
       CHAIN_IDS.UNICHAIN_SEPOLIA,
       'CloneDERC20VotesV2Factory',
@@ -591,16 +518,12 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     dopplerLens: '0x56dcd40a3f2d466f48e7f48bdbe5cc9b92ae4472' as Address,
     dopplerDeployer: '0x2f2bacd46d3f5c9ee052ab392b73711db89129db' as Address,
     poolManager: '0x00B036B58a818B1BC34d502D3fE730Db729e62AC' as Address,
-    v2Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.UNICHAIN_SEPOLIA]
-      .UniswapV2Migrator as Address,
-    v4Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.UNICHAIN_SEPOLIA]
-      .UniswapV4Migrator as Address,
-    noOpMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.UNICHAIN_SEPOLIA]
-      .NoOpMigrator as Address,
+    v2Migrator: '0x620e3fec244e913d73f2163623b62d02DB69638B' as Address,
+    v4Migrator: '0xb6D69eAA98E657bEEFF7ca4452768e6f707aa6b1' as Address,
+    noOpMigrator: '0x193F48A45B6025dDeD10bc4BaeEF65c833696387' as Address,
     governanceFactory: '0x1E4332EEfAE9e4967C2D186f7b2d439D778e81cC' as Address,
-    noOpGovernanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[
-      CHAIN_IDS.UNICHAIN_SEPOLIA
-    ].NoOpGovernanceFactory as Address,
+    noOpGovernanceFactory:
+      '0x7E5D336A6E9e453c9f02E5102CC039E015Fd8fb8' as Address,
     streamableFeesLocker: ZERO_ADDRESS, // Not yet deployed
     universalRouter: '0xf70536B3bcC1bD1a972dc186A2cf84cC6da6Be5D' as Address,
     univ2Router02: '0x284f11109359a7e1306c3e447ef14d38400063ff' as Address,
@@ -610,10 +533,8 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     uniswapV4Quoter: '0x56dcd40a3f2d466f48e7f48bdbe5cc9b92ae4472' as Address,
   },
   [CHAIN_IDS.MONAD_TESTNET]: {
-    airlock: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_TESTNET]
-      .Airlock as Address,
-    tokenFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_TESTNET]
-      .TokenFactory80 as Address,
+    airlock: '0xDe3599a2eC440B296373a983C85C365DA55d9dFA' as Address,
+    tokenFactory: '0xf0B5141dD9096254B2ca624dff26024f46087229' as Address,
     derc20V2Factory: getGeneratedAddress(
       CHAIN_IDS.MONAD_TESTNET,
       'CloneDERC20VotesV2Factory',
@@ -622,49 +543,33 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       CHAIN_IDS.MONAD_TESTNET,
       'CloneDERC20VotesV2',
     ),
-    v3Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_TESTNET]
-      .UniswapV3Initializer as Address,
+    v3Initializer: '0x9F4e56be80f08ba1A2445645EFa6d231E27b43ec' as Address,
     v3Quoter: ZERO_ADDRESS,
-    v4Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_TESTNET]
-      .UniswapV4Initializer as Address,
-    dopplerLens: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_TESTNET]
-      .DopplerLensQuoter as Address,
-    dopplerDeployer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_TESTNET]
-      .DopplerDeployer as Address,
+    v4Initializer: '0x53b4c21a6Cb61D64F636ABBfa6E8E90E6558e8ad' as Address,
+    dopplerLens: '0x2F2BAcd46d3F5c9EE052Ab392b73711dB89129DB' as Address,
+    dopplerDeployer: '0xb35469ee64A87Afd19B31615094fE3962d73e421' as Address,
     poolManager: '0xe93882f395B0b24180855c68Ab19B2d78573ceBc' as Address,
-    v2Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_TESTNET]
-      .UniswapV2Migrator as Address,
+    v2Migrator: '0x43d0D97EC9241A8F05A264f94B82A1d2E600f2B3' as Address,
     v4Migrator: '0xBEd386a1Fc62B6598c9b8d2BF634471B6Fe75EB7' as Address,
-    noOpMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_TESTNET]
-      .NoOpMigrator as Address,
-    governanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_TESTNET]
-      .GovernanceFactory as Address,
-    noOpGovernanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[
-      CHAIN_IDS.MONAD_TESTNET
-    ].NoOpGovernanceFactory as Address,
+    noOpMigrator: '0x5CadB034267751a364dDD4d321C99E07A307f915' as Address,
+    governanceFactory: '0x014E1c0bd34f3B10546E554CB33B3293fECDD056' as Address,
+    noOpGovernanceFactory:
+      '0x094D926A969B3024ca46D2186BF13FD5CDBA9CE2' as Address,
     streamableFeesLocker:
       '0x91231cDdD8d6C86Df602070a3081478e074b97b7' as Address, // Not yet deployed
     universalRouter: ZERO_ADDRESS,
     univ2Router02: ZERO_ADDRESS,
     permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3' as Address,
-    bundler: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_TESTNET]
-      .Bundler as Address,
+    bundler: '0xf6023127f6E937091D5B605680056A6D27524bad' as Address,
     weth: ZERO_ADDRESS, // TODO: Get Monad Testnet weth
     uniswapV4Quoter: ZERO_ADDRESS,
   },
   [CHAIN_IDS.MONAD_MAINNET]: {
     airlock: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_MAINNET]
       .Airlock as Address,
-    tokenFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_MAINNET]
-      .TokenFactory80 as Address,
-    derc20V2Factory: getGeneratedAddress(
-      CHAIN_IDS.MONAD_MAINNET,
-      'CloneDERC20VotesV2Factory',
-    ),
-    derc20V2Implementation: getGeneratedAddress(
-      CHAIN_IDS.MONAD_MAINNET,
-      'CloneDERC20VotesV2',
-    ),
+    tokenFactory: '0xf0B5141dD9096254B2ca624dff26024f46087229' as Address,
+    derc20V2Factory: '0x16F5ACB64F4FA17296E942C51d3395aDC318f9e1',
+    derc20V2Implementation: '0x4BBfed1c27CDE12eF6638251D81ab4e3be7556b7',
     dopplerERC20V1Factory: getGeneratedAddress(
       CHAIN_IDS.MONAD_MAINNET,
       'DopplerERC20V1Factory',
@@ -684,16 +589,12 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     dopplerDeployer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_MAINNET]
       .DopplerDeployer as Address,
     poolManager: '0x188d586ddcf52439676ca21a244753fa19f9ea8e' as Address,
-    v2Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_MAINNET]
-      .UniswapV2Migrator as Address,
+    v2Migrator: '0x136191B46478cAB023cbC01a36160C4Aad81677a' as Address,
     v2MigratorSplit: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_MAINNET]
       .UniswapV2MigratorSplit as Address,
-    v4Migrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_MAINNET]
-      .UniswapV4Migrator as Address,
-    v4MigratorSplit: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_MAINNET]
-      .UniswapV4MigratorSplit as Address,
-    v4MigratorHook: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_MAINNET]
-      .UniswapV4MigratorHook as Address,
+    v4Migrator: '0x44bf742e57cd8cF23ABbc8dab2c44e2a3228356E' as Address,
+    v4MigratorSplit: '0xa1b06BE4f2fC347d194240D79EDa9F40CCAd9732' as Address,
+    v4MigratorHook: '0x3E4c689BBf33b37106eBC13Db8aa5BF13a25e500' as Address,
     noOpMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_MAINNET]
       .NoOpMigrator as Address,
     governanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_MAINNET]
@@ -706,9 +607,8 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     ].LaunchpadGovernanceFactory as Address,
     topUpDistributor: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_MAINNET]
       .TopUpDistributor as Address,
-    v4ScheduledMulticurveInitializer: GENERATED_DOPPLER_DEPLOYMENTS[
-      CHAIN_IDS.MONAD_MAINNET
-    ].UniswapV4ScheduledMulticurveInitializer as Address,
+    v4ScheduledMulticurveInitializer:
+      '0xCe3099B2F07029b086E5e92a1573C5f5A3071783' as Address,
     dopplerHookInitializer: GENERATED_DOPPLER_DEPLOYMENTS[
       CHAIN_IDS.MONAD_MAINNET
     ].DopplerHookInitializer as Address,
@@ -718,8 +618,8 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     rehypeDopplerHook: getRehypeDopplerHookInitializerAddress(
       CHAIN_IDS.MONAD_MAINNET,
     ),
-    streamableFeesLocker: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_MAINNET]
-      .StreamableFeesLocker as Address,
+    streamableFeesLocker:
+      '0x63f8C8F9beFaab2FaCD7Ece0b0242f78B920Ee90' as Address,
     streamableFeesLockerV2: getGeneratedAddress(
       CHAIN_IDS.MONAD_MAINNET,
       'StreamableFeesLockerV2',

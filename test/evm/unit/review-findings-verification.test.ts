@@ -12,7 +12,6 @@ import fs from 'fs';
 import path from 'path';
 import { type Address } from 'viem';
 import { ADDRESSES, CHAIN_IDS } from '../../../src/evm/addresses';
-import { GENERATED_DOPPLER_DEPLOYMENTS } from '../../../src/evm/deployments.generated';
 import {
   OPENING_AUCTION_PHASE_NOT_STARTED,
   OPENING_AUCTION_PHASE_ACTIVE,
@@ -58,28 +57,20 @@ describe('C1: Runtime values must not be exported as type-only', () => {
 // ============================================================================
 // C2: INK chain Airlock address mismatch
 // ============================================================================
-describe('C2: INK Airlock address should match generated deployment', () => {
-  it('INK airlock address should match GENERATED_DOPPLER_DEPLOYMENTS', () => {
+describe('C2: INK Airlock address should remain pinned', () => {
+  it('INK airlock address should match the legacy deployment', () => {
     const inkAddresses = ADDRESSES[CHAIN_IDS.INK];
-    const generatedInk = (
-      GENERATED_DOPPLER_DEPLOYMENTS as Record<string, Record<string, string>>
-    )[String(CHAIN_IDS.INK)];
 
-    // The hardcoded INK airlock is 0x014E... but the generated one is 0x660e...
-    // 0x014E... is actually INK's UniswapV4Initializer
     expect(inkAddresses.airlock.toLowerCase()).toBe(
-      generatedInk.Airlock.toLowerCase(),
+      '0x660eaaedebc968f8f3694354fa8ec0b4c5ba8d12',
     );
   });
 
   it('INK airlock should NOT be the UniswapV4Initializer address', () => {
     const inkAddresses = ADDRESSES[CHAIN_IDS.INK];
-    const generatedInk = (
-      GENERATED_DOPPLER_DEPLOYMENTS as Record<string, Record<string, string>>
-    )[String(CHAIN_IDS.INK)];
 
     expect(inkAddresses.airlock.toLowerCase()).not.toBe(
-      generatedInk.UniswapV4Initializer.toLowerCase(),
+      '0x014e1c0bd34f3b10546e554cb33b3293fecdd056',
     );
   });
 });
@@ -225,23 +216,17 @@ describe('H6: Unichain Sepolia v2Migrator and v4Migrator should be different', (
     );
   });
 
-  it('v2Migrator should match generated deployment', () => {
-    const generated = (
-      GENERATED_DOPPLER_DEPLOYMENTS as Record<string, Record<string, string>>
-    )[String(CHAIN_IDS.UNICHAIN_SEPOLIA)];
+  it('v2Migrator should match the legacy deployment', () => {
     const addresses = ADDRESSES[CHAIN_IDS.UNICHAIN_SEPOLIA];
     expect(addresses.v2Migrator.toLowerCase()).toBe(
-      generated.UniswapV2Migrator.toLowerCase(),
+      '0x620e3fec244e913d73f2163623b62d02db69638b',
     );
   });
 
-  it('v4Migrator should match generated deployment', () => {
-    const generated = (
-      GENERATED_DOPPLER_DEPLOYMENTS as Record<string, Record<string, string>>
-    )[String(CHAIN_IDS.UNICHAIN_SEPOLIA)];
+  it('v4Migrator should match the legacy deployment', () => {
     const addresses = ADDRESSES[CHAIN_IDS.UNICHAIN_SEPOLIA];
     expect(addresses.v4Migrator.toLowerCase()).toBe(
-      generated.UniswapV4Migrator.toLowerCase(),
+      '0xb6d69eaa98e657beeff7ca4452768e6f707aa6b1',
     );
   });
 });
