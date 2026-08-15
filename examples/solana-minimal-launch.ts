@@ -99,10 +99,7 @@ async function main(): Promise<void> {
     '  Phase:              ',
     initializer.phaseLabel(launchAccount.phase),
   );
-  console.log(
-    '  Quote deposited:    ',
-    launchAccount.quoteDeposited.toString(),
-  );
+  console.log('  Created at:          ', launchAccount.createdAt.toString());
   console.log(
     '  Curve virtual base: ',
     launchAccount.curveVirtualBase.toString(),

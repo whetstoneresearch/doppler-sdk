@@ -189,9 +189,8 @@ async function main() {
         launchAccount.curveVirtualQuote.toString(),
       );
       console.log(
-        '  Quote deposited:    ',
-        launchAccount.quoteDeposited.toString(),
-        'lamports',
+        '  Created at:          ',
+        launchAccount.createdAt.toString(),
       );
       console.log(`  Graduation at:       ${MIN_SOL_RAISE} SOL raised`);
 

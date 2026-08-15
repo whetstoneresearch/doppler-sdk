@@ -184,6 +184,8 @@ export type CreateLaunchInput = {
   dynamicFee?: DynamicFeeScheduleArgs | null;
   migration?: boolean | CreateLaunchMigrationConfig | null;
   metadata?: LaunchMetadata | null;
+  /** Pre-initialized immutable vesting config for the reserved base allocation. */
+  vestingConfig?: Address;
   feeBeneficiaries?: InitializeLaunchParams['feeBeneficiaries'];
   allowBuy?: boolean;
   allowSell?: boolean;
@@ -612,6 +614,7 @@ export async function createLaunchWithResolvedHook(
       rent: input.rent ?? SYSVAR_RENT_ADDRESS,
       metadataAccount: addresses.metadataAccount,
       metadataProgram: input.metadataProgram ?? TOKEN_METADATA_PROGRAM_ID,
+      vestingConfig: input.vestingConfig,
       hookCreateRemainingAccounts: hook.createRemainingAccounts,
     },
     {

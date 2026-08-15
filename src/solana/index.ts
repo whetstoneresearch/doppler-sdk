@@ -10,6 +10,7 @@ export * as dopplerLaunchHookV2 from './dopplerLaunchHookV2/index.js';
 export * as dopplerRehypeRouterV1 from './dopplerRehypeRouterV1/index.js';
 export * as feeRehypothecation from './feeRehypothecation/index.js';
 export * as initializer from './initializer/index.js';
+export * as vesting from './vesting/index.js';
 export * as cpmmMigrator from './migrators/cpmmMigrator/index.js';
 export * as predictionMigrator from './migrators/predictionMigrator/index.js';
 export * as trustedOracle from './trustedOracle/index.js';

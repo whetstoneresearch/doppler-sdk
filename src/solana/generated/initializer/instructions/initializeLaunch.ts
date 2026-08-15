@@ -95,6 +95,7 @@ export type InitializeLaunchInstruction<
     'SysvarRent111111111111111111111111111111111',
   TAccountMetadataAccount extends string | AccountMeta<string> = string,
   TAccountMetadataProgram extends string | AccountMeta<string> = string,
+  TAccountVestingConfig extends string | AccountMeta<string> = string,
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -159,6 +160,9 @@ export type InitializeLaunchInstruction<
       TAccountMetadataProgram extends string
         ? ReadonlyAccount<TAccountMetadataProgram>
         : TAccountMetadataProgram,
+      TAccountVestingConfig extends string
+        ? ReadonlyAccount<TAccountVestingConfig>
+        : TAccountVestingConfig,
       ...TRemainingAccounts,
     ]
   >;
@@ -380,6 +384,7 @@ export type InitializeLaunchAsyncInput<
   TAccountRent extends string = string,
   TAccountMetadataAccount extends string = string,
   TAccountMetadataProgram extends string = string,
+  TAccountVestingConfig extends string = string,
 > = {
   config?: Address<TAccountConfig>;
   launch: Address<TAccountLaunch>;
@@ -405,6 +410,8 @@ export type InitializeLaunchAsyncInput<
   metadataAccount?: Address<TAccountMetadataAccount>;
   /** Metaplex Token Metadata program. */
   metadataProgram?: Address<TAccountMetadataProgram>;
+  /** Optional immutable vesting configuration for the reserved base allocation. */
+  vestingConfig?: Address<TAccountVestingConfig>;
   namespace: InitializeLaunchInstructionDataArgs['namespace'];
   launchId: InitializeLaunchInstructionDataArgs['launchId'];
   baseDecimals: InitializeLaunchInstructionDataArgs['baseDecimals'];
@@ -452,6 +459,7 @@ export async function getInitializeLaunchInstructionAsync<
   TAccountRent extends string,
   TAccountMetadataAccount extends string,
   TAccountMetadataProgram extends string,
+  TAccountVestingConfig extends string,
   TProgramAddress extends Address = typeof INITIALIZER_PROGRAM_ADDRESS,
 >(
   input: InitializeLaunchAsyncInput<
@@ -472,7 +480,8 @@ export async function getInitializeLaunchInstructionAsync<
     TAccountSystemProgram,
     TAccountRent,
     TAccountMetadataAccount,
-    TAccountMetadataProgram
+    TAccountMetadataProgram,
+    TAccountVestingConfig
   >,
   config?: { programAddress?: TProgramAddress },
 ): Promise<
@@ -495,7 +504,8 @@ export async function getInitializeLaunchInstructionAsync<
     TAccountSystemProgram,
     TAccountRent,
     TAccountMetadataAccount,
-    TAccountMetadataProgram
+    TAccountMetadataProgram,
+    TAccountVestingConfig
   >
 > {
   // Program address.
@@ -536,6 +546,7 @@ export async function getInitializeLaunchInstructionAsync<
       value: input.metadataProgram ?? null,
       isWritable: false,
     },
+    vestingConfig: { value: input.vestingConfig ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -622,6 +633,7 @@ export async function getInitializeLaunchInstructionAsync<
       getAccountMeta('rent', accounts.rent),
       getAccountMeta('metadataAccount', accounts.metadataAccount),
       getAccountMeta('metadataProgram', accounts.metadataProgram),
+      getAccountMeta('vestingConfig', accounts.vestingConfig),
     ],
     data: getInitializeLaunchInstructionDataEncoder().encode(
       args as InitializeLaunchInstructionDataArgs,
@@ -646,7 +658,8 @@ export async function getInitializeLaunchInstructionAsync<
     TAccountSystemProgram,
     TAccountRent,
     TAccountMetadataAccount,
-    TAccountMetadataProgram
+    TAccountMetadataProgram,
+    TAccountVestingConfig
   >);
 }
 
@@ -669,6 +682,7 @@ export type InitializeLaunchInput<
   TAccountRent extends string = string,
   TAccountMetadataAccount extends string = string,
   TAccountMetadataProgram extends string = string,
+  TAccountVestingConfig extends string = string,
 > = {
   config: Address<TAccountConfig>;
   launch: Address<TAccountLaunch>;
@@ -694,6 +708,8 @@ export type InitializeLaunchInput<
   metadataAccount?: Address<TAccountMetadataAccount>;
   /** Metaplex Token Metadata program. */
   metadataProgram?: Address<TAccountMetadataProgram>;
+  /** Optional immutable vesting configuration for the reserved base allocation. */
+  vestingConfig?: Address<TAccountVestingConfig>;
   namespace: InitializeLaunchInstructionDataArgs['namespace'];
   launchId: InitializeLaunchInstructionDataArgs['launchId'];
   baseDecimals: InitializeLaunchInstructionDataArgs['baseDecimals'];
@@ -741,6 +757,7 @@ export function getInitializeLaunchInstruction<
   TAccountRent extends string,
   TAccountMetadataAccount extends string,
   TAccountMetadataProgram extends string,
+  TAccountVestingConfig extends string,
   TProgramAddress extends Address = typeof INITIALIZER_PROGRAM_ADDRESS,
 >(
   input: InitializeLaunchInput<
@@ -761,7 +778,8 @@ export function getInitializeLaunchInstruction<
     TAccountSystemProgram,
     TAccountRent,
     TAccountMetadataAccount,
-    TAccountMetadataProgram
+    TAccountMetadataProgram,
+    TAccountVestingConfig
   >,
   config?: { programAddress?: TProgramAddress },
 ): InitializeLaunchInstruction<
@@ -783,7 +801,8 @@ export function getInitializeLaunchInstruction<
   TAccountSystemProgram,
   TAccountRent,
   TAccountMetadataAccount,
-  TAccountMetadataProgram
+  TAccountMetadataProgram,
+  TAccountVestingConfig
 > {
   // Program address.
   const programAddress = config?.programAddress ?? INITIALIZER_PROGRAM_ADDRESS;
@@ -823,6 +842,7 @@ export function getInitializeLaunchInstruction<
       value: input.metadataProgram ?? null,
       isWritable: false,
     },
+    vestingConfig: { value: input.vestingConfig ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -863,6 +883,7 @@ export function getInitializeLaunchInstruction<
       getAccountMeta('rent', accounts.rent),
       getAccountMeta('metadataAccount', accounts.metadataAccount),
       getAccountMeta('metadataProgram', accounts.metadataProgram),
+      getAccountMeta('vestingConfig', accounts.vestingConfig),
     ],
     data: getInitializeLaunchInstructionDataEncoder().encode(
       args as InitializeLaunchInstructionDataArgs,
@@ -887,7 +908,8 @@ export function getInitializeLaunchInstruction<
     TAccountSystemProgram,
     TAccountRent,
     TAccountMetadataAccount,
-    TAccountMetadataProgram
+    TAccountMetadataProgram,
+    TAccountVestingConfig
   >);
 }
 
@@ -921,6 +943,8 @@ export type ParsedInitializeLaunchInstruction<
     metadataAccount?: TAccountMetas[16] | undefined;
     /** Metaplex Token Metadata program. */
     metadataProgram?: TAccountMetas[17] | undefined;
+    /** Optional immutable vesting configuration for the reserved base allocation. */
+    vestingConfig?: TAccountMetas[18] | undefined;
   };
   data: InitializeLaunchInstructionData;
 };
@@ -933,12 +957,12 @@ export function parseInitializeLaunchInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedInitializeLaunchInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 18) {
+  if (instruction.accounts.length < 19) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 18,
+        expectedAccountMetas: 19,
       },
     );
   }
@@ -975,6 +999,7 @@ export function parseInitializeLaunchInstruction<
       rent: getNextAccount(),
       metadataAccount: getNextOptionalAccount(),
       metadataProgram: getNextOptionalAccount(),
+      vestingConfig: getNextOptionalAccount(),
     },
     data: getInitializeLaunchInstructionDataDecoder().decode(instruction.data),
   };
