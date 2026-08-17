@@ -176,6 +176,8 @@ compile_only_examples=(
   examples/solana-create-spot-pool.ts
   examples/solana-fee-rehypothecation-launch.ts
   examples/solana-fee-rehypothecation-settle-and-claim.ts
+  examples/solana-vesting-launch.ts
+  examples/solana-vesting-claim.ts
 )
 
 declare -A classified_examples=()

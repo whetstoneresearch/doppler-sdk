@@ -103,6 +103,8 @@ For runnable Solana flows, configure `examples/.env` and run with `pnpm tsx`, fo
 - [examples/solana-usdc-cosigner-gated-buy.ts](./examples/solana-usdc-cosigner-gated-buy.ts)
 - [examples/solana-prediction-market.ts](./examples/solana-prediction-market.ts)
 - [examples/solana-swap.ts](./examples/solana-swap.ts)
+- [examples/solana-vesting-launch.ts](./examples/solana-vesting-launch.ts)
+- [examples/solana-vesting-claim.ts](./examples/solana-vesting-claim.ts)
 
 To implement an independently deployed callback program, see
 [Building a custom Solana hook](./docs/solana-custom-hooks.md) and the

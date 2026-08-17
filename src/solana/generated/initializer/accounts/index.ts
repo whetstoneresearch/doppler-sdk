@@ -11,3 +11,4 @@ export * from './launch';
 export * from './launchFeeState';
 export * from './pool';
 export * from './position';
+export * from './vestingConfig';

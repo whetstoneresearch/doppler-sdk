@@ -59,7 +59,7 @@ export type ClaimReceipt = {
   claimer: Address;
   /** Total winner tokens burned by this user */
   burnedAmount: bigint;
-  /** Reward debt for accumulator accounting (scaled by ACC_SCALE) */
+  /** Raw quote already paid to this receipt */
   rewardDebt: bigint;
   /** Bump seed for this PDA */
   bump: number;
@@ -74,7 +74,7 @@ export type ClaimReceiptArgs = {
   claimer: Address;
   /** Total winner tokens burned by this user */
   burnedAmount: number | bigint;
-  /** Reward debt for accumulator accounting (scaled by ACC_SCALE) */
+  /** Raw quote already paid to this receipt */
   rewardDebt: number | bigint;
   /** Bump seed for this PDA */
   bump: number;

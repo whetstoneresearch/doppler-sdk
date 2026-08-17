@@ -6,7 +6,6 @@
  * @see https://github.com/codama-idl/codama
  */
 
-export * from './accumulatorUpdated';
 export * from './entryMigrated';
 export * from './entryRegistered';
 export * from './marketCreated';

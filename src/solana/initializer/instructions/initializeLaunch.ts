@@ -115,6 +115,8 @@ export interface InitializeLaunchAccounts {
   /** Required when args.metadataName is non-empty. Derive with getTokenMetadataAddress(baseMint). */
   metadataAccount?: Address;
   metadataProgram?: Address;
+  /** Immutable vesting config committed to this launch. */
+  vestingConfig?: Address;
   /** Required when migratorProgram is the CPMM migrator. */
   cpmmConfig?: Address;
   /**
@@ -167,6 +169,7 @@ export async function createInitializeLaunchInstruction(
     rent,
     metadataAccount,
     metadataProgram = TOKEN_METADATA_PROGRAM_ID,
+    vestingConfig,
     hookCreateRemainingAccounts = [],
   } = accounts;
 
@@ -237,6 +240,16 @@ export async function createInitializeLaunchInstruction(
   } else {
     keys.push({ address: programId, role: AccountRole.READONLY });
     keys.push({ address: programId, role: AccountRole.READONLY });
+  }
+
+  // Older Initializer deployments do not have the optional vesting account.
+  // A supplied config identifies the current layout for custom deployments.
+  if (programId === INITIALIZER_PROGRAM_ID || vestingConfig) {
+    keys.push(
+      vestingConfig
+        ? { address: vestingConfig, role: AccountRole.READONLY }
+        : { address: programId, role: AccountRole.READONLY },
+    );
   }
 
   const encoderArgs: InitializeLaunchArgsArgs = {

@@ -178,15 +178,15 @@ describe('initializer instructions', () => {
     );
 
     expect(ix.programAddress).toBe(initializer.INITIALIZER_PROGRAM_ID);
-    // 15 required/static accounts + hook and metadata placeholders +
+    // 15 required/static accounts + hook, metadata, and vesting placeholders +
     // 2 auto-appended CPMM migrator remaining accounts:
     // cpmmMigrationState and cpmmConfig.
-    expect(ix.accounts).toHaveLength(20);
+    expect(ix.accounts).toHaveLength(21);
 
     // Account ordering: config, launch, launchAuthority, baseMint, quoteMint, baseVault, quoteVault, launchFeeState, payer,
     // then optional authority, optional hookProgram, optional migratorProgram,
-    // then base/quote token, system/rent, optional metadata placeholders, then auto-appended
-    // cpmmMigrationState and cpmmConfig.
+    // then base/quote token, system/rent, optional metadata and vesting placeholders,
+    // then auto-appended cpmmMigrationState and cpmmConfig.
     expect(ix.accounts![0].address).toBe(config);
     expect(ix.accounts![1].address).toBe(launch);
     expect(ix.accounts![2].address).toBe(launchAuthority);
@@ -205,10 +205,11 @@ describe('initializer instructions', () => {
     expect(ix.accounts![15].address).toBe(SYSVAR_RENT_PUBKEY);
     expect(ix.accounts![16].address).toBe(initializer.INITIALIZER_PROGRAM_ID);
     expect(ix.accounts![17].address).toBe(initializer.INITIALIZER_PROGRAM_ID);
+    expect(ix.accounts![18].address).toBe(initializer.INITIALIZER_PROGRAM_ID);
     const [expectedCpmmMigratorState] =
       await cpmmMigrator.getCpmmMigratorStateAddress(launch);
-    expect(ix.accounts![18].address).toBe(expectedCpmmMigratorState);
-    expect(ix.accounts![19].address).toBe(cpmmConfig);
+    expect(ix.accounts![19].address).toBe(expectedCpmmMigratorState);
+    expect(ix.accounts![20].address).toBe(cpmmConfig);
 
     // Ensure signer metas were attached for the signer accounts.
     for (const idx of [3, 5, 6, 8]) {
@@ -298,13 +299,14 @@ describe('initializer instructions', () => {
       },
     );
 
-    expect(ix.accounts).toHaveLength(21);
+    expect(ix.accounts).toHaveLength(22);
     expect(ix.accounts![16].address).toBe(metadataAccount);
     expect(ix.accounts![17].address).toBe(TOKEN_METADATA_PROGRAM_ID);
-    expect(ix.accounts![18].address).toBe(SYSVAR_INSTRUCTIONS_ADDRESS);
-    expect(ix.accounts![18].role).toBe(AccountRole.READONLY);
-    expect(ix.accounts![19].address).toBe(expectedCpmmMigratorState);
-    expect(ix.accounts![20].address).toBe(cpmmConfig);
+    expect(ix.accounts![18].address).toBe(initializer.INITIALIZER_PROGRAM_ID);
+    expect(ix.accounts![19].address).toBe(SYSVAR_INSTRUCTIONS_ADDRESS);
+    expect(ix.accounts![19].role).toBe(AccountRole.READONLY);
+    expect(ix.accounts![20].address).toBe(expectedCpmmMigratorState);
+    expect(ix.accounts![21].address).toBe(cpmmConfig);
   });
 
   it('prepares initializeLaunch from launch domain inputs', async () => {
@@ -379,7 +381,7 @@ describe('initializer instructions', () => {
 
     const ix = prepared.instruction;
     expect(ix.programAddress).toBe(initializer.INITIALIZER_PROGRAM_ID);
-    expect(ix.accounts).toHaveLength(21);
+    expect(ix.accounts).toHaveLength(22);
     expect(ix.accounts![0].address).toBe(config);
     expect(ix.accounts![1].address).toBe(expectedLaunch);
     expect(ix.accounts![2].address).toBe(expectedLaunchAuthority);
@@ -398,9 +400,10 @@ describe('initializer instructions', () => {
     expect(ix.accounts![13].address).toBe(TOKEN_PROGRAM_ADDRESS);
     expect(ix.accounts![16].address).toBe(expectedMetadataAccount);
     expect(ix.accounts![17].address).toBe(TOKEN_METADATA_PROGRAM_ID);
-    expect(ix.accounts![18].address).toBe(SYSVAR_INSTRUCTIONS_ADDRESS);
-    expect(ix.accounts![19].address).toBe(expectedCpmmMigratorState);
-    expect(ix.accounts![20].address).toBe(prepared.cpmmMigration!.cpmmConfig);
+    expect(ix.accounts![18].address).toBe(initializer.INITIALIZER_PROGRAM_ID);
+    expect(ix.accounts![19].address).toBe(SYSVAR_INSTRUCTIONS_ADDRESS);
+    expect(ix.accounts![20].address).toBe(expectedCpmmMigratorState);
+    expect(ix.accounts![21].address).toBe(prepared.cpmmMigration!.cpmmConfig);
     expect(prepared.cpmmMigration!.cpmmMigrationState).toBe(
       expectedCpmmMigratorState,
     );
@@ -509,17 +512,17 @@ describe('initializer instructions', () => {
     });
 
     const ix = prepared.instruction;
-    expect(ix.accounts).toHaveLength(20);
+    expect(ix.accounts).toHaveLength(21);
     expect(ix.accounts![10].address).toBe(
       dopplerLaunchHookV1.DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ID,
     );
     expect(ix.accounts![11].address).toBe(
       cpmmMigrator.CPMM_MIGRATOR_PROGRAM_ID,
     );
-    expect(ix.accounts![18].address).toBe(
+    expect(ix.accounts![19].address).toBe(
       prepared.cpmmMigration!.cpmmMigrationState,
     );
-    expect(ix.accounts![19].address).toBe(prepared.cpmmMigration!.cpmmConfig);
+    expect(ix.accounts![20].address).toBe(prepared.cpmmMigration!.cpmmConfig);
 
     if (!ix.data) {
       throw new Error('initialize launch instruction data missing');
@@ -586,7 +589,7 @@ describe('initializer instructions', () => {
     const data = getInitializeLaunchInstructionDataDecoder().decode(ix.data);
 
     expect(prepared.namespace).toBe(admin.address);
-    expect(ix.accounts).toHaveLength(18);
+    expect(ix.accounts).toHaveLength(19);
     expect(ix.accounts![10].address).toBe(
       dopplerLaunchHookV1.DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ID,
     );
@@ -664,7 +667,7 @@ describe('initializer instructions', () => {
     const data = getInitializeLaunchInstructionDataDecoder().decode(ix.data);
 
     expect(prepared.namespace).toBe(SYSTEM_PROGRAM_ADDRESS);
-    expect(ix.accounts).toHaveLength(18);
+    expect(ix.accounts).toHaveLength(19);
     expect(ix.accounts![10].address).toBe(
       dopplerLaunchHookV1.DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ID,
     );
@@ -739,7 +742,7 @@ describe('initializer instructions', () => {
     });
 
     const ix = prepared.instruction;
-    expect(ix.accounts).toHaveLength(18);
+    expect(ix.accounts).toHaveLength(19);
     expect(ix.accounts![10].address).toBe(
       dopplerLaunchHookV1.DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ID,
     );

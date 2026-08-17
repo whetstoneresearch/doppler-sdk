@@ -1,0 +1,5 @@
+export const MAX_VESTING_SCHEDULES = 8;
+export const MAX_VESTING_ALLOCATIONS = 16;
+export const MIN_VESTING_DURATION_SECONDS = 86_400n;
+export const MAX_VESTED_BPS = 8_000n;
+export const VESTING_BPS_DENOMINATOR = 10_000n;

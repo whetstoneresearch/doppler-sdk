@@ -217,11 +217,7 @@ async function main(): Promise<void> {
   console.log('  Stored hook payload len:', hookPayload.length);
   console.log('  Normalized start time: ', normalizedStartTime.toString());
   console.log('  Static swap fee:       ', launchAccount.swapFeeBps, 'bps');
-  console.log(
-    '  Quote deposited:       ',
-    launchAccount.quoteDeposited.toString(),
-    'lamports',
-  );
+  console.log('  Created at:            ', launchAccount.createdAt.toString());
 }
 
 main().catch((error: unknown) => {

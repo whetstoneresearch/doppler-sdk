@@ -180,9 +180,8 @@ async function main() {
         initializer.phaseLabel(launchAccount.phase),
       );
       console.log(
-        '  Quote deposited:    ',
-        launchAccount.quoteDeposited.toString(),
-        'lamports',
+        '  Created at:          ',
+        launchAccount.createdAt.toString(),
       );
       console.log('  Graduates at:       ', MIN_SOL_RAISE, 'SOL raised');
       // Token allocation

@@ -201,7 +201,7 @@ async function main() {
     console.log(`  Found ${ownedLaunches.length} launch(es)`);
     for (const { address: addr, account } of ownedLaunches) {
       console.log(
-        `  ${addr}  phase=${initializer.phaseLabel(account.phase)}  quoteDeposited=${account.quoteDeposited}`,
+        `  ${addr}  phase=${initializer.phaseLabel(account.phase)}  createdAt=${account.createdAt}`,
       );
     }
     console.log('');
@@ -370,7 +370,7 @@ async function main() {
     }
 
     console.log(`  Final phase: ${initializer.phaseLabel(finalLaunch.phase)}`);
-    console.log(`  Quote deposited: ${finalLaunch.quoteDeposited} USDC atoms`);
+    console.log(`  Created at: ${finalLaunch.createdAt}`);
     console.log('');
 
     if (finalLaunch.phase === initializer.PHASE_MIGRATED) {

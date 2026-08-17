@@ -9,6 +9,7 @@ export * as cpmmMigrator from './cpmmMigrator/index.js';
 export * as dopplerLaunchHookV1 from './dopplerLaunchHookV1/index.js';
 export * as dopplerLaunchHookV2 from './dopplerLaunchHookV2/index.js';
 export * as dopplerRehypeRouterV1 from './dopplerRehypeRouterV1/index.js';
+export * as dopplerVesting from './dopplerVesting/index.js';
 export * as initializer from './initializer/index.js';
 export * as predictionMigrator from './predictionMigrator/index.js';
 export * as trustedOracle from './trustedOracle/index.js';

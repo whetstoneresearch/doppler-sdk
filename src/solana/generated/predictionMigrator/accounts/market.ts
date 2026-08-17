@@ -23,8 +23,6 @@ import {
   getBytesEncoder,
   getStructDecoder,
   getStructEncoder,
-  getU128Decoder,
-  getU128Encoder,
   getU64Decoder,
   getU64Encoder,
   getU8Decoder,
@@ -67,11 +65,6 @@ export type Market = {
   winnerMint: Address;
   /** Claimable supply of winner token (fixed after winning entry migrates) */
   claimableSupply: bigint;
-  /**
-   * Scaled accumulator: total_pot * ACC_SCALE / claimable_supply
-   * This tracks quote per token and increases as losing entries migrate
-   */
-  accQuotePerToken: bigint;
   /** Whether the market has been resolved (winner determined) */
   isResolved: boolean;
   /** Bump seed for this PDA */
@@ -97,11 +90,6 @@ export type MarketArgs = {
   winnerMint: Address;
   /** Claimable supply of winner token (fixed after winning entry migrates) */
   claimableSupply: number | bigint;
-  /**
-   * Scaled accumulator: total_pot * ACC_SCALE / claimable_supply
-   * This tracks quote per token and increases as losing entries migrate
-   */
-  accQuotePerToken: number | bigint;
   /** Whether the market has been resolved (winner determined) */
   isResolved: boolean;
   /** Bump seed for this PDA */
@@ -124,7 +112,6 @@ export function getMarketEncoder(): FixedSizeEncoder<MarketArgs> {
       ['totalClaimed', getU64Encoder()],
       ['winnerMint', getAddressEncoder()],
       ['claimableSupply', getU64Encoder()],
-      ['accQuotePerToken', getU128Encoder()],
       ['isResolved', getBooleanEncoder()],
       ['bump', getU8Encoder()],
       ['marketAuthorityBump', getU8Encoder()],
@@ -145,7 +132,6 @@ export function getMarketDecoder(): FixedSizeDecoder<Market> {
     ['totalClaimed', getU64Decoder()],
     ['winnerMint', getAddressDecoder()],
     ['claimableSupply', getU64Decoder()],
-    ['accQuotePerToken', getU128Decoder()],
     ['isResolved', getBooleanDecoder()],
     ['bump', getU8Decoder()],
     ['marketAuthorityBump', getU8Decoder()],
@@ -212,5 +198,5 @@ export async function fetchAllMaybeMarket(
 }
 
 export function getMarketSize(): number {
-  return 208;
+  return 192;
 }
