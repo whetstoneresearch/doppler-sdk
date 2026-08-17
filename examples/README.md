@@ -98,7 +98,7 @@ Create a `dopplerERC20V1` token selected automatically from template-specific ba
 
 ### 12c. [Latest Multicurve Example](./multicurve-latest.ts)
 
-Create and simulate a Base multicurve launch using the default DopplerERC20V1 and DopplerHookInitializer paths, max-balance limits, Rehype fee routing, no-op governance and migration, fee beneficiaries, and multiple vesting distributions for one address. Falls back to Base's public RPC when `RPC_URL` is unset. Optionally broadcasts, previews or claims pool fees, and partially or fully releases vested tokens.
+Create and simulate a Base (default) or Arbitrum multicurve launch using the default DopplerERC20V1 and DopplerHookInitializer paths, max-balance limits, Rehype fee routing, no-op governance and migration, fee beneficiaries, and multiple vesting distributions for one address. Set `TARGET_CHAIN=arbitrum` for Arbitrum; when `RPC_URL` is unset, the example uses the selected chain's public RPC. Optionally broadcasts, previews or claims pool fees, and partially or fully releases vested tokens.
 
 ### 12d. [Multicurve DopplerERC20V1 Multi-Schedule Vesting + Governance](./multicurve-derc20v1-multi-vesting-governance.ts)
 

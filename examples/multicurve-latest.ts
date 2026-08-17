@@ -1,8 +1,9 @@
 /**
- * Example: Base multicurve launch using the current SDK defaults.
+ * Example: Base or Arbitrum multicurve launch using the current SDK defaults.
  *
  * Simulates by default. Set EXECUTE=1 to deploy, or ASSET_ADDRESS=0x...
  * to run post-launch reads/claims against an existing token.
+ * Set TARGET_CHAIN=arbitrum to target Arbitrum; Base remains the default.
  *
  * Optional writes:
  * - CLAIM_FEES=1
@@ -32,19 +33,36 @@ import {
   type Address,
 } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import { base } from 'viem/chains';
+import { arbitrum, base } from 'viem/chains';
 
 const tokenDecimals = 18;
+const TARGET_CHAINS = { arbitrum, base } as const;
+
+function getTargetChain() {
+  const targetChainName = process.env.TARGET_CHAIN?.toLowerCase() ?? 'base';
+  const targetChain =
+    TARGET_CHAINS[targetChainName as keyof typeof TARGET_CHAINS];
+  if (!targetChain) {
+    throw new Error(
+      `TARGET_CHAIN must be one of: ${Object.keys(TARGET_CHAINS).join(', ')}`,
+    );
+  }
+  return targetChain;
+}
 
 async function main(): Promise<void> {
   const privateKey = process.env.PRIVATE_KEY;
   if (!privateKey || !isHex(privateKey)) {
     throw new Error('PRIVATE_KEY must be a 0x-prefixed hex string');
   }
-  const rpcUrl = process.env.RPC_URL ?? base.rpcUrls.default.http[0];
+  const targetChain = getTargetChain();
+  const rpcUrl = process.env.RPC_URL ?? targetChain.rpcUrls.default.http[0];
+  if (!rpcUrl) {
+    throw new Error(`Set RPC_URL for ${targetChain.name}`);
+  }
 
   const account = privateKeyToAccount(privateKey);
-  const chainId = base.id;
+  const chainId = targetChain.id;
   const addresses = getAddresses(chainId);
   const rehypeDopplerHookInitializer = addresses.rehypeDopplerHookInitializer;
   if (!rehypeDopplerHookInitializer) {
@@ -77,11 +95,11 @@ async function main(): Promise<void> {
   }
 
   const publicClient = createPublicClient({
-    chain: base,
+    chain: targetChain,
     transport: http(rpcUrl),
   });
   const walletClient = createWalletClient({
-    chain: base,
+    chain: targetChain,
     transport: http(rpcUrl),
     account,
   });
@@ -187,6 +205,7 @@ async function main(): Promise<void> {
     .build();
 
   console.log('Multicurve latest example');
+  console.log('Target chain:', targetChain.name);
   console.log('Deployer:', account.address);
   console.log('Rehype fee beneficiaries:', rehypeFeeBeneficiaries);
 
