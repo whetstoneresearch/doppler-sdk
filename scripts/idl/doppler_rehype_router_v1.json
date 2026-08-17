@@ -845,6 +845,10 @@
         {
           "name": "gate_cosigner",
           "optional": true
+        },
+        {
+          "name": "cosign_gate_control",
+          "optional": true
         }
       ],
       "args": [
@@ -1860,11 +1864,15 @@
             "type": "u8"
           },
           {
+            "name": "vesting_enabled",
+            "type": "u8"
+          },
+          {
             "name": "_pad4",
             "type": {
               "array": [
                 "u8",
-                6
+                5
               ]
             }
           },
@@ -1877,8 +1885,8 @@
             }
           },
           {
-            "name": "quote_deposited",
-            "type": "u64"
+            "name": "created_at",
+            "type": "i64"
           },
           {
             "name": "_reserved",

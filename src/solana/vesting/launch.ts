@@ -4,43 +4,30 @@ import {
   type TransactionSigner,
 } from '@solana/kit';
 
-import { getAddressFromAddressOrSigner } from '../core/accounts.js';
 import {
   SYSTEM_PROGRAM_ADDRESS,
   TOKEN_PROGRAM_ADDRESS,
 } from '../core/constants.js';
-import {
-  DOPPLER_VESTING_PROGRAM_ADDRESS,
-  getInitializeVestingInstructionAsync,
-  type VestingAllocationInputArgs,
-  type VestingScheduleArgs,
-} from '../generated/dopplerVesting/index.js';
-import { getFundVestingInstructionAsync } from '../generated/initializer/index.js';
+import { DOPPLER_VESTING_PROGRAM_ADDRESS } from '../generated/dopplerVesting/index.js';
 import {
   createLaunch,
   createLaunchId,
   deriveCreateLaunchAddresses,
   type CreateLaunchAccountSigners,
   type CreateLaunchAddresses,
+  type CreateLaunchCpmmMigrationConfig,
   type CreateLaunchInput,
   type LaunchSupply,
 } from '../initializer/createLaunch.js';
 import { INITIALIZER_PROGRAM_ID } from '../initializer/constants.js';
 import {
-  MAX_VESTED_BPS,
-  MAX_VESTING_ALLOCATIONS,
-  MAX_VESTING_SCHEDULES,
-  MIN_VESTING_DURATION_SECONDS,
-  VESTING_BPS_DENOMINATOR,
-} from './constants.js';
-import { deriveVestingAddresses, type VestingAddresses } from './pda.js';
+  normalizeU64,
+  prepareVestingConfiguration,
+  type VestingPlan,
+} from './internal.js';
+import type { VestingAddresses } from './pda.js';
 
-const MAX_U64 = (1n << 64n) - 1n;
-
-export type VestingPlan = {
-  schedules: ReadonlyArray<VestingScheduleArgs>;
-  allocations: ReadonlyArray<VestingAllocationInputArgs>;
-};
+export type { VestingPlan } from './internal.js';
 
 type VestingLaunchSupply = Omit<LaunchSupply, 'baseForDistribution'>;
 
@@ -70,123 +57,63 @@ export type PrepareVestingLaunchResult = {
   fundVestingInstruction: Instruction;
 };
 
-type ValidatedVestingPlan = {
-  schedules: Array<{ cliffSeconds: bigint; durationSeconds: bigint }>;
-  allocations: Array<{
-    beneficiary: Address;
-    scheduleId: number;
-    amount: bigint;
-  }>;
-  totalAllocation: bigint;
-};
+function resolveVestingMigration(
+  migration: PrepareVestingLaunchInput['migration'],
+  baseForLiquidity: bigint,
+): CreateLaunchInput['migration'] {
+  if (migration === undefined || migration === false || migration === null) {
+    return false;
+  }
+  if (migration === true) {
+    throw new Error(
+      'vesting migration requires an explicit CPMM config with a positive minRaiseQuote',
+    );
+  }
+  if (migration.kind === 'custom') {
+    return migration;
+  }
 
-function asU64(value: number | bigint, label: string): bigint {
+  const cpmmMigration: CreateLaunchCpmmMigrationConfig = migration;
   if (
-    typeof value === 'number' &&
-    (!Number.isSafeInteger(value) || value < 0)
-  ) {
-    throw new Error(`${label} must be a non-negative safe integer`);
-  }
-  const normalized = BigInt(value);
-  if (normalized < 0n || normalized > MAX_U64) {
-    throw new Error(`${label} must fit in a u64`);
-  }
-  return normalized;
-}
-
-function validateVestingPlan(
-  plan: VestingPlan,
-  initialSupply: bigint,
-  vestingConfig: Address,
-): ValidatedVestingPlan {
-  if (
-    plan.schedules.length === 0 ||
-    plan.schedules.length > MAX_VESTING_SCHEDULES
-  ) {
-    throw new Error(`vesting requires 1 to ${MAX_VESTING_SCHEDULES} schedules`);
-  }
-  if (
-    plan.allocations.length === 0 ||
-    plan.allocations.length > MAX_VESTING_ALLOCATIONS
+    (cpmmMigration.recipients?.length ?? 0) !== 0 ||
+    (cpmmMigration.recipientAtas?.length ?? 0) !== 0
   ) {
     throw new Error(
-      `vesting requires 1 to ${MAX_VESTING_ALLOCATIONS} allocations`,
+      'vesting CPMM migration does not support migration recipients',
+    );
+  }
+  const minRaiseQuote = normalizeU64(
+    cpmmMigration.minRaiseQuote ?? 0n,
+    'migration minRaiseQuote',
+  );
+  if (minRaiseQuote === 0n) {
+    throw new Error('vesting CPMM migration requires a positive minRaiseQuote');
+  }
+  const baseForDistribution = normalizeU64(
+    cpmmMigration.baseForDistribution ?? 0n,
+    'migration baseForDistribution',
+  );
+  if (baseForDistribution !== 0n) {
+    throw new Error('vesting CPMM migration requires zero baseForDistribution');
+  }
+  const migrationBaseForLiquidity = normalizeU64(
+    cpmmMigration.baseForLiquidity ?? baseForLiquidity,
+    'migration baseForLiquidity',
+  );
+  if (migrationBaseForLiquidity !== baseForLiquidity) {
+    throw new Error(
+      'vesting CPMM migration baseForLiquidity must match the launch supply',
     );
   }
 
-  const schedules = plan.schedules.map((schedule, index) => {
-    const cliffSeconds = asU64(
-      schedule.cliffSeconds,
-      `vesting schedule ${index} cliffSeconds`,
-    );
-    const durationSeconds = asU64(
-      schedule.durationSeconds,
-      `vesting schedule ${index} durationSeconds`,
-    );
-    if (
-      durationSeconds !== 0n &&
-      durationSeconds < MIN_VESTING_DURATION_SECONDS
-    ) {
-      throw new Error(
-        `vesting schedule ${index} duration must be zero or at least ${MIN_VESTING_DURATION_SECONDS} seconds`,
-      );
-    }
-    if (cliffSeconds > durationSeconds) {
-      throw new Error(
-        `vesting schedule ${index} cliff cannot exceed its duration`,
-      );
-    }
-    return { cliffSeconds, durationSeconds };
-  });
-
-  const beneficiaryTotals = new Map<Address, bigint>();
-  let totalAllocation = 0n;
-  const allocations = plan.allocations.map((allocation, index) => {
-    if (
-      allocation.beneficiary === SYSTEM_PROGRAM_ADDRESS ||
-      allocation.beneficiary === vestingConfig
-    ) {
-      throw new Error(`vesting allocation ${index} has an invalid beneficiary`);
-    }
-    if (
-      !Number.isInteger(allocation.scheduleId) ||
-      allocation.scheduleId < 0 ||
-      allocation.scheduleId >= schedules.length
-    ) {
-      throw new Error(
-        `vesting allocation ${index} references an unknown schedule`,
-      );
-    }
-    const amount = asU64(
-      allocation.amount,
-      `vesting allocation ${index} amount`,
-    );
-    if (amount === 0n) {
-      throw new Error(`vesting allocation ${index} amount must be positive`);
-    }
-
-    totalAllocation += amount;
-    beneficiaryTotals.set(
-      allocation.beneficiary,
-      (beneficiaryTotals.get(allocation.beneficiary) ?? 0n) + amount,
-    );
-    return { ...allocation, amount };
-  });
-
-  const maximumAllocation =
-    (initialSupply * MAX_VESTED_BPS) / VESTING_BPS_DENOMINATOR;
-  if (totalAllocation > maximumAllocation) {
-    throw new Error('total vesting allocation exceeds 80% of initial supply');
-  }
-  for (const [beneficiary, amount] of beneficiaryTotals) {
-    if (amount > maximumAllocation) {
-      throw new Error(
-        `vesting allocation for ${beneficiary} exceeds 80% of initial supply`,
-      );
-    }
-  }
-
-  return { schedules, allocations, totalAllocation };
+  return {
+    ...cpmmMigration,
+    minRaiseQuote,
+    recipients: [],
+    recipientAtas: [],
+    baseForDistribution: 0n,
+    baseForLiquidity,
+  };
 }
 
 export async function prepareLaunch(
@@ -195,18 +122,19 @@ export async function prepareLaunch(
   const {
     vesting: vestingPlan,
     vestingProgram: vestingProgramOverride,
+    migration: requestedMigration,
     ...launchInput
   } = input;
-  const initialSupply = asU64(input.supply.baseTotalSupply, 'baseTotalSupply');
-  if (initialSupply === 0n) {
-    throw new Error('baseTotalSupply must be positive');
-  }
-  const baseForLiquidity = asU64(
+  const baseForLiquidity = normalizeU64(
     input.supply.baseForLiquidity,
     'baseForLiquidity',
   );
-  const migration = input.migration ?? false;
-  if ((migration === false || migration === null) && baseForLiquidity !== 0n) {
+  if (
+    (requestedMigration === undefined ||
+      requestedMigration === false ||
+      requestedMigration === null) &&
+    baseForLiquidity !== 0n
+  ) {
     throw new Error('non-migrating launches require zero baseForLiquidity');
   }
   const launchId = input.launchId ?? createLaunchId();
@@ -226,37 +154,34 @@ export async function prepareLaunch(
     input.tokenPrograms?.baseTokenProgram ?? TOKEN_PROGRAM_ADDRESS;
   const vestingProgram =
     vestingProgramOverride ?? DOPPLER_VESTING_PROGRAM_ADDRESS;
-  const vestingAddresses = await deriveVestingAddresses(
-    launchAddresses.launch,
-    input.launchAccounts.baseMint.address,
+  const initializerProgram =
+    input.programId ??
+    input.deployment?.initializerProgram ??
+    INITIALIZER_PROGRAM_ID;
+  const preparedVesting = await prepareVestingConfiguration({
+    payer: input.payer,
+    launch: launchAddresses.launch,
+    launchAuthority: launchAddresses.launchAuthority,
+    baseMint: input.launchAccounts.baseMint,
+    baseVault: input.launchAccounts.baseVault,
     baseTokenProgram,
+    initialSupply: input.supply.baseTotalSupply,
+    plan: vestingPlan,
     vestingProgram,
-  );
-  const plan = validateVestingPlan(
-    vestingPlan,
-    initialSupply,
-    vestingAddresses.config,
-  );
-  if (plan.totalAllocation + baseForLiquidity >= initialSupply) {
+    initializerProgram,
+  });
+  if (
+    preparedVesting.totalAllocation + baseForLiquidity >=
+    preparedVesting.initialSupply
+  ) {
     throw new Error(
       'vesting and liquidity allocations must leave base tokens for the bonding curve',
     );
   }
-
-  const initializeVestingInstruction =
-    await getInitializeVestingInstructionAsync(
-      {
-        payer: input.payer,
-        launch: launchAddresses.launch,
-        baseMint: input.launchAccounts.baseMint,
-        baseTokenProgram,
-        vestingConfig: vestingAddresses.config,
-        initialSupply,
-        schedules: plan.schedules,
-        allocations: plan.allocations,
-      },
-      { programAddress: vestingProgram },
-    );
+  const migration = resolveVestingMigration(
+    requestedMigration,
+    baseForLiquidity,
+  );
   const launch = await createLaunch({
     ...launchInput,
     namespace,
@@ -264,39 +189,22 @@ export async function prepareLaunch(
     addresses: launchAddresses,
     supply: {
       ...input.supply,
-      baseTotalSupply: initialSupply,
-      baseForDistribution: plan.totalAllocation,
+      baseTotalSupply: preparedVesting.initialSupply,
+      baseForDistribution: preparedVesting.totalAllocation,
       baseForLiquidity,
     },
     migration,
-    vestingConfig: vestingAddresses.config,
+    vestingConfig: preparedVesting.addresses.config,
   });
-  const initializerProgram =
-    input.programId ??
-    input.deployment?.initializerProgram ??
-    INITIALIZER_PROGRAM_ID;
-  const fundVestingInstruction = await getFundVestingInstructionAsync(
-    {
-      launch: launchAddresses.launch,
-      launchAuthority: launchAddresses.launchAuthority,
-      vestingConfig: vestingAddresses.config,
-      baseMint: input.launchAccounts.baseMint.address,
-      baseVault: getAddressFromAddressOrSigner(input.launchAccounts.baseVault),
-      vestingVault: vestingAddresses.vault,
-      payer: input.payer,
-      baseTokenProgram,
-    },
-    { programAddress: initializerProgram },
-  );
 
   return {
     namespace,
     launchId,
     launchAddresses,
-    vestingAddresses,
-    totalAllocation: plan.totalAllocation,
-    initializeVestingInstruction,
+    vestingAddresses: preparedVesting.addresses,
+    totalAllocation: preparedVesting.totalAllocation,
+    initializeVestingInstruction: preparedVesting.initializeInstruction,
     initializeLaunchInstruction: launch.instruction,
-    fundVestingInstruction,
+    fundVestingInstruction: preparedVesting.fundInstruction,
   };
 }

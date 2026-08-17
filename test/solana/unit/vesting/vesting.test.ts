@@ -12,6 +12,10 @@ import {
   getClaimInstructionDataDecoder,
   getInitializeVestingInstructionDataDecoder,
 } from '@/solana/generated/dopplerVesting/index.js';
+import {
+  getMigrateArgsDecoder,
+  getRegisterLaunchArgsDecoder,
+} from '@/solana/generated/cpmmMigrator/index.js';
 import { getInitializeLaunchInstructionDataDecoder } from '@/solana/generated/initializer/index.js';
 
 const INITIAL_SUPPLY = 1_000_000n;
@@ -26,7 +30,7 @@ async function prepareVestingLaunch({
   amount?: bigint;
   durationSeconds?: bigint;
   baseForLiquidity?: bigint;
-  migration?: boolean;
+  migration?: Parameters<typeof vesting.prepareLaunch>[0]['migration'];
 } = {}) {
   const payer = await generateKeyPairSigner();
   const baseMint = await generateKeyPairSigner();
@@ -133,6 +137,50 @@ describe('vesting', () => {
         migration: true,
       }),
     ).rejects.toThrow(/leave base tokens for the bonding curve/);
+  });
+
+  it('uses only the liquidity allocation in a CPMM migration payload', async () => {
+    const { prepared } = await prepareVestingLaunch({
+      baseForLiquidity: 100_000n,
+      migration: { minRaiseQuote: 1n },
+    });
+    const initializeLaunch = getInitializeLaunchInstructionDataDecoder().decode(
+      prepared.initializeLaunchInstruction.data!,
+    );
+    const migration = getMigrateArgsDecoder().decode(
+      initializeLaunch.migratorMigratePayload.slice(8),
+    );
+    const registration = getRegisterLaunchArgsDecoder().decode(
+      initializeLaunch.migratorInitPayload.slice(8),
+    );
+
+    expect(initializeLaunch.baseForDistribution).toBe(200_000n);
+    expect(initializeLaunch.baseForLiquidity).toBe(100_000n);
+    expect(registration.minRaiseQuote).toBe(1n);
+    expect(registration.recipients).toEqual([]);
+    expect(migration).toEqual({
+      baseForDistribution: 0n,
+      baseForLiquidity: 100_000n,
+    });
+  });
+
+  it('requires explicit migration settings for a vesting launch', async () => {
+    await expect(prepareVestingLaunch({ migration: true })).rejects.toThrow(
+      /explicit CPMM config with a positive minRaiseQuote/,
+    );
+  });
+
+  it('rejects CPMM migration recipients for a vesting launch', async () => {
+    const recipient = await generateKeyPairSigner();
+
+    await expect(
+      prepareVestingLaunch({
+        migration: {
+          minRaiseQuote: 1n,
+          recipients: [{ wallet: recipient.address, amount: 1n }],
+        },
+      }),
+    ).rejects.toThrow(/does not support migration recipients/);
   });
 
   it('prepares a permissionless claim to the beneficiary ATA', async () => {

@@ -62,6 +62,8 @@ export const CPMM_MIGRATOR_ERROR__INVALID_POSITION = 0x1786; // 6022
 export const CPMM_MIGRATOR_ERROR__INVALID_FEE = 0x1787; // 6023
 /** InvalidHookProgram: Missing or mismatched hook program account */
 export const CPMM_MIGRATOR_ERROR__INVALID_HOOK_PROGRAM = 0x1788; // 6024
+/** VestingNotFunded: Vesting must be funded before migration */
+export const CPMM_MIGRATOR_ERROR__VESTING_NOT_FUNDED = 0x1789; // 6025
 
 export type CpmmMigratorError =
   | typeof CPMM_MIGRATOR_ERROR__ALREADY_MIGRATED
@@ -87,7 +89,8 @@ export type CpmmMigratorError =
   | typeof CPMM_MIGRATOR_ERROR__POSITION_ALREADY_INITIALIZED
   | typeof CPMM_MIGRATOR_ERROR__PRICE_FLOOR_NOT_MET
   | typeof CPMM_MIGRATOR_ERROR__TOO_MANY_RECIPIENTS
-  | typeof CPMM_MIGRATOR_ERROR__UNAUTHORIZED;
+  | typeof CPMM_MIGRATOR_ERROR__UNAUTHORIZED
+  | typeof CPMM_MIGRATOR_ERROR__VESTING_NOT_FUNDED;
 
 let cpmmMigratorErrorMessages: Record<CpmmMigratorError, string> | undefined;
 if (process.env.NODE_ENV !== 'production') {
@@ -116,6 +119,7 @@ if (process.env.NODE_ENV !== 'production') {
     [CPMM_MIGRATOR_ERROR__PRICE_FLOOR_NOT_MET]: `Price floor not met`,
     [CPMM_MIGRATOR_ERROR__TOO_MANY_RECIPIENTS]: `Too many recipients`,
     [CPMM_MIGRATOR_ERROR__UNAUTHORIZED]: `Unauthorized`,
+    [CPMM_MIGRATOR_ERROR__VESTING_NOT_FUNDED]: `Vesting must be funded before migration`,
   };
 }
 
