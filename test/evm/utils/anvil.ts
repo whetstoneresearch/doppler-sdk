@@ -57,6 +57,7 @@ const CHAIN_PORTS: Record<number, number> = {
   [CHAIN_IDS.MONAD_MAINNET]: 8547,
   [CHAIN_IDS.MAINNET]: 8548,
   [CHAIN_IDS.ETH_SEPOLIA]: 8549,
+  [CHAIN_IDS.ARBITRUM]: 8550,
 }
 
 /** Fork RPC URLs for each chain */
@@ -74,6 +75,11 @@ function getForkUrl(chainId: number): string | undefined {
       return (
         process.env.ETH_SEPOLIA_RPC_URL ||
         (alchemyKey ? `https://eth-sepolia.g.alchemy.com/v2/${alchemyKey}` : undefined)
+      )
+    case CHAIN_IDS.ARBITRUM:
+      return (
+        process.env.ARBITRUM_RPC_URL ||
+        (alchemyKey ? `https://arb-mainnet.g.alchemy.com/v2/${alchemyKey}` : undefined)
       )
     case CHAIN_IDS.BASE:
       return (

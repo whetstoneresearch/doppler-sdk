@@ -150,11 +150,14 @@ describe('OpeningAuctionBuilder', () => {
   });
 
   describe('governance defaults by chain', () => {
-    it('defaults to noOp governance on no-op-enabled chains', () => {
-      const params = buildValidOpeningAuction(CHAIN_IDS.BASE).build();
+    it.each([CHAIN_IDS.BASE, CHAIN_IDS.ARBITRUM] as const)(
+      'defaults to noOp governance on no-op-enabled chain %s',
+      (chainId) => {
+        const params = buildValidOpeningAuction(chainId).build();
 
-      expect(params.governance).toEqual({ type: 'noOp' });
-    });
+        expect(params.governance).toEqual({ type: 'noOp' });
+      },
+    );
 
     it('defaults to default governance on chains without no-op governance', () => {
       const params = buildValidOpeningAuction(CHAIN_IDS.INK).build();
@@ -164,6 +167,7 @@ describe('OpeningAuctionBuilder', () => {
 
     it.each([
       CHAIN_IDS.MAINNET,
+      CHAIN_IDS.ARBITRUM,
       CHAIN_IDS.BASE,
       CHAIN_IDS.BASE_SEPOLIA,
       CHAIN_IDS.MONAD_MAINNET,

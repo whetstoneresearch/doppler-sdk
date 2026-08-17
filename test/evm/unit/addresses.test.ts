@@ -10,6 +10,7 @@ import { GENERATED_DOPPLER_DEPLOYMENTS } from '../../../src/evm/deployments.gene
 
 const generatedAddressTargetChains = [
   { name: 'mainnet', chainId: CHAIN_IDS.MAINNET },
+  { name: 'arbitrum', chainId: CHAIN_IDS.ARBITRUM },
   { name: 'base', chainId: CHAIN_IDS.BASE },
   { name: 'base-sepolia', chainId: CHAIN_IDS.BASE_SEPOLIA },
   { name: 'robinhood', chainId: CHAIN_IDS.ROBINHOOD },
@@ -131,4 +132,24 @@ describe('address configuration', () => {
       }
     },
   );
+
+  it('configures the current Arbitrum infrastructure addresses', () => {
+    const addresses = getAddresses(CHAIN_IDS.ARBITRUM);
+
+    expect(addresses).toMatchObject({
+      tokenFactory: zeroAddress,
+      v3Initializer: zeroAddress,
+      v3Quoter: '0x61fFE014bA17989E743c5F6cB21bF9697530B21e',
+      poolManager: '0x360E68faCcca8cA495c1B759Fd9EEe466db9FB32',
+      v2Migrator: zeroAddress,
+      v4Migrator: zeroAddress,
+      streamableFeesLocker: zeroAddress,
+      universalRouter: '0xA51afAFe0263b40EdaEf0Df8781eA9aa03E381a3',
+      permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
+      weth: '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1',
+      uniswapV2Factory: '0xf1D7CC64Fb4452F05c498126312eBE29f30Fbcf9',
+      uniswapV3Factory: '0x1F98431c8aD98523631AE4a59f267346ea31F984',
+      uniswapV4Quoter: '0x3972C00f7ed4885e145823eb7C655375d275A1C5',
+    });
+  });
 });
