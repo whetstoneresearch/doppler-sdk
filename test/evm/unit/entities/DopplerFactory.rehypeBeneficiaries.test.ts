@@ -6,7 +6,7 @@ import {
   type CreateMulticurveParams,
   type RehypeDopplerHookInitializerConfig,
 } from '../../../../src/evm/types';
-import { DEAD_ADDRESS, WAD } from '../../../../src/evm/constants';
+import { WAD } from '../../../../src/evm/constants';
 import {
   createMockPublicClient,
   createMockWalletClient,
@@ -72,10 +72,11 @@ describe('DopplerFactory RehypeDopplerHookInitializer beneficiary encoding', () 
     expect(decoded.feeBeneficiaries).toEqual([]);
   });
 
-  it('encodes sorted beneficiaries and the no-op governance controller', () => {
+  it('encodes sorted beneficiaries with an explicit controller', () => {
     // Given
     const params = multicurveParams({
       hookAddress,
+      buybackDestination,
       feeBeneficiaries: [
         { beneficiary: secondBeneficiary, shares: WAD / 4n },
         { beneficiary: firstBeneficiary, shares: (WAD * 3n) / 4n },
@@ -88,7 +89,7 @@ describe('DopplerFactory RehypeDopplerHookInitializer beneficiary encoding', () 
     const decoded = encodeAndDecode(factory, params);
 
     // Then
-    expect(decoded.buybackDst).toBe(DEAD_ADDRESS);
+    expect(decoded.buybackDst).toBe(buybackDestination);
     expect(Number(decoded.feeRoutingMode)).toBe(
       RehypeFeeRoutingMode.RouteToBeneficiaryFees,
     );
@@ -98,7 +99,7 @@ describe('DopplerFactory RehypeDopplerHookInitializer beneficiary encoding', () 
     ]);
   });
 
-  it('uses a dead controller for complete LP reinvestment with a governance override', () => {
+  it('requires a controller for complete LP reinvestment', () => {
     const params = multicurveParams({
       hookAddress,
       startFee: 3_000,
@@ -109,13 +110,12 @@ describe('DopplerFactory RehypeDopplerHookInitializer beneficiary encoding', () 
       governanceFactory: secondBeneficiary,
     };
 
-    const decoded = encodeAndDecode(factory, params);
-
-    expect(decoded.buybackDst).toBe(DEAD_ADDRESS);
-    expect(decoded.feeBeneficiaries).toEqual([]);
+    expect(() => factory.encodeCreateMulticurveParams(params)).toThrow(
+      'Rehype requires buybackDestination or withFeeDistributionController',
+    );
   });
 
-  it('rejects recipient omission when fees leave LP reinvestment', () => {
+  it('requires a controller when no fee beneficiaries are configured', () => {
     const params = multicurveParams({
       hookAddress,
       startFee: 3_000,
@@ -123,11 +123,11 @@ describe('DopplerFactory RehypeDopplerHookInitializer beneficiary encoding', () 
     });
 
     expect(() => factory.encodeCreateMulticurveParams(params)).toThrow(
-      'Rehype requires buybackDestination, withFeeDistributionController, or feeBeneficiaries unless fee distribution is 100% LP reinvestment',
+      'Rehype requires buybackDestination or withFeeDistributionController',
     );
   });
 
-  it('rejects governance factory inference when the factory is overridden', () => {
+  it('does not infer a controller from governance', () => {
     const params = multicurveParams({
       hookAddress,
       feeBeneficiaries: [{ beneficiary: firstBeneficiary, shares: WAD }],
@@ -140,7 +140,7 @@ describe('DopplerFactory RehypeDopplerHookInitializer beneficiary encoding', () 
     };
 
     expect(() => factory.encodeCreateMulticurveParams(params)).toThrow(
-      'Rehype with a governanceFactory override requires buybackDestination or withFeeDistributionController',
+      'Rehype requires buybackDestination or withFeeDistributionController',
     );
   });
 

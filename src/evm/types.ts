@@ -1048,17 +1048,13 @@ type RehypeFeeBeneficiariesConfig = {
  * `feeBeneficiaries` control beneficiary fee recipients but do not grant that
  * authority.
  *
- * Default and custom governance require an explicit `buybackDestination` or
- * the builder's `withFeeDistributionController` for beneficiary configurations.
- * Canonical launchpad and no-op governance can instead infer that controller
- * as the launchpad multisig or dead address respectively. A governance factory
- * override disables this inference.
+ * Every Rehype configuration requires an explicit fee distribution controller.
+ * Direct factory callers must set `buybackDestination`. Builder callers may
+ * instead use `withFeeDistributionController`. These options configure the
+ * same on-chain field and cannot be used together.
  *
- * Both `buybackDestination` and `feeBeneficiaries` may be omitted only when
- * both fee-distribution rows direct 100% of fees to LP reinvestment. In that
- * case, governance modes without an inferable controller use the dead address.
- * Unlike earlier SDK versions, a fee-beneficiary-only configuration is not
- * sufficient when the controller cannot be inferred.
+ * Governance configuration, governance factory results, fee beneficiaries,
+ * and LP reinvestment do not determine or provide the controller.
  */
 export type RehypeDopplerHookInitializerConfig =
   RehypeDopplerHookInitializerCommonConfig &

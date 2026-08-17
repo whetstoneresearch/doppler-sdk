@@ -181,6 +181,7 @@ async function main(): Promise<void> {
         numeraireFeesToLpWad: 0n,
       },
     })
+    .withFeeDistributionController(account.address)
     .withGovernance({ type: 'noOp' })
     .withMigration({ type: 'noOp' })
     .withUserAddress(account.address)

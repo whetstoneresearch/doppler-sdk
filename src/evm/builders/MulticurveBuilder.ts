@@ -1,6 +1,5 @@
 import type { Address, Hex } from 'viem';
 import {
-  DEAD_ADDRESS,
   DEFAULT_V3_YEARLY_MINT_RATE,
   DECAY_MAX_START_FEE,
   FEE_TIERS,
@@ -16,7 +15,6 @@ import {
   validateMarketCapParameters,
   getMaxLiquiditySafeMulticurveTickUpper,
   normalizeRehypeDopplerHookInitializerConfig,
-  resolveRehypeFeeDistributionController,
 } from '../utils';
 import {
   isNoOpEnabledChain,
@@ -426,10 +424,18 @@ export class MulticurveBuilder<
       );
     }
 
-    normalizeRehypeDopplerHookInitializerConfig(
-      params,
-      params.buybackDestination ?? DEAD_ADDRESS,
-    );
+    // Validate immediately when the controller is already known. Otherwise,
+    // build() validates after withFeeDistributionController() can be chained.
+    if (
+      params.buybackDestination !== undefined ||
+      this.feeDistributionControllerAddress !== undefined
+    ) {
+      normalizeRehypeDopplerHookInitializerConfig(
+        params,
+        this.feeDistributionControllerAddress,
+      );
+    }
+
     this.dopplerHook = params;
     this.initializer = { type: 'rehype', config: params };
     return this;
@@ -609,8 +615,9 @@ export class MulticurveBuilder<
    * distribution matrix.
    *
    * This sets the on-chain `buybackDst`, which also receives direct-buyback
-   * proceeds and legacy empty-beneficiary fees. It is mutually exclusive with
-   * `buybackDestination` and is only valid with a Rehype initializer.
+   * proceeds and legacy empty-beneficiary fees. Every Rehype initializer
+   * requires either this method or `buybackDestination`; they configure the
+   * same field and cannot be used together.
    */
   withFeeDistributionController(address: Address): this {
     if (this.dopplerHook?.buybackDestination !== undefined) {
@@ -859,17 +866,9 @@ export class MulticurveBuilder<
     // Resolve the on-chain buybackDst only after governance is known.
     let dopplerHook = this.dopplerHook;
     if (dopplerHook) {
-      const controller = resolveRehypeFeeDistributionController(
-        dopplerHook,
-        governance,
-        {
-          controllerOverride: this.feeDistributionControllerAddress,
-          governanceFactoryOverride: this.moduleAddresses?.governanceFactory,
-        },
-      );
       dopplerHook = normalizeRehypeDopplerHookInitializerConfig(
         dopplerHook,
-        controller,
+        this.feeDistributionControllerAddress,
       );
     }
 

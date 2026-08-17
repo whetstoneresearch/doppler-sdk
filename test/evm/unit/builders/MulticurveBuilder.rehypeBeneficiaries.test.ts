@@ -2,11 +2,7 @@ import { describe, expect, expectTypeOf, it } from 'vitest';
 import { getAddress, parseEther, type Address, zeroAddress } from 'viem';
 import { CHAIN_IDS } from '../../../../src/evm/addresses';
 import { MulticurveBuilder } from '../../../../src/evm/builders';
-import {
-  DEAD_ADDRESS,
-  DECAY_MAX_START_FEE,
-  WAD,
-} from '../../../../src/evm/constants';
+import { DECAY_MAX_START_FEE, WAD } from '../../../../src/evm/constants';
 import {
   RehypeFeeRoutingMode,
   type BeneficiaryData,
@@ -137,6 +133,7 @@ describe('MulticurveBuilder RehypeDopplerHookInitializer beneficiaries', () => {
     expect(() =>
       builder.withRehypeDopplerHookInitializer({
         hookAddress,
+        buybackDestination,
         feeBeneficiaries: [
           { beneficiary: firstBeneficiary, shares: WAD / 4n },
           { beneficiary: secondBeneficiary, shares: WAD / 4n },
@@ -227,27 +224,23 @@ describe('MulticurveBuilder RehypeDopplerHookInitializer beneficiaries', () => {
         })
         .build(),
     ).toThrow(
-      'Standard governance requires buybackDestination or withFeeDistributionController',
+      'Rehype requires buybackDestination or withFeeDistributionController',
     );
   });
 
-  it('infers the controller from launchpad governance', () => {
-    const params = buildBaseBuilder()
-      .withGovernance({ type: 'launchpad', multisig: buybackDestination })
-      .withRehypeDopplerHookInitializer({
-        hookAddress,
-        feeBeneficiaries: [{ beneficiary: firstBeneficiary, shares: WAD }],
-        startFee: 3_000,
-        feeDistributionInfo: feeDistributionInfo(),
-      })
-      .build();
-
-    expect(params.initializer?.type).toBe('rehype');
-    if (params.initializer?.type !== 'rehype') {
-      throw new Error('Expected RehypeDopplerHookInitializer config');
-    }
-    expect(params.initializer.config.buybackDestination).toBe(
-      buybackDestination,
+  it('does not infer the controller from launchpad governance', () => {
+    expect(() =>
+      buildBaseBuilder()
+        .withGovernance({ type: 'launchpad', multisig: buybackDestination })
+        .withRehypeDopplerHookInitializer({
+          hookAddress,
+          feeBeneficiaries: [{ beneficiary: firstBeneficiary, shares: WAD }],
+          startFee: 3_000,
+          feeDistributionInfo: feeDistributionInfo(),
+        })
+        .build(),
+    ).toThrow(
+      'Rehype requires buybackDestination or withFeeDistributionController',
     );
   });
 
@@ -264,7 +257,7 @@ describe('MulticurveBuilder RehypeDopplerHookInitializer beneficiaries', () => {
         })
         .build(),
     ).toThrow(
-      'Rehype with a governanceFactory override requires buybackDestination or withFeeDistributionController',
+      'Rehype requires buybackDestination or withFeeDistributionController',
     );
   });
 
@@ -290,35 +283,36 @@ describe('MulticurveBuilder RehypeDopplerHookInitializer beneficiaries', () => {
     );
   });
 
-  it('allows recipient omission for complete LP reinvestment', () => {
+  it('requires an explicit controller for complete LP reinvestment', () => {
+    expect(() =>
+      buildBaseBuilder()
+        .withRehypeDopplerHookInitializer({
+          hookAddress,
+          startFee: 3_000,
+          feeDistributionInfo: fullLpReinvestment(),
+        })
+        .build(),
+    ).toThrow(
+      'Rehype requires buybackDestination or withFeeDistributionController',
+    );
+  });
+
+  it('uses an explicit controller for complete LP reinvestment', () => {
     const params = buildBaseBuilder()
       .withRehypeDopplerHookInitializer({
         hookAddress,
         startFee: 3_000,
         feeDistributionInfo: fullLpReinvestment(),
       })
+      .withFeeDistributionController(buybackDestination)
       .build();
 
     expect(params.initializer?.type).toBe('rehype');
     if (params.initializer?.type !== 'rehype') {
       throw new Error('Expected RehypeDopplerHookInitializer config');
     }
-    expect(params.initializer.config.buybackDestination).toBe(DEAD_ADDRESS);
-    expect(params.initializer.config.feeBeneficiaries).toBeUndefined();
-  });
-
-  it('rejects recipient omission when fees leave LP reinvestment', () => {
-    expect(() =>
-      buildBaseBuilder()
-        .withGovernance({ type: 'noOp' })
-        .withRehypeDopplerHookInitializer({
-          hookAddress,
-          startFee: 3_000,
-          feeDistributionInfo: feeDistributionInfo(),
-        })
-        .build(),
-    ).toThrow(
-      'Rehype requires buybackDestination, withFeeDistributionController, or feeBeneficiaries unless fee distribution is 100% LP reinvestment',
+    expect(params.initializer.config.buybackDestination).toBe(
+      buybackDestination,
     );
   });
 
