@@ -94,12 +94,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        chain: [base, base-sepolia]
+        chain: [base, base-sepolia, arbitrum]
         include:
           - chain: base
             chain_id: 8453
           - chain: base-sepolia
             chain_id: 84532
+          - chain: arbitrum
+            chain_id: 42161
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -138,7 +140,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        chain: [base, base-sepolia, mainnet, monad-mainnet, robinhood]
+        chain: [base, base-sepolia, arbitrum, mainnet, monad-mainnet, robinhood]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

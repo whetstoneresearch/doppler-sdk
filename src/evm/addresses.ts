@@ -6,6 +6,7 @@ import { ZERO_ADDRESS } from './constants';
 export const CHAIN_IDS = {
   MAINNET: 1,
   ETH_SEPOLIA: 11155111,
+  ARBITRUM: 42161,
   BASE: 8453,
   BASE_SEPOLIA: 84532,
   INK: 57073,
@@ -213,6 +214,71 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3' as Address,
     weth: '0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14' as Address,
     uniswapV4Quoter: '0x61b3f2011a92d183c7dbadbda940a7555ccf9227' as Address,
+  },
+  [CHAIN_IDS.ARBITRUM]: {
+    airlock: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ARBITRUM]
+      .Airlock as Address,
+    tokenFactory: ZERO_ADDRESS,
+    dopplerERC20V1Factory: getGeneratedAddress(
+      CHAIN_IDS.ARBITRUM,
+      'DopplerERC20V1Factory',
+    ),
+    dopplerERC20V1Implementation: getGeneratedAddress(
+      CHAIN_IDS.ARBITRUM,
+      'DopplerERC20V1',
+    ),
+    doppler404Factory: getGeneratedAddress(CHAIN_IDS.ARBITRUM, 'DN404Factory'),
+    v3Initializer: ZERO_ADDRESS,
+    v3Quoter: '0x61fFE014bA17989E743c5F6cB21bF9697530B21e' as Address,
+    lockableV3Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ARBITRUM]
+      .LockableUniswapV3Initializer as Address,
+    v4Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ARBITRUM]
+      .UniswapV4Initializer as Address,
+    dopplerHookInitializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ARBITRUM]
+      .DopplerHookInitializer as Address,
+    rehypeDopplerHookInitializer: getRehypeDopplerHookInitializerAddress(
+      CHAIN_IDS.ARBITRUM,
+    ),
+    rehypeDopplerHook: getRehypeDopplerHookInitializerAddress(
+      CHAIN_IDS.ARBITRUM,
+    ),
+    dopplerLens: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ARBITRUM]
+      .DopplerLensQuoter as Address,
+    dopplerDeployer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ARBITRUM]
+      .DopplerDeployer as Address,
+    poolManager: '0x360E68faCcca8cA495c1B759Fd9EEe466db9FB32' as Address,
+    v2Migrator: ZERO_ADDRESS,
+    v2MigratorSplit: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ARBITRUM]
+      .UniswapV2MigratorSplit as Address,
+    v4Migrator: ZERO_ADDRESS,
+    dopplerHookMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ARBITRUM]
+      .DopplerHookMigrator as Address,
+    rehypeDopplerHookMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ARBITRUM]
+      .RehypeDopplerHookMigrator as Address,
+    noOpMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ARBITRUM]
+      .NoOpMigrator as Address,
+    governanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ARBITRUM]
+      .GovernanceFactory as Address,
+    noOpGovernanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ARBITRUM]
+      .NoOpGovernanceFactory as Address,
+    launchpadGovernanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[
+      CHAIN_IDS.ARBITRUM
+    ].LaunchpadGovernanceFactory as Address,
+    streamableFeesLocker: ZERO_ADDRESS,
+    streamableFeesLockerV2: getGeneratedAddress(
+      CHAIN_IDS.ARBITRUM,
+      'StreamableFeesLockerV2',
+    ),
+    topUpDistributor: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ARBITRUM]
+      .TopUpDistributor as Address,
+    universalRouter: '0xA51afAFe0263b40EdaEf0Df8781eA9aa03E381a3' as Address,
+    permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3' as Address,
+    bundler: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ARBITRUM]
+      .Bundler as Address,
+    weth: '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1' as Address,
+    uniswapV2Factory: '0xf1D7CC64Fb4452F05c498126312eBE29f30Fbcf9' as Address,
+    uniswapV3Factory: '0x1F98431c8aD98523631AE4a59f267346ea31F984' as Address,
+    uniswapV4Quoter: '0x3972C00f7ed4885e145823eb7C655375d275A1C5' as Address,
   },
   [CHAIN_IDS.BASE]: {
     airlock: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE].Airlock as Address,

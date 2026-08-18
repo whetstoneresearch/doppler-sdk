@@ -16,6 +16,7 @@ import baseConfig from './vitest.config'
  *   TEST_CHAIN=mainnet pnpm test:fork
  *   TEST_CHAIN=eth-sepolia pnpm test:fork
  *   TEST_CHAIN=monad pnpm test:fork
+ *   TEST_CHAIN=arbitrum pnpm test:fork
  */
 
 // Determine which tests to include based on TEST_CHAIN env var
@@ -43,6 +44,7 @@ function getIncludePatterns(): string[] {
     mainnet: ['test/evm/fork/mainnet/**/*.test.ts'],
     'eth-sepolia': ['test/evm/fork/eth-sepolia/**/*.test.ts'],
     monad: ['test/evm/fork/**/*.monad-mainnet.test.ts'],
+    arbitrum: ['test/evm/fork/arbitrum/**/*.test.ts'],
   }
 
   return chainPatterns[testChain] || [

@@ -98,7 +98,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        chain: [base, base-sepolia]
+        chain: [base, base-sepolia, arbitrum]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -106,7 +106,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: nightly
+          version: v1.7.1
 
       - name: Verify Anvil installation
         run: anvil --version

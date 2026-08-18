@@ -29,6 +29,7 @@ const RPC_DELAY_MS = Number(process.env.RPC_DELAY_MS) || 500;
 const WHITELIST_TEST_CHAIN_IDS = [
   CHAIN_IDS.MAINNET,
   CHAIN_IDS.MONAD_MAINNET,
+  CHAIN_IDS.ARBITRUM,
   CHAIN_IDS.BASE,
   CHAIN_IDS.BASE_SEPOLIA,
   CHAIN_IDS.ROBINHOOD,
@@ -38,6 +39,7 @@ const WHITELIST_TEST_CHAIN_IDS = [
 const CHAIN_NAME_TO_ID: Record<string, SupportedChainId> = {
   base: CHAIN_IDS.BASE,
   'base-sepolia': CHAIN_IDS.BASE_SEPOLIA,
+  arbitrum: CHAIN_IDS.ARBITRUM,
   mainnet: CHAIN_IDS.MAINNET,
   'monad-mainnet': CHAIN_IDS.MONAD_MAINNET,
   robinhood: CHAIN_IDS.ROBINHOOD,
@@ -90,6 +92,7 @@ function recordTestResult(result: TestResult) {
 // Chain ID to name mapping
 const CHAIN_ID_NAMES: Record<number, string> = {
   1: 'Mainnet',
+  42161: 'Arbitrum',
   8453: 'Base',
   84532: 'Base Sepolia',
   143: 'Monad Mainnet',
