@@ -160,7 +160,6 @@ jobs:
         env:
           LIVE_TEST_ENABLED: 'true'
           ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
-          MONAD_MAINNET_RPC_URL: ${{ secrets.MONAD_MAINNET_RPC_URL }}
           TEST_CHAINS: ${{ matrix.chain }}
         timeout-minutes: 10
 
