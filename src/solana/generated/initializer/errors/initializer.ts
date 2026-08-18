@@ -98,6 +98,10 @@ export const INITIALIZER_ERROR__INVALID_SWAP_FEE = 0x179a; // 6042
 export const INITIALIZER_ERROR__INVALID_LAUNCH_FEE_STATE = 0x179b; // 6043
 /** NoFeesToDistribute: No fees to distribute */
 export const INITIALIZER_ERROR__NO_FEES_TO_DISTRIBUTE = 0x179c; // 6044
+/** InvalidVestingConfig: Invalid vesting configuration */
+export const INITIALIZER_ERROR__INVALID_VESTING_CONFIG = 0x179d; // 6045
+/** VestingBalanceMismatch: Vesting vault balance changed by an unexpected amount */
+export const INITIALIZER_ERROR__VESTING_BALANCE_MISMATCH = 0x179e; // 6046
 
 export type InitializerError =
   | typeof INITIALIZER_ERROR__ALLOWLIST_FULL
@@ -122,6 +126,7 @@ export type InitializerError =
   | typeof INITIALIZER_ERROR__INVALID_SWAP_FEE
   | typeof INITIALIZER_ERROR__INVALID_TRADE_DIRECTION
   | typeof INITIALIZER_ERROR__INVALID_VAULT
+  | typeof INITIALIZER_ERROR__INVALID_VESTING_CONFIG
   | typeof INITIALIZER_ERROR__LAUNCH_LOCKED
   | typeof INITIALIZER_ERROR__MATH_OVERFLOW
   | typeof INITIALIZER_ERROR__METADATA_CPI_FAILED
@@ -140,6 +145,7 @@ export type InitializerError =
   | typeof INITIALIZER_ERROR__SELL_NOT_ALLOWED
   | typeof INITIALIZER_ERROR__SLIPPAGE_EXCEEDED
   | typeof INITIALIZER_ERROR__UNAUTHORIZED
+  | typeof INITIALIZER_ERROR__VESTING_BALANCE_MISMATCH
   | typeof INITIALIZER_ERROR__WRONG_HOOK
   | typeof INITIALIZER_ERROR__WRONG_MIGRATOR;
 
@@ -168,6 +174,7 @@ if (process.env.NODE_ENV !== 'production') {
     [INITIALIZER_ERROR__INVALID_SWAP_FEE]: `Invalid swap fee`,
     [INITIALIZER_ERROR__INVALID_TRADE_DIRECTION]: `Invalid trade direction`,
     [INITIALIZER_ERROR__INVALID_VAULT]: `Invalid vault`,
+    [INITIALIZER_ERROR__INVALID_VESTING_CONFIG]: `Invalid vesting configuration`,
     [INITIALIZER_ERROR__LAUNCH_LOCKED]: `Launch locked`,
     [INITIALIZER_ERROR__MATH_OVERFLOW]: `Math overflow`,
     [INITIALIZER_ERROR__METADATA_CPI_FAILED]: `Metadata CPI failed`,
@@ -186,6 +193,7 @@ if (process.env.NODE_ENV !== 'production') {
     [INITIALIZER_ERROR__SELL_NOT_ALLOWED]: `Sell not allowed`,
     [INITIALIZER_ERROR__SLIPPAGE_EXCEEDED]: `Slippage exceeded`,
     [INITIALIZER_ERROR__UNAUTHORIZED]: `Unauthorized`,
+    [INITIALIZER_ERROR__VESTING_BALANCE_MISMATCH]: `Vesting vault balance changed by an unexpected amount`,
     [INITIALIZER_ERROR__WRONG_HOOK]: `Wrong hook program`,
     [INITIALIZER_ERROR__WRONG_MIGRATOR]: `Wrong migrator program`,
   };

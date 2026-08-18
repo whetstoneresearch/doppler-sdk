@@ -14,6 +14,7 @@ import {
   dopplerRehypeRouterV1,
   feeRehypothecation,
   initializer,
+  vesting,
 } from '@/solana/index.js';
 import { getInitializeLaunchInstructionDataDecoder } from '@/solana/generated/initializer/index.js';
 import { getInitializeRehypeInstructionDataDecoder } from '@/solana/generated/dopplerRehypeRouterV1/index.js';
@@ -213,6 +214,66 @@ describe('fee rehypothecation launch preparation', () => {
       prepared.initializeRoutingInstruction.data!,
     );
     expect(routingData.beneficiaries).toEqual([]);
+  });
+
+  it('composes fee rehypothecation with immutable vesting', async () => {
+    const payer = await generateKeyPairSigner();
+    const prepared = await feeRehypothecation.prepareLaunch({
+      launchAccounts: {
+        baseMint: await generateKeyPairSigner(),
+        quoteMint: address('So11111111111111111111111111111111111111112'),
+        baseVault: await generateKeyPairSigner(),
+        quoteVault: await generateKeyPairSigner(),
+      },
+      payer,
+      authority: payer,
+      supply: {
+        baseDecimals: 6,
+        baseTotalSupply: 1_000_000n,
+        baseForDistribution: 0n,
+        baseForLiquidity: 0n,
+      },
+      curve: {
+        curveVirtualBase: 1_000_000n,
+        curveVirtualQuote: 10_000n,
+        swapFeeBps: 200,
+      },
+      buybackDestination: payer.address,
+      settlementAuthority: payer.address,
+      beneficiaries: [{ wallet: payer.address, shareBps: 10_000 }],
+      strategy: feeRehypothecation.inKindBeneficiaryFees(),
+      vesting: {
+        schedules: [{ cliffSeconds: 0n, durationSeconds: 86_400n }],
+        allocations: [
+          {
+            beneficiary: payer.address,
+            scheduleId: 0,
+            amount: 200_000n,
+          },
+        ],
+      },
+      metadata: null,
+    });
+    const launchData = getInitializeLaunchInstructionDataDecoder().decode(
+      prepared.initializeLaunchInstruction.data!,
+    );
+
+    expect(prepared.vesting?.totalAllocation).toBe(200_000n);
+    expect(prepared.vesting?.initializeInstruction.programAddress).toBe(
+      vesting.DOPPLER_VESTING_PROGRAM_ADDRESS,
+    );
+    expect(prepared.vesting?.fundInstruction.programAddress).toBe(
+      initializer.INITIALIZER_PROGRAM_ID,
+    );
+    expect(launchData.baseForDistribution).toBe(200_000n);
+    expect(prepared.initializeLaunchInstruction.accounts![18].address).toBe(
+      prepared.vesting?.addresses.config,
+    );
+    expect(
+      prepared.initializeLaunchInstruction
+        .accounts!.slice(-4)
+        .map(({ address }) => address),
+    ).toEqual(prepared.unsignedSwapHook.remainingAccounts);
   });
 
   it('builds signed and unsigned swap hooks for a gated launch', async () => {

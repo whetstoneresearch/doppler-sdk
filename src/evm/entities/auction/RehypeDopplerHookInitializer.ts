@@ -78,7 +78,10 @@ export class RehypeDopplerHookInitializer {
    * The fee amounts are newly collected pool fees, not necessarily the caller's
    * beneficiary payout.
    */
-  async claimFees(poolId: Hex): Promise<{
+  async claimFees(
+    poolId: Hex,
+    options?: { gas?: bigint },
+  ): Promise<{
     fees0: bigint;
     fees1: bigint;
     transactionHash: Hash;
@@ -93,7 +96,9 @@ export class RehypeDopplerHookInitializer {
       args: [poolId],
       account: walletClient.account,
     });
-    const hash = await walletClient.writeContract(request);
+    const hash = await walletClient.writeContract(
+      options?.gas === undefined ? request : { ...request, gas: options.gas },
+    );
     await this.rpc.waitForTransactionReceipt({ hash, confirmations: 1 });
     const [fees0, fees1] = result;
     return { fees0, fees1, transactionHash: hash };
@@ -154,6 +159,44 @@ export class RehypeDopplerHookInitializer {
     await this.rpc.waitForTransactionReceipt({ hash, confirmations: 1 });
     const [fees0, fees1] = result;
     return { fees0, fees1, transactionHash: hash };
+  }
+
+  /**
+   * Replace a pool's complete fee distribution matrix.
+   *
+   * The connected wallet must be the pool's configured fee distribution
+   * controller (`buybackDst`). The asset-fee allocations and numeraire-fee
+   * allocations must each sum to WAD.
+   *
+   * @returns The confirmed transaction hash.
+   */
+  async setFeeDistribution(
+    poolId: Hex,
+    feeDistributionInfo: RehypeFeeDistributionInfo,
+  ): Promise<{ transactionHash: Hash }> {
+    const walletClient = this.requireWalletClient(
+      'Wallet client required to set rehype fee distribution',
+    );
+    const { request } = await this.rpc.simulateContract({
+      address: this.hookAddress,
+      abi: rehypeDopplerHookInitializerAbi,
+      functionName: 'setFeeDistribution',
+      args: [
+        poolId,
+        feeDistributionInfo.assetFeesToAssetBuybackWad,
+        feeDistributionInfo.assetFeesToNumeraireBuybackWad,
+        feeDistributionInfo.assetFeesToBeneficiaryWad,
+        feeDistributionInfo.assetFeesToLpWad,
+        feeDistributionInfo.numeraireFeesToAssetBuybackWad,
+        feeDistributionInfo.numeraireFeesToNumeraireBuybackWad,
+        feeDistributionInfo.numeraireFeesToBeneficiaryWad,
+        feeDistributionInfo.numeraireFeesToLpWad,
+      ],
+      account: walletClient.account,
+    });
+    const hash = await walletClient.writeContract(request);
+    await this.rpc.waitForTransactionReceipt({ hash, confirmations: 1 });
+    return { transactionHash: hash };
   }
 
   async getFeeDistributionInfo(

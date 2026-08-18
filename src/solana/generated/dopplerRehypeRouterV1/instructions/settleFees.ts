@@ -82,6 +82,7 @@ export type SettleFeesInstruction<
   TAccountSystemProgram extends string | AccountMeta<string> =
     '11111111111111111111111111111111',
   TAccountGateCosigner extends string | AccountMeta<string> = string,
+  TAccountCosignGateControl extends string | AccountMeta<string> = string,
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -166,6 +167,9 @@ export type SettleFeesInstruction<
       TAccountGateCosigner extends string
         ? ReadonlyAccount<TAccountGateCosigner>
         : TAccountGateCosigner,
+      TAccountCosignGateControl extends string
+        ? ReadonlyAccount<TAccountCosignGateControl>
+        : TAccountCosignGateControl,
       ...TRemainingAccounts,
     ]
   >;
@@ -237,6 +241,7 @@ export type SettleFeesAsyncInput<
   TAccountAssociatedTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
   TAccountGateCosigner extends string = string,
+  TAccountCosignGateControl extends string = string,
 > = {
   settlementAuthority: TransactionSigner<TAccountSettlementAuthority>;
   initializerProgram?: Address<TAccountInitializerProgram>;
@@ -264,6 +269,7 @@ export type SettleFeesAsyncInput<
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
   gateCosigner?: Address<TAccountGateCosigner>;
+  cosignGateControl?: Address<TAccountCosignGateControl>;
   minBaseToQuoteOut: SettleFeesInstructionDataArgs['minBaseToQuoteOut'];
   minQuoteToBaseOut: SettleFeesInstructionDataArgs['minQuoteToBaseOut'];
 };
@@ -295,6 +301,7 @@ export async function getSettleFeesInstructionAsync<
   TAccountAssociatedTokenProgram extends string,
   TAccountSystemProgram extends string,
   TAccountGateCosigner extends string,
+  TAccountCosignGateControl extends string,
   TProgramAddress extends Address =
     typeof DOPPLER_REHYPE_ROUTER_V1_PROGRAM_ADDRESS,
 >(
@@ -324,7 +331,8 @@ export async function getSettleFeesInstructionAsync<
     TAccountQuoteTokenProgram,
     TAccountAssociatedTokenProgram,
     TAccountSystemProgram,
-    TAccountGateCosigner
+    TAccountGateCosigner,
+    TAccountCosignGateControl
   >,
   config?: { programAddress?: TProgramAddress },
 ): Promise<
@@ -355,7 +363,8 @@ export async function getSettleFeesInstructionAsync<
     TAccountQuoteTokenProgram,
     TAccountAssociatedTokenProgram,
     TAccountSystemProgram,
-    TAccountGateCosigner
+    TAccountGateCosigner,
+    TAccountCosignGateControl
   >
 > {
   // Program address.
@@ -420,6 +429,10 @@ export async function getSettleFeesInstructionAsync<
     },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
     gateCosigner: { value: input.gateCosigner ?? null, isWritable: false },
+    cosignGateControl: {
+      value: input.cosignGateControl ?? null,
+      isWritable: false,
+    },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -580,6 +593,7 @@ export async function getSettleFeesInstructionAsync<
       getAccountMeta('associatedTokenProgram', accounts.associatedTokenProgram),
       getAccountMeta('systemProgram', accounts.systemProgram),
       getAccountMeta('gateCosigner', accounts.gateCosigner),
+      getAccountMeta('cosignGateControl', accounts.cosignGateControl),
     ],
     data: getSettleFeesInstructionDataEncoder().encode(
       args as SettleFeesInstructionDataArgs,
@@ -612,7 +626,8 @@ export async function getSettleFeesInstructionAsync<
     TAccountQuoteTokenProgram,
     TAccountAssociatedTokenProgram,
     TAccountSystemProgram,
-    TAccountGateCosigner
+    TAccountGateCosigner,
+    TAccountCosignGateControl
   >);
 }
 
@@ -643,6 +658,7 @@ export type SettleFeesInput<
   TAccountAssociatedTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
   TAccountGateCosigner extends string = string,
+  TAccountCosignGateControl extends string = string,
 > = {
   settlementAuthority: TransactionSigner<TAccountSettlementAuthority>;
   initializerProgram?: Address<TAccountInitializerProgram>;
@@ -670,6 +686,7 @@ export type SettleFeesInput<
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
   gateCosigner?: Address<TAccountGateCosigner>;
+  cosignGateControl?: Address<TAccountCosignGateControl>;
   minBaseToQuoteOut: SettleFeesInstructionDataArgs['minBaseToQuoteOut'];
   minQuoteToBaseOut: SettleFeesInstructionDataArgs['minQuoteToBaseOut'];
 };
@@ -701,6 +718,7 @@ export function getSettleFeesInstruction<
   TAccountAssociatedTokenProgram extends string,
   TAccountSystemProgram extends string,
   TAccountGateCosigner extends string,
+  TAccountCosignGateControl extends string,
   TProgramAddress extends Address =
     typeof DOPPLER_REHYPE_ROUTER_V1_PROGRAM_ADDRESS,
 >(
@@ -730,7 +748,8 @@ export function getSettleFeesInstruction<
     TAccountQuoteTokenProgram,
     TAccountAssociatedTokenProgram,
     TAccountSystemProgram,
-    TAccountGateCosigner
+    TAccountGateCosigner,
+    TAccountCosignGateControl
   >,
   config?: { programAddress?: TProgramAddress },
 ): SettleFeesInstruction<
@@ -760,7 +779,8 @@ export function getSettleFeesInstruction<
   TAccountQuoteTokenProgram,
   TAccountAssociatedTokenProgram,
   TAccountSystemProgram,
-  TAccountGateCosigner
+  TAccountGateCosigner,
+  TAccountCosignGateControl
 > {
   // Program address.
   const programAddress =
@@ -824,6 +844,10 @@ export function getSettleFeesInstruction<
     },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
     gateCosigner: { value: input.gateCosigner ?? null, isWritable: false },
+    cosignGateControl: {
+      value: input.cosignGateControl ?? null,
+      isWritable: false,
+    },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -876,6 +900,7 @@ export function getSettleFeesInstruction<
       getAccountMeta('associatedTokenProgram', accounts.associatedTokenProgram),
       getAccountMeta('systemProgram', accounts.systemProgram),
       getAccountMeta('gateCosigner', accounts.gateCosigner),
+      getAccountMeta('cosignGateControl', accounts.cosignGateControl),
     ],
     data: getSettleFeesInstructionDataEncoder().encode(
       args as SettleFeesInstructionDataArgs,
@@ -908,7 +933,8 @@ export function getSettleFeesInstruction<
     TAccountQuoteTokenProgram,
     TAccountAssociatedTokenProgram,
     TAccountSystemProgram,
-    TAccountGateCosigner
+    TAccountGateCosigner,
+    TAccountCosignGateControl
   >);
 }
 
@@ -944,6 +970,7 @@ export type ParsedSettleFeesInstruction<
     associatedTokenProgram: TAccountMetas[23];
     systemProgram: TAccountMetas[24];
     gateCosigner?: TAccountMetas[25] | undefined;
+    cosignGateControl?: TAccountMetas[26] | undefined;
   };
   data: SettleFeesInstructionData;
 };
@@ -956,12 +983,12 @@ export function parseSettleFeesInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedSettleFeesInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 26) {
+  if (instruction.accounts.length < 27) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 26,
+        expectedAccountMetas: 27,
       },
     );
   }
@@ -1006,6 +1033,7 @@ export function parseSettleFeesInstruction<
       associatedTokenProgram: getNextAccount(),
       systemProgram: getNextAccount(),
       gateCosigner: getNextOptionalAccount(),
+      cosignGateControl: getNextOptionalAccount(),
     },
     data: getSettleFeesInstructionDataDecoder().decode(instruction.data),
   };

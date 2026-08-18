@@ -151,11 +151,12 @@ describe('fee rehypothecation settlement preparation', () => {
       migratorMigratePayload: payloadBuffer(),
       curveKind: initializer.CURVE_KIND_XYK,
       swapLock: 0,
-      pad4: new Uint8Array(6),
+      pad4: new Uint8Array(5),
       curveParams: payloadBuffer(
         new Uint8Array([initializer.CURVE_PARAMS_FORMAT_XYK_V0]),
       ),
-      quoteDeposited: 0n,
+      vestingEnabled: 0,
+      createdAt: 0n,
       reserved: new Uint8Array(64),
     });
     const launchFeeStateData = getLaunchFeeStateEncoder().encode({

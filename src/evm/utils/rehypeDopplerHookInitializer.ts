@@ -30,7 +30,7 @@ type NormalizedBuybackConfig = NormalizedCommonConfig & {
 };
 
 type NormalizedBeneficiaryConfig = NormalizedCommonConfig & {
-  buybackDestination?: never;
+  buybackDestination: Address;
   feeBeneficiaries: [BeneficiaryData, ...BeneficiaryData[]];
   feeRoutingMode: RehypeFeeRoutingMode.RouteToBeneficiaryFees;
 };
@@ -39,20 +39,35 @@ export type NormalizedRehypeDopplerHookInitializerConfig =
   | NormalizedBuybackConfig
   | NormalizedBeneficiaryConfig;
 
+/**
+ * Normalize a Rehype configuration after its fee distribution controller has
+ * been configured. `buybackDestination` and `controllerOverride` configure the
+ * same on-chain `buybackDst` field and cannot be used together.
+ */
 export function normalizeRehypeDopplerHookInitializerConfig(
   config: RehypeDopplerHookInitializerConfig,
+  controllerOverride?: Address,
 ): NormalizedRehypeDopplerHookInitializerConfig {
   assertNonZeroAddress(config.hookAddress, 'Rehype hookAddress');
 
-  const feeBeneficiaries = config.feeBeneficiaries;
   if (
-    feeBeneficiaries !== undefined &&
-    config.buybackDestination !== undefined
+    config.buybackDestination !== undefined &&
+    controllerOverride !== undefined
   ) {
     throw new Error(
-      'Rehype buybackDestination and feeBeneficiaries are mutually exclusive',
+      'Rehype buybackDestination and withFeeDistributionController are mutually exclusive',
     );
   }
+
+  const buybackDestination = config.buybackDestination ?? controllerOverride;
+  if (buybackDestination === undefined) {
+    throw new Error(
+      'Rehype requires buybackDestination or withFeeDistributionController',
+    );
+  }
+  assertNonZeroAddress(buybackDestination, 'Rehype buybackDestination');
+
+  const feeBeneficiaries = config.feeBeneficiaries;
 
   const feeDistributionInfo = resolveRehypeFeeDistributionInfo(config);
   const { startFee, endFee, durationSeconds, startingTime } =
@@ -81,21 +96,15 @@ export function normalizeRehypeDopplerHookInitializerConfig(
 
     return {
       ...common,
+      buybackDestination,
       feeBeneficiaries: normalizedBeneficiaries,
       feeRoutingMode: RehypeFeeRoutingMode.RouteToBeneficiaryFees,
     };
   }
 
-  if (config.buybackDestination === undefined) {
-    throw new Error(
-      'Rehype requires either buybackDestination or feeBeneficiaries',
-    );
-  }
-  assertNonZeroAddress(config.buybackDestination, 'Rehype buybackDestination');
-
   return {
     ...common,
-    buybackDestination: config.buybackDestination,
+    buybackDestination,
     feeRoutingMode,
   };
 }

@@ -194,6 +194,7 @@ export type RegisterEntryAsyncInput<
   TAccountEntryByMint extends string = string,
 > = {
   initializerConfig: Address<TAccountInitializerConfig>;
+  /** Launch account from initializer */
   launch: Address<TAccountLaunch>;
   /** Launch authority PDA - signed by initializer */
   launchAuthority: TransactionSigner<TAccountLaunchAuthority>;
@@ -201,7 +202,9 @@ export type RegisterEntryAsyncInput<
   baseMint: Address<TAccountBaseMint>;
   /** Quote mint for this market */
   quoteMint: Address<TAccountQuoteMint>;
+  /** Base vault from launch */
   baseVault: Address<TAccountBaseVault>;
+  /** Quote vault from launch */
   quoteVault: Address<TAccountQuoteVault>;
   payer: TransactionSigner<TAccountPayer>;
   baseTokenProgram: Address<TAccountBaseTokenProgram>;
@@ -494,6 +497,7 @@ export type RegisterEntryInput<
   TAccountEntryByMint extends string = string,
 > = {
   initializerConfig: Address<TAccountInitializerConfig>;
+  /** Launch account from initializer */
   launch: Address<TAccountLaunch>;
   /** Launch authority PDA - signed by initializer */
   launchAuthority: TransactionSigner<TAccountLaunchAuthority>;
@@ -501,7 +505,9 @@ export type RegisterEntryInput<
   baseMint: Address<TAccountBaseMint>;
   /** Quote mint for this market */
   quoteMint: Address<TAccountQuoteMint>;
+  /** Base vault from launch */
   baseVault: Address<TAccountBaseVault>;
+  /** Quote vault from launch */
   quoteVault: Address<TAccountQuoteVault>;
   payer: TransactionSigner<TAccountPayer>;
   baseTokenProgram: Address<TAccountBaseTokenProgram>;
@@ -699,6 +705,7 @@ export type ParsedRegisterEntryInstruction<
   programAddress: Address<TProgram>;
   accounts: {
     initializerConfig: TAccountMetas[0];
+    /** Launch account from initializer */
     launch: TAccountMetas[1];
     /** Launch authority PDA - signed by initializer */
     launchAuthority: TAccountMetas[2];
@@ -706,7 +713,9 @@ export type ParsedRegisterEntryInstruction<
     baseMint: TAccountMetas[3];
     /** Quote mint for this market */
     quoteMint: TAccountMetas[4];
+    /** Base vault from launch */
     baseVault: TAccountMetas[5];
+    /** Quote vault from launch */
     quoteVault: TAccountMetas[6];
     payer: TAccountMetas[7];
     baseTokenProgram: TAccountMetas[8];

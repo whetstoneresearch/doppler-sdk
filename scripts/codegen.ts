@@ -35,6 +35,7 @@ const PROGRAMS = [
     idl_name: 'doppler_rehype_router_v1',
     out_dir: 'dopplerRehypeRouterV1',
   },
+  { idl_name: 'doppler_vesting', out_dir: 'dopplerVesting' },
   { idl_name: 'initializer', out_dir: 'initializer' },
   { idl_name: 'prediction_migrator', out_dir: 'predictionMigrator' },
   { idl_name: 'trusted_oracle', out_dir: 'trustedOracle' },

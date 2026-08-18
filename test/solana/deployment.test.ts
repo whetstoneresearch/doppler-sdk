@@ -192,8 +192,9 @@ describe('CPMM migrator custom deployment helpers', () => {
       CUSTOM_PROGRAMS.initializerProgram,
     );
 
-    expect(ix.accounts?.at(-2)?.address).toBe(cpmmMigrationState);
-    expect(ix.accounts?.at(-1)?.address).toBe(cpmmConfig);
+    expect(ix.accounts).toHaveLength(20);
+    expect(ix.accounts?.[18]?.address).toBe(cpmmMigrationState);
+    expect(ix.accounts?.[19]?.address).toBe(cpmmConfig);
     expect(ix.programAddress).toBe(CUSTOM_PROGRAMS.initializerProgram);
   });
 });

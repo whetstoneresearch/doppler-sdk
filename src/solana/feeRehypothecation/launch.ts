@@ -13,6 +13,7 @@ import {
   type ResolvedManagedCosignerGateV2,
 } from '../dopplerLaunchHookV2/index.js';
 import { getInitializeRehypeInstructionAsync } from '../dopplerRehypeRouterV1/index.js';
+import { TOKEN_PROGRAM_ADDRESS } from '../core/constants.js';
 import {
   DOPPLER_SOLANA_DEVNET_FEE_REHYPOTHECATION_PROGRAM_ADDRESSES,
   deriveSolanaFeeRehypothecationDeployment,
@@ -28,6 +29,7 @@ import {
 import {
   createLaunchId,
   createLaunchWithResolvedHook,
+  deriveCreateLaunchAddresses,
   type CreateLaunchAccountSigners,
   type CreateLaunchAddresses,
   type CreateLaunchInput,
@@ -43,6 +45,12 @@ import {
   type FeeRehypothecationStrategy,
 } from './strategies.js';
 import type { RehypeBeneficiaryInputArgs } from '../dopplerRehypeRouterV1/index.js';
+import { DOPPLER_VESTING_PROGRAM_ADDRESS } from '../generated/dopplerVesting/index.js';
+import {
+  prepareVestingConfiguration,
+  type VestingPlan,
+} from '../vesting/internal.js';
+import type { VestingAddresses } from '../vesting/pda.js';
 
 type PrepareLaunchBaseInput = Omit<
   CreateLaunchInput,
@@ -57,6 +65,7 @@ type PrepareLaunchBaseInput = Omit<
   | 'migration'
   | 'payer'
   | 'programId'
+  | 'vestingConfig'
 >;
 
 export type PrepareFeeRehypothecationLaunchInput = PrepareLaunchBaseInput & {
@@ -72,6 +81,17 @@ export type PrepareFeeRehypothecationLaunchInput = PrepareLaunchBaseInput & {
   strategy: FeeRehypothecationStrategy;
   dynamicFee?: DynamicFeeScheduleArgs | null;
   cosignerGate?: ResolvedManagedCosignerGateV2 | null;
+  /** Immutable vesting funded from the launch's initial base supply. */
+  vesting?: VestingPlan;
+  /** Vesting deployment override for custom protocol deployments. */
+  vestingProgram?: Address;
+};
+
+export type PreparedFeeRehypothecationVesting = {
+  addresses: VestingAddresses;
+  totalAllocation: bigint;
+  initializeInstruction: Instruction;
+  fundInstruction: Instruction;
 };
 
 export type PrepareFeeRehypothecationLaunchResult = {
@@ -81,6 +101,7 @@ export type PrepareFeeRehypothecationLaunchResult = {
   routingAddresses: FeeRehypothecationAddresses;
   initializeRoutingInstruction: Instruction;
   initializeLaunchInstruction: Instruction;
+  vesting?: PreparedFeeRehypothecationVesting;
   unsignedSwapHook: CurveSwapHook;
   /** Pass the configured signer while the gate is active; omit it after expiry. */
   getSwapHook(cosigner?: TransactionSigner): CurveSwapHook;
@@ -109,10 +130,43 @@ export async function prepareLaunch(
     ));
   const launchId = input.launchId ?? createLaunchId();
   const namespace = input.namespace ?? deployment.dopplerRehypeRouterV1Program;
+  const launchAddresses = await deriveCreateLaunchAddresses({
+    deployment: {
+      initializerProgram: deployment.initializerProgram,
+      initializerConfig: deployment.initializerConfig,
+    },
+    namespace,
+    launchId,
+    baseMint: input.launchAccounts.baseMint,
+    metadata: input.metadata,
+  });
   const routingAddresses = await deriveFeeRehypothecationAddresses(
     input.launchAccounts.baseMint.address,
     deployment.dopplerRehypeRouterV1Program,
   );
+  const preparedVesting = input.vesting
+    ? await prepareVestingConfiguration({
+        payer: input.payer,
+        launch: launchAddresses.launch,
+        launchAuthority: launchAddresses.launchAuthority,
+        baseMint: input.launchAccounts.baseMint,
+        baseVault: input.launchAccounts.baseVault,
+        baseTokenProgram:
+          input.tokenPrograms?.baseTokenProgram ?? TOKEN_PROGRAM_ADDRESS,
+        initialSupply: input.supply.baseTotalSupply,
+        plan: input.vesting,
+        vestingProgram: input.vestingProgram ?? DOPPLER_VESTING_PROGRAM_ADDRESS,
+        initializerProgram: deployment.initializerProgram,
+      })
+    : undefined;
+  if (
+    preparedVesting &&
+    preparedVesting.totalAllocation >= preparedVesting.initialSupply
+  ) {
+    throw new Error(
+      'vesting allocations must leave base tokens for the bonding curve',
+    );
+  }
 
   const gate = input.cosignerGate ?? undefined;
   if (gate && !isResolvedManagedCosignerGateV2(gate)) {
@@ -174,10 +228,14 @@ export async function prepareLaunch(
     },
     namespace,
     launchId,
+    addresses: launchAddresses,
     launchAccounts: input.launchAccounts,
     payer: input.payer,
     authority: input.authority,
-    supply: input.supply,
+    supply: {
+      ...input.supply,
+      baseForDistribution: preparedVesting?.totalAllocation ?? 0n,
+    },
     curve: input.curve,
     tokenPrograms: input.tokenPrograms,
     metadata: input.metadata,
@@ -187,6 +245,7 @@ export async function prepareLaunch(
     rent: input.rent,
     metadataProgram: input.metadataProgram,
     migration: false,
+    vestingConfig: preparedVesting?.addresses.config,
     feeBeneficiaries: [
       { wallet: routingAddresses.authority, shareBps: 10_000 },
     ],
@@ -236,6 +295,14 @@ export async function prepareLaunch(
     routingAddresses,
     initializeRoutingInstruction,
     initializeLaunchInstruction: launch.instruction,
+    vesting: preparedVesting
+      ? {
+          addresses: preparedVesting.addresses,
+          totalAllocation: preparedVesting.totalAllocation,
+          initializeInstruction: preparedVesting.initializeInstruction,
+          fundInstruction: preparedVesting.fundInstruction,
+        }
+      : undefined,
     unsignedSwapHook,
     getSwapHook,
   };

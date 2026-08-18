@@ -1030,19 +1030,36 @@ type RehypeDopplerHookInitializerCommonConfig = {
 };
 
 type RehypeBuybackDestinationConfig = {
-  buybackDestination: Address;
+  buybackDestination?: Address;
   feeBeneficiaries?: never;
   feeRoutingMode?: RehypeFeeRoutingModeInput;
 };
 
 type RehypeFeeBeneficiariesConfig = {
-  buybackDestination?: never;
+  buybackDestination?: Address;
   feeBeneficiaries: [BeneficiaryData, ...BeneficiaryData[]];
   feeRoutingMode?:
     | RehypeFeeRoutingMode.RouteToBeneficiaryFees
     | 'routeToBeneficiaryFees';
 };
 
+/**
+ * Rehype fee distribution controller requirements:
+ *
+ * `buybackDestination` is encoded as the hook's `buybackDst`: it is the only
+ * address authorized to call `setFeeDistribution` and also receives
+ * direct-buyback proceeds and legacy empty-beneficiary fees. Configured
+ * `feeBeneficiaries` control beneficiary fee recipients but do not grant that
+ * authority.
+ *
+ * Every Rehype configuration requires an explicit fee distribution controller.
+ * Direct factory callers must set `buybackDestination`. Builder callers may
+ * instead use `withFeeDistributionController`. These options configure the
+ * same on-chain field and cannot be used together.
+ *
+ * Governance configuration, governance factory results, fee beneficiaries,
+ * and LP reinvestment do not determine or provide the controller.
+ */
 export type RehypeDopplerHookInitializerConfig =
   RehypeDopplerHookInitializerCommonConfig &
     (RehypeBuybackDestinationConfig | RehypeFeeBeneficiariesConfig);

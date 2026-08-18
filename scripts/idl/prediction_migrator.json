@@ -537,7 +537,10 @@
           "name": "initializer_config"
         },
         {
-          "name": "launch"
+          "name": "launch",
+          "docs": [
+            "Launch account from initializer"
+          ]
         },
         {
           "name": "launch_authority",
@@ -559,10 +562,16 @@
           ]
         },
         {
-          "name": "base_vault"
+          "name": "base_vault",
+          "docs": [
+            "Base vault from launch"
+          ]
         },
         {
-          "name": "quote_vault"
+          "name": "quote_vault",
+          "docs": [
+            "Quote vault from launch"
+          ]
         },
         {
           "name": "payer",
@@ -832,19 +841,6 @@
   ],
   "events": [
     {
-      "name": "AccumulatorUpdated",
-      "discriminator": [
-        107,
-        85,
-        107,
-        83,
-        31,
-        115,
-        47,
-        141
-      ]
-    },
-    {
       "name": "EntryMigrated",
       "discriminator": [
         61,
@@ -990,29 +986,19 @@
       "code": 6019,
       "name": "InvalidInput",
       "msg": "Invalid input"
+    },
+    {
+      "code": 6020,
+      "name": "NoPendingRewards",
+      "msg": "No pending rewards"
+    },
+    {
+      "code": 6021,
+      "name": "ClaimableSupplyAlreadySet",
+      "msg": "Claimable supply already set"
     }
   ],
   "types": [
-    {
-      "name": "AccumulatorUpdated",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "market",
-            "type": "pubkey"
-          },
-          {
-            "name": "new_total_pot",
-            "type": "u64"
-          },
-          {
-            "name": "new_acc_quote_per_token",
-            "type": "u128"
-          }
-        ]
-      }
-    },
     {
       "name": "ClaimReceipt",
       "docs": [
@@ -1046,7 +1032,7 @@
           {
             "name": "reward_debt",
             "docs": [
-              "Reward debt for accumulator accounting (scaled by ACC_SCALE)"
+              "Raw quote already paid to this receipt"
             ],
             "type": "u128"
           },
@@ -1514,11 +1500,15 @@
             "type": "u8"
           },
           {
+            "name": "vesting_enabled",
+            "type": "u8"
+          },
+          {
             "name": "_pad4",
             "type": {
               "array": [
                 "u8",
-                6
+                5
               ]
             }
           },
@@ -1531,8 +1521,8 @@
             }
           },
           {
-            "name": "quote_deposited",
-            "type": "u64"
+            "name": "created_at",
+            "type": "i64"
           },
           {
             "name": "_reserved",
@@ -1603,14 +1593,6 @@
               "Claimable supply of winner token (fixed after winning entry migrates)"
             ],
             "type": "u64"
-          },
-          {
-            "name": "acc_quote_per_token",
-            "docs": [
-              "Scaled accumulator: total_pot * ACC_SCALE / claimable_supply",
-              "This tracks quote per token and increases as losing entries migrate"
-            ],
-            "type": "u128"
           },
           {
             "name": "is_resolved",

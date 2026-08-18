@@ -87,7 +87,7 @@ export const robinhoodChain = defineChain({
 /** Chain configuration for tests */
 interface ChainTestConfig {
   chain: Chain
-  envVar: string
+  envVar?: string
   /** Optional Alchemy network name for fallback */
   alchemyNetwork?: string
 }
@@ -124,7 +124,6 @@ const CHAIN_CONFIG: Record<number, ChainTestConfig> = {
   },
   [CHAIN_IDS.MONAD_MAINNET]: {
     chain: monadMainnet,
-    envVar: 'MONAD_MAINNET_RPC_URL',
     alchemyNetwork: 'monad-mainnet',
   },
 }
@@ -135,7 +134,7 @@ const CHAIN_CONFIG: Record<number, ChainTestConfig> = {
  */
 function getRpcUrl(config: ChainTestConfig): string | undefined {
   // 1. Check environment variable
-  const envUrl = process.env[config.envVar]
+  const envUrl = config.envVar ? process.env[config.envVar] : undefined
   if (envUrl) return envUrl
 
   // 2. Try Alchemy fallback
@@ -173,10 +172,15 @@ export function getTestClient(
 
   const rpcUrl = getRpcUrl(config)
   if (!rpcUrl) {
+    const requirements = [
+      config.envVar ? `Set ${config.envVar} environment variable` : undefined,
+      config.alchemyNetwork
+        ? `ALCHEMY_API_KEY for ${config.alchemyNetwork}`
+        : undefined,
+    ].filter(Boolean)
     throw new Error(
       `No RPC URL available for chain ${chainId}. ` +
-      `Set ${config.envVar} environment variable` +
-      (config.alchemyNetwork ? ` or ALCHEMY_API_KEY for ${config.alchemyNetwork}` : '')
+        requirements.join(' or '),
     )
   }
 
@@ -340,12 +344,15 @@ export function getTestClients(
   // Live or unit mode - use rate-limited client
   const rpcUrl = options.rpcUrl ?? getRpcUrl(config)
   if (!rpcUrl) {
+    const requirements = [
+      config.envVar ? `Set ${config.envVar} environment variable` : undefined,
+      config.alchemyNetwork
+        ? `ALCHEMY_API_KEY for ${config.alchemyNetwork}`
+        : undefined,
+    ].filter(Boolean)
     throw new Error(
       `No RPC URL available for chain ${chainId}. ` +
-        `Set ${config.envVar} environment variable` +
-        (config.alchemyNetwork
-          ? ` or ALCHEMY_API_KEY for ${config.alchemyNetwork}`
-          : '')
+        requirements.join(' or '),
     )
   }
 

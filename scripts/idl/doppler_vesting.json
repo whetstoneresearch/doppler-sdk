@@ -1,0 +1,932 @@
+{
+  "address": "2dhWRsojcuJbEJ2uaB6ayGwXz6PcFaPGpjnqP9Bawead",
+  "metadata": {
+    "name": "doppler_vesting",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Immutable token vesting for Doppler launches"
+  },
+  "instructions": [
+    {
+      "name": "claim",
+      "discriminator": [
+        62,
+        198,
+        214,
+        193,
+        213,
+        159,
+        108,
+        210
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "beneficiary"
+        },
+        {
+          "name": "launch"
+        },
+        {
+          "name": "vesting_config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  101,
+                  115,
+                  116,
+                  105,
+                  110,
+                  103,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "launch"
+              },
+              {
+                "kind": "account",
+                "path": "base_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "base_mint"
+        },
+        {
+          "name": "vesting_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "vesting_config"
+              },
+              {
+                "kind": "account",
+                "path": "base_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "base_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "beneficiary_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "beneficiary"
+              },
+              {
+                "kind": "account",
+                "path": "base_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "base_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "base_token_program"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "ClaimArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "initialize_vesting",
+      "discriminator": [
+        5,
+        29,
+        245,
+        237,
+        50,
+        242,
+        35,
+        13
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "launch"
+        },
+        {
+          "name": "base_mint",
+          "docs": [
+            "Future launch mint. Its signature prevents another caller from claiming this config PDA."
+          ],
+          "signer": true
+        },
+        {
+          "name": "base_token_program"
+        },
+        {
+          "name": "vesting_config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  101,
+                  115,
+                  116,
+                  105,
+                  110,
+                  103,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "launch"
+              },
+              {
+                "kind": "account",
+                "path": "base_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "InitializeVestingArgs"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Launch",
+      "discriminator": [
+        144,
+        51,
+        51,
+        163,
+        206,
+        85,
+        213,
+        38
+      ]
+    },
+    {
+      "name": "VestingConfig",
+      "discriminator": [
+        0,
+        138,
+        71,
+        135,
+        26,
+        29,
+        43,
+        125
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "TokensReleased",
+      "discriminator": [
+        133,
+        146,
+        36,
+        133,
+        72,
+        255,
+        122,
+        204
+      ]
+    },
+    {
+      "name": "VestingInitialized",
+      "discriminator": [
+        157,
+        209,
+        148,
+        135,
+        191,
+        96,
+        26,
+        187
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "InvalidConfig",
+      "msg": "Invalid vesting configuration"
+    },
+    {
+      "code": 6001,
+      "name": "TooManySchedules",
+      "msg": "Too many vesting schedules"
+    },
+    {
+      "code": 6002,
+      "name": "TooManyAllocations",
+      "msg": "Too many vesting allocations"
+    },
+    {
+      "code": 6003,
+      "name": "InvalidSchedule",
+      "msg": "Invalid vesting schedule"
+    },
+    {
+      "code": 6004,
+      "name": "InvalidAllocation",
+      "msg": "Invalid vesting allocation"
+    },
+    {
+      "code": 6005,
+      "name": "AllocationCapExceeded",
+      "msg": "Vesting allocation exceeds the permitted supply cap"
+    },
+    {
+      "code": 6006,
+      "name": "ArithmeticOverflow",
+      "msg": "Arithmetic overflow"
+    },
+    {
+      "code": 6007,
+      "name": "InvalidLaunch",
+      "msg": "Invalid Initializer launch"
+    },
+    {
+      "code": 6008,
+      "name": "InvalidMint",
+      "msg": "Invalid base mint"
+    },
+    {
+      "code": 6009,
+      "name": "InvalidTokenProgram",
+      "msg": "Invalid base token program"
+    },
+    {
+      "code": 6010,
+      "name": "VestingNotFunded",
+      "msg": "The launch has not funded vesting"
+    },
+    {
+      "code": 6011,
+      "name": "InvalidBeneficiary",
+      "msg": "Invalid vesting beneficiary"
+    },
+    {
+      "code": 6012,
+      "name": "UnknownSchedule",
+      "msg": "Unknown vesting schedule"
+    },
+    {
+      "code": 6013,
+      "name": "NoTokensAvailable",
+      "msg": "No vested tokens are currently available"
+    },
+    {
+      "code": 6014,
+      "name": "InsufficientAvailableAmount",
+      "msg": "Requested amount exceeds the vested amount available"
+    }
+  ],
+  "types": [
+    {
+      "name": "ClaimArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "schedule_id",
+            "type": {
+              "option": "u8"
+            }
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "InitializeVestingArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "initial_supply",
+            "type": "u64"
+          },
+          {
+            "name": "schedules",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "VestingSchedule"
+                }
+              }
+            }
+          },
+          {
+            "name": "allocations",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "VestingAllocationInput"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Launch",
+      "docs": [
+        "Launch state account."
+      ],
+      "serialization": "bytemuckunsafe",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "namespace",
+            "type": "pubkey"
+          },
+          {
+            "name": "launch_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "phase",
+            "type": "u8"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "launch_authority_bump",
+            "type": "u8"
+          },
+          {
+            "name": "_pad0",
+            "type": {
+              "array": [
+                "u8",
+                5
+              ]
+            }
+          },
+          {
+            "name": "base_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "quote_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "base_vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "quote_vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "base_total_supply",
+            "type": "u64"
+          },
+          {
+            "name": "base_for_distribution",
+            "type": "u64"
+          },
+          {
+            "name": "base_for_liquidity",
+            "type": "u64"
+          },
+          {
+            "name": "base_for_curve",
+            "type": "u64"
+          },
+          {
+            "name": "curve_virtual_base",
+            "type": "u64"
+          },
+          {
+            "name": "curve_virtual_quote",
+            "type": "u64"
+          },
+          {
+            "name": "swap_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "_pad1",
+            "type": {
+              "array": [
+                "u8",
+                6
+              ]
+            }
+          },
+          {
+            "name": "allow_buy",
+            "type": "u8"
+          },
+          {
+            "name": "allow_sell",
+            "type": "u8"
+          },
+          {
+            "name": "_pad2",
+            "type": {
+              "array": [
+                "u8",
+                6
+              ]
+            }
+          },
+          {
+            "name": "hook_program",
+            "type": "pubkey"
+          },
+          {
+            "name": "hook_flags",
+            "type": "u32"
+          },
+          {
+            "name": "_pad3",
+            "type": {
+              "array": [
+                "u8",
+                4
+              ]
+            }
+          },
+          {
+            "name": "hook_payload",
+            "type": {
+              "defined": {
+                "name": "PayloadBuf"
+              }
+            }
+          },
+          {
+            "name": "migrator_program",
+            "type": "pubkey"
+          },
+          {
+            "name": "migrator_init_payload",
+            "type": {
+              "defined": {
+                "name": "PayloadBuf"
+              }
+            }
+          },
+          {
+            "name": "migrator_migrate_payload",
+            "type": {
+              "defined": {
+                "name": "PayloadBuf"
+              }
+            }
+          },
+          {
+            "name": "curve_kind",
+            "type": "u8"
+          },
+          {
+            "name": "swap_lock",
+            "type": "u8"
+          },
+          {
+            "name": "vesting_enabled",
+            "type": "u8"
+          },
+          {
+            "name": "_pad4",
+            "type": {
+              "array": [
+                "u8",
+                5
+              ]
+            }
+          },
+          {
+            "name": "curve_params",
+            "type": {
+              "defined": {
+                "name": "PayloadBuf"
+              }
+            }
+          },
+          {
+            "name": "created_at",
+            "type": "i64"
+          },
+          {
+            "name": "_reserved",
+            "type": {
+              "array": [
+                "u8",
+                64
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "PayloadBuf",
+      "docs": [
+        "Variable-length payload buffer."
+      ],
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "len",
+            "type": "u16"
+          },
+          {
+            "name": "bytes",
+            "type": {
+              "array": [
+                "u8",
+                256
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "TokensReleased",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "vesting_config",
+            "type": "pubkey"
+          },
+          {
+            "name": "launch",
+            "type": "pubkey"
+          },
+          {
+            "name": "beneficiary",
+            "type": "pubkey"
+          },
+          {
+            "name": "schedule_id",
+            "type": "u8"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "VestingAllocation",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "beneficiary",
+            "type": "pubkey"
+          },
+          {
+            "name": "schedule_id",
+            "type": "u8"
+          },
+          {
+            "name": "_padding",
+            "type": {
+              "array": [
+                "u8",
+                7
+              ]
+            }
+          },
+          {
+            "name": "total_amount",
+            "type": "u64"
+          },
+          {
+            "name": "released_amount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "VestingAllocationInput",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "beneficiary",
+            "type": "pubkey"
+          },
+          {
+            "name": "schedule_id",
+            "type": "u8"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "VestingConfig",
+      "serialization": "bytemuckunsafe",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "launch",
+            "type": "pubkey"
+          },
+          {
+            "name": "base_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "base_token_program",
+            "type": "pubkey"
+          },
+          {
+            "name": "initial_supply",
+            "type": "u64"
+          },
+          {
+            "name": "total_allocation",
+            "type": "u64"
+          },
+          {
+            "name": "schedules",
+            "type": {
+              "array": [
+                {
+                  "defined": {
+                    "name": "VestingSchedule"
+                  }
+                },
+                8
+              ]
+            }
+          },
+          {
+            "name": "allocations",
+            "type": {
+              "array": [
+                {
+                  "defined": {
+                    "name": "VestingAllocation"
+                  }
+                },
+                16
+              ]
+            }
+          },
+          {
+            "name": "version",
+            "type": "u8"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "schedule_count",
+            "type": "u8"
+          },
+          {
+            "name": "allocation_count",
+            "type": "u8"
+          },
+          {
+            "name": "_reserved",
+            "type": {
+              "array": [
+                "u8",
+                60
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "VestingInitialized",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "vesting_config",
+            "type": "pubkey"
+          },
+          {
+            "name": "launch",
+            "type": "pubkey"
+          },
+          {
+            "name": "base_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "total_allocation",
+            "type": "u64"
+          },
+          {
+            "name": "schedule_count",
+            "type": "u8"
+          },
+          {
+            "name": "allocation_count",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "VestingSchedule",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "cliff_seconds",
+            "type": "u64"
+          },
+          {
+            "name": "duration_seconds",
+            "type": "u64"
+          }
+        ]
+      }
+    }
+  ]
+}

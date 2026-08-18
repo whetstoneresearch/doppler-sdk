@@ -28,14 +28,13 @@ type CommonConfig = {
 };
 
 describe('MulticurveBuilder RehypeDopplerHookInitializer beneficiaries', () => {
-  it('makes buyback destination and fee beneficiaries mutually exclusive', () => {
-    type ConflictingConfig = CommonConfig & {
+  it('allows buyback destination with fee beneficiaries', () => {
+    type CombinedConfig = CommonConfig & {
       buybackDestination: Address;
       feeBeneficiaries: [BeneficiaryData];
     };
 
-    // Given / When / Then: the public config type must reject both destinations.
-    expectTypeOf<ConflictingConfig>().not.toMatchTypeOf<RehypeDopplerHookInitializerConfig>();
+    expectTypeOf<CombinedConfig>().toMatchTypeOf<RehypeDopplerHookInitializerConfig>();
   });
 
   it('makes DirectBuyback routing incompatible with fee beneficiaries', () => {
@@ -69,12 +68,12 @@ describe('MulticurveBuilder RehypeDopplerHookInitializer beneficiaries', () => {
     expect(() =>
       Reflect.apply(normalizeRehypeDopplerHookInitializerConfig, undefined, [
         config,
+        buybackDestination,
       ]),
     ).toThrow('Rehype fee beneficiary list must not be empty');
   });
 
-  it('rejects buyback destination with an explicitly empty array at runtime', () => {
-    // Given
+  it('validates beneficiaries when buyback destination is also configured', () => {
     const config = {
       hookAddress,
       buybackDestination,
@@ -83,14 +82,11 @@ describe('MulticurveBuilder RehypeDopplerHookInitializer beneficiaries', () => {
       feeDistributionInfo: feeDistributionInfo(),
     };
 
-    // When / Then
     expect(() =>
       Reflect.apply(normalizeRehypeDopplerHookInitializerConfig, undefined, [
         config,
       ]),
-    ).toThrow(
-      'Rehype buybackDestination and feeBeneficiaries are mutually exclusive',
-    );
+    ).toThrow('Rehype fee beneficiary list must not be empty');
   });
 
   it('sorts beneficiaries and infers beneficiary fee routing', () => {
@@ -108,6 +104,7 @@ describe('MulticurveBuilder RehypeDopplerHookInitializer beneficiaries', () => {
         startFee: 3_000,
         feeDistributionInfo: feeDistributionInfo(),
       })
+      .withFeeDistributionController(buybackDestination)
       .build();
 
     // Then
@@ -123,7 +120,9 @@ describe('MulticurveBuilder RehypeDopplerHookInitializer beneficiaries', () => {
         ({ beneficiary }) => beneficiary,
       ),
     ).toEqual([firstBeneficiary, secondBeneficiary]);
-    expect(params.initializer.config.buybackDestination).toBeUndefined();
+    expect(params.initializer.config.buybackDestination).toBe(
+      buybackDestination,
+    );
   });
 
   it('rejects beneficiary shares that do not sum to WAD', () => {
@@ -134,6 +133,7 @@ describe('MulticurveBuilder RehypeDopplerHookInitializer beneficiaries', () => {
     expect(() =>
       builder.withRehypeDopplerHookInitializer({
         hookAddress,
+        buybackDestination,
         feeBeneficiaries: [
           { beneficiary: firstBeneficiary, shares: WAD / 4n },
           { beneficiary: secondBeneficiary, shares: WAD / 4n },
@@ -212,6 +212,147 @@ describe('MulticurveBuilder RehypeDopplerHookInitializer beneficiaries', () => {
       buybackDestination,
     );
   });
+
+  it('requires an explicit controller for standard governance', () => {
+    expect(() =>
+      buildBaseBuilder()
+        .withRehypeDopplerHookInitializer({
+          hookAddress,
+          feeBeneficiaries: [{ beneficiary: firstBeneficiary, shares: WAD }],
+          startFee: 3_000,
+          feeDistributionInfo: feeDistributionInfo(),
+        })
+        .build(),
+    ).toThrow(
+      'Rehype requires buybackDestination or withFeeDistributionController',
+    );
+  });
+
+  it('does not infer the controller from launchpad governance', () => {
+    expect(() =>
+      buildBaseBuilder()
+        .withGovernance({ type: 'launchpad', multisig: buybackDestination })
+        .withRehypeDopplerHookInitializer({
+          hookAddress,
+          feeBeneficiaries: [{ beneficiary: firstBeneficiary, shares: WAD }],
+          startFee: 3_000,
+          feeDistributionInfo: feeDistributionInfo(),
+        })
+        .build(),
+    ).toThrow(
+      'Rehype requires buybackDestination or withFeeDistributionController',
+    );
+  });
+
+  it('requires an explicit controller with a governance factory override', () => {
+    expect(() =>
+      buildBaseBuilder()
+        .withGovernance({ type: 'noOp' })
+        .withGovernanceFactory(firstBeneficiary)
+        .withRehypeDopplerHookInitializer({
+          hookAddress,
+          feeBeneficiaries: [{ beneficiary: firstBeneficiary, shares: WAD }],
+          startFee: 3_000,
+          feeDistributionInfo: feeDistributionInfo(),
+        })
+        .build(),
+    ).toThrow(
+      'Rehype requires buybackDestination or withFeeDistributionController',
+    );
+  });
+
+  it('allows a governance factory override with an explicit controller', () => {
+    const params = buildBaseBuilder()
+      .withGovernance({ type: 'noOp' })
+      .withGovernanceFactory(firstBeneficiary)
+      .withRehypeDopplerHookInitializer({
+        hookAddress,
+        feeBeneficiaries: [{ beneficiary: firstBeneficiary, shares: WAD }],
+        startFee: 3_000,
+        feeDistributionInfo: feeDistributionInfo(),
+      })
+      .withFeeDistributionController(buybackDestination)
+      .build();
+
+    expect(params.initializer?.type).toBe('rehype');
+    if (params.initializer?.type !== 'rehype') {
+      throw new Error('Expected RehypeDopplerHookInitializer config');
+    }
+    expect(params.initializer.config.buybackDestination).toBe(
+      buybackDestination,
+    );
+  });
+
+  it('requires an explicit controller for complete LP reinvestment', () => {
+    expect(() =>
+      buildBaseBuilder()
+        .withRehypeDopplerHookInitializer({
+          hookAddress,
+          startFee: 3_000,
+          feeDistributionInfo: fullLpReinvestment(),
+        })
+        .build(),
+    ).toThrow(
+      'Rehype requires buybackDestination or withFeeDistributionController',
+    );
+  });
+
+  it('uses an explicit controller for complete LP reinvestment', () => {
+    const params = buildBaseBuilder()
+      .withRehypeDopplerHookInitializer({
+        hookAddress,
+        startFee: 3_000,
+        feeDistributionInfo: fullLpReinvestment(),
+      })
+      .withFeeDistributionController(buybackDestination)
+      .build();
+
+    expect(params.initializer?.type).toBe('rehype');
+    if (params.initializer?.type !== 'rehype') {
+      throw new Error('Expected RehypeDopplerHookInitializer config');
+    }
+    expect(params.initializer.config.buybackDestination).toBe(
+      buybackDestination,
+    );
+  });
+
+  it('rejects a fee distribution controller without a Rehype initializer', () => {
+    expect(() =>
+      buildBaseBuilder()
+        .withFeeDistributionController(buybackDestination)
+        .build(),
+    ).toThrow(
+      'withFeeDistributionController requires a Rehype initializer configuration',
+    );
+  });
+
+  it('rejects both explicit controller inputs in either call order', () => {
+    expect(() =>
+      buildBaseBuilder()
+        .withFeeDistributionController(buybackDestination)
+        .withRehypeDopplerHookInitializer({
+          hookAddress,
+          buybackDestination: firstBeneficiary,
+          startFee: 3_000,
+          feeDistributionInfo: feeDistributionInfo(),
+        }),
+    ).toThrow(
+      'Rehype buybackDestination and withFeeDistributionController are mutually exclusive',
+    );
+
+    expect(() =>
+      buildBaseBuilder()
+        .withRehypeDopplerHookInitializer({
+          hookAddress,
+          buybackDestination,
+          startFee: 3_000,
+          feeDistributionInfo: feeDistributionInfo(),
+        })
+        .withFeeDistributionController(firstBeneficiary),
+    ).toThrow(
+      'Rehype buybackDestination and withFeeDistributionController are mutually exclusive',
+    );
+  });
 });
 
 function buildBaseBuilder() {
@@ -254,5 +395,18 @@ function feeDistributionInfo() {
     numeraireFeesToNumeraireBuybackWad: 0n,
     numeraireFeesToBeneficiaryWad: WAD,
     numeraireFeesToLpWad: 0n,
+  };
+}
+
+function fullLpReinvestment() {
+  return {
+    assetFeesToAssetBuybackWad: 0n,
+    assetFeesToNumeraireBuybackWad: 0n,
+    assetFeesToBeneficiaryWad: 0n,
+    assetFeesToLpWad: WAD,
+    numeraireFeesToAssetBuybackWad: 0n,
+    numeraireFeesToNumeraireBuybackWad: 0n,
+    numeraireFeesToBeneficiaryWad: 0n,
+    numeraireFeesToLpWad: WAD,
   };
 }

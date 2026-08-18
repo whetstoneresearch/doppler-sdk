@@ -679,6 +679,11 @@
       "code": 6024,
       "name": "InvalidHookProgram",
       "msg": "Missing or mismatched hook program account"
+    },
+    {
+      "code": 6025,
+      "name": "VestingNotFunded",
+      "msg": "Vesting must be funded before migration"
     }
   ],
   "types": [
@@ -1160,11 +1165,15 @@
             "type": "u8"
           },
           {
+            "name": "vesting_enabled",
+            "type": "u8"
+          },
+          {
             "name": "_pad4",
             "type": {
               "array": [
                 "u8",
-                6
+                5
               ]
             }
           },
@@ -1177,8 +1186,8 @@
             }
           },
           {
-            "name": "quote_deposited",
-            "type": "u64"
+            "name": "created_at",
+            "type": "i64"
           },
           {
             "name": "_reserved",

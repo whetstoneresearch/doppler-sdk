@@ -103,6 +103,8 @@ For runnable Solana flows, configure `examples/.env` and run with `pnpm tsx`, fo
 - [examples/solana-usdc-cosigner-gated-buy.ts](./examples/solana-usdc-cosigner-gated-buy.ts)
 - [examples/solana-prediction-market.ts](./examples/solana-prediction-market.ts)
 - [examples/solana-swap.ts](./examples/solana-swap.ts)
+- [examples/solana-vesting-launch.ts](./examples/solana-vesting-launch.ts)
+- [examples/solana-vesting-claim.ts](./examples/solana-vesting-claim.ts)
 
 To implement an independently deployed callback program, see
 [Building a custom Solana hook](./docs/solana-custom-hooks.md) and the
@@ -1879,7 +1881,7 @@ The whitelisting suite is scoped to the release-audit chains: Ethereum Mainnet, 
 
 Whitelisting test RPC priority is:
 
-1. Chain-specific RPC URL env var (`ETH_MAINNET_RPC_URL`, `ARBITRUM_RPC_URL`, `BASE_RPC_URL`, `BASE_SEPOLIA_RPC_URL`, `MONAD_MAINNET_RPC_URL`)
+1. Chain-specific RPC URL env var (`ETH_MAINNET_RPC_URL`, `ARBITRUM_RPC_URL`, `BASE_RPC_URL`, `BASE_SEPOLIA_RPC_URL`)
 2. `ALCHEMY_API_KEY` fallback for supported Alchemy networks, including Monad Mainnet
 3. Public/default RPC URL
 

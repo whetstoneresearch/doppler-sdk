@@ -64,6 +64,10 @@ Focus on `graduationMarketCap` behavior for a Rehype multicurve pool on Base Sep
 
 Create a dynamic auction that configures `RehypeDopplerHookMigrator` on the Doppler Hook migrator path instead of the initializer-side multicurve path. This is for launches that graduate into a Doppler Hook migration, with Rehype fee routing configured on the migrated pool rather than on a live multicurve initializer.
 
+### 7g. [Multicurve Rehype Fee Distribution Controller](./rehype/multicurve-fee-distribution-controller-base-sepolia.ts)
+
+Create a Base Sepolia Rehype multicurve pool with a fee-beneficiary matrix and a separately configured fee distribution controller. The example updates the matrix after launch, executes a V4 swap, verifies the stored distribution, and claims the resulting beneficiary fees.
+
 ### 8. [Multicurve Indexer Data](./multicurve-indexer-data.ts)
 
 Query and process pool data from the Doppler indexer. Demonstrates fetching pool metrics, parsing PoolKey data, monitoring migration status, and using indexer data with the SDK for quoting. **Note:** Requires `graphql-request` package.

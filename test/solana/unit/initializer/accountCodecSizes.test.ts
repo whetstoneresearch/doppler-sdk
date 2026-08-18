@@ -1,8 +1,10 @@
 import { address } from '@solana/kit';
 import { describe, expect, it } from 'vitest';
 import * as cpmmAccounts from '@/solana/generated/cpmm/accounts/index.js';
-import * as dopplerLaunchHookV1Accounts from '@/solana/generated/dopplerLaunchHookV1/accounts/index.js';
 import * as cpmmMigratorAccounts from '@/solana/generated/cpmmMigrator/accounts/index.js';
+import * as dopplerLaunchHookV1Accounts from '@/solana/generated/dopplerLaunchHookV1/accounts/index.js';
+import * as dopplerRehypeRouterV1Accounts from '@/solana/generated/dopplerRehypeRouterV1/accounts/index.js';
+import * as dopplerVestingAccounts from '@/solana/generated/dopplerVesting/accounts/index.js';
 import * as initializerAccounts from '@/solana/generated/initializer/accounts/index.js';
 import * as predictionMigratorAccounts from '@/solana/generated/predictionMigrator/accounts/index.js';
 import * as trustedOracleAccounts from '@/solana/generated/trustedOracle/accounts/index.js';
@@ -12,6 +14,8 @@ import type { InitConfigArgs } from '@/solana/initializer/index.js';
 const GENERATED_ACCOUNT_MODULES = [
   { name: 'cpmm', exports: cpmmAccounts },
   { name: 'dopplerLaunchHookV1', exports: dopplerLaunchHookV1Accounts },
+  { name: 'dopplerRehypeRouterV1', exports: dopplerRehypeRouterV1Accounts },
+  { name: 'dopplerVesting', exports: dopplerVestingAccounts },
   { name: 'cpmmMigrator', exports: cpmmMigratorAccounts },
   { name: 'initializer', exports: initializerAccounts },
   { name: 'predictionMigrator', exports: predictionMigratorAccounts },
@@ -123,5 +127,60 @@ describe('generated Solana account codec sizes', () => {
     expect(offset).toBe(2_123);
     expect(decoded.protocolFeeBps).toBe(initConfigArgs.protocolFeeBps);
     expect(() => decoder.decode(encoded.slice(0, -1))).toThrow();
+  });
+
+  it('keeps shared Launch account layouts aligned across generated clients', () => {
+    const emptyPayload = { len: 0, bytes: new Uint8Array(256) };
+    const createdAt = 1_725_000_123n;
+    const encoded = initializer.getLaunchEncoder().encode({
+      authority: DEFAULT_ADDRESS,
+      namespace: DEFAULT_ADDRESS,
+      launchId: new Uint8Array(32),
+      phase: 0,
+      bump: 1,
+      launchAuthorityBump: 2,
+      pad0: new Uint8Array(5),
+      baseMint: DEFAULT_ADDRESS,
+      quoteMint: DEFAULT_ADDRESS,
+      baseVault: DEFAULT_ADDRESS,
+      quoteVault: DEFAULT_ADDRESS,
+      baseTotalSupply: 1_000_000n,
+      baseForDistribution: 200_000n,
+      baseForLiquidity: 0n,
+      baseForCurve: 800_000n,
+      curveVirtualBase: 1_000_000n,
+      curveVirtualQuote: 10_000n,
+      swapFeeBps: 100,
+      pad1: new Uint8Array(6),
+      allowBuy: 1,
+      allowSell: 1,
+      pad2: new Uint8Array(6),
+      hookProgram: DEFAULT_ADDRESS,
+      hookFlags: 0,
+      pad3: new Uint8Array(4),
+      hookPayload: emptyPayload,
+      migratorProgram: DEFAULT_ADDRESS,
+      migratorInitPayload: emptyPayload,
+      migratorMigratePayload: emptyPayload,
+      curveKind: 0,
+      swapLock: 0,
+      vestingEnabled: 1,
+      pad4: new Uint8Array(5),
+      curveParams: emptyPayload,
+      createdAt,
+      reserved: new Uint8Array(64),
+    });
+    const dependentDecoders = [
+      cpmmMigratorAccounts.getLaunchDecoder(),
+      dopplerRehypeRouterV1Accounts.getLaunchDecoder(),
+      dopplerVestingAccounts.getLaunchDecoder(),
+      predictionMigratorAccounts.getLaunchDecoder(),
+    ];
+
+    for (const decoder of dependentDecoders) {
+      const decoded = decoder.decode(encoded);
+      expect(decoded.vestingEnabled).toBe(1);
+      expect(decoded.createdAt).toBe(createdAt);
+    }
   });
 });

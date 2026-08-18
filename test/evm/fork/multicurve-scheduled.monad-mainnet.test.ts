@@ -2,11 +2,11 @@ import { describe, it, expect, beforeAll } from 'vitest'
 import { decodeAbiParameters } from 'viem'
 
 import { DopplerSDK, getAddresses, CHAIN_IDS, airlockAbi, WAD } from '../../../src/evm'
-import { getTestClient, hasRpcUrl, getRpcEnvVar } from '../utils'
+import { getTestClient, hasRpcUrl } from '../utils'
 
 describe('Scheduled Multicurve (Monad Mainnet) smoke test', () => {
   if (!hasRpcUrl(CHAIN_IDS.MONAD_MAINNET)) {
-    it.skip(`requires ${getRpcEnvVar(CHAIN_IDS.MONAD_MAINNET)} env var`)
+    it.skip('requires ALCHEMY_API_KEY')
     return
   }
 

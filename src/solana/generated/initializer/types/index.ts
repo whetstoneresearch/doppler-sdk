@@ -28,3 +28,6 @@ export * from './payloadBuf';
 export * from './setFeePolicyArgs';
 export * from './tradingFlagsUpdated';
 export * from './updateTradingFlagsArgs';
+export * from './vestingAllocation';
+export * from './vestingFunded';
+export * from './vestingSchedule';

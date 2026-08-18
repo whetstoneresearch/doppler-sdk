@@ -38,6 +38,7 @@ import {
   getLaunchFeeStateCodec,
   getPoolCodec,
   getPositionCodec,
+  getVestingConfigCodec,
   type InitConfig,
   type InitConfigArgs,
   type Launch,
@@ -48,11 +49,14 @@ import {
   type PoolArgs,
   type Position,
   type PositionArgs,
+  type VestingConfig,
+  type VestingConfigArgs,
 } from '../accounts';
 import {
   getClaimFeesInstructionAsync,
   getCurveSwapExactInInstructionAsync,
   getDistributeBaseAllocationNoMigrationInstructionAsync,
+  getFundVestingInstructionAsync,
   getHarvestMigratedFeesInstructionAsync,
   getInitializeConfigInstructionAsync,
   getInitializeLaunchInstructionAsync,
@@ -69,6 +73,7 @@ import {
   parseClaimFeesInstruction,
   parseCurveSwapExactInInstruction,
   parseDistributeBaseAllocationNoMigrationInstruction,
+  parseFundVestingInstruction,
   parseHarvestMigratedFeesInstruction,
   parseInitializeConfigInstruction,
   parseInitializeLaunchInstruction,
@@ -85,6 +90,7 @@ import {
   type ClaimFeesAsyncInput,
   type CurveSwapExactInAsyncInput,
   type DistributeBaseAllocationNoMigrationAsyncInput,
+  type FundVestingAsyncInput,
   type HarvestMigratedFeesAsyncInput,
   type InitializeConfigAsyncInput,
   type InitializeLaunchAsyncInput,
@@ -93,6 +99,7 @@ import {
   type ParsedClaimFeesInstruction,
   type ParsedCurveSwapExactInInstruction,
   type ParsedDistributeBaseAllocationNoMigrationInstruction,
+  type ParsedFundVestingInstruction,
   type ParsedHarvestMigratedFeesInstruction,
   type ParsedInitializeConfigInstruction,
   type ParsedInitializeLaunchInstruction,
@@ -125,6 +132,7 @@ export enum InitializerAccount {
   LaunchFeeState,
   Pool,
   Position,
+  VestingConfig,
 }
 
 export function identifyInitializerAccount(
@@ -186,6 +194,17 @@ export function identifyInitializerAccount(
   ) {
     return InitializerAccount.Position;
   }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([0, 138, 71, 135, 26, 29, 43, 125]),
+      ),
+      0,
+    )
+  ) {
+    return InitializerAccount.VestingConfig;
+  }
   throw new SolanaError(
     SOLANA_ERROR__PROGRAM_CLIENTS__FAILED_TO_IDENTIFY_ACCOUNT,
     { accountData: data, programName: 'initializer' },
@@ -196,6 +215,7 @@ export enum InitializerInstruction {
   ClaimFees,
   CurveSwapExactIn,
   DistributeBaseAllocationNoMigration,
+  FundVesting,
   HarvestMigratedFees,
   InitializeConfig,
   InitializeLaunch,
@@ -247,6 +267,17 @@ export function identifyInitializerInstruction(
     )
   ) {
     return InitializerInstruction.DistributeBaseAllocationNoMigration;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([57, 58, 127, 28, 175, 154, 17, 125]),
+      ),
+      0,
+    )
+  ) {
+    return InitializerInstruction.FundVesting;
   }
   if (
     containsBytes(
@@ -410,6 +441,9 @@ export type ParsedInitializerInstruction<
       instructionType: InitializerInstruction.DistributeBaseAllocationNoMigration;
     } & ParsedDistributeBaseAllocationNoMigrationInstruction<TProgram>)
   | ({
+      instructionType: InitializerInstruction.FundVesting;
+    } & ParsedFundVestingInstruction<TProgram>)
+  | ({
       instructionType: InitializerInstruction.HarvestMigratedFees;
     } & ParsedHarvestMigratedFeesInstruction<TProgram>)
   | ({
@@ -474,6 +508,13 @@ export function parseInitializerInstruction<TProgram extends string>(
         instructionType:
           InitializerInstruction.DistributeBaseAllocationNoMigration,
         ...parseDistributeBaseAllocationNoMigrationInstruction(instruction),
+      };
+    }
+    case InitializerInstruction.FundVesting: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: InitializerInstruction.FundVesting,
+        ...parseFundVestingInstruction(instruction),
       };
     }
     case InitializerInstruction.HarvestMigratedFees: {
@@ -593,6 +634,8 @@ export type InitializerPluginAccounts = {
   pool: ReturnType<typeof getPoolCodec> & SelfFetchFunctions<PoolArgs, Pool>;
   position: ReturnType<typeof getPositionCodec> &
     SelfFetchFunctions<PositionArgs, Position>;
+  vestingConfig: ReturnType<typeof getVestingConfigCodec> &
+    SelfFetchFunctions<VestingConfigArgs, VestingConfig>;
 };
 
 export type InitializerPluginInstructions = {
@@ -609,6 +652,10 @@ export type InitializerPluginInstructions = {
   ) => ReturnType<
     typeof getDistributeBaseAllocationNoMigrationInstructionAsync
   > &
+    SelfPlanAndSendFunctions;
+  fundVesting: (
+    input: MakeOptional<FundVestingAsyncInput, 'payer'>,
+  ) => ReturnType<typeof getFundVestingInstructionAsync> &
     SelfPlanAndSendFunctions;
   harvestMigratedFees: (
     input: HarvestMigratedFeesAsyncInput,
@@ -685,6 +732,7 @@ export function initializerProgram() {
           ),
           pool: addSelfFetchFunctions(client, getPoolCodec()),
           position: addSelfFetchFunctions(client, getPositionCodec()),
+          vestingConfig: addSelfFetchFunctions(client, getVestingConfigCodec()),
         },
         instructions: {
           claimFees: (input) =>
@@ -701,6 +749,14 @@ export function initializerProgram() {
             addSelfPlanAndSendFunctions(
               client,
               getDistributeBaseAllocationNoMigrationInstructionAsync(input),
+            ),
+          fundVesting: (input) =>
+            addSelfPlanAndSendFunctions(
+              client,
+              getFundVestingInstructionAsync({
+                ...input,
+                payer: input.payer ?? client.payer,
+              }),
             ),
           harvestMigratedFees: (input) =>
             addSelfPlanAndSendFunctions(

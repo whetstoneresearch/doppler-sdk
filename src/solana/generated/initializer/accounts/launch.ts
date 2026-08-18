@@ -19,6 +19,8 @@ import {
   getAddressEncoder,
   getBytesDecoder,
   getBytesEncoder,
+  getI64Decoder,
+  getI64Encoder,
   getStructDecoder,
   getStructEncoder,
   getU16Decoder,
@@ -90,9 +92,10 @@ export type Launch = {
   migratorMigratePayload: PayloadBuf;
   curveKind: number;
   swapLock: number;
+  vestingEnabled: number;
   pad4: ReadonlyUint8Array;
   curveParams: PayloadBuf;
-  quoteDeposited: bigint;
+  createdAt: bigint;
   reserved: ReadonlyUint8Array;
 };
 
@@ -128,9 +131,10 @@ export type LaunchArgs = {
   migratorMigratePayload: PayloadBufArgs;
   curveKind: number;
   swapLock: number;
+  vestingEnabled: number;
   pad4: ReadonlyUint8Array;
   curveParams: PayloadBufArgs;
-  quoteDeposited: number | bigint;
+  createdAt: number | bigint;
   reserved: ReadonlyUint8Array;
 };
 
@@ -170,9 +174,10 @@ export function getLaunchEncoder(): FixedSizeEncoder<LaunchArgs> {
       ['migratorMigratePayload', getPayloadBufEncoder()],
       ['curveKind', getU8Encoder()],
       ['swapLock', getU8Encoder()],
-      ['pad4', fixEncoderSize(getBytesEncoder(), 6)],
+      ['vestingEnabled', getU8Encoder()],
+      ['pad4', fixEncoderSize(getBytesEncoder(), 5)],
       ['curveParams', getPayloadBufEncoder()],
-      ['quoteDeposited', getU64Encoder()],
+      ['createdAt', getI64Encoder()],
       ['reserved', fixEncoderSize(getBytesEncoder(), 64)],
     ]),
     (value) => ({ ...value, discriminator: LAUNCH_DISCRIMINATOR }),
@@ -214,9 +219,10 @@ export function getLaunchDecoder(): FixedSizeDecoder<Launch> {
     ['migratorMigratePayload', getPayloadBufDecoder()],
     ['curveKind', getU8Decoder()],
     ['swapLock', getU8Decoder()],
-    ['pad4', fixDecoderSize(getBytesDecoder(), 6)],
+    ['vestingEnabled', getU8Decoder()],
+    ['pad4', fixDecoderSize(getBytesDecoder(), 5)],
     ['curveParams', getPayloadBufDecoder()],
-    ['quoteDeposited', getU64Decoder()],
+    ['createdAt', getI64Decoder()],
     ['reserved', fixDecoderSize(getBytesDecoder(), 64)],
   ]);
 }
