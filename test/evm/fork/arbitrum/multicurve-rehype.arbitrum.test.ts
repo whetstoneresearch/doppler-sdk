@@ -159,6 +159,7 @@ describe('Arbitrum multicurve Rehype fork launch', () => {
             numeraireFeesToLpWad: 0n,
           },
         })
+        .withFeeDistributionController(clients.account.address)
         .withGovernance({ type: 'noOp' })
         .withMigration({ type: 'noOp' })
         .withUserAddress(clients.account.address)
