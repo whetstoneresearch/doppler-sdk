@@ -30,6 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
+      ARBITRUM_RPC_URL: ${{ secrets.ARBITRUM_RPC_URL }}
       # workflow_dispatch can specify chains; automated runs keep a reduced default set
       TEST_CHAINS: ${{ github.event_name == 'workflow_dispatch' && (github.event.inputs.chains || 'base,base-sepolia,arbitrum,mainnet,monad-mainnet,robinhood') || 'base,base-sepolia,arbitrum,mainnet,monad-mainnet,robinhood' }}
       RPC_DELAY_MS: ${{ github.event.inputs.rpc_delay_ms || '1000' }}
