@@ -1,4 +1,5 @@
 import {
+  arbitrum,
   base,
   baseSepolia,
   ink,
@@ -14,6 +15,7 @@ import type { Address, Hex, WalletClient } from 'viem';
 export type SupportedChain =
   | typeof mainnet
   | typeof sepolia
+  | typeof arbitrum
   | typeof base
   | typeof baseSepolia
   | typeof ink
