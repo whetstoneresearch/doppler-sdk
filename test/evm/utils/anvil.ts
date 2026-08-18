@@ -86,7 +86,9 @@ function getForkUrl(chainId: number): string | undefined {
         (alchemyKey ? `https://base-sepolia.g.alchemy.com/v2/${alchemyKey}` : undefined)
       )
     case CHAIN_IDS.MONAD_MAINNET:
-      return process.env.MONAD_MAINNET_RPC_URL
+      return alchemyKey
+        ? `https://monad-mainnet.g.alchemy.com/v2/${alchemyKey}`
+        : undefined
     default:
       return undefined
   }

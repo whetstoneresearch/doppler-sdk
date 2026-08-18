@@ -1878,7 +1878,7 @@ The whitelisting suite is scoped to the release-audit chains: Ethereum Mainnet, 
 
 Whitelisting test RPC priority is:
 
-1. Chain-specific RPC URL env var (`ETH_MAINNET_RPC_URL`, `BASE_RPC_URL`, `BASE_SEPOLIA_RPC_URL`, `MONAD_MAINNET_RPC_URL`)
+1. Chain-specific RPC URL env var (`ETH_MAINNET_RPC_URL`, `BASE_RPC_URL`, `BASE_SEPOLIA_RPC_URL`)
 2. `ALCHEMY_API_KEY` fallback for supported Alchemy networks, including Monad Mainnet
 3. Public/default RPC URL
 
