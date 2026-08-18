@@ -128,7 +128,6 @@ jobs:
         env:
           ANVIL_FORK_ENABLED: 'true'
           ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
-          ARBITRUM_RPC_URL: ${{ secrets.ARBITRUM_RPC_URL }}
           # Chain-specific configuration
           TEST_CHAIN: ${{ matrix.chain }}
         timeout-minutes: 15
