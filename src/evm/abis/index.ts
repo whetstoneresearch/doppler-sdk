@@ -4915,6 +4915,51 @@ export const rehypeDopplerHookInitializerAbi = [
     ],
     anonymous: false,
   },
+  {
+    type: 'function',
+    name: 'setFeeDistribution',
+    inputs: [
+      { name: 'poolId', type: 'bytes32', internalType: 'PoolId' },
+      {
+        name: 'assetFeesToAssetBuybackWad',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+      {
+        name: 'assetFeesToNumeraireBuybackWad',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+      {
+        name: 'assetFeesToBeneficiaryWad',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+      { name: 'assetFeesToLpWad', type: 'uint256', internalType: 'uint256' },
+      {
+        name: 'numeraireFeesToAssetBuybackWad',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+      {
+        name: 'numeraireFeesToNumeraireBuybackWad',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+      {
+        name: 'numeraireFeesToBeneficiaryWad',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+      {
+        name: 'numeraireFeesToLpWad',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
   { type: 'error', name: 'FeeBeneficiariesNotConfigured', inputs: [] },
   {
     type: 'error',
@@ -4922,6 +4967,7 @@ export const rehypeDopplerHookInitializerAbi = [
     inputs: [],
   },
   { type: 'error', name: 'FeeDistributionMustAddUpToWAD', inputs: [] },
+  { type: 'error', name: 'SenderNotAuthorized', inputs: [] },
   {
     type: 'error',
     name: 'FeeTooHigh',

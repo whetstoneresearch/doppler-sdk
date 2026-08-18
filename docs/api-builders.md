@@ -303,6 +303,7 @@ Methods (chainable):
     - Automatically appends a filler curve when the selected presets sum to < 100%, keeping total shares at exactly 1e18
 - Initializer configuration defaults to `{ type: 'dopplerHookInitializer' }`.
   - Use `withV4MulticurveInitializer(address)` to select the legacy `{ type: 'standard' }` initializer.
+  - `withRehypeDopplerHookInitializer(config)` requires an explicit fee distribution controller. Set `config.buybackDestination` or chain `withFeeDistributionController(address)`, but not both. Both configure the hook's `buybackDst`, which authorizes distribution updates and may also receive direct-buyback proceeds.
 - withVesting({ duration?, cliffDuration?, recipients?, amounts?, allocations? } | undefined)
   - `recipients`: Optional array of addresses to receive vested tokens. Defaults to `[userAddress]` if not provided.
   - `amounts`: Optional array of token amounts corresponding to each recipient. Must match `recipients` length if provided. Defaults to all unsold tokens to `userAddress` if not provided.
@@ -406,6 +407,41 @@ Preset tiers map to approximate market cap bands (assuming ~1B supply, $4,500 re
 - `high`: 24% allocation targeting $100k-$1B
 
 All presets use the curated tick ranges from `DEFAULT_MULTICURVE_*` constants. Shares are represented in WAD (1e18 = 100%); if you override shares, ensure they remain within bounds or the builder will throw.
+
+### Updating a Rehype fee distribution
+
+The fee distribution controller is fixed when the pool is created and cannot be
+changed. Use an address that will remain available to sign future updates, such
+as the intended operational wallet or multisig. Setting `DEAD_ADDRESS` as the
+controller permanently disables fee distribution updates.
+
+`withFeeDistributionController(address)` is a builder API. Callers that construct
+`DopplerFactory` parameters directly must set `buybackDestination` in the Rehype
+initializer configuration.
+
+After creation, connect the SDK to the controller wallet and replace the pool's
+complete fee distribution matrix:
+
+```ts
+const hook = await sdk.getRehypeDopplerHookInitializer(hookAddress)
+
+const { transactionHash } = await hook.setFeeDistribution(poolId, {
+  assetFeesToAssetBuybackWad: 0n,
+  assetFeesToNumeraireBuybackWad: 0n,
+  assetFeesToBeneficiaryWad: WAD,
+  assetFeesToLpWad: 0n,
+  numeraireFeesToAssetBuybackWad: 0n,
+  numeraireFeesToNumeraireBuybackWad: 0n,
+  numeraireFeesToBeneficiaryWad: WAD,
+  numeraireFeesToLpWad: 0n,
+})
+```
+
+The connected wallet must be the configured controller. This operation replaces
+all eight fields rather than applying a partial update. The four asset-fee
+allocations must sum to `WAD`, and the four numeraire-fee allocations must
+separately sum to `WAD`. The returned transaction hash is provided after the SDK
+waits for transaction confirmation.
 
 ---
 
