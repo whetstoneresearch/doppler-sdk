@@ -1,5 +1,14 @@
 import { describe, expect, it, vi } from 'vitest';
-import { getAddress, type Address, type TransactionReceipt } from 'viem';
+import {
+  encodeAbiParameters,
+  encodeEventTopics,
+  getAddress,
+  zeroAddress,
+  keccak256,
+  type Address,
+  type TransactionReceipt,
+} from 'viem';
+import { bundlerAbi } from '../../../../src/evm/abis';
 import {
   AirlockCreateReceiptError,
   parseAirlockCreateReceipt,
@@ -8,7 +17,10 @@ import {
   type AirlockCreateReceiptErrorCode,
   type PreparedCreateTransactionClient,
 } from '../../../../src/evm/utils/airlockCreateReceipt';
-import type { PreparedMulticurveCreate } from '../../../../src/evm/types';
+import type {
+  PreparedMulticurveCreate,
+  V4PoolKey,
+} from '../../../../src/evm/types';
 import {
   createMockCreateEventLog,
   createMockTransactionReceipt,
@@ -27,6 +39,31 @@ const wrongAddress = getAddress('0xb000000000000000000000000000000000000002');
 const poolInitializer = getAddress(
   '0x7100000000000000000000000000000000000007',
 );
+interface TestEventLog {
+  address: Address;
+  data: `0x${string}`;
+  topics: `0x${string}`[];
+  logIndex: number;
+}
+
+interface BundledLogOptions {
+  emitter?: Address;
+  recipient?: Address;
+  amountIn?: bigint;
+  amountOut?: bigint;
+  poolKey?: V4PoolKey;
+}
+
+interface VestingCreatedLogOptions {
+  emitter?: Address;
+  asset?: Address;
+  recipient?: Address;
+  permissionlessClaim?: boolean;
+  totalAmount?: bigint;
+  start?: bigint;
+  cliffDuration?: bigint;
+  vestingDuration?: bigint;
+}
 
 function createLog(
   options: {
@@ -51,7 +88,7 @@ function createLog(
 }
 
 function createReceipt(
-  logs = [createLog()],
+  logs: TestEventLog[] = [createLog()],
   overrides: Partial<TransactionReceipt> = {},
 ): TransactionReceipt {
   const receipt = {
@@ -132,6 +169,132 @@ async function expectAsyncReceiptError(
     if (!(error instanceof AirlockCreateReceiptError)) throw error;
     expect(error.code).toBe(code);
   }
+}
+
+const devPoolKey: V4PoolKey = {
+  currency0: mockTokenAddress,
+  currency1: mockAddresses.weth,
+  fee: 3000,
+  tickSpacing: 60,
+  hooks: poolInitializer,
+};
+function poolIdFor(poolKey: V4PoolKey) {
+  return keccak256(
+    encodeAbiParameters(
+      [
+        {
+          type: 'tuple',
+          components: [
+            { name: 'currency0', type: 'address' },
+            { name: 'currency1', type: 'address' },
+            { name: 'fee', type: 'uint24' },
+            { name: 'tickSpacing', type: 'int24' },
+            { name: 'hooks', type: 'address' },
+          ],
+        },
+      ],
+      [poolKey],
+    ),
+  );
+}
+
+const devPoolId = poolIdFor(devPoolKey);
+const nativePoolKey = { ...devPoolKey, currency1: zeroAddress };
+const nativePoolId = poolIdFor(nativePoolKey);
+
+function bundledLog(options: BundledLogOptions = {}): TestEventLog {
+  return {
+    address: options.emitter ?? mockAddresses.bundler!,
+    topics: encodeEventTopics({
+      abi: bundlerAbi,
+      eventName: 'Bundled',
+      args: { recipient: options.recipient ?? account },
+    }) as `0x${string}`[],
+    data: encodeAbiParameters(
+      [
+        { type: 'uint128' },
+        { type: 'uint128' },
+        {
+          type: 'tuple',
+          components: [
+            { name: 'currency0', type: 'address' },
+            { name: 'currency1', type: 'address' },
+            { name: 'fee', type: 'uint24' },
+            { name: 'tickSpacing', type: 'int24' },
+            { name: 'hooks', type: 'address' },
+          ],
+        },
+      ],
+      [
+        options.amountIn ?? 25n,
+        options.amountOut ?? 100n,
+        options.poolKey ?? devPoolKey,
+      ],
+    ),
+    logIndex: 8,
+  };
+}
+
+function vestingCreatedLog(
+  options: VestingCreatedLogOptions = {},
+): TestEventLog {
+  return {
+    address: options.emitter ?? mockAddresses.bundler!,
+    topics: encodeEventTopics({
+      abi: bundlerAbi,
+      eventName: 'VestingCreated',
+      args: {
+        asset: options.asset ?? mockTokenAddress,
+        recipient: options.recipient ?? account,
+      },
+    }) as `0x${string}`[],
+    data: encodeAbiParameters(
+      [
+        { type: 'bool' },
+        { type: 'uint128' },
+        { type: 'uint64' },
+        { type: 'uint64' },
+        { type: 'uint64' },
+      ],
+      [
+        options.permissionlessClaim ?? true,
+        options.totalAmount ?? 100n,
+        options.start ?? 1_000n,
+        options.cliffDuration ?? 10n,
+        options.vestingDuration ?? 100n,
+      ],
+    ),
+    logIndex: 9,
+  };
+}
+
+function devPrepared(vestingDuration = 0n): PreparedMulticurveCreate<1> {
+  return {
+    ...prepared,
+    prediction: {
+      ...prepared.prediction,
+      poolOrHookAddress: poolInitializer,
+      migrationPoolAddress: undefined,
+      poolKey: devPoolKey,
+      poolId: devPoolId,
+    },
+    transaction: {
+      to: mockAddresses.bundler!,
+      data: '0x1234',
+      value: 0n,
+    },
+    devBuy: {
+      exactAmountIn: 25n,
+      recipient: account,
+      vesting: {
+        permissionlessClaim: vestingDuration !== 0n,
+        vestingDuration,
+        cliffDuration: vestingDuration === 0n ? 0n : 10n,
+      },
+      bundler: mockAddresses.bundler!,
+      simulatedAmountOut: 90n,
+    },
+  };
 }
 
 describe('parseAirlockCreateReceipt', () => {
@@ -308,6 +471,122 @@ describe('verifyPreparedCreateReceipt', () => {
   });
 });
 
+it('verifies Bundled output and permits direct delivery without vesting', () => {
+  const dev = devPrepared();
+  const verified = verifyPreparedCreateReceipt({
+    prepared: dev,
+    receipt: createReceipt(
+      [createLog({ poolOrHook: poolInitializer }), bundledLog()],
+      { to: mockAddresses.bundler },
+    ),
+  });
+  expect(verified.devBuy).toEqual({ amountOut: 100n });
+  expect(verified.preparedIdentity.migrationPoolAddress).toBeUndefined();
+});
+
+it('requires matching vesting creation when custody is enabled', () => {
+  const dev = devPrepared(100n);
+  const receipt = createReceipt(
+    [
+      createLog({ poolOrHook: poolInitializer }),
+      bundledLog(),
+      vestingCreatedLog(),
+    ],
+    { to: mockAddresses.bundler },
+  );
+  expect(
+    verifyPreparedCreateReceipt({ prepared: dev, receipt }).devBuy,
+  ).toEqual({ amountOut: 100n });
+
+  expectReceiptError(
+    () =>
+      verifyPreparedCreateReceipt({
+        prepared: dev,
+        receipt: createReceipt(
+          [createLog({ poolOrHook: poolInitializer }), bundledLog()],
+          { to: mockAddresses.bundler },
+        ),
+      }),
+    'MISSING_VESTING_EVENT',
+  );
+});
+
+it('rejects invalid Bundled event correlation', () => {
+  const direct = devPrepared();
+  const baseCreate = createLog({ poolOrHook: poolInitializer });
+  const verify = (logs: TestEventLog[]) =>
+    verifyPreparedCreateReceipt({
+      prepared: direct,
+      receipt: createReceipt([baseCreate, ...logs], {
+        to: mockAddresses.bundler,
+      }),
+    });
+
+  expectReceiptError(() => verify([]), 'MISSING_BUNDLED_EVENT');
+  expectReceiptError(
+    () => verify([bundledLog(), bundledLog()]),
+    'MULTIPLE_BUNDLED_EVENTS',
+  );
+  expectReceiptError(
+    () => verify([bundledLog({ emitter: wrongAddress })]),
+    'MISSING_BUNDLED_EVENT',
+  );
+  expectReceiptError(
+    () => verify([bundledLog({ recipient: wrongAddress })]),
+    'BUNDLED_RECIPIENT_MISMATCH',
+  );
+  expectReceiptError(
+    () => verify([bundledLog({ amountIn: 24n })]),
+    'BUNDLED_INPUT_MISMATCH',
+  );
+  expectReceiptError(
+    () => verify([bundledLog({ poolKey: { ...devPoolKey, fee: 500 } })]),
+    'BUNDLED_POOL_KEY_MISMATCH',
+  );
+  expectReceiptError(
+    () =>
+      verifyPreparedCreateReceipt({
+        prepared: direct,
+        receipt: createReceipt(
+          [baseCreate, bundledLog(), vestingCreatedLog()],
+          { to: mockAddresses.bundler },
+        ),
+      }),
+    'UNEXPECTED_VESTING_EVENT',
+  );
+});
+
+it('rejects duplicate and mismatched VestingCreated events', () => {
+  const vested = devPrepared(100n);
+  const baseCreate = createLog({ poolOrHook: poolInitializer });
+  const verify = (vestingLogs: TestEventLog[]) =>
+    verifyPreparedCreateReceipt({
+      prepared: vested,
+      receipt: createReceipt([baseCreate, bundledLog(), ...vestingLogs], {
+        to: mockAddresses.bundler,
+      }),
+    });
+
+  expectReceiptError(
+    () => verify([vestingCreatedLog(), vestingCreatedLog()]),
+    'MULTIPLE_VESTING_EVENTS',
+  );
+  const mismatches: VestingCreatedLogOptions[] = [
+    { asset: wrongAddress },
+    { recipient: wrongAddress },
+    { permissionlessClaim: false },
+    { totalAmount: 99n },
+    { cliffDuration: 11n },
+    { vestingDuration: 101n },
+  ];
+  for (const mismatch of mismatches) {
+    expectReceiptError(
+      () => verify([vestingCreatedLog(mismatch)]),
+      'VESTING_MISMATCH',
+    );
+  }
+});
+
 describe('verifyPreparedCreateExecution', () => {
   function createClient(
     receipt: TransactionReceipt,
@@ -371,6 +650,50 @@ describe('verifyPreparedCreateExecution', () => {
       'RECEIPT_FAILED',
     );
     expect(getTransaction).not.toHaveBeenCalled();
+  });
+
+  it('rejects missing native value for a prepared dev buy', async () => {
+    const nativePrepared = {
+      ...devPrepared(),
+      createParams: {
+        ...prepared.createParams,
+        numeraire: zeroAddress,
+      },
+      prediction: {
+        ...devPrepared().prediction,
+        poolKey: nativePoolKey,
+        poolId: nativePoolId,
+      },
+      transaction: {
+        ...devPrepared().transaction,
+        value: 25n,
+      },
+    } satisfies PreparedMulticurveCreate<1>;
+    const receipt = createReceipt(
+      [
+        createLog({
+          numeraire: zeroAddress,
+          poolOrHook: poolInitializer,
+        }),
+        bundledLog({ poolKey: nativePoolKey }),
+      ],
+      { to: mockAddresses.bundler },
+    );
+    const { publicClient } = createClient(receipt, {
+      to: nativePrepared.transaction.to,
+      input: nativePrepared.transaction.data,
+      value: 0n,
+    });
+
+    await expectAsyncReceiptError(
+      () =>
+        verifyPreparedCreateExecution({
+          prepared: nativePrepared,
+          receipt,
+          publicClient,
+        }),
+      'TRANSACTION_VALUE_MISMATCH',
+    );
   });
 
   it.each([

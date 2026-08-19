@@ -960,6 +960,73 @@ describe('DopplerFactory DopplerERC20V1 token routing', () => {
     expect(decoded[5]).toEqual([parseEther('300000')]);
   });
 
+  it('excludes the dev-buy recipient and active Bundler custody', () => {
+    const build = (vestingDuration: bigint) =>
+      MulticurveBuilder.forChain(1)
+        .tokenConfig({
+          type: 'dopplerERC20V1',
+          name: 'Custody Token',
+          symbol: 'CUST',
+          tokenURI: 'ipfs://custody-token',
+          maxBalanceLimit: parseEther('10000'),
+          balanceLimitEnd: Math.floor(Date.now() / 1000) + 30 * DAY_SECONDS,
+        })
+        .saleConfig({
+          initialSupply: parseEther('1000000'),
+          numTokensToSell: parseEther('700000'),
+          numeraire: mockAddresses.weth,
+        })
+        .withCurves({
+          numerairePrice: 3000,
+          fee: 3000,
+          curves: [
+            {
+              marketCap: { start: 500_000, end: 1_500_000 },
+              numPositions: 10,
+              shares: parseEther('0.3'),
+            },
+            {
+              marketCap: { start: 1_000_000, end: 5_000_000 },
+              numPositions: 15,
+              shares: parseEther('0.4'),
+            },
+            {
+              marketCap: { start: 4_000_000, end: 50_000_000 },
+              numPositions: 10,
+              shares: parseEther('0.29'),
+            },
+            {
+              marketCap: { start: 50_000_000, end: 'max' },
+              numPositions: 10,
+              shares: parseEther('0.01'),
+            },
+          ],
+          beneficiaries: [
+            { beneficiary: userAddress, shares: parseEther('1') },
+          ],
+        })
+        .withGovernance({ type: 'noOp' })
+        .withMigration({ type: 'noOp' })
+        .withUserAddress(userAddress)
+        .withDevBuy({
+          exactAmountIn: 1n,
+          recipient: beneficiary,
+          ...(vestingDuration === 0n ? {} : { vesting: { vestingDuration } }),
+        })
+        .build();
+
+    const vested = decodeV1TokenFactoryData(
+      factory.encodeCreateMulticurveParams(build(86_400n)).tokenFactoryData,
+    );
+    const direct = decodeV1TokenFactoryData(
+      factory.encodeCreateMulticurveParams(build(0n)).tokenFactoryData,
+    );
+
+    expect(vested[10]).toContain(getAddress(beneficiary));
+    expect(vested[10]).toContain(mockAddresses.bundler);
+    expect(direct[10]).toContain(getAddress(beneficiary));
+    expect(direct[10]).not.toContain(mockAddresses.bundler);
+  });
   it('adds the simulated governance timelock for default governance on the default V1 multicurve path', async () => {
     vi.mocked(publicClient.readContract).mockResolvedValueOnce(mockHookAddress);
 

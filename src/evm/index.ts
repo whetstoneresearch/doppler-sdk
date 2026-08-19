@@ -12,6 +12,11 @@ export type {
   TopUpSimulationResult,
   TopUpTransaction,
 } from './entities/TopUpDistributor';
+export { Bundler } from './entities/Bundler';
+export type {
+  BundlerClaimSimulation,
+  BundlerVestingPosition,
+} from './entities/Bundler';
 export {
   StaticAuction,
   DynamicAuction,
@@ -54,6 +59,10 @@ export {
   OpeningAuctionBuilder,
 } from './builders';
 export type { BaseAuctionBuilder } from './builders/shared';
+export type {
+  BuilderDevBuyInput,
+  BuilderDevBuyVestingInput,
+} from './builders/shared';
 export type {
   OpeningAuctionConfig,
   OpeningAuctionDopplerConfig,
@@ -149,8 +158,13 @@ export type {
   CreateDynamicAuctionParams,
   CreateMulticurveParams,
   V4PoolKey,
-  MulticurveBundleExactOutResult,
-  MulticurveBundleExactInResult,
+  MulticurveDevBuyVestingConfig,
+  MulticurveDevBuyConfig,
+  PreparedMulticurveTransaction,
+  PreparedMulticurveDevBuy,
+  SimulatedMulticurveCreate,
+  MulticurveDevBuyResult,
+  MulticurveCreateResult,
   OpeningAuctionState,
   OpeningAuctionCreateResult,
   OpeningAuctionCompleteResult,
@@ -158,6 +172,7 @@ export type {
   MulticurveCreateGasEstimate,
   MulticurveCreatePrediction,
   PreparedMulticurveCreate,
+  ModuleAddressOverrides,
   // Configuration types
   DopplerSDKConfig,
 
@@ -197,9 +212,6 @@ export {
   LAUNCHPAD_ENABLED_CHAIN_IDS,
   isLaunchpadEnabledChain,
 } from './types';
-
-// Also export module override type for advanced usage
-export type { ModuleAddressOverrides } from './types';
 
 // Export enums
 export { LockablePoolStatus } from './types';

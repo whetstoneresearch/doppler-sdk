@@ -307,6 +307,12 @@ Methods (chainable):
 - withVesting({ duration?, cliffDuration?, recipients?, amounts?, allocations? } | undefined)
   - `recipients`: Optional array of addresses to receive vested tokens. Defaults to `[userAddress]` if not provided.
   - `amounts`: Optional array of token amounts corresponding to each recipient. Must match `recipients` length if provided. Defaults to all unsold tokens to `userAddress` if not provided.
+- withDevBuy({ exactAmountIn, recipient, vesting?: { vestingDuration, cliffDuration?, permissionlessClaim? } } | undefined)
+  - Available only on `MulticurveBuilder`; passing `undefined` clears the configuration.
+  - Omit `vesting` for direct recipient delivery. When present, Bundler holds the output under this schedule independently from `withVesting` token allocations.
+  - `exactAmountIn` must be in the positive uint128 range and `recipient` must be nonzero.
+  - `vestingDuration` must fit uint64 and be at least 86,400 seconds; `cliffDuration` defaults to zero and cannot exceed it; `permissionlessClaim` defaults to `false`.
+  - Supported initializer families are DopplerHookInitializer (`dopplerHookInitializer` and its deprecated `dopplerHook` alias) and Rehype; standard, scheduled, and decay initializers reject dev buys.
 - withGovernance(GovernanceOption)
   - Call is required; use `{ type: 'default' }`, `{ type: 'custom', ... }`, or `{ type: 'noOp' }` where supported
 - withMigration(MigrationConfig)
@@ -320,6 +326,7 @@ Methods (chainable):
 - Address overrides (optional):
   - withAirlock(address)
   - withTokenFactory(address)
+  - withBundler(address)
   - withV4MulticurveInitializer(address)
   - withGovernanceFactory(address)
   - withV2Migrator(address)
@@ -334,6 +341,9 @@ Validation highlights:
 - Governance selection is required
 - SDK sorts beneficiaries by address as required on-chain when encoding
 - Explicit salts must be `0x` followed by exactly 64 hexadecimal characters; invalid values fail before RPC or wallet work
+- Dev-buy initializer compatibility is checked at build time; Bundler Airlock/PoolManager compatibility and the Rehype initializer's configured Bundler are checked during RPC-backed preparation and simulation.
+- Native dev buys send exactly `exactAmountIn`; ERC-20 dev buys may prepare a separate exact approval before the atomic create-and-buy transaction.
+- Bundler provides exact-input simulation without a minimum output, deadline, or slippage guard.
 
 Examples:
 ```ts
@@ -407,6 +417,28 @@ Preset tiers map to approximate market cap bands (assuming ~1B supply, $4,500 re
 - `high`: 24% allocation targeting $100k-$1B
 
 All presets use the curated tick ranges from `DEFAULT_MULTICURVE_*` constants. Shares are represented in WAD (1e18 = 100%); if you override shares, ensure they remain within bounds or the builder will throw.
+
+### Bundler dev-buy custody and claims
+
+Access the chain-default contract through `sdk.bundler`, or use `sdk.getBundler(address)` for the same custom deployment selected with `withBundler(address)`. Read methods require only a public client; `claim` requires an SDK wallet client.
+
+```ts
+const bundler = sdk.getBundler(result.devBuy!.bundler)
+const position = await bundler.getVesting(result.tokenAddress)
+const claimable = await bundler.getClaimable(result.tokenAddress)
+
+if (claimable > 0n) {
+  const simulation = await bundler.simulateClaim(result.tokenAddress)
+  console.log('Claimable amount:', simulation.amount)
+
+  const hash = await bundler.claim(result.tokenAddress)
+  await publicClient.waitForTransactionReceipt({ hash })
+}
+```
+
+`getVesting(asset)` returns the stored recipient, permission mode, start timestamp, cliff and vesting durations, total amount, and already claimed amount. All timestamps and durations are seconds. `getClaimable(asset)` returns the amount currently releasable, while `simulateClaim(asset, account?)` validates a caller and produces a write request without submitting it.
+
+Restricted positions can be claimed only by their recipient. Permissionless positions may be triggered by any caller, but Bundler always transfers the vested tokens to the stored recipient.
 
 ### Updating a Rehype fee distribution
 

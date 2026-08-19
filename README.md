@@ -1180,53 +1180,43 @@ console.log('Expected output:', quote.amountOut);
 console.log('Price after swap:', quote.sqrtPriceX96After);
 ```
 
-## Atomic Create + Pre‑Buy (Bundle)
+## Atomic Multicurve Dev Buy
 
-For static auctions, you can create the pool and execute a pre‑buy in a single transaction via the Bundler.
-
-High‑level flow:
-
-- Simulate create to get `CreateParams` and the predicted token address
-- Decide `amountOut` to buy, simulate `amountIn` with `simulateBundleExactOutput(...)`
-- Build Universal Router commands (e.g., via `doppler-router`)
-- Call `factory.bundle(createParams, commands, inputs, { value })`
-
-See docs/quotes-and-swaps.md for a full example.
-
-### Multicurve Bundler Helpers
-
-Multicurve auctions expose similar helpers that work with the Doppler Bundler once it has been upgraded
-with multicurve support (selector check added in `0.0.1-alpha.47`). The SDK now verifies the bundler bytecode
-before attempting these flows; if you see
-`Bundler at <address> does not support multicurve bundling`, deploy or point at the latest bundler release.
+Multicurve dev buys create the market and execute one exact-input purchase through Bundler in the same transaction. They support DopplerHookInitializer and Rehype initializer families; standard, scheduled, and decay initializers reject them. Production use is intended for compatible Rehype launches with no-op governance and no-op migration.
 
 ```ts
-// Prepare multicurve CreateParams up front
-const createParams = sdk.factory.encodeCreateMulticurveParams(multicurveConfig);
+const params = sdk
+  .buildMulticurveAuction()
+  // Configure token, sale, curves, and Rehype initializer as usual.
+  .withGovernance({ type: 'noOp' })
+  .withMigration({ type: 'noOp' })
+  .withDevBuy({
+    exactAmountIn: parseEther('0.01'),
+    recipient: user,
+    vesting: {
+      vestingDuration: 7n * 24n * 60n * 60n,
+      cliffDuration: 24n * 60n * 60n,
+      permissionlessClaim: false,
+    },
+  })
+  .build();
 
-// Quote an exact-out bundle
-const exactOutQuote = await sdk.factory.simulateMulticurveBundleExactOut(
-  createParams,
-  {
-    exactAmountOut: parseEther('100'),
-  },
-);
+const simulated = await sdk.factory.simulateCreateMulticurve(params);
+const result = await simulated.execute();
 
-// Quote an exact-in bundle
-const exactInQuote = await sdk.factory.simulateMulticurveBundleExactIn(
-  createParams,
-  {
-    exactAmountIn: parseEther('25'),
-  },
-);
-
-console.log('Predicted asset:', exactOutQuote.asset);
-console.log('PoolKey:', exactOutQuote.poolKey);
-console.log('Input required:', exactOutQuote.amountIn);
+console.log('Simulated output:', simulated.devBuy?.simulatedAmountOut);
+console.log('Actual output:', result.devBuy?.amountOut);
 ```
 
-The multicurve helpers automatically normalise the returned PoolKey to maintain canonical token ordering and
-hash the result when collecting fees, so consumers no longer need to manually assemble the PoolId.
+Omit `vesting` to deliver the purchased tokens directly to `recipient`. When vesting is configured, Bundler holds the output and releases it under the specified schedule; this is independent from `.withVesting(...)`, which configures token allocation vesting. `cliffDuration` defaults to zero and `permissionlessClaim` defaults to `false`.
+
+Native numeraire sends exactly `exactAmountIn` with the Bundler transaction. ERC-20 numeraire may require a separate exact approval transaction before the atomic create-and-buy transaction; the wallet must already hold the input token. Permit2 and Universal Router commands are not part of this flow.
+
+Use `.withBundler(address)` for a compatible custom deployment. Read custody with `sdk.getBundler(address).getVesting(asset)` and `getClaimable(asset)`, then submit a vested claim with `claim(asset)`. Claims always pay the recorded recipient, including when `permissionlessClaim` allows another account to trigger them.
+
+Bundler is exact-input only and provides no minimum output, deadline, or slippage guard. `simulateCreateMulticurve` returns the informational `simulatedAmountOut`; execution returns the amount verified from the Bundler receipt.
+
+See [docs/quotes-and-swaps.md](./docs/quotes-and-swaps.md) and [examples/multicurve-dev-buy-weth.ts](./examples/multicurve-dev-buy-weth.ts) for complete flows.
 
 ## Migration Configuration
 

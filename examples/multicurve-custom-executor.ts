@@ -147,7 +147,8 @@ async function main(): Promise<void> {
   console.log('Prepared timelock:', verified.preparedIdentity.timelockAddress);
   console.log(
     'Prepared migration pool:',
-    verified.preparedIdentity.migrationPoolAddress,
+    verified.preparedIdentity.migrationPoolAddress ??
+      'not predicted for Bundler launches',
   );
   console.log('Prepared pool ID:', verified.preparedIdentity.poolId);
   console.log(

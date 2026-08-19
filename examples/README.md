@@ -32,9 +32,9 @@ Collect and distribute trading fees from a multicurve pool with lockable benefic
 
 Preview pending fees for one beneficiary across multiple locked multicurve tokens with one multicall by default, plus optional token batching for RPC provider limits.
 
-### 6. [Multicurve Pre-Buy with WETH](./multicurve-prebuy-weth.ts)
+### 6. [Multicurve Dev Buy with WETH](./multicurve-dev-buy-weth.ts)
 
-Atomically create a multicurve auction and pre-buy tokens using WETH (not ETH) with Permit2 signatures. Demonstrates using `doppler-router` to build Universal Router commands for V4 swaps.
+Creates a Rehype multicurve launch and executes one exact-input WETH purchase through Bundler. The example wraps WETH and submits an exact approval separately, then atomically creates the market and holds the purchased tokens under a seven-day Bundler vesting schedule. Omit the `vesting` field to deliver the output directly to the recipient.
 
 ### 7. [Multicurve Quote & Swap](./multicurve-quote-and-swap.ts)
 
@@ -284,7 +284,7 @@ pnpm tsx examples/multicurve-initializer.ts
 ```bash
 npm install @whetstone-research/doppler-sdk viem
 
-# For multicurve pre-buy and quote/swap examples (optional)
+# For the multicurve quote/swap example (optional)
 npm install doppler-router
 
 # For multicurve indexer data example (optional)
@@ -373,17 +373,8 @@ The SDK includes fork tests for selected EVM example flows. These tests run agai
 To run the fork tests, you'll need an RPC URL for Base Sepolia:
 
 ```bash
-# Set your RPC URL
 export BASE_SEPOLIA_RPC_URL=https://sepolia.base.org
-
-# Run all tests
-pnpm test
-
-# Run specific test file
-pnpm test multicurve-quote-swap
-
-# Run tests in watch mode
-pnpm test:watch
+ANVIL_FORK_ENABLED=true pnpm vitest run --config vitest.fork.config.ts test/evm/fork/base-sepolia/multicurve-dev-buy-weth.base-sepolia.test.ts
 ```
 
 ### Test Coverage
@@ -393,7 +384,7 @@ The following example groups have corresponding fork tests:
 - **Multicurve Examples**: `test/multicurve*.test.ts`
 - **Quote & Swap**: `test/multicurve-quote-swap.test.ts`
 - **Indexer Data**: `test/multicurve-indexer-data.test.ts`
-- **Pre-buy with WETH**: `test/multicurve-prebuy-weth.test.ts`
+- **Dev Buys with WETH**: `test/multicurve-dev-buy-weth.test.ts`
 
 Fork tests validate:
 

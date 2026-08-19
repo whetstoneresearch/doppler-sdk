@@ -68,6 +68,18 @@ describe('BaseAuctionBuilder interface', () => {
     expect(typeof builder.withIntegrator).toBe('function');
     expect(typeof builder.withGasLimit).toBe('function');
     expect(typeof builder.withTokenFactory).toBe('function');
+    expect(
+      typeof (builder as MulticurveBuilder<typeof CHAIN_IDS.BASE>).withDevBuy,
+    ).toBe('function');
+    expect('withDevBuy' in StaticAuctionBuilder.forChain(CHAIN_IDS.BASE)).toBe(
+      false,
+    );
+    expect('withDevBuy' in DynamicAuctionBuilder.forChain(CHAIN_IDS.BASE)).toBe(
+      false,
+    );
+    expect('withDevBuy' in OpeningAuctionBuilder.forChain(CHAIN_IDS.BASE)).toBe(
+      false,
+    );
   });
 
   describe('token factory module overrides', () => {

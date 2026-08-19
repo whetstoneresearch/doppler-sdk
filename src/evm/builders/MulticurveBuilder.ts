@@ -30,15 +30,18 @@ import {
   type RehypeDopplerHookConfig,
   type RehypeDopplerHookInitializerConfig,
   type MulticurveInitializerConfig,
+  type MulticurveDevBuyConfig,
 } from '../types';
 import { type SupportedChainId } from '../addresses';
 import {
   type BaseAuctionBuilder,
   type BuilderVestingInput,
+  type BuilderDevBuyInput,
   type MarketCapPresetOverrides,
   buildCurvesFromPresets,
   normalizeBuilderTokenConfig,
   normalizeBuilderVestingSchedule,
+  normalizeBuilderDevBuy,
 } from './shared';
 
 export class MulticurveBuilder<
@@ -51,6 +54,7 @@ export class MulticurveBuilder<
   private schedule?: CreateMulticurveParams<C>['schedule'];
   private dopplerHook?: RehypeDopplerHookInitializerConfig;
   private vesting?: VestingConfig;
+  private devBuy?: MulticurveDevBuyConfig;
   private governance?: GovernanceOption<C>;
   private migration?: MigrationConfig;
   private integrator?: Address;
@@ -474,6 +478,19 @@ export class MulticurveBuilder<
     return this;
   }
 
+  /**
+   * Configures an exact-input purchase executed atomically with market creation.
+   *
+   * Omit `vesting` for direct delivery to `recipient`; when present, Bundler
+   * holds the output and releases it under that schedule. This is independent
+   * from `withVesting`, which configures token allocation vesting. Passing
+   * `undefined` clears the dev buy.
+   */
+  withDevBuy(params?: BuilderDevBuyInput): this {
+    this.devBuy = params ? normalizeBuilderDevBuy(params) : undefined;
+    return this;
+  }
+
   private parseStartTimeSeconds(
     value: number | bigint | Date,
     label: string,
@@ -670,6 +687,9 @@ export class MulticurveBuilder<
   }
   withAirlock(address: Address): this {
     return this.overrideModule('airlock', address);
+  }
+  withBundler(address: Address): this {
+    return this.overrideModule('bundler', address);
   }
   withV4MulticurveInitializer(address: Address): this {
     this.assertCanSetInitializer('standard');
@@ -956,6 +976,17 @@ export class MulticurveBuilder<
       }
     }
 
+    if (
+      this.devBuy &&
+      initializer.type !== 'dopplerHookInitializer' &&
+      initializer.type !== 'dopplerHook' &&
+      initializer.type !== 'rehype'
+    ) {
+      throw new Error(
+        `Dev buys require a DopplerHookInitializer or Rehype initializer; '${initializer.type}' is not supported`,
+      );
+    }
+
     const schedule =
       initializer.type === 'scheduled'
         ? { startTime: initializer.startTime }
@@ -971,6 +1002,12 @@ export class MulticurveBuilder<
       schedule,
       dopplerHook,
       vesting: this.vesting,
+      devBuy: this.devBuy
+        ? {
+            ...this.devBuy,
+            vesting: { ...this.devBuy.vesting },
+          }
+        : undefined,
       governance: governance as GovernanceOption<C>,
       migration: this.migration,
       integrator: this.integrator ?? ZERO_ADDRESS,

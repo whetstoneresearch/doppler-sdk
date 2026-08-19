@@ -1506,4 +1506,179 @@ describe('MulticurveBuilder', () => {
       expect(params.pool.curves[2].shares).toBe(parseEther('0.2'));
     });
   });
+  describe('dev buys', () => {
+    const recipient = '0x00000000000000000000000000000000000000DD' as Address;
+
+    const createDevBuyBuilder = () =>
+      MulticurveBuilder.forChain(CHAIN_IDS.BASE)
+        .tokenConfig({
+          name: 'DevBuyToken',
+          symbol: 'DBT',
+          tokenURI: 'ipfs://dev-buy',
+        })
+        .saleConfig({
+          initialSupply: 1_000_000n * WAD,
+          numTokensToSell: 500_000n * WAD,
+          numeraire: WETH_BASE,
+        })
+        .withCurves({
+          numerairePrice: 3000,
+          fee: 3000,
+          curves: [
+            {
+              marketCap: { start: 500_000, end: 1_500_000 },
+              numPositions: 4,
+              shares: parseEther('0.3'),
+            },
+            {
+              marketCap: { start: 1_000_000, end: 5_000_000 },
+              numPositions: 6,
+              shares: parseEther('0.4'),
+            },
+            {
+              marketCap: { start: 4_000_000, end: 50_000_000 },
+              numPositions: 6,
+              shares: parseEther('0.29'),
+            },
+            {
+              marketCap: { start: 50_000_000, end: 'max' },
+              numPositions: 4,
+              shares: parseEther('0.01'),
+            },
+          ],
+          beneficiaries: [{ beneficiary: USER_ADDRESS, shares: WAD }],
+        })
+        .withGovernance({ type: 'noOp' })
+        .withMigration({ type: 'noOp' })
+        .withUserAddress(USER_ADDRESS);
+
+    it('normalizes direct delivery and enabled vesting independently', () => {
+      const direct = createDevBuyBuilder()
+        .withDevBuy({ exactAmountIn: 10n, recipient })
+        .build();
+      expect(direct.devBuy).toEqual({
+        exactAmountIn: 10n,
+        recipient,
+        vesting: {
+          permissionlessClaim: false,
+          vestingDuration: 0n,
+          cliffDuration: 0n,
+        },
+      });
+
+      const vested = createDevBuyBuilder()
+        .withVesting({
+          duration: 100n,
+          recipients: [USER_ADDRESS],
+          amounts: [1n],
+        })
+        .withDevBuy({
+          exactAmountIn: 20n,
+          recipient,
+          vesting: {
+            permissionlessClaim: true,
+            vestingDuration: 200_000n,
+            cliffDuration: 50_000n,
+          },
+        })
+        .build();
+      expect(vested.vesting).toBeDefined();
+      expect(vested.devBuy?.vesting).toEqual({
+        permissionlessClaim: true,
+        vestingDuration: 200_000n,
+        cliffDuration: 50_000n,
+      });
+    });
+
+    it('clears configuration and propagates a Bundler override', () => {
+      const bundler = '0x00000000000000000000000000000000000000EE' as Address;
+      const builder = createDevBuyBuilder()
+        .withBundler(bundler)
+        .withDevBuy({ exactAmountIn: 1n, recipient });
+      expect(builder.build().modules?.bundler).toBe(bundler);
+      expect(builder.withDevBuy(undefined).build().devBuy).toBeUndefined();
+    });
+
+    it.each([
+      [0n, 'uint128'],
+      [-1n, 'uint128'],
+      [1n << 128n, 'uint128'],
+    ])('rejects exact input %s outside %s', (exactAmountIn, message) => {
+      expect(() =>
+        createDevBuyBuilder().withDevBuy({ exactAmountIn, recipient }),
+      ).toThrow(message);
+    });
+
+    it('validates recipient and uint64 vesting boundaries', () => {
+      expect(() =>
+        createDevBuyBuilder().withDevBuy({
+          exactAmountIn: 1n,
+          recipient: ZERO_ADDRESS,
+        }),
+      ).toThrow('recipient');
+      expect(() =>
+        createDevBuyBuilder().withDevBuy({
+          exactAmountIn: 1n,
+          recipient,
+          vesting: { vestingDuration: 0n },
+        }),
+      ).toThrow('greater than zero');
+      expect(() =>
+        createDevBuyBuilder().withDevBuy({
+          exactAmountIn: 1n,
+          recipient,
+          vesting: {
+            vestingDuration: 1n << 64n,
+          },
+        }),
+      ).toThrow('uint64');
+      expect(() =>
+        createDevBuyBuilder().withDevBuy({
+          exactAmountIn: 1n,
+          recipient,
+          vesting: { vestingDuration: 86_399n },
+        }),
+      ).toThrow('at least 86400 seconds');
+      expect(() =>
+        createDevBuyBuilder().withDevBuy({
+          exactAmountIn: 1n,
+          recipient,
+          vesting: {
+            vestingDuration: 100_000n,
+            cliffDuration: 100_001n,
+          },
+        }),
+      ).toThrow('must not exceed');
+    });
+
+    it('rejects unsupported final initializers regardless of call order', () => {
+      expect(() =>
+        createDevBuyBuilder()
+          .withDevBuy({ exactAmountIn: 1n, recipient })
+          .withV4MulticurveInitializer(LEGACY_MULTICURVE_INITIALIZER)
+          .build(),
+      ).toThrow('Dev buys require');
+      expect(() =>
+        createDevBuyBuilder()
+          .withV4MulticurveInitializer(LEGACY_MULTICURVE_INITIALIZER)
+          .withDevBuy({ exactAmountIn: 1n, recipient })
+          .build(),
+      ).toThrow('Dev buys require');
+      expect(() =>
+        createDevBuyBuilder()
+          .withDevBuy({ exactAmountIn: 1n, recipient })
+          .withSchedule({ startTime: 1 })
+          .build(),
+      ).toThrow('Dev buys require');
+      expect(() =>
+        createDevBuyBuilder()
+          .withDevBuy({ exactAmountIn: 1n, recipient })
+          .withDecay({
+            startFee: 3000,
+            durationSeconds: 0,
+          })
+          .build(),
+      ).toThrow('Dev buys require');
+    });
+  });
 });

@@ -91,37 +91,6 @@ export const createMockPublicClient = (): MockedPublicClient => {
             request: { address, abi, functionName, args },
             result: defaultCreateResult,
           };
-        case 'simulateBundleExactOut':
-          return {
-            request: { address, abi, functionName, args },
-            result: 0n,
-          };
-        case 'simulateMulticurveBundleExactOut':
-          return {
-            request: { address, abi, functionName, args },
-            result: [
-              mockTokenAddress,
-              [mockAddresses.weth, mockTokenAddress, 3000, 60, mockHookAddress],
-              0n,
-              0n,
-            ],
-          };
-        case 'simulateMulticurveBundleExactIn':
-          return {
-            request: { address, abi, functionName, args },
-            result: [
-              mockTokenAddress,
-              {
-                currency0: mockAddresses.weth,
-                currency1: mockTokenAddress,
-                fee: 3000n,
-                tickSpacing: 60n,
-                hooks: mockHookAddress,
-              },
-              0n,
-              0n,
-            ],
-          };
         case 'bundle':
           return {
             request: { address, abi, functionName, args },
@@ -167,7 +136,7 @@ export const createMockTransactionReceipt = (logs: any[] = []) => ({
   gasUsed: 100000n,
   logs,
   status: 'success' as const,
-  to: '0x0000000000000000000000000000000000000002' as `0x${string}`,
+  to: mockAddresses.airlock,
   transactionIndex: 0,
   cumulativeGasUsed: 100000n,
   effectiveGasPrice: 1000000000n,
@@ -216,8 +185,14 @@ export const createMockTransactionReceiptWithCreateEvent = (
   tokenAddress: Address = mockTokenAddress,
   poolOrHookAddress: Address = mockPoolAddress,
   numeraire: Address = mockAddresses.weth,
+  initializer: Address = mockAddresses.v3Initializer,
 ) => {
   return createMockTransactionReceipt([
-    createMockCreateEventLog(tokenAddress, poolOrHookAddress, numeraire),
+    createMockCreateEventLog(
+      tokenAddress,
+      poolOrHookAddress,
+      numeraire,
+      initializer,
+    ),
   ]);
 };

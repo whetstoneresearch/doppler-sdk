@@ -5,8 +5,12 @@ import {
   DEFAULT_MULTICURVE_NUM_POSITIONS,
   DEFAULT_MULTICURVE_UPPER_TICKS,
   FEE_TIERS,
+  MAX_UINT64,
+  MAX_UINT128,
+  MIN_BUNDLER_VESTING_DURATION,
   TICK_SPACINGS,
   WAD,
+  ZERO_ADDRESS,
 } from '../constants';
 import { MAX_TICK, MIN_TICK } from '../utils';
 import type {
@@ -18,8 +22,23 @@ import type {
   MigrationConfig,
   StandardTokenConfig,
   TokenConfig,
+  MulticurveDevBuyConfig,
 } from '../types';
 import type { SupportedChainId } from '../addresses';
+
+/** Optional Bundler custody schedule for a builder-configured dev buy. */
+export type BuilderDevBuyVestingInput = {
+  permissionlessClaim?: boolean;
+  vestingDuration: bigint;
+  cliffDuration?: bigint;
+};
+
+/** Builder input for an exact-input multicurve dev buy. */
+export type BuilderDevBuyInput = {
+  exactAmountIn: bigint;
+  recipient: Address;
+  vesting?: BuilderDevBuyVestingInput;
+};
 
 export type BuilderVestingScheduleInput = {
   duration?: bigint;
@@ -47,6 +66,50 @@ export type BuilderVestingInput =
       amounts?: never;
       allocations: BuilderVestingAllocationInput[];
     };
+
+export function normalizeBuilderDevBuy(
+  params: BuilderDevBuyInput,
+): MulticurveDevBuyConfig {
+  if (params.exactAmountIn <= 0n || params.exactAmountIn > MAX_UINT128) {
+    throw new Error('Dev buy exactAmountIn must be in the uint128 range');
+  }
+  if (params.recipient.toLowerCase() === ZERO_ADDRESS) {
+    throw new Error('Dev buy recipient must not be the zero address');
+  }
+
+  const vestingDuration = params.vesting?.vestingDuration ?? 0n;
+  const cliffDuration = params.vesting?.cliffDuration ?? 0n;
+  if (vestingDuration < 0n || vestingDuration > MAX_UINT64) {
+    throw new Error('Dev buy vestingDuration must be in the uint64 range');
+  }
+  if (cliffDuration < 0n || cliffDuration > MAX_UINT64) {
+    throw new Error('Dev buy cliffDuration must be in the uint64 range');
+  }
+  if (params.vesting && vestingDuration === 0n) {
+    throw new Error(
+      'Dev buy vestingDuration must be greater than zero when vesting is configured',
+    );
+  }
+  if (
+    vestingDuration !== 0n &&
+    vestingDuration < MIN_BUNDLER_VESTING_DURATION
+  ) {
+    throw new Error('Dev buy vestingDuration must be at least 86400 seconds');
+  }
+  if (cliffDuration > vestingDuration) {
+    throw new Error('Dev buy cliffDuration must not exceed vestingDuration');
+  }
+
+  return {
+    exactAmountIn: params.exactAmountIn,
+    recipient: params.recipient,
+    vesting: {
+      permissionlessClaim: params.vesting?.permissionlessClaim ?? false,
+      vestingDuration,
+      cliffDuration,
+    },
+  };
+}
 
 export function assertTokenConfigSupportsYearlyMintRate(
   params: TokenConfig,

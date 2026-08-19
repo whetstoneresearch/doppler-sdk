@@ -244,13 +244,16 @@ describe('DopplerFactory', () => {
       const client = publicClient as PublicClient;
 
       vi.mocked(client.readContract).mockResolvedValue(mockPoolAddress);
-      const receipt = createMockTransactionReceiptWithCreateEvent();
+      const receipt = createMockTransactionReceiptWithCreateEvent(
+        mockTokenAddress,
+        mockPoolAddress,
+        mockAddresses.weth,
+        mockAddresses.v4MulticurveInitializer,
+      );
       vi.mocked(walletClient.writeContract).mockResolvedValue(
         receipt.transactionHash,
       );
-      vi.mocked(client.waitForTransactionReceipt).mockResolvedValue(
-        receipt,
-      );
+      vi.mocked(client.waitForTransactionReceipt).mockResolvedValue(receipt);
 
       const simulation = await factory.simulateCreateMulticurve(params);
       const initialCreateCall = vi
