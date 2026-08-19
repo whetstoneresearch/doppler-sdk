@@ -19,7 +19,7 @@ describe('Multicurve Indexer Data (Base Sepolia fork)', () => {
   const graphqlClient = new GraphQLClient(indexerUrl)
 
   const GET_RECENT_POOLS_QUERY = `
-    query GetRecentPools($types: [String!], $chainId: Float!) {
+    query GetRecentPools($types: [String!], $chainId: Int!) {
       pools(
         orderBy: "createdAt"
         orderDirection: "desc"
@@ -48,7 +48,7 @@ describe('Multicurve Indexer Data (Base Sepolia fork)', () => {
   `
 
   const GET_POOL_QUERY = `
-    query GetPool($address: String!, $chainId: Float!) {
+    query GetPool($address: String!, $chainId: Int!) {
       pools(
         where: { address: $address, chainId: $chainId }
         limit: 1
@@ -129,19 +129,15 @@ describe('Multicurve Indexer Data (Base Sepolia fork)', () => {
   let recentPools: Pool[] = []
 
   beforeAll(async () => {
-    try {
-      const response = await graphqlClient.request<{ pools: { items: Pool[] } }>(
-        GET_RECENT_POOLS_QUERY,
-        {
-          types: ['v4'],
-          chainId: Number(chainId),
-        }
-      )
-      recentPools = response.pools.items
-      console.log(`  Found ${recentPools.length} recent V4 pools on indexer`)
-    } catch (error) {
-      console.warn('  ⚠️  Failed to fetch pools from indexer:', error)
-    }
+    const response = await graphqlClient.request<{ pools: { items: Pool[] } }>(
+      GET_RECENT_POOLS_QUERY,
+      {
+        types: ['v4'],
+        chainId: Number(chainId),
+      }
+    )
+    recentPools = response.pools.items
+    console.log(`  Found ${recentPools.length} recent V4 pools on indexer`)
   })
 
   it('fetches recent multicurve pools from indexer', async () => {

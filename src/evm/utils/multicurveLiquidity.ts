@@ -1,10 +1,9 @@
+import { MAX_UINT128 } from '../constants';
 import {
   getLiquidityForAmount0,
   getLiquidityForAmount1,
 } from './liquidityMath';
 import { getSqrtRatioAtTick, MAX_TICK, MIN_TICK } from './tickMath';
-
-const MAX_UINT128 = (1n << 128n) - 1n;
 
 export type MulticurveMaxTickLiquidityParams = {
   readonly tickLower: number;

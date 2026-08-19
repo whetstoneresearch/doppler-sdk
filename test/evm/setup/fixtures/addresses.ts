@@ -103,6 +103,9 @@ export const mockAddresses: ChainAddresses = {
   noOpGovernanceFactory: getAddress(
     '0x1500000000000000000000000000000000000024',
   ) as Address,
+  noOpMigrator: getAddress(
+    '0x1500000000000000000000000000000000000028',
+  ) as Address,
   launchpadGovernanceFactory: getAddress(
     '0x1500000000000000000000000000000000000025',
   ) as Address,

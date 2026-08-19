@@ -10,7 +10,7 @@ import {
 import { CHAIN_IDS, type SupportedChainId } from './addresses';
 // Re-export SupportedChainId so consumers can import from this module
 export { type SupportedChainId } from './addresses';
-import type { Address, Hex, WalletClient } from 'viem';
+import type { Address, Hash, Hex, WalletClient } from 'viem';
 
 export type SupportedChain =
   | typeof mainnet
@@ -951,20 +951,6 @@ export interface V4PoolKey {
   hooks: Address;
 }
 
-export interface MulticurveBundleExactOutResult {
-  asset: Address;
-  poolKey: V4PoolKey;
-  amountIn: bigint;
-  gasEstimate: bigint;
-}
-
-export interface MulticurveBundleExactInResult {
-  asset: Address;
-  poolKey: V4PoolKey;
-  amountOut: bigint;
-  gasEstimate: bigint;
-}
-
 // RehypeDopplerHook configuration for fee distribution and buyback
 export interface RehypeFeeDistributionInfo {
   assetFeesToAssetBuybackWad: bigint;
@@ -1092,6 +1078,25 @@ export type MulticurveInitializerConfig =
     }
   | { type: 'rehype'; config: RehypeDopplerHookInitializerConfig };
 
+/**
+ * Bundler custody schedule for a multicurve dev buy.
+ *
+ * Durations are seconds. A permissionless claim changes who may trigger the
+ * claim, never the recipient.
+ */
+export interface MulticurveDevBuyVestingConfig {
+  permissionlessClaim: boolean;
+  vestingDuration: bigint;
+  cliffDuration: bigint;
+}
+
+/** Exact-input purchase executed atomically with multicurve market creation. */
+export interface MulticurveDevBuyConfig {
+  exactAmountIn: bigint;
+  recipient: Address;
+  vesting: MulticurveDevBuyVestingConfig;
+}
+
 // Create Multicurve initializer parameters
 export interface CreateMulticurveParams<
   C extends SupportedChainId = SupportedChainId,
@@ -1132,6 +1137,9 @@ export interface CreateMulticurveParams<
 
   // Vesting configuration (optional)
   vesting?: VestingConfig;
+
+  /** Optional exact-input purchase executed atomically through Bundler. */
+  devBuy?: MulticurveDevBuyConfig;
 
   // Governance configuration
   governance: GovernanceOption<C>;
@@ -1183,10 +1191,22 @@ export interface MulticurveCreatePrediction {
   poolOrHookAddress: Address;
   governanceAddress: Address;
   timelockAddress: Address;
-  migrationPoolAddress: Address;
+  migrationPoolAddress?: Address;
   poolKey: V4PoolKey;
   poolId: Hex;
   tokenIsCurrency0: boolean;
+}
+
+export interface PreparedMulticurveTransaction {
+  to: Address;
+  data: Hex;
+  value: bigint;
+}
+
+/** Dev-buy details returned by preparation and contract simulation. */
+export interface PreparedMulticurveDevBuy extends MulticurveDevBuyConfig {
+  bundler: Address;
+  simulatedAmountOut: bigint;
 }
 
 export interface PreparedMulticurveCreate<
@@ -1197,12 +1217,35 @@ export interface PreparedMulticurveCreate<
   airlock: Address;
   createParams: CreateParams;
   prediction: MulticurveCreatePrediction;
-  transaction: {
-    to: Address;
-    data: Hex;
-    value: 0n;
-  };
+  transaction: PreparedMulticurveTransaction;
+  approvalTransaction?: PreparedMulticurveTransaction;
+  devBuy?: PreparedMulticurveDevBuy;
   gasEstimate: MulticurveCreateGasEstimate;
+}
+
+export interface SimulatedMulticurveCreate<
+  _C extends SupportedChainId = SupportedChainId,
+> {
+  createParams: CreateParams;
+  tokenAddress: Address;
+  poolId: Hex;
+  gasEstimate?: bigint;
+  devBuy?: PreparedMulticurveDevBuy;
+  execute: () => Promise<MulticurveCreateResult>;
+}
+
+/** Dev-buy details verified from the executed Bundler receipt. */
+export interface MulticurveDevBuyResult extends MulticurveDevBuyConfig {
+  bundler: Address;
+  amountOut: bigint;
+}
+
+export interface MulticurveCreateResult {
+  tokenAddress: Address;
+  poolId: Hex;
+  transactionHash: Hash;
+  approvalTransactionHash?: Hash;
+  devBuy?: MulticurveDevBuyResult;
 }
 
 // Optional per-call module address overrides. When provided, these take precedence
@@ -1210,6 +1253,7 @@ export interface PreparedMulticurveCreate<
 export interface ModuleAddressOverrides {
   // Core deployment & routing
   airlock?: Address;
+  bundler?: Address;
   tokenFactory?: Address;
   dopplerERC20V1Factory?: Address;
 

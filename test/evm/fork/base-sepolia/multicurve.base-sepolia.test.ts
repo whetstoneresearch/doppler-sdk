@@ -263,58 +263,6 @@ describe('Multicurve (Base Sepolia fork) smoke test', () => {
     expect(result.poolId).toMatch(/^0x[a-fA-F0-9]{64}$/)
   })
 
-  it('quotes multicurve bundle via the Bundler helpers', async () => {
-    // Reuse whitelisting assertions to ensure modules are available
-    expect(initializerWhitelisted && migratorWhitelisted && tokenFactoryWhitelisted && governanceFactoryWhitelisted).toBe(true)
-
-    const builder = sdk
-      .buildMulticurveAuction()
-      .tokenConfig({ type: 'standard', name: 'MultiCurveBundle', symbol: 'MCB', tokenURI: 'ipfs://bundle' })
-      .saleConfig({
-        initialSupply: 1_000_000n * WAD,
-        numTokensToSell: 500_000n * WAD,
-        numeraire: addresses.weth,
-      })
-      .poolConfig({
-        fee: 0,
-        tickSpacing: 8,
-        curves: Array.from({ length: 8 }, (_, i) => ({
-          tickLower: i * 24_000,
-          tickUpper: 200_000,
-          numPositions: 8,
-          shares: WAD / 8n,
-        })),
-      })
-      .withGovernance({ type: 'default' })
-      .withMigration({ type: 'uniswapV2' })
-      .withUserAddress(addresses.airlock)
-      .withV4MulticurveInitializer(addresses.v4MulticurveInitializer!)
-      .withV2Migrator(addresses.v2Migrator)
-
-    const params = builder.build()
-    const { createParams, tokenAddress } = await sdk.factory.simulateCreateMulticurve(params)
-
-    const exactAmountOut = params.sale.numTokensToSell / 10n || 1n
-    const exactOutQuote = await sdk.factory.simulateMulticurveBundleExactOut(createParams, {
-      exactAmountOut,
-      hookData: '0x' as `0x${string}`,
-    })
-
-    expect(exactOutQuote.asset).toBe(tokenAddress)
-    expect(exactOutQuote.amountIn > 0n).toBe(true)
-    expect(exactOutQuote.gasEstimate >= 0n).toBe(true)
-    expect(exactOutQuote.poolKey.hooks).toMatch(/^0x[a-fA-F0-9]{40}$/)
-
-    const exactInQuote = await sdk.factory.simulateMulticurveBundleExactIn(createParams, {
-      exactAmountIn: exactOutQuote.amountIn,
-      hookData: '0x' as `0x${string}`,
-    })
-
-    expect(exactInQuote.asset).toBe(tokenAddress)
-    expect(exactInQuote.amountOut > 0n).toBe(true)
-    expect(exactInQuote.poolKey.hooks).toBe(exactOutQuote.poolKey.hooks)
-  })
-
   it('simulate().execute() produces consistent addresses via closure', async () => {
     // This test verifies that the execute() function returned by simulate
     // uses the same createParams (including salt) as the simulation

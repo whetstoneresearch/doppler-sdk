@@ -22,4 +22,6 @@ export type {
   BaseAuctionBuilder,
   MarketCapPresetConfig,
   MarketCapPresetOverrides,
+  BuilderDevBuyInput,
+  BuilderDevBuyVestingInput,
 } from './shared';

@@ -6,6 +6,8 @@ export const DEAD_ADDRESS =
   '0x000000000000000000000000000000000000dEaD' as Address;
 export const ZERO_ADDRESS =
   '0x0000000000000000000000000000000000000000' as Address;
+export const MAX_UINT64 = (1n << 64n) - 1n;
+export const MAX_UINT128 = (1n << 128n) - 1n;
 
 // =============================================================================
 // Fee Tiers - V3 vs V4 Distinction
@@ -74,6 +76,7 @@ export const DOPPLER_MAX_TICK_SPACING = 30;
 // Time constants
 export const SECONDS_PER_DAY = 86400;
 export const SECONDS_PER_YEAR = 365 * SECONDS_PER_DAY;
+export const MIN_BUNDLER_VESTING_DURATION = BigInt(SECONDS_PER_DAY);
 
 // Default values
 export const DEFAULT_EPOCH_LENGTH = 43200; // 12 hours in seconds (matching V4 SDK)

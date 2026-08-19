@@ -181,66 +181,51 @@ Look at `src/pages/PoolDetails.tsx` for a complete reference implementation.
 
 ---
 
-## Create + Pre‑Buy (Bundle)
+## Atomic Multicurve Dev Buy
 
-For static (V3‑style) auctions you can atomically create the pool and execute a pre‑buy in the same transaction via the Bundler. This mirrors the older V3 SDK’s `bundle(...)` flow.
+`MulticurveBuilder.withDevBuy(...)` routes multicurve creation and one exact-input purchase through Bundler in the same transaction. Dev buys support DopplerHookInitializer and Rehype initializer families; standard, scheduled, and decay initializers reject them. Production use is intended for compatible Rehype initializers configured with no-op governance and no-op migration; no-op migration requires pool beneficiaries.
 
-Steps:
-- Simulate create to get the predicted token (asset) address and `CreateParams`.
-- Decide the amount of tokens to pre‑buy (`amountOut`).
-- Use `factory.simulateBundleExactOutput(...)` to learn the required ETH/WETH input (`amountIn`).
-- Build Universal Router commands for a V3 exact‑out swap (e.g., with `doppler-router`).
-- Call `factory.bundle(...)` with the `CreateParams`, commands, and inputs. Send `value = amountIn` if swapping from ETH.
-
-Example:
+A configured Bundler deployment is required. Use the chain default through `sdk.bundler`, or select a compatible custom deployment with `.withBundler(address)` and access its custody positions through `sdk.getBundler(address)`.
 
 ```ts
-import { CommandBuilder, SwapRouter02Encoder } from 'doppler-router'
-import { parseEther } from 'viem'
+const params = sdk
+  .buildMulticurveAuction()
+  // Configure token, sale, curves, beneficiaries, and Rehype initializer.
+  .withGovernance({ type: 'noOp' })
+  .withMigration({ type: 'noOp' })
+  .withDevBuy({
+    exactAmountIn: parseEther('0.01'),
+    recipient: user,
+    vesting: {
+      vestingDuration: 7n * 24n * 60n * 60n,
+      cliffDuration: 24n * 60n * 60n,
+      permissionlessClaim: false,
+    },
+  })
+  .build();
 
-// 1) Build your static params (builder recommended)
-const staticParams = new StaticAuctionBuilder(base.id)
-  .tokenConfig({ name: 'My Token', symbol: 'MTK', tokenURI: 'ipfs://...' })
-  .saleConfig({ initialSupply: parseEther('1_000_000_000'), numTokensToSell: parseEther('900_000_000'), numeraire: weth })
-  .poolByTicks({ fee: 10000 })
-  .withGovernance({ type: 'default' })
-  .withMigration({ type: 'uniswapV2' })
-  .withUserAddress(user)
-  .build()
+const simulated = await sdk.factory.simulateCreateMulticurve(params);
+console.log('Simulated output:', simulated.devBuy?.simulatedAmountOut);
 
-// 2) Simulate create → get CreateParams, predicted token address, and gas estimate
-const { createParams, asset, gasEstimate } = await sdk.factory.simulateCreateStaticAuction(staticParams)
-
-// (Optional) Adjust your gas limit with the returned estimate if you need custom buffers
-const gasLimit = gasEstimate ? gasEstimate + 500_000n : undefined
-
-// 3) Choose a pre‑buy target amountOut (e.g., 1% of tokens for sale)
-const amountOut = staticParams.sale.numTokensToSell / 100n
-
-// 4) Quote required input using the Bundler simulator
-const amountIn = await sdk.factory.simulateBundleExactOutput(createParams, {
-  tokenIn: weth,
-  tokenOut: asset,
-  amount: amountOut,
-  fee: 10_000,
-  sqrtPriceLimitX96: 0n,
-})
-
-// 5) Build Universal Router commands for a V3 exact‑out swap
-const path = [weth, asset]
-const encodedPath = new SwapRouter02Encoder().encodePathExactOutput(path)
-const builder = new CommandBuilder()
-builder.addWrapEth(addresses.universalRouter, amountIn)
-builder.addV3SwapExactOut(user, amountOut, amountIn, encodedPath, false)
-const [commands, inputs] = builder.build()
-
-// 6) Atomically create + pre‑buy
-const txHash = await sdk.factory.bundle(createParams, commands, inputs, {
-  value: amountIn,
-  gas: gasLimit,
-})
+const result = await simulated.execute();
+console.log('Actual output:', result.devBuy?.amountOut);
 ```
 
-Notes:
-- Bundling is supported for static (V3‑style) auctions. Dynamic (V4) auctions use the Universal Router directly after creation.
-- If buying with ERC‑20 input instead of native ETH, approve/permit as needed and omit `value`.
+Native numeraire sends exactly `exactAmountIn` as transaction value. ERC-20 numeraire sends zero native value and may require a separate `approve(bundler, exactAmountIn)` transaction before the atomic create-and-buy transaction. The wallet must already hold the input token; wrapping WETH and approving it do not form part of the atomic Bundler transaction. Permit2 and unlimited approvals are not used.
+
+Bundler is exact-input only. Its simulation is informational because the contract has no minimum output, deadline, slippage limit, or hook-data parameter; state changes before execution can change the amount received.
+
+Omit `vesting` to deliver purchased tokens directly to `recipient`. When vesting is present, Bundler holds the output under a linear schedule; `cliffDuration` defaults to zero and `permissionlessClaim` defaults to `false`. Permissionless claims change who may trigger a claim, never its recipient.
+
+```ts
+const bundler = sdk.getBundler(result.devBuy!.bundler);
+const position = await bundler.getVesting(result.tokenAddress);
+const claimable = await bundler.getClaimable(result.tokenAddress);
+
+if (claimable > 0n) {
+  const claimHash = await bundler.claim(result.tokenAddress);
+  await publicClient.waitForTransactionReceipt({ hash: claimHash });
+}
+```
+
+`simulateCreateMulticurve` returns `SimulatedMulticurveCreate`, while `prepareCreateMulticurve(params, { account })` returns `PreparedMulticurveCreate` with the Bundler transaction, an optional ERC-20 approval transaction, and deterministic prediction data. Executed receipt verification checks the Bundler recipient, exact input, output amount, and vesting event before returning `MulticurveCreateResult`.

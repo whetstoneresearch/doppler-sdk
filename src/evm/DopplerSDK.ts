@@ -29,6 +29,7 @@ import {
   DopplerERC20V1,
 } from './entities/token';
 import { TopUpDistributor } from './entities/TopUpDistributor';
+import { Bundler } from './entities/Bundler';
 import {
   StaticAuctionBuilder,
   DynamicAuctionBuilder,
@@ -49,6 +50,7 @@ export class DopplerSDK<C extends SupportedChainId = SupportedChainId> {
   private _factory?: DopplerFactory<C>;
   private _quoter?: Quoter;
   private _topUpDistributor?: TopUpDistributor;
+  private _bundler?: Bundler;
 
   constructor(config: DopplerSDKConfig) {
     this.publicClient = config.publicClient;
@@ -112,6 +114,37 @@ export class DopplerSDK<C extends SupportedChainId = SupportedChainId> {
       this.walletClient,
       resolvedTopUpDistributor,
     );
+  }
+
+  /**
+   * Gets the Bundler client configured for this chain.
+   *
+   * Throws when the chain has no Bundler deployment. Use `getBundler(address)`
+   * for custom deployments.
+   */
+  get bundler(): Bundler {
+    if (!this._bundler) {
+      this._bundler = this.getBundler();
+    }
+    return this._bundler;
+  }
+
+  /**
+   * Creates a Bundler client using the chain default or an explicit address.
+   *
+   * Read methods work without a wallet client; claims require one.
+   *
+   * @param bundlerAddress Optional custom Bundler deployment.
+   */
+  getBundler(bundlerAddress?: Address): Bundler {
+    const resolvedBundler =
+      bundlerAddress ?? getAddresses(this.chainId).bundler;
+    if (!resolvedBundler || resolvedBundler === ZERO_ADDRESS) {
+      throw new Error(
+        'Bundler address is not configured on this chain. Pass bundlerAddress to getBundler().',
+      );
+    }
+    return new Bundler(this.publicClient, this.walletClient, resolvedBundler);
   }
 
   /**
