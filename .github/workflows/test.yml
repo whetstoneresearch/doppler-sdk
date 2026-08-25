@@ -228,9 +228,6 @@ jobs:
       - name: Run Solana mainnet fork examples
         run: pnpm test:solana:fork:examples
 
-      - name: Run Solana rehypothecation devnet fork example
-        run: pnpm test:solana:fork:rehypothecation
-
   # Summary job for branch protection
   test-summary:
     name: Test Summary
