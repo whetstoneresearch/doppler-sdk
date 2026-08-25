@@ -48,6 +48,14 @@ export const DOPPLER_LAUNCH_HOOK_V2_ERROR__INVALID_REHYPE_STATE = 0x177e; // 601
 export const DOPPLER_LAUNCH_HOOK_V2_ERROR__SETTLEMENT_INCOMPLETE = 0x177f; // 6015
 /** CosignerRequired: Cosigner approval is required */
 export const DOPPLER_LAUNCH_HOOK_V2_ERROR__COSIGNER_REQUIRED = 0x1780; // 6016
+/** InvalidCosignGateDisableBatch: Cosign gate disable batch must contain between 1 and 8 launches */
+export const DOPPLER_LAUNCH_HOOK_V2_ERROR__INVALID_COSIGN_GATE_DISABLE_BATCH = 0x1781; // 6017
+/** DuplicateLaunch: Cosign gate disable batch contains a duplicate launch */
+export const DOPPLER_LAUNCH_HOOK_V2_ERROR__DUPLICATE_LAUNCH = 0x1782; // 6018
+/** InvalidCosignGateControl: Invalid cosign gate control account */
+export const DOPPLER_LAUNCH_HOOK_V2_ERROR__INVALID_COSIGN_GATE_CONTROL = 0x1783; // 6019
+/** SelectiveCosignGateDisableUnsupported: Launch does not support selective cosign gate disablement */
+export const DOPPLER_LAUNCH_HOOK_V2_ERROR__SELECTIVE_COSIGN_GATE_DISABLE_UNSUPPORTED = 0x1784; // 6020
 
 export type DopplerLaunchHookV2Error =
   | typeof DOPPLER_LAUNCH_HOOK_V2_ERROR__ARITHMETIC_OVERFLOW
@@ -55,9 +63,12 @@ export type DopplerLaunchHookV2Error =
   | typeof DOPPLER_LAUNCH_HOOK_V2_ERROR__COSIGNER_LIST_FULL
   | typeof DOPPLER_LAUNCH_HOOK_V2_ERROR__COSIGNER_NOT_FOUND
   | typeof DOPPLER_LAUNCH_HOOK_V2_ERROR__COSIGNER_REQUIRED
+  | typeof DOPPLER_LAUNCH_HOOK_V2_ERROR__DUPLICATE_LAUNCH
   | typeof DOPPLER_LAUNCH_HOOK_V2_ERROR__INVALID_AUTHORITY
   | typeof DOPPLER_LAUNCH_HOOK_V2_ERROR__INVALID_CONFIG
   | typeof DOPPLER_LAUNCH_HOOK_V2_ERROR__INVALID_COSIGNER
+  | typeof DOPPLER_LAUNCH_HOOK_V2_ERROR__INVALID_COSIGN_GATE_CONTROL
+  | typeof DOPPLER_LAUNCH_HOOK_V2_ERROR__INVALID_COSIGN_GATE_DISABLE_BATCH
   | typeof DOPPLER_LAUNCH_HOOK_V2_ERROR__INVALID_FEE
   | typeof DOPPLER_LAUNCH_HOOK_V2_ERROR__INVALID_FEE_SCHEDULE
   | typeof DOPPLER_LAUNCH_HOOK_V2_ERROR__INVALID_INSTRUCTION_DATA
@@ -65,6 +76,7 @@ export type DopplerLaunchHookV2Error =
   | typeof DOPPLER_LAUNCH_HOOK_V2_ERROR__INVALID_PAYLOAD
   | typeof DOPPLER_LAUNCH_HOOK_V2_ERROR__INVALID_REHYPE_STATE
   | typeof DOPPLER_LAUNCH_HOOK_V2_ERROR__MISSING_ACCOUNT
+  | typeof DOPPLER_LAUNCH_HOOK_V2_ERROR__SELECTIVE_COSIGN_GATE_DISABLE_UNSUPPORTED
   | typeof DOPPLER_LAUNCH_HOOK_V2_ERROR__SETTLEMENT_INCOMPLETE
   | typeof DOPPLER_LAUNCH_HOOK_V2_ERROR__UNEXPECTED_ACCOUNT;
 
@@ -78,9 +90,12 @@ if (process.env.NODE_ENV !== 'production') {
     [DOPPLER_LAUNCH_HOOK_V2_ERROR__COSIGNER_LIST_FULL]: `Cosigner list is full`,
     [DOPPLER_LAUNCH_HOOK_V2_ERROR__COSIGNER_NOT_FOUND]: `Cosigner not found`,
     [DOPPLER_LAUNCH_HOOK_V2_ERROR__COSIGNER_REQUIRED]: `Cosigner approval is required`,
+    [DOPPLER_LAUNCH_HOOK_V2_ERROR__DUPLICATE_LAUNCH]: `Cosign gate disable batch contains a duplicate launch`,
     [DOPPLER_LAUNCH_HOOK_V2_ERROR__INVALID_AUTHORITY]: `Invalid hook authority`,
     [DOPPLER_LAUNCH_HOOK_V2_ERROR__INVALID_CONFIG]: `Invalid hook config`,
     [DOPPLER_LAUNCH_HOOK_V2_ERROR__INVALID_COSIGNER]: `Invalid cosigner`,
+    [DOPPLER_LAUNCH_HOOK_V2_ERROR__INVALID_COSIGN_GATE_CONTROL]: `Invalid cosign gate control account`,
+    [DOPPLER_LAUNCH_HOOK_V2_ERROR__INVALID_COSIGN_GATE_DISABLE_BATCH]: `Cosign gate disable batch must contain between 1 and 8 launches`,
     [DOPPLER_LAUNCH_HOOK_V2_ERROR__INVALID_FEE]: `Invalid swap fee`,
     [DOPPLER_LAUNCH_HOOK_V2_ERROR__INVALID_FEE_SCHEDULE]: `Invalid dynamic fee schedule`,
     [DOPPLER_LAUNCH_HOOK_V2_ERROR__INVALID_INSTRUCTION_DATA]: `Invalid instruction data`,
@@ -88,6 +103,7 @@ if (process.env.NODE_ENV !== 'production') {
     [DOPPLER_LAUNCH_HOOK_V2_ERROR__INVALID_PAYLOAD]: `Invalid hook payload`,
     [DOPPLER_LAUNCH_HOOK_V2_ERROR__INVALID_REHYPE_STATE]: `Invalid Rehype state`,
     [DOPPLER_LAUNCH_HOOK_V2_ERROR__MISSING_ACCOUNT]: `Missing hook account`,
+    [DOPPLER_LAUNCH_HOOK_V2_ERROR__SELECTIVE_COSIGN_GATE_DISABLE_UNSUPPORTED]: `Launch does not support selective cosign gate disablement`,
     [DOPPLER_LAUNCH_HOOK_V2_ERROR__SETTLEMENT_INCOMPLETE]: `Rehype settlement is incomplete`,
     [DOPPLER_LAUNCH_HOOK_V2_ERROR__UNEXPECTED_ACCOUNT]: `Unexpected hook account`,
   };

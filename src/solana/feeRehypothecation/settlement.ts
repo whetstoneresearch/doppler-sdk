@@ -10,7 +10,11 @@ import {
 } from '@solana/kit';
 import { decodeToken, findAssociatedTokenPda } from '@solana-program/token';
 
-import { decodeDopplerLaunchHookV2Payload } from '../dopplerLaunchHookV2/index.js';
+import {
+  decodeDopplerLaunchHookV2Payload,
+  DOPPLER_LAUNCH_HOOK_V2_FEATURE_MANUAL_COSIGN_DISABLE,
+  getDopplerLaunchHookV2CosignGateControlAddress,
+} from '../dopplerLaunchHookV2/index.js';
 import {
   decodeLaunch,
   decodeLaunchFeeState,
@@ -153,6 +157,17 @@ export async function prepareSettlement(
   if (payload.feeRehypothecationState !== routingAddresses.state) {
     throw new Error('launch payload does not match its router state');
   }
+  const cosignGateControl =
+    (payload.featureFlags &
+      DOPPLER_LAUNCH_HOOK_V2_FEATURE_MANUAL_COSIGN_DISABLE) !==
+    0
+      ? (
+          await getDopplerLaunchHookV2CosignGateControlAddress(
+            input.launch,
+            deployment.dopplerLaunchHookV2Program,
+          )
+        )[0]
+      : undefined;
   const feeState = feeStateAccount.data;
   const routingState = routingStateAccount.data;
   if (
@@ -329,6 +344,7 @@ export async function prepareSettlement(
       hookProgram: deployment.dopplerLaunchHookV2Program,
       baseTokenProgram,
       quoteTokenProgram,
+      cosignGateControl,
       gateCosigner: payload.cosignerGate?.cosigner,
       minBaseToQuoteOut,
       minQuoteToBaseOut,

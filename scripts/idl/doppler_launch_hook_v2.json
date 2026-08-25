@@ -72,6 +72,72 @@
       ]
     },
     {
+      "name": "disable_cosign_gates",
+      "discriminator": [
+        104,
+        91,
+        161,
+        218,
+        150,
+        123,
+        48,
+        243
+      ],
+      "accounts": [
+        {
+          "name": "admin_authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  111,
+                  112,
+                  112,
+                  108,
+                  101,
+                  114,
+                  95,
+                  108,
+                  97,
+                  117,
+                  110,
+                  99,
+                  104,
+                  95,
+                  104,
+                  111,
+                  111,
+                  107,
+                  95,
+                  118,
+                  50
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "launches",
+          "type": {
+            "vec": "pubkey"
+          }
+        }
+      ]
+    },
+    {
       "name": "initialize_config",
       "discriminator": [
         208,
@@ -297,6 +363,21 @@
       ]
     }
   ],
+  "events": [
+    {
+      "name": "CosignGateDisabled",
+      "discriminator": [
+        83,
+        95,
+        16,
+        62,
+        194,
+        237,
+        131,
+        186
+      ]
+    }
+  ],
   "errors": [
     {
       "code": 6000,
@@ -382,9 +463,45 @@
       "code": 6016,
       "name": "CosignerRequired",
       "msg": "Cosigner approval is required"
+    },
+    {
+      "code": 6017,
+      "name": "InvalidCosignGateDisableBatch",
+      "msg": "Cosign gate disable batch must contain between 1 and 8 launches"
+    },
+    {
+      "code": 6018,
+      "name": "DuplicateLaunch",
+      "msg": "Cosign gate disable batch contains a duplicate launch"
+    },
+    {
+      "code": 6019,
+      "name": "InvalidCosignGateControl",
+      "msg": "Invalid cosign gate control account"
+    },
+    {
+      "code": 6020,
+      "name": "SelectiveCosignGateDisableUnsupported",
+      "msg": "Launch does not support selective cosign gate disablement"
     }
   ],
   "types": [
+    {
+      "name": "CosignGateDisabled",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "launch",
+            "type": "pubkey"
+          },
+          {
+            "name": "control",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
     {
       "name": "CosignerArg",
       "type": {

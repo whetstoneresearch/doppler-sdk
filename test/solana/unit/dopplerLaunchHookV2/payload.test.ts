@@ -68,6 +68,7 @@ describe('Doppler launch hook v2 payload helpers', () => {
   });
 
   it('commits the canonical fee routing account order', async () => {
+    const launch = address('BPFLoaderUpgradeab1e11111111111111111111111');
     const namespace = address('Sysvar1nstructions1111111111111111111111111');
     const config = address('SysvarC1ock11111111111111111111111111111111');
     const state = address('SysvarS1otHashes111111111111111111111111111');
@@ -75,11 +76,16 @@ describe('Doppler launch hook v2 payload helpers', () => {
       'SysvarRecentB1ockHashes11111111111111111111',
     );
     const cosigner = await generateKeyPairSigner();
+    const [cosignGateControl] =
+      await dopplerLaunchHookV2.getDopplerLaunchHookV2CosignGateControlAddress(
+        launch,
+      );
     const result = dopplerLaunchHookV2.getDopplerLaunchHookV2RemainingAccounts({
       namespace,
       config,
       feeRehypothecationState: state,
       settlementSigner,
+      cosignGateControl,
       cosigner,
     });
 
@@ -88,6 +94,7 @@ describe('Doppler launch hook v2 payload helpers', () => {
       config,
       state,
       settlementSigner,
+      cosignGateControl,
       cosigner,
     ]);
     expect(result.hookRemainingAccountsHash).toEqual(
@@ -96,6 +103,7 @@ describe('Doppler launch hook v2 payload helpers', () => {
         config,
         state,
         settlementSigner,
+        cosignGateControl,
         cosigner.address,
       ]),
     );
@@ -122,11 +130,32 @@ describe('Doppler launch hook v2 payload helpers', () => {
       dopplerLaunchHookV2.decodeDopplerLaunchHookV2Payload(disabledGate),
     ).toThrow(/disabled.*cosigner gate/);
 
+    const manualDisableWithoutGate = gated.slice();
+    manualDisableWithoutGate[9] =
+      dopplerLaunchHookV2.DOPPLER_LAUNCH_HOOK_V2_FEATURE_MANUAL_COSIGN_DISABLE;
+    expect(() =>
+      dopplerLaunchHookV2.decodeDopplerLaunchHookV2Payload(
+        manualDisableWithoutGate,
+      ),
+    ).toThrow(/manual cosigner disable/);
+
     const missingCosigner = gated.slice();
     missingCosigner.fill(0, 48, 80);
     expect(() =>
       dopplerLaunchHookV2.decodeDopplerLaunchHookV2Payload(missingCosigner),
     ).toThrow(/cosigner/);
+  });
+
+  it('requires the control PDA alongside a cosigner account', async () => {
+    const cosigner = await generateKeyPairSigner();
+
+    expect(() =>
+      dopplerLaunchHookV2.getDopplerLaunchHookV2RemainingAccounts({
+        namespace: address('Sysvar1nstructions1111111111111111111111111'),
+        config: address('SysvarC1ock11111111111111111111111111111111'),
+        cosigner,
+      }),
+    ).toThrow(/must be provided together/);
   });
 
   it('rejects invalid cosigner gate modes before encoding', async () => {

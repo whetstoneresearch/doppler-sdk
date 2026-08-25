@@ -1,4 +1,5 @@
 import {
+  AccountRole,
   address,
   type Address,
   type GetAccountInfoApi,
@@ -84,7 +85,7 @@ describe('fee rehypothecation launch preparation', () => {
         swapFeeBps: 200,
       },
       buybackDestination: payer.address,
-      settlementAuthority: payer.address,
+      settlementAuthority: payer,
       beneficiaries: [{ wallet: payer.address, shareBps: 10_000 }],
       strategy: feeRehypothecation.allFeesToBeneficiariesInNumeraire(),
       metadata: null,
@@ -101,6 +102,14 @@ describe('fee rehypothecation launch preparation', () => {
     );
 
     expect(routingData.launchId).toEqual(prepared.launchId);
+    expect(routingData).not.toHaveProperty('settlementAuthority');
+    expect(
+      prepared.initializeRoutingInstruction.accounts!.slice(0, 3),
+    ).toMatchObject([
+      { address: payer.address, role: AccountRole.WRITABLE_SIGNER },
+      { address: payer.address, role: AccountRole.READONLY_SIGNER },
+      { address: baseMint.address, role: AccountRole.READONLY_SIGNER },
+    ]);
     expect(prepared.namespace).toBe(
       dopplerRehypeRouterV1.DOPPLER_REHYPE_ROUTER_V1_PROGRAM_ADDRESS,
     );
@@ -124,7 +133,7 @@ describe('fee rehypothecation launch preparation', () => {
     );
     expect(
       prepared.initializeLaunchInstruction
-        .accounts!.slice(-4)
+        .accounts!.slice(-prepared.unsignedSwapHook.remainingAccounts!.length)
         .map(({ address }) => address),
     ).toEqual(prepared.unsignedSwapHook.remainingAccounts);
   });
@@ -157,7 +166,7 @@ describe('fee rehypothecation launch preparation', () => {
           swapFeeBps: 200,
         },
         buybackDestination: payer.address,
-        settlementAuthority: payer.address,
+        settlementAuthority: payer,
         beneficiaries: [{ wallet: payer.address, shareBps: 10_000 }],
         strategy: feeRehypothecation.inKindBeneficiaryFees(),
       }),
@@ -187,7 +196,7 @@ describe('fee rehypothecation launch preparation', () => {
         swapFeeBps: 200,
       },
       buybackDestination: payer.address,
-      settlementAuthority: payer.address,
+      settlementAuthority: payer,
       beneficiaries: [],
       strategy: {
         routingMode:
@@ -239,7 +248,7 @@ describe('fee rehypothecation launch preparation', () => {
         swapFeeBps: 200,
       },
       buybackDestination: payer.address,
-      settlementAuthority: payer.address,
+      settlementAuthority: payer,
       beneficiaries: [{ wallet: payer.address, shareBps: 10_000 }],
       strategy: feeRehypothecation.inKindBeneficiaryFees(),
       vesting: {
@@ -271,7 +280,7 @@ describe('fee rehypothecation launch preparation', () => {
     );
     expect(
       prepared.initializeLaunchInstruction
-        .accounts!.slice(-4)
+        .accounts!.slice(-prepared.unsignedSwapHook.remainingAccounts!.length)
         .map(({ address }) => address),
     ).toEqual(prepared.unsignedSwapHook.remainingAccounts);
   });
@@ -302,7 +311,7 @@ describe('fee rehypothecation launch preparation', () => {
         swapFeeBps: 200,
       },
       buybackDestination: payer.address,
-      settlementAuthority: payer.address,
+      settlementAuthority: payer,
       beneficiaries: [{ wallet: payer.address, shareBps: 10_000 }],
       strategy: feeRehypothecation.inKindBeneficiaryFees(),
       cosignerGate: gate,
@@ -312,6 +321,13 @@ describe('fee rehypothecation launch preparation', () => {
     expect(prepared.getSwapHook()).toEqual(prepared.unsignedSwapHook);
     expect(prepared.unsignedSwapHook.remainingAccounts?.at(-1)).toBe(
       cosigner.address,
+    );
+    expect(prepared.unsignedSwapHook.remainingAccounts?.at(-2)).toBe(
+      (
+        await dopplerLaunchHookV2.getDopplerLaunchHookV2CosignGateControlAddress(
+          prepared.launchAddresses.launch,
+        )
+      )[0],
     );
     expect(prepared.getSwapHook(cosigner).remainingAccounts?.at(-1)).toBe(
       cosigner,

@@ -364,6 +364,10 @@
           "signer": true
         },
         {
+          "name": "settlement_authority",
+          "signer": true
+        },
+        {
           "name": "base_mint",
           "docs": [
             "Future launch mint. Its signature prevents another caller from claiming this state PDA."
@@ -1662,10 +1666,6 @@
             "type": "pubkey"
           },
           {
-            "name": "settlement_authority",
-            "type": "pubkey"
-          },
-          {
             "name": "routing_mode",
             "type": "u8"
           },
@@ -2514,11 +2514,19 @@
             "type": "u64"
           },
           {
+            "name": "settled_initializer_base_fees",
+            "type": "u64"
+          },
+          {
+            "name": "settled_initializer_quote_fees",
+            "type": "u64"
+          },
+          {
             "name": "_reserved",
             "type": {
               "array": [
                 "u8",
-                24
+                8
               ]
             }
           }

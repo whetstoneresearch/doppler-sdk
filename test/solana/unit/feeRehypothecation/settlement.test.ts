@@ -101,6 +101,11 @@ describe('fee rehypothecation settlement preparation', () => {
       );
     const strategy = feeRehypothecation.allFeesToBeneficiariesInNumeraire();
     const hookPayload = dopplerLaunchHookV2.encodeDopplerLaunchHookV2Payload({
+      cosignerGate: {
+        mode: dopplerLaunchHookV2.DOPPLER_LAUNCH_HOOK_V2_GATE_UNIX_TIMESTAMP,
+        value: 1_000n,
+        cosigner: payer.address,
+      },
       feeRehypothecationState: routingAddresses.state,
     });
     const emptyInitializerBeneficiary = {
@@ -219,7 +224,9 @@ describe('fee rehypothecation settlement preparation', () => {
       settlementAuthority: payer.address,
       cumulativeRoutedBaseFees: 0n,
       cumulativeRoutedQuoteFees: 0n,
-      reserved: new Uint8Array(24),
+      settledInitializerBaseFees: 0n,
+      settledInitializerQuoteFees: 0n,
+      reserved: new Uint8Array(8),
     });
 
     const accounts = new Map<Address, RpcAccount>([
@@ -311,6 +318,14 @@ describe('fee rehypothecation settlement preparation', () => {
     expect(settlementData.minBaseToQuoteOut).toBe(173n);
     expect(settlementData.minQuoteToBaseOut).toBe(0n);
     expect(settlement.instruction.accounts![5].address).toBe(launchAuthority);
+    expect(settlement.instruction.accounts![25].address).toBe(payer.address);
+    expect(settlement.instruction.accounts![26].address).toBe(
+      (
+        await dopplerLaunchHookV2.getDopplerLaunchHookV2CosignGateControlAddress(
+          launch,
+        )
+      )[0],
+    );
     expect(snapshotFetches).toBe(1);
 
     const claim = await feeRehypothecation.prepareClaim({

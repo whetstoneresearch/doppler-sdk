@@ -17,6 +17,7 @@ import {
   DOPPLER_LAUNCH_HOOK_V2_FEATURE_COSIGN_GATE,
   DOPPLER_LAUNCH_HOOK_V2_FEATURE_DYNAMIC_FEE,
   DOPPLER_LAUNCH_HOOK_V2_FEATURE_FEE_REHYPOTHECATION,
+  DOPPLER_LAUNCH_HOOK_V2_FEATURE_MANUAL_COSIGN_DISABLE,
   DOPPLER_LAUNCH_HOOK_V2_FEATURE_MASK,
   DOPPLER_LAUNCH_HOOK_V2_GATE_DISABLED,
   DOPPLER_LAUNCH_HOOK_V2_GATE_SLOT,
@@ -124,7 +125,9 @@ export function encodeDopplerLaunchHookV2Payload(
       throw new Error('invalid Doppler launch hook v2 cosigner gate mode');
     }
     const gateValue = assertU64('cosigner gate value', args.cosignerGate.value);
-    featureFlags |= DOPPLER_LAUNCH_HOOK_V2_FEATURE_COSIGN_GATE;
+    featureFlags |=
+      DOPPLER_LAUNCH_HOOK_V2_FEATURE_COSIGN_GATE |
+      DOPPLER_LAUNCH_HOOK_V2_FEATURE_MANUAL_COSIGN_DISABLE;
     payload[32] = args.cosignerGate.mode;
     view.setBigUint64(40, gateValue, true);
     writeAddress(payload, 48, args.cosignerGate.cosigner);
@@ -171,6 +174,11 @@ export function decodeDopplerLaunchHookV2Payload(
     (featureFlags & DOPPLER_LAUNCH_HOOK_V2_FEATURE_COSIGN_GATE) !== 0;
   const hasFeeRehypothecation =
     (featureFlags & DOPPLER_LAUNCH_HOOK_V2_FEATURE_FEE_REHYPOTHECATION) !== 0;
+  const hasManualCosignDisable =
+    (featureFlags & DOPPLER_LAUNCH_HOOK_V2_FEATURE_MANUAL_COSIGN_DISABLE) !== 0;
+  if (hasManualCosignDisable && !hasCosignerGate) {
+    throw new Error('invalid Doppler launch hook v2 manual cosigner disable');
+  }
 
   const dynamicFee = hasDynamicFee
     ? {
@@ -233,12 +241,14 @@ export function getDopplerLaunchHookV2RemainingAccounts({
   config,
   feeRehypothecationState,
   settlementSigner,
+  cosignGateControl,
   cosigner,
 }: {
   namespace: Address;
   config: Address;
   feeRehypothecationState?: Address;
   settlementSigner?: Address;
+  cosignGateControl?: Address;
   cosigner?: AddressOrTransactionSigner;
 }): DopplerLaunchHookV2RemainingAccounts {
   if (Boolean(feeRehypothecationState) !== Boolean(settlementSigner)) {
@@ -246,13 +256,16 @@ export function getDopplerLaunchHookV2RemainingAccounts({
       'feeRehypothecationState and settlementSigner must be provided together',
     );
   }
+  if (Boolean(cosignGateControl) !== Boolean(cosigner)) {
+    throw new Error('cosignGateControl and cosigner must be provided together');
+  }
 
   const signedHookRemainingAccounts: RemainingAccount[] = [namespace, config];
   if (feeRehypothecationState && settlementSigner) {
     signedHookRemainingAccounts.push(feeRehypothecationState, settlementSigner);
   }
-  if (cosigner) {
-    signedHookRemainingAccounts.push(cosigner);
+  if (cosignGateControl && cosigner) {
+    signedHookRemainingAccounts.push(cosignGateControl, cosigner);
   }
   const unsignedHookRemainingAccounts = signedHookRemainingAccounts.map(
     getAddressFromRemainingAccount,

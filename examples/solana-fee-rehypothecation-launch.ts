@@ -78,7 +78,7 @@ async function main(): Promise<void> {
     },
     metadata: DEFAULT_TEST_METADATA,
     buybackDestination: payer.address,
-    settlementAuthority: payer.address,
+    settlementAuthority: payer,
     beneficiaries: [{ wallet: payer.address, shareBps: 10_000 }],
     strategy: strategies[strategyName](),
   });

@@ -7,6 +7,7 @@
  */
 
 export * from './addCosigner';
+export * from './disableCosignGates';
 export * from './initializeConfig';
 export * from './removeCosigner';
 export * from './setAuthority';

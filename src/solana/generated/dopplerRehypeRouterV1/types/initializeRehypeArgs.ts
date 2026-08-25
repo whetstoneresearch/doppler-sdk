@@ -41,7 +41,6 @@ export type InitializeRehypeArgs = {
   namespace: Address;
   launchId: ReadonlyUint8Array;
   buybackDestination: Address;
-  settlementAuthority: Address;
   routingMode: number;
   feeRouting: FeeRoutingMatrix;
   beneficiaries: Array<RehypeBeneficiaryInput>;
@@ -51,7 +50,6 @@ export type InitializeRehypeArgsArgs = {
   namespace: Address;
   launchId: ReadonlyUint8Array;
   buybackDestination: Address;
-  settlementAuthority: Address;
   routingMode: number;
   feeRouting: FeeRoutingMatrixArgs;
   beneficiaries: Array<RehypeBeneficiaryInputArgs>;
@@ -62,7 +60,6 @@ export function getInitializeRehypeArgsEncoder(): Encoder<InitializeRehypeArgsAr
     ['namespace', getAddressEncoder()],
     ['launchId', fixEncoderSize(getBytesEncoder(), 32)],
     ['buybackDestination', getAddressEncoder()],
-    ['settlementAuthority', getAddressEncoder()],
     ['routingMode', getU8Encoder()],
     ['feeRouting', getFeeRoutingMatrixEncoder()],
     ['beneficiaries', getArrayEncoder(getRehypeBeneficiaryInputEncoder())],
@@ -74,7 +71,6 @@ export function getInitializeRehypeArgsDecoder(): Decoder<InitializeRehypeArgs> 
     ['namespace', getAddressDecoder()],
     ['launchId', fixDecoderSize(getBytesDecoder(), 32)],
     ['buybackDestination', getAddressDecoder()],
-    ['settlementAuthority', getAddressDecoder()],
     ['routingMode', getU8Decoder()],
     ['feeRouting', getFeeRoutingMatrixDecoder()],
     ['beneficiaries', getArrayDecoder(getRehypeBeneficiaryInputDecoder())],
