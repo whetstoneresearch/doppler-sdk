@@ -171,22 +171,17 @@ runtime_examples=(
   examples/solana-usdc-e2e-launch.ts
   examples/solana-usdc-cosigner-gated-buy.ts
 )
-devnet_runtime_examples=(
+compile_only_examples=(
+  examples/solana-prediction-market.ts
   examples/solana-create-spot-pool.ts
   examples/solana-fee-rehypothecation-launch.ts
   examples/solana-fee-rehypothecation-settle-and-claim.ts
   examples/solana-vesting-launch.ts
   examples/solana-vesting-claim.ts
 )
-compile_only_examples=(
-  examples/solana-prediction-market.ts
-)
 
 declare -A classified_examples=()
-for example in \
-  "${runtime_examples[@]}" \
-  "${devnet_runtime_examples[@]}" \
-  "${compile_only_examples[@]}"; do
+for example in "${runtime_examples[@]}" "${compile_only_examples[@]}"; do
   classified_examples["$example"]=1
 done
 for path in "$ROOT_DIR"/examples/solana-*.ts; do
@@ -203,7 +198,5 @@ for example in "${runtime_examples[@]}"; do
   pnpm exec tsx "$example"
 done
 
-echo
-echo "Covered by the devnet fork: ${devnet_runtime_examples[*]}"
 echo
 echo "Compile-only on a mainnet fork: ${compile_only_examples[*]}"

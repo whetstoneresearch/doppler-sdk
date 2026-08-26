@@ -37,7 +37,7 @@
     "test:whitelisting": "LIVE_TEST_ENABLED=true vitest run --config vitest.live.config.ts test/evm/e2e/whitelisting.test.ts",
     "test:solana": "vitest run --config vitest.solana.config.ts",
     "test:solana:fork:examples": "bash scripts/run-solana-mainnet-fork-examples.sh",
-    "test:solana:fork:devnet-examples": "bash scripts/run-solana-devnet-fork-examples.sh",
+    "test:solana:fork:rehypothecation": "bash scripts/run-solana-devnet-rehypothecation-example.sh",
     "check:examples": "tsc --project tsconfig.examples.json",
     "typecheck:solana-examples": "tsc --project tsconfig.solana-examples.json",
     "test:watch": "vitest watch --config vitest.unit.config.ts",

@@ -184,8 +184,6 @@ The Solana examples use `@whetstone-research/doppler-sdk/solana`. Set `SOLANA_NE
 - [`solana-create-spot-pool.ts`](./solana-create-spot-pool.ts): create a permissionless base-token/WSOL spot pool with an immutable fee tier and an optional allowlisted swap-phase hook.
 - [`solana-fee-rehypothecation-launch.ts`](./solana-fee-rehypothecation-launch.ts): create a non-migrating launch with selectable asset-only, numeraire-only, in-kind, or balanced fee routing.
 - [`solana-fee-rehypothecation-settle-and-claim.ts`](./solana-fee-rehypothecation-settle-and-claim.ts): settle routed fees with protected conversion quotes, then claim one beneficiary's proceeds.
-- [`solana-vesting-launch.ts`](./solana-vesting-launch.ts): create and fund a non-migrating launch with an immutable token vesting allocation.
-- [`solana-vesting-claim.ts`](./solana-vesting-claim.ts): permissionlessly claim the tokens currently available to a vesting beneficiary.
 - [`solana-swap.ts`](./solana-swap.ts): quote and submit an exact-in CPMM swap.
 - [`solana-custom-hook/`](./solana-custom-hook/): minimal Anchor implementation of the Solana hook callback ABI. See the [custom hook guide](../docs/solana-custom-hooks.md) for deployment and SDK wiring.
 
@@ -208,7 +206,6 @@ export SOLANA_CPMM_MIGRATOR_PROGRAM_ID=...
 export SOLANA_DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ID=...
 export SOLANA_DOPPLER_LAUNCH_HOOK_V2_PROGRAM_ID=...
 export SOLANA_DOPPLER_REHYPE_ROUTER_V1_PROGRAM_ID=...
-export SOLANA_VESTING_PROGRAM_ID=...
 ```
 
 Fee rehypothecation launches initialize their routing state and launch in two
@@ -232,22 +229,9 @@ The command clones the deployed programs and protocol configs, then uses
 ephemeral payer and cosigner keys. The forked hook config is rewritten to
 authorize only the ephemeral cosigner; no production key or mainnet write is
 required. Set `SOLANA_MAINNET_RPC_URL` to override the public RPC used for
-cloning. The prediction-market example is compile-checked but cannot execute in
-this suite because its required program revision does not have a mainnet
-deployment.
-
-Run examples whose required programs are currently deployed only on devnet
-against a disposable local devnet fork:
-
-```bash
-pnpm test:solana:fork:devnet-examples
-```
-
-This suite executes spot-pool creation, fee-rehypothecation launch and
-settlement/claim, and vesting launch and claim. It uses an immediately vested
-schedule so both vesting examples execute in one CI run without waiting for
-wall-clock time. Set `SOLANA_DEVNET_RPC_URL` to override the public RPC used for
-cloning.
+cloning. The prediction-market and spot-pool examples are compile-checked but
+cannot execute in this suite because their required program revisions do not
+have a mainnet deployment.
 
 For larger CPMM launch metadata, use a launch-specific ALT:
 

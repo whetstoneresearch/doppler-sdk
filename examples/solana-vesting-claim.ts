@@ -15,23 +15,18 @@ import {
 async function main(): Promise<void> {
   const payer = await loadKeypairSignerFromEnv();
   const { rpc, rpcSubscriptions, network } = createSolanaClientsFromEnv();
-  assertSolanaExampleNetwork(network, ['devnet', 'custom']);
+  assertSolanaExampleNetwork(network, ['custom']);
   const launch = address(requiredEnv('SOLANA_VESTING_LAUNCH'));
   const baseMint = address(requiredEnv('SOLANA_VESTING_BASE_MINT'));
   const beneficiary = process.env.SOLANA_VESTING_BENEFICIARY
     ? address(process.env.SOLANA_VESTING_BENEFICIARY)
     : payer.address;
-  const vestingProgramText = process.env.SOLANA_VESTING_PROGRAM_ID?.trim();
-  const vestingProgram = vestingProgramText
-    ? address(vestingProgramText)
-    : undefined;
 
   const claim = await vesting.prepareClaim({
     payer,
     beneficiary,
     launch,
     baseMint,
-    vestingProgram,
   });
   const signature = await sendInstructions({
     rpc,

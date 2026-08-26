@@ -1,8 +1,6 @@
 /** Creates a non-migrating launch, settles one swap's fees, and claims them. */
 import './env.js';
 
-import { writeFileSync } from 'node:fs';
-
 import { generateKeyPairSigner } from '@solana/kit';
 
 import {
@@ -44,28 +42,6 @@ function getStrategyName(): StrategyName {
     );
   }
   return value as StrategyName;
-}
-
-function shouldSettleAndClaim(): boolean {
-  const value = process.env.SOLANA_FEE_REHYPOTHECATION_SETTLE_AND_CLAIM?.trim();
-  if (!value || value === 'true') {
-    return true;
-  }
-  if (value === 'false') {
-    return false;
-  }
-  throw new Error(
-    'SOLANA_FEE_REHYPOTHECATION_SETTLE_AND_CLAIM must be true or false',
-  );
-}
-
-function writeStateOutput(state: { launch: string; baseMint: string }): void {
-  const outputPath =
-    process.env.SOLANA_FEE_REHYPOTHECATION_STATE_OUTPUT?.trim();
-  if (!outputPath) {
-    return;
-  }
-  writeFileSync(outputPath, `${JSON.stringify(state, null, 2)}\n`, 'utf8');
 }
 
 async function main(): Promise<void> {
@@ -145,22 +121,6 @@ async function main(): Promise<void> {
     payer,
     instructions: swap.instructions,
   });
-
-  writeStateOutput({
-    launch: prepared.launchAddresses.launch,
-    baseMint: baseMint.address,
-  });
-
-  if (!shouldSettleAndClaim()) {
-    console.log('Fee rehypothecation launch and swap complete:');
-    console.log('  Launch:       ', prepared.launchAddresses.launch);
-    console.log('  Base mint:    ', baseMint.address);
-    console.log('  Router state: ', prepared.routingAddresses.state);
-    console.log('  Routing tx:   ', routingSignature);
-    console.log('  Launch tx:    ', launchSignature);
-    console.log('  Swap tx:      ', swapSignature);
-    return;
-  }
 
   const settlement = await feeRehypothecation.prepareSettlement({
     rpc,
