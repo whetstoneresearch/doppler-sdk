@@ -14,6 +14,13 @@ FORK_MANIFEST="$RUN_DIR/fork-manifest.json"
 FEE_STATE="$RUN_DIR/fee-state.json"
 VESTING_STATE="$RUN_DIR/vesting-state.json"
 VALIDATOR_PID=""
+RUN_REHYPOTHECATION_EXAMPLES="${SOLANA_RUN_DEVNET_REHYPOTHECATION_EXAMPLES:-false}"
+
+if [[ "$RUN_REHYPOTHECATION_EXAMPLES" != "true" ]] && \
+  [[ "$RUN_REHYPOTHECATION_EXAMPLES" != "false" ]]; then
+  echo "SOLANA_RUN_DEVNET_REHYPOTHECATION_EXAMPLES must be true or false" >&2
+  exit 1
+fi
 
 cleanup() {
   local exit_code="$?"
@@ -130,27 +137,6 @@ export SOLANA_DOPPLER_REHYPE_ROUTER_V1_PROGRAM_ID="$REHYPE_ROUTER_PROGRAM"
 export SOLANA_VESTING_PROGRAM_ID="$VESTING_PROGRAM"
 
 echo
-echo "Running examples/solana-fee-rehypothecation-launch.ts"
-export SOLANA_FEE_REHYPOTHECATION_STRATEGY="${SOLANA_FEE_REHYPOTHECATION_STRATEGY:-numeraire}"
-export SOLANA_FEE_REHYPOTHECATION_SETTLE_AND_CLAIM=false
-export SOLANA_FEE_REHYPOTHECATION_STATE_OUTPUT="$FEE_STATE"
-pnpm exec tsx examples/solana-fee-rehypothecation-launch.ts
-
-export SOLANA_LAUNCH="$(read_json "$FEE_STATE" launch)"
-export SOLANA_BASE_MINT="$(read_json "$FEE_STATE" baseMint)"
-
-echo
-echo "Running examples/solana-fee-rehypothecation-settle-and-claim.ts"
-pnpm exec tsx examples/solana-fee-rehypothecation-settle-and-claim.ts
-
-echo
-echo "Running examples/solana-create-spot-pool.ts"
-export SPOT_POOL_BASE_MINT="$SOLANA_BASE_MINT"
-export SPOT_POOL_BASE_AMOUNT="${SPOT_POOL_BASE_AMOUNT:-1000000}"
-export SPOT_POOL_QUOTE_AMOUNT_LAMPORTS="${SPOT_POOL_QUOTE_AMOUNT_LAMPORTS:-10000000}"
-pnpm exec tsx examples/solana-create-spot-pool.ts
-
-echo
 echo "Running examples/solana-vesting-launch.ts"
 export SOLANA_VESTING_CLIFF_SECONDS=0
 export SOLANA_VESTING_DURATION_SECONDS=0
@@ -163,3 +149,29 @@ export SOLANA_VESTING_BASE_MINT="$(read_json "$VESTING_STATE" baseMint)"
 echo
 echo "Running examples/solana-vesting-claim.ts"
 pnpm exec tsx examples/solana-vesting-claim.ts
+
+echo
+echo "Running examples/solana-create-spot-pool.ts"
+export SPOT_POOL_BASE_MINT="$SOLANA_VESTING_BASE_MINT"
+export SPOT_POOL_BASE_AMOUNT="${SPOT_POOL_BASE_AMOUNT:-1000000}"
+export SPOT_POOL_QUOTE_AMOUNT_LAMPORTS="${SPOT_POOL_QUOTE_AMOUNT_LAMPORTS:-10000000}"
+pnpm exec tsx examples/solana-create-spot-pool.ts
+
+if [[ "$RUN_REHYPOTHECATION_EXAMPLES" == "true" ]]; then
+  echo
+  echo "Running examples/solana-fee-rehypothecation-launch.ts"
+  export SOLANA_FEE_REHYPOTHECATION_STRATEGY="${SOLANA_FEE_REHYPOTHECATION_STRATEGY:-numeraire}"
+  export SOLANA_FEE_REHYPOTHECATION_SETTLE_AND_CLAIM=false
+  export SOLANA_FEE_REHYPOTHECATION_STATE_OUTPUT="$FEE_STATE"
+  pnpm exec tsx examples/solana-fee-rehypothecation-launch.ts
+
+  export SOLANA_LAUNCH="$(read_json "$FEE_STATE" launch)"
+  export SOLANA_BASE_MINT="$(read_json "$FEE_STATE" baseMint)"
+
+  echo
+  echo "Running examples/solana-fee-rehypothecation-settle-and-claim.ts"
+  pnpm exec tsx examples/solana-fee-rehypothecation-settle-and-claim.ts
+else
+  echo
+  echo "Skipping fee-rehypothecation examples until the current router ABI is deployed to devnet"
+fi

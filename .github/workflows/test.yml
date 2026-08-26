@@ -234,6 +234,7 @@ jobs:
     timeout-minutes: 30
     env:
       AGAVE_VERSION: v4.1.0-rc.1
+      SOLANA_RUN_DEVNET_REHYPOTHECATION_EXAMPLES: 'false'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

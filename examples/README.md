@@ -243,11 +243,13 @@ against a disposable local devnet fork:
 pnpm test:solana:fork:devnet-examples
 ```
 
-This suite executes spot-pool creation, fee-rehypothecation launch and
-settlement/claim, and vesting launch and claim. It uses an immediately vested
-schedule so both vesting examples execute in one CI run without waiting for
-wall-clock time. Set `SOLANA_DEVNET_RPC_URL` to override the public RPC used for
-cloning.
+This suite executes spot-pool creation and vesting launch and claim. It uses an
+immediately vested schedule so both vesting examples execute in one CI run
+without waiting for wall-clock time. Set
+`SOLANA_RUN_DEVNET_REHYPOTHECATION_EXAMPLES=true` to also run the
+fee-rehypothecation launch and settlement/claim after the current router ABI is
+deployed to devnet. Set `SOLANA_DEVNET_RPC_URL` to override the public RPC used
+for cloning.
 
 For larger CPMM launch metadata, use a launch-specific ALT:
 
