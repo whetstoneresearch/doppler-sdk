@@ -7,5 +7,6 @@
  */
 
 export * from './cosignerArg';
+export * from './cosignGateDisabled';
 export * from './initializeConfigArgs';
 export * from './setAuthorityArgs';

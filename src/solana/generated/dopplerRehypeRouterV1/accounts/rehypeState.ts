@@ -91,6 +91,8 @@ export type RehypeState = {
   settlementAuthority: Address;
   cumulativeRoutedBaseFees: bigint;
   cumulativeRoutedQuoteFees: bigint;
+  settledInitializerBaseFees: bigint;
+  settledInitializerQuoteFees: bigint;
   reserved: ReadonlyUint8Array;
 };
 
@@ -123,6 +125,8 @@ export type RehypeStateArgs = {
   settlementAuthority: Address;
   cumulativeRoutedBaseFees: number | bigint;
   cumulativeRoutedQuoteFees: number | bigint;
+  settledInitializerBaseFees: number | bigint;
+  settledInitializerQuoteFees: number | bigint;
   reserved: ReadonlyUint8Array;
 };
 
@@ -168,7 +172,9 @@ export function getRehypeStateEncoder(): FixedSizeEncoder<RehypeStateArgs> {
       ['settlementAuthority', getAddressEncoder()],
       ['cumulativeRoutedBaseFees', getU64Encoder()],
       ['cumulativeRoutedQuoteFees', getU64Encoder()],
-      ['reserved', fixEncoderSize(getBytesEncoder(), 24)],
+      ['settledInitializerBaseFees', getU64Encoder()],
+      ['settledInitializerQuoteFees', getU64Encoder()],
+      ['reserved', fixEncoderSize(getBytesEncoder(), 8)],
     ]),
     (value) => ({ ...value, discriminator: REHYPE_STATE_DISCRIMINATOR }),
   );
@@ -215,7 +221,9 @@ export function getRehypeStateDecoder(): FixedSizeDecoder<RehypeState> {
     ['settlementAuthority', getAddressDecoder()],
     ['cumulativeRoutedBaseFees', getU64Decoder()],
     ['cumulativeRoutedQuoteFees', getU64Decoder()],
-    ['reserved', fixDecoderSize(getBytesDecoder(), 24)],
+    ['settledInitializerBaseFees', getU64Decoder()],
+    ['settledInitializerQuoteFees', getU64Decoder()],
+    ['reserved', fixDecoderSize(getBytesDecoder(), 8)],
   ]);
 }
 

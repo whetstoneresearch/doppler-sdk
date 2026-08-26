@@ -9,6 +9,7 @@ import {
   DOPPLER_LAUNCH_HOOK_V2_GATE_UNIX_TIMESTAMP,
   encodeDopplerLaunchHookV2Payload,
   getDopplerLaunchHookV2RemainingAccounts,
+  getDopplerLaunchHookV2CosignGateControlAddress,
   isResolvedManagedCosignerGateV2,
   type ResolvedManagedCosignerGateV2,
 } from '../dopplerLaunchHookV2/index.js';
@@ -76,7 +77,7 @@ export type PrepareFeeRehypothecationLaunchInput = PrepareLaunchBaseInput & {
   payer: TransactionSigner;
   authority: TransactionSigner;
   buybackDestination: Address;
-  settlementAuthority: Address;
+  settlementAuthority: TransactionSigner;
   beneficiaries: ReadonlyArray<RehypeBeneficiaryInputArgs>;
   strategy: FeeRehypothecationStrategy;
   dynamicFee?: DynamicFeeScheduleArgs | null;
@@ -181,12 +182,21 @@ export async function prepareLaunch(
   ) {
     throw new Error('cosignerGate does not match the selected deployment');
   }
+  const cosignGateControl = gate
+    ? (
+        await getDopplerLaunchHookV2CosignGateControlAddress(
+          launchAddresses.launch,
+          deployment.dopplerLaunchHookV2Program,
+        )
+      )[0]
+    : undefined;
 
   const remainingAccounts = getDopplerLaunchHookV2RemainingAccounts({
     namespace,
     config: deployment.dopplerLaunchHookV2Config,
     feeRehypothecationState: routingAddresses.state,
     settlementSigner: routingAddresses.settlementSigner,
+    cosignGateControl,
     cosigner: gate?.cosigner,
   });
   const payload = encodeDopplerLaunchHookV2Payload({
@@ -277,6 +287,7 @@ export async function prepareLaunch(
       config: deployment.dopplerLaunchHookV2Config,
       feeRehypothecationState: routingAddresses.state,
       settlementSigner: routingAddresses.settlementSigner,
+      cosignGateControl,
       cosigner: cosigner ?? gate?.cosigner,
     });
     return {

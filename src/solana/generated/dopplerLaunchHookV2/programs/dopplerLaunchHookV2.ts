@@ -39,16 +39,20 @@ import {
 } from '../accounts';
 import {
   getAddCosignerInstructionAsync,
+  getDisableCosignGatesInstructionAsync,
   getInitializeConfigInstructionAsync,
   getRemoveCosignerInstructionAsync,
   getSetAuthorityInstructionAsync,
   parseAddCosignerInstruction,
+  parseDisableCosignGatesInstruction,
   parseInitializeConfigInstruction,
   parseRemoveCosignerInstruction,
   parseSetAuthorityInstruction,
   type AddCosignerAsyncInput,
+  type DisableCosignGatesAsyncInput,
   type InitializeConfigAsyncInput,
   type ParsedAddCosignerInstruction,
+  type ParsedDisableCosignGatesInstruction,
   type ParsedInitializeConfigInstruction,
   type ParsedRemoveCosignerInstruction,
   type ParsedSetAuthorityInstruction,
@@ -86,6 +90,7 @@ export function identifyDopplerLaunchHookV2Account(
 
 export enum DopplerLaunchHookV2Instruction {
   AddCosigner,
+  DisableCosignGates,
   InitializeConfig,
   RemoveCosigner,
   SetAuthority,
@@ -105,6 +110,17 @@ export function identifyDopplerLaunchHookV2Instruction(
     )
   ) {
     return DopplerLaunchHookV2Instruction.AddCosigner;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([104, 91, 161, 218, 150, 123, 48, 243]),
+      ),
+      0,
+    )
+  ) {
+    return DopplerLaunchHookV2Instruction.DisableCosignGates;
   }
   if (
     containsBytes(
@@ -152,6 +168,9 @@ export type ParsedDopplerLaunchHookV2Instruction<
       instructionType: DopplerLaunchHookV2Instruction.AddCosigner;
     } & ParsedAddCosignerInstruction<TProgram>)
   | ({
+      instructionType: DopplerLaunchHookV2Instruction.DisableCosignGates;
+    } & ParsedDisableCosignGatesInstruction<TProgram>)
+  | ({
       instructionType: DopplerLaunchHookV2Instruction.InitializeConfig;
     } & ParsedInitializeConfigInstruction<TProgram>)
   | ({
@@ -171,6 +190,13 @@ export function parseDopplerLaunchHookV2Instruction<TProgram extends string>(
       return {
         instructionType: DopplerLaunchHookV2Instruction.AddCosigner,
         ...parseAddCosignerInstruction(instruction),
+      };
+    }
+    case DopplerLaunchHookV2Instruction.DisableCosignGates: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: DopplerLaunchHookV2Instruction.DisableCosignGates,
+        ...parseDisableCosignGatesInstruction(instruction),
       };
     }
     case DopplerLaunchHookV2Instruction.InitializeConfig: {
@@ -220,6 +246,10 @@ export type DopplerLaunchHookV2PluginInstructions = {
     input: AddCosignerAsyncInput,
   ) => ReturnType<typeof getAddCosignerInstructionAsync> &
     SelfPlanAndSendFunctions;
+  disableCosignGates: (
+    input: DisableCosignGatesAsyncInput,
+  ) => ReturnType<typeof getDisableCosignGatesInstructionAsync> &
+    SelfPlanAndSendFunctions;
   initializeConfig: (
     input: MakeOptional<InitializeConfigAsyncInput, 'payer'>,
   ) => ReturnType<typeof getInitializeConfigInstructionAsync> &
@@ -254,6 +284,11 @@ export function dopplerLaunchHookV2Program() {
             addSelfPlanAndSendFunctions(
               client,
               getAddCosignerInstructionAsync(input),
+            ),
+          disableCosignGates: (input) =>
+            addSelfPlanAndSendFunctions(
+              client,
+              getDisableCosignGatesInstructionAsync(input),
             ),
           initializeConfig: (input) =>
             addSelfPlanAndSendFunctions(

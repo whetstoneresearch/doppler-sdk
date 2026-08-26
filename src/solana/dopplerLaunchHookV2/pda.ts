@@ -1,4 +1,5 @@
 import {
+  getAddressEncoder,
   getProgramDerivedAddress,
   type Address,
   type ProgramDerivedAddress,
@@ -6,6 +7,7 @@ import {
 
 import {
   DOPPLER_LAUNCH_HOOK_V2_CONFIG_SEED,
+  DOPPLER_LAUNCH_HOOK_V2_COSIGN_GATE_CONTROL_SEED,
   DOPPLER_LAUNCH_HOOK_V2_PROGRAM_ID,
 } from './constants.js';
 
@@ -17,5 +19,18 @@ export async function getDopplerLaunchHookV2ConfigAddress(
   return getProgramDerivedAddress({
     programAddress: programId,
     seeds: [textEncoder.encode(DOPPLER_LAUNCH_HOOK_V2_CONFIG_SEED)],
+  });
+}
+
+export async function getDopplerLaunchHookV2CosignGateControlAddress(
+  launch: Address,
+  programId: Address = DOPPLER_LAUNCH_HOOK_V2_PROGRAM_ID,
+): Promise<ProgramDerivedAddress> {
+  return getProgramDerivedAddress({
+    programAddress: programId,
+    seeds: [
+      textEncoder.encode(DOPPLER_LAUNCH_HOOK_V2_COSIGN_GATE_CONTROL_SEED),
+      getAddressEncoder().encode(launch),
+    ],
   });
 }
