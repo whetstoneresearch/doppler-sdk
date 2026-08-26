@@ -73,3 +73,18 @@ export async function getPredictionEntryByMintAddress(
     ],
   });
 }
+
+export async function getPredictionClaimReceiptAddress(
+  market: Address,
+  claimer: Address,
+  programId: Address = PREDICTION_MIGRATOR_PROGRAM_ADDRESS,
+): Promise<ProgramDerivedAddress> {
+  return getProgramDerivedAddress({
+    programAddress: programId,
+    seeds: [
+      textEncoder.encode('receipt'),
+      addressCodec.encode(market),
+      addressCodec.encode(claimer),
+    ],
+  });
+}
