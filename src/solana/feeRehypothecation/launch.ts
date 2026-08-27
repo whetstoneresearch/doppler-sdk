@@ -77,7 +77,6 @@ export type PrepareFeeRehypothecationLaunchInput = PrepareLaunchBaseInput & {
   payer: TransactionSigner;
   authority: TransactionSigner;
   buybackDestination: Address;
-  settlementAuthority: TransactionSigner;
   beneficiaries: ReadonlyArray<RehypeBeneficiaryInputArgs>;
   strategy: FeeRehypothecationStrategy;
   dynamicFee?: DynamicFeeScheduleArgs | null;
@@ -224,7 +223,6 @@ export async function prepareLaunch(
         namespace,
         launchId,
         buybackDestination: input.buybackDestination,
-        settlementAuthority: input.settlementAuthority,
         routingMode: input.strategy.routingMode,
         feeRouting: input.strategy.feeRouting,
         beneficiaries,

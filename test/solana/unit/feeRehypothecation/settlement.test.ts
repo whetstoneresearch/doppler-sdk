@@ -221,7 +221,7 @@ describe('fee rehypothecation settlement preparation', () => {
       beneficiaryCount: 1,
       inflightKind: 0,
       inflightDirection: 0,
-      settlementAuthority: payer.address,
+      reservedSettlementAuthority: new Uint8Array(32),
       cumulativeRoutedBaseFees: 0n,
       cumulativeRoutedQuoteFees: 0n,
       settledInitializerBaseFees: 0n,
@@ -299,7 +299,7 @@ describe('fee rehypothecation settlement preparation', () => {
       rpc,
       deployment,
       launch,
-      settlementAuthority: payer,
+      payer,
     });
     const settlementData = getSettleFeesInstructionDataDecoder().decode(
       settlement.instruction.data!,

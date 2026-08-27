@@ -24,21 +24,12 @@ async function main(): Promise<void> {
   const beneficiary = process.env.SOLANA_FEE_BENEFICIARY
     ? address(process.env.SOLANA_FEE_BENEFICIARY)
     : payer.address;
-  const settlementAuthority =
-    process.env.SOLANA_SETTLEMENT_AUTHORITY_KEYPAIR_PATH ||
-    process.env.SOLANA_SETTLEMENT_AUTHORITY_KEYPAIR
-      ? await loadKeypairSignerFromEnv({
-          pathEnv: 'SOLANA_SETTLEMENT_AUTHORITY_KEYPAIR_PATH',
-          jsonEnv: 'SOLANA_SETTLEMENT_AUTHORITY_KEYPAIR',
-          label: 'SOLANA_SETTLEMENT_AUTHORITY_KEYPAIR',
-        })
-      : payer;
 
   const settlement = await feeRehypothecation.prepareSettlement({
     rpc,
     deployment,
     launch,
-    settlementAuthority,
+    payer,
   });
   console.log('Settlement quote:', settlement.quote);
   const settlementSignature = await sendInstructions({

@@ -52,7 +52,7 @@ export type FeeRehypothecationRpc = Rpc<
 export type PrepareFeeRehypothecationSettlementInput = {
   rpc: FeeRehypothecationRpc;
   launch: Address;
-  settlementAuthority: TransactionSigner;
+  payer: TransactionSigner;
   deployment?: SolanaFeeRehypothecationDeployment;
   slippageBps?: number;
   minBaseToQuoteOut?: bigint;
@@ -179,7 +179,6 @@ export async function prepareSettlement(
     routingState.baseMint !== launch.baseMint ||
     routingState.quoteMint !== launch.quoteMint ||
     routingState.hookProgram !== launch.hookProgram ||
-    routingState.settlementAuthority !== input.settlementAuthority.address ||
     baseMintAccount.address !== launch.baseMint ||
     quoteMintAccount.address !== launch.quoteMint ||
     baseVaultAccount.address !== launch.baseVault ||
@@ -321,7 +320,7 @@ export async function prepareSettlement(
   });
   const instruction = await getSettleFeesInstructionAsync(
     {
-      settlementAuthority: input.settlementAuthority,
+      payer: input.payer,
       initializerProgram: deployment.initializerProgram,
       initializerConfig: deployment.initializerConfig,
       launch: input.launch,

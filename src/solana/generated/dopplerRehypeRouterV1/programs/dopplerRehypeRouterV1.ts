@@ -356,11 +356,11 @@ export type DopplerRehypeRouterV1PluginInstructions = {
   ) => ReturnType<typeof getReplaceBeneficiaryInstructionAsync> &
     SelfPlanAndSendFunctions;
   settleFees: (
-    input: SettleFeesAsyncInput,
+    input: MakeOptional<SettleFeesAsyncInput, 'payer'>,
   ) => ReturnType<typeof getSettleFeesInstructionAsync> &
     SelfPlanAndSendFunctions;
   settleMigratedFees: (
-    input: SettleMigratedFeesAsyncInput,
+    input: MakeOptional<SettleMigratedFeesAsyncInput, 'payer'>,
   ) => ReturnType<typeof getSettleMigratedFeesInstructionAsync> &
     SelfPlanAndSendFunctions;
 };
@@ -414,12 +414,18 @@ export function dopplerRehypeRouterV1Program() {
           settleFees: (input) =>
             addSelfPlanAndSendFunctions(
               client,
-              getSettleFeesInstructionAsync(input),
+              getSettleFeesInstructionAsync({
+                ...input,
+                payer: input.payer ?? client.payer,
+              }),
             ),
           settleMigratedFees: (input) =>
             addSelfPlanAndSendFunctions(
               client,
-              getSettleMigratedFeesInstructionAsync(input),
+              getSettleMigratedFeesInstructionAsync({
+                ...input,
+                payer: input.payer ?? client.payer,
+              }),
             ),
         },
       },

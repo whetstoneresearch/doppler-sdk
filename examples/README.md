@@ -215,7 +215,8 @@ Fee rehypothecation launches initialize their routing state and launch in two
 transactions. The launch helper configures the router as the Initializer fee
 beneficiary; the router's beneficiary list and routing strategy control the
 eventual payouts. Settlement conversions use a 50 bps slippage tolerance by
-default and require the immutable settlement authority configured at creation.
+default. Settlement is permissionless: any signer can submit and pay for the
+transaction, and no keeper authority is configured at launch creation.
 
 The high-level launch helper uses the deployment's Doppler launch hook v1 automatically. Set `dynamicFee`, a gate returned by `dopplerLaunchHookV1.resolveManagedCosignerGate`, or both in the helper params to enable those features; omit both for static fees without cosigning. The resolver fetches the hook's singleton on-chain config and selects its first active Doppler-managed signer, while `createLaunch` remains an offline instruction builder that pins the resolved signer. Launch creators cannot register or select a cosigner through this flow. Integrators that require their own cosigner must use a separate hook program approved by the protocol; passing a key to the low-level hook helpers does not authorize or register it with the Doppler-managed hook. The gated swap examples require `COSIGNER_KEYPAIR_PATH` or `COSIGNER_KEYPAIR` to match that selected signer because they execute the managed cosigned swap themselves.
 

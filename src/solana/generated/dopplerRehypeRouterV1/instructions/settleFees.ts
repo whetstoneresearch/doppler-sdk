@@ -53,7 +53,7 @@ export function getSettleFeesDiscriminatorBytes() {
 
 export type SettleFeesInstruction<
   TProgram extends string = typeof DOPPLER_REHYPE_ROUTER_V1_PROGRAM_ADDRESS,
-  TAccountSettlementAuthority extends string | AccountMeta<string> = string,
+  TAccountPayer extends string | AccountMeta<string> = string,
   TAccountInitializerProgram extends string | AccountMeta<string> =
     '4h3Dqyo5qmteJoMxXt3tdtfXELDB6pdRTPU9mWruiKp1',
   TAccountInitializerConfig extends string | AccountMeta<string> = string,
@@ -88,10 +88,10 @@ export type SettleFeesInstruction<
   InstructionWithData<ReadonlyUint8Array> &
   InstructionWithAccounts<
     [
-      TAccountSettlementAuthority extends string
-        ? WritableSignerAccount<TAccountSettlementAuthority> &
-            AccountSignerMeta<TAccountSettlementAuthority>
-        : TAccountSettlementAuthority,
+      TAccountPayer extends string
+        ? WritableSignerAccount<TAccountPayer> &
+            AccountSignerMeta<TAccountPayer>
+        : TAccountPayer,
       TAccountInitializerProgram extends string
         ? ReadonlyAccount<TAccountInitializerProgram>
         : TAccountInitializerProgram,
@@ -215,7 +215,7 @@ export function getSettleFeesInstructionDataCodec(): FixedSizeCodec<
 }
 
 export type SettleFeesAsyncInput<
-  TAccountSettlementAuthority extends string = string,
+  TAccountPayer extends string = string,
   TAccountInitializerProgram extends string = string,
   TAccountInitializerConfig extends string = string,
   TAccountLaunch extends string = string,
@@ -243,7 +243,7 @@ export type SettleFeesAsyncInput<
   TAccountGateCosigner extends string = string,
   TAccountCosignGateControl extends string = string,
 > = {
-  settlementAuthority: TransactionSigner<TAccountSettlementAuthority>;
+  payer: TransactionSigner<TAccountPayer>;
   initializerProgram?: Address<TAccountInitializerProgram>;
   initializerConfig: Address<TAccountInitializerConfig>;
   launch: Address<TAccountLaunch>;
@@ -275,7 +275,7 @@ export type SettleFeesAsyncInput<
 };
 
 export async function getSettleFeesInstructionAsync<
-  TAccountSettlementAuthority extends string,
+  TAccountPayer extends string,
   TAccountInitializerProgram extends string,
   TAccountInitializerConfig extends string,
   TAccountLaunch extends string,
@@ -306,7 +306,7 @@ export async function getSettleFeesInstructionAsync<
     typeof DOPPLER_REHYPE_ROUTER_V1_PROGRAM_ADDRESS,
 >(
   input: SettleFeesAsyncInput<
-    TAccountSettlementAuthority,
+    TAccountPayer,
     TAccountInitializerProgram,
     TAccountInitializerConfig,
     TAccountLaunch,
@@ -338,7 +338,7 @@ export async function getSettleFeesInstructionAsync<
 ): Promise<
   SettleFeesInstruction<
     TProgramAddress,
-    TAccountSettlementAuthority,
+    TAccountPayer,
     TAccountInitializerProgram,
     TAccountInitializerConfig,
     TAccountLaunch,
@@ -373,10 +373,7 @@ export async function getSettleFeesInstructionAsync<
 
   // Original accounts.
   const originalAccounts = {
-    settlementAuthority: {
-      value: input.settlementAuthority ?? null,
-      isWritable: true,
-    },
+    payer: { value: input.payer ?? null, isWritable: true },
     initializerProgram: {
       value: input.initializerProgram ?? null,
       isWritable: false,
@@ -567,7 +564,7 @@ export async function getSettleFeesInstructionAsync<
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta('settlementAuthority', accounts.settlementAuthority),
+      getAccountMeta('payer', accounts.payer),
       getAccountMeta('initializerProgram', accounts.initializerProgram),
       getAccountMeta('initializerConfig', accounts.initializerConfig),
       getAccountMeta('launch', accounts.launch),
@@ -601,7 +598,7 @@ export async function getSettleFeesInstructionAsync<
     programAddress,
   } as SettleFeesInstruction<
     TProgramAddress,
-    TAccountSettlementAuthority,
+    TAccountPayer,
     TAccountInitializerProgram,
     TAccountInitializerConfig,
     TAccountLaunch,
@@ -632,7 +629,7 @@ export async function getSettleFeesInstructionAsync<
 }
 
 export type SettleFeesInput<
-  TAccountSettlementAuthority extends string = string,
+  TAccountPayer extends string = string,
   TAccountInitializerProgram extends string = string,
   TAccountInitializerConfig extends string = string,
   TAccountLaunch extends string = string,
@@ -660,7 +657,7 @@ export type SettleFeesInput<
   TAccountGateCosigner extends string = string,
   TAccountCosignGateControl extends string = string,
 > = {
-  settlementAuthority: TransactionSigner<TAccountSettlementAuthority>;
+  payer: TransactionSigner<TAccountPayer>;
   initializerProgram?: Address<TAccountInitializerProgram>;
   initializerConfig: Address<TAccountInitializerConfig>;
   launch: Address<TAccountLaunch>;
@@ -692,7 +689,7 @@ export type SettleFeesInput<
 };
 
 export function getSettleFeesInstruction<
-  TAccountSettlementAuthority extends string,
+  TAccountPayer extends string,
   TAccountInitializerProgram extends string,
   TAccountInitializerConfig extends string,
   TAccountLaunch extends string,
@@ -723,7 +720,7 @@ export function getSettleFeesInstruction<
     typeof DOPPLER_REHYPE_ROUTER_V1_PROGRAM_ADDRESS,
 >(
   input: SettleFeesInput<
-    TAccountSettlementAuthority,
+    TAccountPayer,
     TAccountInitializerProgram,
     TAccountInitializerConfig,
     TAccountLaunch,
@@ -754,7 +751,7 @@ export function getSettleFeesInstruction<
   config?: { programAddress?: TProgramAddress },
 ): SettleFeesInstruction<
   TProgramAddress,
-  TAccountSettlementAuthority,
+  TAccountPayer,
   TAccountInitializerProgram,
   TAccountInitializerConfig,
   TAccountLaunch,
@@ -788,10 +785,7 @@ export function getSettleFeesInstruction<
 
   // Original accounts.
   const originalAccounts = {
-    settlementAuthority: {
-      value: input.settlementAuthority ?? null,
-      isWritable: true,
-    },
+    payer: { value: input.payer ?? null, isWritable: true },
     initializerProgram: {
       value: input.initializerProgram ?? null,
       isWritable: false,
@@ -874,7 +868,7 @@ export function getSettleFeesInstruction<
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta('settlementAuthority', accounts.settlementAuthority),
+      getAccountMeta('payer', accounts.payer),
       getAccountMeta('initializerProgram', accounts.initializerProgram),
       getAccountMeta('initializerConfig', accounts.initializerConfig),
       getAccountMeta('launch', accounts.launch),
@@ -908,7 +902,7 @@ export function getSettleFeesInstruction<
     programAddress,
   } as SettleFeesInstruction<
     TProgramAddress,
-    TAccountSettlementAuthority,
+    TAccountPayer,
     TAccountInitializerProgram,
     TAccountInitializerConfig,
     TAccountLaunch,
@@ -944,7 +938,7 @@ export type ParsedSettleFeesInstruction<
 > = {
   programAddress: Address<TProgram>;
   accounts: {
-    settlementAuthority: TAccountMetas[0];
+    payer: TAccountMetas[0];
     initializerProgram: TAccountMetas[1];
     initializerConfig: TAccountMetas[2];
     launch: TAccountMetas[3];
@@ -1007,7 +1001,7 @@ export function parseSettleFeesInstruction<
   return {
     programAddress: instruction.programAddress,
     accounts: {
-      settlementAuthority: getNextAccount(),
+      payer: getNextAccount(),
       initializerProgram: getNextAccount(),
       initializerConfig: getNextAccount(),
       launch: getNextAccount(),

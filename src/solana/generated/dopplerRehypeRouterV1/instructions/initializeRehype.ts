@@ -70,7 +70,6 @@ export function getInitializeRehypeDiscriminatorBytes() {
 export type InitializeRehypeInstruction<
   TProgram extends string = typeof DOPPLER_REHYPE_ROUTER_V1_PROGRAM_ADDRESS,
   TAccountPayer extends string | AccountMeta<string> = string,
-  TAccountSettlementAuthority extends string | AccountMeta<string> = string,
   TAccountBaseMint extends string | AccountMeta<string> = string,
   TAccountQuoteMint extends string | AccountMeta<string> = string,
   TAccountHookProgram extends string | AccountMeta<string> = string,
@@ -90,10 +89,6 @@ export type InitializeRehypeInstruction<
         ? WritableSignerAccount<TAccountPayer> &
             AccountSignerMeta<TAccountPayer>
         : TAccountPayer,
-      TAccountSettlementAuthority extends string
-        ? ReadonlySignerAccount<TAccountSettlementAuthority> &
-            AccountSignerMeta<TAccountSettlementAuthority>
-        : TAccountSettlementAuthority,
       TAccountBaseMint extends string
         ? ReadonlySignerAccount<TAccountBaseMint> &
             AccountSignerMeta<TAccountBaseMint>
@@ -181,7 +176,6 @@ export function getInitializeRehypeInstructionDataCodec(): Codec<
 
 export type InitializeRehypeAsyncInput<
   TAccountPayer extends string = string,
-  TAccountSettlementAuthority extends string = string,
   TAccountBaseMint extends string = string,
   TAccountQuoteMint extends string = string,
   TAccountHookProgram extends string = string,
@@ -192,7 +186,6 @@ export type InitializeRehypeAsyncInput<
   TAccountSystemProgram extends string = string,
 > = {
   payer: TransactionSigner<TAccountPayer>;
-  settlementAuthority: TransactionSigner<TAccountSettlementAuthority>;
   /** Future launch mint. Its signature prevents another caller from claiming this state PDA. */
   baseMint: TransactionSigner<TAccountBaseMint>;
   quoteMint: Address<TAccountQuoteMint>;
@@ -212,7 +205,6 @@ export type InitializeRehypeAsyncInput<
 
 export async function getInitializeRehypeInstructionAsync<
   TAccountPayer extends string,
-  TAccountSettlementAuthority extends string,
   TAccountBaseMint extends string,
   TAccountQuoteMint extends string,
   TAccountHookProgram extends string,
@@ -226,7 +218,6 @@ export async function getInitializeRehypeInstructionAsync<
 >(
   input: InitializeRehypeAsyncInput<
     TAccountPayer,
-    TAccountSettlementAuthority,
     TAccountBaseMint,
     TAccountQuoteMint,
     TAccountHookProgram,
@@ -241,7 +232,6 @@ export async function getInitializeRehypeInstructionAsync<
   InitializeRehypeInstruction<
     TProgramAddress,
     TAccountPayer,
-    TAccountSettlementAuthority,
     TAccountBaseMint,
     TAccountQuoteMint,
     TAccountHookProgram,
@@ -259,10 +249,6 @@ export async function getInitializeRehypeInstructionAsync<
   // Original accounts.
   const originalAccounts = {
     payer: { value: input.payer ?? null, isWritable: true },
-    settlementAuthority: {
-      value: input.settlementAuthority ?? null,
-      isWritable: false,
-    },
     baseMint: { value: input.baseMint ?? null, isWritable: false },
     quoteMint: { value: input.quoteMint ?? null, isWritable: false },
     hookProgram: { value: input.hookProgram ?? null, isWritable: false },
@@ -359,7 +345,6 @@ export async function getInitializeRehypeInstructionAsync<
   return Object.freeze({
     accounts: [
       getAccountMeta('payer', accounts.payer),
-      getAccountMeta('settlementAuthority', accounts.settlementAuthority),
       getAccountMeta('baseMint', accounts.baseMint),
       getAccountMeta('quoteMint', accounts.quoteMint),
       getAccountMeta('hookProgram', accounts.hookProgram),
@@ -376,7 +361,6 @@ export async function getInitializeRehypeInstructionAsync<
   } as InitializeRehypeInstruction<
     TProgramAddress,
     TAccountPayer,
-    TAccountSettlementAuthority,
     TAccountBaseMint,
     TAccountQuoteMint,
     TAccountHookProgram,
@@ -390,7 +374,6 @@ export async function getInitializeRehypeInstructionAsync<
 
 export type InitializeRehypeInput<
   TAccountPayer extends string = string,
-  TAccountSettlementAuthority extends string = string,
   TAccountBaseMint extends string = string,
   TAccountQuoteMint extends string = string,
   TAccountHookProgram extends string = string,
@@ -401,7 +384,6 @@ export type InitializeRehypeInput<
   TAccountSystemProgram extends string = string,
 > = {
   payer: TransactionSigner<TAccountPayer>;
-  settlementAuthority: TransactionSigner<TAccountSettlementAuthority>;
   /** Future launch mint. Its signature prevents another caller from claiming this state PDA. */
   baseMint: TransactionSigner<TAccountBaseMint>;
   quoteMint: Address<TAccountQuoteMint>;
@@ -421,7 +403,6 @@ export type InitializeRehypeInput<
 
 export function getInitializeRehypeInstruction<
   TAccountPayer extends string,
-  TAccountSettlementAuthority extends string,
   TAccountBaseMint extends string,
   TAccountQuoteMint extends string,
   TAccountHookProgram extends string,
@@ -435,7 +416,6 @@ export function getInitializeRehypeInstruction<
 >(
   input: InitializeRehypeInput<
     TAccountPayer,
-    TAccountSettlementAuthority,
     TAccountBaseMint,
     TAccountQuoteMint,
     TAccountHookProgram,
@@ -449,7 +429,6 @@ export function getInitializeRehypeInstruction<
 ): InitializeRehypeInstruction<
   TProgramAddress,
   TAccountPayer,
-  TAccountSettlementAuthority,
   TAccountBaseMint,
   TAccountQuoteMint,
   TAccountHookProgram,
@@ -466,10 +445,6 @@ export function getInitializeRehypeInstruction<
   // Original accounts.
   const originalAccounts = {
     payer: { value: input.payer ?? null, isWritable: true },
-    settlementAuthority: {
-      value: input.settlementAuthority ?? null,
-      isWritable: false,
-    },
     baseMint: { value: input.baseMint ?? null, isWritable: false },
     quoteMint: { value: input.quoteMint ?? null, isWritable: false },
     hookProgram: { value: input.hookProgram ?? null, isWritable: false },
@@ -510,7 +485,6 @@ export function getInitializeRehypeInstruction<
   return Object.freeze({
     accounts: [
       getAccountMeta('payer', accounts.payer),
-      getAccountMeta('settlementAuthority', accounts.settlementAuthority),
       getAccountMeta('baseMint', accounts.baseMint),
       getAccountMeta('quoteMint', accounts.quoteMint),
       getAccountMeta('hookProgram', accounts.hookProgram),
@@ -527,7 +501,6 @@ export function getInitializeRehypeInstruction<
   } as InitializeRehypeInstruction<
     TProgramAddress,
     TAccountPayer,
-    TAccountSettlementAuthority,
     TAccountBaseMint,
     TAccountQuoteMint,
     TAccountHookProgram,
@@ -546,16 +519,15 @@ export type ParsedInitializeRehypeInstruction<
   programAddress: Address<TProgram>;
   accounts: {
     payer: TAccountMetas[0];
-    settlementAuthority: TAccountMetas[1];
     /** Future launch mint. Its signature prevents another caller from claiming this state PDA. */
-    baseMint: TAccountMetas[2];
-    quoteMint: TAccountMetas[3];
-    hookProgram: TAccountMetas[4];
-    initializerProgram: TAccountMetas[5];
-    rehypeState: TAccountMetas[6];
-    rehypeAuthority: TAccountMetas[7];
-    settlementSigner: TAccountMetas[8];
-    systemProgram: TAccountMetas[9];
+    baseMint: TAccountMetas[1];
+    quoteMint: TAccountMetas[2];
+    hookProgram: TAccountMetas[3];
+    initializerProgram: TAccountMetas[4];
+    rehypeState: TAccountMetas[5];
+    rehypeAuthority: TAccountMetas[6];
+    settlementSigner: TAccountMetas[7];
+    systemProgram: TAccountMetas[8];
   };
   data: InitializeRehypeInstructionData;
 };
@@ -568,12 +540,12 @@ export function parseInitializeRehypeInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedInitializeRehypeInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 10) {
+  if (instruction.accounts.length < 9) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 10,
+        expectedAccountMetas: 9,
       },
     );
   }
@@ -587,7 +559,6 @@ export function parseInitializeRehypeInstruction<
     programAddress: instruction.programAddress,
     accounts: {
       payer: getNextAccount(),
-      settlementAuthority: getNextAccount(),
       baseMint: getNextAccount(),
       quoteMint: getNextAccount(),
       hookProgram: getNextAccount(),

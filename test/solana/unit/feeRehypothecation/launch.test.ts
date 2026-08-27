@@ -85,7 +85,6 @@ describe('fee rehypothecation launch preparation', () => {
         swapFeeBps: 200,
       },
       buybackDestination: payer.address,
-      settlementAuthority: payer,
       beneficiaries: [{ wallet: payer.address, shareBps: 10_000 }],
       strategy: feeRehypothecation.allFeesToBeneficiariesInNumeraire(),
       metadata: null,
@@ -104,10 +103,9 @@ describe('fee rehypothecation launch preparation', () => {
     expect(routingData.launchId).toEqual(prepared.launchId);
     expect(routingData).not.toHaveProperty('settlementAuthority');
     expect(
-      prepared.initializeRoutingInstruction.accounts!.slice(0, 3),
+      prepared.initializeRoutingInstruction.accounts!.slice(0, 2),
     ).toMatchObject([
       { address: payer.address, role: AccountRole.WRITABLE_SIGNER },
-      { address: payer.address, role: AccountRole.READONLY_SIGNER },
       { address: baseMint.address, role: AccountRole.READONLY_SIGNER },
     ]);
     expect(prepared.namespace).toBe(
@@ -166,7 +164,6 @@ describe('fee rehypothecation launch preparation', () => {
           swapFeeBps: 200,
         },
         buybackDestination: payer.address,
-        settlementAuthority: payer,
         beneficiaries: [{ wallet: payer.address, shareBps: 10_000 }],
         strategy: feeRehypothecation.inKindBeneficiaryFees(),
       }),
@@ -196,7 +193,6 @@ describe('fee rehypothecation launch preparation', () => {
         swapFeeBps: 200,
       },
       buybackDestination: payer.address,
-      settlementAuthority: payer,
       beneficiaries: [],
       strategy: {
         routingMode:
@@ -248,7 +244,6 @@ describe('fee rehypothecation launch preparation', () => {
         swapFeeBps: 200,
       },
       buybackDestination: payer.address,
-      settlementAuthority: payer,
       beneficiaries: [{ wallet: payer.address, shareBps: 10_000 }],
       strategy: feeRehypothecation.inKindBeneficiaryFees(),
       vesting: {
@@ -311,7 +306,6 @@ describe('fee rehypothecation launch preparation', () => {
         swapFeeBps: 200,
       },
       buybackDestination: payer.address,
-      settlementAuthority: payer,
       beneficiaries: [{ wallet: payer.address, shareBps: 10_000 }],
       strategy: feeRehypothecation.inKindBeneficiaryFees(),
       cosignerGate: gate,
