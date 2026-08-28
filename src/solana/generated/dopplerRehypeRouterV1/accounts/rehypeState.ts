@@ -88,7 +88,8 @@ export type RehypeState = {
   beneficiaryCount: number;
   inflightKind: number;
   inflightDirection: number;
-  settlementAuthority: Address;
+  /** Reserved bytes formerly used by the privileged settlement authority. */
+  reservedSettlementAuthority: ReadonlyUint8Array;
   cumulativeRoutedBaseFees: bigint;
   cumulativeRoutedQuoteFees: bigint;
   settledInitializerBaseFees: bigint;
@@ -122,7 +123,8 @@ export type RehypeStateArgs = {
   beneficiaryCount: number;
   inflightKind: number;
   inflightDirection: number;
-  settlementAuthority: Address;
+  /** Reserved bytes formerly used by the privileged settlement authority. */
+  reservedSettlementAuthority: ReadonlyUint8Array;
   cumulativeRoutedBaseFees: number | bigint;
   cumulativeRoutedQuoteFees: number | bigint;
   settledInitializerBaseFees: number | bigint;
@@ -169,7 +171,7 @@ export function getRehypeStateEncoder(): FixedSizeEncoder<RehypeStateArgs> {
       ['beneficiaryCount', getU8Encoder()],
       ['inflightKind', getU8Encoder()],
       ['inflightDirection', getU8Encoder()],
-      ['settlementAuthority', getAddressEncoder()],
+      ['reservedSettlementAuthority', fixEncoderSize(getBytesEncoder(), 32)],
       ['cumulativeRoutedBaseFees', getU64Encoder()],
       ['cumulativeRoutedQuoteFees', getU64Encoder()],
       ['settledInitializerBaseFees', getU64Encoder()],
@@ -218,7 +220,7 @@ export function getRehypeStateDecoder(): FixedSizeDecoder<RehypeState> {
     ['beneficiaryCount', getU8Decoder()],
     ['inflightKind', getU8Decoder()],
     ['inflightDirection', getU8Decoder()],
-    ['settlementAuthority', getAddressDecoder()],
+    ['reservedSettlementAuthority', fixDecoderSize(getBytesDecoder(), 32)],
     ['cumulativeRoutedBaseFees', getU64Decoder()],
     ['cumulativeRoutedQuoteFees', getU64Decoder()],
     ['settledInitializerBaseFees', getU64Decoder()],

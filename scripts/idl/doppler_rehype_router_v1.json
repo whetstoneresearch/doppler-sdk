@@ -364,10 +364,6 @@
           "signer": true
         },
         {
-          "name": "settlement_authority",
-          "signer": true
-        },
-        {
           "name": "base_mint",
           "docs": [
             "Future launch mint. Its signature prevents another caller from claiming this state PDA."
@@ -568,7 +564,7 @@
       ],
       "accounts": [
         {
-          "name": "settlement_authority",
+          "name": "payer",
           "writable": true,
           "signer": true
         },
@@ -880,7 +876,7 @@
       ],
       "accounts": [
         {
-          "name": "settlement_authority",
+          "name": "payer",
           "writable": true,
           "signer": true
         },
@@ -2502,8 +2498,16 @@
             "type": "u8"
           },
           {
-            "name": "settlement_authority",
-            "type": "pubkey"
+            "name": "_reserved_settlement_authority",
+            "docs": [
+              "Reserved bytes formerly used by the privileged settlement authority."
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
           },
           {
             "name": "cumulative_routed_base_fees",

@@ -102,7 +102,6 @@ async function main(): Promise<void> {
     },
     metadata: DEFAULT_TEST_METADATA,
     buybackDestination: payer.address,
-    settlementAuthority: payer,
     beneficiaries: [{ wallet: payer.address, shareBps: 10_000 }],
     strategy: strategies[strategyName](),
   });
@@ -166,7 +165,7 @@ async function main(): Promise<void> {
     rpc,
     deployment,
     launch: prepared.launchAddresses.launch,
-    settlementAuthority: payer,
+    payer,
   });
   const settlementSignature = await sendInstructions({
     rpc,
