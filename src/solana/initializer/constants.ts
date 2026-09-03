@@ -9,6 +9,10 @@ export const INITIALIZER_PROGRAM_ID: Address = address(
   '4h3Dqyo5qmteJoMxXt3tdtfXELDB6pdRTPU9mWruiKp1',
 );
 
+export const MAINNET_INITIALIZER_PROGRAM_ID: Address = address(
+  '4carc9eePfE7jKUXdCAYMhcPf4awEFpZPrz1sTykdss1',
+);
+
 export const BPF_LOADER_UPGRADEABLE_PROGRAM_ID: Address = address(
   'BPFLoaderUpgradeab1e11111111111111111111111',
 );

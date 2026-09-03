@@ -6,6 +6,7 @@ import {
 } from './core/index.js';
 import {
   INITIALIZER_PROGRAM_ID,
+  MAINNET_INITIALIZER_PROGRAM_ID,
   getConfigAddress as getInitializerConfigAddress,
 } from './initializer/index.js';
 import { DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ID } from './dopplerLaunchHookV1/index.js';
@@ -50,7 +51,7 @@ export const DOPPLER_SOLANA_DEVNET_PROGRAM_ADDRESSES: SolanaCpmmProgramAddresses
 export const DOPPLER_SOLANA_MAINNET_PROGRAM_ADDRESSES: SolanaCpmmProgramAddresses =
   {
     cpmmProgram: address('5pXzd9UiWrVxATCYWmgo5EbfxzXqHYhfSKGdCPXPz7vK'),
-    initializerProgram: address('4carc9eePfE7jKUXdCAYMhcPf4awEFpZPrz1sTykdss1'),
+    initializerProgram: MAINNET_INITIALIZER_PROGRAM_ID,
     cpmmMigratorProgram: address(
       'H71WD4tsiCCipro4urykWHySH1ryvLTmqEdNbHTGwb3o',
     ),
@@ -68,7 +69,7 @@ export const DOPPLER_SOLANA_DEVNET_FEE_REHYPOTHECATION_PROGRAM_ADDRESSES: Solana
 
 export const DOPPLER_SOLANA_MAINNET_FEE_REHYPOTHECATION_PROGRAM_ADDRESSES: SolanaFeeRehypothecationProgramAddresses =
   {
-    initializerProgram: address('4carc9eePfE7jKUXdCAYMhcPf4awEFpZPrz1sTykdss1'),
+    initializerProgram: MAINNET_INITIALIZER_PROGRAM_ID,
     dopplerLaunchHookV2Program: address(
       '7ZueM1Tef2QA5zrFtVJMDM8MFqkoeG8fog1mXPgmLGH1',
     ),

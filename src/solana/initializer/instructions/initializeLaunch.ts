@@ -27,6 +27,7 @@ import {
   CURVE_KIND_XYK,
   CURVE_PARAMS_FORMAT_XYK_V0,
   INITIALIZER_PROGRAM_ID,
+  MAINNET_INITIALIZER_PROGRAM_ID,
   HF_AFTER_CREATE,
   HF_BEFORE_CREATE,
 } from '../constants.js';
@@ -243,8 +244,12 @@ export async function createInitializeLaunchInstruction(
   }
 
   // Older Initializer deployments do not have the optional vesting account.
-  // A supplied config identifies the current layout for custom deployments.
-  if (programId === INITIALIZER_PROGRAM_ID || vestingConfig) {
+  // Known current deployments and explicit vesting configs use the new layout.
+  if (
+    programId === INITIALIZER_PROGRAM_ID ||
+    programId === MAINNET_INITIALIZER_PROGRAM_ID ||
+    vestingConfig
+  ) {
     keys.push(
       vestingConfig
         ? { address: vestingConfig, role: AccountRole.READONLY }
