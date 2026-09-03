@@ -14,6 +14,8 @@ import {
   initializer,
   cpmmMigrator,
   dopplerLaunchHookV1,
+  DOPPLER_SOLANA_MAINNET_PROGRAM_ADDRESSES,
+  deriveSolanaCpmmDeployment,
 } from '@/solana/index.js';
 import { getInitializeLaunchInstructionDataDecoder } from '@/solana/generated/initializer/instructions/initializeLaunch.js';
 import {
@@ -747,6 +749,41 @@ describe('initializer instructions', () => {
       dopplerLaunchHookV1.DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ID,
     );
     expect(ix.accounts![11].address).toBe(initializer.INITIALIZER_PROGRAM_ID);
+
+    const mainnetDeployment = await deriveSolanaCpmmDeployment(
+      DOPPLER_SOLANA_MAINNET_PROGRAM_ADDRESSES,
+    );
+    const mainnetPrepared = await createLaunch({
+      deployment: mainnetDeployment,
+      namespace: admin.address,
+      launchId: initializer.launchIdFromU64(6n),
+      launchAccounts: {
+        baseMint,
+        quoteMint,
+        baseVault,
+        quoteVault,
+      },
+      payer: admin,
+      authority: admin,
+      supply: {
+        baseDecimals: 6,
+        baseTotalSupply: 1_000_000n,
+        baseForDistribution: 0n,
+        baseForLiquidity: 0n,
+      },
+      curve: {
+        curveVirtualBase: 200_000n,
+        curveVirtualQuote: 200_000n,
+        swapFeeBps: 100,
+      },
+      migration: false,
+      metadata: null,
+    });
+
+    expect(mainnetPrepared.instruction.accounts).toHaveLength(19);
+    expect(mainnetPrepared.instruction.accounts![18].address).toBe(
+      initializer.MAINNET_INITIALIZER_PROGRAM_ID,
+    );
   });
 
   it('rejects initializeLaunch when curve kind is not currently enabled', async () => {

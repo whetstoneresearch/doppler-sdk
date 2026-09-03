@@ -160,6 +160,7 @@ export SWAP_INPUT_MINT="$SWAP_BASE_MINT_ADDRESS"
 
 runtime_examples=(
   examples/solana-minimal-launch.ts
+  examples/solana-permissionless-no-migration-launch.ts
   examples/solana-launch-by-marketcap.ts
   examples/solana-dynamic-fee-launch.ts
   examples/solana-adv-launch.ts
