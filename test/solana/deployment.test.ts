@@ -7,6 +7,7 @@ import {
   cpmmMigrator,
   DOPPLER_SOLANA_DEVNET_PROGRAM_ADDRESSES,
   DOPPLER_SOLANA_DEVNET_FEE_REHYPOTHECATION_PROGRAM_ADDRESSES,
+  DOPPLER_SOLANA_MAINNET_FEE_REHYPOTHECATION_PROGRAM_ADDRESSES,
   DOPPLER_SOLANA_MAINNET_PROGRAM_ADDRESSES,
   deriveSolanaCpmmDeployment,
   deriveSolanaFeeRehypothecationDeployment,
@@ -38,6 +39,22 @@ describe('Solana deployment helpers', () => {
     );
     expect(deployment.initializerConfig).toBeDefined();
     expect(deployment.dopplerLaunchHookV2Config).toBeDefined();
+  });
+
+  it('derives the mainnet fee rehypothecation deployment', async () => {
+    const deployment = await deriveSolanaFeeRehypothecationDeployment(
+      DOPPLER_SOLANA_MAINNET_FEE_REHYPOTHECATION_PROGRAM_ADDRESSES,
+    );
+
+    expect(deployment).toEqual({
+      ...DOPPLER_SOLANA_MAINNET_FEE_REHYPOTHECATION_PROGRAM_ADDRESSES,
+      initializerConfig: address(
+        '2SjmG3AKYXnWKZjQxjyyYyzfWJpbJ7Rx4at4gCqWsLkM',
+      ),
+      dopplerLaunchHookV2Config: address(
+        '6e1B6yK2qaFnD6BrrFzsjEDrECsY83aAUt6gVingbdMF',
+      ),
+    });
   });
 
   it('derives the default devnet CPMM deployment', async () => {

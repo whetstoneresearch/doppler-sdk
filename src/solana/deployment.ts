@@ -66,6 +66,17 @@ export const DOPPLER_SOLANA_DEVNET_FEE_REHYPOTHECATION_PROGRAM_ADDRESSES: Solana
     dopplerRehypeRouterV1Program: DOPPLER_REHYPE_ROUTER_V1_PROGRAM_ADDRESS,
   };
 
+export const DOPPLER_SOLANA_MAINNET_FEE_REHYPOTHECATION_PROGRAM_ADDRESSES: SolanaFeeRehypothecationProgramAddresses =
+  {
+    initializerProgram: address('4carc9eePfE7jKUXdCAYMhcPf4awEFpZPrz1sTykdss1'),
+    dopplerLaunchHookV2Program: address(
+      '7ZueM1Tef2QA5zrFtVJMDM8MFqkoeG8fog1mXPgmLGH1',
+    ),
+    dopplerRehypeRouterV1Program: address(
+      'BpHX6orJ73qCvsfKkSMARQtqJvSPfqXNUfoes5rMND1D',
+    ),
+  };
+
 export async function deriveSolanaCpmmDeployment(
   programs: SolanaCpmmProgramAddresses = DOPPLER_SOLANA_DEVNET_PROGRAM_ADDRESSES,
 ): Promise<SolanaCpmmDeployment> {
