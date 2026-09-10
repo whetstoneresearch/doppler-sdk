@@ -11,7 +11,6 @@
 
 import type { Address } from 'viem';
 import type {
-  MarketCapRange,
   MarketCapValidationResult,
   StaticAuctionTickParams,
   DynamicAuctionTickParams,

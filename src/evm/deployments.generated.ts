@@ -6,12 +6,6 @@
 // WARNING: If you need Doppler addresses, import from @addresses.ts instead (e.g. use ADDRESSES / getAddresses).
 
 /** @internal */
-export type GeneratedDopplerDeployments = Record<
-  string,
-  Record<string, string>
->;
-
-/** @internal */
 export const GENERATED_DOPPLER_DEPLOYMENTS = {
   '1': {
     Airlock: '0xDe3599a2eC440B296373a983C85C365DA55d9dFA',

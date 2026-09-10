@@ -377,7 +377,7 @@ export function buildCurvesFromPresets(params: {
     };
   });
 
-  let totalShares = presetCurves.reduce((acc, curve) => {
+  const totalShares = presetCurves.reduce((acc, curve) => {
     if (curve.shares <= 0n) {
       throw new Error('Preset shares must be greater than zero');
     }
@@ -424,12 +424,6 @@ export function buildCurvesFromPresets(params: {
       numPositions: fillerNumPositions,
       shares: remainder,
     });
-
-    totalShares = WAD;
-  }
-
-  if (totalShares !== WAD) {
-    throw new Error('Failed to normalize preset shares to 100%');
   }
 
   return { fee, tickSpacing, curves };

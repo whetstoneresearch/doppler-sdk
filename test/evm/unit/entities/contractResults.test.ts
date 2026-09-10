@@ -1,12 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { zeroAddress, type Address, type Hex } from 'viem';
+import { zeroAddress, type Address } from 'viem';
 import {
   normalizeDynamicHookState,
   normalizeRehypeFeeDistributionInfo,
   normalizeRehypeFeeSchedule,
   normalizeRehypeHookFees,
   normalizeRehypePoolInfo,
-  normalizeRehypePosition,
   parseAirlockLiquidityMigrator,
   parseAirlockPoolOrHook,
 } from '../../../../src/evm/entities/auction/contractResults';
@@ -17,7 +16,6 @@ const buybackDst = '0x0000000000000000000000000000000000000003' as Address;
 const liquidityMigrator =
   '0x0000000000000000000000000000000000000004' as Address;
 const poolOrHook = '0x0000000000000000000000000000000000000005' as Address;
-const positionSalt = `0x${'11'.repeat(32)}` as Hex;
 
 describe('contract result normalizers', () => {
   it('parses Airlock asset data from object and tuple shapes', () => {
@@ -126,25 +124,11 @@ describe('contract result normalizers', () => {
     });
   });
 
-  it('normalizes rehype pool info and positions', () => {
+  it('normalizes rehype pool info', () => {
     expect(normalizeRehypePoolInfo([asset, numeraire, buybackDst])).toEqual({
       asset,
       numeraire,
       buybackDst,
-    });
-
-    expect(
-      normalizeRehypePosition({
-        tickLower: -120,
-        tickUpper: 120,
-        liquidity: 123n,
-        salt: positionSalt,
-      }),
-    ).toEqual({
-      tickLower: -120,
-      tickUpper: 120,
-      liquidity: 123n,
-      salt: positionSalt,
     });
   });
 
