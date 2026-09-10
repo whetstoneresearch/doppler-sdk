@@ -7,6 +7,7 @@ import {
   type GetAccountInfoApi,
   type GetMultipleAccountsApi,
   type GetProgramAccountsApi,
+  type ReadonlyUint8Array,
 } from '@solana/kit';
 import * as pm from '@/solana/predictionMarkets/index.js';
 import * as prediction from '@/solana/migrators/predictionMigrator/index.js';
@@ -33,7 +34,7 @@ type RpcValue = {
   rentEpoch: bigint;
   space: bigint;
 };
-function encoded(bytes: Readonly<Uint8Array>, owner: Address): RpcValue {
+function encoded(bytes: ReadonlyUint8Array, owner: Address): RpcValue {
   return {
     data: [bytesToBase64(bytes), 'base64'],
     owner,

@@ -74,7 +74,7 @@ $('app').innerHTML = `<main>
 <header><div class="brand">Doppler / developer examples</div><span class="tag">Devnet & local validator</span></header>
 <h1>Prediction markets, end to end.</h1><p class="intro">Create a market, buy an outcome, and follow settlement through to payout. Connect a browser wallet to sign each transaction. Markets stay open until their oracle is finalized.</p>
 <div class="steps"><span>01 Create</span><span>02 Register every outcome</span><span>03 Buy</span><span>04 Finalize</span><span>05 Settle & claim</span></div>
-<div class="grid"><section class="card"><h2>Connection</h2><label for="network">Network</label><select id="network"><option value="devnet">Devnet</option><option value="local">Local validator</option></select><label for="rpc">RPC endpoint</label><input id="rpc" value="https://api.devnet.solana.com"><div id="deployment-gate" class="status error">Devnet transactions are disabled: its current deployment has not been verified against the merged prediction ABI. Use a local validator with freshly built matching programs for this walkthrough.</div><label for="wallet">Wallet</label><select id="wallet"></select><button id="connect">Connect wallet</button><button id="disconnect" class="secondary">Disconnect</button><button id="local-wallet" class="secondary">Use local test wallet</button><small>Local test wallet: creates an in-memory key and requests 10 local test SOL. Only a loopback validator with a non-public genesis is allowed. The key disappears on reload, disconnect, or network/RPC change.</small><small id="wallet-account">No wallet connected. Install a Wallet Standard Solana wallet to sign.</small></section>
+<div class="grid"><section class="card"><h2>Connection</h2><label for="network">Network</label><select id="network"><option value="devnet">Devnet</option><option value="local">Local validator</option></select><label for="rpc">RPC endpoint</label><input id="rpc" value="https://api.devnet.solana.com"><div id="deployment-gate" class="status">Devnet wallet transactions are enabled. The app verifies devnet network identity before signing and submitting. Use a funded tester wallet.</div><label for="wallet">Wallet</label><select id="wallet"></select><button id="connect">Connect wallet</button><button id="disconnect" class="secondary">Disconnect</button><button id="local-wallet" class="secondary">Use local test wallet</button><small>Local test wallet: creates an in-memory key and requests 10 local test SOL. Only a loopback validator with a non-public genesis is allowed. The key disappears on reload, disconnect, or network/RPC change.</small><small id="wallet-account">No wallet connected. Install a Wallet Standard Solana wallet to sign.</small></section>
 <section class="card"><h2>Inspect a market</h2><label for="manifest-file">Import public CLI manifest or browser session</label><input id="manifest-file" type="file" accept="application/json,.json"><button id="import" class="secondary">Import addresses</button><label for="imported-market">Imported market</label><select id="imported-market"><option value="">No manifest imported</option></select><label for="market">Market address</label><input id="market" placeholder="Paste a market address from an example run"><button id="inspect">Load market</button><p id="market-summary">Load an existing market, or create one below.</p><details><summary>Decoded on-chain state</summary><pre id="state">No market loaded.</pre></details></section>
 <section class="card"><h2>Creator · set up</h2><label for="labels">Outcome labels, separated by commas</label><input id="labels" value="YES, NO"><small>Labels encode canonical 32-byte IDs. Declare 2–8 unique outcomes.</small><label for="nonce">Oracle nonce</label><input id="nonce" value="${Date.now()}"><button id="create-oracle">Create oracle</button><label for="oracle">Oracle address · new or existing</label><input id="oracle" placeholder="Create an oracle above, or paste one"><label for="quote">Quote mint</label><input id="quote" value="So11111111111111111111111111111111111111112"><button id="create-market">Create market</button><small>Defaults to wrapped SOL. This example supports classic SPL Token. Creating a market does not register outcomes.</small></section>
 <section class="card"><h2>Creator · register outcomes</h2><label for="outcome">Outcome slot</label><select id="outcome"><option value="0">Load a market first</option></select><div class="row"><div><label for="supply">Supply, raw units</label><input id="supply" value="1000000000000000"></div><div><label for="decimals">Token decimals</label><input id="decimals" value="6" type="number" min="0" max="9"></div></div><div class="row"><div><label for="virtual-base">Virtual base, raw units</label><input id="virtual-base" value="2000000000000000"></div><div><label for="virtual-quote">Virtual quote, raw units</label><input id="virtual-quote" value="1000000000"><label for="swap-fee">Swap fee, basis points (100 = 1%)</label><input id="swap-fee" type="number" min="0" max="10000" step="1" value="100"></div></div><button id="register">Register selected outcome</button><small>Repeat for every slot before buying. Each outcome is a buy-only curve. Ephemeral mint/vault keys are generated in memory and never exported.</small></section>
@@ -100,8 +100,9 @@ const receipts: { action: string; signature: string; network: string }[] = [];
 let busy = false;
 let localSigner: Awaited<ReturnType<typeof generateKeyPairSigner>> | undefined;
 let localGenesis: string | undefined;
+const devnetGenesisHash = 'EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG';
 const publicGenesisHashes = new Set([
-  'EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG',
+  devnetGenesisHash,
   '4uhcVJyU9pJkvQyS88uRDiswHXSCkY3zQawwpjk2NsNY',
   '5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d',
 ]);
@@ -138,8 +139,14 @@ const rpc = () => {
   const local = ['127.0.0.1', 'localhost', '[::1]'].includes(endpoint.hostname);
   if (
     value('network') === 'local'
-      ? !local
-      : endpoint.hostname !== 'api.devnet.solana.com'
+      ? !local ||
+        !['http:', 'https:'].includes(endpoint.protocol) ||
+        !!endpoint.username ||
+        !!endpoint.password
+      : endpoint.hostname !== 'api.devnet.solana.com' ||
+        endpoint.protocol !== 'https:' ||
+        !!endpoint.username ||
+        !!endpoint.password
   )
     throw new Error(
       'This example allows the public devnet endpoint or a localhost validator. Choose the matching network.',
@@ -224,12 +231,20 @@ function requireMarket() {
   };
 }
 async function send(action: string, instructions: readonly Instruction[]) {
-  if (value('network') === 'devnet')
-    throw new Error(
-      'Devnet transactions are disabled until the deployed stack is verified against the prediction refactor. Use a matching local validator.',
-    );
-  const payer = signer();
   const client = rpc();
+  if (value('network') === 'devnet') {
+    if ((await client.getGenesisHash().send()) !== devnetGenesisHash)
+      throw new Error(
+        'RPC network identity does not match devnet. Transaction blocked.',
+      );
+    if (localSigner)
+      throw new Error(
+        'Local test wallets cannot sign devnet transactions. Connect a Wallet Standard tester wallet.',
+      );
+  } else {
+    await assertLocalValidator();
+  }
+  const payer = signer();
   const blockhash = (
     await client.getLatestBlockhash({ commitment: 'confirmed' }).send()
   ).value;
@@ -860,9 +875,9 @@ $('network').addEventListener('change', () => {
   $('wallet-account').textContent = account?.address ?? 'No wallet connected.';
   $('deployment-gate').textContent =
     value('network') === 'devnet'
-      ? 'Devnet transactions are disabled: the deployed stack has not been verified against the merged prediction ABI.'
+      ? 'Devnet wallet transactions are enabled. Network identity is checked before signing and submitting. Use a funded tester wallet.'
       : 'Local validator: load freshly built matching programs and allowlists. Wallet submission runs preflight; program presence alone does not verify ABI compatibility.';
-  $('deployment-gate').classList.toggle('error', value('network') === 'devnet');
+  $('deployment-gate').classList.remove('error');
   $<HTMLInputElement>('rpc').value =
     value('network') === 'devnet'
       ? 'https://api.devnet.solana.com'
