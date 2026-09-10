@@ -29,6 +29,13 @@ jobs:
           owner: whetstoneresearch
           repositories: doppler-sol
           permission-contents: read
+      - name: Explain private protocol access failure
+        if: failure() && steps.protocol-token.outcome == 'failure'
+        run: |
+          echo 'The GitHub App behind APP_ID / APP_PRIVATE_KEY must be installed on whetstoneresearch/doppler-sol with Contents read access.' >&2
+          echo 'An organization app administrator must add doppler-sol at https://github.com/organizations/whetstoneresearch/settings/installations, then rerun this workflow.' >&2
+          echo 'Local validator verification remains available with a clean, authorized protocol checkout; this CI gate is not skipped.' >&2
+          exit 1
       - uses: actions/checkout@v4
         with:
           token: ${{ steps.protocol-token.outputs.token }}
