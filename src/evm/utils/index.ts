@@ -61,8 +61,6 @@ export type { MulticurveMaxTickLiquidityParams } from './multicurveLiquidity';
 
 export { computeOptimalGamma } from './computeOptimalGamma';
 
-export { resolveGasEstimate } from './gasEstimate';
-
 export { isToken0Expected } from './isToken0Expected';
 
 export { normalizeBeneficiaries, sortBeneficiaries } from './beneficiaries';

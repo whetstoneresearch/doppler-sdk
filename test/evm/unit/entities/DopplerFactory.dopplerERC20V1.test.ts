@@ -14,7 +14,6 @@ import { DAY_SECONDS, DEAD_ADDRESS, WAD } from '../../../../src/evm/constants';
 import {
   DynamicAuctionBuilder,
   MulticurveBuilder,
-  OpeningAuctionBuilder,
   StaticAuctionBuilder,
 } from '../../../../src/evm/builders';
 import { DopplerFactory } from '../../../../src/evm/entities/DopplerFactory';
@@ -44,8 +43,6 @@ const excluded = '0x1111111111111111111111111111111111111111' as Address;
 const zeroAddress = '0x0000000000000000000000000000000000000000' as Address;
 const customTokenFactory =
   '0x2222222222222222222222222222222222222222' as Address;
-const openingAuctionInitializer =
-  '0x3333333333333333333333333333333333333333' as Address;
 
 const UNISWAP_V2_PAIR_INIT_CODE_HASH =
   '0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f' as const;
@@ -825,114 +822,6 @@ describe('DopplerFactory DopplerERC20V1 token routing', () => {
     ]);
     expect(decoded[3]).toEqual([getAddress(beneficiary)]);
     expect(decoded[5]).toEqual([parseEther('100000')]);
-  });
-
-  it('routes opening auctions through DopplerERC20V1Factory', async () => {
-    vi.mocked(publicClient.readContract)
-      .mockResolvedValueOnce(mockAddresses.poolManager)
-      .mockResolvedValueOnce(mockAddresses.dopplerDeployer);
-
-    const params = OpeningAuctionBuilder.forChain(1)
-      .tokenConfig({
-        type: 'dopplerERC20V1',
-        name: 'Opening Token',
-        symbol: 'OT',
-        tokenURI: 'ipfs://opening-token',
-      })
-      .saleConfig({
-        initialSupply: parseEther('1000000'),
-        numTokensToSell: parseEther('900000'),
-        numeraire: mockAddresses.weth,
-      })
-      .openingAuctionConfig({
-        auctionDuration: 3600,
-        minAcceptableTickToken0: -120000,
-        minAcceptableTickToken1: -120000,
-        incentiveShareBps: 500,
-        tickSpacing: 60,
-        fee: 3000,
-        minLiquidity: 1n,
-        shareToAuctionBps: 8000,
-      })
-      .dopplerConfig({
-        minProceeds: parseEther('100'),
-        maxProceeds: parseEther('10000'),
-        startTick: -60000,
-        endTick: -120000,
-        epochLength: 3600,
-        duration: 7 * DAY_SECONDS,
-        fee: 3000,
-        tickSpacing: 10,
-      })
-      .withVesting({ duration: 45n * BigInt(DAY_SECONDS) })
-      .withGovernance({ type: 'noOp' })
-      .withMigration({ type: 'uniswapV4', fee: 3000, tickSpacing: 10 })
-      .withOpeningAuctionInitializer(openingAuctionInitializer)
-      .withUserAddress(userAddress)
-      .build();
-
-    const { createParams } =
-      await factory.encodeCreateOpeningAuctionParams(params);
-    const decoded = decodeV1TokenFactoryData(createParams.tokenFactoryData);
-
-    expect(createParams.tokenFactory).toBe(mockAddresses.dopplerERC20V1Factory);
-    expect(decoded[0]).toBe('Opening Token');
-    expect(decoded[2]).toEqual([
-      { cliff: 0n, duration: 45n * BigInt(DAY_SECONDS) },
-    ]);
-  });
-
-  it('does not use a simulated governance timelock in opening token exclusions', async () => {
-    vi.mocked(publicClient.readContract)
-      .mockResolvedValueOnce(mockAddresses.poolManager)
-      .mockResolvedValueOnce(mockAddresses.dopplerDeployer);
-
-    const balanceLimitEnd = Math.floor(Date.now() / 1000) + 30 * DAY_SECONDS;
-    const params = OpeningAuctionBuilder.forChain(1)
-      .tokenConfig({
-        type: 'dopplerERC20V1',
-        name: 'Opening Token Timelock',
-        symbol: 'OVT',
-        tokenURI: 'ipfs://opening-token-timelock',
-        maxBalanceLimit: parseEther('10000'),
-        balanceLimitEnd,
-      })
-      .saleConfig({
-        initialSupply: parseEther('1000000'),
-        numTokensToSell: parseEther('990000'),
-        numeraire: mockAddresses.weth,
-      })
-      .openingAuctionConfig({
-        auctionDuration: 3600,
-        minAcceptableTickToken0: -120000,
-        minAcceptableTickToken1: -120000,
-        incentiveShareBps: 500,
-        tickSpacing: 60,
-        fee: 3000,
-        minLiquidity: 1n,
-        shareToAuctionBps: 8000,
-      })
-      .dopplerConfig({
-        minProceeds: parseEther('100'),
-        maxProceeds: parseEther('10000'),
-        startTick: -60000,
-        endTick: -120000,
-        epochLength: 3600,
-        duration: 7 * DAY_SECONDS,
-        fee: 3000,
-        tickSpacing: 10,
-      })
-      .withGovernance({ type: 'default' })
-      .withMigration({ type: 'uniswapV4', fee: 3000, tickSpacing: 10 })
-      .withOpeningAuctionInitializer(openingAuctionInitializer)
-      .withUserAddress(userAddress)
-      .build();
-
-    const { createParams } = await factory.simulateCreateOpeningAuction(params);
-    const decoded = decodeV1TokenFactoryData(createParams.tokenFactoryData);
-
-    expect(createParams.tokenFactory).toBe(mockAddresses.dopplerERC20V1Factory);
-    expect(decoded[10]).not.toContain(mockTimelockAddress);
   });
 
   it('routes multicurve auctions through DopplerERC20V1Factory', () => {

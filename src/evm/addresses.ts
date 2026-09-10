@@ -43,8 +43,6 @@ export interface ChainAddresses {
   v4MulticurveInitializer?: Address;
   v4ScheduledMulticurveInitializer?: Address;
   v4DecayMulticurveInitializer?: Address;
-  openingAuctionInitializer?: Address;
-  openingAuctionPositionManager?: Address;
 
   // DopplerHook system (for RehypeDopplerHook support)
   dopplerHookInitializer?: Address;
@@ -323,9 +321,6 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       '0xA36715dA46Ddf4A769f3290f49AF58bF8132ED8E' as Address, // From Doppler scheduled multicurve deployments (Base mainnet)
     v4DecayMulticurveInitializer:
       '0xD59cE43E53D69F190E15d9822Fb4540dCcc91178' as Address, // From Doppler decay multicurve deployments (Base mainnet)
-    // Opening auction slots reserved for phase-1 lifecycle support (not deployed on Base yet)
-    openingAuctionInitializer: ZERO_ADDRESS,
-    openingAuctionPositionManager: ZERO_ADDRESS,
     dopplerLens: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
       .DopplerLensQuoter as Address,
     dopplerDeployer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BASE]
@@ -396,11 +391,6 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       '0xF84378C9F39e0FF267f3101c88773359c5393876' as Address, // From Doppler scheduled multicurve deployments (Base Sepolia)
     v4DecayMulticurveInitializer:
       '0xD59cE43E53D69F190E15d9822Fb4540dCcc91178' as Address, // From Doppler decay multicurve deployments (Base Sepolia)
-    // Opening Auction contracts (deployed Feb 2025)
-    openingAuctionInitializer:
-      '0x3dCd35945Dc86a9FaA80846B06CB4676961d0AEa' as Address,
-    openingAuctionPositionManager:
-      '0x957CA7472ced1C1B3608152F83E0E69F975a37a9' as Address,
     dopplerHookInitializer: GENERATED_DOPPLER_DEPLOYMENTS[
       CHAIN_IDS.BASE_SEPOLIA
     ].DopplerHookInitializer as Address,

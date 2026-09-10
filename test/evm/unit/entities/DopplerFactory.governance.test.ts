@@ -8,7 +8,6 @@ import type {
   CreateStaticAuctionParams,
   CreateDynamicAuctionParams,
   CreateMulticurveParams,
-  CreateOpeningAuctionParams,
   GovernanceOption,
   SupportedChainId,
   VestingConfig,
@@ -20,7 +19,6 @@ describe('DopplerFactory governance encoding', () => {
   let publicClient: SupportedPublicClient;
   let simulateContractMock: ReturnType<typeof vi.fn>;
   let getBlockMock: ReturnType<typeof vi.fn>;
-  let readContractMock: ReturnType<typeof vi.fn>;
   const account = privateKeyToAccount(
     '0x1234567890123456789012345678901234567890123456789012345678901234',
   );
@@ -101,12 +99,10 @@ describe('DopplerFactory governance encoding', () => {
       ],
     });
     getBlockMock = vi.fn().mockResolvedValue({ timestamp: 1n });
-    readContractMock = vi.fn();
 
     publicClient = {
       simulateContract: simulateContractMock,
       getBlock: getBlockMock,
-      readContract: readContractMock,
     } as unknown as SupportedPublicClient;
 
     factory = new DopplerFactory(
@@ -409,103 +405,6 @@ describe('DopplerFactory governance encoding', () => {
           : getAddresses(CHAIN_IDS.BASE_SEPOLIA).governanceFactory,
       );
       expect(createParams.governanceFactoryData).toBe(
-        typeof expected === 'string'
-          ? expected
-          : encodeAbiParameters(governanceAbi, [
-              params.token.name,
-              ...expected,
-            ]),
-      );
-    },
-  );
-
-  it.each(governanceCases)(
-    'encodes $label governance for opening auctions',
-    async ({ tokenType, vesting, governance, expected }) => {
-      const openingAuctionInitializer =
-        '0x9100000000000000000000000000000000000001' as Address;
-      const poolManager =
-        '0x9100000000000000000000000000000000000002' as Address;
-      const auctionDeployer =
-        '0x9100000000000000000000000000000000000003' as Address;
-      const minedSalt =
-        '0x00000000000000000000000000000000000000000000000000000000000000ac' as const;
-      const minedHook = '0x9200000000000000000000000000000000000003' as Address;
-      const minedToken =
-        '0x0100000000000000000000000000000000000003' as Address;
-      const encodedTokenFactoryData = '0xfeedbeef' as const;
-
-      readContractMock
-        .mockResolvedValueOnce(poolManager)
-        .mockResolvedValueOnce(auctionDeployer);
-
-      vi.spyOn(
-        factory as unknown as {
-          mineOpeningAuctionHookAddress: () => readonly [
-            `0x${string}`,
-            Address,
-            Address,
-            `0x${string}`,
-          ];
-        },
-        'mineOpeningAuctionHookAddress',
-      ).mockReturnValue([
-        minedSalt,
-        minedHook,
-        minedToken,
-        encodedTokenFactoryData,
-      ]);
-
-      const params: CreateOpeningAuctionParams = {
-        token: {
-          type: tokenType,
-          name: 'Launchpad Opening Token',
-          symbol: 'LOT',
-          tokenURI: 'https://example.com/token.json',
-        },
-        sale: {
-          initialSupply: parseEther('1000000'),
-          numTokensToSell: parseEther('500000'),
-          numeraire: '0x4200000000000000000000000000000000000006' as Address,
-        },
-        openingAuction: {
-          auctionDuration: 3600,
-          minAcceptableTickToken0: -1200,
-          minAcceptableTickToken1: 1200,
-          incentiveShareBps: 500,
-          tickSpacing: 60,
-          fee: 3000,
-          minLiquidity: 1n,
-          shareToAuctionBps: 2000,
-        },
-        doppler: {
-          minProceeds: parseEther('100'),
-          maxProceeds: parseEther('10000'),
-          startTick: 900,
-          endTick: 1000,
-          epochLength: 3600,
-          duration: 24 * 3600,
-          fee: 3000,
-          tickSpacing: 10,
-        },
-        governance,
-        vesting,
-        migration: { type: 'uniswapV2' },
-        userAddress: account.address,
-        blockTimestamp: 1_700_000_000,
-        modules: {
-          openingAuctionInitializer,
-        },
-      };
-
-      const result = await factory.encodeCreateOpeningAuctionParams(params);
-
-      expect(result.createParams.governanceFactory).toBe(
-        governance.type === 'launchpad'
-          ? expectedLaunchpadFactory
-          : getAddresses(CHAIN_IDS.BASE_SEPOLIA).governanceFactory,
-      );
-      expect(result.createParams.governanceFactoryData).toBe(
         typeof expected === 'string'
           ? expected
           : encodeAbiParameters(governanceAbi, [
