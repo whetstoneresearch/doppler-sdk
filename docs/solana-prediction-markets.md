@@ -20,6 +20,42 @@ Run it with the path to the clean protocol checkout:
 DOPPLER_SOL_SOURCE_DIR=/path/to/doppler-sol bash scripts/run-solana-prediction-validator.sh
 ```
 
+## Verify against a devnet fork before deployment
+
+The candidate fork harness reads current devnet configuration, quote mints, and
+feature activations, then runs the six scenarios on a local ledger with the four
+source-built prediction programs overlaid. Program builds use the explicit Solana
+4.1.0 release and SBPF v3; the local validator uses a separately pinned runtime
+matching the observed devnet release. It does not submit transactions to public
+devnet.
+
+```bash
+PATH="$HOME/.local/share/solana/install/releases/4.1.0/solana-release/bin:$PATH" \
+DOPPLER_PREDICTION_FORK_VALIDATOR="$HOME/.local/share/solana/install/releases/4.3.0-rc.0/solana-release/bin/solana-test-validator" \
+DOPPLER_SOL_SOURCE_DIR=/path/to/clean/doppler-sol \
+bash scripts/run-solana-prediction-devnet-fork.sh
+```
+
+Install those official releases in the shown locations, or adjust the paths. The
+harness refuses a validator whose reported release or feature-set identifier
+differs from the devnet snapshot. The sibling `solana` executable supplies the
+matching runtime feature registry.
+
+The live Initializer configuration remains unchanged, including its existing
+admin, fee bounds, and hook/migrator allowlists. The run records the upstream
+snapshot and local test funding substitutions, verifies exact payouts/refunds,
+and compares the config again after all scenarios. See the verification report
+for the actual completed run and its evidence boundary.
+
+CI is split by repository: SDK checks run in this public repository; the pinned
+protocol/SDK fork job runs in private `doppler-sol` with its own repository token.
+The latter fetches the public SDK without credentials, so no organization admin
+grant or shared GitHub App secret is required. Its default SDK commit must be
+updated deliberately when reviewing a new SDK revision. Inspect both PRs/checks
+with `gh`; a green SDK build alone is not fork execution proof.
+
+## Connect to an existing validator
+
 For an already running matching validator:
 
 ```bash
