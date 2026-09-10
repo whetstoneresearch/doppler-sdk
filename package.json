@@ -1,7 +1,7 @@
 {
   "name": "@whetstone-research/doppler-sdk",
   "author": "Whetstone Research",
-  "version": "1.0.40",
+  "version": "1.0.41",
   "license": "MIT",
   "type": "module",
   "repository": {
