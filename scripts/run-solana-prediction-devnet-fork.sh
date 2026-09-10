@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
-# Devnet policy/account fork with candidate programs overlaid only in local genesis.
+# Fork deployed devnet programs and policy; candidate overlays are explicit opt-in.
 set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SOURCE_DIR="${DOPPLER_SOL_SOURCE_DIR:-$ROOT_DIR/../doppler-sol}"
 EXPECTED_REVISION=8bac0551f6e0f83a861f4822886d30a00095a22e
+export DOPPLER_PREDICTION_FORK_MODE="${DOPPLER_PREDICTION_FORK_MODE:-deployed}"
+[[ "$DOPPLER_PREDICTION_FORK_MODE" == deployed || "$DOPPLER_PREDICTION_FORK_MODE" == candidate ]] || { echo "Fork mode must be deployed or candidate" >&2; exit 1; }
 export SOLANA_DEVNET_RPC_URL="${SOLANA_DEVNET_RPC_URL:-https://api.devnet.solana.com}"
 if [[ -n "${DOPPLER_PREDICTION_FORK_REPORT_DIR:-}" ]]; then
   mkdir -p "$DOPPLER_PREDICTION_FORK_REPORT_DIR"
@@ -28,23 +30,28 @@ cleanup() {
   if [[ "$result" != 0 && -f "$RUN_DIR/validator.log" ]]; then tail -60 "$RUN_DIR/validator.log" >&2; fi
 }
 trap cleanup EXIT
-for executable in solana solana-keygen solana-test-validator cargo cargo-build-sbf node; do
+for executable in solana solana-keygen node; do
   command -v "$executable" >/dev/null || { echo "Required executable missing: $executable" >&2; exit 1; }
 done
 solana --version | tee "$RUN_DIR/toolchain.log"
 "$VALIDATOR_BIN" --version >> "$RUN_DIR/toolchain.log"
-cargo-build-sbf --version >> "$RUN_DIR/toolchain.log"
-solana --version | grep -q 'solana-cli 4.1.0 ' || { echo 'Agave 4.1.0 required for this v3 devnet fork' >&2; exit 1; }
-cargo-build-sbf --version | grep -q '^cargo-build-sbf 4.1.0$' || { echo 'Agave 4.1.0 SBF builder required' >&2; exit 1; }
 [[ -x "$RUNTIME_CLI" ]] || { echo "Matching runtime CLI missing: $RUNTIME_CLI" >&2; exit 1; }
-[[ "$(git -C "$SOURCE_DIR" rev-parse HEAD)" == "$EXPECTED_REVISION" ]] || { echo "Expected protocol revision $EXPECTED_REVISION" >&2; exit 1; }
-[[ -z "$(git -C "$SOURCE_DIR" status --porcelain --untracked-files=no)" ]] || { echo 'Use a clean protocol checkout' >&2; exit 1; }
-export DOPPLER_PREDICTION_FORK_ARTIFACT_DIR="$SOURCE_DIR/target/devnet-ready/deploy"
-# Build from pinned source even if artifacts already exist. No remote deployment commands occur.
-for manifest in programs/initializer programs/trusted_oracle programs/prediction_migrator programs/hooks/prediction_hook; do
-  CARGO_TARGET_DIR="$SOURCE_DIR/target/devnet-ready/build" cargo build-sbf --tools-version v1.54 --arch v3 \
-    --sbf-out-dir "$DOPPLER_PREDICTION_FORK_ARTIFACT_DIR" --manifest-path "$SOURCE_DIR/$manifest/Cargo.toml"
-done
+if [[ "$DOPPLER_PREDICTION_FORK_MODE" == candidate ]]; then
+  for executable in cargo cargo-build-sbf; do
+    command -v "$executable" >/dev/null || { echo "Required executable missing: $executable" >&2; exit 1; }
+  done
+  cargo-build-sbf --version >> "$RUN_DIR/toolchain.log"
+  solana --version | grep -q 'solana-cli 4.1.0 ' || { echo 'Agave 4.1.0 required for this v3 devnet fork' >&2; exit 1; }
+  cargo-build-sbf --version | grep -q '^cargo-build-sbf 4.1.0$' || { echo 'Agave 4.1.0 SBF builder required' >&2; exit 1; }
+  [[ "$(git -C "$SOURCE_DIR" rev-parse HEAD)" == "$EXPECTED_REVISION" ]] || { echo "Expected protocol revision $EXPECTED_REVISION" >&2; exit 1; }
+  [[ -z "$(git -C "$SOURCE_DIR" status --porcelain --untracked-files=no)" ]] || { echo 'Use a clean protocol checkout' >&2; exit 1; }
+  export DOPPLER_PREDICTION_FORK_ARTIFACT_DIR="$SOURCE_DIR/target/devnet-ready/deploy"
+  # Build from pinned source even if artifacts already exist. No remote deployment commands occur.
+  for manifest in programs/initializer programs/trusted_oracle programs/prediction_migrator programs/hooks/prediction_hook; do
+    CARGO_TARGET_DIR="$SOURCE_DIR/target/devnet-ready/build" cargo build-sbf --tools-version v1.54 --arch v3 \
+      --sbf-out-dir "$DOPPLER_PREDICTION_FORK_ARTIFACT_DIR" --manifest-path "$SOURCE_DIR/$manifest/Cargo.toml"
+  done
+fi
 cd "$ROOT_DIR"
 for signer in genesis creator second-creator; do
   solana-keygen new --no-bip39-passphrase --silent --outfile "$RUN_DIR/$signer-keypair.json"
@@ -62,15 +69,21 @@ export SOLANA_PREDICTION_HOOK_PROGRAM_ID=7QcQDANJVC17Jgc6KjjeagSkm2zAphgHVPK5agJ
 if solana cluster-version --url "$LOCAL_RPC_URL" >/dev/null 2>&1; then
   echo "Refusing occupied local RPC port $RPC_PORT" >&2; exit 1
 fi
+PROGRAM_ARGS=()
+if [[ "$DOPPLER_PREDICTION_FORK_MODE" == candidate ]]; then
+  PROGRAM_ARGS=(
+    --upgradeable-program "$SOLANA_INITIALIZER_PROGRAM_ID" "$DOPPLER_PREDICTION_FORK_ARTIFACT_DIR/initializer.so" "$GENESIS_PAYER" \
+    --upgradeable-program "$SOLANA_TRUSTED_ORACLE_PROGRAM_ID" "$DOPPLER_PREDICTION_FORK_ARTIFACT_DIR/trusted_oracle.so" "$GENESIS_PAYER" \
+    --upgradeable-program "$SOLANA_PREDICTION_MIGRATOR_PROGRAM_ID" "$DOPPLER_PREDICTION_FORK_ARTIFACT_DIR/prediction_migrator.so" "$GENESIS_PAYER" \
+    --upgradeable-program "$SOLANA_PREDICTION_HOOK_PROGRAM_ID" "$DOPPLER_PREDICTION_FORK_ARTIFACT_DIR/prediction_hook.so" "$GENESIS_PAYER"
+  )
+fi
 "$VALIDATOR_BIN" --reset --quiet --ledger "$RUN_DIR/ledger" --mint "$GENESIS_PAYER" \
   --url "$SOLANA_DEVNET_RPC_URL" --clone-feature-set \
   --account-dir "$RUN_DIR/genesis-accounts" \
   --rpc-port "$RPC_PORT" --faucet-port "$((RPC_PORT + 2))" --gossip-port "$((RPC_PORT + 3))" \
   --dynamic-port-range "$((RPC_PORT + 4))-$((RPC_PORT + 30))" \
-  --upgradeable-program "$SOLANA_INITIALIZER_PROGRAM_ID" "$DOPPLER_PREDICTION_FORK_ARTIFACT_DIR/initializer.so" "$GENESIS_PAYER" \
-  --upgradeable-program "$SOLANA_TRUSTED_ORACLE_PROGRAM_ID" "$DOPPLER_PREDICTION_FORK_ARTIFACT_DIR/trusted_oracle.so" "$GENESIS_PAYER" \
-  --upgradeable-program "$SOLANA_PREDICTION_MIGRATOR_PROGRAM_ID" "$DOPPLER_PREDICTION_FORK_ARTIFACT_DIR/prediction_migrator.so" "$GENESIS_PAYER" \
-  --upgradeable-program "$SOLANA_PREDICTION_HOOK_PROGRAM_ID" "$DOPPLER_PREDICTION_FORK_ARTIFACT_DIR/prediction_hook.so" "$GENESIS_PAYER" \
+  "${PROGRAM_ARGS[@]}" \
   > "$RUN_DIR/validator.log" 2>&1 &
 VALIDATOR_PID=$!
 ready=false
@@ -99,7 +112,7 @@ solana airdrop 100 "$SECOND_CREATOR" --url "$LOCAL_RPC_URL"
 npx --yes pnpm@10.11.0 exec tsx scripts/prepare-solana-prediction-devnet-fork.ts --verify
 cp "$RUN_DIR/local-verification.json" "$RUN_DIR/local-before.json"
 export SOLANA_PROBE_PAYER="$SOLANA_FORK_CREATOR"
-npx --yes pnpm@10.11.0 exec tsx scripts/check-prediction-deployment.ts | tee "$RUN_DIR/candidate-abi-probe.log"
+npx --yes pnpm@10.11.0 exec tsx scripts/check-prediction-deployment.ts | tee "$RUN_DIR/fork-abi-probe.log"
 for scenario in binary multi eight shared incremental void; do
   npx --yes pnpm@10.11.0 exec tsx examples/solana-prediction-market.ts \
     --scenario "$scenario" --manifest "$RUN_DIR/$scenario.json" --action all \

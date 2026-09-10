@@ -18,6 +18,11 @@ const runDir = process.env.DOPPLER_PREDICTION_FORK_REPORT_DIR!;
 assert(runDir, 'DOPPLER_PREDICTION_FORK_REPORT_DIR required');
 const upstream =
   process.env.SOLANA_DEVNET_RPC_URL ?? 'https://api.devnet.solana.com';
+const mode = process.env.DOPPLER_PREDICTION_FORK_MODE ?? 'deployed';
+assert(
+  ['deployed', 'candidate'].includes(mode),
+  'Fork mode must be deployed or candidate',
+);
 const expectedGenesis = 'EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG';
 const config = 'A9DojSvj32PMTTGctEcWZu9GSKuQVEhPkBXxDxmYu34o';
 const wsol = 'So11111111111111111111111111111111111111112';
@@ -183,6 +188,7 @@ async function prepare() {
       initializer.BPF_LOADER_UPGRADEABLE_PROGRAM_ID,
       'Expected live upgradeable program',
     );
+    assert.equal(account.executable, true);
     assert.equal(bytes(account).readUInt32LE(0), 2);
     return getAddressDecoder().decode(bytes(account).subarray(4, 36));
   });
@@ -198,6 +204,56 @@ async function prepare() {
     addresses: programDataAddresses,
     ...programData,
   });
+
+  const deployedPrograms = Object.entries(programs).map(
+    ([name, programId], i) => {
+      const programAccount = accounts.value[i + 3];
+      const dataAccount = programData.value[i];
+      assert(dataAccount, `${name}: missing upstream ProgramData`);
+      assert.equal(
+        dataAccount.owner,
+        initializer.BPF_LOADER_UPGRADEABLE_PROGRAM_ID,
+      );
+      assert.equal(dataAccount.executable, false);
+      const raw = bytes(dataAccount);
+      assert.equal(raw.readUInt32LE(0), 3);
+      assert(
+        raw[12] === 0 || raw[12] === 1,
+        'Invalid upgrade authority option',
+      );
+      assert(
+        raw.subarray(45, 49).equals(Buffer.from([0x7f, 0x45, 0x4c, 0x46])),
+        'Missing deployed ELF',
+      );
+      const localRaw = Buffer.from(raw);
+      localRaw.writeBigUInt64LE(0n, 4);
+      const localDataAccount = {
+        ...dataAccount,
+        data: [localRaw.toString('base64'), 'base64'],
+      };
+      if (mode === 'deployed') {
+        // A fresh ledger has no ancestry for the upstream deployment slot.
+        // Normalize only that metadata; preserve the ELF, padding and authority.
+        dump(programId, programAccount);
+        dump(programDataAddresses[i], localDataAccount);
+      }
+      return {
+        name,
+        program: accountSummary(programId, programAccount),
+        programData: accountSummary(programDataAddresses[i], dataAccount),
+        localProgramData:
+          mode === 'deployed'
+            ? accountSummary(programDataAddresses[i], localDataAccount)
+            : undefined,
+        deploymentSlot: raw.readBigUInt64LE(4),
+        upgradeAuthority:
+          raw[12] === 1
+            ? getAddressDecoder().decode(raw.subarray(13, 45))
+            : null,
+        elfAndPaddingSha256: hash(raw.subarray(45)),
+      };
+    },
+  );
 
   // Explicit synthetic local balance fixture. The real cloned mint and its supply
   // are untouched; these tokens are not claimed to come from a live holder.
@@ -230,21 +286,28 @@ async function prepare() {
   save('local-quote-fixture.json', { pubkey: localAta, account: quoteFixture });
   dump(localAta, quoteFixture);
   const artifactDir = process.env.DOPPLER_PREDICTION_FORK_ARTIFACT_DIR!;
-  const artifacts = Object.fromEntries(
-    Object.entries(programs).map(([name, programId]) => {
-      const artifact = readFileSync(join(artifactDir, `${name}.so`));
-      assert.equal(artifact.readUInt32LE(48), 3, `${name} must be SBPFv3`);
-      return [
-        name,
-        {
-          programId,
-          bytes: artifact.length,
-          sha256: hash(artifact),
-          elfFlags: 3,
-        },
-      ];
-    }),
-  );
+  const artifacts =
+    mode === 'candidate'
+      ? Object.fromEntries(
+          Object.entries(programs).map(([name, programId]) => {
+            const artifact = readFileSync(join(artifactDir, `${name}.so`));
+            assert.equal(
+              artifact.readUInt32LE(48),
+              3,
+              `${name} must be SBPFv3`,
+            );
+            return [
+              name,
+              {
+                programId,
+                bytes: artifact.length,
+                sha256: hash(artifact),
+                elfFlags: 3,
+              },
+            ];
+          }),
+        )
+      : undefined;
   const registryText = readFileSync(
     join(runDir, 'upstream-runtime-feature-registry.json'),
     'utf8',
@@ -255,9 +318,21 @@ async function prepare() {
     (id) => !recognizedIds.includes(id),
   );
   save('fork-manifest.json', {
-    kind: 'devnet account and feature fork with local candidate program overlay',
-    sourceCommit: '8bac0551f6e0f83a861f4822886d30a00095a22e',
-    toolchain: 'Agave 4.1.0 / platform-tools v1.54 / arch v3',
+    mode,
+    kind:
+      mode === 'deployed'
+        ? 'deployed devnet ELF fork with local loader deployment-slot normalization'
+        : 'devnet account and feature fork with local candidate program overlay',
+    sourceCommit:
+      mode === 'candidate' ? '8bac0551f6e0f83a861f4822886d30a00095a22e' : null,
+    sourceRevisionProof:
+      mode === 'deployed'
+        ? 'unproven: snapshotted deployed ELF and padding unchanged; only local loader deployment slot normalized, not a source revision claim'
+        : 'pinned candidate source build',
+    toolchain:
+      mode === 'candidate'
+        ? 'Agave 4.1.0 / platform-tools v1.54 / arch v3'
+        : 'no program build: deployed ELF and padding unchanged',
     upstream: {
       origin: new URL(upstream).origin,
       genesisHash: expectedGenesis,
@@ -293,15 +368,41 @@ async function prepare() {
     upstreamPrograms: programDataAddresses.map((pubkey: string, i: number) =>
       accountSummary(pubkey, programData.value[i]),
     ),
+    deployedPrograms,
     artifacts,
-    localUpgradeAuthority: process.env.SOLANA_FORK_UPGRADE_AUTHORITY,
+    localUpgradeAuthority:
+      mode === 'candidate'
+        ? process.env.SOLANA_FORK_UPGRADE_AUTHORITY
+        : undefined,
     localSubstitutions: [
-      {
-        kind: 'program overlays',
-        programs,
-        explanation:
-          'Four candidate binaries replace live program code only in local genesis with the explicit ephemeral local genesis signer as upgrade authority; no devnet deployment. Live program state remains recorded, not treated as compatible.',
-      },
+      ...(mode === 'deployed'
+        ? [
+            {
+              kind: 'local loader deployment-slot normalization',
+              byteRange: { start: 4, endExclusive: 12 },
+              localSlot: 0,
+              programs: deployedPrograms.map((program) => ({
+                name: program.name,
+                programData: program.programData.pubkey,
+                upstreamSlot: program.deploymentSlot,
+                upstreamDataSha256: program.programData.dataSha256,
+                localDataSha256: program.localProgramData!.dataSha256,
+              })),
+              explanation:
+                'A fresh local validator has no ancestor at the upstream deployment slots and cannot cache those raw loader accounts. Only the eight-byte deployment slot is set to zero. Full upstream originals are retained; Program accounts, ELF bytes and trailing padding, authority, owner, lamports and executable flags are unchanged.',
+            },
+          ]
+        : []),
+      ...(mode === 'candidate'
+        ? [
+            {
+              kind: 'program overlays',
+              programs,
+              explanation:
+                'Four candidate binaries replace live program code only in local genesis with the explicit ephemeral local genesis signer as upgrade authority; no devnet deployment. Live program state remains recorded, not treated as compatible.',
+            },
+          ]
+        : []),
       {
         kind: 'ephemeral SOL funding',
         explanation:
@@ -327,7 +428,9 @@ async function prepare() {
       {
         kind: 'fresh application state',
         explanation:
-          'Oracles, markets, launches, token accounts and receipts are created locally by SDK transactions; this is candidate-code compatibility proof against cloned devnet policy, not a live deployed ABI claim.',
+          mode === 'deployed'
+            ? 'Oracles, markets, launches, token accounts and receipts are created locally by SDK transactions against unchanged snapshotted deployed binaries with only local loader deployment-slot normalization. Transactions execute on a disposable local fork, not devnet.'
+            : 'Oracles, markets, launches, token accounts and receipts are created locally by SDK transactions; this is candidate-code compatibility proof against cloned devnet policy, not a live deployed ABI claim.',
       },
     ],
     quoteMint: usdc,
@@ -403,6 +506,54 @@ async function verify() {
     assert.equal(account.owner, initializer.BPF_LOADER_UPGRADEABLE_PROGRAM_ID);
     const data = bytes(account);
     assert.equal(data.readUInt32LE(0), 3);
+    if (manifest.mode === 'deployed') {
+      const expected = manifest.deployedPrograms[i];
+      const actualProgram = accountSummary(
+        Object.values(programs)[i],
+        localPrograms.value[i],
+      );
+      const actualData = accountSummary(localProgramDataAddresses[i], account);
+      assert.deepEqual(
+        actualProgram,
+        expected.program,
+        `${name}: deployed Program account changed`,
+      );
+      assert.deepEqual(
+        actualData,
+        expected.localProgramData,
+        `${name}: local ProgramData differs beyond approved slot normalization`,
+      );
+      assert.equal(
+        data.readBigUInt64LE(4),
+        0n,
+        `${name}: local deployment slot must be zero`,
+      );
+      const authority =
+        data[12] === 1
+          ? getAddressDecoder().decode(data.subarray(13, 45))
+          : null;
+      assert.equal(
+        authority,
+        expected.upgradeAuthority,
+        `${name}: upgrade authority changed`,
+      );
+      assert.equal(
+        hash(data.subarray(45)),
+        expected.elfAndPaddingSha256,
+        `${name}: ELF or padding changed`,
+      );
+      return {
+        name,
+        program: actualProgram,
+        programData: actualData,
+        deploymentSlot: data.readBigUInt64LE(4),
+        upgradeAuthority: authority,
+        elfAndPaddingSha256: hash(data.subarray(45)),
+        upstreamDeploymentSlot: expected.deploymentSlot,
+        deployedElfAndAuthorityAssertion:
+          'passed (only loader deployment slot normalized)',
+      };
+    }
     assert.equal(data[12], 1, 'Local overlay must have explicit authority');
     assert.equal(
       getAddressDecoder().decode(data.subarray(13, 45)),
@@ -436,6 +587,11 @@ async function verify() {
     localVersion,
     upstreamRuntimeIdentityAssertion:
       'passed (release and compiled feature-set hash)',
+    mode: manifest.mode,
+    programCodeAssertion:
+      manifest.mode === 'deployed'
+        ? 'deployed Program account, ELF, authority and full padding preserved; only eight-byte ProgramData deployment slot normalized to zero'
+        : 'candidate ELF hashes matched',
     loadedPrograms,
     slot: accounts.context.slot,
     unchangedAccountAssertions:
@@ -471,7 +627,7 @@ async function verify() {
     `Runtime boundary: ${missing.length} active upstream feature IDs are unrecognized by matched Agave ${localVersion['solana-core']}; all are recorded in fork-manifest.json. The validator release and compiled feature-set hash match upstream; raw feature-account IDs absent from its registry are recorded separately.`,
   );
   console.log(
-    `Matched ${localActive.length} runtime-recognized active features and all four loaded ELF hashes. Unchanged cloned config and quote-mint assertions passed at local slot ${accounts.context.slot}`,
+    `Matched ${localActive.length} runtime-recognized active features and all four ${manifest.mode} program assertions. Unchanged cloned config and quote-mint assertions passed at local slot ${accounts.context.slot}`,
   );
 }
 (process.argv.includes('--verify') ? verify() : prepare()).catch((error) => {

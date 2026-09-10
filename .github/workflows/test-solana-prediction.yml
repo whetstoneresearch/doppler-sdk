@@ -29,5 +29,5 @@ jobs:
       - name: Build browser walkthrough
         working-directory: examples/solana-prediction-browser
         run: npm ci && npm run build
-      # Run candidate program fork tests locally or in a temporary external
-      # environment with an authorized protocol checkout until deployment.
+      # Run deployed-program fork tests locally or in a temporary external
+      # environment; no protocol repository workflow is required.

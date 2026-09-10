@@ -8,6 +8,7 @@ import {
   type GetAccountInfoApi,
   type GetMultipleAccountsApi,
   type GetProgramAccountsApi,
+  type ReadonlyUint8Array,
 } from '@solana/kit';
 import * as pm from '@/solana/predictionMarkets/index.js';
 import * as prediction from '@/solana/migrators/predictionMigrator/index.js';
@@ -75,7 +76,7 @@ async function fixture() {
   };
   return { oracle, market, oracleData, marketData };
 }
-function rpcAccount(bytes: Uint8Array | Readonly<Uint8Array>, owner: Address) {
+function rpcAccount(bytes: ReadonlyUint8Array, owner: Address) {
   return {
     data: [bytesToBase64(bytes), 'base64'],
     owner,
