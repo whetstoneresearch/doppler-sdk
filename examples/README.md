@@ -154,7 +154,8 @@ The Solana examples use `@whetstone-research/doppler-sdk/solana`. Set `SOLANA_NE
 - [`solana-cosigner-gated-buy.ts`](./solana-cosigner-gated-buy.ts): cosigner-gated WSOL buy flow with env-configured fee beneficiaries.
 - [`solana-cosigner-gated-buy-token-2022.ts`](./solana-cosigner-gated-buy-token-2022.ts): same cosigner-gated WSOL flow with a Token-2022 base mint and Metaplex metadata.
 - [`solana-usdc-cosigner-gated-buy.ts`](./solana-usdc-cosigner-gated-buy.ts): cosigner-gated devnet USDC buy flow.
-- [`solana-prediction-market.ts`](./solana-prediction-market.ts): create a two-outcome prediction market with trusted oracle and prediction migrator.
+- [`solana-prediction-browser/`](./solana-prediction-browser/README.md): wallet-connected prediction market walkthrough using a CLI public manifest.
+- [`solana-prediction-market.ts`](./solana-prediction-market.ts): complete runnable prediction lifecycle: binary, three/eight outcomes, shared oracle, incremental claims, void refunds, and resumable manifests. See the [prediction guide](../docs/solana-prediction-markets.md).
 - [`solana-create-spot-pool.ts`](./solana-create-spot-pool.ts): create a permissionless base-token/WSOL spot pool with an immutable fee tier and an optional allowlisted swap-phase hook.
 - [`solana-fee-rehypothecation-launch.ts`](./solana-fee-rehypothecation-launch.ts): create a non-migrating launch with selectable asset-only, numeraire-only, in-kind, or balanced fee routing.
 - [`solana-fee-rehypothecation-settle-and-claim.ts`](./solana-fee-rehypothecation-settle-and-claim.ts): settle routed fees with protected conversion quotes, then claim one beneficiary's proceeds.
@@ -207,9 +208,7 @@ The command clones the deployed programs and protocol configs, then uses
 ephemeral payer and cosigner keys. The forked hook config is rewritten to
 authorize only the ephemeral cosigner; no production key or mainnet write is
 required. Set `SOLANA_MAINNET_RPC_URL` to override the public RPC used for
-cloning. The prediction-market example is compile-checked but cannot execute in
-this suite because its required program revision does not have a mainnet
-deployment.
+cloning. Prediction scenarios execute in their own matching-program local validator harness (`scripts/run-solana-prediction-validator.sh`), not this mainnet fork suite. Check the [prediction deployment boundary](../docs/solana-prediction-markets.md) before using devnet.
 
 Run examples whose required programs are currently deployed only on devnet
 against a disposable local devnet fork:

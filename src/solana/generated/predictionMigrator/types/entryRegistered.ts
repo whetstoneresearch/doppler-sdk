@@ -28,6 +28,7 @@ export type EntryRegistered = {
   oracle: Address;
   entryId: ReadonlyUint8Array;
   baseMint: Address;
+  outcomeId: ReadonlyUint8Array;
 };
 
 export type EntryRegisteredArgs = EntryRegistered;
@@ -38,6 +39,7 @@ export function getEntryRegisteredEncoder(): FixedSizeEncoder<EntryRegisteredArg
     ['oracle', getAddressEncoder()],
     ['entryId', fixEncoderSize(getBytesEncoder(), 32)],
     ['baseMint', getAddressEncoder()],
+    ['outcomeId', fixEncoderSize(getBytesEncoder(), 32)],
   ]);
 }
 
@@ -47,6 +49,7 @@ export function getEntryRegisteredDecoder(): FixedSizeDecoder<EntryRegistered> {
     ['oracle', getAddressDecoder()],
     ['entryId', fixDecoderSize(getBytesDecoder(), 32)],
     ['baseMint', getAddressDecoder()],
+    ['outcomeId', fixDecoderSize(getBytesDecoder(), 32)],
   ]);
 }
 

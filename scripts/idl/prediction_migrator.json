@@ -58,6 +58,11 @@
                 "kind": "account",
                 "path": "market.quote_mint",
                 "account": "Market"
+              },
+              {
+                "kind": "account",
+                "path": "market.creator",
+                "account": "Market"
               }
             ]
           }
@@ -104,7 +109,7 @@
         {
           "name": "winner_mint",
           "docs": [
-            "Winner mint (must match market.winner_mint)"
+            "Winner mint selected and cached during market resolution"
           ],
           "writable": true
         },
@@ -113,42 +118,6 @@
           "docs": [
             "Quote mint used for reward payouts"
           ]
-        },
-        {
-          "name": "entry_by_mint",
-          "docs": [
-            "EntryByMint for validation that this mint belongs to this market"
-          ],
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  101,
-                  110,
-                  116,
-                  114,
-                  121,
-                  95,
-                  98,
-                  121,
-                  95,
-                  109,
-                  105,
-                  110,
-                  116
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "market"
-              },
-              {
-                "kind": "account",
-                "path": "winner_mint"
-              }
-            ]
-          }
         },
         {
           "name": "claimer_winner_ata",
@@ -229,9 +198,142 @@
       ]
     },
     {
+      "name": "create_market",
+      "docs": [
+        "Create a creator-owned market for an oracle + quote mint.",
+        "",
+        "Snapshots the oracle's declared outcome count. Entries are registered",
+        "afterward via initializer launches owned by the same creator."
+      ],
+      "discriminator": [
+        103,
+        226,
+        97,
+        235,
+        200,
+        188,
+        251,
+        254
+      ],
+      "accounts": [
+        {
+          "name": "creator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "oracle",
+          "docs": [
+            "Oracle whose declared outcomes this market will instantiate."
+          ]
+        },
+        {
+          "name": "quote_mint"
+        },
+        {
+          "name": "market",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  97,
+                  114,
+                  107,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "oracle"
+              },
+              {
+                "kind": "account",
+                "path": "quote_mint"
+              },
+              {
+                "kind": "account",
+                "path": "creator"
+              }
+            ]
+          }
+        },
+        {
+          "name": "pot_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  116,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "market"
+              }
+            ]
+          }
+        },
+        {
+          "name": "market_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  97,
+                  114,
+                  107,
+                  101,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "market"
+              }
+            ]
+          }
+        },
+        {
+          "name": "quote_token_program"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "migrate_entry",
       "docs": [
-        "Migrate an entry after the oracle finalizes.",
+        "Migrate an entry after the oracle finalizes, resolving the market on the",
+        "first migration.",
         "Called by initializer at migrate time via migrator migrate hook.",
         "",
         "Burns unsold base tokens, transfers quote to pot, records contribution.",
@@ -346,6 +448,11 @@
               {
                 "kind": "account",
                 "path": "quote_mint"
+              },
+              {
+                "kind": "account",
+                "path": "market.creator",
+                "account": "Market"
               }
             ]
           }
@@ -397,13 +504,7 @@
           "docs": [
             "Entry PDA"
           ],
-          "writable": true
-        },
-        {
-          "name": "entry_by_mint",
-          "docs": [
-            "EntryByMint PDA (for validation)"
-          ],
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -413,15 +514,7 @@
                   110,
                   116,
                   114,
-                  121,
-                  95,
-                  98,
-                  121,
-                  95,
-                  109,
-                  105,
-                  110,
-                  116
+                  121
                 ]
               },
               {
@@ -436,16 +529,7 @@
           }
         }
       ],
-      "args": [
-        {
-          "name": "args",
-          "type": {
-            "defined": {
-              "name": "MigrateEntryArgs"
-            }
-          }
-        }
-      ]
+      "args": []
     },
     {
       "name": "preview_payout_if_winner",
@@ -491,9 +575,17 @@
                 "kind": "account",
                 "path": "market.quote_mint",
                 "account": "Market"
+              },
+              {
+                "kind": "account",
+                "path": "market.creator",
+                "account": "Market"
               }
             ]
           }
+        },
+        {
+          "name": "oracle"
         },
         {
           "name": "candidate_mint",
@@ -514,13 +606,160 @@
       ]
     },
     {
+      "name": "refund",
+      "docs": [
+        "Burn tokens from a migrated entry in a void market and recover that",
+        "entry's quote contribution pro rata."
+      ],
+      "discriminator": [
+        2,
+        96,
+        183,
+        251,
+        63,
+        208,
+        46,
+        46
+      ],
+      "accounts": [
+        {
+          "name": "market",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  97,
+                  114,
+                  107,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "market.oracle",
+                "account": "Market"
+              },
+              {
+                "kind": "account",
+                "path": "market.quote_mint",
+                "account": "Market"
+              },
+              {
+                "kind": "account",
+                "path": "market.creator",
+                "account": "Market"
+              }
+            ]
+          }
+        },
+        {
+          "name": "entry",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  110,
+                  116,
+                  114,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "market"
+              },
+              {
+                "kind": "account",
+                "path": "entry.base_mint",
+                "account": "Entry"
+              }
+            ]
+          }
+        },
+        {
+          "name": "market_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  97,
+                  114,
+                  107,
+                  101,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "market"
+              }
+            ]
+          }
+        },
+        {
+          "name": "pot_vault",
+          "writable": true
+        },
+        {
+          "name": "base_mint",
+          "writable": true
+        },
+        {
+          "name": "quote_mint"
+        },
+        {
+          "name": "refunder_base_ata",
+          "writable": true
+        },
+        {
+          "name": "refunder_quote_ata",
+          "writable": true
+        },
+        {
+          "name": "refunder",
+          "signer": true
+        },
+        {
+          "name": "base_token_program"
+        },
+        {
+          "name": "quote_token_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "burn_amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
       "name": "register_entry",
       "docs": [
-        "Register an entry in the prediction market.",
+        "Register an entry in an existing creator-owned prediction market.",
         "Called by initializer at launch creation time via migrator init hook.",
         "",
-        "Creates Market PDA if first entry for this oracle.",
-        "Creates Entry PDA and EntryByMint reverse lookup."
+        "Requires `launch.authority == market.creator` and membership in the",
+        "oracle's declared outcome set."
       ],
       "discriminator": [
         198,
@@ -595,13 +834,13 @@
         {
           "name": "oracle",
           "docs": [
-            "The oracle that this market is tied to"
+            "Declared-outcome oracle for this market."
           ]
         },
         {
           "name": "market",
           "docs": [
-            "Market PDA - created if first entry"
+            "Existing creator-owned Market PDA"
           ],
           "writable": true,
           "pda": {
@@ -624,67 +863,11 @@
               {
                 "kind": "account",
                 "path": "quote_mint"
-              }
-            ]
-          }
-        },
-        {
-          "name": "pot_vault",
-          "docs": [
-            "Pot vault for holding quote tokens"
-          ],
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  116,
-                  95,
-                  118,
-                  97,
-                  117,
-                  108,
-                  116
-                ]
               },
               {
                 "kind": "account",
-                "path": "market"
-              }
-            ]
-          }
-        },
-        {
-          "name": "market_authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  109,
-                  97,
-                  114,
-                  107,
-                  101,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "market"
+                "path": "market.creator",
+                "account": "Market"
               }
             ]
           }
@@ -694,13 +877,6 @@
           "docs": [
             "Entry PDA for this entry"
           ],
-          "writable": true
-        },
-        {
-          "name": "entry_by_mint",
-          "docs": [
-            "EntryByMint PDA for reverse lookup"
-          ],
           "writable": true,
           "pda": {
             "seeds": [
@@ -711,15 +887,7 @@
                   110,
                   116,
                   114,
-                  121,
-                  95,
-                  98,
-                  121,
-                  95,
-                  109,
-                  105,
-                  110,
-                  116
+                  121
                 ]
               },
               {
@@ -771,19 +939,6 @@
         246,
         221,
         250
-      ]
-    },
-    {
-      "name": "EntryByMint",
-      "discriminator": [
-        188,
-        191,
-        157,
-        194,
-        68,
-        82,
-        181,
-        126
       ]
     },
     {
@@ -893,6 +1048,32 @@
       ]
     },
     {
+      "name": "MarketVoided",
+      "discriminator": [
+        217,
+        12,
+        138,
+        39,
+        108,
+        75,
+        89,
+        26
+      ]
+    },
+    {
+      "name": "RefundClaimed",
+      "discriminator": [
+        136,
+        64,
+        242,
+        99,
+        4,
+        244,
+        208,
+        130
+      ]
+    },
+    {
       "name": "RewardsClaimed",
       "discriminator": [
         75,
@@ -916,6 +1097,16 @@
       "code": 6001,
       "name": "QuoteMintMismatch",
       "msg": "Quote mint mismatch"
+    },
+    {
+      "code": 6002,
+      "name": "InvalidHookProgram",
+      "msg": "Invalid prediction hook program"
+    },
+    {
+      "code": 6003,
+      "name": "InvalidHookConfig",
+      "msg": "Invalid prediction hook configuration"
     },
     {
       "code": 6004,
@@ -996,6 +1187,31 @@
       "code": 6021,
       "name": "ClaimableSupplyAlreadySet",
       "msg": "Claimable supply already set"
+    },
+    {
+      "code": 6022,
+      "name": "InvalidOracleOutcome",
+      "msg": "Invalid or unregistered oracle outcome"
+    },
+    {
+      "code": 6023,
+      "name": "MarketAlreadyResolved",
+      "msg": "Market already resolved"
+    },
+    {
+      "code": 6024,
+      "name": "MarketIncomplete",
+      "msg": "Market has not registered all oracle outcomes"
+    },
+    {
+      "code": 6025,
+      "name": "MarketVoided",
+      "msg": "Market is void"
+    },
+    {
+      "code": 6026,
+      "name": "MarketNotVoided",
+      "msg": "Market is not void"
     }
   ],
   "types": [
@@ -1062,7 +1278,7 @@
       "name": "Entry",
       "docs": [
         "Entry PDA: tracks a single entry/outcome in a prediction market.",
-        "Seeds: [b\"entry\", market.as_ref(), &entry_id]"
+        "Seeds: [b\"entry\", market.as_ref(), base_mint.as_ref()]"
       ],
       "type": {
         "kind": "struct",
@@ -1073,18 +1289,6 @@
               "The market this entry belongs to"
             ],
             "type": "pubkey"
-          },
-          {
-            "name": "entry_id",
-            "docs": [
-              "Unique identifier for this entry within the market"
-            ],
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
           },
           {
             "name": "base_mint",
@@ -1115,73 +1319,18 @@
             "type": "u8"
           },
           {
-            "name": "_reserved",
+            "name": "refund_supply",
             "docs": [
-              "Reserved for future use"
+              "Circulating supply fixed at migration for void-market refunds"
             ],
-            "type": {
-              "array": [
-                "u8",
-                14
-              ]
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "EntryByMint",
-      "docs": [
-        "EntryByMint PDA: reverse lookup from mint to entry_id.",
-        "Seeds: [b\"entry_by_mint\", market.as_ref(), base_mint.as_ref()]"
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "market",
-            "docs": [
-              "The market this entry belongs to"
-            ],
-            "type": "pubkey"
+            "type": "u64"
           },
           {
-            "name": "base_mint",
+            "name": "refunded_quote",
             "docs": [
-              "The base mint"
+              "Quote already refunded for this entry"
             ],
-            "type": "pubkey"
-          },
-          {
-            "name": "entry_id",
-            "docs": [
-              "The entry_id for reverse lookup"
-            ],
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          },
-          {
-            "name": "bump",
-            "docs": [
-              "Bump seed for this PDA"
-            ],
-            "type": "u8"
-          },
-          {
-            "name": "_reserved",
-            "docs": [
-              "Reserved for future use"
-            ],
-            "type": {
-              "array": [
-                "u8",
-                7
-              ]
-            }
+            "type": "u64"
           }
         ]
       }
@@ -1248,6 +1397,15 @@
           {
             "name": "base_mint",
             "type": "pubkey"
+          },
+          {
+            "name": "outcome_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
           }
         ]
       }
@@ -1540,7 +1698,7 @@
       "name": "Market",
       "docs": [
         "Market PDA: holds pot escrow and accounting for a prediction market.",
-        "Seeds: [b\"market\", oracle.as_ref(), quote_mint.as_ref()]"
+        "Seeds: [b\"market\", oracle.as_ref(), quote_mint.as_ref(), creator.as_ref()]"
       ],
       "type": {
         "kind": "struct",
@@ -1581,9 +1739,21 @@
             "type": "u64"
           },
           {
+            "name": "winning_outcome_id",
+            "docs": [
+              "Canonical outcome ID used to resolve this market"
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
             "name": "winner_mint",
             "docs": [
-              "Winner mint (set when market resolves)"
+              "Market-local token mint mapped to the winning outcome"
             ],
             "type": "pubkey"
           },
@@ -1616,14 +1786,42 @@
             "type": "u8"
           },
           {
-            "name": "_reserved",
+            "name": "creator",
             "docs": [
-              "Reserved for future use"
+              "Creator / authority allowed to register entries into this market"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "outcome_count",
+            "docs": [
+              "Snapshot of oracle.outcome_count at market creation"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "registered_bitmap",
+            "docs": [
+              "Bitmap of registered oracle outcome slots"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "is_void",
+            "docs": [
+              "Whether the resolved winner had no surviving claimable supply"
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "outcome_mints",
+            "docs": [
+              "Market-local token mint for each oracle outcome slot"
             ],
             "type": {
               "array": [
-                "u8",
-                29
+                "pubkey",
+                8
               ]
             }
           }
@@ -1646,6 +1844,10 @@
           {
             "name": "quote_mint",
             "type": "pubkey"
+          },
+          {
+            "name": "creator",
+            "type": "pubkey"
           }
         ]
       }
@@ -1664,31 +1866,36 @@
             "type": "pubkey"
           },
           {
+            "name": "winning_outcome_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
             "name": "winner_mint",
             "type": "pubkey"
-          },
-          {
-            "name": "claimable_supply",
-            "type": "u64"
-          },
-          {
-            "name": "total_pot",
-            "type": "u64"
           }
         ]
       }
     },
     {
-      "name": "MigrateEntryArgs",
-      "docs": [
-        "Arguments for migrate_entry instruction.",
-        "This is decoded from migrator_migrate_payload passed by initializer."
-      ],
+      "name": "MarketVoided",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "entry_id",
+            "name": "market",
+            "type": "pubkey"
+          },
+          {
+            "name": "oracle",
+            "type": "pubkey"
+          },
+          {
+            "name": "winning_outcome_id",
             "type": {
               "array": [
                 "u8",
@@ -1717,25 +1924,23 @@
             "type": "pubkey"
           },
           {
-            "name": "quote_mint",
-            "docs": [
-              "Optional quote mint for validation (Pubkey::default() if not used)."
-            ],
-            "type": "pubkey"
-          },
-          {
             "name": "is_finalized",
             "docs": [
-              "Whether the oracle has been finalized with a winner."
+              "Whether the oracle has been finalized with an outcome."
             ],
             "type": "bool"
           },
           {
-            "name": "winning_mint",
+            "name": "winning_outcome_id",
             "docs": [
-              "The winning mint (only valid if is_finalized == true)."
+              "Canonical winning outcome ID (only valid if is_finalized == true)."
             ],
-            "type": "pubkey"
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
           },
           {
             "name": "nonce",
@@ -1752,14 +1957,26 @@
             "type": "u8"
           },
           {
-            "name": "_reserved",
+            "name": "outcome_count",
             "docs": [
-              "Reserved for future use."
+              "Number of declared outcomes in `outcome_ids`."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "outcome_ids",
+            "docs": [
+              "Immutable set of canonical outcome IDs declared at initialization."
             ],
             "type": {
               "array": [
-                "u8",
-                31
+                {
+                  "array": [
+                    "u8",
+                    32
+                  ]
+                },
+                8
               ]
             }
           }
@@ -1803,7 +2020,44 @@
             "type": "pubkey"
           },
           {
+            "name": "candidate_outcome_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
             "name": "token_amount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RefundClaimed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "market",
+            "type": "pubkey"
+          },
+          {
+            "name": "entry",
+            "type": "pubkey"
+          },
+          {
+            "name": "refunder",
+            "type": "pubkey"
+          },
+          {
+            "name": "burned_amount",
+            "type": "u64"
+          },
+          {
+            "name": "refund_amount",
             "type": "u64"
           }
         ]
@@ -1819,7 +2073,7 @@
         "kind": "struct",
         "fields": [
           {
-            "name": "entry_id",
+            "name": "outcome_id",
             "type": {
               "array": [
                 "u8",

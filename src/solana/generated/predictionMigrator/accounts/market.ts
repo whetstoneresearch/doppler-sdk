@@ -17,6 +17,8 @@ import {
   fixEncoderSize,
   getAddressDecoder,
   getAddressEncoder,
+  getArrayDecoder,
+  getArrayEncoder,
   getBooleanDecoder,
   getBooleanEncoder,
   getBytesDecoder,
@@ -61,7 +63,9 @@ export type Market = {
   totalPot: bigint;
   /** Total quote claimed/paid out (cumulative) */
   totalClaimed: bigint;
-  /** Winner mint (set when market resolves) */
+  /** Canonical outcome ID used to resolve this market */
+  winningOutcomeId: ReadonlyUint8Array;
+  /** Market-local token mint mapped to the winning outcome */
   winnerMint: Address;
   /** Claimable supply of winner token (fixed after winning entry migrates) */
   claimableSupply: bigint;
@@ -71,8 +75,16 @@ export type Market = {
   bump: number;
   /** Bump seed for market authority PDA */
   marketAuthorityBump: number;
-  /** Reserved for future use */
-  reserved: ReadonlyUint8Array;
+  /** Creator / authority allowed to register entries into this market */
+  creator: Address;
+  /** Snapshot of oracle.outcome_count at market creation */
+  outcomeCount: number;
+  /** Bitmap of registered oracle outcome slots */
+  registeredBitmap: number;
+  /** Whether the resolved winner had no surviving claimable supply */
+  isVoid: boolean;
+  /** Market-local token mint for each oracle outcome slot */
+  outcomeMints: Array<Address>;
 };
 
 export type MarketArgs = {
@@ -86,7 +98,9 @@ export type MarketArgs = {
   totalPot: number | bigint;
   /** Total quote claimed/paid out (cumulative) */
   totalClaimed: number | bigint;
-  /** Winner mint (set when market resolves) */
+  /** Canonical outcome ID used to resolve this market */
+  winningOutcomeId: ReadonlyUint8Array;
+  /** Market-local token mint mapped to the winning outcome */
   winnerMint: Address;
   /** Claimable supply of winner token (fixed after winning entry migrates) */
   claimableSupply: number | bigint;
@@ -96,8 +110,16 @@ export type MarketArgs = {
   bump: number;
   /** Bump seed for market authority PDA */
   marketAuthorityBump: number;
-  /** Reserved for future use */
-  reserved: ReadonlyUint8Array;
+  /** Creator / authority allowed to register entries into this market */
+  creator: Address;
+  /** Snapshot of oracle.outcome_count at market creation */
+  outcomeCount: number;
+  /** Bitmap of registered oracle outcome slots */
+  registeredBitmap: number;
+  /** Whether the resolved winner had no surviving claimable supply */
+  isVoid: boolean;
+  /** Market-local token mint for each oracle outcome slot */
+  outcomeMints: Array<Address>;
 };
 
 /** Gets the encoder for {@link MarketArgs} account data. */
@@ -110,12 +132,17 @@ export function getMarketEncoder(): FixedSizeEncoder<MarketArgs> {
       ['potVault', getAddressEncoder()],
       ['totalPot', getU64Encoder()],
       ['totalClaimed', getU64Encoder()],
+      ['winningOutcomeId', fixEncoderSize(getBytesEncoder(), 32)],
       ['winnerMint', getAddressEncoder()],
       ['claimableSupply', getU64Encoder()],
       ['isResolved', getBooleanEncoder()],
       ['bump', getU8Encoder()],
       ['marketAuthorityBump', getU8Encoder()],
-      ['reserved', fixEncoderSize(getBytesEncoder(), 29)],
+      ['creator', getAddressEncoder()],
+      ['outcomeCount', getU8Encoder()],
+      ['registeredBitmap', getU8Encoder()],
+      ['isVoid', getBooleanEncoder()],
+      ['outcomeMints', getArrayEncoder(getAddressEncoder(), { size: 8 })],
     ]),
     (value) => ({ ...value, discriminator: MARKET_DISCRIMINATOR }),
   );
@@ -130,12 +157,17 @@ export function getMarketDecoder(): FixedSizeDecoder<Market> {
     ['potVault', getAddressDecoder()],
     ['totalPot', getU64Decoder()],
     ['totalClaimed', getU64Decoder()],
+    ['winningOutcomeId', fixDecoderSize(getBytesDecoder(), 32)],
     ['winnerMint', getAddressDecoder()],
     ['claimableSupply', getU64Decoder()],
     ['isResolved', getBooleanDecoder()],
     ['bump', getU8Decoder()],
     ['marketAuthorityBump', getU8Decoder()],
-    ['reserved', fixDecoderSize(getBytesDecoder(), 29)],
+    ['creator', getAddressDecoder()],
+    ['outcomeCount', getU8Decoder()],
+    ['registeredBitmap', getU8Decoder()],
+    ['isVoid', getBooleanDecoder()],
+    ['outcomeMints', getArrayDecoder(getAddressDecoder(), { size: 8 })],
   ]);
 }
 
@@ -198,5 +230,5 @@ export async function fetchAllMaybeMarket(
 }
 
 export function getMarketSize(): number {
-  return 192;
+  return 486;
 }

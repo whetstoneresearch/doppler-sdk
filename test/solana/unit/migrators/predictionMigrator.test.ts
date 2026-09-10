@@ -70,7 +70,6 @@ describe('prediction migrator claims', () => {
       POT_VAULT,
       WINNER_MINT,
       QUOTE_MINT,
-      expect.any(String),
       prepared.outcomeTokenAccount,
       prepared.quoteTokenAccount,
       claimer.address,
@@ -123,7 +122,7 @@ describe('prediction migrator claims', () => {
       baseTokenProgram: TOKEN_2022_PROGRAM_ADDRESS,
     });
 
-    expect(prepared.claimInstruction.accounts![11]!.address).toBe(
+    expect(prepared.claimInstruction.accounts![10]!.address).toBe(
       TOKEN_2022_PROGRAM_ADDRESS,
     );
     expect(prepared.closeOutcomeTokenAccountInstruction.programAddress).toBe(

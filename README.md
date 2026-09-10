@@ -101,6 +101,7 @@ For runnable Solana flows, configure `examples/.env` and run with `pnpm tsx`, fo
 - [examples/solana-cosigner-gated-buy.ts](./examples/solana-cosigner-gated-buy.ts)
 - [examples/solana-usdc-e2e-launch.ts](./examples/solana-usdc-e2e-launch.ts)
 - [examples/solana-usdc-cosigner-gated-buy.ts](./examples/solana-usdc-cosigner-gated-buy.ts)
+- [Prediction markets guide](./docs/solana-prediction-markets.md): complete lifecycle helpers, six executable scenarios, payout accounting, and [ABI migration](./docs/solana-prediction-migration.md).
 - [examples/solana-prediction-market.ts](./examples/solana-prediction-market.ts)
 - [examples/solana-swap.ts](./examples/solana-swap.ts)
 - [examples/solana-vesting-launch.ts](./examples/solana-vesting-launch.ts)

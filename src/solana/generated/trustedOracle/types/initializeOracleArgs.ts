@@ -8,47 +8,51 @@
 
 import {
   combineCodec,
-  getAddressDecoder,
-  getAddressEncoder,
+  fixDecoderSize,
+  fixEncoderSize,
+  getArrayDecoder,
+  getArrayEncoder,
+  getBytesDecoder,
+  getBytesEncoder,
   getStructDecoder,
   getStructEncoder,
   getU64Decoder,
   getU64Encoder,
-  type Address,
-  type FixedSizeCodec,
-  type FixedSizeDecoder,
-  type FixedSizeEncoder,
+  type Codec,
+  type Decoder,
+  type Encoder,
+  type ReadonlyUint8Array,
 } from '@solana/kit';
 
 export type InitializeOracleArgs = {
   /** Nonce for PDA derivation (allows multiple oracles per authority) */
   nonce: bigint;
-  /** Optional quote mint for validation (use Pubkey::default() if not needed) */
-  quoteMint: Address;
+  /** Immutable set of canonical outcome IDs this oracle may finalize to. */
+  outcomeIds: Array<ReadonlyUint8Array>;
 };
 
 export type InitializeOracleArgsArgs = {
   /** Nonce for PDA derivation (allows multiple oracles per authority) */
   nonce: number | bigint;
-  /** Optional quote mint for validation (use Pubkey::default() if not needed) */
-  quoteMint: Address;
+  /** Immutable set of canonical outcome IDs this oracle may finalize to. */
+  outcomeIds: Array<ReadonlyUint8Array>;
 };
 
-export function getInitializeOracleArgsEncoder(): FixedSizeEncoder<InitializeOracleArgsArgs> {
+export function getInitializeOracleArgsEncoder(): Encoder<InitializeOracleArgsArgs> {
   return getStructEncoder([
     ['nonce', getU64Encoder()],
-    ['quoteMint', getAddressEncoder()],
+    ['outcomeIds', getArrayEncoder(fixEncoderSize(getBytesEncoder(), 32))],
   ]);
 }
 
-export function getInitializeOracleArgsDecoder(): FixedSizeDecoder<InitializeOracleArgs> {
+export function getInitializeOracleArgsDecoder(): Decoder<InitializeOracleArgs> {
   return getStructDecoder([
     ['nonce', getU64Decoder()],
-    ['quoteMint', getAddressDecoder()],
+    ['outcomeIds', getArrayDecoder(fixDecoderSize(getBytesDecoder(), 32))],
   ]);
 }
 
-export function getInitializeOracleArgsCodec(): FixedSizeCodec<
+export function getInitializeOracleArgsCodec(): Codec<
   InitializeOracleArgsArgs,
   InitializeOracleArgs
 > {

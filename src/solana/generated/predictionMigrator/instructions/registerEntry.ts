@@ -70,10 +70,7 @@ export type RegisterEntryInstruction<
     'SysvarRent111111111111111111111111111111111',
   TAccountOracle extends string | AccountMeta<string> = string,
   TAccountMarket extends string | AccountMeta<string> = string,
-  TAccountPotVault extends string | AccountMeta<string> = string,
-  TAccountMarketAuthority extends string | AccountMeta<string> = string,
   TAccountEntry extends string | AccountMeta<string> = string,
-  TAccountEntryByMint extends string | AccountMeta<string> = string,
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -123,34 +120,27 @@ export type RegisterEntryInstruction<
       TAccountMarket extends string
         ? WritableAccount<TAccountMarket>
         : TAccountMarket,
-      TAccountPotVault extends string
-        ? WritableAccount<TAccountPotVault>
-        : TAccountPotVault,
-      TAccountMarketAuthority extends string
-        ? ReadonlyAccount<TAccountMarketAuthority>
-        : TAccountMarketAuthority,
       TAccountEntry extends string
         ? WritableAccount<TAccountEntry>
         : TAccountEntry,
-      TAccountEntryByMint extends string
-        ? WritableAccount<TAccountEntryByMint>
-        : TAccountEntryByMint,
       ...TRemainingAccounts,
     ]
   >;
 
 export type RegisterEntryInstructionData = {
   discriminator: ReadonlyUint8Array;
-  entryId: ReadonlyUint8Array;
+  outcomeId: ReadonlyUint8Array;
 };
 
-export type RegisterEntryInstructionDataArgs = { entryId: ReadonlyUint8Array };
+export type RegisterEntryInstructionDataArgs = {
+  outcomeId: ReadonlyUint8Array;
+};
 
 export function getRegisterEntryInstructionDataEncoder(): FixedSizeEncoder<RegisterEntryInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['entryId', fixEncoderSize(getBytesEncoder(), 32)],
+      ['outcomeId', fixEncoderSize(getBytesEncoder(), 32)],
     ]),
     (value) => ({ ...value, discriminator: REGISTER_ENTRY_DISCRIMINATOR }),
   );
@@ -159,7 +149,7 @@ export function getRegisterEntryInstructionDataEncoder(): FixedSizeEncoder<Regis
 export function getRegisterEntryInstructionDataDecoder(): FixedSizeDecoder<RegisterEntryInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['entryId', fixDecoderSize(getBytesDecoder(), 32)],
+    ['outcomeId', fixDecoderSize(getBytesDecoder(), 32)],
   ]);
 }
 
@@ -188,10 +178,7 @@ export type RegisterEntryAsyncInput<
   TAccountRent extends string = string,
   TAccountOracle extends string = string,
   TAccountMarket extends string = string,
-  TAccountPotVault extends string = string,
-  TAccountMarketAuthority extends string = string,
   TAccountEntry extends string = string,
-  TAccountEntryByMint extends string = string,
 > = {
   initializerConfig: Address<TAccountInitializerConfig>;
   /** Launch account from initializer */
@@ -211,18 +198,13 @@ export type RegisterEntryAsyncInput<
   quoteTokenProgram: Address<TAccountQuoteTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
   rent?: Address<TAccountRent>;
-  /** The oracle that this market is tied to */
+  /** Declared-outcome oracle for this market. */
   oracle: Address<TAccountOracle>;
-  /** Market PDA - created if first entry */
-  market?: Address<TAccountMarket>;
-  /** Pot vault for holding quote tokens */
-  potVault?: Address<TAccountPotVault>;
-  marketAuthority?: Address<TAccountMarketAuthority>;
+  /** Existing creator-owned Market PDA */
+  market: Address<TAccountMarket>;
   /** Entry PDA for this entry */
-  entry: Address<TAccountEntry>;
-  /** EntryByMint PDA for reverse lookup */
-  entryByMint?: Address<TAccountEntryByMint>;
-  entryId: RegisterEntryInstructionDataArgs['entryId'];
+  entry?: Address<TAccountEntry>;
+  outcomeId: RegisterEntryInstructionDataArgs['outcomeId'];
 };
 
 export async function getRegisterEntryInstructionAsync<
@@ -240,10 +222,7 @@ export async function getRegisterEntryInstructionAsync<
   TAccountRent extends string,
   TAccountOracle extends string,
   TAccountMarket extends string,
-  TAccountPotVault extends string,
-  TAccountMarketAuthority extends string,
   TAccountEntry extends string,
-  TAccountEntryByMint extends string,
   TProgramAddress extends Address = typeof PREDICTION_MIGRATOR_PROGRAM_ADDRESS,
 >(
   input: RegisterEntryAsyncInput<
@@ -261,10 +240,7 @@ export async function getRegisterEntryInstructionAsync<
     TAccountRent,
     TAccountOracle,
     TAccountMarket,
-    TAccountPotVault,
-    TAccountMarketAuthority,
-    TAccountEntry,
-    TAccountEntryByMint
+    TAccountEntry
   >,
   config?: { programAddress?: TProgramAddress },
 ): Promise<
@@ -284,10 +260,7 @@ export async function getRegisterEntryInstructionAsync<
     TAccountRent,
     TAccountOracle,
     TAccountMarket,
-    TAccountPotVault,
-    TAccountMarketAuthority,
-    TAccountEntry,
-    TAccountEntryByMint
+    TAccountEntry
   >
 > {
   // Program address.
@@ -322,13 +295,7 @@ export async function getRegisterEntryInstructionAsync<
     rent: { value: input.rent ?? null, isWritable: false },
     oracle: { value: input.oracle ?? null, isWritable: false },
     market: { value: input.market ?? null, isWritable: true },
-    potVault: { value: input.potVault ?? null, isWritable: true },
-    marketAuthority: {
-      value: input.marketAuthority ?? null,
-      isWritable: false,
-    },
     entry: { value: input.entry ?? null, isWritable: true },
-    entryByMint: { value: input.entryByMint ?? null, isWritable: true },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -347,70 +314,11 @@ export async function getRegisterEntryInstructionAsync<
     accounts.rent.value =
       'SysvarRent111111111111111111111111111111111' as Address<'SysvarRent111111111111111111111111111111111'>;
   }
-  if (!accounts.market.value) {
-    accounts.market.value = await getProgramDerivedAddress({
+  if (!accounts.entry.value) {
+    accounts.entry.value = await getProgramDerivedAddress({
       programAddress,
       seeds: [
-        getBytesEncoder().encode(new Uint8Array([109, 97, 114, 107, 101, 116])),
-        getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount(
-            'oracle',
-            accounts.oracle.value,
-          ),
-        ),
-        getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount(
-            'quoteMint',
-            accounts.quoteMint.value,
-          ),
-        ),
-      ],
-    });
-  }
-  if (!accounts.potVault.value) {
-    accounts.potVault.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(
-          new Uint8Array([112, 111, 116, 95, 118, 97, 117, 108, 116]),
-        ),
-        getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount(
-            'market',
-            accounts.market.value,
-          ),
-        ),
-      ],
-    });
-  }
-  if (!accounts.marketAuthority.value) {
-    accounts.marketAuthority.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(
-          new Uint8Array([
-            109, 97, 114, 107, 101, 116, 95, 97, 117, 116, 104, 111, 114, 105,
-            116, 121,
-          ]),
-        ),
-        getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount(
-            'market',
-            accounts.market.value,
-          ),
-        ),
-      ],
-    });
-  }
-  if (!accounts.entryByMint.value) {
-    accounts.entryByMint.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(
-          new Uint8Array([
-            101, 110, 116, 114, 121, 95, 98, 121, 95, 109, 105, 110, 116,
-          ]),
-        ),
+        getBytesEncoder().encode(new Uint8Array([101, 110, 116, 114, 121])),
         getAddressEncoder().encode(
           getAddressFromResolvedInstructionAccount(
             'market',
@@ -444,10 +352,7 @@ export async function getRegisterEntryInstructionAsync<
       getAccountMeta('rent', accounts.rent),
       getAccountMeta('oracle', accounts.oracle),
       getAccountMeta('market', accounts.market),
-      getAccountMeta('potVault', accounts.potVault),
-      getAccountMeta('marketAuthority', accounts.marketAuthority),
       getAccountMeta('entry', accounts.entry),
-      getAccountMeta('entryByMint', accounts.entryByMint),
     ],
     data: getRegisterEntryInstructionDataEncoder().encode(
       args as RegisterEntryInstructionDataArgs,
@@ -469,10 +374,7 @@ export async function getRegisterEntryInstructionAsync<
     TAccountRent,
     TAccountOracle,
     TAccountMarket,
-    TAccountPotVault,
-    TAccountMarketAuthority,
-    TAccountEntry,
-    TAccountEntryByMint
+    TAccountEntry
   >);
 }
 
@@ -491,10 +393,7 @@ export type RegisterEntryInput<
   TAccountRent extends string = string,
   TAccountOracle extends string = string,
   TAccountMarket extends string = string,
-  TAccountPotVault extends string = string,
-  TAccountMarketAuthority extends string = string,
   TAccountEntry extends string = string,
-  TAccountEntryByMint extends string = string,
 > = {
   initializerConfig: Address<TAccountInitializerConfig>;
   /** Launch account from initializer */
@@ -514,18 +413,13 @@ export type RegisterEntryInput<
   quoteTokenProgram: Address<TAccountQuoteTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
   rent?: Address<TAccountRent>;
-  /** The oracle that this market is tied to */
+  /** Declared-outcome oracle for this market. */
   oracle: Address<TAccountOracle>;
-  /** Market PDA - created if first entry */
+  /** Existing creator-owned Market PDA */
   market: Address<TAccountMarket>;
-  /** Pot vault for holding quote tokens */
-  potVault: Address<TAccountPotVault>;
-  marketAuthority: Address<TAccountMarketAuthority>;
   /** Entry PDA for this entry */
   entry: Address<TAccountEntry>;
-  /** EntryByMint PDA for reverse lookup */
-  entryByMint: Address<TAccountEntryByMint>;
-  entryId: RegisterEntryInstructionDataArgs['entryId'];
+  outcomeId: RegisterEntryInstructionDataArgs['outcomeId'];
 };
 
 export function getRegisterEntryInstruction<
@@ -543,10 +437,7 @@ export function getRegisterEntryInstruction<
   TAccountRent extends string,
   TAccountOracle extends string,
   TAccountMarket extends string,
-  TAccountPotVault extends string,
-  TAccountMarketAuthority extends string,
   TAccountEntry extends string,
-  TAccountEntryByMint extends string,
   TProgramAddress extends Address = typeof PREDICTION_MIGRATOR_PROGRAM_ADDRESS,
 >(
   input: RegisterEntryInput<
@@ -564,10 +455,7 @@ export function getRegisterEntryInstruction<
     TAccountRent,
     TAccountOracle,
     TAccountMarket,
-    TAccountPotVault,
-    TAccountMarketAuthority,
-    TAccountEntry,
-    TAccountEntryByMint
+    TAccountEntry
   >,
   config?: { programAddress?: TProgramAddress },
 ): RegisterEntryInstruction<
@@ -586,10 +474,7 @@ export function getRegisterEntryInstruction<
   TAccountRent,
   TAccountOracle,
   TAccountMarket,
-  TAccountPotVault,
-  TAccountMarketAuthority,
-  TAccountEntry,
-  TAccountEntryByMint
+  TAccountEntry
 > {
   // Program address.
   const programAddress =
@@ -623,13 +508,7 @@ export function getRegisterEntryInstruction<
     rent: { value: input.rent ?? null, isWritable: false },
     oracle: { value: input.oracle ?? null, isWritable: false },
     market: { value: input.market ?? null, isWritable: true },
-    potVault: { value: input.potVault ?? null, isWritable: true },
-    marketAuthority: {
-      value: input.marketAuthority ?? null,
-      isWritable: false,
-    },
     entry: { value: input.entry ?? null, isWritable: true },
-    entryByMint: { value: input.entryByMint ?? null, isWritable: true },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -666,10 +545,7 @@ export function getRegisterEntryInstruction<
       getAccountMeta('rent', accounts.rent),
       getAccountMeta('oracle', accounts.oracle),
       getAccountMeta('market', accounts.market),
-      getAccountMeta('potVault', accounts.potVault),
-      getAccountMeta('marketAuthority', accounts.marketAuthority),
       getAccountMeta('entry', accounts.entry),
-      getAccountMeta('entryByMint', accounts.entryByMint),
     ],
     data: getRegisterEntryInstructionDataEncoder().encode(
       args as RegisterEntryInstructionDataArgs,
@@ -691,10 +567,7 @@ export function getRegisterEntryInstruction<
     TAccountRent,
     TAccountOracle,
     TAccountMarket,
-    TAccountPotVault,
-    TAccountMarketAuthority,
-    TAccountEntry,
-    TAccountEntryByMint
+    TAccountEntry
   >);
 }
 
@@ -722,17 +595,12 @@ export type ParsedRegisterEntryInstruction<
     quoteTokenProgram: TAccountMetas[9];
     systemProgram: TAccountMetas[10];
     rent: TAccountMetas[11];
-    /** The oracle that this market is tied to */
+    /** Declared-outcome oracle for this market. */
     oracle: TAccountMetas[12];
-    /** Market PDA - created if first entry */
+    /** Existing creator-owned Market PDA */
     market: TAccountMetas[13];
-    /** Pot vault for holding quote tokens */
-    potVault: TAccountMetas[14];
-    marketAuthority: TAccountMetas[15];
     /** Entry PDA for this entry */
-    entry: TAccountMetas[16];
-    /** EntryByMint PDA for reverse lookup */
-    entryByMint: TAccountMetas[17];
+    entry: TAccountMetas[14];
   };
   data: RegisterEntryInstructionData;
 };
@@ -745,12 +613,12 @@ export function parseRegisterEntryInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedRegisterEntryInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 18) {
+  if (instruction.accounts.length < 15) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 18,
+        expectedAccountMetas: 15,
       },
     );
   }
@@ -777,10 +645,7 @@ export function parseRegisterEntryInstruction<
       rent: getNextAccount(),
       oracle: getNextAccount(),
       market: getNextAccount(),
-      potVault: getNextAccount(),
-      marketAuthority: getNextAccount(),
       entry: getNextAccount(),
-      entryByMint: getNextAccount(),
     },
     data: getRegisterEntryInstructionDataDecoder().decode(instruction.data),
   };
