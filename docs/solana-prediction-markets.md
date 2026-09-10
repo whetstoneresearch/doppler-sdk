@@ -30,7 +30,7 @@ export SOLANA_KEYPAIR_PATH="$HOME/.config/solana/doppler-tester.json"
 npx --yes pnpm@10.11.0 exec tsx examples/solana-prediction-market.ts --scenario binary --manifest /tmp/prediction-binary.json
 ```
 
-The signer pays transaction/account rent and buys 0.01 SOL of every purchased outcome. Fund it before running. A custom SPL Token quote mint can be selected with `SOLANA_PREDICTION_QUOTE_MINT`; fund the signer's quote ATA first. WSOL is the default and is wrapped automatically for buys. Payout assertions inspect WSOL token balances, not native SOL after transaction fees.
+The signer pays transaction/account rent and spends 10,000,000 raw quote units on every purchased outcome (0.01 SOL with the default WSOL mint). For a custom mint, convert that raw amount using its decimals when funding the signer. A custom SPL Token quote mint can be selected with `SOLANA_PREDICTION_QUOTE_MINT`; fund the signer's quote ATA first. WSOL is the default and is wrapped automatically for buys. Payout assertions inspect WSOL token balances, not native SOL after transaction fees.
 
 All four programs must use their matching compiled IDs; arbitrary runtime ID substitution is rejected. The Initializer configuration must allowlist the prediction hook and prediction migrator. The example creator is a fee beneficiary and must differ from the protocol fee beneficiary. No Metaplex deployment is required: CLI outcome launches use `metadata: null`.
 
@@ -90,6 +90,8 @@ console.log(view.status.phase, view.status.missingOutcomeIndexes);
 const owned = await predictionMarkets.listPredictionMarkets(rpc, { creator });
 const sameEvent = await predictionMarkets.listPredictionMarkets(rpc, { oracle });
 ```
+
+`fetchPredictionMarketWithLaunches` recovers launch addresses and settlement accounts from a market address, so applications do not need a saved CLI manifest. `prepareMissingOutcomeLaunches(rpc, { market, outcomes })` validates the supplied creator, oracle, quote mint, and outcome IDs, then returns plans only for unregistered outcomes. `prepareRemainingSettlements(rpc, { market, payer })` skips settled entries and places the winner first; confirm each returned plan separately and refetch before retrying. `fetchPredictionClaimReceipt` reads a holder's existing burned entitlement and reward debt for `previewClaim` or later harvests.
 
 An oracle is reusable across independent creators and quote mints. `assertReusableOracle` checks that its immutable outcome list matches and it is unfinalized. A creator can create one market per `(oracle, quoteMint, creator)` PDA. Every oracle outcome must be registered before any buy. Markets can trade indefinitely while the oracle remains unfinalized; no fundraising threshold or timer forces settlement.
 
