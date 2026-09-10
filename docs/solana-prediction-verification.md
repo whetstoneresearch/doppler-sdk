@@ -6,35 +6,106 @@ SDK starting point: `ef8e083aedb3421b4985850aa64e6f9fec47e9cb`.
 
 ## Deployment boundary
 
-A read-only public devnet probe on September 10, 2026 confirmed that the deployed
-programs do **not** implement the new prediction ABI:
+The September 10, 2026 post-upgrade devnet probe passed both the new
+`initialize_oracle` arguments (two canonical outcomes) and `create_market`, with
+`simulationError: null`. This supersedes the earlier same-day probe that found
+the old oracle interpretation and Anchor `InstructionFallbackNotFound` (101).
+Neither probe signed or broadcast a transaction.
 
-- Trusted Oracle deployment slot: `467226409` (June 5, 2026).
-- Prediction Migrator deployment slot: `467226465` (June 5, 2026).
-- Prediction Hook deployment slot: `467226521` (June 5, 2026).
-- Initializer deployment slot: `486266634` (August 21, 2026).
-- Simulated new `initialize_oracle` arguments were interpreted by the old program
-  as a quote mint; the next `create_market` instruction failed with Anchor
-  `InstructionFallbackNotFound` (101).
+Independent RPC inspection at 19:55:32 UTC, context slots 496308540–496308555,
+recorded these live deployments:
 
-The probe did not sign or broadcast a transaction. Run it again with:
+| Program | Deployment slot | ELF version |
+| --- | --- | --- |
+| Trusted Oracle | 496291801 | SBPF v3 |
+| Prediction Migrator | 496291924 | SBPF v3 |
+| Prediction Hook | 496292025 | SBPF v3 |
+| Initializer | 496287029 | SBPF v3 |
+
+All four are executable upgradeable programs at the SDK's expected addresses.
+Initializer config `A9DojSvj32PMTTGctEcWZu9GSKuQVEhPkBXxDxmYu34o` includes the
+prediction migrator and hook in its existing two-migrator/eight-hook allowlists.
+Its protocol fee is 625 bps and permitted swap fees are 50–1000 bps.
+
+The live ELF hashes differ from the separately prepared candidate artifacts.
+The binaries embed different compiler-host paths, and some section lengths also
+differ. These observations show differing build inputs; they do not establish an
+exact source revision match or prove that build-host differences explain every
+byte. The pinned source revision below describes the tested candidate artifacts,
+not an independently proven source hash for the live deployments.
+
+The requested verification target is creation through payouts using the actual
+deployed binaries on a local devnet fork. That run passed all six scenarios. No funded
+public-network lifecycle is required for this task. ABI simulation and
+program/config inspection alone do not establish the full fork lifecycle. Fresh
+compatible account state is still required; see
+[the migration guide](solana-prediction-migration.md).
+
+Local evidence:
+
+- `/tmp/doppler-prediction-new-devnet-probe.log`
+- `/tmp/doppler-live-prediction-verification/program-verification.json`
+- `/tmp/doppler-live-prediction-verification/initializer-config.json`
+
+Repeat the read-only probe with:
 
 ```sh
 pnpm prediction:check-deployment
 ```
 
-A successful probe verifies only the oracle/market creation ABI, not hook policy,
-allowlists, trading, settlement, or payouts. Full lifecycle execution is required
-before claiming deployment readiness. The new market and oracle layouts require
-fresh compatible accounts; see [the migration guide](solana-prediction-migration.md).
+## Completed deployed-binary fork (September 10, 2026)
 
-## Existing test-typecheck baseline
+The tested SDK code matches `7bda05d`. The run snapshotted devnet accounts and
+features at slot **496311901**, and ProgramData at **496311903**. All six
+scenarios passed: **98 lifecycle transactions across eight markets**. Lookup-table
+setup transactions are additional and recorded in scenario logs. Binary setup
+and completed-workflow replay added no lifecycle transactions.
 
-`pnpm typecheck:test` reports 43 identical TypeScript diagnostic lines on the
-pristine SDK starting point and the working branch. They concern existing EVM
-tests and Vitest configuration. This update does not introduce those diagnostics.
-Source, prediction-tool, and example typechecks are tracked separately; this
-baseline does not waive new Solana type errors.
+| Scenario | Lifecycle transactions | Payout in raw quote units |
+| --- | ---: | --- |
+| Binary | 11 | 9,900,000 + 9,900,000 |
+| Three outcomes | 13 | 29,700,000 |
+| Eight outcomes | 28 | 79,200,000 |
+| Shared oracle, two creators and two quote mints | 26 | 19,800,000 in each of three markets |
+| Incremental settlement | 11 | 9,900,000 + 9,900,000 later harvest |
+| Void refund | 9 | 9,900,000 |
+
+The suite checks actual quote-token balance changes, burned tokens, final market
+state, and expected rejection errors. The final verification at local slot
+**970** rechecked all four deployed binaries, original upgrade authorities,
+Initializer config, and both quote mints. Independent byte comparison confirmed
+that only bytes within the ProgramData deployment-slot field changed; ELF bytes
+and all allocation padding remain identical to the upstream snapshots.
+
+Agave **4.3.0-rc.0** and feature-set identifier **2409014235** matched devnet.
+All **253** runtime-recognized active features matched. The **70** active feature
+account IDs absent from that runtime registry are recorded separately; this is
+not a claim that the local validator reproduces every aspect of the public cluster.
+
+```sh
+PATH="$HOME/.local/share/solana/install/releases/4.3.0-rc.0/solana-release/bin:$PATH" \
+DOPPLER_PREDICTION_FORK_VALIDATOR="$HOME/.local/share/solana/install/releases/4.3.0-rc.0/solana-release/bin/solana-test-validator" \
+DOPPLER_PREDICTION_FORK_RPC_PORT=19219 \
+bash scripts/run-solana-prediction-devnet-fork.sh
+```
+
+Evidence is retained under `doppler-prediction-devnet-fork.CIrM3k` in the local
+temporary directory: original upstream accounts, normalized genesis snapshots,
+`fork-manifest.json`, `local-before.json`, `local-verification.json`, six public
+scenario manifests/logs, and replay logs. Full output:
+`/tmp/doppler-sdk-deployed-devnet-fork-verified.log`.
+
+No protocol source or locally rebuilt binary was used. SOL funding, the synthetic
+second quote-token balance, native-mint balance restoration, and fresh application
+state exist only on the disposable local ledger. Public-network transactions and
+extension-wallet signing are outside this SDK fork proof.
+
+## Test-typecheck status
+
+The prediction regression helpers now accept Kit's `ReadonlyUint8Array` codec
+output type. This fixes six test type errors reported by CI; the remote Unit Tests
+check passed at `7bda05d`. Local full test typechecking still reports unrelated EVM/Vitest
+diagnostics; prediction-tool and example typechecks pass.
 
 ## Verification results
 
@@ -119,13 +190,19 @@ on a public explorer. Browser extension-wallet signing remains distinct from
 the verified local test signer path. Local-validator results do not establish
 live devnet compatibility.
 
-## Temporary fork verification and deployment coordination
+## Temporary fork verification
 
 The SDK workflow runs source, example and tool checks plus the browser build.
-Candidate program execution is a temporary local/external verification step
-until deployment is coordinated. Use an authorized clean protocol checkout and
-record the tested source/SDK pair; no workflow belongs in the program repository
-for this SDK-specific check.
+Default deployed mode retains the original raw upstream Program/ProgramData
+snapshots and requires no protocol checkout or compiler. Local loading normalizes
+only the eight-byte ProgramData deployment-slot field to zero. The first attempt
+with original historical slots hit Agave `ProgramCacheHitMaxLimit` despite a
+validator warp. This metadata adjustment preserves the deployed ELF and padding
+bytes, upgrade authority, account owners and balances, and Initializer config;
+it does not rebuild or replace the deployed binary. The deployed-binary run passed all six scenarios and final preservation checks. Candidate mode is an explicit opt-in using
+`DOPPLER_PREDICTION_FORK_MODE=candidate`, a clean pinned protocol checkout, and
+Solana 4.1.0 / SBPF v3 builds. Keep both forms of temporary verification outside
+the program repository; no protocol workflow is required for this SDK check.
 
 A temporary Linux run also passed all six scenarios at SDK commit
 `2616b642ca3d8c44efa2953e5c2ba8235dd92a9b` and protocol commit
@@ -135,11 +212,16 @@ The proposed protocol workflow PR was closed without merging and its remote
 branch deleted. That historical run is evidence, not an ongoing CI dependency.
 The original cross-repository GitHub App requirement has also been removed.
 
-Devnet deployment is deferred for coordination with James. Forks overlay
-candidate programs only on disposable local ledgers; they do not upgrade the
-public devnet programs or make existing prediction accounts layout-compatible.
+The September 10 devnet upgrades and successful ABI probe supersede the earlier
+deployment deferral. The historical candidate-overlay runs below did not upgrade
+public devnet or make existing prediction accounts layout-compatible. They must
+not be represented as runs against the actual deployed binaries. The new default
+deployed mode preserves those binaries and authority/configuration, with only the
+documented local ProgramData deployment-slot normalization. Its proof
+will cover execution on the local fork; public-network transactions and browser
+extension-wallet signing remain outside that proof.
 
-## Devnet-fork execution
+## Historical candidate-overlay devnet-fork execution
 
 The six scenarios completed against a devnet account/feature fork captured at
 slot **496278573**, with 98 confirmed application transactions across eight

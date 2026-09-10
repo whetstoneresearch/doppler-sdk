@@ -54,6 +54,24 @@ source defaults. Program-address overrides select SDK instruction targets;
 they do not change fixed cross-program IDs compiled into deployed binaries.
 Verify deployed artifacts and configuration before sending lifecycle transactions.
 
+As of September 10, 2026, the upgraded devnet programs pass a simulation of the
+new oracle initialization and explicit market creation. Independent reads confirm
+SBPF v3 artifacts and the prediction allowlists; live Initializer fee policy is
+625 bps protocol fee with 50–1000 bps swap bounds. This supersedes the earlier
+failed ABI probe. Verification against those actual deployed binaries on a local
+fork passed all six lifecycle scenarios, exact payout/refund assertions, and replay. Public-network transactions are outside this verification scope.
+The live artifacts differ from the prepared candidate binaries, so this
+is not an exact source-hash attestation. See the
+[verification report](solana-prediction-verification.md) for the observed slots
+and evidence boundaries. Default fork mode retains raw upstream snapshots and
+loads the exact deployed ELF/padding without a protocol checkout or rebuild.
+Only the local ProgramData deployment-slot field is normalized to zero for Agave
+program-cache loading; authority, owners, balances, and config remain unchanged. Candidate
+overlays require explicit `DOPPLER_PREDICTION_FORK_MODE=candidate` and the pinned
+protocol/SBPF v3 build. Public-network execution and extension-wallet signing are
+outside the fork proof. The upgrade does not convert legacy account layouts or
+balances.
+
 ## Lifecycle changes for applications
 
 Register all outcomes before enabling buys. Required prediction launch policy is

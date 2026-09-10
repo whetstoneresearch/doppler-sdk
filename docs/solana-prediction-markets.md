@@ -2,7 +2,7 @@
 
 The `predictionMarkets` namespace prepares the complete lifecycle: create an oracle, create a creator-owned market, register an outcome launch for every oracle outcome, buy, finalize the oracle, settle entries, and claim winnings or void refunds. Builders return instructions; your wallet or transaction service owns signing and confirmation.
 
-**Deployment boundary:** the current devnet deployment must be upgraded to the merged prediction ABI before these examples can run there. A read-only September 10, 2026 probe found the old oracle layout and no `create_market` instruction. A matching local validator is the starting point. Mainnet is not an example target. See the [ABI migration guide](solana-prediction-migration.md) before upgrading an existing integration.
+**Deployment status (September 10, 2026):** devnet now passes the new oracle-initialization and `create_market` ABI simulation. Independent RPC reads confirm all four program artifacts use SBPF v3 and the prediction hook/migrator are allowlisted. The earlier failed probe is superseded. The current verification target is the complete SDK lifecycle on a local fork of the actual deployed binaries and accounts. All six scenarios passed on that fork: 98 lifecycle transactions across eight markets, exact payouts/refunds, and replay without additional transactions. No funded public-network run is required. See the [verification report](solana-prediction-verification.md) for deployment slots, configuration, and artifact limits. Mainnet is not an example target; existing integrations should also read the [ABI migration guide](solana-prediction-migration.md).
 
 ## Run the full example collection
 
@@ -20,40 +20,53 @@ Run it with the path to the clean protocol checkout:
 DOPPLER_SOL_SOURCE_DIR=/path/to/doppler-sol bash scripts/run-solana-prediction-validator.sh
 ```
 
-## Verify against a devnet fork before deployment
+## Verify against a devnet fork
 
-The candidate fork harness reads current devnet configuration, quote mints, and
-feature activations, then runs the six scenarios on a local ledger with the four
-source-built prediction programs overlaid. Program builds use the explicit Solana
-4.1.0 release and SBPF v3; the local validator uses a separately pinned runtime
-matching the observed devnet release. It does not submit transactions to public
-devnet.
+The default fork mode snapshots the actual devnet Program and ProgramData
+accounts without replacing their binaries, together with current configuration,
+quote mints, and feature activations. It runs the six SDK scenarios on a local
+ledger using a separately pinned validator runtime matching the observed devnet
+release. No protocol checkout or build is needed in this mode, and no transaction
+is submitted to public devnet.
+
+```bash
+PATH="$HOME/.local/share/solana/install/releases/4.3.0-rc.0/solana-release/bin:$PATH" \
+DOPPLER_PREDICTION_FORK_VALIDATOR="$HOME/.local/share/solana/install/releases/4.3.0-rc.0/solana-release/bin/solana-test-validator" \
+bash scripts/run-solana-prediction-devnet-fork.sh
+```
+
+Install the official runtime in the shown location, or adjust the path. The
+harness refuses a validator whose reported release or feature-set identifier
+differs from the devnet snapshot. The sibling `solana` executable supplies the
+matching runtime feature registry. The original upstream Program/ProgramData
+snapshots are retained. On the local ledger, only the eight-byte ProgramData
+deployment-slot field is normalized to zero to avoid Agave program-cache loading
+failures with cloned historical slots. Deployed ELF bytes and padding, upgrade
+authority, account owners and balances, and the Initializer configuration remain
+unchanged. The run records this normalization and local funding fixtures, verifies
+payouts/refunds, and compares preserved state after
+execution. See the [verification report](solana-prediction-verification.md) for the completed
+deployed-binary run and separately recorded historical candidate runs.
+
+To test an un-deployed candidate deliberately, opt into candidate mode. This
+requires a clean protocol checkout at `8bac0551f6e0f83a861f4822886d30a00095a22e`
+and the explicit Solana 4.1.0 / SBPF v3 compiler:
 
 ```bash
 PATH="$HOME/.local/share/solana/install/releases/4.1.0/solana-release/bin:$PATH" \
+DOPPLER_PREDICTION_FORK_MODE=candidate \
 DOPPLER_PREDICTION_FORK_VALIDATOR="$HOME/.local/share/solana/install/releases/4.3.0-rc.0/solana-release/bin/solana-test-validator" \
 DOPPLER_SOL_SOURCE_DIR=/path/to/clean/doppler-sol \
 bash scripts/run-solana-prediction-devnet-fork.sh
 ```
 
-Install those official releases in the shown locations, or adjust the paths. The
-harness refuses a validator whose reported release or feature-set identifier
-differs from the devnet snapshot. The sibling `solana` executable supplies the
-matching runtime feature registry.
-
-The live Initializer configuration remains unchanged, including its existing
-admin, fee bounds, and hook/migrator allowlists. The run records the upstream
-snapshot and local test funding substitutions, verifies exact payouts/refunds,
-and compares the config again after all scenarios. See the verification report
-for the actual completed run and its evidence boundary.
-
-SDK CI runs source, example, and browser checks in this repository. Until the
-matching programs are deployed, run the candidate fork harness locally or in a
-temporary external test environment with an authorized protocol checkout. Keep
-this temporary verification outside the program repository; it does not require
-a protocol CI change or an organization admin grant. Record the exact protocol
-and SDK revisions alongside the fork evidence. A green SDK build alone is not
-fork execution proof.
+SDK CI runs source, example, and browser checks in this repository. Keep this
+temporary fork verification outside the program repository; it does not require
+a protocol CI change or an organization admin grant. Record deployed account
+hashes and the SDK revision for deployed mode, and the protocol revision and build
+artifacts for candidate mode. Public-network transaction execution and browser
+extension-wallet signing are outside the fork proof. A green SDK build alone is
+not fork execution proof.
 
 ## Connect to an existing validator
 
