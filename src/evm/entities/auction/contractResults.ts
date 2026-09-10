@@ -1,4 +1,4 @@
-import { isAddress, isHex, type Address, type Hex } from 'viem';
+import { isAddress, type Address } from 'viem';
 import type { RehypeFeeDistributionInfo } from '../../types';
 
 export interface DynamicHookState {
@@ -52,13 +52,6 @@ export interface AirlockAssetData {
   numTokensToSell: bigint;
   totalSupply: bigint;
   integrator: Address;
-}
-
-export interface RehypePosition {
-  tickLower: number;
-  tickUpper: number;
-  liquidity: bigint;
-  salt: Hex;
 }
 
 export function normalizeAirlockAssetData(
@@ -272,18 +265,6 @@ export function normalizeRehypePoolInfo(
   };
 }
 
-export function normalizeRehypePosition(
-  rawPosition: unknown,
-  context = 'Rehype getPosition',
-): RehypePosition {
-  return {
-    tickLower: parseNumberField(rawPosition, 'tickLower', 0, context),
-    tickUpper: parseNumberField(rawPosition, 'tickUpper', 1, context),
-    liquidity: parseBigIntField(rawPosition, 'liquidity', 2, context),
-    salt: parseHexField(rawPosition, 'salt', 3, context),
-  };
-}
-
 function parseAddressField(
   rawResult: unknown,
   fieldName: string,
@@ -371,26 +352,6 @@ function parseBooleanField(
     throw new Error(`${context}: ${fieldName} must be a boolean`);
   }
   return rawField;
-}
-
-function parseHexField(
-  rawResult: unknown,
-  fieldName: string,
-  tupleIndex: number,
-  context: string,
-): Hex {
-  const rawField = readContractResultField(
-    rawResult,
-    [fieldName],
-    tupleIndex,
-    context,
-  );
-
-  if (typeof rawField === 'string' && isHex(rawField)) {
-    return rawField as Hex;
-  }
-
-  throw new Error(`${context}: ${fieldName} must be hex`);
 }
 
 function parseAddress(

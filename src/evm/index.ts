@@ -170,7 +170,7 @@ export type {
   SupportedChainKey,
 } from './addresses';
 
-// Export constants (excluding MIN_SQRT_RATIO and MAX_SQRT_RATIO to avoid conflicts)
+// Export constants
 export {
   WAD,
   DEAD_ADDRESS,

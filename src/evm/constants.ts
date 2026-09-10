@@ -126,11 +126,6 @@ export const DEFAULT_MULTICURVE_MAX_SUPPLY_SHARES = [
   parseEther('0.24'), // 24% for HIGH tier
 ] as const;
 
-// Price bounds
-export const MIN_SQRT_RATIO = 4295128739n;
-export const MAX_SQRT_RATIO =
-  1461446703485210103287273052203988822378723970342n;
-
 // Basis points
 export const BASIS_POINTS = 10000;
 
@@ -148,10 +143,3 @@ export const DOPPLER_FLAGS = BigInt(
 // V4 Dynamic Fee Flag
 export const DYNAMIC_FEE_FLAG = 0x800000; // 8388608 in decimal
 export const FEE_AMOUNT_MASK = 0xffffff; // Mask to extract actual fee from dynamic fee
-
-/**
- * @deprecated Dynamic auctions (V4) support ANY fee 0-100,000 with explicit tickSpacing.
- * This constant is kept for backwards compatibility but is no longer enforced.
- * Standard fee tiers still auto-derive tickSpacing; custom fees require explicit tickSpacing.
- */
-export const DYNAMIC_AUCTION_VALID_FEES = [100, 500, 3000, 10000] as const;
