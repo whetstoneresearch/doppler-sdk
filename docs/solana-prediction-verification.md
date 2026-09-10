@@ -119,14 +119,65 @@ on a public explorer. Browser extension-wallet signing remains distinct from
 the verified local test signer path. Local-validator results do not establish
 live devnet compatibility.
 
-## Remote CI access requirement
+## CI ownership and deployment coordination
 
-[PR #203](https://github.com/whetstoneresearch/doppler-sdk/pull/203) runs the
-new validator workflow. Its first run failed before checkout: the existing SDK
-GitHub App could not access the private `whetstoneresearch/doppler-sol` repository
-(`GET /repos/whetstoneresearch/doppler-sol/installation` returned 404).
-An organization app administrator must add that repository to the existing app
-installation, then rerun the job. The workflow requests only `contents: read` and
-checks out the pinned protocol commit. No user credentials were copied into CI.
-This is a remote verification blocker; local validation does not substitute for
-a successful Linux CI run.
+The SDK workflow runs source, example and tool checks plus the browser build.
+Candidate program execution belongs in the private `doppler-sol` repository:
+its normal repository token can read protocol source, and it checks out this
+public SDK at a pinned commit. This avoids a cross-repository GitHub App grant
+or copying personal credentials into CI. Both repositories' checks must be
+reviewed for the exact source/SDK pair; SDK checks alone do not prove on-chain
+execution.
+
+The original SDK-hosted validator attempt failed before checkout because the
+existing GitHub App lacked access to `doppler-sol`. That cross-repository token
+dependency has been removed. The replacement protocol-owned workflow and fork
+evidence are tracked with the linked PRs.
+
+Devnet deployment is deferred for coordination with James. Forks overlay
+candidate programs only on disposable local ledgers; they do not upgrade the
+public devnet programs or make existing prediction accounts layout-compatible.
+
+## Devnet-fork execution
+
+The six scenarios completed against a devnet account/feature fork captured at
+slot **496278573**, with 98 confirmed application transactions across eight
+markets. Completed binary setup and full-workflow replay sent no additional
+application transactions. Exact payouts match the scenario table above.
+
+The source remained pinned to `8bac0551f6e0f83a861f4822886d30a00095a22e`.
+Builds used Agave 4.1.0 / platform-tools v1.54 / SBPF v3. The local validator
+used **4.3.0-rc.0**, matching devnet's reported runtime and compiled feature-set
+identifier **2409014235**. All **253 runtime-recognized active features** matched.
+The snapshot also records 70 active feature-account IDs absent from that same
+runtime's registry; they are not presented as independently verified runtime
+behavior.
+
+Before and after the workflows, the harness verified all four loaded ProgramData
+ELF hashes against the candidate artifacts and compared the Initializer config
+and WSOL/USDC mint accounts by owner, lamports, executable flag, data length and
+SHA-256. The live config was preserved: admin unchanged, protocol fee 625 bps,
+swap bounds 50–1000 bps, and the existing two migrators/eight hooks allowlisted.
+No local config bootstrap or admin substitution was used.
+
+Explicit local fixtures: ephemeral SOL-funded signers; a new USDC ATA with
+1,000,000,000 raw test units while preserving the real mint account; restoration
+of the snapshotted WSOL mint SOL balance after the validator's built-in genesis
+normalization; and candidate-program upgrade authority assigned to the local
+genesis signer. Fresh oracle/market/launch/receipt state was created by SDK
+transactions. No transaction was submitted to public devnet.
+
+Run artifacts are retained locally under `doppler-prediction-devnet-fork.3gvGBc`:
+`fork-manifest.json`, upstream snapshots, scenario manifests/signatures, per-case
+logs, and `local-verification.json`. The complete output is
+`/tmp/doppler-sdk-prediction-devnet-fork.log`. Use the command in the prediction
+market guide to reproduce with separately installed compiler and runtime.
+
+Browser fee-policy regression: the walkthrough previously hard-coded a zero
+swap fee. It now exposes a fee field defaulting to 100 bps, within the cloned
+50–1000 bps bounds. A visible browser created oracle/market state and confirmed
+registration on the retained fork at market
+`9addHX5MNXhgayULMeHNoX1K2J9EgF16CuEfRM5ykJG3`, launch
+`6Knfgd5zsNK7JgrFfhEVs9mcay5zv5koN5ZgzsxkdpAL`, signature
+`hKLaZFd9N4hNmQy2opnk41KaPKjFzMukJsVVupX3KFhDvMBYS4iYrBt5XYcgrn7HWfr374KpPMjq5NV1ZpyLkEt`.
+The browser build, source formatting, lint and prediction-tool typecheck passed.

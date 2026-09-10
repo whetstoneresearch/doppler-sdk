@@ -2,7 +2,8 @@
   "extends": "./tsconfig.json",
   "include": [
     "scripts/check-prediction-deployment.ts",
-    "scripts/setup-solana-prediction-validator.ts"
+    "scripts/setup-solana-prediction-validator.ts",
+    "scripts/prepare-solana-prediction-devnet-fork.ts"
   ],
   "exclude": ["node_modules", "dist"],
   "compilerOptions": {

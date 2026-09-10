@@ -57,7 +57,8 @@
     "test:solana:local:setup": "tsx scripts/setup-solana-local-test-validator.ts",
     "test:solana:prediction:validator": "bash scripts/run-solana-prediction-validator.sh",
     "prediction:check-deployment": "tsx scripts/check-prediction-deployment.ts",
-    "typecheck:prediction-tools": "tsc --project tsconfig.prediction-tools.json"
+    "typecheck:prediction-tools": "tsc --project tsconfig.prediction-tools.json",
+    "test:solana:prediction:devnet-fork": "bash scripts/run-solana-prediction-devnet-fork.sh"
   },
   "prettier": {
     "printWidth": 80,
@@ -68,6 +69,7 @@
   "devDependencies": {
     "@codama/nodes-from-anchor": "^1.3.9",
     "@codama/renderers-js": "^2.0.3",
+    "@solana/rpc-spec-types": "6.3.1",
     "@types/node": "^24.3.0",
     "@types/react": "^18.0.0",
     "@vitest/coverage-v8": "^2.1.9",

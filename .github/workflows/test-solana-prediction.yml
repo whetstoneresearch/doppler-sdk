@@ -1,4 +1,4 @@
-name: Solana Prediction Lifecycle
+name: Solana Prediction SDK
 on:
   pull_request:
     paths: ['src/solana/**', 'test/solana/**', 'examples/solana-prediction*', 'examples/solana-prediction/**', 'examples/solana-prediction-browser/**', 'scripts/*prediction*', 'scripts/idl/**', 'tsconfig*', '.github/workflows/test-solana-prediction.yml', 'package.json', 'pnpm-lock.yaml']
@@ -9,51 +9,18 @@ on:
 permissions:
   contents: read
 jobs:
-  validator:
+  sdk:
     runs-on: ubuntu-22.04
-    timeout-minutes: 40
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - name: Require trusted repository context
-        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository
-        run: |
-          echo 'The private protocol fixture requires a maintainer branch run; fork PRs cannot access the GitHub App credentials.' >&2
-          exit 1
-      - uses: actions/create-github-app-token@v2
-        id: protocol-token
-        with:
-          app-id: ${{ secrets.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          owner: whetstoneresearch
-          repositories: doppler-sol
-          permission-contents: read
-      - name: Explain private protocol access failure
-        if: failure() && steps.protocol-token.outcome == 'failure'
-        run: |
-          echo 'The GitHub App behind APP_ID / APP_PRIVATE_KEY must be installed on whetstoneresearch/doppler-sol with Contents read access.' >&2
-          echo 'An organization app administrator must add doppler-sol at https://github.com/organizations/whetstoneresearch/settings/installations, then rerun this workflow.' >&2
-          echo 'Local validator verification remains available with a clean, authorized protocol checkout; this CI gate is not skipped.' >&2
-          exit 1
-      - uses: actions/checkout@v4
-        with:
-          token: ${{ steps.protocol-token.outputs.token }}
-          persist-credentials: false
-          repository: whetstoneresearch/doppler-sol
-          ref: 8bac0551f6e0f83a861f4822886d30a00095a22e
-          path: protocol-source
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: pnpm
-      - uses: dtolnay/rust-toolchain@stable
-      - name: Install pinned local validator
-        run: |
-          curl --fail --location --retry 3 https://github.com/anza-xyz/agave/releases/download/v3.1.8/solana-release-x86_64-unknown-linux-gnu.tar.bz2 -o /tmp/agave.tar.bz2
-          tar -xjf /tmp/agave.tar.bz2 -C "$RUNNER_TEMP"
-          echo "$RUNNER_TEMP/solana-release/bin" >> "$GITHUB_PATH"
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
       - run: pnpm test:solana
@@ -62,24 +29,6 @@ jobs:
       - name: Build browser walkthrough
         working-directory: examples/solana-prediction-browser
         run: npm ci && npm run build
-      - name: Execute assertions against matching SBF artifacts
-        env:
-          TMPDIR: /tmp
-          DOPPLER_SOL_SOURCE_DIR: ${{ github.workspace }}/protocol-source
-        run: pnpm test:solana:prediction:validator
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: prediction-validator-evidence
-          path: |
-            /tmp/doppler-prediction-validator.*/*.log
-            /tmp/doppler-prediction-validator.*/artifacts.json
-            /tmp/doppler-prediction-validator.*/quote-*.json
-            /tmp/doppler-prediction-validator.*/binary.json
-            /tmp/doppler-prediction-validator.*/multi.json
-            /tmp/doppler-prediction-validator.*/eight.json
-            /tmp/doppler-prediction-validator.*/shared.json
-            /tmp/doppler-prediction-validator.*/incremental.json
-            /tmp/doppler-prediction-validator.*/void.json
-          retention-days: 7
-          if-no-files-found: warn
+      # Candidate program execution lives in doppler-sol's prediction-sdk-fork
+      # workflow: its own token can read private protocol source and the public
+      # SDK is pinned by commit. No cross-repository credentials are needed here.
