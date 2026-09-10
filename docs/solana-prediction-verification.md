@@ -119,20 +119,21 @@ on a public explorer. Browser extension-wallet signing remains distinct from
 the verified local test signer path. Local-validator results do not establish
 live devnet compatibility.
 
-## CI ownership and deployment coordination
+## Temporary fork verification and deployment coordination
 
 The SDK workflow runs source, example and tool checks plus the browser build.
-Candidate program execution belongs in the private `doppler-sol` repository:
-its normal repository token can read protocol source, and it checks out this
-public SDK at a pinned commit. This avoids a cross-repository GitHub App grant
-or copying personal credentials into CI. Both repositories' checks must be
-reviewed for the exact source/SDK pair; SDK checks alone do not prove on-chain
-execution.
+Candidate program execution is a temporary local/external verification step
+until deployment is coordinated. Use an authorized clean protocol checkout and
+record the tested source/SDK pair; no workflow belongs in the program repository
+for this SDK-specific check.
 
-The original SDK-hosted validator attempt failed before checkout because the
-existing GitHub App lacked access to `doppler-sol`. That cross-repository token
-dependency has been removed. The replacement protocol-owned workflow and fork
-evidence are tracked with the linked PRs.
+A temporary Linux run also passed all six scenarios at SDK commit
+`2616b642ca3d8c44efa2953e5c2ba8235dd92a9b` and protocol commit
+`8bac0551f6e0f83a861f4822886d30a00095a22e`:
+[retained execution evidence](https://github.com/whetstoneresearch/doppler-sol/actions/runs/34516311537).
+The proposed protocol workflow PR was closed without merging and its remote
+branch deleted. That historical run is evidence, not an ongoing CI dependency.
+The original cross-repository GitHub App requirement has also been removed.
 
 Devnet deployment is deferred for coordination with James. Forks overlay
 candidate programs only on disposable local ledgers; they do not upgrade the
