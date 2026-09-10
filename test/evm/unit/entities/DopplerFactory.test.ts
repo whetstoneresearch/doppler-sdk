@@ -592,10 +592,9 @@ describe('DopplerFactory', () => {
           },
         },
       };
-      params.modules = {
-        dopplerHookInitializer:
-          '0x7100000000000000000000000000000000000011' as Address,
-      };
+      const dopplerHookInitializer =
+        '0x7100000000000000000000000000000000000011' as Address;
+      params.modules = { dopplerHookInitializer };
 
       const result = await factory.simulateCreateMulticurve(params);
 
@@ -622,7 +621,7 @@ describe('DopplerFactory', () => {
             currency1,
             DYNAMIC_FEE_FLAG,
             params.pool.tickSpacing,
-            params.modules.dopplerHookInitializer,
+            dopplerHookInitializer,
           ],
         ),
       );
@@ -679,10 +678,9 @@ describe('DopplerFactory', () => {
 
     it('computes doppler-hook initializer poolId without a rehype hook using the static pool fee', async () => {
       const params = multicurveParams();
-      params.modules = {
-        dopplerHookInitializer:
-          '0x7100000000000000000000000000000000000011' as Address,
-      };
+      const dopplerHookInitializer =
+        '0x7100000000000000000000000000000000000011' as Address;
+      params.modules = { dopplerHookInitializer };
 
       const result = await factory.simulateCreateMulticurve(params);
 
@@ -709,7 +707,7 @@ describe('DopplerFactory', () => {
             currency1,
             params.pool.fee,
             params.pool.tickSpacing,
-            params.modules.dopplerHookInitializer,
+            dopplerHookInitializer,
           ],
         ),
       );
@@ -909,10 +907,9 @@ describe('DopplerFactory', () => {
 
     it('computes rehype multicurve poolId with zero hook when no hook config is set', async () => {
       const params = multicurveParams();
-      params.modules = {
-        dopplerHookInitializer:
-          '0x7100000000000000000000000000000000000011' as Address,
-      };
+      const dopplerHookInitializer =
+        '0x7100000000000000000000000000000000000011' as Address;
+      params.modules = { dopplerHookInitializer };
 
       const result = await factory.simulateCreateMulticurve(params);
 
@@ -939,7 +936,7 @@ describe('DopplerFactory', () => {
             currency1,
             params.pool.fee,
             params.pool.tickSpacing,
-            params.modules.dopplerHookInitializer,
+            dopplerHookInitializer,
           ],
         ),
       );

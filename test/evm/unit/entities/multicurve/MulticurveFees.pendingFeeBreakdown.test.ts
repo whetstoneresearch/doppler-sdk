@@ -329,6 +329,9 @@ describe('MulticurveFees getPendingFeeBreakdown', () => {
 });
 
 function createStandardPoolKey(tokenAddress: Address): V4PoolKey {
+  if (!breakdownAddresses.v4MulticurveInitializer) {
+    throw new Error('Multicurve initializer is required by the test fixture');
+  }
   return {
     currency0: tokenAddress,
     currency1: mockNumeraire,

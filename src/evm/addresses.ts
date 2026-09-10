@@ -125,6 +125,7 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       CHAIN_IDS.MAINNET,
       'DopplerERC20V1',
     ),
+    doppler404Factory: getGeneratedAddress(CHAIN_IDS.MAINNET, 'DN404Factory'),
     v3Initializer: ZERO_ADDRESS,
     v3Quoter: '0x61fFE014bA17989E743c5F6cB21bF9697530B21e' as Address,
     lockableV3Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MAINNET]
@@ -230,6 +231,7 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       'StreamableFeesLockerV2',
     ),
     universalRouter: '0xA51afAFe0263b40EdaEf0Df8781eA9aa03E381a3' as Address,
+    univ2Router02: '0x4752ba5dbc23f44d87826276bf6fd6b1c372ad24' as Address,
     permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3' as Address,
     bundler: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ARBITRUM]
       .Bundler as Address,
@@ -287,6 +289,7 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       'StreamableFeesLockerV2',
     ),
     universalRouter: '0x1906c1d672b88cd1b9ac7593301ca990f94eae07' as Address,
+    univ2Router02: '0x4752ba5dbc23f44d87826276bf6fd6b1c372ad24' as Address,
     permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3' as Address,
     bundler: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BSC].Bundler as Address,
     weth: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c' as Address,
@@ -526,6 +529,7 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       'StreamableFeesLockerV2',
     ),
     universalRouter: '0x8876789976decbfcbbbe364623c63652db8c0904' as Address,
+    univ2Router02: '0x89e5db8b5aa49aa85ac63f691524311aeb649eba' as Address,
     permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3' as Address,
     bundler: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ROBINHOOD]
       .Bundler as Address,
@@ -640,6 +644,10 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
       CHAIN_IDS.MONAD_MAINNET,
       'DopplerERC20V1',
     ),
+    doppler404Factory: getGeneratedAddress(
+      CHAIN_IDS.MONAD_MAINNET,
+      'DN404Factory',
+    ),
     v3Initializer: ZERO_ADDRESS,
     v3Quoter: '0x661E93cca42AfacB172121EF892830cA3b70F08d' as Address,
     lockableV3Initializer: GENERATED_DOPPLER_DEPLOYMENTS[
@@ -693,6 +701,7 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     dopplerHookMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.MONAD_MAINNET]
       .DopplerHookMigrator as Address,
     weth: '0x3bd359c1119da7da1d913d1c4d2b7c461115433a' as Address, // INFO: this is wmon, but we treat it as weth because mon is native
+    uniswapV3Factory: '0x204faca1764b154221e35c0d20abb3c525710498' as Address,
     uniswapV4Quoter: '0xa222dd357a9076d1091ed6aa2e16c9742dd26891' as Address,
   },
 };

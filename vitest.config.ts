@@ -25,7 +25,6 @@ export default defineConfig({
     environment: 'node',
     // Global setup/teardown for Anvil cleanup
     globalSetup: './test/evm/setup/globalSetup.ts',
-    globalTeardown: './test/evm/setup/globalTeardown.ts',
     // Include both test directories
     include: [
       'test/evm/**/*.test.ts',

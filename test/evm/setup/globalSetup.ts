@@ -7,6 +7,7 @@
 import { exec } from 'child_process'
 import { promisify } from 'util'
 
+import teardown from './globalTeardown'
 const execAsync = promisify(exec)
 
 // Known Anvil ports used by tests (from test/utils/anvil.ts)
@@ -21,7 +22,7 @@ async function killAnvilOnPort(port: number): Promise<void> {
   }
 }
 
-export async function setup(): Promise<void> {
+export async function setup(): Promise<() => Promise<void>> {
   // Kill any stale Anvil processes on known ports
   await Promise.all(ANVIL_PORTS.map(killAnvilOnPort))
 
@@ -34,6 +35,7 @@ export async function setup(): Promise<void> {
 
   // Brief pause to ensure ports are released
   await new Promise((resolve) => setTimeout(resolve, 500))
+  return teardown
 }
 
 export default setup

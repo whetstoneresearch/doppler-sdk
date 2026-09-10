@@ -47,6 +47,7 @@ const generatedAddressMappings = [
   ['derc20V2Implementation', 'CloneDERC20VotesV2'],
   ['dopplerERC20V1Factory', 'DopplerERC20V1Factory'],
   ['dopplerERC20V1Implementation', 'DopplerERC20V1'],
+  ['doppler404Factory', 'DN404Factory'],
   ['v3Initializer', 'UniswapV3Initializer'],
   ['lockableV3Initializer', 'LockableUniswapV3Initializer'],
   ['v4Initializer', 'UniswapV4Initializer'],
@@ -87,6 +88,35 @@ function expectConfiguredAddress(address: Address | undefined): Address {
 }
 
 describe('address configuration', () => {
+  it.each([
+    CHAIN_IDS.MAINNET,
+    CHAIN_IDS.BASE,
+    CHAIN_IDS.ARBITRUM,
+    CHAIN_IDS.BSC,
+    CHAIN_IDS.MONAD_MAINNET,
+    CHAIN_IDS.ROBINHOOD,
+  ])(
+    'configures launch and quote dependencies on mainnet chain %i',
+    (chainId) => {
+      const addresses = getAddresses(chainId);
+      for (const property of [
+        'airlock',
+        'weth',
+        'univ2Router02',
+        'uniswapV2Factory',
+        'uniswapV3Factory',
+        'lockableV3Initializer',
+        'doppler404Factory',
+        'dopplerERC20V1Factory',
+        'dopplerERC20V1Implementation',
+        'noOpGovernanceFactory',
+        'noOpMigrator',
+      ] as const) {
+        expectConfiguredAddress(addresses[property]);
+      }
+    },
+  );
+
   it.each(generatedAddressTargetChains)(
     'returns generated DopplerERC20V1 addresses for $name',
     ({ chainId }) => {
