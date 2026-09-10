@@ -47,12 +47,13 @@ snapshot and local test funding substitutions, verifies exact payouts/refunds,
 and compares the config again after all scenarios. See the verification report
 for the actual completed run and its evidence boundary.
 
-CI is split by repository: SDK checks run in this public repository; the pinned
-protocol/SDK fork job runs in private `doppler-sol` with its own repository token.
-The latter fetches the public SDK without credentials, so no organization admin
-grant or shared GitHub App secret is required. Its default SDK commit must be
-updated deliberately when reviewing a new SDK revision. Inspect both PRs/checks
-with `gh`; a green SDK build alone is not fork execution proof.
+SDK CI runs source, example, and browser checks in this repository. Until the
+matching programs are deployed, run the candidate fork harness locally or in a
+temporary external test environment with an authorized protocol checkout. Keep
+this temporary verification outside the program repository; it does not require
+a protocol CI change or an organization admin grant. Record the exact protocol
+and SDK revisions alongside the fork evidence. A green SDK build alone is not
+fork execution proof.
 
 ## Connect to an existing validator
 
