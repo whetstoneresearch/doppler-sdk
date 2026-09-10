@@ -128,15 +128,7 @@ Full production-style decay multicurve launch with integrator, beneficiaries, mu
 
 Deploy a decay multicurve pool on Base mainnet, then simulate buys across fee-decay checkpoints using the Pure Markets swap flow. Requires `CONFIRM_BASE_MAINNET=true`.
 
-### 18. [Opening Auction Lifecycle](./opening-auction-lifecycle.ts)
-
-Demonstrates the full opening auction lifecycle: creating an opening auction, monitoring its phase transitions, and settling the auction once it closes.
-
-### 19. [Opening Auction Bidding](./opening-auction-bidding.ts)
-
-Demonstrates bid placement, withdrawal, and management in an opening auction. Covers placing bids at specific tick ranges, checking bid status, and withdrawing or modifying bids.
-
-### 20. [Split Migrator + Launchpad Governance](./split-migrator-launchpad-governance.ts)
+### 18. [Split Migrator + Launchpad Governance](./split-migrator-launchpad-governance.ts)
 
 Minimal builder examples for `uniswapV2Split` / `uniswapV4Split` migrations and launchpad governance.
 

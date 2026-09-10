@@ -3,12 +3,10 @@ import {
   decodeAbiParameters,
   parseEther,
   type Address,
-  type PublicClient,
 } from 'viem';
 import {
   DynamicAuctionBuilder,
   MulticurveBuilder,
-  OpeningAuctionBuilder,
   StaticAuctionBuilder,
 } from '../../../../src/evm/builders';
 import { DAY_SECONDS, WAD } from '../../../../src/evm/constants';
@@ -16,7 +14,6 @@ import { DopplerFactory } from '../../../../src/evm/entities/DopplerFactory';
 import type {
   CreateDynamicAuctionParams,
   CreateMulticurveParams,
-  CreateOpeningAuctionParams,
   CreateStaticAuctionParams,
   VestingConfig,
 } from '../../../../src/evm/types';
@@ -111,41 +108,6 @@ function buildDynamic(unit?: bigint): CreateDynamicAuctionParams<1> {
     .build();
 }
 
-function buildOpening(unit?: bigint): CreateOpeningAuctionParams<1> {
-  return OpeningAuctionBuilder.forChain(1)
-    .tokenConfig(tokenConfig(unit))
-    .saleConfig({
-      initialSupply: parseEther('1000000'),
-      numTokensToSell: parseEther('900000'),
-      numeraire: mockAddresses.weth,
-    })
-    .openingAuctionConfig({
-      auctionDuration: DAY_SECONDS,
-      minAcceptableTickToken0: -120000,
-      minAcceptableTickToken1: -120000,
-      incentiveShareBps: 100,
-      tickSpacing: 10,
-      fee: 3000,
-      minLiquidity: 1000n,
-      shareToAuctionBps: 8000,
-    })
-    .dopplerConfig({
-      minProceeds: parseEther('100'),
-      maxProceeds: parseEther('10000'),
-      startTick: -60000,
-      endTick: -120000,
-      duration: 7 * DAY_SECONDS,
-      epochLength: 3600,
-      fee: 3000,
-      tickSpacing: 10,
-    })
-    .withGovernance({ type: 'noOp' })
-    .withMigration({ type: 'uniswapV2' })
-    .withUserAddress(userAddress)
-    .withOpeningAuctionInitializer(mockAddresses.v4Initializer)
-    .build();
-}
-
 function buildMulticurve(unit?: bigint): CreateMulticurveParams<1> {
   return MulticurveBuilder.forChain(1)
     .tokenConfig(tokenConfig(unit))
@@ -172,11 +134,10 @@ function buildMulticurve(unit?: bigint): CreateMulticurveParams<1> {
     .build();
 }
 
-type LaunchStyle = 'static' | 'dynamic' | 'opening' | 'multicurve';
+type LaunchStyle = 'static' | 'dynamic' | 'multicurve';
 type Doppler404LaunchParams =
   | CreateStaticAuctionParams<1>
   | CreateDynamicAuctionParams<1>
-  | CreateOpeningAuctionParams<1>
   | CreateMulticurveParams<1>;
 
 function buildLaunch(style: LaunchStyle): Doppler404LaunchParams {
@@ -185,8 +146,6 @@ function buildLaunch(style: LaunchStyle): Doppler404LaunchParams {
       return buildStatic();
     case 'dynamic':
       return buildDynamic();
-    case 'opening':
-      return buildOpening();
     case 'multicurve':
       return buildMulticurve();
   }
@@ -206,11 +165,6 @@ async function encodeLaunch(
     case 'dynamic':
       await factory.encodeCreateDynamicAuctionParams(
         params as CreateDynamicAuctionParams<1>,
-      );
-      return;
-    case 'opening':
-      await factory.encodeCreateOpeningAuctionParams(
-        params as CreateOpeningAuctionParams<1>,
       );
       return;
     case 'multicurve':
@@ -236,12 +190,6 @@ async function encodeTokenFactory(
           params as CreateDynamicAuctionParams<1>,
         )
       ).createParams.tokenFactory;
-    case 'opening':
-      return (
-        await factory.encodeCreateOpeningAuctionParams(
-          params as CreateOpeningAuctionParams<1>,
-        )
-      ).createParams.tokenFactory;
     case 'multicurve':
       return factory.encodeCreateMulticurveParams(
         params as CreateMulticurveParams<1>,
@@ -256,9 +204,6 @@ describe('DopplerFactory Doppler404 token routing', () => {
   beforeEach(() => {
     mockAddresses.doppler404Factory = configuredDoppler404Factory;
     publicClient = createMockPublicClient();
-    vi.mocked((publicClient as PublicClient).readContract)
-      .mockResolvedValueOnce(mockAddresses.poolManager)
-      .mockResolvedValueOnce(mockAddresses.dopplerDeployer);
     factory = new DopplerFactory(publicClient, createMockWalletClient(), 1);
   });
 
@@ -267,20 +212,17 @@ describe('DopplerFactory Doppler404 token routing', () => {
       await factory.encodeCreateStaticAuctionParams(buildStatic());
     const dynamicParams =
       await factory.encodeCreateDynamicAuctionParams(buildDynamic());
-    const openingParams =
-      await factory.encodeCreateOpeningAuctionParams(buildOpening());
     const multicurveParams =
       factory.encodeCreateMulticurveParams(buildMulticurve());
 
     expect([
       decodeUnit(staticParams.tokenFactoryData),
       decodeUnit(dynamicParams.createParams.tokenFactoryData),
-      decodeUnit(openingParams.createParams.tokenFactoryData),
       decodeUnit(multicurveParams.tokenFactoryData),
-    ]).toEqual([WAD, WAD, WAD, WAD]);
+    ]).toEqual([WAD, WAD, WAD]);
   });
 
-  it.each<LaunchStyle>(['static', 'dynamic', 'opening', 'multicurve'])(
+  it.each<LaunchStyle>(['static', 'dynamic', 'multicurve'])(
     'preserves an explicitly configured unit for %s launches',
     async (launchStyle) => {
       const customUnit = 25n * WAD;
@@ -310,17 +252,6 @@ describe('DopplerFactory Doppler404 token routing', () => {
             ),
           ).toBe(customUnit);
           break;
-        case 'opening':
-          expect(
-            decodeUnit(
-              (
-                await factory.encodeCreateOpeningAuctionParams(
-                  params as CreateOpeningAuctionParams<1>,
-                )
-              ).createParams.tokenFactoryData,
-            ),
-          ).toBe(customUnit);
-          break;
         case 'multicurve':
           expect(
             decodeUnit(
@@ -333,7 +264,7 @@ describe('DopplerFactory Doppler404 token routing', () => {
     },
   );
 
-  it.each<LaunchStyle>(['static', 'dynamic', 'opening', 'multicurve'])(
+  it.each<LaunchStyle>(['static', 'dynamic', 'multicurve'])(
     'rejects vesting for %s launches',
     async (launchStyle) => {
       const params = buildLaunch(launchStyle);
@@ -348,7 +279,7 @@ describe('DopplerFactory Doppler404 token routing', () => {
     },
   );
 
-  it.each<LaunchStyle>(['static', 'dynamic', 'opening', 'multicurve'])(
+  it.each<LaunchStyle>(['static', 'dynamic', 'multicurve'])(
     'accepts a compatible token factory override for %s launches on a configured chain',
     async (launchStyle) => {
       const params = buildLaunch(launchStyle);
@@ -360,7 +291,7 @@ describe('DopplerFactory Doppler404 token routing', () => {
     },
   );
 
-  it.each<LaunchStyle>(['static', 'dynamic', 'opening', 'multicurve'])(
+  it.each<LaunchStyle>(['static', 'dynamic', 'multicurve'])(
     'rejects a generic token factory override for %s launches when the chain lacks Doppler404',
     async (launchStyle) => {
       mockAddresses.doppler404Factory = undefined;

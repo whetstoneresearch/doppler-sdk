@@ -9,7 +9,6 @@ import { DAY_SECONDS, WAD } from '../../../../src/evm/constants';
 import {
   DynamicAuctionBuilder,
   MulticurveBuilder,
-  OpeningAuctionBuilder,
   StaticAuctionBuilder,
 } from '../../../../src/evm/builders';
 import { DopplerFactory } from '../../../../src/evm/entities/DopplerFactory';
@@ -316,71 +315,6 @@ describe('DopplerFactory V2 cliff vesting', () => {
       parseEther('80000'),
       parseEther('100000'),
     ]);
-  });
-
-  it('uses the V2 factory for opening auctions with cliffs', async () => {
-    const publicClient = createMockPublicClient() as any;
-    vi.mocked(publicClient.readContract)
-      .mockResolvedValueOnce(mockAddresses.poolManager as any)
-      .mockResolvedValueOnce(mockAddresses.dopplerDeployer as any);
-    factory = new DopplerFactory(publicClient, createMockWalletClient(), 1);
-
-    const params = OpeningAuctionBuilder.forChain(1)
-      .tokenConfig({
-        type: 'standard',
-        name: 'Opening Cliff',
-        symbol: 'OPCL',
-        tokenURI: 'ipfs://opening-cliff',
-      })
-      .saleConfig({
-        initialSupply: parseEther('1000000'),
-        numTokensToSell: parseEther('900000'),
-        numeraire: mockAddresses.weth,
-      })
-      .openingAuctionConfig({
-        auctionDuration: DAY_SECONDS,
-        minAcceptableTickToken0: -120000,
-        minAcceptableTickToken1: -120000,
-        incentiveShareBps: 100,
-        tickSpacing: 10,
-        fee: 3000,
-        minLiquidity: 1000n,
-        shareToAuctionBps: 8000,
-      })
-      .dopplerConfig({
-        minProceeds: parseEther('100'),
-        maxProceeds: parseEther('10000'),
-        startTick: -60000,
-        endTick: -120000,
-        duration: 7 * DAY_SECONDS,
-        epochLength: 3600,
-        fee: 3000,
-        tickSpacing: 10,
-      })
-      .withVesting({
-        duration: 180n * BigInt(DAY_SECONDS),
-        cliffDuration: 90 * DAY_SECONDS,
-      })
-      .withGovernance({ type: 'noOp' })
-      .withMigration({ type: 'uniswapV2' })
-      .withUserAddress(userAddress)
-      .withOpeningAuctionInitializer(mockAddresses.v4Initializer)
-      .build();
-
-    const { createParams } =
-      await factory.encodeCreateOpeningAuctionParams(params);
-    const decoded = decodeV2TokenFactoryData(createParams.tokenFactoryData);
-
-    expect(createParams.tokenFactory).toBe(mockAddresses.derc20V2Factory);
-    expect(decoded[3]).toEqual([
-      {
-        cliff: 90n * BigInt(DAY_SECONDS),
-        duration: 180n * BigInt(DAY_SECONDS),
-      },
-    ]);
-    expect(decoded[4]).toEqual([userAddress]);
-    expect(decoded[5]).toEqual([0n]);
-    expect(decoded[6]).toEqual([parseEther('100000')]);
   });
 
   it('uses the V2 factory for multicurve auctions with cliffs', () => {

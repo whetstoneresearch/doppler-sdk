@@ -4,7 +4,6 @@ import {
   StaticAuctionBuilder,
   DynamicAuctionBuilder,
   MulticurveBuilder,
-  OpeningAuctionBuilder,
   type BaseAuctionBuilder,
 } from '../../../../src/evm/builders';
 import { CHAIN_IDS } from '../../../../src/evm/addresses';
@@ -76,9 +75,6 @@ describe('BaseAuctionBuilder interface', () => {
     expect('withDevBuy' in DynamicAuctionBuilder.forChain(CHAIN_IDS.BASE)).toBe(
       false,
     );
-    expect('withDevBuy' in OpeningAuctionBuilder.forChain(CHAIN_IDS.BASE)).toBe(
-      false,
-    );
   });
 
   describe('token factory module overrides', () => {
@@ -145,38 +141,6 @@ describe('BaseAuctionBuilder interface', () => {
           ],
         })
         .withGovernance({ type: 'default' })
-        .withMigration({ type: 'uniswapV2' })
-        .withTokenFactory(TOKEN_FACTORY)
-        .withUserAddress(USER)
-        .build();
-
-      expect(params.modules?.tokenFactory).toBe(TOKEN_FACTORY);
-    });
-
-    it('sets token factory overrides on opening auction builders', () => {
-      const params = OpeningAuctionBuilder.forChain(CHAIN_IDS.BASE)
-        .tokenConfig({ name: 'Token', symbol: 'TKN', tokenURI: 'ipfs://token' })
-        .saleConfig({
-          initialSupply: 1_000n * WAD,
-          numTokensToSell: 500n * WAD,
-          numeraire: ZERO_ADDRESS,
-        })
-        .openingAuctionConfig({
-          auctionDuration: 86_400,
-          minAcceptableTickToken0: -34_020,
-          minAcceptableTickToken1: -34_020,
-          incentiveShareBps: 1_000,
-          tickSpacing: 60,
-          fee: 3_000,
-          minLiquidity: 1n,
-          shareToAuctionBps: 10_000,
-        })
-        .dopplerConfig({
-          minProceeds: 0n,
-          maxProceeds: 10n,
-          startTick: -120_000,
-          endTick: -90_000,
-        })
         .withMigration({ type: 'uniswapV2' })
         .withTokenFactory(TOKEN_FACTORY)
         .withUserAddress(USER)
