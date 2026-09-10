@@ -7,6 +7,8 @@
  */
 
 export * from './claim';
+export * from './createMarket';
 export * from './migrateEntry';
 export * from './previewPayoutIfWinner';
+export * from './refund';
 export * from './registerEntry';

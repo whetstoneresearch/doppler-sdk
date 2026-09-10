@@ -24,16 +24,20 @@ import {
  * Arguments for register_entry instruction.
  * This is decoded from migrator_init_payload passed by initializer.
  */
-export type RegisterEntryArgs = { entryId: ReadonlyUint8Array };
+export type RegisterEntryArgs = { outcomeId: ReadonlyUint8Array };
 
 export type RegisterEntryArgsArgs = RegisterEntryArgs;
 
 export function getRegisterEntryArgsEncoder(): FixedSizeEncoder<RegisterEntryArgsArgs> {
-  return getStructEncoder([['entryId', fixEncoderSize(getBytesEncoder(), 32)]]);
+  return getStructEncoder([
+    ['outcomeId', fixEncoderSize(getBytesEncoder(), 32)],
+  ]);
 }
 
 export function getRegisterEntryArgsDecoder(): FixedSizeDecoder<RegisterEntryArgs> {
-  return getStructDecoder([['entryId', fixDecoderSize(getBytesDecoder(), 32)]]);
+  return getStructDecoder([
+    ['outcomeId', fixDecoderSize(getBytesDecoder(), 32)],
+  ]);
 }
 
 export function getRegisterEntryArgsCodec(): FixedSizeCodec<

@@ -18,19 +18,23 @@ import { TRUSTED_ORACLE_PROGRAM_ADDRESS } from '../programs';
 export const TRUSTED_ORACLE_ERROR__UNAUTHORIZED = 0x1770; // 6000
 /** AlreadyFinalized: Oracle already finalized */
 export const TRUSTED_ORACLE_ERROR__ALREADY_FINALIZED = 0x1771; // 6001
-/** InvalidWinningMint: Invalid winning mint */
-export const TRUSTED_ORACLE_ERROR__INVALID_WINNING_MINT = 0x1773; // 6003
+/** InvalidWinningOutcome: Invalid winning outcome ID */
+export const TRUSTED_ORACLE_ERROR__INVALID_WINNING_OUTCOME = 0x1773; // 6003
+/** InvalidOutcomeSet: Invalid declared outcome set */
+export const TRUSTED_ORACLE_ERROR__INVALID_OUTCOME_SET = 0x1774; // 6004
 
 export type TrustedOracleError =
   | typeof TRUSTED_ORACLE_ERROR__ALREADY_FINALIZED
-  | typeof TRUSTED_ORACLE_ERROR__INVALID_WINNING_MINT
+  | typeof TRUSTED_ORACLE_ERROR__INVALID_OUTCOME_SET
+  | typeof TRUSTED_ORACLE_ERROR__INVALID_WINNING_OUTCOME
   | typeof TRUSTED_ORACLE_ERROR__UNAUTHORIZED;
 
 let trustedOracleErrorMessages: Record<TrustedOracleError, string> | undefined;
 if (process.env.NODE_ENV !== 'production') {
   trustedOracleErrorMessages = {
     [TRUSTED_ORACLE_ERROR__ALREADY_FINALIZED]: `Oracle already finalized`,
-    [TRUSTED_ORACLE_ERROR__INVALID_WINNING_MINT]: `Invalid winning mint`,
+    [TRUSTED_ORACLE_ERROR__INVALID_OUTCOME_SET]: `Invalid declared outcome set`,
+    [TRUSTED_ORACLE_ERROR__INVALID_WINNING_OUTCOME]: `Invalid winning outcome ID`,
     [TRUSTED_ORACLE_ERROR__UNAUTHORIZED]: `Unauthorized: only oracle authority can perform this action`,
   };
 }

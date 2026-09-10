@@ -18,7 +18,6 @@ import {
 } from '../../generated/predictionMigrator/index.js';
 import {
   getPredictionClaimReceiptAddress,
-  getPredictionEntryByMintAddress,
   getPredictionMarketAuthorityAddress,
 } from './pda.js';
 
@@ -78,7 +77,6 @@ export async function prepareClaimAndClose(
     [outcomeTokenAccount],
     [quoteTokenAccount],
     [marketAuthority],
-    [entryByMint],
     [receipt],
   ] = await Promise.all([
     findAssociatedTokenPda({
@@ -93,11 +91,6 @@ export async function prepareClaimAndClose(
     }),
     getPredictionMarketAuthorityAddress(
       input.market,
-      predictionMigratorProgram,
-    ),
-    getPredictionEntryByMintAddress(
-      input.market,
-      input.winnerMint,
       predictionMigratorProgram,
     ),
     getPredictionClaimReceiptAddress(
@@ -126,7 +119,6 @@ export async function prepareClaimAndClose(
       potVault: input.potVault,
       winnerMint: input.winnerMint,
       quoteMint: input.quoteMint,
-      entryByMint,
       claimerWinnerAta: outcomeTokenAccount,
       claimerQuoteAta: quoteTokenAccount,
       claimer: input.claimer,
