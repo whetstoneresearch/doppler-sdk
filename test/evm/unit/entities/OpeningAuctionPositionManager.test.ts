@@ -730,6 +730,9 @@ describe('OpeningAuctionPositionManager', () => {
       const tickLower = 0;
       const tickUpper = tickLower + mockKey.tickSpacing;
       const salt = `0x${'ee'.repeat(32)}` as Hash;
+      if (!walletClient.account) {
+        throw new Error('Wallet account is required by the test fixture');
+      }
       const owner = walletClient.account.address;
 
       vi.mocked(publicClient.readContract)

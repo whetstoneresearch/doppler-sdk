@@ -14,10 +14,10 @@
  *   useSnapshot(testClient)
  */
 
-import type { TestClient, Chain, TestClientMode } from 'viem'
+import type { TestClient, Hex } from 'viem'
 import { beforeEach, afterEach } from 'vitest'
 
-type AnyTestClient = TestClient<TestClientMode, any, Chain | undefined>
+type AnyTestClient = TestClient
 
 /**
  * Manager for Anvil snapshots
@@ -26,7 +26,7 @@ type AnyTestClient = TestClient<TestClientMode, any, Chain | undefined>
  */
 export class SnapshotManager {
   private testClient: AnyTestClient
-  private snapshotStack: string[] = []
+  private snapshotStack: Hex[] = []
 
   constructor(testClient: AnyTestClient) {
     this.testClient = testClient
@@ -36,7 +36,7 @@ export class SnapshotManager {
    * Create a snapshot of the current state
    * @returns The snapshot ID
    */
-  async snapshot(): Promise<string> {
+  async snapshot(): Promise<Hex> {
     const snapshotId = await this.testClient.snapshot()
     this.snapshotStack.push(snapshotId)
     return snapshotId
@@ -46,7 +46,7 @@ export class SnapshotManager {
    * Revert to a specific snapshot
    * @param snapshotId - The snapshot ID to revert to
    */
-  async revert(snapshotId?: string): Promise<void> {
+  async revert(snapshotId?: Hex): Promise<void> {
     const id = snapshotId ?? this.snapshotStack.pop()
     if (!id) {
       throw new Error('No snapshot ID provided and stack is empty')
@@ -117,7 +117,7 @@ export function getSnapshotManager(testClient: AnyTestClient): SnapshotManager {
 export function useSnapshot(
   getTestClient: (() => AnyTestClient | undefined) | AnyTestClient | undefined
 ): void {
-  let snapshotId: string | undefined
+  let snapshotId: Hex | undefined
 
   beforeEach(async () => {
     const client =
@@ -178,7 +178,7 @@ export async function withSnapshot<T>(
 export async function createNamedSnapshot(
   testClient: AnyTestClient,
   name: string
-): Promise<{ id: string; name: string; revert: () => Promise<void> }> {
+): Promise<{ id: Hex; name: string; revert: () => Promise<void> }> {
   const id = await testClient.snapshot()
   return {
     id,

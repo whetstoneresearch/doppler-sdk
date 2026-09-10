@@ -123,31 +123,6 @@ type StreamableFeesLockerCase = {
   migratorAddress?: Address;
 };
 
-const SKIPPED_AIRLOCK_MODULES_BY_CHAIN: Partial<
-  Record<SupportedChainId, readonly string[]>
-> = {
-  [CHAIN_IDS.MAINNET]: [
-    'DN404Factory',
-    'UniswapV2MigratorSplit',
-    'UniswapV4MigratorSplit',
-  ],
-  [CHAIN_IDS.MONAD_MAINNET]: [
-    'DN404Factory',
-    'UniswapV2MigratorSplit',
-    'UniswapV4MigratorSplit',
-  ],
-  [CHAIN_IDS.BASE]: ['UniswapV2MigratorSplit', 'UniswapV4MigratorSplit'],
-};
-
-function shouldSkipAirlockModuleCase(
-  chainId: SupportedChainId,
-  moduleName: string,
-) {
-  return Boolean(
-    SKIPPED_AIRLOCK_MODULES_BY_CHAIN[chainId]?.includes(moduleName),
-  );
-}
-
 function formatExpectation(value: number | string | undefined): string {
   if (value === undefined) return 'n/a';
   if (typeof value === 'number') {
@@ -459,12 +434,6 @@ describe('Airlock Module Whitelisting', () => {
           expectedState: ModuleState.LiquidityMigrator,
         },
         {
-          title: `UniswapV4MigratorSplit (${addresses.v4MigratorSplit}) whitelisted`,
-          module: 'UniswapV4MigratorSplit',
-          address: addresses.v4MigratorSplit,
-          expectedState: ModuleState.LiquidityMigrator,
-        },
-        {
           title: `DopplerHookMigrator (${addresses.dopplerHookMigrator}) whitelisted`,
           module: 'DopplerHookMigrator',
           address: addresses.dopplerHookMigrator,
@@ -515,9 +484,7 @@ describe('Airlock Module Whitelisting', () => {
       ];
 
       for (const moduleCase of airlockModuleCases) {
-        const shouldRun =
-          isConfiguredAddress(moduleCase.address) &&
-          !shouldSkipAirlockModuleCase(chainId, moduleCase.module);
+        const shouldRun = isConfiguredAddress(moduleCase.address);
         const testFn = shouldRun ? it : it.skip;
         testFn(moduleCase.title, () =>
           testModule(

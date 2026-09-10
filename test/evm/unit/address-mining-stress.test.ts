@@ -10,6 +10,7 @@ import { parseEther, type Address } from 'viem';
 import { isToken0Expected } from '../../../src/evm/utils';
 import { DAY_SECONDS } from '../../../src/evm/constants';
 import { CHAIN_IDS } from '../../../src/evm/addresses';
+import type * as AddressesModule from '../../../src/evm/addresses';
 
 // Base WETH address - this is < halfMaxUint160, so isToken0Expected returns false
 // meaning token address must be > WETH (token is token1)
@@ -27,7 +28,7 @@ const baseMockAddresses = {
 
 // Mock the addresses module to use Base WETH
 vi.mock('../../../src/evm/addresses', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../../src/addresses')>();
+  const actual = await importOriginal<typeof AddressesModule>();
   return {
     ...actual,
     getAddresses: vi.fn(() => baseMockAddresses),

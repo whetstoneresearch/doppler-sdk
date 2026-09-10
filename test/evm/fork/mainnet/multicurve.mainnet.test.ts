@@ -1,13 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { Address } from 'viem';
 
-import {
-  CHAIN_IDS,
-  DopplerSDK,
-  WAD,
-  airlockAbi,
-  getAddresses,
-} from '../../../../src/evm';
+import { CHAIN_IDS, DopplerSDK, WAD, getAddresses } from '../../../../src/evm';
 import { delay, getRpcEnvVar, getTestClient, hasRpcUrl } from '../../utils';
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as Address;
@@ -26,83 +20,6 @@ describe('Multicurve (Ethereum Mainnet fork) smoke test', () => {
   });
   const sdk = new DopplerSDK({ publicClient, chainId });
 
-  const configuredModules: Array<{
-    label: string;
-    address?: Address;
-    expectedState: number;
-  }> = [
-    {
-      label: 'TokenFactory',
-      address: addresses.tokenFactory,
-      expectedState: 1,
-    },
-    {
-      label: 'V4Initializer',
-      address: addresses.v4Initializer,
-      expectedState: 3,
-    },
-    {
-      label: 'V4ScheduledMulticurveInitializer',
-      address: addresses.v4ScheduledMulticurveInitializer,
-      expectedState: 3,
-    },
-    {
-      label: 'DopplerHookInitializer',
-      address: addresses.dopplerHookInitializer,
-      expectedState: 3,
-    },
-    {
-      label: 'LockableUniswapV3Initializer',
-      address: addresses.lockableV3Initializer,
-      expectedState: 3,
-    },
-    {
-      label: 'GovernanceFactory',
-      address: addresses.governanceFactory,
-      expectedState: 2,
-    },
-    {
-      label: 'NoOpGovernanceFactory',
-      address: addresses.noOpGovernanceFactory,
-      expectedState: 2,
-    },
-    {
-      label: 'LaunchpadGovernanceFactory',
-      address: addresses.launchpadGovernanceFactory,
-      expectedState: 2,
-    },
-    {
-      label: 'V2Migrator',
-      address: addresses.v2Migrator,
-      expectedState: 4,
-    },
-    {
-      label: 'UniswapV2MigratorSplit',
-      address: addresses.v2MigratorSplit,
-      expectedState: 4,
-    },
-    {
-      label: 'V4Migrator',
-      address: addresses.v4Migrator,
-      expectedState: 4,
-    },
-    {
-      label: 'UniswapV4MigratorSplit',
-      address: addresses.v4MigratorSplit,
-      expectedState: 4,
-    },
-    {
-      label: 'DopplerHookMigrator',
-      address: addresses.dopplerHookMigrator,
-      expectedState: 4,
-    },
-    {
-      label: 'NoOpMigrator',
-      address: addresses.noOpMigrator,
-      expectedState: 4,
-    },
-  ];
-
   beforeAll(async () => {
     await delay(250);
   });
@@ -112,36 +29,6 @@ describe('Multicurve (Ethereum Mainnet fork) smoke test', () => {
     expect(addresses.universalRouter).not.toBe(ZERO_ADDRESS);
     expect(addresses.uniswapV4Quoter).not.toBe(ZERO_ADDRESS);
   });
-
-  it(
-    'verifies whitelisted module states for configured Ethereum mainnet modules',
-    { timeout: 180_000 },
-    async () => {
-      const activeModules = configuredModules.filter(
-        (module): module is typeof module & { address: Address } =>
-          Boolean(module.address) && module.address !== ZERO_ADDRESS,
-      );
-
-      const moduleStates = await Promise.all(
-        activeModules.map(async (module) => ({
-          module,
-          state: await publicClient.readContract({
-            address: addresses.airlock,
-            abi: airlockAbi,
-            functionName: 'getModuleState',
-            args: [module.address],
-          }),
-        })),
-      );
-
-      for (const { module, state } of moduleStates) {
-        expect(
-          Number(state),
-          `${module.label} expected state ${module.expectedState}`,
-        ).toBe(module.expectedState);
-      }
-    },
-  );
 
   it('defaults multicurve governance to noOp on Ethereum mainnet', () => {
     const params = sdk

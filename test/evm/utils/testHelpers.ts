@@ -9,11 +9,12 @@
  */
 
 import { describe, it, type TestFunction } from 'vitest'
-import type { Address, TestClient, WalletClient, Chain, TestClientMode } from 'viem'
+import type { Address, TestClient } from 'viem'
 import { parseEther } from 'viem'
+import { getBlock, getBlockNumber as readBlockNumber } from 'viem/actions'
 import { isAnvilForkEnabled } from './anvil'
 
-type AnyTestClient = TestClient<TestClientMode, any, Chain | undefined>
+type AnyTestClient = TestClient
 
 /** Test mode detection */
 export type TestMode = 'unit' | 'fork' | 'live'
@@ -64,42 +65,42 @@ export function isUnitMode(): boolean {
  * })
  * ```
  */
-export const describeFork = isForkMode()
+export const describeFork: typeof describe.skip = isForkMode()
   ? describe
   : describe.skip
 
 /**
  * Conditional describe that only runs in live mode
  */
-export const describeLive = isLiveMode()
+export const describeLive: typeof describe.skip = isLiveMode()
   ? describe
   : describe.skip
 
 /**
  * Conditional describe that only runs in unit mode
  */
-export const describeUnit = isUnitMode()
+export const describeUnit: typeof describe.skip = isUnitMode()
   ? describe
   : describe.skip
 
 /**
  * Conditional it that only runs in fork mode
  */
-export const itFork = isForkMode()
+export const itFork: typeof it.skip = isForkMode()
   ? it
   : it.skip
 
 /**
  * Conditional it that only runs in live mode
  */
-export const itLive = isLiveMode()
+export const itLive: typeof it.skip = isLiveMode()
   ? it
   : it.skip
 
 /**
  * Conditional it that only runs in unit mode
  */
-export const itUnit = isUnitMode()
+export const itUnit: typeof it.skip = isUnitMode()
   ? it
   : it.skip
 
@@ -295,7 +296,7 @@ export async function setStorageAt(
 export async function getBlockNumber(
   testClient: AnyTestClient
 ): Promise<bigint> {
-  return testClient.getBlockNumber()
+  return readBlockNumber(testClient)
 }
 
 /**
@@ -306,7 +307,7 @@ export async function getBlockNumber(
 export async function getBlockTimestamp(
   testClient: AnyTestClient
 ): Promise<bigint> {
-  const block = await testClient.getBlock()
+  const block = await getBlock(testClient)
   return block.timestamp
 }
 

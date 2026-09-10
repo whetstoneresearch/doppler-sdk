@@ -16,9 +16,10 @@ import type {
   CreateDynamicAuctionParams,
 } from '../../../src/evm/types';
 import { DAY_SECONDS } from '../../../src/evm/constants';
+import type * as AddressesModule from '../../../src/evm/addresses';
 
 vi.mock('../../../src/evm/addresses', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../addresses')>();
+  const actual = await importOriginal<typeof AddressesModule>();
   return {
     ...actual,
     getAddresses: vi.fn(() => mockAddresses),

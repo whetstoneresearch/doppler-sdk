@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import type { OpeningAuction } from '../../../../src/evm'
 import {
   DopplerSDK,
   getAddresses,
@@ -79,6 +80,7 @@ describe.skip('Opening Auction Bid Management (Base Sepolia fork)', () => {
   let poolKey: V4PoolKey
   let auctionEndTime: bigint
   let bidManager: Awaited<ReturnType<DopplerSDK['getOpeningAuctionBidManager']>>
+  let openingAuction: OpeningAuction
   let primaryIsToken0 = false
   let canRunBidWrites = true
   let bidWriteBlockReason = ''
@@ -229,6 +231,7 @@ describe.skip('Opening Auction Bid Management (Base Sepolia fork)', () => {
       openingAuctionHookAddress: hookAddress,
       openingAuctionPoolKey: poolKey,
     })
+    openingAuction = await sdkWithWallet.getOpeningAuction(hookAddress)
 
     // Ensure account can pay either token side used by position manager transfers.
     // On forked dev accounts, WETH balance/allowance is usually 0 by default.
@@ -241,6 +244,8 @@ describe.skip('Opening Auction Bid Management (Base Sepolia fork)', () => {
 
     if (wethBalance < parseEther('5')) {
       const wrapTx = await walletClient.writeContract({
+        chain: forkClients.chain,
+        account,
         address: addresses.weth,
         abi: wethDepositAbi,
         functionName: 'deposit',
@@ -251,6 +256,8 @@ describe.skip('Opening Auction Bid Management (Base Sepolia fork)', () => {
 
     for (const currency of [poolKey.currency0, poolKey.currency1]) {
       const approveTx = await walletClient.writeContract({
+        chain: forkClients.chain,
+        account,
         address: currency,
         abi: erc20Abi,
         functionName: 'approve',
@@ -260,7 +267,7 @@ describe.skip('Opening Auction Bid Management (Base Sepolia fork)', () => {
     }
 
     // Probe whether write-paths are available on this fork snapshot.
-    primaryIsToken0 = await bidManager.openingAuction.getIsToken0()
+    primaryIsToken0 = await openingAuction.getIsToken0()
     console.log('Is token0:', primaryIsToken0)
 
     try {
@@ -364,7 +371,7 @@ describe.skip('Opening Auction Bid Management (Base Sepolia fork)', () => {
     })
 
     it('should read auction constraints', async () => {
-      const constraints = await bidManager.openingAuction.getBidConstraints()
+      const constraints = await openingAuction.getBidConstraints()
 
       expect(constraints.minLiquidity).toBeGreaterThanOrEqual(MIN_LIQUIDITY)
       expect(constraints.minAcceptableTickToken0).toBeDefined()
@@ -377,9 +384,9 @@ describe.skip('Opening Auction Bid Management (Base Sepolia fork)', () => {
     })
 
     it('should read auction state', async () => {
-      const phase = await bidManager.openingAuction.getPhase()
-      const isToken0 = await bidManager.openingAuction.getIsToken0()
-      const estimatedClearingTick = await bidManager.openingAuction.getEstimatedClearingTick()
+      const phase = await openingAuction.getPhase()
+      const isToken0 = await openingAuction.getIsToken0()
+      const estimatedClearingTick = await openingAuction.getEstimatedClearingTick()
 
       expect(phase).toBeDefined()
       expect(isToken0).toBeDefined()
@@ -492,7 +499,7 @@ describe.skip('Opening Auction Bid Management (Base Sepolia fork)', () => {
       console.log('Bid placed:', txHash)
 
       // Verify position was created
-      const positionId = await bidManager.openingAuction.getPositionId({
+      const positionId = await openingAuction.getPositionId({
         owner: account.address,
         tickLower,
         tickUpper: tickLower + poolKey.tickSpacing,
@@ -661,7 +668,7 @@ describe.skip('Opening Auction Bid Management (Base Sepolia fork)', () => {
 
     it('should reject partial withdrawal during active phase', async () => {
       // First check current phase
-      const phase = await bidManager.openingAuction.getPhase()
+      const phase = await openingAuction.getPhase()
       console.log('Current phase before withdrawal:', phase)
 
       if (phase !== 1) {
@@ -685,7 +692,7 @@ describe.skip('Opening Auction Bid Management (Base Sepolia fork)', () => {
         return
       }
 
-      const phase = await bidManager.openingAuction.getPhase()
+      const phase = await openingAuction.getPhase()
       if (phase !== 1) {
         console.log('Skipping move simulation - auction is not active')
         return
@@ -729,7 +736,7 @@ describe.skip('Opening Auction Bid Management (Base Sepolia fork)', () => {
 
     it('should move a bid to a new tick', async () => {
       // Check phase
-      const phase = await bidManager.openingAuction.getPhase()
+      const phase = await openingAuction.getPhase()
       if (phase !== 1) {
         console.log('Skipping move test - auction is not active')
         return
@@ -824,7 +831,7 @@ describe.skip('Opening Auction Bid Management (Base Sepolia fork)', () => {
 
     it('should settle the auction', async () => {
       // Check current phase before settling
-      const phaseBefore = await bidManager.openingAuction.getPhase()
+      const phaseBefore = await openingAuction.getPhase()
       console.log('Phase before settlement:', phaseBefore)
 
       // Use bidManager to settle the auction
@@ -839,7 +846,7 @@ describe.skip('Opening Auction Bid Management (Base Sepolia fork)', () => {
       console.log('Auction settled:', txHash)
 
       // Verify phase changed
-      const phaseAfter = await bidManager.openingAuction.getPhase()
+      const phaseAfter = await openingAuction.getPhase()
       console.log('Phase after settlement:', phaseAfter)
     }, 60000)
   })
@@ -851,7 +858,7 @@ describe.skip('Opening Auction Bid Management (Base Sepolia fork)', () => {
       })
 
       for (const bid of bids) {
-        const incentives = await bidManager.openingAuction.calculateIncentives(
+        const incentives = await openingAuction.calculateIncentives(
           bid.positionId,
         )
         console.log(`Position ${bid.positionId} incentives:`, incentives.toString())

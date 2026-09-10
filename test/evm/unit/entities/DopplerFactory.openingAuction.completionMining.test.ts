@@ -203,7 +203,8 @@ describe('DopplerFactory opening-auction completion mining correctness', () => {
     });
 
     expect(mineHookSaltSpy).toHaveBeenCalledTimes(1);
-    expect(mineHookSaltSpy.mock.calls[0][0].unsoldTokens).toBe(
+    expect(mineHookSaltSpy.mock.calls[0][0]).toHaveProperty(
+      'unsoldTokens',
       t.expectedUnsoldTokens,
     );
   });
@@ -299,8 +300,8 @@ describe('DopplerFactory opening-auction completion mining correctness', () => {
     });
 
     expect(mineHookSaltSpy).toHaveBeenCalledTimes(2);
-    expect(mineHookSaltSpy.mock.calls[0][0].dopplerData.startingTick).toBe(0);
-    expect(mineHookSaltSpy.mock.calls[1][0].dopplerData.startingTick).toBe(60);
+    expect(mineHookSaltSpy.mock.calls[0][0]).toHaveProperty('dopplerData.startingTick', 0);
+    expect(mineHookSaltSpy.mock.calls[1][0]).toHaveProperty('dopplerData.startingTick', 60);
 
     // Clamp above MAX_TICK
     vi.mocked(publicClient.readContract).mockImplementation(async (call: any) => {
@@ -335,7 +336,8 @@ describe('DopplerFactory opening-auction completion mining correctness', () => {
       }),
       blockTimestamp: 0,
     });
-    expect(mineHookSaltSpy.mock.calls[2][0].dopplerData.startingTick).toBe(
+    expect(mineHookSaltSpy.mock.calls[2][0]).toHaveProperty(
+      'dopplerData.startingTick',
       maxAligned,
     );
 
@@ -372,7 +374,8 @@ describe('DopplerFactory opening-auction completion mining correctness', () => {
       }),
       blockTimestamp: 0,
     });
-    expect(mineHookSaltSpy.mock.calls[3][0].dopplerData.startingTick).toBe(
+    expect(mineHookSaltSpy.mock.calls[3][0]).toHaveProperty(
+      'dopplerData.startingTick',
       minAligned,
     );
   });
@@ -440,8 +443,8 @@ describe('DopplerFactory opening-auction completion mining correctness', () => {
       expect.objectContaining({ blockTag: 'latest' }),
     );
     expect(mineHookSaltSpy).toHaveBeenCalledTimes(1);
-    expect(mineHookSaltSpy.mock.calls[0][0].dopplerData.startingTime).toBe(2001n);
-    expect(mineHookSaltSpy.mock.calls[0][0].dopplerData.endingTime).toBe(2301n);
+    expect(mineHookSaltSpy.mock.calls[0][0]).toHaveProperty('dopplerData.startingTime', 2001n);
+    expect(mineHookSaltSpy.mock.calls[0][0]).toHaveProperty('dopplerData.endingTime', 2301n);
   });
 
   it('advances startSalt and retries when first mined hook address has bytecode', async () => {
@@ -511,8 +514,8 @@ describe('DopplerFactory opening-auction completion mining correctness', () => {
     });
 
     expect(mineHookSaltSpy).toHaveBeenCalledTimes(2);
-    expect(mineHookSaltSpy.mock.calls[0][0].startSalt).toBe(10n);
-    expect(mineHookSaltSpy.mock.calls[1][0].startSalt).toBe(11n);
+    expect(mineHookSaltSpy.mock.calls[0][0]).toHaveProperty('startSalt', 10n);
+    expect(mineHookSaltSpy.mock.calls[1][0]).toHaveProperty('startSalt', 11n);
     expect(mined).toEqual({
       dopplerSalt: toSalt(11n),
       dopplerHookAddress: getAddress(
