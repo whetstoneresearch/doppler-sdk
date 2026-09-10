@@ -63,9 +63,10 @@ local validator. These are not v3 devnet deployment artifacts.
 The full shell harness completed successfully against the clean pinned source:
 
 ```sh
+PATH=/Users/z80/.cache/doppler-agave-3.1.8/solana-release/bin:$PATH \
 DOPPLER_SOL_SOURCE_DIR=/Users/z80/dev/doppler-sol-sdk-validation \
 DOPPLER_PREDICTION_RPC_PORT=19019 \
-npx --yes pnpm@10.11.0 test:solana:prediction:validator
+bash scripts/run-solana-prediction-validator.sh > /tmp/doppler-sdk-prediction-final-harness.log 2>&1
 ```
 
 Agave 3.1.8 was on `PATH`. The harness rebuilt all four programs using platform
