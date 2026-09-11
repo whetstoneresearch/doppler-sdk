@@ -102,7 +102,8 @@ For runnable Solana flows, configure `examples/.env` and run with `pnpm tsx`, fo
 - [examples/solana-usdc-e2e-launch.ts](./examples/solana-usdc-e2e-launch.ts)
 - [examples/solana-usdc-cosigner-gated-buy.ts](./examples/solana-usdc-cosigner-gated-buy.ts)
 - [Prediction markets guide](./docs/solana-prediction-markets.md): complete lifecycle helpers, six executable scenarios, payout accounting, and [ABI migration](./docs/solana-prediction-migration.md).
-- [examples/solana-prediction-market.ts](./examples/solana-prediction-market.ts)
+- Concise prediction examples: [create](./examples/solana-prediction-create.ts), [buy](./examples/solana-prediction-buy.ts), [resolve and settle](./examples/solana-prediction-resolve.ts), [claim or refund](./examples/solana-prediction-claim.ts).
+- [Full prediction scenario runner](./examples/solana-prediction-market.ts)
 - [examples/solana-swap.ts](./examples/solana-swap.ts)
 - [examples/solana-vesting-launch.ts](./examples/solana-vesting-launch.ts)
 - [examples/solana-vesting-claim.ts](./examples/solana-vesting-claim.ts)
