@@ -4,6 +4,44 @@ The `predictionMarkets` namespace prepares the complete lifecycle: create an ora
 
 **Deployment status (September 10, 2026):** devnet now passes the new oracle-initialization and `create_market` ABI simulation. Independent RPC reads confirm all four program artifacts use SBPF v3 and the prediction hook/migrator are allowlisted. The earlier failed probe is superseded. The current verification target is the complete SDK lifecycle on a local fork of the actual deployed binaries and accounts. All six scenarios passed on that fork: 98 lifecycle transactions across eight markets, exact payouts/refunds, and replay without additional transactions. No funded public-network run is required. See the [verification report](solana-prediction-verification.md) for deployment slots, configuration, and artifact limits. Mainnet is not an example target; existing integrations should also read the [ABI migration guide](solana-prediction-migration.md).
 
+## Start with concise SDK examples
+
+These standalone examples use the public `predictionMarkets` helpers for each
+step, following the same connection/signing pattern as `solana-minimal-launch.ts`.
+They import the repository source for development; installed applications import
+`predictionMarkets` from `@whetstone-research/doppler-sdk/solana`.
+
+| Example | SDK helpers | Required action inputs |
+| --- | --- | --- |
+| [Create](../examples/solana-prediction-create.ts) | `prepareOracle`, `prepareMarket`, `prepareOutcomeLaunch` | None; prints market and YES/NO mint addresses |
+| [Buy](../examples/solana-prediction-buy.ts) | `fetchPredictionBuyQuote`, `prepareBuy` | `SOLANA_PREDICTION_MARKET`, `SOLANA_PREDICTION_BASE_MINT`, `SOLANA_PREDICTION_AMOUNT_IN` |
+| [Resolve and settle](../examples/solana-prediction-resolve.ts) | `prepareFinalize`, `prepareRemainingSettlements` | `SOLANA_PREDICTION_MARKET`, `SOLANA_PREDICTION_WINNER_INDEX` (0 = YES, 1 = NO) |
+| [Claim or refund](../examples/solana-prediction-claim.ts) | `fetchPredictionMarket`, `prepareClaim`, `prepareRefund` | `SOLANA_PREDICTION_MARKET`, `SOLANA_PREDICTION_BURN_AMOUNT`; void refunds also need `SOLANA_PREDICTION_BASE_MINT` |
+
+Set `SOLANA_NETWORK=devnet` (or `custom` with `SOLANA_RPC_URL` and
+`SOLANA_WS_URL`) and `SOLANA_KEYPAIR_PATH` to a funded tester signer. Use the
+matching prediction deployments and allowlists described below. The creator must
+differ from the protocol fee beneficiary. Run a file with:
+
+```bash
+pnpm exec tsx examples/solana-prediction-create.ts
+```
+
+Then use its printed addresses to run buy, resolve, and claim in order with the
+inputs above. Each file submits transactions. Creation starts a new market on
+each run; use the resumable scenario runner below when you need persisted recovery.
+Buy amounts are raw quote units (10,000,000 = 0.01 SOL for these WSOL markets);
+burn amounts are raw outcome units (1,000,000 = one token at six decimals).
+The buy helper wraps SOL and prepares token accounts. Finalization uses the
+oracle authority signer; after finalization anyone can run settlement. Claims
+use the participant signer and pay WSOL. A zero burn harvests later proceeds
+from an existing winning claim; void refunds require a positive burn and a
+settled entry. Buy a winning outcome before resolution for the normal payout
+flow; resolving an outcome with no circulating supply produces a void market.
+
+The larger runner below provides scenario assertions, manifests, and replay
+verification; these focused examples show the SDK calls needed by an integrator.
+
 ## Run the full example collection
 
 ```bash
