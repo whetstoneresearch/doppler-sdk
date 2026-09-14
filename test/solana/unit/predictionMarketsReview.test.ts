@@ -1,3 +1,4 @@
+import { fixtureAddress } from '../fixtures/prediction.js';
 import { describe, expect, it, vi } from 'vitest';
 import {
   address,
@@ -25,8 +26,8 @@ const ZERO = address('11111111111111111111111111111111');
 const QUOTE = address('So11111111111111111111111111111111111111112');
 const BASE = address('SysvarC1ock11111111111111111111111111111111');
 const OTHER = address('SysvarS1otHashes111111111111111111111111111');
-const creator = createNoopSigner(BASE);
-const payer = createNoopSigner(OTHER);
+const creator = createNoopSigner(fixtureAddress(71));
+const payer = createNoopSigner(fixtureAddress(72));
 const ids = [pm.outcomeIdFromLabel('YES'), pm.outcomeIdFromLabel('NO')];
 
 async function fixture() {
@@ -140,34 +141,48 @@ describe('prediction market independent regression review', () => {
     const input = {
       oracle: f.oracle,
       market: f.market,
-      config: ZERO,
-      launch: BASE,
-      launchAuthority: OTHER,
+      config: fixtureAddress(61),
+      launch: fixtureAddress(62),
+      launchAuthority: fixtureAddress(63),
       baseMint: BASE,
       quoteMint: QUOTE,
-      baseVault: OTHER,
-      quoteVault: ZERO,
-      launchFeeState: QUOTE,
+      baseVault: fixtureAddress(64),
+      quoteVault: fixtureAddress(65),
+      launchFeeState: fixtureAddress(66),
       payer,
     };
     const result = await pm.prepareSettlement(input);
     const ix = result.instructions[0];
     expect(ix.programAddress).toBe(INITIALIZER_PROGRAM_ID);
     expect(ix.accounts?.slice(0, 10).map((a) => a.address)).toEqual([
-      ZERO,
-      BASE,
-      OTHER,
-      BASE,
-      QUOTE,
-      OTHER,
-      ZERO,
-      QUOTE,
+      input.config,
+      input.launch,
+      input.launchAuthority,
+      input.baseMint,
+      input.quoteMint,
+      input.baseVault,
+      input.quoteVault,
+      input.launchFeeState,
       prediction.PREDICTION_MIGRATOR_PROGRAM_ADDRESS,
       payer.address,
     ]);
     expect(ix.accounts?.[3].role).toBe(AccountRole.WRITABLE);
-    const accounts = await pm.derivePredictionAccounts(input);
-    expect(ix.accounts?.slice(14)).toEqual(accounts.settlement);
+    const [potVault] = await prediction.getPredictionPotVaultAddress(f.market);
+    const [marketAuthority] =
+      await prediction.getPredictionMarketAuthorityAddress(f.market);
+    const [entry] = await prediction.getPredictionEntryAddress(
+      f.market,
+      input.baseMint,
+    );
+    // Protocol CPI order, independently specified rather than copied from the builder.
+    expect(ix.accounts?.slice(14)).toEqual([
+      { address: f.oracle, role: AccountRole.READONLY },
+      { address: f.market, role: AccountRole.WRITABLE },
+      { address: potVault, role: AccountRole.WRITABLE },
+      { address: marketAuthority, role: AccountRole.READONLY },
+      { address: entry, role: AccountRole.WRITABLE },
+    ]);
+    expect(ix.accounts?.[7].role).toBe(AccountRole.WRITABLE);
     expect(ix.accounts?.[9]).toMatchObject({
       role: AccountRole.WRITABLE_SIGNER,
       signer: payer,
@@ -184,10 +199,10 @@ describe('prediction market independent regression review', () => {
         config: ZERO,
         launchId: ids[1],
         launchAccounts: {
-          baseMint: creator,
+          baseMint: createNoopSigner(BASE),
           quoteMint: QUOTE,
-          baseVault: payer,
-          quoteVault: payer,
+          baseVault: createNoopSigner(fixtureAddress(67)),
+          quoteVault: createNoopSigner(fixtureAddress(68)),
         },
         payer,
         supply: {
@@ -206,23 +221,35 @@ describe('prediction market independent regression review', () => {
     const data = getInitializeLaunchInstructionDataDecoder().decode(
       result.instruction.data!,
     );
-    const accounts = await pm.derivePredictionAccounts({
-      oracle: f.oracle,
-      market: result.market,
-      baseMint: creator.address,
-    });
+    const [entry] = await prediction.getPredictionEntryAddress(
+      result.market,
+      BASE,
+    );
+    const [potVault] = await prediction.getPredictionPotVaultAddress(
+      result.market,
+    );
+    const [marketAuthority] =
+      await prediction.getPredictionMarketAuthorityAddress(result.market);
     expect(data.hookRemainingAccountsHash).toEqual(
-      computeRemainingAccountsHash(accounts.hook.map((a) => a.address)),
+      computeRemainingAccountsHash([f.oracle, result.market]),
     );
     expect(data.migratorInitRemainingAccountsHash).toEqual(
-      computeRemainingAccountsHash(accounts.registration.map((a) => a.address)),
+      computeRemainingAccountsHash([f.oracle, result.market, entry]),
     );
     expect(data.migratorRemainingAccountsHash).toEqual(
-      computeRemainingAccountsHash(accounts.settlement.map((a) => a.address)),
+      computeRemainingAccountsHash([
+        f.oracle,
+        result.market,
+        potVault,
+        marketAuthority,
+        entry,
+      ]),
     );
-    expect(result.instruction.accounts?.slice(-3)).toEqual(
-      accounts.registration,
-    );
+    expect(result.instruction.accounts?.slice(-3)).toEqual([
+      { address: f.oracle, role: AccountRole.READONLY },
+      { address: result.market, role: AccountRole.WRITABLE },
+      { address: entry, role: AccountRole.WRITABLE },
+    ]);
   });
 
   it('keeps a sponsored WSOL buyer as token authority while payer funds the wrapped input', async () => {

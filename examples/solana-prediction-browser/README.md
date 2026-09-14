@@ -43,3 +43,14 @@ This is a developer walkthrough, not a production market UI. Check the SDK's val
 The sender measures transaction size before submission. It uses a legacy message when that fits and the signer supports it, or creates and confirms a per-action address lookup table for larger v0 transactions. Lookup-table setup appears as separate confirmed receipts and may require additional wallet approvals. The sender waits for table activation and refreshes the blockhash before the launch transaction.
 
 The matching devnet Oracle and Market ABI has passed a read-only compatibility probe. Live Wallet Standard signing is still unverified; this is separate from the confirmed local browser lifecycle and production build checks.
+
+## UI regression tests
+
+Run `npm test` for DOM integration tests and `npm run build` for typechecking
+and bundling. The tests load the actual app event handlers in jsdom, serve
+serialized account fixtures through the SDK's RPC interface, and construct real
+buy instructions. Wallet discovery is stubbed and tests stop before signing or
+submission. They cover SOL versus SPL-token funding, canonical launch selection,
+and invalidation of minimum output after amount, launch, market, RPC, or outcome
+changes. This is automated UI logic coverage, not a browser-engine or wallet
+extension compatibility test.

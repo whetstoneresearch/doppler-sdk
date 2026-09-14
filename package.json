@@ -39,6 +39,7 @@
     "test:solana:fork:examples": "bash scripts/run-solana-mainnet-fork-examples.sh",
     "test:solana:fork:devnet-examples": "bash scripts/run-solana-devnet-fork-examples.sh",
     "check:examples": "tsc --project tsconfig.examples.json",
+    "typecheck:solana-tests": "tsc --project tsconfig.solana-tests.json",
     "typecheck:solana-examples": "tsc --project tsconfig.solana-examples.json",
     "test:watch": "vitest watch --config vitest.unit.config.ts",
     "test:coverage": "vitest run --coverage --config vitest.unit.config.ts",

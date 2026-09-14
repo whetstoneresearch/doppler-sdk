@@ -289,3 +289,27 @@ The repository-wide `typecheck:test` still reports errors in unchanged EVM tests
 and Vitest configuration. The deployed-binary fork evidence above remains tied
 to its recorded SDK revision; this follow-up does not claim a new 98-transaction
 lifecycle run.
+
+## Automated regression coverage follow-up
+
+Settlement and registration expectations now specify the protocol account order
+independently of the builders. Shared RPC fixtures use distinct addresses,
+before-swap/context hook flags, and mutable responses for snapshot-change tests.
+Direct tests cover sponsored claim/refund/harvest wiring, claim-receipt validation,
+finalization, and reusable-oracle checks. Browser DOM integration tests exercise
+the actual app event handlers and SDK readers without signing transactions.
+
+Prediction SDK CI also runs the existing deployed-devnet fork suite: six scenarios,
+exact payouts, completed replay, and unchanged upstream configuration checks. It
+uses an ephemeral local validator and uploads only logs and verification manifests,
+excluding generated keypairs. This job depends on upstream devnet RPC availability
+and matching runtime features; its live-deployment snapshot is recorded in each
+run's evidence. It does not pin the remote programs to one immutable binary.
+
+The strengthened suite passes 254 Solana tests and eight DOM integration tests.
+Prediction modules measure 98.9% line coverage and 100% function coverage; this
+is supporting evidence, not a guarantee of complete behavior coverage. Deliberate
+mutations of settlement account order, the snapshot-change guard, forced SOL
+wrapping, and stale minimum-output handling each fail the corresponding tests.
+`pnpm typecheck:solana-tests` checks the Solana test tree independently of existing
+EVM/Vitest errors in the repository-wide test configuration.

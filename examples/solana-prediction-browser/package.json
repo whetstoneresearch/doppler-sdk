@@ -5,13 +5,16 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "tsc --noEmit && vite build",
-    "preview": "vite preview --host 127.0.0.1"
+    "preview": "vite preview --host 127.0.0.1",
+    "test": "vitest run"
   },
   "dependencies": {
     "@wallet-standard/app": "1.1.0"
   },
   "devDependencies": {
+    "jsdom": "26.1.0",
     "typescript": "~5.8.3",
-    "vite": "6.3.6"
+    "vite": "6.3.6",
+    "vitest": "2.1.9"
   }
 }
