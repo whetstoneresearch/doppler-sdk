@@ -9,6 +9,15 @@ import {
   type GetProgramAccountsApi,
   type ReadonlyUint8Array,
 } from '@solana/kit';
+import {
+  getMintEncoder,
+  getMintDecoder,
+  getMintSize,
+  getTokenEncoder,
+  getTokenDecoder,
+  getTokenSize,
+  TOKEN_PROGRAM_ADDRESS,
+} from '@solana-program/token';
 import * as pm from '@/solana/predictionMarkets/index.js';
 import * as prediction from '@/solana/migrators/predictionMigrator/index.js';
 import * as oracleClient from '@/solana/trustedOracle/index.js';
@@ -221,6 +230,172 @@ async function fixture({
   return { rpc, market, oracle, accounts, launches, inputs };
 }
 
+async function buyFixture(migrated: number[] = []) {
+  const f = await fixture({ finalized: false, migrated });
+  const launch = f.launches[0].pubkey;
+  const [launchAuthority] = await initializer.getLaunchAuthorityAddress(launch);
+  const [feeAddress] = await initializer.getLaunchFeeStateAddress(launch);
+  const [baseVault] = await prediction.getPredictionPotVaultAddress(f.market);
+  const [quoteVault] = await prediction.getPredictionMarketAuthorityAddress(
+    f.market,
+  );
+  const launchData = {
+    ...generated
+      .getLaunchDecoder()
+      .decode(Buffer.from(f.launches[0].account.data[0], 'base64')),
+    baseVault,
+    quoteVault,
+    baseForDistribution: 200n,
+    baseForLiquidity: 100n,
+    curveVirtualBase: 1000n,
+    curveVirtualQuote: 1000n,
+    swapFeeBps: 100,
+  };
+  const feeData = {
+    ...generated
+      .getLaunchFeeStateDecoder()
+      .decode(new Uint8Array(generated.getLaunchFeeStateSize())),
+    launch,
+    beneficiaryLen: 1,
+    swapFeeBps: 100,
+    cumulatedBaseFees: 100n,
+    cumulatedQuoteFees: 50n,
+    distributedProtocolBaseFees: 20n,
+    distributedProtocolQuoteFees: 10n,
+    distributedBaseByBeneficiary: [30n, ...Array(7).fill(0n)],
+    distributedQuoteByBeneficiary: [15n, ...Array(7).fill(0n)],
+  };
+  function update() {
+    f.launches[0].account = encoded(
+      generated.getLaunchEncoder().encode(launchData),
+      initializer.INITIALIZER_PROGRAM_ID,
+    );
+    f.accounts.set(
+      feeAddress,
+      encoded(
+        generated.getLaunchFeeStateEncoder().encode(feeData),
+        initializer.INITIALIZER_PROGRAM_ID,
+      ),
+    );
+  }
+  update();
+  for (const mint of [mints[0], QUOTE]) {
+    f.accounts.set(
+      mint,
+      encoded(
+        getMintEncoder().encode({
+          ...getMintDecoder().decode(new Uint8Array(getMintSize())),
+          isInitialized: true,
+          decimals: 6,
+          supply: 10000n,
+        }),
+        TOKEN_PROGRAM_ADDRESS,
+      ),
+    );
+  }
+  for (const [vault, mint, amount] of [
+    [baseVault, mints[0], 1000n],
+    [quoteVault, QUOTE, 525n],
+  ] as const) {
+    f.accounts.set(
+      vault,
+      encoded(
+        getTokenEncoder().encode({
+          ...getTokenDecoder().decode(new Uint8Array(getTokenSize())),
+          mint,
+          owner: launchAuthority,
+          amount,
+          state: 1,
+        }),
+        TOKEN_PROGRAM_ADDRESS,
+      ),
+    );
+  }
+  const input = { market: f.market, baseMint: mints[0], amountIn: 100n };
+  return { ...f, input, launchData, feeData, update };
+}
+
+describe('prediction buy quotes from serialized accounts', () => {
+  it('excludes distribution, liquidity and pending beneficiary/protocol fees', async () => {
+    const f = await buyFixture();
+    const quote = await pm.fetchPredictionBuyQuote(f.rpc, f.input);
+    // Executable XYK: (650 real + 1000 virtual) * 99 net / (500 + 1000 + 99).
+    expect(quote).toMatchObject({
+      amountOut: 102n,
+      feeAmount: 1n,
+      minAmountOut: 101n,
+      pendingBaseFees: 50n,
+      pendingQuoteFees: 25n,
+    });
+  });
+  it('keeps reserved base fees in the hypothetical surviving supply', async () => {
+    const f = await buyFixture([1, 2]);
+    const estimate = await pm.fetchPotentialPayoutIfWinner(f.rpc, {
+      market: f.market,
+      candidateMint: mints[0],
+      tokenAmount: 9050n,
+    });
+    expect(estimate).toMatchObject({
+      claimableSupplyUsed: 9050n,
+      unsettledContributions: 500n,
+      payoutQuoteForTokenAmount: 500n,
+    });
+  });
+  it('rejects inconsistent base fees in the hypothetical payout', async () => {
+    const f = await buyFixture([1, 2]);
+    f.feeData.distributedProtocolBaseFees = 1000n;
+    f.update();
+    await expect(
+      pm.fetchPotentialPayoutIfWinner(f.rpc, {
+        market: f.market,
+        candidateMint: mints[0],
+        tokenAmount: 1n,
+      }),
+    ).rejects.toThrow('Inconsistent candidate base fees');
+  });
+  it('rejects inactive launches and unsupported curves', async () => {
+    for (const change of [
+      { phase: initializer.PHASE_MIGRATED },
+      { allowBuy: 0 },
+      { curveKind: 1 },
+    ]) {
+      const f = await buyFixture();
+      Object.assign(f.launchData, change);
+      f.update();
+      await expect(
+        pm.fetchPredictionBuyQuote(f.rpc, f.input),
+      ).rejects.toThrow();
+    }
+  });
+  it('rejects allocations plus fees that exceed the base vault', async () => {
+    const f = await buyFixture();
+    f.launchData.baseForDistribution = 900n;
+    f.update();
+    await expect(pm.fetchPredictionBuyQuote(f.rpc, f.input)).rejects.toThrow(
+      'Inconsistent reserve/fee snapshot',
+    );
+  });
+  it('rejects negative pending fees and mismatched fee rates', async () => {
+    for (const field of [
+      'distributedProtocolBaseFees',
+      'distributedProtocolQuoteFees',
+    ] as const) {
+      const f = await buyFixture();
+      f.feeData[field] = 1000n;
+      f.update();
+      await expect(pm.fetchPredictionBuyQuote(f.rpc, f.input)).rejects.toThrow(
+        'Inconsistent reserve/fee snapshot',
+      );
+    }
+    const f = await buyFixture();
+    f.feeData.swapFeeBps = 200;
+    f.update();
+    await expect(pm.fetchPredictionBuyQuote(f.rpc, f.input)).rejects.toThrow(
+      'swap fee state',
+    );
+  });
+});
+
 describe('prediction market resume from serialized chain state', () => {
   it('recovers launch and derived settlement bindings without a saved manifest', async () => {
     const f = await fixture();
@@ -289,6 +464,24 @@ describe('prediction market resume from serialized chain state', () => {
     await expect(
       pm.fetchPredictionMarketWithLaunches(wrong.rpc, wrong.market),
     ).rejects.toThrow('Invalid launch PDA');
+  });
+  it('ignores same-mint launches with the wrong hook or migrator', async () => {
+    const f = await fixture();
+    const original = f.launches[0];
+    const data = generated
+      .getLaunchDecoder()
+      .decode(Buffer.from(original.account.data[0], 'base64'));
+    for (const change of [{ hookProgram: ZERO }, { migratorProgram: ZERO }]) {
+      f.launches.unshift({
+        pubkey: ZERO,
+        account: encoded(
+          generated.getLaunchEncoder().encode({ ...data, ...change }),
+          initializer.INITIALIZER_PROGRAM_ID,
+        ),
+      });
+    }
+    const view = await pm.fetchPredictionMarketWithLaunches(f.rpc, f.market);
+    expect(view.outcomes[0].launch.address).toBe(original.pubkey);
   });
   it('resumes only unregistered outcomes without duplicating a confirmed registration', async () => {
     const f = await fixture({ bitmap: 1, finalized: false, migrated: [] });

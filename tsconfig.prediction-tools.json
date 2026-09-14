@@ -2,6 +2,7 @@
   "extends": "./tsconfig.json",
   "include": [
     "scripts/check-prediction-deployment.ts",
+    "scripts/benchmark-solana-metadata-size.ts",
     "scripts/setup-solana-prediction-validator.ts",
     "scripts/prepare-solana-prediction-devnet-fork.ts"
   ],

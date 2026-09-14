@@ -174,7 +174,17 @@ export async function fetchPotentialPayoutIfWinner(
             base.data.owner !== outcome.launchAuthority
           )
             throw new Error('Invalid candidate base vault');
-          candidateUnsoldBase = base.data.amount;
+          const pendingBaseFees =
+            fee.cumulatedBaseFees -
+            fee.distributedProtocolBaseFees -
+            fee.distributedBaseByBeneficiary
+              .slice(0, fee.beneficiaryLen)
+              .reduce((a, b) => a + b, 0n);
+          if (pendingBaseFees < 0n || pendingBaseFees > base.data.amount)
+            throw new Error('Inconsistent candidate base fees; refresh state');
+          // Settlement leaves beneficiary/protocol fees in the vault. Only the
+          // remaining base tokens are burned and removed from claimable supply.
+          candidateUnsoldBase = base.data.amount - pendingBaseFees;
         }
         return { amount: vault.data.amount, pendingFees };
       }),

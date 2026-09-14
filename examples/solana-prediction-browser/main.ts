@@ -1,6 +1,5 @@
 import './style.css';
 import {
-  fetchToken,
   fetchMint,
   fetchMaybeToken,
   findAssociatedTokenPda,
@@ -12,7 +11,6 @@ import {
   getPredictionClaimReceiptAddress,
   getPredictionEntryAddress,
 } from '../../src/solana/migrators/predictionMigrator/index.ts';
-import { fetchLaunchFeeState } from '../../src/solana/generated/initializer/accounts/launchFeeState.ts';
 import { getWallets } from '@wallet-standard/app';
 import type { Wallet, WalletAccount } from '@wallet-standard/base';
 import type {
@@ -44,15 +42,6 @@ import {
   compressTransactionMessageWithLookupTable,
 } from '../../src/solana/initializer/addressLookupTables.ts';
 import * as prediction from '../../src/solana/predictionMarkets/index.ts';
-import {
-  fetchLaunch,
-  fetchLaunchesByAuthority,
-} from '../../src/solana/initializer/client/launch.ts';
-import {
-  getLaunchAuthorityAddress,
-  getLaunchFeeStateAddress,
-  getConfigAddress,
-} from '../../src/solana/initializer/pda.ts';
 import { fetchMarket } from '../../src/solana/generated/predictionMigrator/accounts/market.ts';
 import { fetchOracleState } from '../../src/solana/generated/trustedOracle/accounts/oracleState.ts';
 
@@ -95,7 +84,10 @@ let marketData: Awaited<ReturnType<typeof fetchMarket>>['data'] | undefined;
 let oracleData:
   | Awaited<ReturnType<typeof fetchOracleState>>['data']
   | undefined;
-let launches: Awaited<ReturnType<typeof fetchLaunchesByAuthority>> = [];
+let launches: Awaited<
+  ReturnType<typeof prediction.fetchPredictionMarketWithLaunches>
+>['outcomes'][number]['launch'][] = [];
+let loadedMarketAddress: string | undefined;
 const receipts: { action: string; signature: string; network: string }[] = [];
 let busy = false;
 let localSigner: Awaited<ReturnType<typeof generateKeyPairSigner>> | undefined;
@@ -222,6 +214,8 @@ getWallets().on('unregister', refreshWallets);
 refreshWallets();
 function requireMarket() {
   if (!marketData || !oracleData) throw new Error('Load a market first.');
+  if (loadedMarketAddress !== value('market'))
+    throw new Error('Market input changed; reload the market.');
   if (marketData.oracle !== value('oracle'))
     throw new Error('Oracle input changed; reload the market.');
   return {
@@ -384,14 +378,17 @@ async function loadMarket() {
     market,
     oracle,
     status: marketStatus,
-  } = await prediction.fetchPredictionMarket(client, address(value('market')));
+    outcomes,
+  } = await prediction.fetchPredictionMarketWithLaunches(
+    client,
+    address(value('market')),
+  );
+  loadedMarketAddress = market.address;
   marketData = market.data;
   oracleData = oracle.data;
   $<HTMLInputElement>('oracle').value = marketData.oracle;
   $<HTMLInputElement>('quote').value = marketData.quoteMint;
-  launches = await fetchLaunchesByAuthority(client, marketData.creator, {
-    commitment: 'confirmed',
-  });
+  launches = outcomes.map((outcome) => outcome.launch);
   const names = oracleData.outcomeIds.slice(0, oracleData.outcomeCount).map(
     (id, i) =>
       `${i + 1} · ${Array.from(id)
@@ -419,6 +416,7 @@ async function loadMarket() {
   selectOutcome();
 }
 function selectOutcome() {
+  clearBuyQuote();
   if (!marketData) return;
   const mint = marketData.outcomeMints[Number(value('outcome'))];
   const launch = launches.find(
@@ -430,27 +428,25 @@ function selectOutcome() {
 async function launchInput() {
   const { market, marketAddress } = requireMarket();
   const launch = address(value('launch'));
-  const data = await fetchLaunch(rpc(), launch, { commitment: 'confirmed' });
-  if (
-    !data ||
-    data.quoteMint !== market.quoteMint ||
-    !market.outcomeMints.includes(data.baseMint) ||
-    data.namespace !== market.oracle ||
-    data.authority !== market.creator
-  )
-    throw new Error('Launch does not belong to this market.');
-  const [[launchAuthority], [launchFeeState], [config]] = await Promise.all([
-    getLaunchAuthorityAddress(launch),
-    getLaunchFeeStateAddress(launch),
-    getConfigAddress(),
-  ]);
+  const view = await prediction.fetchPredictionMarketWithLaunches(
+    rpc(),
+    marketAddress,
+  );
+  const outcome = view.outcomes.find(
+    (candidate) =>
+      candidate.launch.address === launch &&
+      candidate.entry.data.baseMint ===
+        market.outcomeMints[Number(value('outcome'))],
+  );
+  if (!outcome)
+    throw new Error('Launch does not match the selected market outcome.');
   return {
-    ...data,
+    ...outcome.launch.account,
     launch,
-    launchAuthority,
-    launchFeeState,
-    config,
-    oracle: market.oracle,
+    launchAuthority: outcome.launchAuthority,
+    launchFeeState: outcome.launchFeeState,
+    config: outcome.config,
+    oracle: view.market.data.oracle,
     market: marketAddress,
     payer: signer(),
   };
@@ -672,42 +668,11 @@ action('register', async () => {
 });
 action('quote-buy', async () => {
   await loadMarket();
-  if (oracleData!.isFinalized)
-    throw new Error('Buying is closed: the oracle is finalized.');
-  if (marketData!.registeredBitmap !== (1 << marketData!.outcomeCount) - 1)
-    throw new Error('Register every outcome before buying.');
-  const launch = await launchInput();
-  const client = rpc();
-  const [base, quote, fees] = await Promise.all([
-    fetchToken(client, launch.baseVault, { commitment: 'confirmed' }),
-    fetchToken(client, launch.quoteVault, { commitment: 'confirmed' }),
-    fetchLaunchFeeState(client, launch.launchFeeState, {
-      commitment: 'confirmed',
-    }),
-  ]);
-  const pendingBase =
-    fees.data.cumulatedBaseFees -
-    fees.data.distributedProtocolBaseFees -
-    fees.data.distributedBaseByBeneficiary
-      .slice(0, fees.data.beneficiaryLen)
-      .reduce((a, b) => a + b, 0n);
-  const pendingQuote =
-    fees.data.cumulatedQuoteFees -
-    fees.data.distributedProtocolQuoteFees -
-    fees.data.distributedQuoteByBeneficiary
-      .slice(0, fees.data.beneficiaryLen)
-      .reduce((a, b) => a + b, 0n);
-  const quoteResult = prediction.quoteBuy({
+  const { market, marketAddress } = requireMarket();
+  const quoteResult = await prediction.fetchPredictionBuyQuote(rpc(), {
+    market: marketAddress,
+    baseMint: market.outcomeMints[Number(value('outcome'))],
     amountIn: BigInt(value('amount')),
-    baseReserve:
-      base.data.amount -
-      launch.baseForDistribution -
-      launch.baseForLiquidity -
-      pendingBase,
-    quoteReserve: quote.data.amount - pendingQuote,
-    virtualBase: launch.curveVirtualBase,
-    virtualQuote: launch.curveVirtualQuote,
-    swapFeeBps: launch.swapFeeBps,
     slippageBps: 50,
   });
   $<HTMLInputElement>('minimum').value = String(quoteResult.minAmountOut);
@@ -725,7 +690,6 @@ action('buy', async () => {
     ...(await launchInput()),
     amountIn: BigInt(value('amount')),
     minAmountOut,
-    wrapSol: true,
   });
   await send('Buy outcome', plan.instructions);
   await loadMarket();
@@ -864,6 +828,13 @@ action('export', async () => {
   URL.revokeObjectURL(url);
   status('Public session state downloaded.');
 });
+function clearBuyQuote() {
+  $<HTMLInputElement>('minimum').value = '';
+  $('buy-quote').textContent = 'Fetch a current quote before buying.';
+}
+for (const id of ['amount', 'launch', 'market', 'rpc']) {
+  $(id).addEventListener('input', clearBuyQuote);
+}
 $('outcome').addEventListener('change', selectOutcome);
 $('market').addEventListener('input', () => {
   marketData = undefined;
