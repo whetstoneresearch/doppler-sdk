@@ -1,319 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import {
-  address,
-  createNoopSigner,
-  type Address,
-  type Rpc,
-  type GetAccountInfoApi,
-  type GetMultipleAccountsApi,
-  type GetProgramAccountsApi,
-  type ReadonlyUint8Array,
-} from '@solana/kit';
-import {
-  getMintEncoder,
-  getMintDecoder,
-  getMintSize,
-  getTokenEncoder,
-  getTokenDecoder,
-  getTokenSize,
-  TOKEN_PROGRAM_ADDRESS,
-} from '@solana-program/token';
 import * as pm from '@/solana/predictionMarkets/index.js';
-import * as prediction from '@/solana/migrators/predictionMigrator/index.js';
 import * as oracleClient from '@/solana/trustedOracle/index.js';
+import * as prediction from '@/solana/migrators/predictionMigrator/index.js';
 import * as initializer from '@/solana/initializer/index.js';
 import * as generated from '@/solana/generated/initializer/index.js';
-import { bytesToBase64 } from '@/solana/core/accounts.js';
-
-const ZERO = address('11111111111111111111111111111111');
-const QUOTE = address('So11111111111111111111111111111111111111112');
-const mints = [
-  address('SysvarC1ock11111111111111111111111111111111'),
-  address('SysvarS1otHashes111111111111111111111111111'),
-  address('ComputeBudget111111111111111111111111111111'),
-];
-const creator = createNoopSigner(mints[0]);
-const payer = createNoopSigner(mints[1]);
-const ids = ['YES', 'NO', 'OTHER'].map(pm.outcomeIdFromLabel);
-type RpcValue = {
-  data: [string, 'base64'];
-  owner: Address;
-  executable: boolean;
-  lamports: bigint;
-  rentEpoch: bigint;
-  space: bigint;
-};
-function encoded(bytes: ReadonlyUint8Array, owner: Address): RpcValue {
-  return {
-    data: [bytesToBase64(bytes), 'base64'],
-    owner,
-    executable: false,
-    lamports: 1n,
-    rentEpoch: 0n,
-    space: BigInt(bytes.length),
-  };
-}
-
-// Serialize real generated account layouts and serve them through the RPC boundary.
-// No lifecycle functions or instruction builders are mocked.
-async function fixture({
-  bitmap = 7,
-  finalized = true,
-  migrated = [0],
-}: { bitmap?: number; finalized?: boolean; migrated?: number[] } = {}) {
-  const [oracle, oracleBump] = await oracleClient.getOracleStateAddress(
-    creator.address,
-    73n,
-  );
-  const [market, bump] = await prediction.getPredictionMarketAddress(
-    oracle,
-    QUOTE,
-    creator.address,
-  );
-  const [potVault] = await prediction.getPredictionPotVaultAddress(market);
-  const [, marketAuthorityBump] =
-    await prediction.getPredictionMarketAuthorityAddress(market);
-  const accounts = new Map<Address, RpcValue>();
-  accounts.set(
-    oracle,
-    encoded(
-      oracleClient
-        .getOracleStateEncoder()
-        .encode({
-          oracleAuthority: creator.address,
-          nonce: 73n,
-          bump: oracleBump,
-          outcomeCount: 3,
-          outcomeIds: [
-            ...ids,
-            ...Array.from({ length: 5 }, () => new Uint8Array(32)),
-          ],
-          isFinalized: finalized,
-          winningOutcomeId: finalized ? ids[2] : new Uint8Array(32),
-        }),
-      oracleClient.TRUSTED_ORACLE_PROGRAM_ADDRESS,
-    ),
-  );
-  accounts.set(
-    market,
-    encoded(
-      prediction
-        .getMarketEncoder()
-        .encode({
-          oracle,
-          quoteMint: QUOTE,
-          creator: creator.address,
-          potVault,
-          bump,
-          marketAuthorityBump,
-          outcomeCount: 3,
-          registeredBitmap: bitmap,
-          outcomeMints: [
-            ...mints.map((mint, i) => (bitmap & (1 << i) ? mint : ZERO)),
-            ...Array(5).fill(ZERO),
-          ],
-          isResolved: false,
-          isVoid: false,
-          winningOutcomeId: new Uint8Array(32),
-          winnerMint: ZERO,
-          totalPot: 0n,
-          totalClaimed: 0n,
-          claimableSupply: 0n,
-        }),
-      prediction.PREDICTION_MIGRATOR_PROGRAM_ADDRESS,
-    ),
-  );
-  const launches: Array<{ pubkey: Address; account: RpcValue }> = [];
-  for (let i = 0; i < 3; i++) {
-    if (!(bitmap & (1 << i))) continue;
-    const [entry, entryBump] = await prediction.getPredictionEntryAddress(
-      market,
-      mints[i],
-    );
-    accounts.set(
-      entry,
-      encoded(
-        prediction
-          .getEntryEncoder()
-          .encode({
-            market,
-            baseMint: mints[i],
-            bump: entryBump,
-            isMigrated: migrated.includes(i),
-            contribution: 0n,
-            refundSupply: 0n,
-            refundedQuote: 0n,
-          }),
-        prediction.PREDICTION_MIGRATOR_PROGRAM_ADDRESS,
-      ),
-    );
-    const [launch, launchBump] = await initializer.getLaunchAddress(
-      oracle,
-      ids[i],
-    );
-    const [, launchAuthorityBump] =
-      await initializer.getLaunchAuthorityAddress(launch);
-    const empty = generated
-      .getLaunchDecoder()
-      .decode(new Uint8Array(generated.getLaunchSize()));
-    const data = generated
-      .getLaunchEncoder()
-      .encode({
-        ...empty,
-        authority: creator.address,
-        namespace: oracle,
-        launchId: ids[i],
-        bump: launchBump,
-        launchAuthorityBump,
-        baseMint: mints[i],
-        quoteMint: QUOTE,
-        baseVault: mints[i],
-        quoteVault: QUOTE,
-        phase: migrated.includes(i)
-          ? initializer.PHASE_MIGRATED
-          : initializer.PHASE_TRADING,
-        allowBuy: 1,
-        allowSell: 0,
-        hookProgram: initializer.PREDICTION_HOOK_PROGRAM_ID,
-        hookFlags: 130,
-        migratorProgram: prediction.PREDICTION_MIGRATOR_PROGRAM_ADDRESS,
-      });
-    launches.push({
-      pubkey: launch,
-      account: encoded(data, initializer.INITIALIZER_PROGRAM_ID),
-    });
-  }
-  const rpc = {
-    getAccountInfo: (key: Address) => ({
-      send: async () => ({
-        context: { slot: 1n },
-        value: accounts.get(key) ?? null,
-      }),
-    }),
-    getMultipleAccounts: (keys: Address[]) => ({
-      send: async () => ({
-        context: { slot: 1n },
-        value: keys.map((key) => accounts.get(key) ?? null),
-      }),
-    }),
-    getProgramAccounts: () => ({ send: async () => launches }),
-  } as unknown as Rpc<
-    GetAccountInfoApi & GetMultipleAccountsApi & GetProgramAccountsApi
-  >;
-  const inputs: pm.PrepareOutcomeLaunchInput[] = ids.map((outcomeId, i) => ({
-    oracle,
-    creator,
-    outcomeId,
-    launch: {
-      config: ZERO,
-      launchId: outcomeId,
-      launchAccounts: {
-        baseMint: createNoopSigner(mints[i]),
-        quoteMint: QUOTE,
-        baseVault: payer,
-        quoteVault: payer,
-      },
-      payer,
-      supply: {
-        baseDecimals: 6,
-        baseTotalSupply: 1000000n,
-        baseForDistribution: 0n,
-        baseForLiquidity: 0n,
-      },
-      curve: {
-        curveVirtualBase: 1000000n,
-        curveVirtualQuote: 1000000n,
-        swapFeeBps: 100,
-      },
-    },
-  }));
-  return { rpc, market, oracle, accounts, launches, inputs };
-}
-
-async function buyFixture(migrated: number[] = []) {
-  const f = await fixture({ finalized: false, migrated });
-  const launch = f.launches[0].pubkey;
-  const [launchAuthority] = await initializer.getLaunchAuthorityAddress(launch);
-  const [feeAddress] = await initializer.getLaunchFeeStateAddress(launch);
-  const [baseVault] = await prediction.getPredictionPotVaultAddress(f.market);
-  const [quoteVault] = await prediction.getPredictionMarketAuthorityAddress(
-    f.market,
-  );
-  const launchData = {
-    ...generated
-      .getLaunchDecoder()
-      .decode(Buffer.from(f.launches[0].account.data[0], 'base64')),
-    baseVault,
-    quoteVault,
-    baseForDistribution: 200n,
-    baseForLiquidity: 100n,
-    curveVirtualBase: 1000n,
-    curveVirtualQuote: 1000n,
-    swapFeeBps: 100,
-  };
-  const feeData = {
-    ...generated
-      .getLaunchFeeStateDecoder()
-      .decode(new Uint8Array(generated.getLaunchFeeStateSize())),
-    launch,
-    beneficiaryLen: 1,
-    swapFeeBps: 100,
-    cumulatedBaseFees: 100n,
-    cumulatedQuoteFees: 50n,
-    distributedProtocolBaseFees: 20n,
-    distributedProtocolQuoteFees: 10n,
-    distributedBaseByBeneficiary: [30n, ...Array(7).fill(0n)],
-    distributedQuoteByBeneficiary: [15n, ...Array(7).fill(0n)],
-  };
-  function update() {
-    f.launches[0].account = encoded(
-      generated.getLaunchEncoder().encode(launchData),
-      initializer.INITIALIZER_PROGRAM_ID,
-    );
-    f.accounts.set(
-      feeAddress,
-      encoded(
-        generated.getLaunchFeeStateEncoder().encode(feeData),
-        initializer.INITIALIZER_PROGRAM_ID,
-      ),
-    );
-  }
-  update();
-  for (const mint of [mints[0], QUOTE]) {
-    f.accounts.set(
-      mint,
-      encoded(
-        getMintEncoder().encode({
-          ...getMintDecoder().decode(new Uint8Array(getMintSize())),
-          isInitialized: true,
-          decimals: 6,
-          supply: 10000n,
-        }),
-        TOKEN_PROGRAM_ADDRESS,
-      ),
-    );
-  }
-  for (const [vault, mint, amount] of [
-    [baseVault, mints[0], 1000n],
-    [quoteVault, QUOTE, 525n],
-  ] as const) {
-    f.accounts.set(
-      vault,
-      encoded(
-        getTokenEncoder().encode({
-          ...getTokenDecoder().decode(new Uint8Array(getTokenSize())),
-          mint,
-          owner: launchAuthority,
-          amount,
-          state: 1,
-        }),
-        TOKEN_PROGRAM_ADDRESS,
-      ),
-    );
-  }
-  const input = { market: f.market, baseMint: mints[0], amountIn: 100n };
-  return { ...f, input, launchData, feeData, update };
-}
+import {
+  fixture,
+  buyFixture,
+  encoded,
+  ZERO,
+  mints,
+  payer,
+  ids,
+} from '../fixtures/prediction.js';
 
 describe('prediction buy quotes from serialized accounts', () => {
   it('excludes distribution, liquidity and pending beneficiary/protocol fees', async () => {
@@ -393,6 +92,105 @@ describe('prediction buy quotes from serialized accounts', () => {
     await expect(pm.fetchPredictionBuyQuote(f.rpc, f.input)).rejects.toThrow(
       'swap fee state',
     );
+  });
+});
+
+describe('payout estimates across changing RPC state', () => {
+  it.each([
+    { totalPot: 1n },
+    { totalClaimed: 1n },
+    { isResolved: true },
+    { isVoid: true },
+  ])('rejects a market change between reads: %s', async (patch) => {
+    const f = await buyFixture();
+    f.readHook.current = (key, count) => {
+      if (key !== f.market || count !== 2) return;
+      const current = f.accounts.get(key)!;
+      const data = prediction
+        .getMarketDecoder()
+        .decode(Buffer.from(current.data[0], 'base64'));
+      f.accounts.set(
+        key,
+        encoded(
+          prediction.getMarketEncoder().encode({ ...data, ...patch }),
+          current.owner,
+        ),
+      );
+    };
+    await expect(
+      pm.fetchPotentialPayoutIfWinner(f.rpc, {
+        market: f.market,
+        candidateMint: mints[0],
+        tokenAmount: 1n,
+      }),
+    ).rejects.toThrow('Market changed while estimating payout');
+  });
+  it('rejects an entry settling between the two snapshots', async () => {
+    const f = await buyFixture();
+    const [entry] = await prediction.getPredictionEntryAddress(
+      f.market,
+      mints[0],
+    );
+    f.readHook.current = (key, count) => {
+      if (key !== f.market || count !== 2) return;
+      const current = f.accounts.get(entry)!;
+      const data = prediction
+        .getEntryDecoder()
+        .decode(Buffer.from(current.data[0], 'base64'));
+      f.accounts.set(
+        entry,
+        encoded(
+          prediction.getEntryEncoder().encode({ ...data, isMigrated: true }),
+          current.owner,
+        ),
+      );
+    };
+    await expect(
+      pm.fetchPotentialPayoutIfWinner(f.rpc, {
+        market: f.market,
+        candidateMint: mints[0],
+        tokenAmount: 1n,
+      }),
+    ).rejects.toThrow('Market changed while estimating payout');
+  });
+  it('rechecks oracle finalization before returning an estimate', async () => {
+    const f = await buyFixture();
+    f.readHook.current = (key, count) => {
+      if (key !== f.oracle || count !== 2) return;
+      const current = f.accounts.get(key)!;
+      const data = oracleClient
+        .getOracleStateDecoder()
+        .decode(Buffer.from(current.data[0], 'base64'));
+      f.accounts.set(
+        key,
+        encoded(
+          oracleClient
+            .getOracleStateEncoder()
+            .encode({ ...data, isFinalized: true, winningOutcomeId: ids[1] }),
+          current.owner,
+        ),
+      );
+    };
+    await expect(
+      pm.fetchPotentialPayoutIfWinner(f.rpc, {
+        market: f.market,
+        candidateMint: mints[0],
+        tokenAmount: 1n,
+      }),
+    ).rejects.toThrow('losing outcome');
+  });
+  it('returns a quote for an unchanged snapshot', async () => {
+    const f = await buyFixture();
+    expect(
+      await pm.fetchPotentialPayoutIfWinner(f.rpc, {
+        market: f.market,
+        candidateMint: mints[0],
+        tokenAmount: 9050n,
+      }),
+    ).toMatchObject({
+      unsettledContributions: 500n,
+      claimableSupplyUsed: 9050n,
+    });
   });
 });
 

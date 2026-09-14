@@ -5,9 +5,11 @@
     "moduleResolution": "bundler",
     "lib": ["ES2022", "DOM"],
     "strict": true,
+    "baseUrl": ".",
+    "paths": { "@/*": ["../../src/*"] },
     "skipLibCheck": true,
     "noEmit": true,
     "allowImportingTsExtensions": true
   },
-  "include": ["main.ts"]
+  "include": ["main.ts", "test/**/*.ts", "vitest.config.ts"]
 }
