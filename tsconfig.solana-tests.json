@@ -4,6 +4,8 @@
   "exclude": ["node_modules", "dist"],
   "compilerOptions": {
     "noEmit": true,
+    "declaration": false,
+    "declarationMap": false,
     "rootDir": ".",
     "baseUrl": ".",
     "paths": { "@/*": ["src/*"] },
