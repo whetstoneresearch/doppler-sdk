@@ -309,10 +309,17 @@ export async function fixture({
   return { rpc, market, oracle, accounts, launches, inputs, readHook };
 }
 
+export type BuyFixture = Awaited<ReturnType<typeof fixture>> & {
+  input: { market: Address; baseMint: Address; amountIn: bigint };
+  launchData: generated.Launch;
+  feeData: generated.LaunchFeeState;
+  update: () => void;
+};
+
 export async function buyFixture(
   migrated: number[] = [],
   quoteMint: Address = QUOTE,
-) {
+): Promise<BuyFixture> {
   const f = await fixture({
     finalized: migrated.length > 0,
     migrated,
