@@ -41,7 +41,6 @@ jobs:
     env:
       AGAVE_VERSION: v4.3.0-rc.0
       DOPPLER_PREDICTION_FORK_MODE: deployed
-      DOPPLER_PREDICTION_FORK_REPORT_DIR: ${{ runner.temp }}/prediction-fork
     steps:
       - uses: actions/checkout@v4
         with:
@@ -64,6 +63,8 @@ jobs:
           fi
           echo "$HOME/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
       - name: Run six prediction scenarios and completed replay
+        env:
+          DOPPLER_PREDICTION_FORK_REPORT_DIR: ${{ runner.temp }}/prediction-fork
         run: pnpm test:solana:prediction:devnet-fork
       - name: Retain verification evidence (exclude ephemeral keys)
         if: always()
