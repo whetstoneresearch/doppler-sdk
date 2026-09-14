@@ -286,6 +286,28 @@ describe('prediction market independent regression review', () => {
     expect(plan.setupInstructions).toHaveLength(2);
   });
 
+  it('does not wrap SOL for a classic SPL quote mint', async () => {
+    const f = await fixture();
+    const plan = await pm.prepareBuy({
+      oracle: f.oracle,
+      market: f.market,
+      launch: BASE,
+      launchAuthority: OTHER,
+      baseMint: BASE,
+      quoteMint: OTHER,
+      baseVault: BASE,
+      quoteVault: OTHER,
+      launchFeeState: ZERO,
+      payer,
+      amountIn: 100n,
+      minAmountOut: 1n,
+    });
+    expect(plan.setupInstructions).toHaveLength(2);
+    expect(
+      plan.setupInstructions.every((ix) => ix.programAddress !== ZERO),
+    ).toBe(true);
+  });
+
   it('distinguishes registration, unbounded trading, pending settlement, claims and voids', async () => {
     const { marketData: m, oracleData: o } = await fixture();
     expect(pm.getPredictionMarketStatus(m, o).missingOutcomeIndexes).toEqual([

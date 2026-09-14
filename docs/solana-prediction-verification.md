@@ -264,3 +264,28 @@ registration on the retained fork at market
 `6Knfgd5zsNK7JgrFfhEVs9mcay5zv5koN5ZgzsxkdpAL`, signature
 `hKLaZFd9N4hNmQy2opnk41KaPKjFzMukJsVVupX3KFhDvMBYS4iYrBt5XYcgrn7HWfr374KpPMjq5NV1ZpyLkEt`.
 The browser build, source formatting, lint and prediction-tool typecheck passed.
+
+## September 14 SDK review regressions
+
+The review follow-up corrects buy-quote reserve accounting (distribution,
+liquidity, and pending fees), hypothetical payout supply (pending base fees
+survive settlement), and rejection of inactive/non-XYK launch quotes. Serialized
+RPC-account regression tests cover these paths and canonical launch recovery.
+Five of the new tests fail against the preceding SDK implementation.
+
+The browser now uses the validated SDK launch/quote readers, auto-detects SOL
+wrapping, and clears minimum output when the amount or outcome binding changes.
+A local browser smoke check verified clearing the minimum after amount and
+launch edits; it did not submit wallet transactions.
+
+The metadata benchmark now builds prediction instructions through
+`prepareOutcomeLaunch`. Prediction SDK CI typechecks and executes the benchmark,
+including when only its file changes. Its reported oversized transactions are
+size measurements, not successful submissions.
+
+Validation: 1,005 unit tests, 233 Solana tests, source/example/prediction-tool
+TypeScript checks, lint, formatting, browser build, and benchmark execution pass.
+The repository-wide `typecheck:test` still reports errors in unchanged EVM tests
+and Vitest configuration. The deployed-binary fork evidence above remains tied
+to its recorded SDK revision; this follow-up does not claim a new 98-transaction
+lifecycle run.

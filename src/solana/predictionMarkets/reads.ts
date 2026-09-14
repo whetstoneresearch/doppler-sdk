@@ -298,6 +298,14 @@ export async function fetchPredictionBuyQuote(
     (o) => o.entry.data.baseMint === input.baseMint,
   );
   if (!outcome) throw new Error('Mint is not registered in market');
+  if (
+    outcome.entry.data.isMigrated ||
+    outcome.launch.account.phase !== initializer.PHASE_TRADING ||
+    outcome.launch.account.allowBuy === 0
+  )
+    throw new Error('Outcome launch is not open for buys');
+  if (outcome.launch.account.curveKind !== initializer.CURVE_KIND_XYK)
+    throw new Error('Prediction buy quotes require an XYK curve');
   const [[baseMint, quoteMint], [baseVault, quoteVault], feeState] =
     await Promise.all([
       Promise.all([
@@ -348,10 +356,13 @@ export async function fetchPredictionBuyQuote(
     fee.distributedQuoteByBeneficiary
       .slice(0, fee.beneficiaryLen)
       .reduce((a, b) => a + b, 0n);
+  const reservedBase =
+    outcome.launch.account.baseForDistribution +
+    outcome.launch.account.baseForLiquidity;
   if (
     pendingBaseFees < 0n ||
     pendingQuoteFees < 0n ||
-    baseVault.data.amount < pendingBaseFees ||
+    baseVault.data.amount < pendingBaseFees + reservedBase ||
     quoteVault.data.amount < pendingQuoteFees
   )
     throw new Error('Inconsistent reserve/fee snapshot; refresh state');
@@ -359,7 +370,7 @@ export async function fetchPredictionBuyQuote(
     ...quoteBuy({
       amountIn: input.amountIn,
       slippageBps: input.slippageBps,
-      baseReserve: baseVault.data.amount - pendingBaseFees,
+      baseReserve: baseVault.data.amount - pendingBaseFees - reservedBase,
       quoteReserve: quoteVault.data.amount - pendingQuoteFees,
       virtualBase: outcome.launch.account.curveVirtualBase,
       virtualQuote: outcome.launch.account.curveVirtualQuote,

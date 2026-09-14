@@ -1,5 +1,6 @@
 import {
   appendTransactionMessageInstructions,
+  blockhash,
   createTransactionMessage,
   generateKeyPairSigner,
   getTransactionMessageSize,
@@ -21,7 +22,7 @@ import {
   dopplerLaunchHookV1,
   cpmmMigrator,
   initializer,
-  predictionMigrator,
+  predictionMarkets,
   trustedOracle,
 } from '../src/solana/index.js';
 
@@ -40,7 +41,7 @@ const REQUESTED_METADATA = {
   metadataUri: 'https://example.com/frenzy-devnet-cosigner.json',
 };
 const DUMMY_BLOCKHASH = {
-  blockhash: '11111111111111111111111111111111',
+  blockhash: blockhash('11111111111111111111111111111111'),
   lastValidBlockHeight: 0n,
 };
 
@@ -296,102 +297,36 @@ async function buildPredictionMessage(metadata: {
     payer.address,
     oracleNonce,
   );
-  const namespace = oracleStateAddress;
-  const entryId = new Uint8Array(32);
-  entryId.set(new TextEncoder().encode('YES'));
-  const launchId = entryId;
-  const [config] = await initializer.getConfigAddress();
-  const [launch] = await initializer.getLaunchAddress(namespace, launchId);
-  const [launchAuthority] = await initializer.getLaunchAuthorityAddress(launch);
-  const metadataAccount = await initializer.getTokenMetadataAddress(
-    baseMint.address,
-  );
-
-  const [market] = await predictionMigrator.getPredictionMarketAddress(
-    oracleStateAddress,
-    WSOL_MINT,
-  );
-  const [potVault] =
-    await predictionMigrator.getPredictionPotVaultAddress(market);
-  const [marketAuthority] =
-    await predictionMigrator.getPredictionMarketAuthorityAddress(market);
-  const [entryAddress] = await predictionMigrator.getPredictionEntryAddress(
-    market,
-    entryId,
-  );
-  const [entryByMint] =
-    await predictionMigrator.getPredictionEntryByMintAddress(
-      market,
-      baseMint.address,
-    );
-
-  const migratorAccounts = [
-    oracleStateAddress,
-    market,
-    potVault,
-    marketAuthority,
-    entryAddress,
-    entryByMint,
-  ];
-
-  const baseDecimals = 6;
-  const baseTotalSupply = 1_000_000_000n * 10n ** BigInt(baseDecimals);
-  const ix = await initializer.createInitializeLaunchInstruction(
-    {
-      config,
-      launch,
-      launchAuthority,
-      baseMint,
-      quoteMint: WSOL_MINT,
-      baseVault,
-      quoteVault,
+  const baseTotalSupply = 1_000_000_000n * 10n ** 6n;
+  const plan = await predictionMarkets.prepareOutcomeLaunch({
+    oracle: oracleStateAddress,
+    creator: payer,
+    outcomeId: predictionMarkets.outcomeIdFromLabel('YES'),
+    launch: {
+      config: (await initializer.getConfigAddress())[0],
+      launchId: predictionMarkets.outcomeIdFromLabel('YES'),
+      launchAccounts: { baseMint, quoteMint: WSOL_MINT, baseVault, quoteVault },
       payer,
-      authority: payer,
-      migratorProgram: predictionMigrator.PREDICTION_MIGRATOR_PROGRAM_ADDRESS,
-      baseTokenProgram: TOKEN_PROGRAM_ADDRESS,
-      quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
-      systemProgram: SYSTEM_PROGRAM_ADDRESS,
-      rent: SYSVAR_RENT_ADDRESS,
-      metadataAccount,
+      supply: {
+        baseDecimals: 6,
+        baseTotalSupply,
+        baseForDistribution: 0n,
+        baseForLiquidity: 0n,
+      },
+      curve: {
+        curveVirtualBase: baseTotalSupply,
+        curveVirtualQuote: 500_000_000n,
+        swapFeeBps: 100,
+      },
+      metadata,
     },
-    {
-      namespace,
-      launchId,
-      baseDecimals,
-      baseTotalSupply,
-      baseForDistribution: 0n,
-      baseForLiquidity: 0n,
-      curveVirtualBase: baseTotalSupply,
-      curveVirtualQuote: 500_000_000n,
-      curveFeeBps: 100,
-      curveKind: initializer.CURVE_KIND_XYK,
-      curveParams: new Uint8Array([initializer.CURVE_PARAMS_FORMAT_XYK_V0]),
-      allowBuy: true,
-      allowSell: true,
-      hookFlags: initializer.HF_BEFORE_SWAP,
-      hookPayload: new Uint8Array(),
-      migratorInitPayload: predictionMigrator
-        .getRegisterEntryInstructionDataEncoder()
-        .encode({ entryId }),
-      migratorMigratePayload: predictionMigrator
-        .getMigrateEntryInstructionDataEncoder()
-        .encode({ entryId }),
-      hookRemainingAccountsHash: initializer.computeRemainingAccountsHash([
-        oracleStateAddress,
-      ]),
-      migratorInitRemainingAccountsHash:
-        initializer.computeRemainingAccountsHash(migratorAccounts),
-      migratorRemainingAccountsHash:
-        initializer.computeRemainingAccountsHash(migratorAccounts),
-      ...metadata,
-    },
-  );
+  });
 
   return pipe(
     createTransactionMessage({ version: 0 }),
     (tx) => setTransactionMessageFeePayerSigner(payer, tx),
     (tx) => setTransactionMessageLifetimeUsingBlockhash(DUMMY_BLOCKHASH, tx),
-    (tx) => appendTransactionMessageInstructions([ix], tx),
+    (tx) => appendTransactionMessageInstructions(plan.instructions, tx),
   );
 }
 
