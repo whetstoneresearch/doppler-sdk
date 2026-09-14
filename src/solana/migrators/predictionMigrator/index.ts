@@ -5,6 +5,5 @@ export {
   getPredictionMarketAuthorityAddress,
   getPredictionPotVaultAddress,
   getPredictionEntryAddress,
-  getPredictionEntryByMintAddress,
   getPredictionClaimReceiptAddress,
 } from './pda.js';

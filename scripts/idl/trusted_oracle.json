@@ -10,7 +10,7 @@
     {
       "name": "finalize",
       "docs": [
-        "Finalize the oracle by setting the winning mint",
+        "Finalize the oracle by setting the canonical winning outcome ID.",
         "",
         "Only the oracle_authority can call this instruction.",
         "Once finalized, the oracle cannot be changed."
@@ -64,8 +64,13 @@
       ],
       "args": [
         {
-          "name": "winning_mint",
-          "type": "pubkey"
+          "name": "winning_outcome_id",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
         }
       ]
     },
@@ -75,7 +80,7 @@
         "Initialize a new oracle with a trusted authority",
         "",
         "The oracle_authority will be the only account that can finalize",
-        "this oracle and set the winning mint."
+        "this oracle and set the canonical winning outcome ID."
       ],
       "discriminator": [
         144,
@@ -168,8 +173,13 @@
     },
     {
       "code": 6003,
-      "name": "InvalidWinningMint",
-      "msg": "Invalid winning mint"
+      "name": "InvalidWinningOutcome",
+      "msg": "Invalid winning outcome ID"
+    },
+    {
+      "code": 6004,
+      "name": "InvalidOutcomeSet",
+      "msg": "Invalid declared outcome set"
     }
   ],
   "types": [
@@ -186,11 +196,18 @@
             "type": "u64"
           },
           {
-            "name": "quote_mint",
+            "name": "outcome_ids",
             "docs": [
-              "Optional quote mint for validation (use Pubkey::default() if not needed)"
+              "Immutable set of canonical outcome IDs this oracle may finalize to."
             ],
-            "type": "pubkey"
+            "type": {
+              "vec": {
+                "array": [
+                  "u8",
+                  32
+                ]
+              }
+            }
           }
         ]
       }
@@ -213,25 +230,23 @@
             "type": "pubkey"
           },
           {
-            "name": "quote_mint",
-            "docs": [
-              "Optional quote mint for validation (Pubkey::default() if not used)"
-            ],
-            "type": "pubkey"
-          },
-          {
             "name": "is_finalized",
             "docs": [
-              "Whether the oracle has been finalized with a winner"
+              "Whether the oracle has been finalized with an outcome"
             ],
             "type": "bool"
           },
           {
-            "name": "winning_mint",
+            "name": "winning_outcome_id",
             "docs": [
-              "The winning mint (only valid if is_finalized == true)"
+              "Canonical winning outcome ID (only valid if is_finalized == true)"
             ],
-            "type": "pubkey"
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
           },
           {
             "name": "nonce",
@@ -248,14 +263,26 @@
             "type": "u8"
           },
           {
-            "name": "_reserved",
+            "name": "outcome_count",
             "docs": [
-              "Reserved for future use"
+              "Number of declared outcomes in `outcome_ids`"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "outcome_ids",
+            "docs": [
+              "Immutable set of canonical outcome IDs declared at initialization"
             ],
             "type": {
               "array": [
-                "u8",
-                31
+                {
+                  "array": [
+                    "u8",
+                    32
+                  ]
+                },
+                8
               ]
             }
           }

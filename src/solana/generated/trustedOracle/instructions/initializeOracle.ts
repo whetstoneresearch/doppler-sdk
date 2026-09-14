@@ -10,8 +10,8 @@ import {
   combineCodec,
   fixDecoderSize,
   fixEncoderSize,
-  getAddressDecoder,
-  getAddressEncoder,
+  getArrayDecoder,
+  getArrayEncoder,
   getBytesDecoder,
   getBytesEncoder,
   getStructDecoder,
@@ -24,9 +24,9 @@ import {
   type AccountMeta,
   type AccountSignerMeta,
   type Address,
-  type FixedSizeCodec,
-  type FixedSizeDecoder,
-  type FixedSizeEncoder,
+  type Codec,
+  type Decoder,
+  type Encoder,
   type Instruction,
   type InstructionWithAccounts,
   type InstructionWithData,
@@ -81,37 +81,37 @@ export type InitializeOracleInstructionData = {
   discriminator: ReadonlyUint8Array;
   /** Nonce for PDA derivation (allows multiple oracles per authority) */
   nonce: bigint;
-  /** Optional quote mint for validation (use Pubkey::default() if not needed) */
-  quoteMint: Address;
+  /** Immutable set of canonical outcome IDs this oracle may finalize to. */
+  outcomeIds: Array<ReadonlyUint8Array>;
 };
 
 export type InitializeOracleInstructionDataArgs = {
   /** Nonce for PDA derivation (allows multiple oracles per authority) */
   nonce: number | bigint;
-  /** Optional quote mint for validation (use Pubkey::default() if not needed) */
-  quoteMint: Address;
+  /** Immutable set of canonical outcome IDs this oracle may finalize to. */
+  outcomeIds: Array<ReadonlyUint8Array>;
 };
 
-export function getInitializeOracleInstructionDataEncoder(): FixedSizeEncoder<InitializeOracleInstructionDataArgs> {
+export function getInitializeOracleInstructionDataEncoder(): Encoder<InitializeOracleInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       ['nonce', getU64Encoder()],
-      ['quoteMint', getAddressEncoder()],
+      ['outcomeIds', getArrayEncoder(fixEncoderSize(getBytesEncoder(), 32))],
     ]),
     (value) => ({ ...value, discriminator: INITIALIZE_ORACLE_DISCRIMINATOR }),
   );
 }
 
-export function getInitializeOracleInstructionDataDecoder(): FixedSizeDecoder<InitializeOracleInstructionData> {
+export function getInitializeOracleInstructionDataDecoder(): Decoder<InitializeOracleInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['nonce', getU64Decoder()],
-    ['quoteMint', getAddressDecoder()],
+    ['outcomeIds', getArrayDecoder(fixDecoderSize(getBytesDecoder(), 32))],
   ]);
 }
 
-export function getInitializeOracleInstructionDataCodec(): FixedSizeCodec<
+export function getInitializeOracleInstructionDataCodec(): Codec<
   InitializeOracleInstructionDataArgs,
   InitializeOracleInstructionData
 > {
@@ -131,7 +131,7 @@ export type InitializeOracleInput<
   oracleState: Address<TAccountOracleState>;
   systemProgram?: Address<TAccountSystemProgram>;
   nonce: InitializeOracleInstructionDataArgs['nonce'];
-  quoteMint: InitializeOracleInstructionDataArgs['quoteMint'];
+  outcomeIds: InitializeOracleInstructionDataArgs['outcomeIds'];
 };
 
 export function getInitializeOracleInstruction<

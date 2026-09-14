@@ -73,7 +73,6 @@ export type MigrateEntryInstruction<
   TAccountPotVault extends string | AccountMeta<string> = string,
   TAccountMarketAuthority extends string | AccountMeta<string> = string,
   TAccountEntry extends string | AccountMeta<string> = string,
-  TAccountEntryByMint extends string | AccountMeta<string> = string,
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -132,26 +131,17 @@ export type MigrateEntryInstruction<
       TAccountEntry extends string
         ? WritableAccount<TAccountEntry>
         : TAccountEntry,
-      TAccountEntryByMint extends string
-        ? ReadonlyAccount<TAccountEntryByMint>
-        : TAccountEntryByMint,
       ...TRemainingAccounts,
     ]
   >;
 
-export type MigrateEntryInstructionData = {
-  discriminator: ReadonlyUint8Array;
-  entryId: ReadonlyUint8Array;
-};
+export type MigrateEntryInstructionData = { discriminator: ReadonlyUint8Array };
 
-export type MigrateEntryInstructionDataArgs = { entryId: ReadonlyUint8Array };
+export type MigrateEntryInstructionDataArgs = {};
 
 export function getMigrateEntryInstructionDataEncoder(): FixedSizeEncoder<MigrateEntryInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([
-      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['entryId', fixEncoderSize(getBytesEncoder(), 32)],
-    ]),
+    getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
     (value) => ({ ...value, discriminator: MIGRATE_ENTRY_DISCRIMINATOR }),
   );
 }
@@ -159,7 +149,6 @@ export function getMigrateEntryInstructionDataEncoder(): FixedSizeEncoder<Migrat
 export function getMigrateEntryInstructionDataDecoder(): FixedSizeDecoder<MigrateEntryInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['entryId', fixDecoderSize(getBytesDecoder(), 32)],
   ]);
 }
 
@@ -191,7 +180,6 @@ export type MigrateEntryAsyncInput<
   TAccountPotVault extends string = string,
   TAccountMarketAuthority extends string = string,
   TAccountEntry extends string = string,
-  TAccountEntryByMint extends string = string,
 > = {
   /** Standard initializer module-call prefix account. */
   initializerConfig: Address<TAccountInitializerConfig>;
@@ -218,16 +206,13 @@ export type MigrateEntryAsyncInput<
    */
   oracle: Address<TAccountOracle>;
   /** Market PDA */
-  market?: Address<TAccountMarket>;
+  market: Address<TAccountMarket>;
   /** Pot vault for holding quote tokens */
   potVault: Address<TAccountPotVault>;
   /** Market authority PDA used as the pot vault owner. */
   marketAuthority?: Address<TAccountMarketAuthority>;
   /** Entry PDA */
-  entry: Address<TAccountEntry>;
-  /** EntryByMint PDA (for validation) */
-  entryByMint?: Address<TAccountEntryByMint>;
-  entryId: MigrateEntryInstructionDataArgs['entryId'];
+  entry?: Address<TAccountEntry>;
 };
 
 export async function getMigrateEntryInstructionAsync<
@@ -248,7 +233,6 @@ export async function getMigrateEntryInstructionAsync<
   TAccountPotVault extends string,
   TAccountMarketAuthority extends string,
   TAccountEntry extends string,
-  TAccountEntryByMint extends string,
   TProgramAddress extends Address = typeof PREDICTION_MIGRATOR_PROGRAM_ADDRESS,
 >(
   input: MigrateEntryAsyncInput<
@@ -268,8 +252,7 @@ export async function getMigrateEntryInstructionAsync<
     TAccountMarket,
     TAccountPotVault,
     TAccountMarketAuthority,
-    TAccountEntry,
-    TAccountEntryByMint
+    TAccountEntry
   >,
   config?: { programAddress?: TProgramAddress },
 ): Promise<
@@ -291,8 +274,7 @@ export async function getMigrateEntryInstructionAsync<
     TAccountMarket,
     TAccountPotVault,
     TAccountMarketAuthority,
-    TAccountEntry,
-    TAccountEntryByMint
+    TAccountEntry
   >
 > {
   // Program address.
@@ -333,15 +315,11 @@ export async function getMigrateEntryInstructionAsync<
       isWritable: false,
     },
     entry: { value: input.entry ?? null, isWritable: true },
-    entryByMint: { value: input.entryByMint ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
     ResolvedInstructionAccount
   >;
-
-  // Original args.
-  const args = { ...input };
 
   // Resolve default values.
   if (!accounts.systemProgram.value) {
@@ -351,26 +329,6 @@ export async function getMigrateEntryInstructionAsync<
   if (!accounts.rent.value) {
     accounts.rent.value =
       'SysvarRent111111111111111111111111111111111' as Address<'SysvarRent111111111111111111111111111111111'>;
-  }
-  if (!accounts.market.value) {
-    accounts.market.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(new Uint8Array([109, 97, 114, 107, 101, 116])),
-        getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount(
-            'oracle',
-            accounts.oracle.value,
-          ),
-        ),
-        getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount(
-            'quoteMint',
-            accounts.quoteMint.value,
-          ),
-        ),
-      ],
-    });
   }
   if (!accounts.marketAuthority.value) {
     accounts.marketAuthority.value = await getProgramDerivedAddress({
@@ -391,15 +349,11 @@ export async function getMigrateEntryInstructionAsync<
       ],
     });
   }
-  if (!accounts.entryByMint.value) {
-    accounts.entryByMint.value = await getProgramDerivedAddress({
+  if (!accounts.entry.value) {
+    accounts.entry.value = await getProgramDerivedAddress({
       programAddress,
       seeds: [
-        getBytesEncoder().encode(
-          new Uint8Array([
-            101, 110, 116, 114, 121, 95, 98, 121, 95, 109, 105, 110, 116,
-          ]),
-        ),
+        getBytesEncoder().encode(new Uint8Array([101, 110, 116, 114, 121])),
         getAddressEncoder().encode(
           getAddressFromResolvedInstructionAccount(
             'market',
@@ -436,11 +390,8 @@ export async function getMigrateEntryInstructionAsync<
       getAccountMeta('potVault', accounts.potVault),
       getAccountMeta('marketAuthority', accounts.marketAuthority),
       getAccountMeta('entry', accounts.entry),
-      getAccountMeta('entryByMint', accounts.entryByMint),
     ],
-    data: getMigrateEntryInstructionDataEncoder().encode(
-      args as MigrateEntryInstructionDataArgs,
-    ),
+    data: getMigrateEntryInstructionDataEncoder().encode({}),
     programAddress,
   } as MigrateEntryInstruction<
     TProgramAddress,
@@ -460,8 +411,7 @@ export async function getMigrateEntryInstructionAsync<
     TAccountMarket,
     TAccountPotVault,
     TAccountMarketAuthority,
-    TAccountEntry,
-    TAccountEntryByMint
+    TAccountEntry
   >);
 }
 
@@ -483,7 +433,6 @@ export type MigrateEntryInput<
   TAccountPotVault extends string = string,
   TAccountMarketAuthority extends string = string,
   TAccountEntry extends string = string,
-  TAccountEntryByMint extends string = string,
 > = {
   /** Standard initializer module-call prefix account. */
   initializerConfig: Address<TAccountInitializerConfig>;
@@ -517,9 +466,6 @@ export type MigrateEntryInput<
   marketAuthority: Address<TAccountMarketAuthority>;
   /** Entry PDA */
   entry: Address<TAccountEntry>;
-  /** EntryByMint PDA (for validation) */
-  entryByMint: Address<TAccountEntryByMint>;
-  entryId: MigrateEntryInstructionDataArgs['entryId'];
 };
 
 export function getMigrateEntryInstruction<
@@ -540,7 +486,6 @@ export function getMigrateEntryInstruction<
   TAccountPotVault extends string,
   TAccountMarketAuthority extends string,
   TAccountEntry extends string,
-  TAccountEntryByMint extends string,
   TProgramAddress extends Address = typeof PREDICTION_MIGRATOR_PROGRAM_ADDRESS,
 >(
   input: MigrateEntryInput<
@@ -560,8 +505,7 @@ export function getMigrateEntryInstruction<
     TAccountMarket,
     TAccountPotVault,
     TAccountMarketAuthority,
-    TAccountEntry,
-    TAccountEntryByMint
+    TAccountEntry
   >,
   config?: { programAddress?: TProgramAddress },
 ): MigrateEntryInstruction<
@@ -582,8 +526,7 @@ export function getMigrateEntryInstruction<
   TAccountMarket,
   TAccountPotVault,
   TAccountMarketAuthority,
-  TAccountEntry,
-  TAccountEntryByMint
+  TAccountEntry
 > {
   // Program address.
   const programAddress =
@@ -623,15 +566,11 @@ export function getMigrateEntryInstruction<
       isWritable: false,
     },
     entry: { value: input.entry ?? null, isWritable: true },
-    entryByMint: { value: input.entryByMint ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
     ResolvedInstructionAccount
   >;
-
-  // Original args.
-  const args = { ...input };
 
   // Resolve default values.
   if (!accounts.systemProgram.value) {
@@ -663,11 +602,8 @@ export function getMigrateEntryInstruction<
       getAccountMeta('potVault', accounts.potVault),
       getAccountMeta('marketAuthority', accounts.marketAuthority),
       getAccountMeta('entry', accounts.entry),
-      getAccountMeta('entryByMint', accounts.entryByMint),
     ],
-    data: getMigrateEntryInstructionDataEncoder().encode(
-      args as MigrateEntryInstructionDataArgs,
-    ),
+    data: getMigrateEntryInstructionDataEncoder().encode({}),
     programAddress,
   } as MigrateEntryInstruction<
     TProgramAddress,
@@ -687,8 +623,7 @@ export function getMigrateEntryInstruction<
     TAccountMarket,
     TAccountPotVault,
     TAccountMarketAuthority,
-    TAccountEntry,
-    TAccountEntryByMint
+    TAccountEntry
   >);
 }
 
@@ -730,8 +665,6 @@ export type ParsedMigrateEntryInstruction<
     marketAuthority: TAccountMetas[15];
     /** Entry PDA */
     entry: TAccountMetas[16];
-    /** EntryByMint PDA (for validation) */
-    entryByMint: TAccountMetas[17];
   };
   data: MigrateEntryInstructionData;
 };
@@ -744,12 +677,12 @@ export function parseMigrateEntryInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedMigrateEntryInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 18) {
+  if (instruction.accounts.length < 17) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 18,
+        expectedAccountMetas: 17,
       },
     );
   }
@@ -779,7 +712,6 @@ export function parseMigrateEntryInstruction<
       potVault: getNextAccount(),
       marketAuthority: getNextAccount(),
       entry: getNextAccount(),
-      entryByMint: getNextAccount(),
     },
     data: getMigrateEntryInstructionDataDecoder().decode(instruction.data),
   };

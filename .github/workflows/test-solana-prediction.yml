@@ -1,0 +1,79 @@
+name: Solana Prediction SDK
+on:
+  pull_request:
+    paths: ['src/solana/**', 'test/solana/**', 'examples/solana-prediction*', 'examples/solana-prediction/**', 'examples/solana-prediction-browser/**', 'scripts/*prediction*', 'scripts/benchmark-solana-metadata-size.ts', 'scripts/idl/**', 'tsconfig*', '.github/workflows/test-solana-prediction.yml', 'package.json', 'pnpm-lock.yaml']
+  push:
+    branches: [main]
+    paths: ['src/solana/**', 'test/solana/**', 'examples/solana-prediction*', 'examples/solana-prediction/**', 'examples/solana-prediction-browser/**', 'scripts/*prediction*', 'scripts/benchmark-solana-metadata-size.ts', 'scripts/idl/**', 'tsconfig*', '.github/workflows/test-solana-prediction.yml', 'package.json', 'pnpm-lock.yaml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  sdk:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test:solana
+      - run: pnpm typecheck:solana-tests
+      - run: pnpm typecheck:solana-examples
+      - run: pnpm typecheck:prediction-tools
+      - name: Verify metadata size benchmark
+        run: pnpm exec tsx scripts/benchmark-solana-metadata-size.ts
+      - name: Build browser walkthrough
+        working-directory: examples/solana-prediction-browser
+        run: npm ci && npm test && npm run build
+
+  prediction-fork:
+    name: Prediction lifecycle (devnet fork)
+    needs: sdk
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      AGAVE_VERSION: v4.3.0-rc.0
+      DOPPLER_PREDICTION_FORK_MODE: deployed
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/cache@v4
+        with:
+          path: ~/.local/share/solana/install
+          key: prediction-agave-${{ runner.os }}-${{ env.AGAVE_VERSION }}
+      - name: Install matching validator and CLI
+        run: |
+          if [ ! -x "$HOME/.local/share/solana/install/active_release/bin/solana-test-validator" ]; then
+            curl -sSfL "https://release.anza.xyz/${AGAVE_VERSION}/install" -o "$RUNNER_TEMP/install-agave.sh"
+            sh "$RUNNER_TEMP/install-agave.sh"
+          fi
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
+      - name: Run six prediction scenarios and completed replay
+        env:
+          DOPPLER_PREDICTION_FORK_REPORT_DIR: ${{ runner.temp }}/prediction-fork
+        run: pnpm test:solana:prediction:devnet-fork
+      - name: Retain verification evidence (exclude ephemeral keys)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: prediction-fork-evidence
+          retention-days: 7
+          path: |
+            ${{ runner.temp }}/prediction-fork/*.log
+            ${{ runner.temp }}/prediction-fork/fork-manifest.json
+            ${{ runner.temp }}/prediction-fork/local-before.json
+            ${{ runner.temp }}/prediction-fork/local-verification.json

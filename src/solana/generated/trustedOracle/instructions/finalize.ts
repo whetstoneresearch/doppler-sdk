@@ -10,8 +10,6 @@ import {
   combineCodec,
   fixDecoderSize,
   fixEncoderSize,
-  getAddressDecoder,
-  getAddressEncoder,
   getBytesDecoder,
   getBytesEncoder,
   getStructDecoder,
@@ -69,16 +67,18 @@ export type FinalizeInstruction<
 
 export type FinalizeInstructionData = {
   discriminator: ReadonlyUint8Array;
-  winningMint: Address;
+  winningOutcomeId: ReadonlyUint8Array;
 };
 
-export type FinalizeInstructionDataArgs = { winningMint: Address };
+export type FinalizeInstructionDataArgs = {
+  winningOutcomeId: ReadonlyUint8Array;
+};
 
 export function getFinalizeInstructionDataEncoder(): FixedSizeEncoder<FinalizeInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['winningMint', getAddressEncoder()],
+      ['winningOutcomeId', fixEncoderSize(getBytesEncoder(), 32)],
     ]),
     (value) => ({ ...value, discriminator: FINALIZE_DISCRIMINATOR }),
   );
@@ -87,7 +87,7 @@ export function getFinalizeInstructionDataEncoder(): FixedSizeEncoder<FinalizeIn
 export function getFinalizeInstructionDataDecoder(): FixedSizeDecoder<FinalizeInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['winningMint', getAddressDecoder()],
+    ['winningOutcomeId', fixDecoderSize(getBytesDecoder(), 32)],
   ]);
 }
 
@@ -108,7 +108,7 @@ export type FinalizeInput<
   /** The oracle authority - must sign to finalize */
   oracleAuthority: TransactionSigner<TAccountOracleAuthority>;
   oracleState: Address<TAccountOracleState>;
-  winningMint: FinalizeInstructionDataArgs['winningMint'];
+  winningOutcomeId: FinalizeInstructionDataArgs['winningOutcomeId'];
 };
 
 export function getFinalizeInstruction<
