@@ -2,14 +2,14 @@ import { type Address, zeroAddress, type PublicClient } from 'viem';
 import { SupportedPublicClient } from '../../../types';
 
 /**
- * A class providing read-only access to Ethereum (ETH) token information and balances.
+ * Read-only access to the client's native currency information and balances.
  *
  * @remarks
  * This class implements a consistent interface with other token implementations (like DERC20)
- * but handles ETH-specific behavior such as:
- * - Hardcoded token metadata (name, symbol, decimals)
- * - Simulating unlimited allowance for ETH transfers
- * - Querying native ETH balances through viem
+ * but handles native currency behavior such as:
+ * - Reading chain metadata (falling back to Ether for clients without a chain)
+ * - Simulating unlimited allowance for native transfers
+ * - Querying native balances through viem
  */
 export class Eth {
   private publicClient: SupportedPublicClient;
@@ -17,7 +17,7 @@ export class Eth {
     return this.publicClient as PublicClient;
   }
 
-  /** Static ETH address identifier (zero address) */
+  /** Static native currency address identifier (zero address) */
   static readonly address = zeroAddress;
 
   constructor(publicClient: SupportedPublicClient) {
@@ -26,34 +26,34 @@ export class Eth {
 
   /**
    * Get the human-readable name of the token
-   * @returns Promise resolving to "Ether" (hardcoded ETH name)
+   * @returns Promise resolving to the chain's native currency name
    */
   async getName(): Promise<string> {
-    return 'Ether';
+    return this.rpc.chain?.nativeCurrency.name ?? 'Ether';
   }
 
   /**
    * Get the ticker symbol of the token
-   * @returns Promise resolving to "ETH" (hardcoded ETH symbol)
+   * @returns Promise resolving to the chain's native currency symbol
    */
   async getSymbol(): Promise<string> {
-    return 'ETH';
+    return this.rpc.chain?.nativeCurrency.symbol ?? 'ETH';
   }
 
   /**
    * Get the number of decimal places used by the token
-   * @returns Promise resolving to 18 (standard ETH decimals)
+   * @returns Promise resolving to the chain's native currency decimals
    */
   async getDecimals(): Promise<number> {
-    return 18;
+    return this.rpc.chain?.nativeCurrency.decimals ?? 18;
   }
 
   /**
    * Get the allowance granted to a spender (always returns maximum value)
-   * @returns Promise resolving to 2^256 - 1 (simulates unlimited ETH allowance)
+   * @returns Promise resolving to 2^256 - 1 (simulates unlimited native allowance)
    *
    * @remarks
-   * ETH doesn't have an allowance mechanism, so this returns max uint256 value
+   * Native currency doesn't have an allowance mechanism, so this returns max uint256 value
    * to represent unlimited approval in systems expecting ERC20-like interfaces
    */
   async getAllowance(): Promise<bigint> {
@@ -61,9 +61,9 @@ export class Eth {
   }
 
   /**
-   * Get the ETH balance of a specified account
+   * Get the native balance of a specified account
    * @param account - Address of the account to query
-   * @returns Promise resolving to the account's ETH balance in wei
+   * @returns Promise resolving to the account's balance in native base units
    */
   async getBalanceOf(account: Address): Promise<bigint> {
     return await this.rpc.getBalance({

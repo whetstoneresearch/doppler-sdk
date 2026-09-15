@@ -24,6 +24,11 @@ All types referenced are exported from `src/types.ts`.
   - Migration config should use `DopplerHookMigratorConfig` with `type: 'dopplerHookMigrator'`; the deprecated `DopplerHookMigrationConfig` and `type: 'dopplerHook'` remain accepted.
   - Multicurve initializer params should use `type: 'dopplerHookInitializer'`; the deprecated initializer discriminator `type: 'dopplerHook'` remains accepted.
 
+- Arc numeraires:
+  - Native USDC is `ZERO_ADDRESS` with 18 decimals.
+  - Builders and factory launch methods reject native USDC for every V3 static launch, including `LockableUniswapV3Initializer`, and for `uniswapV2` or `uniswapV2Split` migration.
+  - Use a nonzero ERC-20 numeraire for Arc V2/V3 launches. Native V4-only configurations remain supported.
+
 Price → Ticks conversion used by builders:
 
 ```
@@ -238,7 +243,7 @@ Methods (chainable):
     - Default when `type` is omitted or explicitly set to `dopplerERC20V1`. Uses `dopplerERC20V1Factory`; `withTokenFactory(address)` takes precedence but must point to a compatible factory. DopplerERC20V1 does not encode `yearlyMintRate`; `controller` defaults to the zero address.
     - `excludedFromBalanceLimit` is encoded only at deployment. The SDK adds user-supplied exclusions and, only with the default DopplerERC20V1 integration, deterministic protocol recipients for the selected auction path. When `withTokenFactory` or `withDopplerERC20V1Factory` overrides it, explicitly include every required protocol recipient in `excludedFromBalanceLimit`. It does not add the nonce-based standard-governance timelock. With an active balance limit and `default` or `custom` governance, encoding fails when `initialSupply - numTokensToSell - vesting allocations` exceeds `maxBalanceLimit`; allocate the excess to the sale or vesting, increase the limit, or use no-op or launchpad governance.
 - saleConfig({ initialSupply, numTokensToSell, numeraire? })
-  - Defaults: `numeraire = ZERO_ADDRESS` (token is paired against ETH)
+  - Defaults: `numeraire = ZERO_ADDRESS` (the chain's native currency; 18-decimal USDC on Arc)
 - poolConfig({ fee, tickSpacing })
 - Price configuration methods (use one, not multiple):
   - **withMarketCapRange({ marketCap, numerairePrice, minProceeds, maxProceeds, ... })** ⭐ Recommended
@@ -665,7 +670,7 @@ const { tokenAddress: token3, poolId: poolId3 } =
 
 Notes:
 
-- Doppler404 launches require a configured `doppler404Factory`. They are supported on Ethereum, Base, Arbitrum, BNB Smart Chain (BSC), Monad, Robinhood, and Base Sepolia. A generic `withTokenFactory(address)` override does not enable Doppler404 on another chain.
+- Doppler404 launches require a configured `doppler404Factory` on the selected network. A generic `withTokenFactory(address)` override does not enable Doppler404 on another chain.
 - Doppler404 tokenConfig supports optional `unit?: bigint`. It defaults to `WAD` (`1e18`), so one full 18-decimal ERC-20 token corresponds to one NFT. Set `unit` explicitly to choose another ERC-20 base-unit threshold.
 - Size `initialSupply` and `unit` together: the maximum NFT count is approximately `initialSupply / unit`. Very large NFT counts can make launch transfers exceed practical gas limits.
 - Doppler404 does not support vesting. The factory rejects any Doppler404 launch with `withVesting(...)`.

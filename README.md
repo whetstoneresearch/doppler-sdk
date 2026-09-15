@@ -15,7 +15,7 @@ The Doppler SDK exposes network-specific entrypoints for creating, managing, and
 - **Solana Clients and React**: Read clients, PDA helpers, generated codecs, and optional React bindings
 - **Token Management**: Built-in EVM support for DERC20 tokens with vesting
 - **Type Safety**: Full TypeScript support across EVM and Solana entrypoints
-- **Network Support**: EVM deployments on Base, Arbitrum One, BNB Smart Chain (BSC), Unichain, Ink, and other supported chains; Solana/SVM support via explicit Solana program deployments
+- **Network Support**: EVM deployments on Ethereum, BNB Smart Chain (BSC), Monad, Robinhood Chain, Arc, Base, and Arbitrum; Solana/SVM support via explicit Solana program deployments
 
 ## Installation
 
@@ -1331,12 +1331,9 @@ for (const id of SUPPORTED_CHAIN_IDS) {
 }
 ```
 
-Arbitrum One is available as `CHAIN_IDS.ARBITRUM` (`42161`) with a viem chain
-definition included in `SupportedChain`.
+Available launch features depend on the contracts deployed on the selected network. Use `getAddresses(chainId)` to inspect its deployment configuration. For native V4 numeraires, use `zeroAddress` and the chain's native currency decimals rather than the decimals of an ERC-20 token with the same symbol.
 
-Robinhood Chain is available as `CHAIN_IDS.ROBINHOOD` (`4663`). The SDK exposes
-addresses and support checks for it, but does not export a viem chain definition;
-use your application's chain/client setup when constructing clients.
+Arc uses native USDC with 18 decimals. Import the SDK's `arc` chain definition and provide an explicit RPC transport; Multicall3 is configured for fee previews. Arc launches with `numeraire: zeroAddress` must stay on Uniswap V4: all V3 static launches (including `LockableUniswapV3Initializer`) and both `uniswapV2` and `uniswapV2Split` migrations reject native USDC. Use a nonzero ERC-20 numeraire for those V2/V3 paths. For native dynamic auctions on Arc, use `dopplerHookMigrator`; locked native multicurve pools can use `noOp`.
 
 ## Advanced Usage
 
@@ -1693,49 +1690,40 @@ pnpm dev
 
 The SDK includes comprehensive tests covering:
 
-- **Airlock Whitelisting**: Verifies that all modules are properly whitelisted on Ethereum Mainnet, Arbitrum One, BNB Smart Chain (BSC), Monad Mainnet, Base Mainnet, Base Sepolia, and Robinhood Chain
-- **Multicurve Functionality**: Tests multicurve auction creation and quoting
+- **Airlock Whitelisting**: Verifies that configured modules are whitelisted on the selected networks
+- **Auction Workflows**: Tests dynamic and multicurve creation, quoting, and executed buy/sell round trips on local Anvil forks
 - **Token Address Mining**: Tests for generating optimized token addresses
 
-To run whitelisting tests:
+Configure Alchemy once, then run the whitelist audit:
 
 ```bash
-# Canonical whitelist audit
+export ALCHEMY_API_KEY=your_key_here
 pnpm test:whitelisting
 
-# With Alchemy fallback (faster and more reliable)
-ALCHEMY_API_KEY=your_key_here pnpm test:whitelisting
-
 # Limit to specific whitelist-audit chains when needed
-TEST_CHAINS=mainnet,base,base-sepolia,arbitrum,bsc,monad-mainnet,robinhood pnpm test:whitelisting
+TEST_CHAINS=mainnet,base,base-sepolia,arbitrum,bsc,arc,monad-mainnet,robinhood pnpm test:whitelisting
 ```
 
-The whitelisting suite is scoped to the release-audit chains: Ethereum Mainnet, Arbitrum One, BNB Smart Chain (BSC), Monad Mainnet, Base Mainnet, Base Sepolia, and Robinhood Chain.
+Use `TEST_CHAINS` to select networks by their comma-separated names, or omit it to check all networks configured in the whitelisting suite.
 
-Whitelisting test RPC priority is:
-
-1. Chain-specific RPC URL env var (`ETH_MAINNET_RPC_URL`, `ARBITRUM_RPC_URL`, `BSC_RPC_URL`, `BASE_RPC_URL`, `BASE_SEPOLIA_RPC_URL`)
-2. `ALCHEMY_API_KEY` fallback for supported Alchemy networks, including Monad Mainnet
-3. Public/default RPC URL
+The test harness selects the network endpoint from the chain ID; no per-chain RPC URL setup is needed.
 
 To run fork tests (Anvil):
 
 ```bash
 # all fork tests
-ALCHEMY_API_KEY=your_key_here pnpm test:fork
+pnpm test:fork
 
 # chain-specific fork tests
-ALCHEMY_API_KEY=your_key_here TEST_CHAIN=base pnpm test:fork
-ALCHEMY_API_KEY=your_key_here TEST_CHAIN=base-sepolia pnpm test:fork
-ALCHEMY_API_KEY=your_key_here TEST_CHAIN=mainnet pnpm test:fork
+TEST_CHAIN=base pnpm test:fork
+TEST_CHAIN=base-sepolia pnpm test:fork
+TEST_CHAIN=mainnet pnpm test:fork
+TEST_CHAIN=monad-mainnet pnpm test:fork
+TEST_CHAIN=robinhood pnpm test:fork
+TEST_CHAIN=arc pnpm test:fork
 ```
 
-You can also provide chain-specific RPC URLs directly:
-
-```bash
-ETH_MAINNET_RPC_URL=https://... TEST_CHAIN=mainnet pnpm test:fork
-ARBITRUM_RPC_URL=https://... TEST_CHAIN=arbitrum pnpm test:fork
-```
+The shared mainnet suite buys and partially sells through each newly created dynamic, Rehype, NoOp, and deployed scheduled pool. Arc uses native USDC; other networks use their configured wrapped native token. Checks verify receipts, acquired and sold tokens, and returned numeraire, with gas costs excluded from native sell proceeds. Fork tests do not broadcast to mainnet.
 
 ## Migration from Previous SDKs
 

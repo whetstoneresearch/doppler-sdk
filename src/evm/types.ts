@@ -8,6 +8,7 @@ import {
   unichain,
 } from 'viem/chains';
 import { CHAIN_IDS, type SupportedChainId } from './addresses';
+import { arc } from './chains';
 // Re-export SupportedChainId so consumers can import from this module
 export { type SupportedChainId } from './addresses';
 import type { Address, Hash, Hex, WalletClient } from 'viem';
@@ -15,6 +16,7 @@ import type { Address, Hash, Hex, WalletClient } from 'viem';
 export type SupportedChain =
   | typeof mainnet
   | typeof arbitrum
+  | typeof arc
   | typeof base
   | typeof baseSepolia
   | typeof bsc
@@ -140,6 +142,7 @@ export type VestingConfig =
 export const NO_OP_ENABLED_CHAIN_IDS = [
   CHAIN_IDS.MAINNET,
   CHAIN_IDS.ARBITRUM,
+  CHAIN_IDS.ARC,
   CHAIN_IDS.BASE,
   CHAIN_IDS.BASE_SEPOLIA,
   CHAIN_IDS.BSC,
@@ -165,6 +168,7 @@ export function isNoOpEnabledChain(
 export const LAUNCHPAD_ENABLED_CHAIN_IDS = [
   CHAIN_IDS.MAINNET,
   CHAIN_IDS.ARBITRUM,
+  CHAIN_IDS.ARC,
   CHAIN_IDS.BASE,
   CHAIN_IDS.BASE_SEPOLIA,
   CHAIN_IDS.BSC,
@@ -597,6 +601,8 @@ export interface MulticurveTickParams {
  */
 export interface TickToMarketCapParams {
   tick: number;
+  /** Whether the sold token is token0 in the supplied tick's price ratio. */
+  tokenIsToken0: boolean;
   tokenSupply: bigint;
   numerairePriceUSD: number;
   tokenDecimals?: number;

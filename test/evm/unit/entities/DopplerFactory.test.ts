@@ -1397,8 +1397,30 @@ describe('DopplerFactory', () => {
       expect(createParams).toBeDefined();
       expect(hookAddress).toBe(mockPoolAddress);
       expect(tokenAddress).toBe(mockTokenAddress);
-      expect(typeof poolId).toBe('string');
-      expect(poolId.startsWith('0x')).toBe(true);
+      const [currency0, currency1] =
+        BigInt(mockTokenAddress) < BigInt(validParams.sale.numeraire)
+          ? [mockTokenAddress, validParams.sale.numeraire]
+          : [validParams.sale.numeraire, mockTokenAddress];
+      expect(poolId).toBe(
+        keccak256(
+          encodeAbiParameters(
+            [
+              { type: 'address' },
+              { type: 'address' },
+              { type: 'uint24' },
+              { type: 'int24' },
+              { type: 'address' },
+            ],
+            [
+              currency0,
+              currency1,
+              DYNAMIC_FEE_FLAG,
+              validParams.pool.tickSpacing,
+              mockPoolAddress,
+            ],
+          ),
+        ),
+      );
       expect(gasEstimate).toBe(12_250_000n);
     });
 
