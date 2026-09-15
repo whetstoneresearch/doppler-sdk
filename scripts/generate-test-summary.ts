@@ -12,6 +12,7 @@ const CHAIN_NAMES: Record<number, string> = {
   1: 'Mainnet',
   42161: 'Arbitrum',
   56: 'BNB Smart Chain',
+  5042: 'Arc',
   8453: 'Base',
   84532: 'Base Sepolia',
   57073: 'Ink',

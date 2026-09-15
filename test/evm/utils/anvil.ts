@@ -12,7 +12,9 @@
  */
 
 import { type ChildProcess, spawn } from 'child_process';
-import { CHAIN_IDS } from '../../../src/evm';
+import { createTestClient, http } from 'viem';
+import { CHAIN_IDS } from '../../../src/evm/addresses';
+import { CHAIN_CONFIG, getRpcUrl } from './rpc';
 import { loadTestEnv } from './env';
 
 loadTestEnv();
@@ -56,59 +58,11 @@ const CHAIN_PORTS: Record<number, number> = {
   [CHAIN_IDS.BASE_SEPOLIA]: 8546,
   [CHAIN_IDS.MONAD_MAINNET]: 8547,
   [CHAIN_IDS.MAINNET]: 8548,
+  [CHAIN_IDS.ROBINHOOD]: 8549,
   [CHAIN_IDS.ARBITRUM]: 8550,
   [CHAIN_IDS.BSC]: 8551,
+  [CHAIN_IDS.ARC]: 8552,
 };
-
-/** Fork RPC URLs for each chain */
-function getForkUrl(chainId: number): string | undefined {
-  const alchemyKey = process.env.ALCHEMY_API_KEY;
-
-  switch (chainId) {
-    case CHAIN_IDS.MAINNET:
-      return (
-        process.env.ETH_MAINNET_RPC_URL ||
-        process.env.MAINNET_RPC_URL ||
-        (alchemyKey
-          ? `https://eth-mainnet.g.alchemy.com/v2/${alchemyKey}`
-          : undefined)
-      );
-    case CHAIN_IDS.ARBITRUM:
-      return (
-        process.env.ARBITRUM_RPC_URL ||
-        (alchemyKey
-          ? `https://arb-mainnet.g.alchemy.com/v2/${alchemyKey}`
-          : undefined)
-      );
-    case CHAIN_IDS.BSC:
-      return (
-        process.env.BSC_RPC_URL ||
-        (alchemyKey
-          ? `https://bnb-mainnet.g.alchemy.com/v2/${alchemyKey}`
-          : undefined)
-      );
-    case CHAIN_IDS.BASE:
-      return (
-        process.env.BASE_RPC_URL ||
-        (alchemyKey
-          ? `https://base-mainnet.g.alchemy.com/v2/${alchemyKey}`
-          : undefined)
-      );
-    case CHAIN_IDS.BASE_SEPOLIA:
-      return (
-        process.env.BASE_SEPOLIA_RPC_URL ||
-        (alchemyKey
-          ? `https://base-sepolia.g.alchemy.com/v2/${alchemyKey}`
-          : undefined)
-      );
-    case CHAIN_IDS.MONAD_MAINNET:
-      return alchemyKey
-        ? `https://monad-mainnet.g.alchemy.com/v2/${alchemyKey}`
-        : undefined;
-    default:
-      return undefined;
-  }
-}
 
 /** Options for starting an Anvil instance */
 export interface AnvilOptions {
@@ -155,7 +109,8 @@ export class AnvilManager {
       return this.instances.get(chainId)!.rpcUrl;
     }
 
-    const forkUrl = getForkUrl(chainId);
+    const config = CHAIN_CONFIG[chainId];
+    const forkUrl = config && getRpcUrl(config);
     if (!forkUrl) {
       throw new Error(
         `No fork URL available for chain ${chainId}. Set ALCHEMY_API_KEY or chain-specific RPC URL.`,
@@ -235,6 +190,11 @@ export class AnvilManager {
 
     // Wait for Anvil to be ready
     await this.waitForReady(rpcUrl, chainId);
+    // Source headers (e.g. Nitro) may omit blob fields required by Anvil's EVM.
+    // Mine a local header before any calls so the fork has a complete block environment.
+    await createTestClient({ mode: 'anvil', transport: http(rpcUrl) }).mine({
+      blocks: 1,
+    });
 
     return rpcUrl;
   }

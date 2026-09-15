@@ -12,6 +12,7 @@ const generatedAddressTargetChains = [
   { name: 'mainnet', chainId: CHAIN_IDS.MAINNET },
   { name: 'arbitrum', chainId: CHAIN_IDS.ARBITRUM },
   { name: 'bsc', chainId: CHAIN_IDS.BSC },
+  { name: 'arc', chainId: CHAIN_IDS.ARC },
   { name: 'base', chainId: CHAIN_IDS.BASE },
   { name: 'base-sepolia', chainId: CHAIN_IDS.BASE_SEPOLIA },
   { name: 'robinhood', chainId: CHAIN_IDS.ROBINHOOD },

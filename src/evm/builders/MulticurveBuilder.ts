@@ -34,6 +34,7 @@ import {
 } from '../types';
 import { type SupportedChainId } from '../addresses';
 import {
+  assertSupportedNumeraire,
   type BaseAuctionBuilder,
   type BuilderVestingInput,
   type BuilderDevBuyInput,
@@ -747,6 +748,12 @@ export class MulticurveBuilder<
     if (!this.sale) throw new Error('saleConfig is required');
     if (!this.migration) throw new Error('migration configuration is required');
     if (!this.userAddress) throw new Error('userAddress is required');
+    assertSupportedNumeraire(
+      this.chainId,
+      this.sale.numeraire,
+      this.migration.type,
+      'v4',
+    );
 
     // Convert deferred curves config to pool if set
     if (this.curvesConfig && !this.pool) {

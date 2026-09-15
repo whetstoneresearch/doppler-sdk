@@ -24,7 +24,26 @@ import type {
   TokenConfig,
   MulticurveDevBuyConfig,
 } from '../types';
-import type { SupportedChainId } from '../addresses';
+import { CHAIN_IDS, type SupportedChainId } from '../addresses';
+
+export function assertSupportedNumeraire(
+  chainId: SupportedChainId,
+  numeraire: Address,
+  migrationType: MigrationConfig['type'],
+  poolVersion: 'v3' | 'v4',
+): void {
+  if (
+    chainId === CHAIN_IDS.ARC &&
+    numeraire === ZERO_ADDRESS &&
+    (poolVersion === 'v3' ||
+      migrationType === 'uniswapV2' ||
+      migrationType === 'uniswapV2Split')
+  ) {
+    throw new Error(
+      'Arc native USDC cannot use Uniswap V2/V3. Use a nonzero ERC20 numeraire instead.',
+    );
+  }
+}
 
 /** Optional Bundler custody schedule for a builder-configured dev buy. */
 export type BuilderDevBuyVestingInput = {

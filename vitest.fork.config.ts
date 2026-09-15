@@ -1,5 +1,6 @@
 import { defineConfig } from 'vitest/config';
 import baseConfig from './vitest.config';
+import { getMainnetForkChains } from './test/evm/utils/mainnetChains';
 
 /**
  * Fork test configuration
@@ -14,42 +15,24 @@ import baseConfig from './vitest.config';
  *   TEST_CHAIN=base pnpm test:fork
  *   TEST_CHAIN=base-sepolia pnpm test:fork
  *   TEST_CHAIN=mainnet pnpm test:fork
- *   TEST_CHAIN=monad pnpm test:fork
+ *   TEST_CHAIN=monad-mainnet pnpm test:fork
  *   TEST_CHAIN=arbitrum pnpm test:fork
  *   TEST_CHAIN=bsc pnpm test:fork
+ *   TEST_CHAIN=arc pnpm test:fork
  */
 
 // Determine which tests to include based on TEST_CHAIN env var
 function getIncludePatterns(): string[] {
-  const testChain = process.env.TEST_CHAIN;
-
-  if (!testChain) {
-    // Run all fork tests
-    return ['test/evm/fork/**/*.test.ts', 'test/evm/integration/**/*.test.ts'];
+  const chains = getMainnetForkChains();
+  const mainnetPatterns = ['test/evm/fork/mainnets/**/*.test.ts'];
+  const sepoliaPatterns = [
+    'test/evm/fork/base-sepolia/**/*.test.ts',
+    'test/evm/integration/**/*.test.ts',
+  ];
+  if (process.env.TEST_CHAIN === undefined) {
+    return [...mainnetPatterns, ...sepoliaPatterns];
   }
-
-  // Map chain names to chain-specific fork test patterns.
-  const chainPatterns: Record<string, string[]> = {
-    base: [
-      'test/evm/fork/base/**/*.test.ts',
-      'test/evm/integration/**/*.test.ts',
-    ],
-    'base-sepolia': [
-      'test/evm/fork/base-sepolia/**/*.test.ts',
-      'test/evm/integration/**/*.test.ts',
-    ],
-    mainnet: ['test/evm/fork/mainnet/**/*.test.ts'],
-    monad: ['test/evm/fork/**/*.monad-mainnet.test.ts'],
-    arbitrum: ['test/evm/fork/arbitrum/**/*.test.ts'],
-    bsc: ['test/evm/fork/bsc/**/*.test.ts'],
-  };
-
-  return (
-    chainPatterns[testChain] || [
-      'test/evm/fork/**/*.test.ts',
-      'test/evm/integration/**/*.test.ts',
-    ]
-  );
+  return chains.length ? mainnetPatterns : sepoliaPatterns;
 }
 
 const base = baseConfig as any;
