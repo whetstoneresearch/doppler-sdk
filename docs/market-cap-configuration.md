@@ -381,7 +381,19 @@ If computed ticks seem wrong:
 2. Verify `tokenSupply` matches your token configuration
 3. For Dynamic auctions, remember `start > min` (descending)
 
-Use `tickToMarketCap()` to reverse-check what market cap a tick represents.
+Use `tickToMarketCap()` to reverse-check what market cap a signed tick represents. The required `tokenIsToken0` parameter identifies the sold token's position in the price ratio; tick sign alone cannot determine this. Omitting it throws rather than guessing a price direction.
+
+For on-chain V3/V4 ticks, use the actual pool ordering: `BigInt(tokenAddress) < BigInt(numeraireAddress)`. For unadjusted ticks returned by `marketCapToTickForMulticurve()` or `marketCapToTicksForMulticurve()`, pass `tokenIsToken0: true`; these helpers use canonical sold-token0 ticks before the initializer adjusts them for the deployed pool.
+
+```ts
+// Native USDC is token0 on Arc; the sold token is token1.
+const marketCapUSD = tickToMarketCap({
+  tick: -20800,
+  tokenIsToken0: false,
+  tokenSupply: parseEther('1000000'),
+  numerairePriceUSD: 1,
+}); // Approximately $8,003,637.
+```
 
 ---
 

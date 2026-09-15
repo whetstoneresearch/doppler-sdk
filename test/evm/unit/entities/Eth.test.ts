@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Eth } from '../../../../src/evm/entities/token/eth/Eth';
 import { createMockPublicClient } from '../../setup/fixtures/clients';
-import { parseEther, type Address } from 'viem';
+import { createPublicClient, http, parseEther, type Address } from 'viem';
+import { arc } from '../../../../src/evm';
 
 describe('Eth', () => {
   let eth: Eth;
@@ -10,6 +11,18 @@ describe('Eth', () => {
   beforeEach(() => {
     publicClient = createMockPublicClient();
     eth = new Eth(publicClient);
+  });
+
+  it('reports native Arc USDC with 18 decimals, not ERC20 USDC decimals', async () => {
+    const nativeUsdc = new Eth(
+      createPublicClient({
+        chain: arc,
+        transport: http('http://127.0.0.1:8552'),
+      }),
+    );
+    expect(await nativeUsdc.getName()).toBe('USDC');
+    expect(await nativeUsdc.getSymbol()).toBe('USDC');
+    expect(await nativeUsdc.getDecimals()).toBe(18);
   });
 
   describe('Static properties', () => {

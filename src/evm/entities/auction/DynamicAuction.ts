@@ -58,6 +58,7 @@ export class DynamicAuction {
       epochLength,
       minimumProceeds,
       maximumProceeds,
+      isToken0,
     ] = await Promise.all([
       this.readHookState(),
       this.rpc.readContract({
@@ -100,6 +101,11 @@ export class DynamicAuction {
         abi: dopplerHookAbi,
         functionName: 'maximumProceeds',
       }),
+      this.rpc.readContract({
+        address: this.hookAddress,
+        abi: dopplerHookAbi,
+        functionName: 'isToken0',
+      }),
     ]);
 
     // Calculate current epoch
@@ -111,7 +117,6 @@ export class DynamicAuction {
 
     // Determine token addresses from poolKey
     const poolKey = normalizePoolKey(poolKeyRaw);
-    const isToken0 = poolKey.currency0 !== zeroAddress;
     const tokenAddress = isToken0 ? poolKey.currency0 : poolKey.currency1;
     const numeraireAddress = isToken0 ? poolKey.currency1 : poolKey.currency0;
 

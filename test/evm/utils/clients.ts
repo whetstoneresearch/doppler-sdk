@@ -21,16 +21,14 @@ import {
   type WalletClient,
   type TestClient,
   type Account,
-  defineChain,
   createPublicClient,
   createWalletClient,
   createTestClient,
   http,
 } from 'viem';
-import { arbitrum, base, baseSepolia, bsc, mainnet } from 'viem/chains';
 import { privateKeyToAccount } from 'viem/accounts';
-import { createRateLimitedClient } from './rpc';
-import { CHAIN_IDS } from '../../../src/evm';
+import { CHAIN_CONFIG, createRateLimitedClient, getRpcUrl } from './rpc';
+import { CHAIN_IDS } from '../../../src/evm/addresses';
 import { loadTestEnv } from './env';
 import { ANVIL_ACCOUNTS, getAnvilManager, getAnvilPort } from './anvil';
 import { getTestMode, type TestMode } from './testHelpers';
@@ -42,109 +40,6 @@ const DEFAULT_TEST_CLIENT_CONFIG = {
   retryCount: 5,
   retryDelay: 2000,
 };
-
-/** Monad Mainnet chain definition (not in viem/chains yet) */
-export const monadMainnet = defineChain({
-  id: CHAIN_IDS.MONAD_MAINNET,
-  name: 'Monad Mainnet',
-  nativeCurrency: {
-    decimals: 18,
-    name: 'Monad',
-    symbol: 'MONAD',
-  },
-  rpcUrls: {
-    default: {
-      http: [],
-    },
-  },
-});
-
-export const robinhoodChain = defineChain({
-  id: CHAIN_IDS.ROBINHOOD,
-  name: 'Robinhood Chain',
-  nativeCurrency: {
-    decimals: 18,
-    name: 'Ether',
-    symbol: 'ETH',
-  },
-  rpcUrls: {
-    default: {
-      http: ['https://rpc.mainnet.chain.robinhood.com'],
-    },
-  },
-  blockExplorers: {
-    default: {
-      name: 'Robinhood Chain Blockscout',
-      url: 'https://robinhoodchain.blockscout.com',
-    },
-  },
-});
-
-/** Chain configuration for tests */
-interface ChainTestConfig {
-  chain: Chain;
-  envVar?: string;
-  /** Optional Alchemy network name for fallback */
-  alchemyNetwork?: string;
-}
-
-const CHAIN_CONFIG: Record<number, ChainTestConfig> = {
-  [CHAIN_IDS.MAINNET]: {
-    chain: mainnet,
-    envVar: 'ETH_MAINNET_RPC_URL',
-    alchemyNetwork: 'eth-mainnet',
-  },
-  [CHAIN_IDS.ARBITRUM]: {
-    chain: arbitrum,
-    envVar: 'ARBITRUM_RPC_URL',
-    alchemyNetwork: 'arb-mainnet',
-  },
-  [CHAIN_IDS.BSC]: {
-    chain: bsc,
-    envVar: 'BSC_RPC_URL',
-    alchemyNetwork: 'bnb-mainnet',
-  },
-  [CHAIN_IDS.BASE]: {
-    chain: base,
-    envVar: 'BASE_RPC_URL',
-    alchemyNetwork: 'base-mainnet',
-  },
-  [CHAIN_IDS.BASE_SEPOLIA]: {
-    chain: baseSepolia,
-    envVar: 'BASE_SEPOLIA_RPC_URL',
-    alchemyNetwork: 'base-sepolia',
-  },
-  [CHAIN_IDS.ROBINHOOD]: {
-    chain: robinhoodChain,
-    envVar: 'ROBINHOOD_RPC_URL',
-  },
-  [CHAIN_IDS.MONAD_MAINNET]: {
-    chain: monadMainnet,
-    alchemyNetwork: 'monad-mainnet',
-  },
-};
-
-/**
- * Get the RPC URL for a chain
- * Priority: env var > Alchemy > default viem RPC
- */
-function getRpcUrl(config: ChainTestConfig): string | undefined {
-  // 1. Check environment variable
-  const envUrl = config.envVar ? process.env[config.envVar] : undefined;
-  if (envUrl) return envUrl;
-
-  // 2. Try Alchemy fallback
-  const alchemyKey = process.env.ALCHEMY_API_KEY;
-  if (alchemyKey && config.alchemyNetwork) {
-    return `https://${config.alchemyNetwork}.g.alchemy.com/v2/${alchemyKey}`;
-  }
-
-  // 3. Fall back to default viem RPC URL
-  const defaultRpc = config.chain.rpcUrls.default.http[0];
-  if (defaultRpc) return defaultRpc;
-
-  return undefined;
-}
 
 /**
  * Get a rate-limited test client for the specified chain
@@ -169,7 +64,7 @@ export function getTestClient(
   const rpcUrl = getRpcUrl(config);
   if (!rpcUrl) {
     const requirements = [
-      config.envVar ? `Set ${config.envVar} environment variable` : undefined,
+      `Set ${config.envVars.join(' or ')} environment variable`,
       config.alchemyNetwork
         ? `ALCHEMY_API_KEY for ${config.alchemyNetwork}`
         : undefined,
@@ -200,7 +95,7 @@ export function hasRpcUrl(chainId: number): boolean {
  * Useful for skip messages
  */
 export function getRpcEnvVar(chainId: number): string | undefined {
-  return CHAIN_CONFIG[chainId]?.envVar;
+  return CHAIN_CONFIG[chainId]?.envVars[0];
 }
 
 // Convenience exports for commonly used chains
@@ -344,7 +239,7 @@ export function getTestClients(
   const rpcUrl = options.rpcUrl ?? getRpcUrl(config);
   if (!rpcUrl) {
     const requirements = [
-      config.envVar ? `Set ${config.envVar} environment variable` : undefined,
+      `Set ${config.envVars.join(' or ')} environment variable`,
       config.alchemyNetwork
         ? `ALCHEMY_API_KEY for ${config.alchemyNetwork}`
         : undefined,

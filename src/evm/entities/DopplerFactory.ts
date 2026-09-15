@@ -51,7 +51,10 @@ import type {
   PreparedMulticurveCreate,
 } from '../types';
 import type { ModuleAddressOverrides } from '../types';
-import { assertTokenConfigSupportsYearlyMintRate } from '../builders/shared';
+import {
+  assertSupportedNumeraire,
+  assertTokenConfigSupportsYearlyMintRate,
+} from '../builders/shared';
 import { CHAIN_IDS, getAddresses } from '../addresses';
 import {
   ZERO_ADDRESS,
@@ -1377,6 +1380,12 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     tokenAddress: Address;
     transactionHash: string;
   }> {
+    assertSupportedNumeraire(
+      this.chainId,
+      params.sale.numeraire,
+      params.migration.type,
+      'v3',
+    );
     // Use provided createParams (from simulate) or auto-simulate to get consistent params
     const createParams =
       options?._createParams ??
@@ -1913,6 +1922,12 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     poolId: string;
     transactionHash: string;
   }> {
+    assertSupportedNumeraire(
+      this.chainId,
+      params.sale.numeraire,
+      params.migration.type,
+      'v4',
+    );
     const addresses = getAddresses(this.chainId);
 
     // Use provided createParams (from simulate) or auto-simulate to get consistent params
@@ -1992,14 +2007,14 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     // Calculate pool ID for V4 using actual addresses
     const poolId = this.computePoolId({
       currency0:
-        actualTokenAddress < params.sale.numeraire
+        BigInt(actualTokenAddress) < BigInt(params.sale.numeraire)
           ? actualTokenAddress
           : params.sale.numeraire,
       currency1:
-        actualTokenAddress < params.sale.numeraire
+        BigInt(actualTokenAddress) < BigInt(params.sale.numeraire)
           ? params.sale.numeraire
           : actualTokenAddress,
-      fee: params.pool.fee,
+      fee: DYNAMIC_FEE_FLAG,
       tickSpacing: params.pool.tickSpacing,
       hooks: actualHookAddress,
     });
@@ -2063,14 +2078,14 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
 
     const poolId = this.computePoolId({
       currency0:
-        tokenAddress < params.sale.numeraire
+        BigInt(tokenAddress) < BigInt(params.sale.numeraire)
           ? tokenAddress
           : params.sale.numeraire,
       currency1:
-        tokenAddress < params.sale.numeraire
+        BigInt(tokenAddress) < BigInt(params.sale.numeraire)
           ? params.sale.numeraire
           : tokenAddress,
-      fee: params.pool.fee,
+      fee: DYNAMIC_FEE_FLAG,
       tickSpacing: params.pool.tickSpacing,
       hooks: hookAddress,
     });
@@ -3175,6 +3190,12 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     createParams?: CreateParams;
   }) {
     const { params, simulationAccount } = args;
+    assertSupportedNumeraire(
+      this.chainId,
+      params.sale.numeraire,
+      params.migration.type,
+      'v4',
+    );
     const addresses = getAddresses(this.chainId);
     const airlock = params.modules?.airlock ?? addresses.airlock;
     const createParams =
@@ -3863,6 +3884,12 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
   }
 
   private validateStaticAuctionParams(params: CreateStaticAuctionParams): void {
+    assertSupportedNumeraire(
+      this.chainId,
+      params.sale.numeraire,
+      params.migration.type,
+      'v3',
+    );
     // Validate token parameters
     if (!params.token.name || params.token.name.trim().length === 0) {
       throw new Error('Token name is required');
@@ -3972,6 +3999,12 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
   private validateDynamicAuctionParams(
     params: CreateDynamicAuctionParams,
   ): void {
+    assertSupportedNumeraire(
+      this.chainId,
+      params.sale.numeraire,
+      params.migration.type,
+      'v4',
+    );
     // Validate token parameters
     if (!params.token.name || params.token.name.trim().length === 0) {
       throw new Error('Token name is required');
@@ -4153,6 +4186,12 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
    * Validate multicurve auction parameters
    */
   private validateMulticurveParams(params: CreateMulticurveParams<C>): void {
+    assertSupportedNumeraire(
+      this.chainId,
+      params.sale.numeraire,
+      params.migration.type,
+      'v4',
+    );
     if (
       params.salt !== undefined &&
       (typeof params.salt !== 'string' ||

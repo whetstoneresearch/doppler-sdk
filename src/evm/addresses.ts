@@ -6,6 +6,7 @@ import { ZERO_ADDRESS } from './constants';
 export const CHAIN_IDS = {
   MAINNET: 1,
   ARBITRUM: 42161,
+  ARC: 5042,
   BASE: 8453,
   BASE_SEPOLIA: 84532,
   BSC: 56,
@@ -237,6 +238,63 @@ export const ADDRESSES: Record<SupportedChainId, ChainAddresses> = {
     uniswapV2Factory: '0xf1D7CC64Fb4452F05c498126312eBE29f30Fbcf9' as Address,
     uniswapV3Factory: '0x1F98431c8aD98523631AE4a59f267346ea31F984' as Address,
     uniswapV4Quoter: '0x3972C00f7ed4885e145823eb7C655375d275A1C5' as Address,
+  },
+  [CHAIN_IDS.ARC]: {
+    airlock: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ARC].Airlock as Address,
+    tokenFactory: ZERO_ADDRESS,
+    dopplerERC20V1Factory: getGeneratedAddress(
+      CHAIN_IDS.ARC,
+      'DopplerERC20V1Factory',
+    ),
+    dopplerERC20V1Implementation: getGeneratedAddress(
+      CHAIN_IDS.ARC,
+      'DopplerERC20V1',
+    ),
+    doppler404Factory: getGeneratedAddress(CHAIN_IDS.ARC, 'DN404Factory'),
+    v3Initializer: ZERO_ADDRESS,
+    v3Quoter: '0x7dfd4f31be6814d2906bde155c3e1b146eac1468',
+    lockableV3Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ARC]
+      .LockableUniswapV3Initializer as Address,
+    v4Initializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ARC]
+      .UniswapV4Initializer as Address,
+    dopplerHookInitializer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ARC]
+      .DopplerHookInitializer as Address,
+    rehypeDopplerHookInitializer: getRehypeDopplerHookInitializerAddress(
+      CHAIN_IDS.ARC,
+    ),
+    rehypeDopplerHook: getRehypeDopplerHookInitializerAddress(CHAIN_IDS.ARC),
+    dopplerLens: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ARC]
+      .DopplerLensQuoter as Address,
+    dopplerDeployer: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ARC]
+      .DopplerDeployer as Address,
+    poolManager: '0x8366a39cc670b4001a1121b8f6a443a643e40951',
+    v2Migrator: ZERO_ADDRESS,
+    v2MigratorSplit: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ARC]
+      .UniswapV2MigratorSplit as Address,
+    v4Migrator: ZERO_ADDRESS,
+    dopplerHookMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ARC]
+      .DopplerHookMigrator as Address,
+    noOpMigrator: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ARC]
+      .NoOpMigrator as Address,
+    governanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ARC]
+      .GovernanceFactory as Address,
+    noOpGovernanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ARC]
+      .NoOpGovernanceFactory as Address,
+    launchpadGovernanceFactory: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ARC]
+      .LaunchpadGovernanceFactory as Address,
+    streamableFeesLocker: ZERO_ADDRESS,
+    streamableFeesLockerV2: getGeneratedAddress(
+      CHAIN_IDS.ARC,
+      'StreamableFeesLockerV2',
+    ),
+    universalRouter: '0x4fca4a51ab4f23a7447b3284fbd7d73289a89fb1',
+    permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
+    bundler: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.ARC].Bundler as Address,
+    // Unsupported wrapped-native placeholder; Arc V2/V3 launches require ERC20 numeraires.
+    weth: '0x8bceaa40b9acdfaedf85adf4ff01f5ad6517937f',
+    uniswapV2Factory: '0x89e5db8b5aa49aa85ac63f691524311aeb649eba',
+    uniswapV3Factory: '0xf0db7b58379503491d857db50ac9ece64c653918',
+    uniswapV4Quoter: '0x8dc178efb8111bb0973dd9d722ebeff267c98f94',
   },
   [CHAIN_IDS.BSC]: {
     airlock: GENERATED_DOPPLER_DEPLOYMENTS[CHAIN_IDS.BSC].Airlock as Address,

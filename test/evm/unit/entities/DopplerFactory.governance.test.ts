@@ -468,7 +468,7 @@ describe('DopplerFactory governance encoding', () => {
     },
   );
 
-  it.each([CHAIN_IDS.ROBINHOOD, CHAIN_IDS.BSC])(
+  it.each([CHAIN_IDS.ROBINHOOD, CHAIN_IDS.BSC, CHAIN_IDS.ARC])(
     'requires explicit custom governance for an unknown legacy clock on chain %s',
     async (chainId) => {
       const chainFactory = new DopplerFactory(publicClient, undefined, chainId);

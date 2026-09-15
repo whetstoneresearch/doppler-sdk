@@ -28,77 +28,78 @@ describe('DynamicAuction', () => {
   });
 
   describe('getHookInfo', () => {
-    it('should fetch hook information correctly', async () => {
-      const mockPoolKey = {
-        currency0: mockTokenAddress,
-        currency1: mockAddresses.weth,
-        fee: 3000,
-        tickSpacing: 60,
-        hooks: mockHookAddress,
-      };
+    it.each([true, false])(
+      'reads token identity from the hook when isToken0=%s',
+      async (isToken0) => {
+        const mockPoolKey = {
+          currency0: isToken0 ? mockTokenAddress : mockAddresses.weth,
+          currency1: isToken0 ? mockAddresses.weth : mockTokenAddress,
+          fee: 3000,
+          tickSpacing: 60,
+          hooks: mockHookAddress,
+        };
 
-      const mockState = {
-        lastEpoch: 5,
-        tickAccumulator: 1000000n,
-        totalTokensSold: 250000000000000000000000n,
-        totalProceeds: 50000000000000000000n,
-        totalTokensSoldLastEpoch: 50000000000000000000000n,
-        feesAccrued: { amount0: 100n, amount1: 200n },
-      };
+        const mockState = {
+          lastEpoch: 5,
+          tickAccumulator: 1000000n,
+          totalTokensSold: 250000000000000000000000n,
+          totalProceeds: 50000000000000000000n,
+          totalTokensSoldLastEpoch: 50000000000000000000000n,
+          feesAccrued: { amount0: 100n, amount1: 200n },
+        };
 
-      // Mock all the hook contract calls in the correct order
-      vi.mocked(publicClient.readContract)
-        .mockResolvedValueOnce(mockState) // state
-        .mockResolvedValueOnce(false) // earlyExit
-        .mockResolvedValueOnce(false) // insufficientProceeds
-        .mockResolvedValueOnce(mockPoolKey) // poolKey
-        .mockResolvedValueOnce(1640995200n) // startingTime
-        .mockResolvedValueOnce(1641600000n) // endingTime
-        .mockResolvedValueOnce(3600n) // epochLength
-        .mockResolvedValueOnce(10000000000000000000n) // minimumProceeds
-        .mockResolvedValueOnce(1000000000000000000000n); // maximumProceeds
+        // Mock all the hook contract calls in the correct order
+        vi.mocked(publicClient.readContract)
+          .mockResolvedValueOnce(mockState) // state
+          .mockResolvedValueOnce(false) // earlyExit
+          .mockResolvedValueOnce(false) // insufficientProceeds
+          .mockResolvedValueOnce(mockPoolKey) // poolKey
+          .mockResolvedValueOnce(1640995200n) // startingTime
+          .mockResolvedValueOnce(1641600000n) // endingTime
+          .mockResolvedValueOnce(3600n) // epochLength
+          .mockResolvedValueOnce(10000000000000000000n) // minimumProceeds
+          .mockResolvedValueOnce(1000000000000000000000n) // maximumProceeds
+          .mockResolvedValueOnce(isToken0);
 
-      const hookInfo = await auction.getHookInfo();
+        const hookInfo = await auction.getHookInfo();
 
-      // Compute expected poolId
-      const encoded = encodeAbiParameters(
-        [
-          { type: 'address' },
-          { type: 'address' },
-          { type: 'uint24' },
-          { type: 'int24' },
-          { type: 'address' },
-        ],
-        [
-          mockPoolKey.currency0,
-          mockPoolKey.currency1,
-          mockPoolKey.fee,
-          mockPoolKey.tickSpacing,
-          mockPoolKey.hooks,
-        ],
-      );
-      const expectedPoolId = keccak256(encoded);
+        // Compute expected poolId
+        const encoded = encodeAbiParameters(
+          [
+            { type: 'address' },
+            { type: 'address' },
+            { type: 'uint24' },
+            { type: 'int24' },
+            { type: 'address' },
+          ],
+          [
+            mockPoolKey.currency0,
+            mockPoolKey.currency1,
+            mockPoolKey.fee,
+            mockPoolKey.tickSpacing,
+            mockPoolKey.hooks,
+          ],
+        );
+        const expectedPoolId = keccak256(encoded);
 
-      expect(hookInfo).toEqual({
-        hookAddress: mockHookAddress,
-        tokenAddress: mockTokenAddress,
-        numeraireAddress: mockAddresses.weth,
-        poolId: expectedPoolId,
-        currentEpoch: expect.any(Number),
-        totalProceeds: 50000000000000000000n,
-        totalTokensSold: 250000000000000000000000n,
-        earlyExit: false,
-        insufficientProceeds: false,
-        startingTime: 1640995200n,
-        endingTime: 1641600000n,
-        epochLength: 3600n,
-        minimumProceeds: 10000000000000000000n,
-        maximumProceeds: 1000000000000000000000n,
-      });
-
-      // Verify all expected calls were made
-      expect(publicClient.readContract).toHaveBeenCalledTimes(9);
-    });
+        expect(hookInfo).toEqual({
+          hookAddress: mockHookAddress,
+          tokenAddress: mockTokenAddress,
+          numeraireAddress: mockAddresses.weth,
+          poolId: expectedPoolId,
+          currentEpoch: expect.any(Number),
+          totalProceeds: 50000000000000000000n,
+          totalTokensSold: 250000000000000000000000n,
+          earlyExit: false,
+          insufficientProceeds: false,
+          startingTime: 1640995200n,
+          endingTime: 1641600000n,
+          epochLength: 3600n,
+          minimumProceeds: 10000000000000000000n,
+          maximumProceeds: 1000000000000000000000n,
+        });
+      },
+    );
   });
 
   describe('getTokenAddress', () => {

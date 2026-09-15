@@ -169,6 +169,7 @@ export type {
   ChainAddresses,
   SupportedChainKey,
 } from './addresses';
+export { arc } from './chains';
 
 // Export constants
 export {

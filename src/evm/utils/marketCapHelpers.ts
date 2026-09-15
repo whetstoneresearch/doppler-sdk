@@ -289,9 +289,10 @@ export function marketCapToTicksForStaticAuction(
 /**
  * Convert market cap range to ticks for V4 Dynamic Auctions (Doppler).
  *
- * Dynamic auctions compute tick sign based on expected token ordering:
- * - Token1 (ETH numeraire): positive ticks, startTick < endTick
- * - Token0 (stablecoin numeraire): negative ticks, startTick > endTick
+ * Tick sign depends on the price ratio and token decimals, not numeraire type.
+ * - Sold token1: retain signed ratio ticks, startTick < endTick.
+ * - Sold token0: invert signed ratio ticks, startTick > endTick.
+ * startTick represents the higher market cap; endTick represents the lower one.
  *
  * Unlike Multicurve, Doppler contract does NOT auto-flip ticks.
  *
@@ -300,27 +301,15 @@ export function marketCapToTicksForStaticAuction(
  *
  * @example
  * ```ts
- * // ETH numeraire (token1) - positive ticks
- * const eth = marketCapToTicksForDynamicAuction({
- *   marketCapRange: { start: 50_000, end: 500_000 },
- *   tokenSupply: parseEther('1000000000'),
- *   numerairePriceUSD: 3000,
- *   numeraire: WETH_ADDRESS,
- *   tickSpacing: 30,
- * })
- * // Returns: { startTick: 120000, endTick: 170000 } (positive, ascending)
- *
- * // USDC numeraire (token0) - negative ticks
- * const usdc = marketCapToTicksForDynamicAuction({
- *   marketCapRange: { start: 50_000, end: 500_000 },
- *   tokenSupply: parseEther('1000000000'),
+ * // Native USDC with a sold-token price above $1 (both use 18 decimals)
+ * const { startTick, endTick } = marketCapToTicksForDynamicAuction({
+ *   marketCapRange: { start: 2_000_000, end: 8_000_000 },
+ *   tokenSupply: parseEther('1000000'),
  *   numerairePriceUSD: 1,
- *   numeraire: USDC_ADDRESS,
- *   tickSpacing: 30,
- *   tokenDecimals: 18,
- *   numeraireDecimals: 6,
+ *   numeraire: zeroAddress,
+ *   tickSpacing: 20,
  * })
- * // Returns: { startTick: -120000, endTick: -170000 } (negative, descending)
+ * // Both ticks are negative, with startTick < endTick.
  * ```
  */
 export function marketCapToTicksForDynamicAuction(
@@ -364,31 +353,16 @@ export function marketCapToTicksForDynamicAuction(
   // Determine token ordering from numeraire address
   const tokenIsToken0 = isToken0Expected(numeraire);
 
-  if (tokenIsToken0) {
-    // Token0 (stablecoin numeraire): negative ticks, startTick > endTick
-    const startTick = -Math.min(Math.abs(tickAtStart), Math.abs(tickAtEnd));
-    const endTick = -Math.max(Math.abs(tickAtStart), Math.abs(tickAtEnd));
+  const startTick = tokenIsToken0 ? -tickAtEnd : tickAtEnd;
+  const endTick = tokenIsToken0 ? -tickAtStart : tickAtStart;
 
-    if (startTick === endTick) {
-      throw new Error(
-        `Market cap range resulted in same tick (${startTick}). Try a wider range.`,
-      );
-    }
-
-    return { startTick, endTick }; // e.g., { -120000, -170000 }
-  } else {
-    // Token1 (ETH numeraire): positive ticks, startTick < endTick
-    const startTick = Math.min(Math.abs(tickAtStart), Math.abs(tickAtEnd));
-    const endTick = Math.max(Math.abs(tickAtStart), Math.abs(tickAtEnd));
-
-    if (startTick === endTick) {
-      throw new Error(
-        `Market cap range resulted in same tick (${startTick}). Try a wider range.`,
-      );
-    }
-
-    return { startTick, endTick }; // e.g., { 120000, 170000 }
+  if (startTick === endTick) {
+    throw new Error(
+      `Market cap range resulted in same tick (${startTick}). Try a wider range.`,
+    );
   }
+
+  return { startTick, endTick };
 }
 
 /**
@@ -617,44 +591,40 @@ export function validateMarketCapParameters(
 /**
  * Calculate market cap from a tick (reverse conversion)
  *
- * Useful for displaying what market cap a given tick represents.
- * Works with ticks from any auction type (Static, Dynamic, Multicurve).
+ * Uses signed pool ticks and explicit sold-token ordering.
+ * For unadjusted multicurve helper ticks, pass tokenIsToken0: true.
  *
  * @param params - Configuration object with tick and token parameters
  * @returns Market cap in USD
  *
  * @example
  * ```ts
- * // Works with negative ticks (Multicurve)
+ * // Native USDC is token0 on Arc, so the sold token is token1.
  * tickToMarketCap({
- *   tick: -156000,
- *   tokenSupply: supply,
- *   numerairePriceUSD: 3000,
+ *   tick: -20800,
+ *   tokenIsToken0: false,
+ *   tokenSupply: 1_000_000n * 10n ** 18n,
+ *   numerairePriceUSD: 1,
  * })
- *
- * // Works with positive ticks (Static/Dynamic)
- * tickToMarketCap({
- *   tick: 156000,
- *   tokenSupply: supply,
- *   numerairePriceUSD: 3000,
- * })
+ * // Approximately $8,003,637.
  * ```
  */
 export function tickToMarketCap(params: TickToMarketCapParams): number {
   const {
     tick,
+    tokenIsToken0,
     tokenSupply,
     numerairePriceUSD,
     tokenDecimals = 18,
     numeraireDecimals = 18,
   } = params;
 
-  // Use absolute value since tick sign varies by auction type
-  // but the underlying ratio is always positive
-  const adjustedTick = Math.abs(tick);
+  if (typeof tokenIsToken0 !== 'boolean') {
+    throw new Error('tokenIsToken0 must specify the sold token ordering');
+  }
 
-  // Tick → ratio (reverse of ratioToTick)
-  const ratio = Math.pow(1.0001, adjustedTick);
+  // Convert the signed pool tick to the token/numeraire ratio.
+  const ratio = Math.pow(1.0001, tokenIsToken0 ? -tick : tick);
 
   // Ratio → token price (reverse of tokenPriceToRatio)
   // ratio = (numerairePriceUSD / tokenPriceUSD) * 10^(tokenDecimals - numeraireDecimals)
