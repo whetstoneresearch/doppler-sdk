@@ -5,6 +5,7 @@ import {
   getAddress,
   parseEther,
   zeroAddress,
+  type Address,
 } from 'viem';
 import {
   CHAIN_IDS,
@@ -12,18 +13,23 @@ import {
   DopplerSDK,
   WAD,
   airlockAbi,
+  dopplerHookAbi,
   getAddresses,
+  normalizePoolKey,
   rehypeDopplerHookInitializerAbi,
   verifyPreparedCreateExecution,
   type BeneficiaryData,
+  type V4PoolKey,
 } from '../../../../src/evm';
 import {
   getAnvilManager,
   getForkClients,
   getMainnetForkChains,
   isAnvilForkEnabled,
+  mineToTimestamp,
   type ForkClients,
 } from '../../utils';
+import { executeV4Swap, readPoolTokenBalances } from '../utils';
 
 for (const [chainName, chainId] of getMainnetForkChains()) {
   describe(`${chainName} deployed launch workflows`, () => {
@@ -40,12 +46,14 @@ for (const [chainName, chainId] of getMainnetForkChains()) {
     const numerairePrice = chainId === CHAIN_IDS.ARC ? 1 : 3500;
     const anvilManager = getAnvilManager();
     let clients: ForkClients;
+    let trader: ForkClients;
     let sdk: DopplerSDK;
 
     beforeAll(async () => {
       // Missing RPCs and unwhitelisted deployments must fail, never silently skip.
       await anvilManager.start(chainId);
       clients = getForkClients(chainId, 0, { timeout: 90_000 });
+      trader = getForkClients(chainId, 1, { timeout: 90_000 });
       sdk = new DopplerSDK({
         publicClient: clients.publicClient,
         walletClient: clients.walletClient,
@@ -56,6 +64,66 @@ for (const [chainName, chainId] of getMainnetForkChains()) {
     afterAll(async () => {
       await anvilManager.stop(chainId);
     });
+
+    async function buyAndSell(tokenAddress: Address, poolKey: V4PoolKey) {
+      // A separate trader must receive tokens without creator exclusions or fee payouts.
+      const swap = {
+        addresses,
+        publicClient: trader.publicClient,
+        walletClient: trader.walletClient,
+        account: trader.account,
+        sdk,
+        poolKey,
+        // Robinhood's deployed router requires the newer price-limit tuple.
+        minHopPriceX36: chainId === CHAIN_IDS.ROBINHOOD ? 0n : undefined,
+      };
+      const balances = () =>
+        readPoolTokenBalances({
+          publicClient: trader.publicClient,
+          token0: poolKey.currency0,
+          token1: poolKey.currency1,
+          beneficiary: trader.account.address,
+        });
+      const assetIndex =
+        getAddress(poolKey.currency0) === getAddress(tokenAddress)
+          ? 'token0'
+          : 'token1';
+      const numeraireIndex = assetIndex === 'token0' ? 'token1' : 'token0';
+      const amountIn = parseEther('0.01');
+      const beforeBuy = await balances();
+      const buy = await executeV4Swap({
+        ...swap,
+        tokenIn: numeraire,
+        amountIn,
+      });
+      expect(buy.receipt.status).toBe('success');
+      const afterBuy = await balances();
+      const bought = afterBuy[assetIndex] - beforeBuy[assetIndex];
+      expect(bought).toBeGreaterThan(1n);
+      if (numeraire === zeroAddress) {
+        expect(beforeBuy[numeraireIndex] - afterBuy[numeraireIndex]).toBe(
+          amountIn + buy.gasCost,
+        );
+      }
+
+      const sold = bought / 2n;
+      const sell = await executeV4Swap({
+        ...swap,
+        tokenIn: tokenAddress,
+        amountIn: sold,
+      });
+      expect(sell.receipt.status).toBe('success');
+      const afterSell = await balances();
+      expect(afterBuy[assetIndex] - afterSell[assetIndex]).toBe(sold);
+      expect(afterSell[assetIndex]).toBeGreaterThan(beforeBuy[assetIndex]);
+      // Native proceeds must exclude the trader's approval and swap gas costs.
+      const proceeds =
+        afterSell[numeraireIndex] -
+        afterBuy[numeraireIndex] +
+        (numeraire === zeroAddress ? sell.gasCost : 0n);
+      expect(proceeds).toBeGreaterThan(0n);
+      expect(proceeds).toBeLessThan(amountIn);
+    }
 
     async function launchMulticurve(
       params: Parameters<typeof sdk.factory.prepareCreateMulticurve>[0],
@@ -109,7 +177,7 @@ for (const [chainName, chainId] of getMainnetForkChains()) {
       return verified;
     }
 
-    it('creates a dynamic auction and reads its deployed hook and token state', async () => {
+    it('creates a dynamic auction, verifies its state, then buys and sells', async () => {
       const blockTimestamp = Number(
         (await clients.publicClient.getBlock()).timestamp,
       );
@@ -199,9 +267,18 @@ for (const [chainName, chainId] of getMainnetForkChains()) {
           functionName: 'totalSupply',
         }),
       ).toBe(1_000_000n * WAD);
+      const poolKey = normalizePoolKey(
+        await clients.publicClient.readContract({
+          address: simulation.hookAddress,
+          abi: dopplerHookAbi,
+          functionName: 'poolKey',
+        }),
+      );
+      await mineToTimestamp(clients.testClient, info.startingTime + 1n);
+      await buyAndSell(simulation.tokenAddress, poolKey);
     }, 180_000);
 
-    it('launches Rehype with vesting, verified receipt identity and integrator routing', async () => {
+    it('launches Rehype with vesting and integrator routing, then buys and sells', async () => {
       const rehypeHook = addresses.rehypeDopplerHookInitializer;
       if (!rehypeHook || rehypeHook === zeroAddress) {
         throw new Error(`${chainName} Rehype initializer is required`);
@@ -356,11 +433,15 @@ for (const [chainName, chainId] of getMainnetForkChains()) {
           ),
         ).toEqual({ fees0: 0n, fees1: 0n });
       }
+      await buyAndSell(
+        verified.receiptIdentity.tokenAddress,
+        verified.preparedIdentity.poolKey,
+      );
     }, 180_000);
 
     describe('NoOp multicurve launch ranges', () => {
       it.each(['positive', 'negative', 'presets'] as const)(
-        'creates and reads back a %s range pool',
+        'creates a %s range pool, then buys and sells',
         async (range) => {
           const beneficiaries = [await sdk.getAirlockBeneficiary(WAD)];
           const builder = sdk
@@ -399,13 +480,17 @@ for (const [chainName, chainId] of getMainnetForkChains()) {
           }
           const saltByte =
             range === 'positive' ? '44' : range === 'negative' ? '45' : '46';
-          await launchMulticurve(
+          const verified = await launchMulticurve(
             builder
               .withGovernance({ type: 'noOp' })
               .withMigration({ type: 'noOp' })
               .withUserAddress(clients.account.address)
               .withSalt(`0x${saltByte.repeat(32)}`)
               .build(),
+          );
+          await buyAndSell(
+            verified.receiptIdentity.tokenAddress,
+            verified.preparedIdentity.poolKey,
           );
         },
         180_000,
@@ -416,7 +501,7 @@ for (const [chainName, chainId] of getMainnetForkChains()) {
       !addresses.v4ScheduledMulticurveInitializer ||
         addresses.v4ScheduledMulticurveInitializer === zeroAddress,
     )(
-      'creates a scheduled multicurve pool (only where the scheduled initializer is deployed)',
+      'creates a scheduled multicurve pool, then buys and sells after opening (where deployed)',
       async () => {
         const startTime =
           Number((await clients.publicClient.getBlock()).timestamp) + 3600;
@@ -455,6 +540,11 @@ for (const [chainName, chainId] of getMainnetForkChains()) {
         );
         expect(getAddress(assetData.poolInitializer)).toBe(
           getAddress(addresses.v4ScheduledMulticurveInitializer!),
+        );
+        await mineToTimestamp(clients.testClient, BigInt(startTime) + 1n);
+        await buyAndSell(
+          verified.receiptIdentity.tokenAddress,
+          verified.preparedIdentity.poolKey,
         );
       },
       180_000,

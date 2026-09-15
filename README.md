@@ -1691,7 +1691,7 @@ pnpm dev
 The SDK includes comprehensive tests covering:
 
 - **Airlock Whitelisting**: Verifies that configured modules are whitelisted on the selected networks
-- **Multicurve Functionality**: Tests multicurve auction creation and quoting
+- **Auction Workflows**: Tests dynamic and multicurve creation, quoting, and executed buy/sell round trips on local Anvil forks
 - **Token Address Mining**: Tests for generating optimized token addresses
 
 Configure Alchemy once, then run the whitelist audit:
@@ -1722,6 +1722,8 @@ TEST_CHAIN=monad-mainnet pnpm test:fork
 TEST_CHAIN=robinhood pnpm test:fork
 TEST_CHAIN=arc pnpm test:fork
 ```
+
+The shared mainnet suite buys and partially sells through each newly created dynamic, Rehype, NoOp, and deployed scheduled pool. Arc uses native USDC; other networks use their configured wrapped native token. Checks verify receipts, acquired and sold tokens, and returned numeraire, with gas costs excluded from native sell proceeds. Fork tests do not broadcast to mainnet.
 
 ## Migration from Previous SDKs
 
