@@ -182,7 +182,12 @@ devnet_pending_examples=(
   examples/solana-fee-rehypothecation-settle-and-claim.ts
 )
 compile_only_examples=(
-  examples/solana-prediction-market.ts
+  # Prediction examples require devnet/custom market state and are typechecked
+  # by the Solana Prediction SDK workflow.
+  examples/solana-prediction-create.ts
+  examples/solana-prediction-buy.ts
+  examples/solana-prediction-resolve.ts
+  examples/solana-prediction-claim.ts
 )
 
 declare -A classified_examples=()

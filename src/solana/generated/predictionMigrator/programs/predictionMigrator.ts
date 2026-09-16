@@ -34,7 +34,6 @@ import {
 } from '@solana/program-client-core';
 import {
   getClaimReceiptCodec,
-  getEntryByMintCodec,
   getEntryCodec,
   getInitConfigCodec,
   getLaunchCodec,
@@ -44,8 +43,6 @@ import {
   type ClaimReceiptArgs,
   type Entry,
   type EntryArgs,
-  type EntryByMint,
-  type EntryByMintArgs,
   type InitConfig,
   type InitConfigArgs,
   type Launch,
@@ -57,20 +54,28 @@ import {
 } from '../accounts';
 import {
   getClaimInstructionAsync,
+  getCreateMarketInstructionAsync,
   getMigrateEntryInstructionAsync,
   getPreviewPayoutIfWinnerInstruction,
+  getRefundInstructionAsync,
   getRegisterEntryInstructionAsync,
   parseClaimInstruction,
+  parseCreateMarketInstruction,
   parseMigrateEntryInstruction,
   parsePreviewPayoutIfWinnerInstruction,
+  parseRefundInstruction,
   parseRegisterEntryInstruction,
   type ClaimAsyncInput,
+  type CreateMarketAsyncInput,
   type MigrateEntryAsyncInput,
   type ParsedClaimInstruction,
+  type ParsedCreateMarketInstruction,
   type ParsedMigrateEntryInstruction,
   type ParsedPreviewPayoutIfWinnerInstruction,
+  type ParsedRefundInstruction,
   type ParsedRegisterEntryInstruction,
   type PreviewPayoutIfWinnerInput,
+  type RefundAsyncInput,
   type RegisterEntryAsyncInput,
 } from '../instructions';
 
@@ -80,7 +85,6 @@ export const PREDICTION_MIGRATOR_PROGRAM_ADDRESS =
 export enum PredictionMigratorAccount {
   ClaimReceipt,
   Entry,
-  EntryByMint,
   InitConfig,
   Launch,
   Market,
@@ -112,17 +116,6 @@ export function identifyPredictionMigratorAccount(
     )
   ) {
     return PredictionMigratorAccount.Entry;
-  }
-  if (
-    containsBytes(
-      data,
-      fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([188, 191, 157, 194, 68, 82, 181, 126]),
-      ),
-      0,
-    )
-  ) {
-    return PredictionMigratorAccount.EntryByMint;
   }
   if (
     containsBytes(
@@ -176,8 +169,10 @@ export function identifyPredictionMigratorAccount(
 
 export enum PredictionMigratorInstruction {
   Claim,
+  CreateMarket,
   MigrateEntry,
   PreviewPayoutIfWinner,
+  Refund,
   RegisterEntry,
 }
 
@@ -195,6 +190,17 @@ export function identifyPredictionMigratorInstruction(
     )
   ) {
     return PredictionMigratorInstruction.Claim;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([103, 226, 97, 235, 200, 188, 251, 254]),
+      ),
+      0,
+    )
+  ) {
+    return PredictionMigratorInstruction.CreateMarket;
   }
   if (
     containsBytes(
@@ -222,6 +228,17 @@ export function identifyPredictionMigratorInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([2, 96, 183, 251, 63, 208, 46, 46]),
+      ),
+      0,
+    )
+  ) {
+    return PredictionMigratorInstruction.Refund;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([198, 25, 1, 183, 73, 219, 215, 14]),
       ),
       0,
@@ -242,11 +259,17 @@ export type ParsedPredictionMigratorInstruction<
       instructionType: PredictionMigratorInstruction.Claim;
     } & ParsedClaimInstruction<TProgram>)
   | ({
+      instructionType: PredictionMigratorInstruction.CreateMarket;
+    } & ParsedCreateMarketInstruction<TProgram>)
+  | ({
       instructionType: PredictionMigratorInstruction.MigrateEntry;
     } & ParsedMigrateEntryInstruction<TProgram>)
   | ({
       instructionType: PredictionMigratorInstruction.PreviewPayoutIfWinner;
     } & ParsedPreviewPayoutIfWinnerInstruction<TProgram>)
+  | ({
+      instructionType: PredictionMigratorInstruction.Refund;
+    } & ParsedRefundInstruction<TProgram>)
   | ({
       instructionType: PredictionMigratorInstruction.RegisterEntry;
     } & ParsedRegisterEntryInstruction<TProgram>);
@@ -263,6 +286,13 @@ export function parsePredictionMigratorInstruction<TProgram extends string>(
         ...parseClaimInstruction(instruction),
       };
     }
+    case PredictionMigratorInstruction.CreateMarket: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: PredictionMigratorInstruction.CreateMarket,
+        ...parseCreateMarketInstruction(instruction),
+      };
+    }
     case PredictionMigratorInstruction.MigrateEntry: {
       assertIsInstructionWithAccounts(instruction);
       return {
@@ -275,6 +305,13 @@ export function parsePredictionMigratorInstruction<TProgram extends string>(
       return {
         instructionType: PredictionMigratorInstruction.PreviewPayoutIfWinner,
         ...parsePreviewPayoutIfWinnerInstruction(instruction),
+      };
+    }
+    case PredictionMigratorInstruction.Refund: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: PredictionMigratorInstruction.Refund,
+        ...parseRefundInstruction(instruction),
       };
     }
     case PredictionMigratorInstruction.RegisterEntry: {
@@ -305,8 +342,6 @@ export type PredictionMigratorPluginAccounts = {
     SelfFetchFunctions<ClaimReceiptArgs, ClaimReceipt>;
   entry: ReturnType<typeof getEntryCodec> &
     SelfFetchFunctions<EntryArgs, Entry>;
-  entryByMint: ReturnType<typeof getEntryByMintCodec> &
-    SelfFetchFunctions<EntryByMintArgs, EntryByMint>;
   initConfig: ReturnType<typeof getInitConfigCodec> &
     SelfFetchFunctions<InitConfigArgs, InitConfig>;
   launch: ReturnType<typeof getLaunchCodec> &
@@ -321,6 +356,10 @@ export type PredictionMigratorPluginInstructions = {
   claim: (
     input: MakeOptional<ClaimAsyncInput, 'payer'>,
   ) => ReturnType<typeof getClaimInstructionAsync> & SelfPlanAndSendFunctions;
+  createMarket: (
+    input: CreateMarketAsyncInput,
+  ) => ReturnType<typeof getCreateMarketInstructionAsync> &
+    SelfPlanAndSendFunctions;
   migrateEntry: (
     input: MakeOptional<MigrateEntryAsyncInput, 'payer'>,
   ) => ReturnType<typeof getMigrateEntryInstructionAsync> &
@@ -329,6 +368,9 @@ export type PredictionMigratorPluginInstructions = {
     input: PreviewPayoutIfWinnerInput,
   ) => ReturnType<typeof getPreviewPayoutIfWinnerInstruction> &
     SelfPlanAndSendFunctions;
+  refund: (
+    input: RefundAsyncInput,
+  ) => ReturnType<typeof getRefundInstructionAsync> & SelfPlanAndSendFunctions;
   registerEntry: (
     input: MakeOptional<RegisterEntryAsyncInput, 'payer'>,
   ) => ReturnType<typeof getRegisterEntryInstructionAsync> &
@@ -350,7 +392,6 @@ export function predictionMigratorProgram() {
         accounts: {
           claimReceipt: addSelfFetchFunctions(client, getClaimReceiptCodec()),
           entry: addSelfFetchFunctions(client, getEntryCodec()),
-          entryByMint: addSelfFetchFunctions(client, getEntryByMintCodec()),
           initConfig: addSelfFetchFunctions(client, getInitConfigCodec()),
           launch: addSelfFetchFunctions(client, getLaunchCodec()),
           market: addSelfFetchFunctions(client, getMarketCodec()),
@@ -365,6 +406,11 @@ export function predictionMigratorProgram() {
                 payer: input.payer ?? client.payer,
               }),
             ),
+          createMarket: (input) =>
+            addSelfPlanAndSendFunctions(
+              client,
+              getCreateMarketInstructionAsync(input),
+            ),
           migrateEntry: (input) =>
             addSelfPlanAndSendFunctions(
               client,
@@ -377,6 +423,11 @@ export function predictionMigratorProgram() {
             addSelfPlanAndSendFunctions(
               client,
               getPreviewPayoutIfWinnerInstruction(input),
+            ),
+          refund: (input) =>
+            addSelfPlanAndSendFunctions(
+              client,
+              getRefundInstructionAsync(input),
             ),
           registerEntry: (input) =>
             addSelfPlanAndSendFunctions(

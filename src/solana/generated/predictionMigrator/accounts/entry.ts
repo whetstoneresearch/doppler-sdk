@@ -53,8 +53,6 @@ export type Entry = {
   discriminator: ReadonlyUint8Array;
   /** The market this entry belongs to */
   market: Address;
-  /** Unique identifier for this entry within the market */
-  entryId: ReadonlyUint8Array;
   /** The token mint for this entry */
   baseMint: Address;
   /** Quote contributed when this entry was migrated */
@@ -63,15 +61,15 @@ export type Entry = {
   isMigrated: boolean;
   /** Bump seed for this PDA */
   bump: number;
-  /** Reserved for future use */
-  reserved: ReadonlyUint8Array;
+  /** Circulating supply fixed at migration for void-market refunds */
+  refundSupply: bigint;
+  /** Quote already refunded for this entry */
+  refundedQuote: bigint;
 };
 
 export type EntryArgs = {
   /** The market this entry belongs to */
   market: Address;
-  /** Unique identifier for this entry within the market */
-  entryId: ReadonlyUint8Array;
   /** The token mint for this entry */
   baseMint: Address;
   /** Quote contributed when this entry was migrated */
@@ -80,8 +78,10 @@ export type EntryArgs = {
   isMigrated: boolean;
   /** Bump seed for this PDA */
   bump: number;
-  /** Reserved for future use */
-  reserved: ReadonlyUint8Array;
+  /** Circulating supply fixed at migration for void-market refunds */
+  refundSupply: number | bigint;
+  /** Quote already refunded for this entry */
+  refundedQuote: number | bigint;
 };
 
 /** Gets the encoder for {@link EntryArgs} account data. */
@@ -90,12 +90,12 @@ export function getEntryEncoder(): FixedSizeEncoder<EntryArgs> {
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       ['market', getAddressEncoder()],
-      ['entryId', fixEncoderSize(getBytesEncoder(), 32)],
       ['baseMint', getAddressEncoder()],
       ['contribution', getU64Encoder()],
       ['isMigrated', getBooleanEncoder()],
       ['bump', getU8Encoder()],
-      ['reserved', fixEncoderSize(getBytesEncoder(), 14)],
+      ['refundSupply', getU64Encoder()],
+      ['refundedQuote', getU64Encoder()],
     ]),
     (value) => ({ ...value, discriminator: ENTRY_DISCRIMINATOR }),
   );
@@ -106,12 +106,12 @@ export function getEntryDecoder(): FixedSizeDecoder<Entry> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['market', getAddressDecoder()],
-    ['entryId', fixDecoderSize(getBytesDecoder(), 32)],
     ['baseMint', getAddressDecoder()],
     ['contribution', getU64Decoder()],
     ['isMigrated', getBooleanDecoder()],
     ['bump', getU8Decoder()],
-    ['reserved', fixDecoderSize(getBytesDecoder(), 14)],
+    ['refundSupply', getU64Decoder()],
+    ['refundedQuote', getU64Decoder()],
   ]);
 }
 
@@ -174,5 +174,5 @@ export async function fetchAllMaybeEntry(
 }
 
 export function getEntrySize(): number {
-  return 128;
+  return 98;
 }

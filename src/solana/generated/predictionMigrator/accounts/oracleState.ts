@@ -17,6 +17,8 @@ import {
   fixEncoderSize,
   getAddressDecoder,
   getAddressEncoder,
+  getArrayDecoder,
+  getArrayEncoder,
   getBooleanDecoder,
   getBooleanEncoder,
   getBytesDecoder,
@@ -55,35 +57,35 @@ export type OracleState = {
   discriminator: ReadonlyUint8Array;
   /** The authority that can finalize this oracle. */
   oracleAuthority: Address;
-  /** Optional quote mint for validation (Pubkey::default() if not used). */
-  quoteMint: Address;
-  /** Whether the oracle has been finalized with a winner. */
+  /** Whether the oracle has been finalized with an outcome. */
   isFinalized: boolean;
-  /** The winning mint (only valid if is_finalized == true). */
-  winningMint: Address;
+  /** Canonical winning outcome ID (only valid if is_finalized == true). */
+  winningOutcomeId: ReadonlyUint8Array;
   /** Nonce used in PDA derivation. */
   nonce: bigint;
   /** PDA bump seed. */
   bump: number;
-  /** Reserved for future use. */
-  reserved: ReadonlyUint8Array;
+  /** Number of declared outcomes in `outcome_ids`. */
+  outcomeCount: number;
+  /** Immutable set of canonical outcome IDs declared at initialization. */
+  outcomeIds: Array<ReadonlyUint8Array>;
 };
 
 export type OracleStateArgs = {
   /** The authority that can finalize this oracle. */
   oracleAuthority: Address;
-  /** Optional quote mint for validation (Pubkey::default() if not used). */
-  quoteMint: Address;
-  /** Whether the oracle has been finalized with a winner. */
+  /** Whether the oracle has been finalized with an outcome. */
   isFinalized: boolean;
-  /** The winning mint (only valid if is_finalized == true). */
-  winningMint: Address;
+  /** Canonical winning outcome ID (only valid if is_finalized == true). */
+  winningOutcomeId: ReadonlyUint8Array;
   /** Nonce used in PDA derivation. */
   nonce: number | bigint;
   /** PDA bump seed. */
   bump: number;
-  /** Reserved for future use. */
-  reserved: ReadonlyUint8Array;
+  /** Number of declared outcomes in `outcome_ids`. */
+  outcomeCount: number;
+  /** Immutable set of canonical outcome IDs declared at initialization. */
+  outcomeIds: Array<ReadonlyUint8Array>;
 };
 
 /** Gets the encoder for {@link OracleStateArgs} account data. */
@@ -92,12 +94,15 @@ export function getOracleStateEncoder(): FixedSizeEncoder<OracleStateArgs> {
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       ['oracleAuthority', getAddressEncoder()],
-      ['quoteMint', getAddressEncoder()],
       ['isFinalized', getBooleanEncoder()],
-      ['winningMint', getAddressEncoder()],
+      ['winningOutcomeId', fixEncoderSize(getBytesEncoder(), 32)],
       ['nonce', getU64Encoder()],
       ['bump', getU8Encoder()],
-      ['reserved', fixEncoderSize(getBytesEncoder(), 31)],
+      ['outcomeCount', getU8Encoder()],
+      [
+        'outcomeIds',
+        getArrayEncoder(fixEncoderSize(getBytesEncoder(), 32), { size: 8 }),
+      ],
     ]),
     (value) => ({ ...value, discriminator: ORACLE_STATE_DISCRIMINATOR }),
   );
@@ -108,12 +113,15 @@ export function getOracleStateDecoder(): FixedSizeDecoder<OracleState> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['oracleAuthority', getAddressDecoder()],
-    ['quoteMint', getAddressDecoder()],
     ['isFinalized', getBooleanDecoder()],
-    ['winningMint', getAddressDecoder()],
+    ['winningOutcomeId', fixDecoderSize(getBytesDecoder(), 32)],
     ['nonce', getU64Decoder()],
     ['bump', getU8Decoder()],
-    ['reserved', fixDecoderSize(getBytesDecoder(), 31)],
+    ['outcomeCount', getU8Decoder()],
+    [
+      'outcomeIds',
+      getArrayDecoder(fixDecoderSize(getBytesDecoder(), 32), { size: 8 }),
+    ],
   ]);
 }
 
@@ -179,5 +187,5 @@ export async function fetchAllMaybeOracleState(
 }
 
 export function getOracleStateSize(): number {
-  return 145;
+  return 339;
 }

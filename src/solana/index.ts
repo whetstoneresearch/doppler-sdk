@@ -61,3 +61,5 @@ export {
   type SolanaFeeRehypothecationDeployment,
   type SolanaFeeRehypothecationProgramAddresses,
 } from './deployment.js';
+
+export * as predictionMarkets from './predictionMarkets/index.js';

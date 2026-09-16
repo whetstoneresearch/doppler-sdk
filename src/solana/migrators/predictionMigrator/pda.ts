@@ -1,7 +1,6 @@
 import {
   type Address,
   type ProgramDerivedAddress,
-  type ReadonlyUint8Array,
   getAddressCodec,
   getProgramDerivedAddress,
 } from '@solana/kit';
@@ -13,6 +12,7 @@ const textEncoder = new TextEncoder();
 export async function getPredictionMarketAddress(
   oracleState: Address,
   quoteMint: Address,
+  creator: Address,
   programId: Address = PREDICTION_MIGRATOR_PROGRAM_ADDRESS,
 ): Promise<ProgramDerivedAddress> {
   return getProgramDerivedAddress({
@@ -21,6 +21,7 @@ export async function getPredictionMarketAddress(
       textEncoder.encode('market'),
       addressCodec.encode(oracleState),
       addressCodec.encode(quoteMint),
+      addressCodec.encode(creator),
     ],
   });
 }
@@ -50,26 +51,15 @@ export async function getPredictionPotVaultAddress(
 
 export async function getPredictionEntryAddress(
   market: Address,
-  entryId: ReadonlyUint8Array | Uint8Array,
-  programId: Address = PREDICTION_MIGRATOR_PROGRAM_ADDRESS,
-): Promise<ProgramDerivedAddress> {
-  return getProgramDerivedAddress({
-    programAddress: programId,
-    seeds: [textEncoder.encode('entry'), addressCodec.encode(market), entryId],
-  });
-}
-
-export async function getPredictionEntryByMintAddress(
-  market: Address,
-  mint: Address,
+  baseMint: Address,
   programId: Address = PREDICTION_MIGRATOR_PROGRAM_ADDRESS,
 ): Promise<ProgramDerivedAddress> {
   return getProgramDerivedAddress({
     programAddress: programId,
     seeds: [
-      textEncoder.encode('entry_by_mint'),
+      textEncoder.encode('entry'),
       addressCodec.encode(market),
-      addressCodec.encode(mint),
+      addressCodec.encode(baseMint),
     ],
   });
 }

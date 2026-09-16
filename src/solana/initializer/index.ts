@@ -174,3 +174,5 @@ export {
   type FetchLaunchesConfig,
   type LaunchWithAddress,
 } from './client/index.js';
+
+export { calculatePendingInitializerFees } from './fees.js';

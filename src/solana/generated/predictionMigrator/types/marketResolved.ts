@@ -8,41 +8,36 @@
 
 import {
   combineCodec,
+  fixDecoderSize,
+  fixEncoderSize,
   getAddressDecoder,
   getAddressEncoder,
+  getBytesDecoder,
+  getBytesEncoder,
   getStructDecoder,
   getStructEncoder,
-  getU64Decoder,
-  getU64Encoder,
   type Address,
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
+  type ReadonlyUint8Array,
 } from '@solana/kit';
 
 export type MarketResolved = {
   market: Address;
   oracle: Address;
+  winningOutcomeId: ReadonlyUint8Array;
   winnerMint: Address;
-  claimableSupply: bigint;
-  totalPot: bigint;
 };
 
-export type MarketResolvedArgs = {
-  market: Address;
-  oracle: Address;
-  winnerMint: Address;
-  claimableSupply: number | bigint;
-  totalPot: number | bigint;
-};
+export type MarketResolvedArgs = MarketResolved;
 
 export function getMarketResolvedEncoder(): FixedSizeEncoder<MarketResolvedArgs> {
   return getStructEncoder([
     ['market', getAddressEncoder()],
     ['oracle', getAddressEncoder()],
+    ['winningOutcomeId', fixEncoderSize(getBytesEncoder(), 32)],
     ['winnerMint', getAddressEncoder()],
-    ['claimableSupply', getU64Encoder()],
-    ['totalPot', getU64Encoder()],
   ]);
 }
 
@@ -50,9 +45,8 @@ export function getMarketResolvedDecoder(): FixedSizeDecoder<MarketResolved> {
   return getStructDecoder([
     ['market', getAddressDecoder()],
     ['oracle', getAddressDecoder()],
+    ['winningOutcomeId', fixDecoderSize(getBytesDecoder(), 32)],
     ['winnerMint', getAddressDecoder()],
-    ['claimableSupply', getU64Decoder()],
-    ['totalPot', getU64Decoder()],
   ]);
 }
 

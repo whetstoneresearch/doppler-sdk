@@ -8,8 +8,12 @@
 
 import {
   combineCodec,
+  fixDecoderSize,
+  fixEncoderSize,
   getAddressDecoder,
   getAddressEncoder,
+  getBytesDecoder,
+  getBytesEncoder,
   getStructDecoder,
   getStructEncoder,
   getU64Decoder,
@@ -18,21 +22,25 @@ import {
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
+  type ReadonlyUint8Array,
 } from '@solana/kit';
 
 export type PreviewPayoutIfWinnerArgs = {
   candidateWinnerMint: Address;
+  candidateOutcomeId: ReadonlyUint8Array;
   tokenAmount: bigint;
 };
 
 export type PreviewPayoutIfWinnerArgsArgs = {
   candidateWinnerMint: Address;
+  candidateOutcomeId: ReadonlyUint8Array;
   tokenAmount: number | bigint;
 };
 
 export function getPreviewPayoutIfWinnerArgsEncoder(): FixedSizeEncoder<PreviewPayoutIfWinnerArgsArgs> {
   return getStructEncoder([
     ['candidateWinnerMint', getAddressEncoder()],
+    ['candidateOutcomeId', fixEncoderSize(getBytesEncoder(), 32)],
     ['tokenAmount', getU64Encoder()],
   ]);
 }
@@ -40,6 +48,7 @@ export function getPreviewPayoutIfWinnerArgsEncoder(): FixedSizeEncoder<PreviewP
 export function getPreviewPayoutIfWinnerArgsDecoder(): FixedSizeDecoder<PreviewPayoutIfWinnerArgs> {
   return getStructDecoder([
     ['candidateWinnerMint', getAddressDecoder()],
+    ['candidateOutcomeId', fixDecoderSize(getBytesDecoder(), 32)],
     ['tokenAmount', getU64Decoder()],
   ]);
 }

@@ -22,6 +22,7 @@ export type MarketCreated = {
   market: Address;
   oracle: Address;
   quoteMint: Address;
+  creator: Address;
 };
 
 export type MarketCreatedArgs = MarketCreated;
@@ -31,6 +32,7 @@ export function getMarketCreatedEncoder(): FixedSizeEncoder<MarketCreatedArgs> {
     ['market', getAddressEncoder()],
     ['oracle', getAddressEncoder()],
     ['quoteMint', getAddressEncoder()],
+    ['creator', getAddressEncoder()],
   ]);
 }
 
@@ -39,6 +41,7 @@ export function getMarketCreatedDecoder(): FixedSizeDecoder<MarketCreated> {
     ['market', getAddressDecoder()],
     ['oracle', getAddressDecoder()],
     ['quoteMint', getAddressDecoder()],
+    ['creator', getAddressDecoder()],
   ]);
 }
 
