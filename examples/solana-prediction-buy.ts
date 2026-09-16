@@ -17,10 +17,14 @@ async function main(): Promise<void> {
   assertSolanaExampleNetwork(clients.network, ['devnet', 'custom']);
   const market = address(requiredEnv('SOLANA_PREDICTION_MARKET'));
   const baseMint = address(requiredEnv('SOLANA_PREDICTION_BASE_MINT'));
+  const launch = process.env.SOLANA_PREDICTION_LAUNCH
+    ? address(process.env.SOLANA_PREDICTION_LAUNCH)
+    : undefined;
   const amountIn = BigInt(requiredEnv('SOLANA_PREDICTION_AMOUNT_IN'));
   const quote = await predictionMarkets.fetchPredictionBuyQuote(clients.rpc, {
     market,
     baseMint,
+    launch,
     amountIn,
     slippageBps: 50,
   });

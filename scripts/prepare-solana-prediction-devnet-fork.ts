@@ -3,7 +3,15 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { address, getAddressDecoder, getAddressEncoder } from '@solana/kit';
+import {
+  address,
+  createSolanaRpc,
+  getAddressDecoder,
+  getAddressEncoder,
+  type AccountInfoBase,
+  type AccountInfoWithBase64EncodedData,
+} from '@solana/kit';
+import { bytesToBase64EncodedBytes } from '../src/solana/core/accounts.js';
 import {
   findAssociatedTokenPda,
   TOKEN_PROGRAM_ADDRESS,
@@ -34,116 +42,76 @@ const programs = {
   prediction_migrator: 'HYHdyy7QZg8Ucky9Z97xNtSCvrZxVNkeoney8xEPXjiZ',
   prediction_hook: '7QcQDANJVC17Jgc6KjjeagSkm2zAphgHVPK5agJzyihB',
 };
-const safeMethods = new Set([
-  'getGenesisHash',
-  'getVersion',
-  'getSlot',
-  'getMultipleAccounts',
-  'getProgramAccounts',
-  'getMinimumBalanceForRentExemption',
-]);
-// Preserve u64 fields such as rentEpoch=18446744073709551615 while retaining
-// ordinary JS numbers for safe slot/size fields used by this harness.
-function losslessJson(text: string): any {
-  function normalize(value: any): any {
-    if (typeof value === 'bigint')
-      return value <= BigInt(Number.MAX_SAFE_INTEGER) &&
-        value >= BigInt(Number.MIN_SAFE_INTEGER)
-        ? Number(value)
-        : value;
-    if (Array.isArray(value)) return value.map(normalize);
-    if (value && typeof value === 'object')
-      return Object.fromEntries(
-        Object.entries(value).map(([key, item]) => [key, normalize(item)]),
-      );
-    return value;
-  }
-  return normalize(parseJsonWithBigInts(text));
-}
-async function readRpc(
-  endpoint: string,
-  method: string,
-  params: unknown[] = [],
-): Promise<any> {
-  assert(
-    safeMethods.has(method),
-    `Only read-only RPC methods allowed: ${method}`,
-  );
-  for (let attempt = 0; attempt < 5; attempt++) {
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
-    });
-    if (response.status === 429 || response.status >= 500) {
-      await new Promise((resolve) => setTimeout(resolve, 1000 * (attempt + 1)));
-      continue;
-    }
-    assert(response.ok, `${method}: HTTP ${response.status}`);
-    const result = losslessJson(await response.text()) as {
-      result?: unknown;
-      error?: unknown;
-    };
-    assert(!result.error, `${method}: ${JSON.stringify(result.error)}`);
-    return result.result;
-  }
-  throw new Error(`${method}: upstream RPC retry limit reached`);
-}
+const upstreamRpc = createSolanaRpc(upstream);
+type SnapshotAccount = AccountInfoBase & AccountInfoWithBase64EncodedData;
+type FeatureSnapshot = {
+  context: { slot: bigint };
+  value: { pubkey: string; account: SnapshotAccount }[];
+};
+
 function save(name: string, value: unknown) {
   writeFileSync(join(runDir, name), stringifyJsonWithBigInts(value, 2) + '\n');
 }
-function bytes(account: any): Buffer {
+function bytes(account: SnapshotAccount | null): Buffer {
+  assert(account, 'Missing snapshot account');
   return Buffer.from(account.data[0], 'base64');
 }
 function hash(value: Uint8Array | string) {
   return createHash('sha256').update(value).digest('hex');
 }
-function accountSummary(pubkey: string, account: any) {
+function accountSummary(pubkey: string, account: SnapshotAccount | null) {
+  assert(account, `Missing snapshot account ${pubkey}`);
   return {
     pubkey,
     owner: account.owner,
     lamports: account.lamports,
     executable: account.executable,
-    dataBytes: bytes(account).length,
+    dataBytes: BigInt(bytes(account).length),
     dataSha256: hash(bytes(account)),
   };
 }
-function dump(pubkey: string, account: any) {
+function dump(pubkey: string, account: SnapshotAccount | null) {
   save(`genesis-accounts/${pubkey}.json`, { pubkey, account });
 }
-function activeFeatures(snapshot: any): string[] {
+function activeFeatures(snapshot: FeatureSnapshot): string[] {
   return snapshot.value
     .filter(
-      (row: any) =>
+      (row) =>
         bytes(row.account)[0] === 1 &&
         bytes(row.account).readBigUInt64LE(1) <= BigInt(snapshot.context.slot),
     )
-    .map((row: any) => row.pubkey)
+    .map((row) => row.pubkey)
     .sort();
 }
 async function prepare() {
   mkdirSync(join(runDir, 'genesis-accounts'), { recursive: true });
   assert.equal(
-    await readRpc(upstream, 'getGenesisHash'),
+    await upstreamRpc.getGenesisHash().send(),
     expectedGenesis,
     'Upstream must be devnet',
   );
   const snapshotAddresses = [config, wsol, usdc, ...Object.values(programs)];
   const [accounts, features, version] = await Promise.all([
-    readRpc(upstream, 'getMultipleAccounts', [
-      snapshotAddresses,
-      { encoding: 'base64', commitment: 'confirmed' },
-    ]),
-    readRpc(upstream, 'getProgramAccounts', [
-      featureProgram,
-      { encoding: 'base64', commitment: 'confirmed', withContext: true },
-    ]),
-    readRpc(upstream, 'getVersion'),
+    upstreamRpc
+      .getMultipleAccounts(snapshotAddresses.map(address), {
+        encoding: 'base64',
+        commitment: 'confirmed',
+      })
+      .send(),
+    upstreamRpc
+      .getProgramAccounts(address(featureProgram), {
+        encoding: 'base64',
+        commitment: 'confirmed',
+        withContext: true,
+      })
+      .send(),
+    upstreamRpc.getVersion().send(),
   ]);
   save('upstream-accounts.json', { addresses: snapshotAddresses, ...accounts });
   save('upstream-features.json', features);
   assert(accounts.value.every(Boolean), 'Required devnet accounts must exist');
   const configAccount = accounts.value[0];
+  assert(configAccount, 'Missing initializer config');
   assert.equal(configAccount.owner, programs.initializer);
   const policy = initializer
     .getInitConfigDecoder()
@@ -167,7 +135,7 @@ async function prepare() {
   for (let i = 0; i < 3; i++) dump(snapshotAddresses[i], accounts.value[i]);
   for (const i of [1, 2]) {
     assert.equal(
-      accounts.value[i].owner,
+      accounts.value[i]?.owner,
       TOKEN_PROGRAM_ADDRESS,
       'Quote mint must be classic SPL Token',
     );
@@ -182,7 +150,8 @@ async function prepare() {
       'Quote mint must be initialized',
     );
   }
-  const programDataAddresses = accounts.value.slice(3).map((account: any) => {
+  const programDataAddresses = accounts.value.slice(3).map((account) => {
+    assert(account, 'Missing deployed program');
     assert.equal(
       account.owner,
       initializer.BPF_LOADER_UPGRADEABLE_PROGRAM_ID,
@@ -192,14 +161,13 @@ async function prepare() {
     assert.equal(bytes(account).readUInt32LE(0), 2);
     return getAddressDecoder().decode(bytes(account).subarray(4, 36));
   });
-  const programData = await readRpc(upstream, 'getMultipleAccounts', [
-    programDataAddresses,
-    {
+  const programData = await upstreamRpc
+    .getMultipleAccounts(programDataAddresses, {
       encoding: 'base64',
       commitment: 'confirmed',
       minContextSlot: accounts.context.slot,
-    },
-  ]);
+    })
+    .send();
   save('upstream-programdata.json', {
     addresses: programDataAddresses,
     ...programData,
@@ -227,9 +195,9 @@ async function prepare() {
       );
       const localRaw = Buffer.from(raw);
       localRaw.writeBigUInt64LE(0n, 4);
-      const localDataAccount = {
+      const localDataAccount: SnapshotAccount = {
         ...dataAccount,
-        data: [localRaw.toString('base64'), 'base64'],
+        data: [bytesToBase64EncodedBytes(localRaw), 'base64'],
       };
       if (mode === 'deployed') {
         // A fresh ledger has no ancestry for the upstream deployment slot.
@@ -273,15 +241,16 @@ async function prepare() {
   tokenData.set(getAddressEncoder().encode(creator), 32);
   tokenData.writeBigUInt64LE(1_000_000_000n, 64);
   tokenData[108] = 1;
-  const quoteFixture = {
-    lamports: await readRpc(upstream, 'getMinimumBalanceForRentExemption', [
-      165,
-      { commitment: 'confirmed' },
-    ]),
+  // Validator genesis JSON still requires this deprecated RPC field.
+  const quoteFixture: SnapshotAccount & { rentEpoch: bigint } = {
+    lamports: await upstreamRpc
+      .getMinimumBalanceForRentExemption(165n, { commitment: 'confirmed' })
+      .send(),
     owner: TOKEN_PROGRAM_ADDRESS,
     executable: false,
-    rentEpoch: 0,
-    data: [tokenData.toString('base64'), 'base64'],
+    rentEpoch: 0n,
+    space: 165n,
+    data: [bytesToBase64EncodedBytes(tokenData), 'base64'],
   };
   save('local-quote-fixture.json', { pubkey: localAta, account: quoteFixture });
   dump(localAta, quoteFixture);
@@ -300,7 +269,7 @@ async function prepare() {
               name,
               {
                 programId,
-                bytes: artifact.length,
+                bytes: BigInt(artifact.length),
                 sha256: hash(artifact),
                 elfFlags: 3,
               },
@@ -312,12 +281,28 @@ async function prepare() {
     join(runDir, 'upstream-runtime-feature-registry.json'),
     'utf8',
   );
-  const registry = losslessJson(registryText);
-  const recognizedIds = registry.features.map((feature: any) => feature.id);
-  const unknownActive = activeFeatures(features).filter(
-    (id) => !recognizedIds.includes(id),
+  const registry: unknown = parseJsonWithBigInts(registryText);
+  assert(
+    registry &&
+      typeof registry === 'object' &&
+      'features' in registry &&
+      Array.isArray(registry.features),
+    'Invalid runtime feature registry',
   );
-  save('fork-manifest.json', {
+  const recognizedIds = registry.features.map((feature: unknown) => {
+    assert(
+      feature &&
+        typeof feature === 'object' &&
+        'id' in feature &&
+        typeof feature.id === 'string',
+      'Invalid runtime feature',
+    );
+    return address(feature.id);
+  });
+  const unknownActive = activeFeatures(features).filter(
+    (id) => !recognizedIds.includes(address(id)),
+  );
+  const manifest = {
     mode,
     kind:
       mode === 'deployed'
@@ -411,7 +396,7 @@ async function prepare() {
       {
         kind: 'native mint balance restoration',
         initialLocalLamports: 1_000_000_000,
-        restoredLamports: accounts.value[1].lamports,
+        restoredLamports: accounts.value[1]?.lamports,
         explanation:
           'Agave bootstrap resets the native mint balance to 1 SOL; the harness transfers only local genesis SOL to restore its exact upstream snapshot balance before assertions. Transaction signature is retained in native-mint-restoration.log.',
       },
@@ -437,31 +422,41 @@ async function prepare() {
     localQuoteAccount: localAta,
     localCreator: creator,
     noRemoteBroadcasts: true,
-  });
+  };
+  save('fork-manifest.json', manifest);
   console.log(
     `Snapshotted devnet configuration at slot ${accounts.context.slot}; protocol fee ${policy.protocolFeeBps}bps; quote account ${localAta}`,
   );
+  return manifest;
 }
+type ForkManifest = Awaited<ReturnType<typeof prepare>>;
 async function verify() {
   const endpoint = process.env.SOLANA_RPC_URL!;
   assert(
     ['127.0.0.1', 'localhost', '[::1]'].includes(new URL(endpoint).hostname),
     'Verification endpoint must be local',
   );
-  const manifest = losslessJson(
+  // This file is produced by prepare() in the harness-owned, initially empty run directory.
+  const manifest = parseJsonWithBigInts(
     readFileSync(join(runDir, 'fork-manifest.json'), 'utf8'),
-  );
+  ) as ForkManifest;
+  const localRpc = createSolanaRpc(endpoint);
   const [accounts, features, genesis, localVersion] = await Promise.all([
-    readRpc(endpoint, 'getMultipleAccounts', [
-      [config, wsol, usdc],
-      { encoding: 'base64', commitment: 'confirmed' },
-    ]),
-    readRpc(endpoint, 'getProgramAccounts', [
-      featureProgram,
-      { encoding: 'base64', commitment: 'confirmed', withContext: true },
-    ]),
-    readRpc(endpoint, 'getGenesisHash'),
-    readRpc(endpoint, 'getVersion'),
+    localRpc
+      .getMultipleAccounts([config, wsol, usdc].map(address), {
+        encoding: 'base64',
+        commitment: 'confirmed',
+      })
+      .send(),
+    localRpc
+      .getProgramAccounts(address(featureProgram), {
+        encoding: 'base64',
+        commitment: 'confirmed',
+        withContext: true,
+      })
+      .send(),
+    localRpc.getGenesisHash().send(),
+    localRpc.getVersion().send(),
   ]);
   assert.notEqual(genesis, expectedGenesis, 'Local fork must not be devnet');
   assert.equal(
@@ -470,8 +465,8 @@ async function verify() {
     'Local validator release differs from upstream',
   );
   assert.equal(
-    localVersion['feature-set'],
-    manifest.upstream.version['feature-set'],
+    String(localVersion['feature-set']),
+    String(manifest.upstream.version['feature-set']),
     'Local compiled feature registry differs from upstream',
   );
   for (let i = 0; i < 3; i++)
@@ -487,22 +482,28 @@ async function verify() {
   const added = localActive.filter(
     (id: string) => !manifest.upstream.activeFeatureIds.includes(id),
   );
-  const localPrograms = await readRpc(endpoint, 'getMultipleAccounts', [
-    Object.values(programs),
-    { encoding: 'base64', commitment: 'confirmed' },
-  ]);
-  const localProgramDataAddresses = localPrograms.value.map((account: any) => {
+  const localPrograms = await localRpc
+    .getMultipleAccounts(Object.values(programs).map(address), {
+      encoding: 'base64',
+      commitment: 'confirmed',
+    })
+    .send();
+  const localProgramDataAddresses = localPrograms.value.map((account) => {
+    assert(account, 'Missing local program');
     assert.equal(account.owner, initializer.BPF_LOADER_UPGRADEABLE_PROGRAM_ID);
     assert.equal(account.executable, true);
     assert.equal(bytes(account).readUInt32LE(0), 2);
     return getAddressDecoder().decode(bytes(account).subarray(4, 36));
   });
-  const localData = await readRpc(endpoint, 'getMultipleAccounts', [
-    localProgramDataAddresses,
-    { encoding: 'base64', commitment: 'confirmed' },
-  ]);
+  const localData = await localRpc
+    .getMultipleAccounts(localProgramDataAddresses, {
+      encoding: 'base64',
+      commitment: 'confirmed',
+    })
+    .send();
   const loadedPrograms = Object.keys(programs).map((name, i) => {
     const account = localData.value[i];
+    assert(account, 'Missing local ProgramData');
     assert.equal(account.owner, initializer.BPF_LOADER_UPGRADEABLE_PROGRAM_ID);
     const data = bytes(account);
     assert.equal(data.readUInt32LE(0), 3);
@@ -560,8 +561,9 @@ async function verify() {
       manifest.localUpgradeAuthority,
       'Unexpected local upgrade authority',
     );
+    assert(manifest.artifacts, 'Missing candidate artifacts');
     const artifact = manifest.artifacts[name];
-    const deployedHash = hash(data.subarray(45, 45 + artifact.bytes));
+    const deployedHash = hash(data.subarray(45, 45 + Number(artifact.bytes)));
     assert.equal(
       deployedHash,
       artifact.sha256,
@@ -576,7 +578,7 @@ async function verify() {
   });
   const expectedRecognized = manifest.upstream.activeFeatureIds
     .filter((id: string) =>
-      manifest.runtimeFeatureRegistry.knownIds.includes(id),
+      manifest.runtimeFeatureRegistry.knownIds.includes(address(id)),
     )
     .sort();
   const missingRecognized = expectedRecognized.filter(

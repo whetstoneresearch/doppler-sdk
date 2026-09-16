@@ -88,13 +88,13 @@ spl-token --url "$SOLANA_RPC_URL" --output json address --verbose   --token "$SO
 QUOTE_ACCOUNT="$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).associatedTokenAddress)' "$RUN_DIR/quote-address.json")"
 spl-token --url "$SOLANA_RPC_URL" --fee-payer "$SOLANA_KEYPAIR_PATH"   mint "$SOLANA_SECOND_QUOTE_MINT" 100 "$QUOTE_ACCOUNT" --mint-authority "$SOLANA_KEYPAIR_PATH"
 for scenario in binary multi eight shared incremental void; do
-  npx --yes pnpm@10.11.0 exec tsx examples/solana-prediction-market.ts \
+  npx --yes pnpm@10.11.0 exec tsx test/solana/integration/prediction/run.ts \
     --scenario "$scenario" --manifest "$RUN_DIR/$scenario.json" --action all \
     2>&1 | tee "$RUN_DIR/$scenario.log"
 done
 # Replaying a completed market must not register, rebuy, or settle it again.
 SIGNATURE_COUNT_BEFORE="$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).signatures.length)' "$RUN_DIR/binary.json")"
-npx --yes pnpm@10.11.0 exec tsx examples/solana-prediction-market.ts   --scenario binary --manifest "$RUN_DIR/binary.json" --action all   2>&1 | tee "$RUN_DIR/binary-replay.log"
+npx --yes pnpm@10.11.0 exec tsx test/solana/integration/prediction/run.ts   --scenario binary --manifest "$RUN_DIR/binary.json" --action all   2>&1 | tee "$RUN_DIR/binary-replay.log"
 SIGNATURE_COUNT_AFTER="$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).signatures.length)' "$RUN_DIR/binary.json")"
 [[ "$SIGNATURE_COUNT_BEFORE" == "$SIGNATURE_COUNT_AFTER" ]] || {
   echo "Completed replay submitted additional transactions" >&2; exit 1;

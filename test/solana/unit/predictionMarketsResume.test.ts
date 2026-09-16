@@ -50,7 +50,7 @@ describe('prediction buy quotes from serialized accounts', () => {
         candidateMint: mints[0],
         tokenAmount: 1n,
       }),
-    ).rejects.toThrow('Inconsistent candidate base fees');
+    ).rejects.toThrow('distributed fees exceed cumulative fees');
   });
   it('rejects inactive launches and unsupported curves', async () => {
     for (const change of [
@@ -83,7 +83,7 @@ describe('prediction buy quotes from serialized accounts', () => {
       f.feeData[field] = 1000n;
       f.update();
       await expect(pm.fetchPredictionBuyQuote(f.rpc, f.input)).rejects.toThrow(
-        'Inconsistent reserve/fee snapshot',
+        'distributed fees exceed cumulative fees',
       );
     }
     const f = await buyFixture();

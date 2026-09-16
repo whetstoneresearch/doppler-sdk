@@ -1,13 +1,15 @@
-import type {
-  Address,
-  Rpc,
-  GetAccountInfoApi,
-  GetMultipleAccountsApi,
-  GetProgramAccountsApi,
+import {
+  assertAccountsExist,
+  fetchEncodedAccounts,
+  type Address,
+  type Rpc,
+  type GetAccountInfoApi,
+  type GetMultipleAccountsApi,
+  type GetProgramAccountsApi,
 } from '@solana/kit';
 import {
   fetchMint,
-  fetchToken,
+  decodeToken,
   TOKEN_PROGRAM_ADDRESS,
 } from '@solana-program/token';
 import * as init from '../generated/initializer/index.js';
@@ -18,6 +20,7 @@ import {
 } from './reads.js';
 import type { OracleState } from '../trustedOracle/index.js';
 import type { Market } from '../migrators/predictionMigrator/index.js';
+import { calculatePendingInitializerFees } from '../initializer/fees.js';
 import { assertU64 } from './validation.js';
 
 /** Pure hypothetical arithmetic for a caller-supplied snapshot. This function has no oracle state and cannot establish that a candidate can win. Use fetchPotentialPayoutIfWinner for verified on-chain inputs and finalized-winner checks. */
@@ -135,12 +138,19 @@ export async function fetchPotentialPayoutIfWinner(
         if (usedVaults.has(vaultAddress))
           throw new Error('Duplicate quote vault in prediction market');
         usedVaults.add(vaultAddress);
-        const [vault, fees] = await Promise.all([
-          fetchToken(rpc, vaultAddress, { commitment: 'confirmed' }),
-          init.fetchLaunchFeeState(rpc, outcome.launchFeeState, {
-            commitment: 'confirmed',
-          }),
-        ]);
+        const isCandidate = outcome.entry.data.baseMint === input.candidateMint;
+        const snapshot = await fetchEncodedAccounts(
+          rpc,
+          [
+            vaultAddress,
+            outcome.launchFeeState,
+            ...(isCandidate ? [outcome.launch.account.baseVault] : []),
+          ],
+          { commitment: 'confirmed' },
+        );
+        assertAccountsExist(snapshot);
+        const vault = decodeToken(snapshot[0]);
+        const fees = init.decodeLaunchFeeState(snapshot[1]);
         if (
           vault.programAddress !== TOKEN_PROGRAM_ADDRESS ||
           vault.data.mint !== view.market.data.quoteMint ||
@@ -158,29 +168,31 @@ export async function fetchPotentialPayoutIfWinner(
           fee.swapFeeBps !== outcome.launch.account.swapFeeBps
         )
           throw new Error('Invalid prediction fee configuration');
-        const pendingFees =
-          fee.cumulatedQuoteFees -
-          fee.distributedProtocolQuoteFees -
-          fee.distributedQuoteByBeneficiary
-            .slice(0, fee.beneficiaryLen)
-            .reduce((a, b) => a + b, 0n);
-        if (outcome.entry.data.baseMint === input.candidateMint) {
-          const base = await fetchToken(rpc, outcome.launch.account.baseVault, {
-            commitment: 'confirmed',
-          });
+        const pendingFees = calculatePendingInitializerFees({
+          cumulativeFees: fee.cumulatedQuoteFees,
+          distributedProtocolFees: fee.distributedProtocolQuoteFees,
+          distributedBeneficiaryFees: fee.distributedQuoteByBeneficiary.slice(
+            0,
+            fee.beneficiaryLen,
+          ),
+        });
+        if (isCandidate) {
+          const base = decodeToken(snapshot[2]);
           if (
             base.programAddress !== TOKEN_PROGRAM_ADDRESS ||
             base.data.mint !== input.candidateMint ||
             base.data.owner !== outcome.launchAuthority
           )
             throw new Error('Invalid candidate base vault');
-          const pendingBaseFees =
-            fee.cumulatedBaseFees -
-            fee.distributedProtocolBaseFees -
-            fee.distributedBaseByBeneficiary
-              .slice(0, fee.beneficiaryLen)
-              .reduce((a, b) => a + b, 0n);
-          if (pendingBaseFees < 0n || pendingBaseFees > base.data.amount)
+          const pendingBaseFees = calculatePendingInitializerFees({
+            cumulativeFees: fee.cumulatedBaseFees,
+            distributedProtocolFees: fee.distributedProtocolBaseFees,
+            distributedBeneficiaryFees: fee.distributedBaseByBeneficiary.slice(
+              0,
+              fee.beneficiaryLen,
+            ),
+          });
+          if (pendingBaseFees > base.data.amount)
             throw new Error('Inconsistent candidate base fees; refresh state');
           // Settlement leaves beneficiary/protocol fees in the vault. Only the
           // remaining base tokens are burned and removed from claimable supply.

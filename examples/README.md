@@ -146,9 +146,7 @@ The Solana examples use `@whetstone-research/doppler-sdk/solana`. Set `SOLANA_NE
 - [`solana-cosigner-gated-buy.ts`](./solana-cosigner-gated-buy.ts): cosigner-gated WSOL buy flow with env-configured fee beneficiaries.
 - [`solana-cosigner-gated-buy-token-2022.ts`](./solana-cosigner-gated-buy-token-2022.ts): same cosigner-gated WSOL flow with a Token-2022 base mint and Metaplex metadata.
 - [`solana-usdc-cosigner-gated-buy.ts`](./solana-usdc-cosigner-gated-buy.ts): cosigner-gated devnet USDC buy flow.
-- [`solana-prediction-browser/`](./solana-prediction-browser/README.md): wallet-connected prediction market walkthrough using a CLI public manifest.
 - Concise prediction SDK examples: [create](./solana-prediction-create.ts), [buy](./solana-prediction-buy.ts), [resolve and settle](./solana-prediction-resolve.ts), and [claim or refund](./solana-prediction-claim.ts). Start here; see [inputs and run instructions](../docs/solana-prediction-markets.md#start-with-concise-sdk-examples).
-- [`solana-prediction-market.ts`](./solana-prediction-market.ts): complete runnable prediction lifecycle: binary, three/eight outcomes, shared oracle, incremental claims, void refunds, and resumable manifests. See the [prediction guide](../docs/solana-prediction-markets.md).
 - [`solana-create-spot-pool.ts`](./solana-create-spot-pool.ts): create a permissionless base-token/WSOL spot pool with an immutable fee tier and an optional allowlisted swap-phase hook.
 - [`solana-fee-rehypothecation-launch.ts`](./solana-fee-rehypothecation-launch.ts): create a non-migrating launch with selectable asset-only, numeraire-only, in-kind, or balanced fee routing.
 - [`solana-fee-rehypothecation-settle-and-claim.ts`](./solana-fee-rehypothecation-settle-and-claim.ts): settle routed fees with protected conversion quotes, then claim one beneficiary's proceeds.

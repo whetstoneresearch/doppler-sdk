@@ -114,13 +114,13 @@ cp "$RUN_DIR/local-verification.json" "$RUN_DIR/local-before.json"
 export SOLANA_PROBE_PAYER="$SOLANA_FORK_CREATOR"
 npx --yes pnpm@10.11.0 exec tsx scripts/check-prediction-deployment.ts | tee "$RUN_DIR/fork-abi-probe.log"
 for scenario in binary multi eight shared incremental void; do
-  npx --yes pnpm@10.11.0 exec tsx examples/solana-prediction-market.ts \
+  npx --yes pnpm@10.11.0 exec tsx test/solana/integration/prediction/run.ts \
     --scenario "$scenario" --manifest "$RUN_DIR/$scenario.json" --action all \
     2>&1 | tee "$RUN_DIR/$scenario.log"
 done
 COUNT_BEFORE="$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).signatures.length)' "$RUN_DIR/binary.json")"
 for action in setup all; do
-  npx --yes pnpm@10.11.0 exec tsx examples/solana-prediction-market.ts \
+  npx --yes pnpm@10.11.0 exec tsx test/solana/integration/prediction/run.ts \
     --scenario binary --manifest "$RUN_DIR/binary.json" --action "$action" \
     2>&1 | tee "$RUN_DIR/binary-replay-$action.log"
 done

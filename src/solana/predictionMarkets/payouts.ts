@@ -10,6 +10,7 @@ import {
 } from '@solana-program/token';
 import * as prediction from '../migrators/predictionMigrator/index.js';
 import { assertPredictionTokenProgram } from './builders.js';
+import { prepareClaimInstructions } from '../migrators/predictionMigrator/claimInstructions.js';
 import { assertU64 } from './validation.js';
 export type PrepareClaimInput = {
   market: Address;
@@ -22,61 +23,31 @@ export type PrepareClaimInput = {
   baseTokenProgram?: Address;
   quoteTokenProgram?: Address;
 };
-export async function prepareClaim(input: PrepareClaimInput) {
-  assertU64(input.burnAmount, 'burnAmount');
+export type PrepareClaimResult = {
+  outcomeTokenAccount: Address;
+  quoteTokenAccount: Address;
+  receipt: Address;
+  claimInstruction: Instruction;
+  instructions: Instruction[];
+};
+/** Prepare a claim, including ATA setup for initial claims and later harvests. */
+export async function prepareClaim(
+  input: PrepareClaimInput,
+): Promise<PrepareClaimResult> {
   assertPredictionTokenProgram(input.baseTokenProgram);
   assertPredictionTokenProgram(input.quoteTokenProgram);
-  const [
-    [outcomeTokenAccount],
-    [quoteTokenAccount],
-    [marketAuthority],
-    [receipt],
-  ] = await Promise.all([
-    findAssociatedTokenPda({
-      owner: input.claimer.address,
-      mint: input.winnerMint,
-      tokenProgram: TOKEN_PROGRAM_ADDRESS,
-    }),
-    findAssociatedTokenPda({
-      owner: input.claimer.address,
-      mint: input.quoteMint,
-      tokenProgram: TOKEN_PROGRAM_ADDRESS,
-    }),
-    prediction.getPredictionMarketAuthorityAddress(input.market),
-    prediction.getPredictionClaimReceiptAddress(
-      input.market,
-      input.claimer.address,
-    ),
-  ]);
-  const setup = [
-    getCreateAssociatedTokenIdempotentInstruction({
-      payer: input.payer,
-      ata: outcomeTokenAccount,
-      owner: input.claimer.address,
-      mint: input.winnerMint,
-    }),
-    getCreateAssociatedTokenIdempotentInstruction({
-      payer: input.payer,
-      ata: quoteTokenAccount,
-      owner: input.claimer.address,
-      mint: input.quoteMint,
-    }),
-  ];
-  const claimInstruction = await prediction.getClaimInstructionAsync({
-    ...input,
-    marketAuthority,
-    receipt,
-    claimerWinnerAta: outcomeTokenAccount,
-    claimerQuoteAta: quoteTokenAccount,
-    baseTokenProgram: TOKEN_PROGRAM_ADDRESS,
-    quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
-  });
+  const {
+    createOutcomeTokenAccountInstruction,
+    createQuoteTokenAccountInstruction,
+    ...claim
+  } = await prepareClaimInstructions(input);
   return {
-    outcomeTokenAccount,
-    quoteTokenAccount,
-    receipt,
-    claimInstruction,
-    instructions: [...setup, claimInstruction] as Instruction[],
+    ...claim,
+    instructions: [
+      createOutcomeTokenAccountInstruction,
+      createQuoteTokenAccountInstruction,
+      claim.claimInstruction,
+    ],
   };
 }
 /** Recreates an empty outcome ATA if it was closed, so later settlement proceeds remain harvestable. */
@@ -87,7 +58,16 @@ export type PrepareRefundInput = Omit<
   PrepareClaimInput,
   'winnerMint' | 'claimer'
 > & { baseMint: Address; refunder: TransactionSigner };
-export async function prepareRefund(input: PrepareRefundInput) {
+export type PrepareRefundResult = {
+  outcomeTokenAccount: Address;
+  quoteTokenAccount: Address;
+  entry: Address;
+  refundInstruction: Instruction;
+  instructions: Instruction[];
+};
+export async function prepareRefund(
+  input: PrepareRefundInput,
+): Promise<PrepareRefundResult> {
   assertU64(input.burnAmount, 'burnAmount');
   if (input.burnAmount === 0n)
     throw new Error('Refund burnAmount must be positive');
@@ -132,7 +112,7 @@ export async function prepareRefund(input: PrepareRefundInput) {
     quoteTokenAccount,
     entry,
     refundInstruction,
-    instructions: [setup, refundInstruction] as Instruction[],
+    instructions: [setup, refundInstruction],
   };
 }
 /** Current pot entitlement only; future unsettled contributions are not promised. */

@@ -1,8 +1,5 @@
 import {
-  ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
   getCloseAccountInstruction,
-  getCreateAssociatedTokenIdempotentInstruction,
-  findAssociatedTokenPda,
   TOKEN_PROGRAM_ADDRESS,
 } from '@solana-program/token';
 import {
@@ -10,16 +7,7 @@ import {
   type Instruction,
   type TransactionSigner,
 } from '@solana/kit';
-
-import { SYSTEM_PROGRAM_ADDRESS } from '../../core/constants.js';
-import {
-  getClaimInstructionAsync,
-  PREDICTION_MIGRATOR_PROGRAM_ADDRESS,
-} from '../../generated/predictionMigrator/index.js';
-import {
-  getPredictionClaimReceiptAddress,
-  getPredictionMarketAuthorityAddress,
-} from './pda.js';
+import { prepareClaimInstructions } from './claimInstructions.js';
 
 const MAX_U64 = (1n << 64n) - 1n;
 
@@ -64,73 +52,17 @@ export async function prepareClaimAndClose(
     throw new Error('outcomeTokenBalance must fit in a u64');
   }
 
+  const {
+    outcomeTokenAccount,
+    quoteTokenAccount,
+    createQuoteTokenAccountInstruction,
+    claimInstruction,
+  } = await prepareClaimInstructions({
+    ...input,
+    burnAmount: input.outcomeTokenBalance,
+  });
   const baseTokenProgram = input.baseTokenProgram ?? TOKEN_PROGRAM_ADDRESS;
-  const quoteTokenProgram = input.quoteTokenProgram ?? TOKEN_PROGRAM_ADDRESS;
-  const associatedTokenProgram =
-    input.associatedTokenProgram ?? ASSOCIATED_TOKEN_PROGRAM_ADDRESS;
-  const systemProgram = input.systemProgram ?? SYSTEM_PROGRAM_ADDRESS;
-  const predictionMigratorProgram =
-    input.predictionMigratorProgram ?? PREDICTION_MIGRATOR_PROGRAM_ADDRESS;
   const rentDestination = input.rentDestination ?? input.payer.address;
-
-  const [
-    [outcomeTokenAccount],
-    [quoteTokenAccount],
-    [marketAuthority],
-    [receipt],
-  ] = await Promise.all([
-    findAssociatedTokenPda({
-      owner: input.claimer.address,
-      mint: input.winnerMint,
-      tokenProgram: baseTokenProgram,
-    }),
-    findAssociatedTokenPda({
-      owner: input.claimer.address,
-      mint: input.quoteMint,
-      tokenProgram: quoteTokenProgram,
-    }),
-    getPredictionMarketAuthorityAddress(
-      input.market,
-      predictionMigratorProgram,
-    ),
-    getPredictionClaimReceiptAddress(
-      input.market,
-      input.claimer.address,
-      predictionMigratorProgram,
-    ),
-  ]);
-
-  const createQuoteTokenAccountInstruction =
-    getCreateAssociatedTokenIdempotentInstruction(
-      {
-        payer: input.payer,
-        ata: quoteTokenAccount,
-        owner: input.claimer.address,
-        mint: input.quoteMint,
-        systemProgram,
-        tokenProgram: quoteTokenProgram,
-      },
-      { programAddress: associatedTokenProgram },
-    );
-  const claimInstruction = await getClaimInstructionAsync(
-    {
-      market: input.market,
-      marketAuthority,
-      potVault: input.potVault,
-      winnerMint: input.winnerMint,
-      quoteMint: input.quoteMint,
-      claimerWinnerAta: outcomeTokenAccount,
-      claimerQuoteAta: quoteTokenAccount,
-      claimer: input.claimer,
-      receipt,
-      payer: input.payer,
-      baseTokenProgram,
-      quoteTokenProgram,
-      systemProgram,
-      burnAmount: input.outcomeTokenBalance,
-    },
-    { programAddress: predictionMigratorProgram },
-  );
   const closeOutcomeTokenAccountInstruction = getCloseAccountInstruction(
     {
       account: outcomeTokenAccount,

@@ -254,9 +254,11 @@ export async function fixture({
       pubkey: launch,
       account: encoded(data, initializer.INITIALIZER_PROGRAM_ID),
     });
+    accounts.set(launch, encoded(data, initializer.INITIALIZER_PROGRAM_ID));
   }
   const readCounts = new Map<Address, number>();
   const readHook: { current?: (key: Address, count: number) => void } = {};
+  const afterBatchRead: { current?: (keys: readonly Address[]) => void } = {};
   const rpc = {
     getAccountInfo: (key: Address) => ({
       send: async () => {
@@ -270,10 +272,11 @@ export async function fixture({
       },
     }),
     getMultipleAccounts: (keys: Address[]) => ({
-      send: async () => ({
-        context: { slot: 1n },
-        value: keys.map((key) => accounts.get(key) ?? null),
-      }),
+      send: async () => {
+        const value = keys.map((key) => accounts.get(key) ?? null);
+        afterBatchRead.current?.(keys);
+        return { context: { slot: 1n }, value };
+      },
     }),
     getProgramAccounts: () => ({ send: async () => launches }),
   } as unknown as Rpc<
@@ -306,7 +309,16 @@ export async function fixture({
       },
     },
   }));
-  return { rpc, market, oracle, accounts, launches, inputs, readHook };
+  return {
+    rpc,
+    market,
+    oracle,
+    accounts,
+    launches,
+    inputs,
+    readHook,
+    afterBatchRead,
+  };
 }
 
 export type BuyFixture = Awaited<ReturnType<typeof fixture>> & {
@@ -370,6 +382,7 @@ export async function buyFixture(
       generated.getLaunchEncoder().encode(launchData),
       initializer.INITIALIZER_PROGRAM_ID,
     );
+    f.accounts.set(launch, f.launches[0].account);
     f.accounts.set(
       feeAddress,
       encoded(

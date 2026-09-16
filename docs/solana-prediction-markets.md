@@ -42,7 +42,7 @@ flow; resolving an outcome with no circulating supply produces a void market.
 The larger runner below provides scenario assertions, manifests, and replay
 verification; these focused examples show the SDK calls needed by an integrator.
 
-## Run the full example collection
+## Run the integration scenarios
 
 ```bash
 npx --yes pnpm@10.11.0 install --frozen-lockfile
@@ -98,7 +98,7 @@ DOPPLER_SOL_SOURCE_DIR=/path/to/clean/doppler-sol \
 bash scripts/run-solana-prediction-devnet-fork.sh
 ```
 
-SDK CI runs source, example, and browser checks in this repository. Keep this
+SDK CI runs source, example, and integration-tool checks in this repository. Keep this
 temporary fork verification outside the program repository; it does not require
 a protocol CI change or an organization admin grant. Record deployed account
 hashes and the SDK revision for deployed mode, and the protocol revision and build
@@ -115,7 +115,7 @@ export SOLANA_NETWORK=custom
 export SOLANA_RPC_URL=http://127.0.0.1:8899
 export SOLANA_WS_URL=ws://127.0.0.1:8900
 export SOLANA_KEYPAIR_PATH="$HOME/.config/solana/doppler-tester.json"
-npx --yes pnpm@10.11.0 exec tsx examples/solana-prediction-market.ts --scenario binary --manifest /tmp/prediction-binary.json
+npx --yes pnpm@10.11.0 exec tsx test/solana/integration/prediction/run.ts --scenario binary --manifest /tmp/prediction-binary.json
 ```
 
 The signer pays transaction/account rent and spends 10,000,000 raw quote units on every purchased outcome (0.01 SOL with the default WSOL mint). For a custom mint, convert that raw amount using its decimals when funding the signer. A custom SPL Token quote mint can be selected with `SOLANA_PREDICTION_QUOTE_MINT`; fund the signer's quote ATA first. WSOL is the default and is wrapped automatically for buys. Payout assertions inspect WSOL token balances, not native SOL after transaction fees.
@@ -136,19 +136,19 @@ Use a separate manifest per scenario. `shared` additionally requires `SOLANA_SEC
 ## Execute individual actions and resume
 
 ```bash
-npx --yes pnpm@10.11.0 exec tsx examples/solana-prediction-market.ts --action setup --manifest /tmp/my-market.json
-npx --yes pnpm@10.11.0 exec tsx examples/solana-prediction-market.ts --action inspect --manifest /tmp/my-market.json
-npx --yes pnpm@10.11.0 exec tsx examples/solana-prediction-market.ts --action buy --manifest /tmp/my-market.json
-npx --yes pnpm@10.11.0 exec tsx examples/solana-prediction-market.ts --action resolve --manifest /tmp/my-market.json
-npx --yes pnpm@10.11.0 exec tsx examples/solana-prediction-market.ts --action settle --manifest /tmp/my-market.json
-npx --yes pnpm@10.11.0 exec tsx examples/solana-prediction-market.ts --action claim --manifest /tmp/my-market.json
+npx --yes pnpm@10.11.0 exec tsx test/solana/integration/prediction/run.ts --action setup --manifest /tmp/my-market.json
+npx --yes pnpm@10.11.0 exec tsx test/solana/integration/prediction/run.ts --action inspect --manifest /tmp/my-market.json
+npx --yes pnpm@10.11.0 exec tsx test/solana/integration/prediction/run.ts --action buy --manifest /tmp/my-market.json
+npx --yes pnpm@10.11.0 exec tsx test/solana/integration/prediction/run.ts --action resolve --manifest /tmp/my-market.json
+npx --yes pnpm@10.11.0 exec tsx test/solana/integration/prediction/run.ts --action settle --manifest /tmp/my-market.json
+npx --yes pnpm@10.11.0 exec tsx test/solana/integration/prediction/run.ts --action claim --manifest /tmp/my-market.json
 ```
 
 `inspect` is read-only and needs no signer. Change `SOLANA_KEYPAIR_PATH` for participant `buy`/`claim`; oracle finalization requires the original oracle authority. Settlement is permissionless. Keep `--scenario` identical when resuming non-binary manifests.
 
 The public manifest records ledger genesis hash, program IDs, nonce, oracle, creators, mints, launches, entries, and confirmed transaction signatures. Writes are atomic. Setup saves pending launch addresses before submission and checks them on-chain on restart; settlement skips already settled entries. Buy checks its recorded receipt and current token balance before submitting. Claims use the current token balance and harvest existing receipt entitlements when that balance is zero. Do not delete the manifest to retry: that deliberately starts a new oracle/market. After resetting a validator, use a new manifest because the old ledger state no longer exists.
 
-This is a sequential example runner, not a concurrent transaction job queue. A production sender should durably save the signed transaction and signature before broadcast, reconcile ambiguous confirmations, and coordinate concurrent actors. Manifest recovery checks cannot reconstruct a lost confirmation receipt if the process stopped immediately after broadcast; on-chain account state remains authoritative. Never blindly replay a buy after a timeout.
+This is a sequential integration-test runner, not a concurrent transaction job queue. A production sender should durably save the signed transaction and signature before broadcast, reconcile ambiguous confirmations, and coordinate concurrent actors. Manifest recovery checks cannot reconstruct a lost confirmation receipt if the process stopped immediately after broadcast; on-chain account state remains authoritative. Never blindly replay a buy after a timeout.
 
 ## Integrate the SDK
 
@@ -170,7 +170,7 @@ const marketPlan = await predictionMarkets.prepareMarket({
 
 `prepareOutcomeLaunch` accepts the ordinary launch supply, curve, token accounts, metadata, and fee beneficiaries under `launch`. It enforces buy-only trading, all supply on the curve, required prediction hook flags, empty hook payload, and the registration and settlement account commitments. Use a unique launch ID for each creator/outcome. The canonical outcome ID is oracle-global; its associated token mint is market-local.
 
-`prepareBuy` takes launch accounts, oracle, market, amount in, and minimum amount out. `quoteBuy` computes an XYK exact-input estimate with ceiling-rounded fees and slippage. Supply current curve reserves **after excluding unclaimed fees**. Refresh immediately before building a transaction; `minAmountOut` protects execution if state moves. Use `fetchPredictionBuyQuote` to fetch validated mint/vault state and calculate net reserves from current fee accounting; the CLI uses this helper.
+`prepareBuy` takes launch accounts, oracle, market, amount in, and minimum amount out. `quoteBuy` computes an XYK exact-input estimate with ceiling-rounded fees and slippage. Supply current curve reserves **after excluding unclaimed fees**. Refresh immediately before building a transaction; `minAmountOut` protects execution if state moves. Use `fetchPredictionBuyQuote` to read the market, launch, vaults, and fee counters in one RPC snapshot. Pass its optional `launch` address after initial discovery to avoid rescanning all of the creator's launches on each price refresh. The buy example accepts this address as `SOLANA_PREDICTION_LAUNCH`; omitting it performs discovery. Caller-supplied launch addresses are validated against the market and outcome.
 
 ```ts
 const view = await predictionMarkets.fetchPredictionMarket(rpc, marketAddress);
@@ -195,6 +195,6 @@ Independent outcome curve prices are **not normalized probabilities** and need n
 
 ## Wallet integration and support
 
-The builders accept Solana Kit `TransactionSigner` values and return instructions; they do not import a Node keypair loader. Browser applications should use their connected wallet signer, show the action and quote, prepare the transaction with a recent blockhash, sign/send with their wallet adapter, and reconcile confirmation before refreshing the account view. Keep oracle authority, market creator, transaction fee payer, and participant roles visible. Run the [browser wallet example](../examples/solana-prediction-browser/README.md) for an interactive walkthrough: import the CLI public manifest, connect a Wallet Standard wallet, inspect markets, buy, resolve, settle, and claim/refund.
+The builders accept Solana Kit `TransactionSigner` values and return instructions; they do not import a Node keypair loader. Browser applications should use their connected wallet signer, show the action and quote, prepare the transaction with a recent blockhash, sign/send with their wallet adapter, and reconcile confirmation before refreshing the account view. Keep oracle authority, market creator, transaction fee payer, and participant roles visible.
 
 High-level helpers currently support the classic SPL Token program. Token-2022 support is deliberately not inferred from Initializer mint acceptance: extension behavior must be verified across hook, settlement, burn, and payout paths first. Low-level generated clients remain available for separately verified integrations.

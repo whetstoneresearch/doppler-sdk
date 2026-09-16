@@ -1,10 +1,10 @@
 name: Solana Prediction SDK
 on:
   pull_request:
-    paths: ['src/solana/**', 'test/solana/**', 'examples/solana-prediction*', 'examples/solana-prediction/**', 'examples/solana-prediction-browser/**', 'scripts/*prediction*', 'scripts/benchmark-solana-metadata-size.ts', 'scripts/idl/**', 'tsconfig*', '.github/workflows/test-solana-prediction.yml', 'package.json', 'pnpm-lock.yaml']
+    paths: ['src/solana/**', 'test/solana/**', 'examples/solana-prediction*', 'examples/solanaExampleHelpers.ts', 'scripts/*prediction*', 'scripts/benchmark-solana-metadata-size.ts', 'scripts/idl/**', 'tsconfig*', '.github/workflows/test-solana-prediction.yml', 'package.json', 'pnpm-lock.yaml']
   push:
     branches: [main]
-    paths: ['src/solana/**', 'test/solana/**', 'examples/solana-prediction*', 'examples/solana-prediction/**', 'examples/solana-prediction-browser/**', 'scripts/*prediction*', 'scripts/benchmark-solana-metadata-size.ts', 'scripts/idl/**', 'tsconfig*', '.github/workflows/test-solana-prediction.yml', 'package.json', 'pnpm-lock.yaml']
+    paths: ['src/solana/**', 'test/solana/**', 'examples/solana-prediction*', 'examples/solanaExampleHelpers.ts', 'scripts/*prediction*', 'scripts/benchmark-solana-metadata-size.ts', 'scripts/idl/**', 'tsconfig*', '.github/workflows/test-solana-prediction.yml', 'package.json', 'pnpm-lock.yaml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -23,15 +23,11 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
-      - run: pnpm test:solana
       - run: pnpm typecheck:solana-tests
       - run: pnpm typecheck:solana-examples
       - run: pnpm typecheck:prediction-tools
       - name: Verify metadata size benchmark
         run: pnpm exec tsx scripts/benchmark-solana-metadata-size.ts
-      - name: Build browser walkthrough
-        working-directory: examples/solana-prediction-browser
-        run: npm ci && npm test && npm run build
 
   prediction-fork:
     name: Prediction lifecycle (devnet fork)

@@ -16,7 +16,7 @@ import {
   predictionMigrator,
   predictionMarkets,
   trustedOracle,
-} from '../../src/solana/index.js';
+} from '../../../../src/solana/index.js';
 import {
   createSolanaClientsFromEnv,
   loadKeypairSignerFromEnv,
@@ -25,7 +25,7 @@ import {
   simulateInstructions,
   assertSimulationRejected,
   WSOL_MINT,
-} from '../solanaExampleHelpers.js';
+} from '../../../../examples/solanaExampleHelpers.js';
 import {
   options,
   readManifest,
@@ -436,6 +436,7 @@ export async function run() {
         const quote = await predictionMarkets.fetchPredictionBuyQuote(rpc, {
           market: market.market,
           baseMint: outcome.baseMint,
+          launch: outcome.launch,
           amountIn: 10_000_000n,
           slippageBps: 100,
         });
