@@ -190,11 +190,18 @@ export class AnvilManager {
 
     // Wait for Anvil to be ready
     await this.waitForReady(rpcUrl, chainId);
+    const testClient = createTestClient({
+      mode: 'anvil',
+      transport: http(rpcUrl),
+    });
     // Source headers (e.g. Nitro) may omit blob fields required by Anvil's EVM.
     // Mine a local header before any calls so the fork has a complete block environment.
-    await createTestClient({ mode: 'anvil', transport: http(rpcUrl) }).mine({
-      blocks: 1,
-    });
+    await testClient.mine({ blocks: 1 });
+    // Public test keys can inherit EIP-7702 delegations from the forked chain.
+    // Restore ordinary EOAs only for our local test accounts.
+    for (const { address } of ANVIL_ACCOUNTS) {
+      await testClient.setCode({ address, bytecode: '0x' });
+    }
 
     return rpcUrl;
   }
