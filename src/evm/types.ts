@@ -188,9 +188,29 @@ export function isLaunchpadEnabledChain(
   return (LAUNCHPAD_ENABLED_CHAIN_IDS as readonly number[]).includes(chainId);
 }
 
-// Governance configuration (discriminated union)
-export type GovernanceDefault = { type: 'default' };
+/**
+ * Standard GovernanceFactory with default voting parameters.
+ *
+ * **Warning:** For launches that migrate, attackers who gain control of
+ * governance may steal locked liquidity once it unlocks. Prefer
+ * NoOpGovernanceFactory (`type: 'noOp'`) or LaunchpadGovernanceFactory
+ * (`type: 'launchpad'`). Standard governance remains supported.
+ */
+export type GovernanceDefault = {
+  /** Warning: standard governance may expose migrated liquidity to governance attacks after unlock. Prefer `noOp` or `launchpad`. */
+  type: 'default';
+};
+/**
+ * Standard GovernanceFactory with custom voting parameters.
+ *
+ * **Warning:** Custom voting parameters do not eliminate governance risk.
+ * For launches that migrate, attackers who gain control of governance may
+ * steal locked liquidity once it unlocks. Prefer NoOpGovernanceFactory
+ * (`type: 'noOp'`) or LaunchpadGovernanceFactory (`type: 'launchpad'`).
+ * Standard governance remains supported.
+ */
 export interface GovernanceCustom {
+  /** Warning: standard governance may expose migrated liquidity to governance attacks after unlock. Prefer `noOp` or `launchpad`. */
   type: 'custom';
   /** Duration in token-clock units; seconds for timestamp-clock deployments. */
   initialVotingDelay: number;
@@ -204,6 +224,14 @@ export interface GovernanceLaunchpad {
   multisig: Address;
 }
 
+/**
+ * Governance selection. Prefer `noOp` or `launchpad` where supported.
+ *
+ * **Warning:** `default` and `custom` use standard GovernanceFactory.
+ * For launches that migrate, attackers who gain control of governance may
+ * steal locked liquidity once it unlocks. A lock delays access; it does not
+ * prevent governance attacks after unlock.
+ */
 export type GovernanceOption<C extends SupportedChainId> =
   | GovernanceDefault
   | GovernanceCustom

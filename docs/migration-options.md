@@ -35,6 +35,12 @@ Internally, the factory resolves the on‑chain migrator address for your chain 
 
 ## When to choose which
 
+For **multicurve launches**, prefer `withMigration({ type: 'noOp' })` with pool beneficiaries. Migration is not required and is discouraged; no-op migration keeps liquidity in the multicurve pool. Pool beneficiaries are required for this configuration.
+
+Other multicurve migrators remain supported, but their `MulticurveBuilder.withMigration` overloads are marked `@deprecated` for editor diagnostics. A full-union `MigrationConfig` variable can select an unmarked fallback overload. Encoding multicurve parameters with any non-`noOp` migration emits a non-blocking `console.warn`, including when a migrator address is overridden. Simulation and creation paths that encode parameters also warn; builder `build()` alone does not. This warning is independent of governance selection. Static and dynamic auctions are unchanged.
+
+The options below describe available migration targets when migration is intentionally selected.
+
 - Uniswap V2
   - Simple constant‑product pool; broad ecosystem tooling
   - No price range configuration; least complexity
@@ -184,6 +190,9 @@ The public `streams(poolId)` getter returns only static stream fields. Solidity 
 ## Governance Selection
 
 - Required: You must call `withGovernance(...)` in the builders.
+- Prefer `NoOpGovernanceFactory` (`type: 'noOp'`) or `LaunchpadGovernanceFactory` (`type: 'launchpad'`). Standard `GovernanceFactory` remains supported but is the least recommended option: for launches that migrate, attackers who gain control of governance may steal locked liquidity once it unlocks. A liquidity lock delays access; it does not prevent governance attacks after unlock.
+- The SDK emits a non-blocking `console.warn` when encoding static, dynamic, or multicurve launches with `default` or `custom` governance, including governance factory overrides. Simulation and creation paths that encode these parameters also emit the warning. Builder `build()` alone does not emit it. Review voting power distribution and governance parameters before using standard governance.
+- Builder `withGovernance` overloads for `default` and `custom` are marked `@deprecated` to surface the risk in TypeScript-aware editors. Here, deprecated means discouraged but still supported; existing public SDK calls remain valid. The `noOp` and `launchpad` overloads are not deprecated. Variables typed as the full governance union can select an unmarked fallback overload.
 - Standard governance defaults to a 1-day voting delay and 7-day voting period. Current DopplerERC20V1 tokens encode these durations in seconds.
 - Legacy `type: 'standard'` tokens, including DERC20 V2 vesting, encode approximate block counts using the nominal Solidity `block.number` cadence: 12 seconds on Ethereum and Arbitrum, 2 seconds on Base and Base Sepolia, 1 second on Ink and Unichain (including Unichain Sepolia), and 400 milliseconds on Monad mainnet and testnet. For example, Ethereum uses 7,200 / 50,400 blocks; Base uses 43,200 / 302,400 blocks.
 - Custom voting delays and periods are durations in the token clock's units and are passed through unchanged. Check `CLOCK_MODE()` for historical or custom tokens. Unknown legacy clock cadences, including on custom legacy deployments, require explicit custom governance values. Changed chain cadence or custom token clocks also require explicit values.

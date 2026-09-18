@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { privateKeyToAccount } from 'viem/accounts';
 import { encodeAbiParameters, parseEther, type Address, type Hex } from 'viem';
 import { DopplerFactory } from '../../../../src/evm/entities/DopplerFactory';
@@ -92,6 +92,7 @@ describe('DopplerFactory governance encoding', () => {
   ];
 
   beforeEach(() => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
     simulateContractMock = vi.fn().mockResolvedValue({
       result: [
         '0xffffffffffffffffffffffffffffffffffffffff',
@@ -110,6 +111,10 @@ describe('DopplerFactory governance encoding', () => {
       undefined,
       CHAIN_IDS.BASE_SEPOLIA,
     );
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('omits governance payload for static auctions with noOp governance', async () => {
@@ -139,6 +144,7 @@ describe('DopplerFactory governance encoding', () => {
     const result = await factory.encodeCreateStaticAuctionParams(params);
 
     expect(result.governanceFactoryData).toBe('0x');
+    expect(console.warn).not.toHaveBeenCalled();
   });
 
   it.each(governanceCases)(
@@ -183,6 +189,9 @@ describe('DopplerFactory governance encoding', () => {
               params.token.name,
               ...expected,
             ]),
+      );
+      expect(console.warn).toHaveBeenCalledTimes(
+        governance.type === 'launchpad' ? 0 : 1,
       );
     },
   );
@@ -236,6 +245,7 @@ describe('DopplerFactory governance encoding', () => {
       await factory.encodeCreateDynamicAuctionParams(params);
 
     expect(createParams.governanceFactoryData).toBe('0x');
+    expect(console.warn).not.toHaveBeenCalled();
   });
 
   it.each(governanceCases)(
@@ -315,10 +325,13 @@ describe('DopplerFactory governance encoding', () => {
               ...expected,
             ]),
       );
+      expect(console.warn).toHaveBeenCalledTimes(
+        governance.type === 'launchpad' ? 0 : 1,
+      );
     },
   );
 
-  it('omits governance payload for multicurve auctions with noOp governance', () => {
+  it('warns for multicurve migration independently of governance and stays silent for no-op migration', () => {
     const params: CreateMulticurveParams = {
       token: {
         name: 'NoOp Multi Token',
@@ -356,6 +369,29 @@ describe('DopplerFactory governance encoding', () => {
     const createParams = factory.encodeCreateMulticurveParams(params);
 
     expect(createParams.governanceFactoryData).toBe('0x');
+    expect(console.warn).toHaveBeenCalledTimes(1);
+    expect(console.warn).toHaveBeenCalledWith(
+      expect.stringMatching(/migration.*discouraged.*multicurve/i),
+    );
+    expect(console.warn).toHaveBeenCalledWith(
+      expect.stringContaining('NoOpMigrator'),
+    );
+
+    vi.mocked(console.warn).mockClear();
+    const noOpResult = factory.encodeCreateMulticurveParams({
+      ...params,
+      migration: { type: 'noOp' },
+      pool: {
+        ...params.pool,
+        beneficiaries: [
+          { beneficiary: account.address, shares: parseEther('1') },
+        ],
+      },
+    });
+    expect(noOpResult.liquidityMigrator).toBe(
+      getAddresses(CHAIN_IDS.BASE_SEPOLIA).noOpMigrator,
+    );
+    expect(console.warn).not.toHaveBeenCalled();
   });
 
   it.each(governanceCases)(
@@ -412,6 +448,14 @@ describe('DopplerFactory governance encoding', () => {
               ...expected,
             ]),
       );
+      const governanceWarning = expect.stringContaining(
+        'Standard GovernanceFactory selected',
+      );
+      if (governance.type === 'launchpad') {
+        expect(console.warn).not.toHaveBeenCalledWith(governanceWarning);
+      } else {
+        expect(console.warn).toHaveBeenCalledWith(governanceWarning);
+      }
     },
   );
 
@@ -440,6 +484,27 @@ describe('DopplerFactory governance encoding', () => {
       governanceFactory: legacyAddresses.governanceFactory,
     },
   };
+
+  it('warns without blocking standard governance with a factory override', async () => {
+    const result = await factory.encodeCreateStaticAuctionParams({
+      ...legacyTokenParams,
+      modules: {
+        ...legacyTokenParams.modules,
+        governanceFactory: account.address,
+      },
+    });
+
+    expect(result.governanceFactory).toBe(account.address);
+    expect(console.warn).toHaveBeenCalledTimes(1);
+    expect(console.warn).toHaveBeenCalledWith(
+      expect.stringMatching(/governance.*steal.*liquidity.*unlocks/i),
+    );
+    expect(console.warn).toHaveBeenCalledWith(
+      expect.stringMatching(
+        /NoOpGovernanceFactory.*LaunchpadGovernanceFactory/,
+      ),
+    );
+  });
 
   it.each([
     [CHAIN_IDS.MAINNET, 7_200, 50_400],

@@ -635,6 +635,26 @@ export class MulticurveBuilder<
     return this;
   }
 
+  /**
+   * @deprecated Prefer `noOp` or `launchpad` governance. For launches that
+   * migrate, governance attackers may steal locked liquidity once it unlocks.
+   * Standard governance is discouraged but remains supported.
+   */
+  withGovernance(
+    params: Extract<GovernanceOption<C>, { type: 'default' | 'custom' }>,
+  ): this;
+  /** Configure no-op or launchpad governance where supported. */
+  withGovernance(
+    params: Exclude<GovernanceOption<C>, { type: 'default' | 'custom' }>,
+  ): this;
+  /**
+   * Configure governance. Prefer `noOp` or `launchpad` where supported.
+   *
+   * **Warning:** `default` and `custom` use standard GovernanceFactory.
+   * For launches that migrate, attackers who gain control of governance may
+   * steal locked liquidity once it unlocks. Standard governance remains supported.
+   */
+  withGovernance(params: GovernanceOption<C>): this;
   withGovernance(params: GovernanceOption<C>): this {
     this.governance = params;
     return this;
@@ -659,6 +679,19 @@ export class MulticurveBuilder<
     return this;
   }
 
+  /**
+   * @deprecated Migration is discouraged for multicurve launches; it is not
+   * required. Prefer `{ type: 'noOp' }` with pool beneficiaries to keep liquidity
+   * in the multicurve pool. Other migrators remain supported.
+   */
+  withMigration(migration: Exclude<MigrationConfig, { type: 'noOp' }>): this;
+  /** Keep liquidity in the multicurve pool. Requires pool beneficiaries. */
+  withMigration(migration: Extract<MigrationConfig, { type: 'noOp' }>): this;
+  /**
+   * Configure migration. Prefer `{ type: 'noOp' }` with pool beneficiaries;
+   * migration is discouraged but remains supported for multicurve launches.
+   */
+  withMigration(migration: MigrationConfig): this;
   withMigration(migration: MigrationConfig): this {
     this.migration = migration;
     return this;
@@ -715,6 +748,14 @@ export class MulticurveBuilder<
   withV4DecayMulticurveInitializer(address: Address): this {
     return this.overrideModule('v4DecayMulticurveInitializer', address);
   }
+  /**
+   * Override the factory for the selected governance type.
+   *
+   * **Warning:** With standard GovernanceFactory, attackers who gain control
+   * of governance may steal migrated, locked liquidity once it unlocks.
+   * Prefer NoOpGovernanceFactory or LaunchpadGovernanceFactory with the
+   * matching `withGovernance` configuration.
+   */
   withGovernanceFactory(address: Address): this {
     return this.overrideModule('governanceFactory', address);
   }
