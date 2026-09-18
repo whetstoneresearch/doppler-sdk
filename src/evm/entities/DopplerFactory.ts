@@ -565,6 +565,13 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
     if (!resolved || resolved === ZERO_ADDRESS) {
       throw new Error(args.standardError);
     }
+    console.warn(
+      '[DopplerSDK] Standard GovernanceFactory selected (default or custom governance). ' +
+        'For launches that migrate, attackers who gain control of governance may steal the locked liquidity once it unlocks. ' +
+        'A liquidity lock delays access; it does not prevent governance attacks after unlock. ' +
+        'Prefer NoOpGovernanceFactory (governance.type: "noOp") or LaunchpadGovernanceFactory (governance.type: "launchpad"). ' +
+        'Standard governance remains supported, but requires careful review of voting power distribution and governance parameters.',
+    );
     return resolved;
   }
 
@@ -3094,6 +3101,14 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
 
     if (!tokenFactoryData) {
       throw new Error('Token factory data could not be resolved.');
+    }
+
+    if (params.migration.type !== 'noOp') {
+      console.warn(
+        '[DopplerSDK] Migration is discouraged for multicurve launches; it is not required. ' +
+          'Prefer NoOpMigrator (migration.type: "noOp") with pool beneficiaries to keep liquidity in the multicurve pool. ' +
+          "Other migrators remain supported. Review the selected migrator's liquidity custody and withdrawal permissions before proceeding.",
+      );
     }
 
     const createParams: CreateParams = {

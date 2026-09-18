@@ -15,9 +15,9 @@ All types referenced are exported from `src/types.ts`.
   - `standard`: legacy DERC20 factory path with optional vesting and yearly mint rate; requires explicit `type: 'standard'`
 - Governance is required:
   - Call `withGovernance(...)` in all cases.
-  - Use `withGovernance({ type: 'default' })` for standard governance defaults.
-  - Use `withGovernance({ type: 'noOp' })` where the chain supports no-op governance.
-  - Use `withGovernance({ type: 'launchpad', multisig })` on launchpad-enabled chains.
+  - Prefer `withGovernance({ type: 'noOp' })` where supported, or `withGovernance({ type: 'launchpad', multisig })` on launchpad-enabled chains.
+  - `withGovernance({ type: 'default' })` selects standard governance defaults. Standard governance remains supported but is the least recommended option.
+  - Encoding `default` or `custom` governance emits a non-blocking warning: for launches that migrate, governance attacks may steal locked liquidity once it unlocks. Builder `build()` alone does not emit this warning. See [Governance Selection](./migration-options.md#governance-selection).
   - Or provide `withGovernance({ type: 'custom', initialVotingDelay, initialVotingPeriod, initialProposalThreshold })`. Current timestamp-clock deployments interpret delay and period as seconds; defaults are 1 day and 7 days. Legacy `type: 'standard'` tokens use equivalent nominal block counts for the chain, including DERC20 V2 vesting. Custom values are not converted; see [Governance Selection](./migration-options.md#governance-selection) for clock assumptions.
 - Fee tiers and tick spacing: 100→1, 500→10, 3000→60, 10000→200
 - DopplerHook compatibility:
@@ -380,6 +380,8 @@ Methods (chainable):
   - Call is required; use `{ type: 'default' }`, `{ type: 'custom', ... }`, or `{ type: 'noOp' }` where supported
 - withMigration(MigrationConfig)
   - Supports `uniswapV2`, `uniswapV2Split`, `uniswapV4`, `uniswapV4Split`, and `noOp`
+  - Prefer `{ type: 'noOp' }` with pool beneficiaries. Migration is not required for multicurve launches and is discouraged.
+  - Non-`noOp` overloads are marked `@deprecated` for editor diagnostics but remain supported. Encoding emits a non-blocking `console.warn`; builder `build()` alone does not. Full-union migration variables can select an unmarked fallback overload.
 - withUserAddress(address)
 - withIntegrator(address?)
 - withSalt(salt?: Hex)
