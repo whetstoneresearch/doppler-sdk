@@ -847,6 +847,63 @@ describe('DopplerFactory', () => {
       );
     });
 
+    it('rejects a rehype farTick on the top curve boundary', () => {
+      // DopplerHookInitializer._initialize requires farTick < upperTickBoundary
+      // when the asset is token0 (and farTick <= upperTickBoundary as token1).
+      // The multicurve salt is random, so farTick == max(tickUpper) reverts with
+      // UnreachableFarTick() whenever the token sorts below the numeraire.
+      const params = multicurveParams();
+      params.pool.curves = [
+        {
+          tickLower: -140000,
+          tickUpper: -70000,
+          numPositions: 8,
+          shares: parseEther('0.6'),
+        },
+        {
+          tickLower: -90000,
+          tickUpper: -50000,
+          numPositions: 4,
+          shares: parseEther('0.4'),
+        },
+      ];
+      params.initializer = {
+        type: 'rehype',
+        config: {
+          hookAddress: mockHookAddress,
+          buybackDestination:
+            '0x1234567890123456789012345678901234567890' as Address,
+          startFee: 3000,
+          endFee: 3000,
+          durationSeconds: 0,
+          feeDistributionInfo: {
+            assetFeesToAssetBuybackWad: 0n,
+            assetFeesToNumeraireBuybackWad: parseEther('1'),
+            assetFeesToBeneficiaryWad: 0n,
+            assetFeesToLpWad: 0n,
+            numeraireFeesToAssetBuybackWad: 0n,
+            numeraireFeesToNumeraireBuybackWad: parseEther('1'),
+            numeraireFeesToBeneficiaryWad: 0n,
+            numeraireFeesToLpWad: 0n,
+          },
+          farTick: -50000,
+        },
+      };
+      params.modules = {
+        dopplerHookInitializer:
+          '0x7100000000000000000000000000000000000011' as Address,
+      };
+
+      expect(() => factory.encodeCreateMulticurveParams(params)).toThrow(
+        /farTick/,
+      );
+
+      // One tick-spacing inside the boundary is reachable for either ordering
+      if (params.initializer.type !== 'rehype') throw new Error('unreachable');
+      params.initializer.config.farTick = -50060;
+      expect(() => factory.encodeCreateMulticurveParams(params)).not.toThrow();
+    });
+
     it('uses an interior farTick when DopplerHookInitializer is selected without hook config', () => {
       const params = multicurveParams();
       params.modules = {

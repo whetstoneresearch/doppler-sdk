@@ -2718,6 +2718,22 @@ export class DopplerFactory<C extends SupportedChainId = SupportedChainId> {
         farTick = Math.max(...allTickUppers) - params.pool.tickSpacing;
       }
 
+      // DopplerHookInitializer requires farTick in [minTickLower, maxTickUpper)
+      // when the asset is token0 and [minTickLower, maxTickUpper] when it is
+      // token1. The token ordering is not known here, so enforce the
+      // intersection to avoid an on-chain UnreachableFarTick() revert.
+      const minTickLower = Math.min(
+        ...normalizedCurves.map((c) => c.tickLower),
+      );
+      const maxTickUpper = Math.max(
+        ...normalizedCurves.map((c) => c.tickUpper),
+      );
+      if (farTick < minTickLower || farTick >= maxTickUpper) {
+        throw new Error(
+          `farTick ${farTick} must be >= ${minTickLower} and < ${maxTickUpper} (the highest curve tick) to be reachable on-chain`,
+        );
+      }
+
       // Encode dopplerHook initialization calldata if provided
       let onInitializationDopplerHookCalldata: Hex = '0x';
       let graduationDopplerHookCalldata: Hex = '0x';
