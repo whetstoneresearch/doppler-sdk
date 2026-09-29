@@ -1738,3 +1738,5 @@ Contributions are welcome! Please see our [Contributing Guide](./CONTRIBUTING.md
 ## License
 
 MIT License - see [LICENSE](../../LICENSE) for details.
+
+For Initializer launches with deterministic curve vaults, see [the V2 vault guide](docs/solana-deterministic-vaults.md). Legacy creation remains the default until a deployment explicitly enables V2.

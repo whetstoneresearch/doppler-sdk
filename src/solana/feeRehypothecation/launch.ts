@@ -238,6 +238,7 @@ export async function prepareLaunch(
     launchId,
     addresses: launchAddresses,
     launchAccounts: input.launchAccounts,
+    vaultMode: input.vaultMode,
     payer: input.payer,
     authority: input.authority,
     supply: {

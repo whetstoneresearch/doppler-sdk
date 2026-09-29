@@ -43,6 +43,7 @@ import {
 } from './constants.js';
 import {
   createInitializeLaunchInstruction,
+  createInitializeLaunchV2Instruction,
   getTokenMetadataAddress,
   type InitializeLaunchAccounts,
   type InitializeLaunchParams,
@@ -171,6 +172,8 @@ export type CreateLaunchInput = {
   launchId?: Uint8Array;
   addresses?: CreateLaunchAddresses;
   launchAccounts: CreateLaunchAccountSigners;
+  /** Select deterministic only after the target deployment supports initialize_launch_v2. */
+  vaultMode?: 'legacy' | 'deterministic';
   payer: AddressOrSigner;
   authority?: AddressOrSigner;
   supply: LaunchSupply;
@@ -593,7 +596,24 @@ export async function createLaunchWithResolvedHook(
     hashRemainingAccounts(migration?.remainingAccounts) ??
     EMPTY_REMAINING_ACCOUNTS_HASH;
 
-  const instruction = await createInitializeLaunchInstruction(
+  const createInstruction =
+    input.vaultMode === 'deterministic'
+      ? (
+          accounts: InitializeLaunchAccounts,
+          args: InitializeLaunchParams,
+          program: Address,
+        ) =>
+          createInitializeLaunchV2Instruction(
+            {
+              ...accounts,
+              baseVault: getAddressFromAddressOrSigner(accounts.baseVault),
+              quoteVault: getAddressFromAddressOrSigner(accounts.quoteVault),
+            },
+            args,
+            program,
+          )
+      : createInitializeLaunchInstruction;
+  const instruction = await createInstruction(
     {
       config: addresses.config,
       launch: addresses.launch,

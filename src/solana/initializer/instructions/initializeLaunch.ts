@@ -34,9 +34,16 @@ import {
 import { computeRemainingAccountsHash } from '../helpers.js';
 import { CPMM_MIGRATOR_PROGRAM_ID } from '../../migrators/cpmmMigrator/constants.js';
 import { getCpmmMigratorStateAddress } from '../../migrators/cpmmMigrator/pda.js';
-import { getLaunchFeeStateAddress } from '../pda.js';
+import {
+  getLaunchFeeStateAddress,
+  getBaseVaultAddress,
+  getQuoteVaultAddress,
+} from '../pda.js';
 import type { InitializeLaunchArgsArgs } from '../../generated/initializer/index.js';
-import { getInitializeLaunchInstructionDataEncoder } from '../../generated/initializer/index.js';
+import {
+  getInitializeLaunchInstructionDataEncoder,
+  getInitializeLaunchV2InstructionDataEncoder,
+} from '../../generated/initializer/index.js';
 
 /**
  * Public params for createInitializeLaunchInstruction.
@@ -141,6 +148,47 @@ export async function createInitializeLaunchInstruction(
   args: InitializeLaunchParams,
   programId: Address = INITIALIZER_PROGRAM_ID,
 ): Promise<Instruction> {
+  return buildInitializeLaunchInstruction(accounts, args, programId, 'legacy');
+}
+
+export type InitializeLaunchV2Accounts = Omit<
+  InitializeLaunchAccounts,
+  'baseVault' | 'quoteVault'
+> & {
+  baseVault?: Address;
+  quoteVault?: Address;
+};
+
+/** Requires an Initializer deployment supporting initialize_launch_v2. */
+export async function createInitializeLaunchV2Instruction(
+  accounts: InitializeLaunchV2Accounts,
+  args: InitializeLaunchParams,
+  programId: Address = INITIALIZER_PROGRAM_ID,
+): Promise<Instruction> {
+  const [[baseVault], [quoteVault]] = await Promise.all([
+    getBaseVaultAddress(accounts.launch, programId),
+    getQuoteVaultAddress(accounts.launch, programId),
+  ]);
+  if (
+    (accounts.baseVault && accounts.baseVault !== baseVault) ||
+    (accounts.quoteVault && accounts.quoteVault !== quoteVault)
+  ) {
+    throw new Error('V2 vaults must match the canonical launch vault PDAs');
+  }
+  return buildInitializeLaunchInstruction(
+    { ...accounts, baseVault, quoteVault },
+    args,
+    programId,
+    'deterministic',
+  );
+}
+
+async function buildInitializeLaunchInstruction(
+  accounts: InitializeLaunchAccounts,
+  args: InitializeLaunchParams,
+  programId: Address,
+  vaultMode: 'legacy' | 'deterministic',
+): Promise<Instruction> {
   validateInitializeLaunchCurveParams(args);
 
   const {
@@ -195,8 +243,18 @@ export async function createInitializeLaunchInstruction(
     { address: launchAuthority, role: AccountRole.READONLY },
     createAccountMeta(baseMint, AccountRole.WRITABLE_SIGNER),
     { address: quoteMint, role: AccountRole.READONLY },
-    createAccountMeta(baseVault, AccountRole.WRITABLE_SIGNER),
-    createAccountMeta(quoteVault, AccountRole.WRITABLE_SIGNER),
+    vaultMode === 'legacy'
+      ? createAccountMeta(baseVault, AccountRole.WRITABLE_SIGNER)
+      : {
+          address: getAddressFromAddressOrSigner(baseVault),
+          role: AccountRole.WRITABLE,
+        },
+    vaultMode === 'legacy'
+      ? createAccountMeta(quoteVault, AccountRole.WRITABLE_SIGNER)
+      : {
+          address: getAddressFromAddressOrSigner(quoteVault),
+          role: AccountRole.WRITABLE,
+        },
     {
       address:
         launchFeeState ??
@@ -238,6 +296,7 @@ export async function createInitializeLaunchInstruction(
   // Older Initializer deployments do not have the optional vesting account.
   // Known current deployments and explicit vesting configs use the new layout.
   if (
+    vaultMode === 'deterministic' ||
     programId === INITIALIZER_PROGRAM_ID ||
     programId === MAINNET_INITIALIZER_PROGRAM_ID ||
     vestingConfig
@@ -265,7 +324,10 @@ export async function createInitializeLaunchInstruction(
   };
 
   const data = new Uint8Array(
-    getInitializeLaunchInstructionDataEncoder().encode(encoderArgs),
+    (vaultMode === 'legacy'
+      ? getInitializeLaunchInstructionDataEncoder()
+      : getInitializeLaunchV2InstructionDataEncoder()
+    ).encode(encoderArgs),
   );
 
   if (withToken2022Metadata) {

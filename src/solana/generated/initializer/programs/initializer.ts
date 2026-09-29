@@ -60,6 +60,7 @@ import {
   getHarvestMigratedFeesInstructionAsync,
   getInitializeConfigInstructionAsync,
   getInitializeLaunchInstructionAsync,
+  getInitializeLaunchV2InstructionAsync,
   getMigrateLaunchInstructionAsync,
   getMigratorInitInstructionAsync,
   getPreviewMigrationInstructionAsync,
@@ -77,6 +78,7 @@ import {
   parseHarvestMigratedFeesInstruction,
   parseInitializeConfigInstruction,
   parseInitializeLaunchInstruction,
+  parseInitializeLaunchV2Instruction,
   parseMigrateLaunchInstruction,
   parseMigratorInitInstruction,
   parsePreviewMigrationInstruction,
@@ -94,6 +96,7 @@ import {
   type HarvestMigratedFeesAsyncInput,
   type InitializeConfigAsyncInput,
   type InitializeLaunchAsyncInput,
+  type InitializeLaunchV2AsyncInput,
   type MigrateLaunchAsyncInput,
   type MigratorInitAsyncInput,
   type ParsedClaimFeesInstruction,
@@ -103,6 +106,7 @@ import {
   type ParsedHarvestMigratedFeesInstruction,
   type ParsedInitializeConfigInstruction,
   type ParsedInitializeLaunchInstruction,
+  type ParsedInitializeLaunchV2Instruction,
   type ParsedMigrateLaunchInstruction,
   type ParsedMigratorInitInstruction,
   type ParsedPreviewMigrationInstruction,
@@ -219,6 +223,7 @@ export enum InitializerInstruction {
   HarvestMigratedFees,
   InitializeConfig,
   InitializeLaunch,
+  InitializeLaunchV2,
   MigrateLaunch,
   MigratorInit,
   PreviewMigration,
@@ -311,6 +316,17 @@ export function identifyInitializerInstruction(
     )
   ) {
     return InitializerInstruction.InitializeLaunch;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([176, 21, 196, 90, 68, 112, 226, 143]),
+      ),
+      0,
+    )
+  ) {
+    return InitializerInstruction.InitializeLaunchV2;
   }
   if (
     containsBytes(
@@ -453,6 +469,9 @@ export type ParsedInitializerInstruction<
       instructionType: InitializerInstruction.InitializeLaunch;
     } & ParsedInitializeLaunchInstruction<TProgram>)
   | ({
+      instructionType: InitializerInstruction.InitializeLaunchV2;
+    } & ParsedInitializeLaunchV2Instruction<TProgram>)
+  | ({
       instructionType: InitializerInstruction.MigrateLaunch;
     } & ParsedMigrateLaunchInstruction<TProgram>)
   | ({
@@ -536,6 +555,13 @@ export function parseInitializerInstruction<TProgram extends string>(
       return {
         instructionType: InitializerInstruction.InitializeLaunch,
         ...parseInitializeLaunchInstruction(instruction),
+      };
+    }
+    case InitializerInstruction.InitializeLaunchV2: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: InitializerInstruction.InitializeLaunchV2,
+        ...parseInitializeLaunchV2Instruction(instruction),
       };
     }
     case InitializerInstruction.MigrateLaunch: {
@@ -669,6 +695,10 @@ export type InitializerPluginInstructions = {
     input: MakeOptional<InitializeLaunchAsyncInput, 'payer'>,
   ) => ReturnType<typeof getInitializeLaunchInstructionAsync> &
     SelfPlanAndSendFunctions;
+  initializeLaunchV2: (
+    input: MakeOptional<InitializeLaunchV2AsyncInput, 'payer'>,
+  ) => ReturnType<typeof getInitializeLaunchV2InstructionAsync> &
+    SelfPlanAndSendFunctions;
   migrateLaunch: (
     input: MakeOptional<MigrateLaunchAsyncInput, 'payer'>,
   ) => ReturnType<typeof getMigrateLaunchInstructionAsync> &
@@ -772,6 +802,14 @@ export function initializerProgram() {
             addSelfPlanAndSendFunctions(
               client,
               getInitializeLaunchInstructionAsync({
+                ...input,
+                payer: input.payer ?? client.payer,
+              }),
+            ),
+          initializeLaunchV2: (input) =>
+            addSelfPlanAndSendFunctions(
+              client,
+              getInitializeLaunchV2InstructionAsync({
                 ...input,
                 payer: input.payer ?? client.payer,
               }),
