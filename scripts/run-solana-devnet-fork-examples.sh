@@ -11,7 +11,6 @@ LEDGER_DIR="$RUN_DIR/ledger"
 VALIDATOR_LOG="$RUN_DIR/validator.log"
 PAYER_KEYPAIR="$RUN_DIR/payer.json"
 FORK_MANIFEST="$RUN_DIR/fork-manifest.json"
-INITIALIZER_CANDIDATE="$RUN_DIR/initializer.so"
 FEE_STATE="$RUN_DIR/fee-state.json"
 VESTING_STATE="$RUN_DIR/vesting-state.json"
 VALIDATOR_PID=""
@@ -84,8 +83,6 @@ CPMM_CONFIG="$(read_json "$FORK_MANIFEST" accounts.cpmmConfig)"
 INITIALIZER_CONFIG="$(read_json "$FORK_MANIFEST" accounts.initializerConfig)"
 HOOK_CONFIG="$(read_json "$FORK_MANIFEST" accounts.dopplerLaunchHookV2Config)"
 
-node scripts/prepare-solana-initializer-candidate.mjs devnet "$INITIALIZER_CANDIDATE"
-
 validator_args=(
   --ledger "$LEDGER_DIR"
   --reset
@@ -99,7 +96,7 @@ validator_args=(
   --dynamic-port-range "$((RPC_PORT + 4))-$((RPC_PORT + 40))"
   --log-messages-bytes-limit 100000000
   --clone-upgradeable-program "$CPMM_PROGRAM"
-  --upgradeable-program "$INITIALIZER_PROGRAM" "$INITIALIZER_CANDIDATE" "$PAYER_ADDRESS"
+  --clone-upgradeable-program "$INITIALIZER_PROGRAM"
   --clone-upgradeable-program "$CPMM_MIGRATOR_PROGRAM"
   --clone-upgradeable-program "$LAUNCH_HOOK_V2_PROGRAM"
   --clone-upgradeable-program "$REHYPE_ROUTER_PROGRAM"
@@ -110,7 +107,7 @@ validator_args=(
   --clone "$HOOK_CONFIG"
 )
 
-echo "Starting disposable devnet fork with the pinned V2 initializer at $RPC_URL"
+echo "Starting disposable devnet fork at $RPC_URL"
 solana-test-validator "${validator_args[@]}" >"$VALIDATOR_LOG" 2>&1 &
 VALIDATOR_PID="$!"
 

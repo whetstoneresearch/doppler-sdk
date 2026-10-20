@@ -8,11 +8,6 @@
     "arch": "v3"
   },
   "artifacts": {
-    "devnet": {
-      "file": "devnet.so.gz",
-      "bytes": 733168,
-      "sha256": "f88b1113906c22740db8c90f51fbf49f6b938778b84e5b2dbc2085d952a19179"
-    },
     "mainnet": {
       "file": "mainnet.so.gz",
       "bytes": 733168,

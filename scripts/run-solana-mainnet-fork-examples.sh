@@ -94,7 +94,7 @@ HOOK_CONFIG="$(read_manifest accounts.hookConfig)"
 MAINNET_USDC_MINT="$(read_manifest accounts.mainnetUsdcMint)"
 PAYER_USDC_ACCOUNT="$(read_manifest accounts.payerUsdcAccount)"
 
-node scripts/prepare-solana-initializer-candidate.mjs mainnet "$INITIALIZER_CANDIDATE"
+node scripts/prepare-solana-initializer-candidate.mjs "$INITIALIZER_CANDIDATE"
 
 validator_args=(
   --ledger "$LEDGER_DIR"
