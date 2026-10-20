@@ -15,6 +15,8 @@ import {
   createLaunch,
   initializer,
   feeRehypothecation,
+  vesting,
+  predictionMarkets,
 } from '@/solana/index.js';
 import { getInitializeLaunchInstructionDataDecoder } from '@/solana/generated/initializer/index.js';
 
@@ -50,13 +52,15 @@ async function fixture(
     },
     metadata: null,
   };
-  const legacy = await createLaunch(input);
+  const legacy = await createLaunch({ ...input, vaultMode: 'legacy' });
   const decoded = getInitializeLaunchInstructionDataDecoder().decode(
     legacy.instruction.data!,
   );
   const args = { ...decoded, allowBuy: true, allowSell: true };
   const accounts = {
     ...legacy.addresses,
+    baseVault: undefined,
+    quoteVault: undefined,
     hookProgram: legacy.instruction.accounts![10].address,
     baseMint,
     quoteMint: input.launchAccounts.quoteMint,
@@ -68,6 +72,151 @@ async function fixture(
 }
 
 describe('deterministic launch vaults', () => {
+  it('defaults the existing public helpers to V2 without vault inputs', async () => {
+    const { input, args, accounts } = await fixture();
+    const prepared = await createLaunch({
+      ...input,
+      launchAccounts: {
+        baseMint: input.launchAccounts.baseMint,
+        quoteMint: input.launchAccounts.quoteMint,
+      },
+    });
+    const instruction = await initializer.createInitializeLaunchInstruction(
+      accounts,
+      args,
+    );
+    const [[baseVault], [quoteVault]] = await Promise.all([
+      initializer.getBaseVaultAddress(accounts.launch),
+      initializer.getQuoteVaultAddress(accounts.launch),
+    ]);
+    expect(prepared.addresses).toMatchObject({ baseVault, quoteVault });
+    for (const candidate of [prepared.instruction, instruction]) {
+      expect([...candidate.data!.slice(0, 8)]).toEqual([
+        176, 21, 196, 90, 68, 112, 226, 143,
+      ]);
+      expect(candidate.accounts?.slice(5, 7)).toEqual([
+        { address: baseVault, role: AccountRole.WRITABLE },
+        { address: quoteVault, role: AccountRole.WRITABLE },
+      ]);
+    }
+  });
+
+  it('uses the same PDA for creation and vesting funding in both vesting helpers', async () => {
+    const { input } = await fixture();
+    const launchInput = {
+      ...input,
+      launchAccounts: {
+        baseMint: input.launchAccounts.baseMint,
+        quoteMint: input.launchAccounts.quoteMint,
+      },
+      vesting: {
+        schedules: [{ cliffSeconds: 0n, durationSeconds: 0n }],
+        allocations: [
+          { beneficiary: input.payer.address, scheduleId: 0, amount: 200_000n },
+        ],
+      },
+    };
+    const vested = await vesting.prepareLaunch(launchInput);
+    const rehype = await feeRehypothecation.prepareLaunch({
+      ...launchInput,
+      buybackDestination: input.payer.address,
+      beneficiaries: [{ wallet: input.payer.address, shareBps: 10_000 }],
+      strategy: feeRehypothecation.allFeesToBeneficiariesInNumeraire(),
+    });
+    expect(rehype.vesting).toBeDefined();
+    for (const prepared of [
+      {
+        addresses: vested.launchAddresses,
+        create: vested.initializeLaunchInstruction,
+        fund: vested.fundVestingInstruction,
+      },
+      {
+        addresses: rehype.launchAddresses,
+        create: rehype.initializeLaunchInstruction,
+        fund: rehype.vesting!.fundInstruction,
+      },
+    ]) {
+      const [baseVault] = await initializer.getBaseVaultAddress(
+        prepared.addresses.launch,
+      );
+      expect(prepared.addresses.baseVault).toBe(baseVault);
+      expect(prepared.create.accounts?.[5]).toEqual({
+        address: baseVault,
+        role: AccountRole.WRITABLE,
+      });
+      expect(prepared.fund.accounts).toContainEqual({
+        address: baseVault,
+        role: AccountRole.WRITABLE,
+      });
+      expect([...prepared.create.data!.slice(0, 8)]).toEqual([
+        176, 21, 196, 90, 68, 112, 226, 143,
+      ]);
+    }
+  });
+
+  it('defaults prediction outcome launches to V2 while preserving registration accounts', async () => {
+    const { input } = await fixture();
+    const prepared = await predictionMarkets.prepareOutcomeLaunch({
+      oracle: input.payer.address,
+      creator: input.payer,
+      outcomeId: new Uint8Array(32).fill(1),
+      launch: {
+        ...input,
+        launchAccounts: {
+          baseMint: input.launchAccounts.baseMint,
+          quoteMint: input.launchAccounts.quoteMint,
+        },
+      },
+    });
+    expect([...prepared.instruction.data!.slice(0, 8)]).toEqual([
+      176, 21, 196, 90, 68, 112, 226, 143,
+    ]);
+    expect(prepared.instruction.accounts?.[5]).toEqual({
+      address: prepared.addresses.baseVault,
+      role: AccountRole.WRITABLE,
+    });
+    expect(
+      prepared.instruction.accounts?.some(
+        ({ address }) => address === prepared.entry,
+      ),
+    ).toBe(true);
+  });
+
+  it('rejects old keypair vault inputs unless legacy mode is explicitly requested', async () => {
+    const { input, accounts, args, legacy } = await fixture();
+    await expect(createLaunch(input)).rejects.toThrow(
+      'canonical launch vault PDAs',
+    );
+    await expect(
+      initializer.createInitializeLaunchInstruction(
+        {
+          ...accounts,
+          baseVault: input.launchAccounts.baseVault,
+        },
+        args,
+      ),
+    ).rejects.toThrow('canonical launch vault PDAs');
+    await expect(
+      initializer.createInitializeLaunchLegacyInstruction(accounts, args),
+    ).rejects.toThrow('Legacy launches require');
+    const explicitLegacy =
+      await initializer.createInitializeLaunchLegacyInstruction(
+        {
+          ...accounts,
+          baseVault: input.launchAccounts.baseVault,
+          quoteVault: input.launchAccounts.quoteVault,
+        },
+        args,
+      );
+    expect(explicitLegacy.data).toEqual(legacy.instruction.data);
+    expect(explicitLegacy.accounts).toEqual(legacy.instruction.accounts);
+    expect(legacy.addresses.baseVault).toBe(
+      input.launchAccounts.baseVault.address,
+    );
+    expect(legacy.addresses.quoteVault).toBe(
+      input.launchAccounts.quoteVault.address,
+    );
+  });
   it('adds V2 without changing legacy arguments or signer requirements', async () => {
     const { input, legacy, args, accounts } = await fixture();
     const v2 = await initializer.createInitializeLaunchV2Instruction(

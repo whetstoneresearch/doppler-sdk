@@ -137,8 +137,12 @@ for (const program of PROGRAMS) {
   // would do post-parse if the error didn't fire first.
   const idl = flattenIdlInstructionArgs(raw_idl);
 
+  // Preserve public SDK namespaces when canonical on-chain program names change.
   const root = applyAccountAllocationOverrides(
-    rootNodeFromAnchor(idl),
+    rootNodeFromAnchor({
+      ...idl,
+      metadata: { ...idl.metadata, name: program.idl_name },
+    }),
     ACCOUNT_ALLOCATION_OVERRIDES[program.idl_name],
   );
   const codama = createFromRoot(root);

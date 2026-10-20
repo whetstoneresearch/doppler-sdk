@@ -12,7 +12,7 @@ import { DOPPLER_VESTING_PROGRAM_ADDRESS } from '../generated/dopplerVesting/ind
 import {
   createLaunch,
   createLaunchId,
-  deriveCreateLaunchAddresses,
+  resolveCreateLaunchAddresses,
   type CreateLaunchAccountSigners,
   type CreateLaunchAddresses,
   type CreateLaunchCpmmMigrationConfig,
@@ -139,17 +139,11 @@ export async function prepareLaunch(
   }
   const launchId = input.launchId ?? createLaunchId();
   const namespace = input.namespace ?? SYSTEM_PROGRAM_ADDRESS;
-  const launchAddresses =
-    input.addresses ??
-    (await deriveCreateLaunchAddresses({
-      deployment: input.deployment,
-      programId: input.programId,
-      config: input.config,
-      namespace,
-      launchId,
-      baseMint: input.launchAccounts.baseMint,
-      metadata: input.metadata,
-    }));
+  const launchAddresses = await resolveCreateLaunchAddresses({
+    ...input,
+    namespace,
+    launchId,
+  });
   const baseTokenProgram =
     input.tokenPrograms?.baseTokenProgram ?? TOKEN_PROGRAM_ADDRESS;
   const vestingProgram =
@@ -163,7 +157,7 @@ export async function prepareLaunch(
     launch: launchAddresses.launch,
     launchAuthority: launchAddresses.launchAuthority,
     baseMint: input.launchAccounts.baseMint,
-    baseVault: input.launchAccounts.baseVault,
+    baseVault: launchAddresses.baseVault,
     baseTokenProgram,
     initialSupply: input.supply.baseTotalSupply,
     plan: vestingPlan,

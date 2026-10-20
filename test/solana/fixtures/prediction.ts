@@ -292,8 +292,6 @@ export async function fixture({
       launchAccounts: {
         baseMint: createNoopSigner(mints[i]),
         quoteMint,
-        baseVault: createNoopSigner(baseVaults[i]),
-        quoteVault: createNoopSigner(quoteVaults[i]),
       },
       payer,
       supply: {

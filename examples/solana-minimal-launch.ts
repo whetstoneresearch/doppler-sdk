@@ -33,8 +33,6 @@ async function main(): Promise<void> {
   const namespace = SYSTEM_PROGRAM_ADDRESS;
 
   const baseMint = await generateKeyPairSigner();
-  const baseVault = await generateKeyPairSigner();
-  const quoteVault = await generateKeyPairSigner();
 
   const { instruction, addresses, cpmmMigration } = await createLaunch({
     deployment,
@@ -42,8 +40,6 @@ async function main(): Promise<void> {
     launchAccounts: {
       baseMint,
       quoteMint: WSOL_MINT,
-      baseVault,
-      quoteVault,
     },
     payer,
     supply: {

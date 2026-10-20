@@ -1,10 +1,10 @@
 {
   "address": "4h3Dqyo5qmteJoMxXt3tdtfXELDB6pdRTPU9mWruiKp1",
   "metadata": {
-    "name": "initializer",
+    "name": "doppler_launch_markets_v1",
     "version": "1.0.0",
     "spec": "0.1.0",
-    "description": "Initializer program with bonding-curve launch, hooks, and programmable migration"
+    "description": "Doppler launch market creation, bonding-curve trading, and accounting"
   },
   "instructions": [
     {

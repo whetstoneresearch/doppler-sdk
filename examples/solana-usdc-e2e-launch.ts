@@ -96,8 +96,6 @@ async function main() {
   console.log('Step 1: Creating XYK token launch...');
 
   const baseMint = await generateKeyPairSigner();
-  const baseVault = await generateKeyPairSigner();
-  const quoteVault = await generateKeyPairSigner();
   const metadata = DEFAULT_TEST_METADATA;
 
   const namespace = SYSTEM_PROGRAM_ADDRESS;
@@ -140,8 +138,6 @@ async function main() {
       launchAccounts: {
         baseMint,
         quoteMint: USDC_MINT,
-        baseVault,
-        quoteVault,
       },
       payer,
       authority: payer,
@@ -214,8 +210,8 @@ async function main() {
       {
         launch,
         launchFeeState,
-        baseVault: baseVault.address,
-        quoteVault: quoteVault.address,
+        baseVault: launchAddresses.baseVault,
+        quoteVault: launchAddresses.quoteVault,
         hookProgram: deployment.dopplerLaunchHookV1Program,
         remainingAccounts: [namespace],
       },
@@ -265,8 +261,8 @@ async function main() {
       deployment,
       launch,
       launchAuthority,
-      baseVault: baseVault.address,
-      quoteVault: quoteVault.address,
+      baseVault: launchAddresses.baseVault,
+      quoteVault: launchAddresses.quoteVault,
       launchFeeState,
       baseMint: baseMint.address,
       quoteMint: USDC_MINT,
@@ -309,7 +305,7 @@ async function main() {
     const { quoteVaultAmount, migrationQuoteAmount } =
       await assertMigrationQuoteThreshold({
         rpc,
-        quoteVault: quoteVault.address,
+        quoteVault: launchAddresses.quoteVault,
         pendingQuoteFees,
         minRaiseQuote,
       });
@@ -338,8 +334,8 @@ async function main() {
       launchAuthority,
       baseMint: baseMint.address,
       quoteMint: USDC_MINT,
-      baseVault: baseVault.address,
-      quoteVault: quoteVault.address,
+      baseVault: launchAddresses.baseVault,
+      quoteVault: launchAddresses.quoteVault,
       launchFeeState,
       payer,
       cpmmMigration: migrationAccounts,

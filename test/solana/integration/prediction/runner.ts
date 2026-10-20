@@ -349,6 +349,8 @@ export async function run() {
           creator,
           outcomeId: outcomeIds[i],
           launch: {
+            // Exercise legacy compatibility against the cloned deployment.
+            vaultMode: 'legacy',
             payer,
             launchId,
             programId: programs.initializerProgram,

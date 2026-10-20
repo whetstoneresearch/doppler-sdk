@@ -102,8 +102,6 @@ async function main() {
   });
 
   const baseMint = await generateKeyPairSigner();
-  const baseVault = await generateKeyPairSigner();
-  const quoteVault = await generateKeyPairSigner();
   const metadata = DEFAULT_TEST_METADATA;
 
   const namespace = dopplerLaunchHookV1Config;
@@ -159,8 +157,6 @@ async function main() {
       launchAccounts: {
         baseMint,
         quoteMint: USDC_MINT,
-        baseVault,
-        quoteVault,
       },
       payer,
       authority: payer,
@@ -208,8 +204,8 @@ async function main() {
     deployment,
     launch,
     launchAuthority,
-    baseVault: baseVault.address,
-    quoteVault: quoteVault.address,
+    baseVault: launchAddresses.baseVault,
+    quoteVault: launchAddresses.quoteVault,
     launchFeeState,
     baseMint: baseMint.address,
     quoteMint: USDC_MINT,
@@ -257,7 +253,7 @@ async function main() {
   const { quoteVaultAmount, pendingQuoteFees } =
     await assertMigrationQuoteThreshold({
       rpc,
-      quoteVault: quoteVault.address,
+      quoteVault: launchAddresses.quoteVault,
       pendingQuoteFees: initializer.getCurveSwapFeeAmount(
         BUY_AMOUNT_IN,
         SWAP_FEE_BPS,
@@ -274,8 +270,8 @@ async function main() {
     launchAuthority,
     baseMint: baseMint.address,
     quoteMint: USDC_MINT,
-    baseVault: baseVault.address,
-    quoteVault: quoteVault.address,
+    baseVault: launchAddresses.baseVault,
+    quoteVault: launchAddresses.quoteVault,
     launchFeeState,
     payer,
     cpmmMigration: migrationAccounts,

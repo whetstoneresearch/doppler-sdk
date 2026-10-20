@@ -56,8 +56,6 @@ async function main(): Promise<void> {
   assertSolanaExampleNetwork(network, ['devnet', 'custom']);
   const deployment = await getSolanaCpmmDeploymentFromEnv(network);
   const baseMint = await generateKeyPairSigner();
-  const baseVault = await generateKeyPairSigner();
-  const quoteVault = await generateKeyPairSigner();
   const cliffSeconds = nonnegativeBigIntEnv(
     'SOLANA_VESTING_CLIFF_SECONDS',
     7n * DAY_SECONDS,
@@ -76,8 +74,6 @@ async function main(): Promise<void> {
     launchAccounts: {
       baseMint,
       quoteMint: WSOL_MINT,
-      baseVault,
-      quoteVault,
     },
     payer,
     authority: payer,

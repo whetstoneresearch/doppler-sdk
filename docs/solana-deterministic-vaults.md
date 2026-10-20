@@ -1,35 +1,58 @@
-# Deterministic Initializer vaults
+# Deterministic launch vaults
 
-`initializer.createInitializeLaunchV2Instruction` creates base and quote curve vault PDAs with seeds `["base_vault", launch]` and `["quote_vault", launch]` under the selected Initializer program. It derives both vault addresses, accepts optional matching addresses, and rejects mismatches. The vaults are writable nonsigners; the mint and payer still sign. This requires an Initializer deployment with `initialize_launch_v2` support.
+Solana launch helpers now use `initialize_launch_v2` by default. Both token vault addresses are PDAs derived from the launch account. `createLaunch`, the low-level `createInitializeLaunchInstruction`, vesting, Rehype, and prediction-market launch helpers use this default.
 
-```ts
-const instruction = await initializer.createInitializeLaunchV2Instruction(
-  accounts, // same accounts as V1; baseVault and quoteVault may be omitted
-  args,     // same launch arguments as V1
-  programId,
-);
-```
+## Deployment prerequisite
 
-For `createLaunch` or `feeRehypothecation.prepareLaunch`, opt in with `vaultMode: 'deterministic'` and supply the derived addresses in `launchAccounts`:
+The target initializer must support `initialize_launch_v2` before using this SDK default. On October 19, 2026, both canonical devnet and mainnet deployments rejected its discriminator with `InstructionFallbackNotFound`. A staged upgrade buffer does not activate the instruction. Release this default after the required program upgrades; fork examples also need a V2-capable binary.
+
+## Creating a launch
+
+Keep the existing helper and omit vault keypairs:
 
 ```ts
-const [launch] = await initializer.getLaunchAddress(namespace, launchId, programId);
-const [[baseVault], [quoteVault]] = await Promise.all([
-  initializer.getBaseVaultAddress(launch, programId),
-  initializer.getQuoteVaultAddress(launch, programId),
-]);
 const prepared = await createLaunch({
   ...launchInput,
-  programId,
-  namespace,
-  launchId,
-  vaultMode: 'deterministic',
-  launchAccounts: { ...launchInput.launchAccounts, baseVault, quoteVault },
+  launchAccounts: { baseMint, quoteMint },
+});
+
+const { baseVault, quoteVault } = prepared.addresses;
+```
+
+Use these returned addresses for later swaps, funding, and account lookups. Vesting and Rehype return them under `prepared.launchAddresses` and use the resolved base vault when composing vesting funding. `deriveCreateLaunchAddresses` also returns the canonical vault PDAs when addresses are needed before preparation.
+
+The low-level `createInitializeLaunchInstruction(accounts, args, programId)` keeps its name and arguments; omit `accounts.baseVault` and `accounts.quoteVault` to derive them. `createInitializeLaunchV2Instruction` remains available as an explicit alias for V2 behavior. Supplied vault overrides must match the canonical PDAs; unrelated keypair addresses are rejected rather than silently changing the destination.
+
+Existing callers that generate vault keypairs must remove those inputs and use the returned PDAs, or explicitly select legacy mode. Other launch settings, hook payloads, remaining accounts, and lifecycle behavior are unchanged.
+
+## Legacy compatibility
+
+To create a launch against an older deployment, explicitly select the original instruction and provide both vault signers:
+
+```ts
+const prepared = await createLaunch({
+  ...launchInput,
+  vaultMode: 'legacy',
+  launchAccounts: {
+    baseMint,
+    quoteMint,
+    baseVault: baseVaultSigner,
+    quoteVault: quoteVaultSigner,
+  },
 });
 ```
 
-Legacy builders and the default `vaultMode: 'legacy'` keep the original discriminator and vault signer requirements. Switch callers only after upgrading the target Initializer program. The V2 path includes the vesting account placeholder under custom program IDs as well as the default deployment.
+Vesting, Rehype, and prediction launch inputs accept the same `vaultMode` selection. Low-level callers can use `createInitializeLaunchLegacyInstruction`; the generated V1 instruction builders remain available. Returned launch addresses reflect the selected mode, including legacy vaults.
 
-Existing launches are not converted. For swaps, claims, vesting, Rehype and migration, always use `Launch.baseVault` and `Launch.quoteVault` from the decoded on-chain state. The account and event layouts are unchanged; deriving V2 addresses for a legacy launch would produce the wrong vaults. No changes to external indexers' classification heuristics are implied.
+Existing launches are unaffected. Read their vault addresses from launch state rather than deriving V2 addresses for a launch created through V1.
 
-V2 removes 128 signature bytes from an otherwise equivalent inline transaction. Its vault keys are also eligible for address lookup tables. Metadata and other instruction data still count toward Solana's transaction size limit.
+## Address and IDL details
+
+- Base vault seeds: `['base_vault', launch]` under the initializer program.
+- Quote vault seeds: `['quote_vault', launch]` under the initializer program.
+- Both vaults are writable nonsigners, eliminating two transaction signatures (128 signature bytes).
+- V2 includes the optional vesting-config account slot for every program ID, including custom deployments.
+
+V1 vaults already used the launch-authority PDA as their token authority. V2 changes the token-account addresses, not who controls the tokens. Deterministic addresses make integration easier, but indexers and security providers may still need to recognize the vaults as protocol inventory.
+
+The initializer IDL is synchronized with `doppler-sol` revision `44d4135`. Regenerate codecs with `pnpm generate:codecs`. Code generation preserves the SDK's existing `initializer` namespace even though the source IDL names the program `doppler_launch_markets_v1`.

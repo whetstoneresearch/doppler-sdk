@@ -104,6 +104,7 @@ export {
   createSetHookAllowlistInstruction,
   type SetHookAllowlistAccounts,
   createInitializeLaunchInstruction,
+  createInitializeLaunchLegacyInstruction,
   createInitializeLaunchV2Instruction,
   type InitializeLaunchV2Accounts,
   getTokenMetadataAddress,

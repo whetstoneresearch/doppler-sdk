@@ -97,8 +97,6 @@ async function main() {
           label: 'SOLANA_BASE_MINT_KEYPAIR',
         })
       : await generateKeyPairSigner();
-  const baseVault = await generateKeyPairSigner();
-  const quoteVault = await generateKeyPairSigner();
   const metadata = DEFAULT_TEST_METADATA;
 
   const namespace = SYSTEM_PROGRAM_ADDRESS;
@@ -128,8 +126,6 @@ async function main() {
       launchAccounts: {
         baseMint,
         quoteMint: WSOL_MINT,
-        baseVault,
-        quoteVault,
       },
       payer,
       authority: payer,
@@ -204,8 +200,8 @@ async function main() {
       {
         launch,
         launchFeeState,
-        baseVault: baseVault.address,
-        quoteVault: quoteVault.address,
+        baseVault: launchAddresses.baseVault,
+        quoteVault: launchAddresses.quoteVault,
         hookProgram: deployment.dopplerLaunchHookV1Program,
         remainingAccounts: [namespace],
       },
@@ -253,8 +249,8 @@ async function main() {
       deployment,
       launch,
       launchAuthority,
-      baseVault: baseVault.address,
-      quoteVault: quoteVault.address,
+      baseVault: launchAddresses.baseVault,
+      quoteVault: launchAddresses.quoteVault,
       launchFeeState,
       baseMint: baseMint.address,
       quoteMint: WSOL_MINT,
@@ -293,8 +289,8 @@ async function main() {
       launchAuthority,
       baseMint: baseMint.address,
       quoteMint: WSOL_MINT,
-      baseVault: baseVault.address,
-      quoteVault: quoteVault.address,
+      baseVault: launchAddresses.baseVault,
+      quoteVault: launchAddresses.quoteVault,
       launchFeeState,
       payer,
       cpmmMigration: migrationAccounts,

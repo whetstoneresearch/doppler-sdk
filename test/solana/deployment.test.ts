@@ -167,8 +167,6 @@ describe('CPMM migrator custom deployment helpers', () => {
         launchAuthority,
         baseMint: address('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'),
         quoteMint: address('So11111111111111111111111111111111111111112'),
-        baseVault: address('SysvarS1otHashes111111111111111111111111111'),
-        quoteVault: address('SysvarRecentB1ockHashes11111111111111111111'),
         payer: address('SysvarFees111111111111111111111111111111111'),
         authority: address('SysvarFees111111111111111111111111111111111'),
         migratorProgram: CUSTOM_PROGRAMS.cpmmMigratorProgram,
@@ -209,9 +207,9 @@ describe('CPMM migrator custom deployment helpers', () => {
       CUSTOM_PROGRAMS.initializerProgram,
     );
 
-    expect(ix.accounts).toHaveLength(20);
-    expect(ix.accounts?.[18]?.address).toBe(cpmmMigrationState);
-    expect(ix.accounts?.[19]?.address).toBe(cpmmConfig);
+    expect(ix.accounts).toHaveLength(21);
+    expect(ix.accounts?.[19]?.address).toBe(cpmmMigrationState);
+    expect(ix.accounts?.[20]?.address).toBe(cpmmConfig);
     expect(ix.programAddress).toBe(CUSTOM_PROGRAMS.initializerProgram);
   });
 });

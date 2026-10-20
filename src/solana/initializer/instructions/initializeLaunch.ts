@@ -34,11 +34,8 @@ import {
 import { computeRemainingAccountsHash } from '../helpers.js';
 import { CPMM_MIGRATOR_PROGRAM_ID } from '../../migrators/cpmmMigrator/constants.js';
 import { getCpmmMigratorStateAddress } from '../../migrators/cpmmMigrator/pda.js';
-import {
-  getLaunchFeeStateAddress,
-  getBaseVaultAddress,
-  getQuoteVaultAddress,
-} from '../pda.js';
+import { getLaunchFeeStateAddress } from '../pda.js';
+import { resolveLaunchVaults } from '../vaults.js';
 import type { InitializeLaunchArgsArgs } from '../../generated/initializer/index.js';
 import {
   getInitializeLaunchInstructionDataEncoder,
@@ -101,8 +98,9 @@ export interface InitializeLaunchAccounts {
   launchAuthority: Address;
   baseMint: AddressOrSigner;
   quoteMint: Address;
-  baseVault: AddressOrSigner;
-  quoteVault: AddressOrSigner;
+  /** Canonical PDA override; omitted vaults are derived from launch and programId. */
+  baseVault?: AddressOrSigner;
+  quoteVault?: AddressOrSigner;
   launchFeeState?: Address;
   payer: AddressOrSigner;
   authority?: AddressOrSigner;
@@ -148,16 +146,31 @@ export async function createInitializeLaunchInstruction(
   args: InitializeLaunchParams,
   programId: Address = INITIALIZER_PROGRAM_ID,
 ): Promise<Instruction> {
-  return buildInitializeLaunchInstruction(accounts, args, programId, 'legacy');
+  return createInitializeLaunchV2Instruction(accounts, args, programId);
 }
 
-export type InitializeLaunchV2Accounts = Omit<
-  InitializeLaunchAccounts,
-  'baseVault' | 'quoteVault'
-> & {
-  baseVault?: Address;
-  quoteVault?: Address;
-};
+export type InitializeLaunchV2Accounts = InitializeLaunchAccounts;
+
+/** Explicit compatibility builder for deployments without initialize_launch_v2. */
+export async function createInitializeLaunchLegacyInstruction(
+  accounts: InitializeLaunchAccounts,
+  args: InitializeLaunchParams,
+  programId: Address = INITIALIZER_PROGRAM_ID,
+): Promise<Instruction> {
+  if (!accounts.baseVault || !accounts.quoteVault) {
+    throw new Error('Legacy launches require baseVault and quoteVault signers');
+  }
+  return buildInitializeLaunchInstruction(
+    {
+      ...accounts,
+      baseVault: accounts.baseVault,
+      quoteVault: accounts.quoteVault,
+    },
+    args,
+    programId,
+    'legacy',
+  );
+}
 
 /** Requires an Initializer deployment supporting initialize_launch_v2. */
 export async function createInitializeLaunchV2Instruction(
@@ -165,16 +178,10 @@ export async function createInitializeLaunchV2Instruction(
   args: InitializeLaunchParams,
   programId: Address = INITIALIZER_PROGRAM_ID,
 ): Promise<Instruction> {
-  const [[baseVault], [quoteVault]] = await Promise.all([
-    getBaseVaultAddress(accounts.launch, programId),
-    getQuoteVaultAddress(accounts.launch, programId),
-  ]);
-  if (
-    (accounts.baseVault && accounts.baseVault !== baseVault) ||
-    (accounts.quoteVault && accounts.quoteVault !== quoteVault)
-  ) {
-    throw new Error('V2 vaults must match the canonical launch vault PDAs');
-  }
+  const { baseVault, quoteVault } = await resolveLaunchVaults({
+    ...accounts,
+    programId,
+  });
   return buildInitializeLaunchInstruction(
     { ...accounts, baseVault, quoteVault },
     args,
@@ -184,7 +191,10 @@ export async function createInitializeLaunchV2Instruction(
 }
 
 async function buildInitializeLaunchInstruction(
-  accounts: InitializeLaunchAccounts,
+  accounts: InitializeLaunchAccounts & {
+    baseVault: AddressOrSigner;
+    quoteVault: AddressOrSigner;
+  },
   args: InitializeLaunchParams,
   programId: Address,
   vaultMode: 'legacy' | 'deterministic',

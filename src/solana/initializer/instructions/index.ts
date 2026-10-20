@@ -15,6 +15,7 @@ export {
 
 export {
   createInitializeLaunchInstruction,
+  createInitializeLaunchLegacyInstruction,
   createInitializeLaunchV2Instruction,
   type InitializeLaunchV2Accounts,
   getTokenMetadataAddress,

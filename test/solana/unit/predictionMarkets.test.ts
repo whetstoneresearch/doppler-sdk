@@ -55,8 +55,6 @@ describe('prediction lifecycle planners', () => {
         launchAccounts: {
           baseMint: signer,
           quoteMint: mint,
-          baseVault: signer,
-          quoteVault: signer,
         },
         payer: signer,
         supply: {
