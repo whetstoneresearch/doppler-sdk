@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DEVNET_RPC_URL="${SOLANA_DEVNET_RPC_URL:-https://api.devnet.solana.com}"
-RPC_PORT="${DOPPLER_LOCAL_DEVNET_RPC_PORT:-18909}"
+RPC_PORT="${DOPPLER_LOCAL_DEVNET_RPC_PORT:-19009}"
 RPC_URL="http://127.0.0.1:${RPC_PORT}"
 WS_URL="ws://127.0.0.1:$((RPC_PORT + 1))"
 RUN_DIR="$(mktemp -d "${TMPDIR:-/tmp}/doppler-sdk-devnet-fork.XXXXXX")"
@@ -11,6 +11,7 @@ LEDGER_DIR="$RUN_DIR/ledger"
 VALIDATOR_LOG="$RUN_DIR/validator.log"
 PAYER_KEYPAIR="$RUN_DIR/payer.json"
 FORK_MANIFEST="$RUN_DIR/fork-manifest.json"
+INITIALIZER_CANDIDATE="$RUN_DIR/initializer.so"
 FEE_STATE="$RUN_DIR/fee-state.json"
 VESTING_STATE="$RUN_DIR/vesting-state.json"
 VALIDATOR_PID=""
@@ -83,6 +84,8 @@ CPMM_CONFIG="$(read_json "$FORK_MANIFEST" accounts.cpmmConfig)"
 INITIALIZER_CONFIG="$(read_json "$FORK_MANIFEST" accounts.initializerConfig)"
 HOOK_CONFIG="$(read_json "$FORK_MANIFEST" accounts.dopplerLaunchHookV2Config)"
 
+node scripts/prepare-solana-initializer-candidate.mjs devnet "$INITIALIZER_CANDIDATE"
+
 validator_args=(
   --ledger "$LEDGER_DIR"
   --reset
@@ -91,9 +94,12 @@ validator_args=(
   --clone-feature-set
   --mint "$PAYER_ADDRESS"
   --rpc-port "$RPC_PORT"
+  --faucet-port "$((RPC_PORT + 2))"
+  --gossip-port "$((RPC_PORT + 3))"
+  --dynamic-port-range "$((RPC_PORT + 4))-$((RPC_PORT + 40))"
   --log-messages-bytes-limit 100000000
   --clone-upgradeable-program "$CPMM_PROGRAM"
-  --clone-upgradeable-program "$INITIALIZER_PROGRAM"
+  --upgradeable-program "$INITIALIZER_PROGRAM" "$INITIALIZER_CANDIDATE" "$PAYER_ADDRESS"
   --clone-upgradeable-program "$CPMM_MIGRATOR_PROGRAM"
   --clone-upgradeable-program "$LAUNCH_HOOK_V2_PROGRAM"
   --clone-upgradeable-program "$REHYPE_ROUTER_PROGRAM"
@@ -104,7 +110,7 @@ validator_args=(
   --clone "$HOOK_CONFIG"
 )
 
-echo "Starting disposable devnet fork at $RPC_URL"
+echo "Starting disposable devnet fork with the pinned V2 initializer at $RPC_URL"
 solana-test-validator "${validator_args[@]}" >"$VALIDATOR_LOG" 2>&1 &
 VALIDATOR_PID="$!"
 

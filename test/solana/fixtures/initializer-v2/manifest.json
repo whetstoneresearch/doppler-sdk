@@ -1,0 +1,22 @@
+{
+  "repository": "whetstoneresearch/doppler-sol",
+  "revision": "44d41352c7c819f8821990da8cabadbda69cfb73",
+  "program": "doppler_launch_markets_v1",
+  "toolchain": {
+    "solana": "4.1.0",
+    "platformTools": "v1.54",
+    "arch": "v3"
+  },
+  "artifacts": {
+    "devnet": {
+      "file": "devnet.so.gz",
+      "bytes": 733168,
+      "sha256": "f88b1113906c22740db8c90f51fbf49f6b938778b84e5b2dbc2085d952a19179"
+    },
+    "mainnet": {
+      "file": "mainnet.so.gz",
+      "bytes": 733168,
+      "sha256": "a14777121868fe6ccdacb183dc009dd13edd566eebdfc9513a989660dfd81320"
+    }
+  }
+}

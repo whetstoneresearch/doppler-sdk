@@ -4,7 +4,9 @@ Solana launch helpers now use `initialize_launch_v2` by default. Both token vaul
 
 ## Deployment prerequisite
 
-The target initializer must support `initialize_launch_v2` before using this SDK default. On October 19, 2026, both canonical devnet and mainnet deployments rejected its discriminator with `InstructionFallbackNotFound`. A staged upgrade buffer does not activate the instruction. Release this default after the required program upgrades; fork examples also need a V2-capable binary.
+The target initializer must support `initialize_launch_v2` before using this SDK default. On October 19, 2026, both canonical devnet and mainnet deployments rejected its discriminator with `InstructionFallbackNotFound`. A staged upgrade buffer does not activate the instruction. Release this default after the required program upgrades.
+
+The mainnet and devnet example suites load a pinned V2 initializer candidate locally while cloning other programs and configuration from the network. Their [fixture manifest](../test/solana/fixtures/initializer-v2/manifest.json) records the source revision and binary hashes. The prediction lifecycle suite separately tests deployed-program compatibility with explicit legacy launches. Passing candidate tests does not establish live V2 availability.
 
 ## Creating a launch
 

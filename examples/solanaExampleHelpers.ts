@@ -372,7 +372,7 @@ async function waitForSlotAfter(
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
 
-  throw new Error('Timed out waiting for address lookup table warmup slot');
+  throw new Error('Timed out waiting for a later confirmed slot');
 }
 
 export async function createLookupTableForInstruction({
@@ -389,6 +389,9 @@ export async function createLookupTableForInstruction({
   label?: string;
 }) {
   const recentSlot = await rpc.getSlot({ commitment: 'finalized' }).send();
+  // Lookup table creation requires an ancestor in SlotHashes. On a fresh
+  // validator, the finalized slot can still be the current confirmed bank.
+  await waitForSlotAfter(rpc, recentSlot);
   const addresses = initializer.getInstructionLookupTableAddresses(instruction);
   const authority = await generateKeyPairSigner();
   const lookupTable =

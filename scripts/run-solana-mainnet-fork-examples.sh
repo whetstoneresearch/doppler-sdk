@@ -15,6 +15,7 @@ SWAP_BASE_MINT_KEYPAIR="$RUN_DIR/swap-base-mint.json"
 HOOK_CONFIG_FIXTURE="$RUN_DIR/hook-config.json"
 PAYER_USDC_FIXTURE="$RUN_DIR/payer-usdc.json"
 FORK_MANIFEST="$RUN_DIR/fork-manifest.json"
+INITIALIZER_CANDIDATE="$RUN_DIR/initializer.so"
 VALIDATOR_PID=""
 
 cleanup() {
@@ -93,6 +94,8 @@ HOOK_CONFIG="$(read_manifest accounts.hookConfig)"
 MAINNET_USDC_MINT="$(read_manifest accounts.mainnetUsdcMint)"
 PAYER_USDC_ACCOUNT="$(read_manifest accounts.payerUsdcAccount)"
 
+node scripts/prepare-solana-initializer-candidate.mjs mainnet "$INITIALIZER_CANDIDATE"
+
 validator_args=(
   --ledger "$LEDGER_DIR"
   --reset
@@ -101,9 +104,12 @@ validator_args=(
   --clone-feature-set
   --mint "$PAYER_ADDRESS"
   --rpc-port "$RPC_PORT"
+  --faucet-port "$((RPC_PORT + 2))"
+  --gossip-port "$((RPC_PORT + 3))"
+  --dynamic-port-range "$((RPC_PORT + 4))-$((RPC_PORT + 40))"
   --log-messages-bytes-limit 100000000
   --clone-upgradeable-program "$CPMM_PROGRAM"
-  --clone-upgradeable-program "$INITIALIZER_PROGRAM"
+  --upgradeable-program "$INITIALIZER_PROGRAM" "$INITIALIZER_CANDIDATE" "$PAYER_ADDRESS"
   --clone-upgradeable-program "$CPMM_MIGRATOR_PROGRAM"
   --clone-upgradeable-program "$LAUNCH_HOOK_PROGRAM"
   --clone-upgradeable-program "$TOKEN_METADATA_PROGRAM"
@@ -114,7 +120,7 @@ validator_args=(
   --account "$PAYER_USDC_ACCOUNT" "$PAYER_USDC_FIXTURE"
 )
 
-echo "Starting disposable mainnet fork at $RPC_URL"
+echo "Starting disposable mainnet fork with the pinned V2 initializer at $RPC_URL"
 solana-test-validator "${validator_args[@]}" >"$VALIDATOR_LOG" 2>&1 &
 VALIDATOR_PID="$!"
 
