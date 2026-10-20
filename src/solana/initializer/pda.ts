@@ -52,7 +52,7 @@ export async function getProgramDataAddress(
 }
 
 /**
- * Derive the Launch PDA address.
+ * Derive a legacy Launch PDA address. For new launches use getLaunchV2Address.
  * Seeds: ['launch', namespace, launch_id_bytes_32]
  */
 export async function getLaunchAddress(
@@ -136,4 +136,42 @@ export async function getQuoteVaultAddress(
     programAddress: programId,
     seeds: [textEncoder.encode(SEED_QUOTE_VAULT), addressCodec.encode(launch)],
   });
+}
+
+/** Derive a mint-bound V2 launch. Seeds: ['launch', baseMint]. */
+export async function getLaunchV2Address(
+  baseMint: Address,
+  programId: Address = INITIALIZER_PROGRAM_ID,
+): Promise<ProgramDerivedAddress> {
+  return getProgramDerivedAddress({
+    programAddress: programId,
+    seeds: [textEncoder.encode(SEED_LAUNCH), addressCodec.encode(baseMint)],
+  });
+}
+
+/** Validate either supported launch identity using decoded, owner-checked launch state. */
+export async function isLaunchAddress(
+  address: Address,
+  launch: {
+    namespace: Address;
+    launchId: ArrayLike<number>;
+    baseMint: Address;
+  },
+  programId: Address = INITIALIZER_PROGRAM_ID,
+): Promise<boolean> {
+  const mintBytes = addressCodec.encode(launch.baseMint);
+  const launchId = Uint8Array.from(launch.launchId);
+  if (
+    launchId.length === mintBytes.length &&
+    launchId.every((byte, i) => byte === mintBytes[i])
+  ) {
+    const [mintLaunch] = await getLaunchV2Address(launch.baseMint, programId);
+    if (address === mintLaunch) return true;
+  }
+  const [legacyLaunch] = await getLaunchAddress(
+    launch.namespace,
+    launchId,
+    programId,
+  );
+  return address === legacyLaunch;
 }

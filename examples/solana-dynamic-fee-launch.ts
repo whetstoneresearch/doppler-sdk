@@ -106,11 +106,9 @@ async function main(): Promise<void> {
 
   const baseMint = await generateKeyPairSigner();
   const namespace = SYSTEM_PROGRAM_ADDRESS;
-  const launchId = initializer.launchIdFromU64(BigInt(Date.now()));
   const launchAddresses = await initializer.deriveCreateLaunchAddresses({
     deployment,
     namespace,
-    launchId,
     baseMint,
   });
 
@@ -127,7 +125,6 @@ async function main(): Promise<void> {
   const { instruction, addresses, cpmmMigration } = await createLaunch({
     deployment,
     namespace,
-    launchId,
     addresses: launchAddresses,
     launchAccounts: {
       baseMint,

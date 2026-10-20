@@ -99,11 +99,9 @@ async function main() {
   const metadata = DEFAULT_TEST_METADATA;
 
   const namespace = SYSTEM_PROGRAM_ADDRESS;
-  const launchId = initializer.launchIdFromU64(BigInt(Date.now()));
   const launchAddresses = await initializer.deriveCreateLaunchAddresses({
     deployment,
     namespace,
-    launchId,
     baseMint,
     metadata,
   });
@@ -133,7 +131,6 @@ async function main() {
     const { instruction: ix, cpmmMigration } = await createLaunch({
       deployment,
       namespace,
-      launchId,
       addresses: launchAddresses,
       launchAccounts: {
         baseMint,

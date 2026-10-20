@@ -10,6 +10,7 @@ export * from './feeBeneficiary';
 export * from './feeRoute';
 export * from './feeRoutingMatrix';
 export * from './initializeRehypeArgs';
+export * from './initializeRehypeV2Args';
 export * from './lpRebalanceArgs';
 export * from './payloadBuf';
 export * from './rehypeBeneficiary';

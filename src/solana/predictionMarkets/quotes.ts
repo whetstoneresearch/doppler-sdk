@@ -140,15 +140,15 @@ export async function fetchPredictionBuyQuote(
   if (!status.canBuy) throw new Error('Market is not open for buys');
   validateOwner(currentLaunch, initializer.INITIALIZER_PROGRAM_ID);
   validateOwner(entry, prediction.PREDICTION_MIGRATOR_PROGRAM_ADDRESS);
-  const [expectedLaunch] = await initializer.getLaunchAddress(
-    currentLaunch.data.namespace,
-    Uint8Array.from(currentLaunch.data.launchId),
+  const hasValidLaunchAddress = await initializer.isLaunchAddress(
+    launch.address,
+    currentLaunch.data,
   );
   const outcomeIndex = market.data.outcomeMints
     .slice(0, market.data.outcomeCount)
     .indexOf(input.baseMint);
   if (
-    expectedLaunch !== launch.address ||
+    !hasValidLaunchAddress ||
     !currentLaunch.data.discriminator.every(
       (byte, index) => byte === generated.LAUNCH_DISCRIMINATOR[index],
     ) ||

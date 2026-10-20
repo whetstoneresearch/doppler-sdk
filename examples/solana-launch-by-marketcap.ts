@@ -88,13 +88,11 @@ async function main() {
   const metadata = DEFAULT_TEST_METADATA;
 
   // ── Derive launch addresses ─────────────────────────────────────────────────
-  // Date.now() as launchId ensures each run creates a distinct launch.
+  // The signing base mint uniquely identifies this launch.
   const namespace = SYSTEM_PROGRAM_ADDRESS;
-  const launchId = initializer.launchIdFromU64(BigInt(Date.now()));
   const launchAddresses = await initializer.deriveCreateLaunchAddresses({
     deployment,
     namespace,
-    launchId,
     baseMint,
     metadata,
   });
@@ -107,7 +105,6 @@ async function main() {
     const { instruction: ix, cpmmMigration } = await createLaunch({
       deployment,
       namespace,
-      launchId,
       addresses: launchAddresses,
       launchAccounts: {
         baseMint,

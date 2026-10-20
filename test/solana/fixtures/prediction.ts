@@ -288,7 +288,6 @@ export async function fixture({
     outcomeId,
     launch: {
       config: ZERO,
-      launchId: outcomeId,
       launchAccounts: {
         baseMint: createNoopSigner(mints[i]),
         quoteMint,

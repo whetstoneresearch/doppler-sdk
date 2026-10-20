@@ -8,6 +8,7 @@
 
 export * from './claimFees';
 export * from './initializeRehype';
+export * from './initializeRehypeV2';
 export * from './replaceBeneficiary';
 export * from './settleFees';
 export * from './settleMigratedFees';

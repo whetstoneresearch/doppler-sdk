@@ -6,7 +6,7 @@ import {
   getRegisterEntryInstructionDataDecoder,
   getMigrateEntryInstructionDataDecoder,
 } from '../../../src/solana/generated/predictionMigrator/index.js';
-import { getInitializeLaunchInstructionDataDecoder } from '../../../src/solana/generated/initializer/index.js';
+import { getInitializeLaunchV2InstructionDataDecoder } from '../../../src/solana/generated/initializer/index.js';
 import {
   TOKEN_PROGRAM_ADDRESS,
   TOKEN_2022_PROGRAM_ADDRESS,
@@ -51,7 +51,6 @@ describe('prediction lifecycle planners', () => {
       outcomeId: id,
       launch: {
         config: mint,
-        launchId: id,
         launchAccounts: {
           baseMint: signer,
           quoteMint: mint,
@@ -70,7 +69,7 @@ describe('prediction lifecycle planners', () => {
         },
       },
     });
-    const data = getInitializeLaunchInstructionDataDecoder().decode(
+    const data = getInitializeLaunchV2InstructionDataDecoder().decode(
       result.instruction.data!
     );
     expect(data.feeBeneficiaries).toEqual([

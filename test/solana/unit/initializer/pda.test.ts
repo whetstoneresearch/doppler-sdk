@@ -11,6 +11,8 @@ import {
 } from '@/solana/initializer/constants.js';
 import {
   getLaunchAddress,
+  getLaunchV2Address,
+  isLaunchAddress,
   getLaunchAuthorityAddress,
   launchIdFromU64,
 } from '@/solana/initializer/pda.js';
@@ -32,7 +34,11 @@ describe('initializer PDA derivation', () => {
       ],
     });
 
-    const [launchAddress] = await getLaunchAddress(admin, launchIdBytes32, INITIALIZER_PROGRAM_ID);
+    const [launchAddress] = await getLaunchAddress(
+      admin,
+      launchIdBytes32,
+      INITIALIZER_PROGRAM_ID,
+    );
     expect(launchAddress).toBe(expectedLaunch[0]);
 
     const expectedLaunchAuthority = await getProgramDerivedAddress({
@@ -43,7 +49,28 @@ describe('initializer PDA derivation', () => {
       ],
     });
 
-    const [launchAuthority] = await getLaunchAuthorityAddress(launchAddress, INITIALIZER_PROGRAM_ID);
+    const [launchAuthority] = await getLaunchAuthorityAddress(
+      launchAddress,
+      INITIALIZER_PROGRAM_ID,
+    );
     expect(launchAuthority).toBe(expectedLaunchAuthority[0]);
   });
+});
+
+it('validates both mint-derived and legacy identities, including a legacy ID equal to mint bytes', async () => {
+  const namespace = address('11111111111111111111111111111111');
+  const baseMint = address('So11111111111111111111111111111111111111112');
+  const launchId = new Uint8Array(addressCodec.encode(baseMint));
+  const state = { namespace, baseMint, launchId };
+  const [mintLaunch] = await getLaunchV2Address(baseMint);
+  const [legacyLaunch] = await getLaunchAddress(namespace, launchId);
+  expect(await isLaunchAddress(mintLaunch, state)).toBe(true);
+  expect(await isLaunchAddress(legacyLaunch, state)).toBe(true);
+  expect(
+    await isLaunchAddress(mintLaunch, { ...state, namespace: baseMint }),
+  ).toBe(true);
+  expect(
+    await isLaunchAddress(mintLaunch, { ...state, baseMint: namespace }),
+  ).toBe(false);
+  expect(await isLaunchAddress(namespace, state)).toBe(false);
 });

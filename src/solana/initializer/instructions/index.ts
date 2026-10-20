@@ -21,6 +21,7 @@ export {
   getTokenMetadataAddress,
   type InitializeLaunchAccounts,
   type InitializeLaunchParams,
+  type InitializeLaunchLegacyParams,
 } from './initializeLaunch.js';
 
 export {

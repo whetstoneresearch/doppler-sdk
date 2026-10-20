@@ -11,7 +11,7 @@ import {
 import { DOPPLER_VESTING_PROGRAM_ADDRESS } from '../generated/dopplerVesting/index.js';
 import {
   createLaunch,
-  createLaunchId,
+  resolveCreateLaunchId,
   resolveCreateLaunchAddresses,
   type CreateLaunchAccountSigners,
   type CreateLaunchAddresses,
@@ -137,7 +137,7 @@ export async function prepareLaunch(
   ) {
     throw new Error('non-migrating launches require zero baseForLiquidity');
   }
-  const launchId = input.launchId ?? createLaunchId();
+  const launchId = resolveCreateLaunchId(input);
   const namespace = input.namespace ?? SYSTEM_PROGRAM_ADDRESS;
   const launchAddresses = await resolveCreateLaunchAddresses({
     ...input,
@@ -179,7 +179,7 @@ export async function prepareLaunch(
   const launch = await createLaunch({
     ...launchInput,
     namespace,
-    launchId,
+    launchId: input.vaultMode === 'legacy' ? launchId : undefined,
     addresses: launchAddresses,
     supply: {
       ...input.supply,

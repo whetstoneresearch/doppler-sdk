@@ -100,11 +100,9 @@ async function main() {
   const metadata = DEFAULT_TEST_METADATA;
 
   const namespace = dopplerLaunchHookV1Config;
-  const launchId = initializer.launchIdFromU64(BigInt(Date.now()));
   const launchAddresses = await initializer.deriveCreateLaunchAddresses({
     deployment,
     namespace,
-    launchId,
     baseMint,
     metadata,
   });
@@ -135,7 +133,6 @@ async function main() {
     {
       deployment,
       namespace,
-      launchId,
       addresses: launchAddresses,
       launchAccounts: {
         baseMint,

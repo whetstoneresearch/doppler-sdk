@@ -278,11 +278,7 @@ export async function fetchPredictionMarketWithLaunches(
           `Expected one prediction launch for ${entry.data.baseMint}, found ${matches.length}`,
         );
       const launch = matches[0];
-      const [expectedLaunch] = await initializer.getLaunchAddress(
-        launch.account.namespace,
-        Uint8Array.from(launch.account.launchId),
-      );
-      if (expectedLaunch !== launch.address)
+      if (!(await initializer.isLaunchAddress(launch.address, launch.account)))
         throw new Error('Invalid launch PDA');
       const [[launchAuthority], [launchFeeState], [config]] = await Promise.all(
         [
