@@ -145,6 +145,7 @@ export async function fetchLaunchesByAuthority(
   return launches;
 }
 
+/** Check a legacy namespace/ID launch. For V2, derive with getLaunchV2Address and fetchLaunch. */
 export async function launchExists(
   rpc: Rpc<GetAccountInfoApi>,
   namespace: Address,

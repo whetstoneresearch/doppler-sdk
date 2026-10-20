@@ -34,7 +34,7 @@ import {
 import { computeRemainingAccountsHash } from '../helpers.js';
 import { CPMM_MIGRATOR_PROGRAM_ID } from '../../migrators/cpmmMigrator/constants.js';
 import { getCpmmMigratorStateAddress } from '../../migrators/cpmmMigrator/pda.js';
-import { getLaunchFeeStateAddress } from '../pda.js';
+import { getLaunchFeeStateAddress, getLaunchV2Address } from '../pda.js';
 import { resolveLaunchVaults } from '../vaults.js';
 import type { InitializeLaunchArgsArgs } from '../../generated/initializer/index.js';
 import {
@@ -48,7 +48,7 @@ import {
  * - migratorProgram is omitted — it is derived from accounts.migratorProgram
  *   so callers do not need to repeat it in both the accounts object and args.
  */
-export type InitializeLaunchParams = Omit<
+export type InitializeLaunchLegacyParams = Omit<
   InitializeLaunchArgsArgs,
   | 'allowBuy'
   | 'allowSell'
@@ -68,6 +68,12 @@ export type InitializeLaunchParams = Omit<
   hookCreateRemainingAccountsLen?: number;
   hookCreateRemainingAccountsHash?: ReadonlyUint8Array;
 };
+
+/** Mint-derived V2 launches do not accept a caller-selected launch ID. */
+export type InitializeLaunchParams = Omit<
+  InitializeLaunchLegacyParams,
+  'launchId'
+>;
 
 type AddressOrSigner = AddressOrTransactionSigner;
 type ReadonlyRemainingAccount = AddressOrSigner;
@@ -154,7 +160,7 @@ export type InitializeLaunchV2Accounts = InitializeLaunchAccounts;
 /** Explicit compatibility builder for deployments without initialize_launch_v2. */
 export async function createInitializeLaunchLegacyInstruction(
   accounts: InitializeLaunchAccounts,
-  args: InitializeLaunchParams,
+  args: InitializeLaunchLegacyParams,
   programId: Address = INITIALIZER_PROGRAM_ID,
 ): Promise<Instruction> {
   if (!accounts.baseVault || !accounts.quoteVault) {
@@ -178,13 +184,25 @@ export async function createInitializeLaunchV2Instruction(
   args: InitializeLaunchParams,
   programId: Address = INITIALIZER_PROGRAM_ID,
 ): Promise<Instruction> {
+  const [expectedLaunch] = await getLaunchV2Address(
+    getAddressFromAddressOrSigner(accounts.baseMint),
+    programId,
+  );
+  if (accounts.launch !== expectedLaunch) {
+    throw new Error('V2 launch must be derived from its base mint');
+  }
   const { baseVault, quoteVault } = await resolveLaunchVaults({
     ...accounts,
     programId,
   });
   return buildInitializeLaunchInstruction(
     { ...accounts, baseVault, quoteVault },
-    args,
+    {
+      ...args,
+      launchId: getAddressEncoder().encode(
+        getAddressFromAddressOrSigner(accounts.baseMint),
+      ),
+    },
     programId,
     'deterministic',
   );
@@ -195,7 +213,7 @@ async function buildInitializeLaunchInstruction(
     baseVault: AddressOrSigner;
     quoteVault: AddressOrSigner;
   },
-  args: InitializeLaunchParams,
+  args: InitializeLaunchLegacyParams,
   programId: Address,
   vaultMode: 'legacy' | 'deterministic',
 ): Promise<Instruction> {

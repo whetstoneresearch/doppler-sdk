@@ -908,7 +908,26 @@
         },
         {
           "name": "launch",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  97,
+                  117,
+                  110,
+                  99,
+                  104
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "base_mint"
+              }
+            ]
+          }
         },
         {
           "name": "launch_authority",
@@ -1110,7 +1129,7 @@
           "name": "args",
           "type": {
             "defined": {
-              "name": "InitializeLaunchArgs"
+              "name": "InitializeLaunchV2Args"
             }
           }
         }
@@ -2762,6 +2781,171 @@
       }
     },
     {
+      "name": "InitializeLaunchV2Args",
+      "docs": [
+        "Arguments for a launch whose identity is bound to its signing base mint."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "namespace",
+            "docs": [
+              "Optional integration grouping; not part of the launch address."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "base_decimals",
+            "type": "u8"
+          },
+          {
+            "name": "base_total_supply",
+            "type": "u64"
+          },
+          {
+            "name": "base_for_distribution",
+            "type": "u64"
+          },
+          {
+            "name": "base_for_liquidity",
+            "type": "u64"
+          },
+          {
+            "name": "curve_virtual_base",
+            "type": "u64"
+          },
+          {
+            "name": "curve_virtual_quote",
+            "type": "u64"
+          },
+          {
+            "name": "swap_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "curve_kind",
+            "type": "u8"
+          },
+          {
+            "name": "curve_params",
+            "type": "bytes"
+          },
+          {
+            "name": "allow_buy",
+            "type": "u8"
+          },
+          {
+            "name": "allow_sell",
+            "type": "u8"
+          },
+          {
+            "name": "hook_flags",
+            "type": "u32"
+          },
+          {
+            "name": "hook_payload",
+            "type": "bytes"
+          },
+          {
+            "name": "hook_create_remaining_accounts_len",
+            "type": "u32"
+          },
+          {
+            "name": "migrator_init_payload",
+            "type": "bytes"
+          },
+          {
+            "name": "migrator_migrate_payload",
+            "type": "bytes"
+          },
+          {
+            "name": "hook_create_remaining_accounts_hash",
+            "docs": [
+              "Commitment hash for initialize_launch hook remaining accounts.",
+              "Computed as hash(u32_len || pubkey_0 || ... || pubkey_n)."
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "hook_remaining_accounts_hash",
+            "docs": [
+              "Commitment hash for swap/preview hook remaining accounts.",
+              "Computed as hash(u32_len || pubkey_0 || ... || pubkey_n)."
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "migrator_init_remaining_accounts_hash",
+            "docs": [
+              "Commitment hash for migrator-init remaining accounts.",
+              "Computed as hash(u32_len || pubkey_0 || ... || pubkey_n)."
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "migrator_remaining_accounts_hash",
+            "docs": [
+              "Commitment hash for migrator-migrate remaining accounts.",
+              "Computed as hash(u32_len || pubkey_0 || ... || pubkey_n)."
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "metadata_name",
+            "docs": [
+              "Token name for on-chain metadata. If empty, metadata creation is skipped."
+            ],
+            "type": "string"
+          },
+          {
+            "name": "metadata_symbol",
+            "docs": [
+              "Token symbol for on-chain metadata."
+            ],
+            "type": "string"
+          },
+          {
+            "name": "metadata_uri",
+            "docs": [
+              "Metadata JSON URI for on-chain metadata."
+            ],
+            "type": "string"
+          },
+          {
+            "name": "fee_beneficiaries",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "FeeBeneficiaryInput"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "Launch",
       "serialization": "bytemuckunsafe",
       "repr": {
@@ -2780,6 +2964,9 @@
           },
           {
             "name": "launch_id",
+            "docs": [
+              "Caller-selected ID for legacy launches; base-mint bytes for mint-derived V2 launches."
+            ],
             "type": {
               "array": [
                 "u8",

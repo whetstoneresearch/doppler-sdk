@@ -3,6 +3,7 @@ import {
   AccountRole,
   address,
   generateKeyPairSigner,
+  getAddressEncoder,
   createTransactionMessage,
   appendTransactionMessageInstructions,
   setTransactionMessageFeePayerSigner,
@@ -29,7 +30,6 @@ async function fixture(
   const input = {
     programId,
     namespace: payer.address,
-    launchId: initializer.launchIdFromU64(42n),
     launchAccounts: {
       baseMint,
       baseVault,
@@ -52,13 +52,17 @@ async function fixture(
     },
     metadata: null,
   };
-  const legacy = await createLaunch({ ...input, vaultMode: 'legacy' });
+  const legacy = await createLaunch({
+    ...input,
+    launchId: initializer.launchIdFromU64(42n),
+    vaultMode: 'legacy',
+  });
   const decoded = getInitializeLaunchInstructionDataDecoder().decode(
     legacy.instruction.data!,
   );
   const args = { ...decoded, allowBuy: true, allowSell: true };
   const accounts = {
-    ...legacy.addresses,
+    ...(await initializer.deriveCreateLaunchAddresses({ baseMint, programId })),
     baseVault: undefined,
     quoteVault: undefined,
     hookProgram: legacy.instruction.accounts![10].address,
@@ -90,6 +94,18 @@ describe('deterministic launch vaults', () => {
       initializer.getQuoteVaultAddress(accounts.launch),
     ]);
     expect(prepared.addresses).toMatchObject({ baseVault, quoteVault });
+    expect(prepared.launchId).toEqual(
+      new Uint8Array(
+        getAddressEncoder().encode(input.launchAccounts.baseMint.address),
+      ),
+    );
+    expect(prepared.addresses.launch).toBe(
+      (
+        await initializer.getLaunchV2Address(
+          input.launchAccounts.baseMint.address,
+        )
+      )[0],
+    );
     for (const candidate of [prepared.instruction, instruction]) {
       expect([...candidate.data!.slice(0, 8)]).toEqual([
         176, 21, 196, 90, 68, 112, 226, 143,
@@ -182,6 +198,28 @@ describe('deterministic launch vaults', () => {
     ).toBe(true);
   });
 
+  it('rejects caller-selected V2 IDs and launch addresses derived from another mint', async () => {
+    const { input, accounts, args } = await fixture();
+    await expect(
+      createLaunch({ ...input, launchId: new Uint8Array(32) }),
+    ).rejects.toThrow('launchId is only supported in legacy mode');
+    const obsoleteIdentity = {
+      baseMint: input.launchAccounts.baseMint,
+      launchId: new Uint8Array(32),
+    };
+    await expect(
+      // @ts-expect-error Untyped callers must also reject obsolete V2 IDs.
+      initializer.deriveCreateLaunchAddresses(obsoleteIdentity),
+    ).rejects.toThrow('V2 launch derivation does not accept launchId');
+    const otherMint = await generateKeyPairSigner();
+    await expect(
+      initializer.createInitializeLaunchV2Instruction(
+        { ...accounts, baseMint: otherMint },
+        args,
+      ),
+    ).rejects.toThrow('V2 launch must be derived from its base mint');
+  });
+
   it('rejects old keypair vault inputs unless legacy mode is explicitly requested', async () => {
     const { input, accounts, args, legacy } = await fixture();
     await expect(createLaunch(input)).rejects.toThrow(
@@ -203,6 +241,7 @@ describe('deterministic launch vaults', () => {
       await initializer.createInitializeLaunchLegacyInstruction(
         {
           ...accounts,
+          ...legacy.addresses,
           baseVault: input.launchAccounts.baseVault,
           quoteVault: input.launchAccounts.quoteVault,
         },
@@ -217,7 +256,7 @@ describe('deterministic launch vaults', () => {
       input.launchAccounts.quoteVault.address,
     );
   });
-  it('adds V2 without changing legacy arguments or signer requirements', async () => {
+  it('omits the legacy ID from V2 arguments and preserves legacy signer requirements', async () => {
     const { input, legacy, args, accounts } = await fixture();
     const v2 = await initializer.createInitializeLaunchV2Instruction(
       accounts,
@@ -233,7 +272,11 @@ describe('deterministic launch vaults', () => {
     expect([...legacy.instruction.data!.slice(0, 8)]).toEqual([
       90, 201, 220, 142, 112, 253, 100, 13,
     ]);
-    expect(v2.data!.slice(8)).toEqual(legacy.instruction.data!.slice(8));
+    expect(v2.data!.length).toBe(legacy.instruction.data!.length - 32);
+    expect(v2.data!.slice(8, 40)).toEqual(
+      legacy.instruction.data!.slice(8, 40),
+    );
+    expect(v2.data!.slice(40)).toEqual(legacy.instruction.data!.slice(72));
     expect(v2.accounts?.slice(5, 7)).toEqual([
       { address: baseVault, role: AccountRole.WRITABLE },
       { address: quoteVault, role: AccountRole.WRITABLE },
@@ -246,8 +289,8 @@ describe('deterministic launch vaults', () => {
       address: input.launchAccounts.quoteVault.address,
       role: AccountRole.WRITABLE_SIGNER,
     });
-    expect(v2.accounts?.slice(7)).toEqual(
-      legacy.instruction.accounts?.slice(7),
+    expect(v2.accounts?.slice(8)).toEqual(
+      legacy.instruction.accounts?.slice(8),
     );
   });
 
@@ -331,7 +374,7 @@ describe('deterministic launch vaults', () => {
     }
   });
 
-  it('removes two signatures from serialized launch transactions', async () => {
+  it('removes two signatures and the 32-byte ID from launch transactions', async () => {
     const { input, legacy, accounts, args } = await fixture();
     const v2 = await initializer.createInitializeLaunchV2Instruction(
       accounts,
@@ -357,7 +400,7 @@ describe('deterministic launch vaults', () => {
           message(legacy.instruction, version),
         ).size -
           initializer.measureTransactionMessageSize(message(v2, version)).size,
-      ).toBe(128);
+      ).toBe(160);
     }
     const compressedSize = (instruction: Instruction) =>
       initializer.measureTransactionMessageSize(
@@ -376,7 +419,7 @@ describe('deterministic launch vaults', () => {
           },
         ),
       ).size;
-    expect(compressedSize(legacy.instruction) - compressedSize(v2)).toBe(190);
+    expect(compressedSize(legacy.instruction) - compressedSize(v2)).toBe(222);
     const lookupAddresses = initializer.getInstructionLookupTableAddresses(v2);
     expect(lookupAddresses).toContain(v2.accounts?.[5].address);
     expect(lookupAddresses).toContain(v2.accounts?.[6].address);

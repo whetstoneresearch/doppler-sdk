@@ -142,10 +142,8 @@ describe('CPMM migrator custom deployment helpers', () => {
 
   it('appends CPMM register-launch accounts for custom migrator programs', async () => {
     const namespace = address('SysvarC1ock11111111111111111111111111111111');
-    const launchId = initializer.launchIdFromU64(1n);
-    const [launch] = await initializer.getLaunchAddress(
-      namespace,
-      launchId,
+    const [launch] = await initializer.getLaunchV2Address(
+      address('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'),
       CUSTOM_PROGRAMS.initializerProgram,
     );
     const [launchAuthority] = await initializer.getLaunchAuthorityAddress(
@@ -176,7 +174,6 @@ describe('CPMM migrator custom deployment helpers', () => {
       },
       {
         namespace,
-        launchId,
         baseDecimals: 6,
         baseTotalSupply: 1_000_000n,
         baseForDistribution: 0n,

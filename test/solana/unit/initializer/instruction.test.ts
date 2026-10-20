@@ -1,3 +1,4 @@
+import { getInitializeLaunchV2InstructionDataDecoder } from '@/solana/generated/initializer/index.js';
 import { describe, expect, it } from 'vitest';
 import { address } from '@solana/addresses';
 import { generateKeyPairSigner } from '@solana/signers';
@@ -434,21 +435,16 @@ describe('initializer instructions', () => {
       await dopplerLaunchHookV1.resolveManagedCosignerGate(rpc);
 
     const quoteMint = address('DtCGbAhmf5R6Fjuo3zJqCS9Ep5wePTmxHzK8ri8E5nhb');
-    const launchId = initializer.launchIdFromU64(6n);
     const [config] = await initializer.getConfigAddress();
     const [dopplerLaunchHookV1Config] =
       await dopplerLaunchHookV1.getDopplerLaunchHookV1ConfigAddress();
-    const [expectedLaunch] = await initializer.getLaunchAddress(
-      SYSTEM_PROGRAM_ADDRESS,
-      launchId,
-    );
+    const [expectedLaunch] = await initializer.getLaunchV2Address(baseMint.address);
 
     const launchInput = {
       deployment: {
         initializerConfig: config,
         initializerProgram: initializer.INITIALIZER_PROGRAM_ID,
       },
-      launchId,
       launchAccounts: {
         baseMint,
         quoteMint,
@@ -528,7 +524,7 @@ describe('initializer instructions', () => {
     if (!ix.data) {
       throw new Error('initialize launch instruction data missing');
     }
-    const data = getInitializeLaunchInstructionDataDecoder().decode(ix.data);
+    const data = getInitializeLaunchV2InstructionDataDecoder().decode(ix.data);
     expect(data.hookFlags).toBe(
       initializer.HF_BEFORE_SWAP | initializer.HF_FORWARD_READONLY_SIGNERS,
     );

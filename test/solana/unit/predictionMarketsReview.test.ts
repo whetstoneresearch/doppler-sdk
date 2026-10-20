@@ -19,7 +19,7 @@ import {
   INITIALIZER_PROGRAM_ID,
   PREDICTION_HOOK_PROGRAM_ID,
 } from '@/solana/initializer/index.js';
-import { getInitializeLaunchInstructionDataDecoder } from '@/solana/generated/initializer/index.js';
+import { getInitializeLaunchV2InstructionDataDecoder } from '@/solana/generated/initializer/index.js';
 import { bytesToBase64 } from '@/solana/core/accounts.js';
 
 const ZERO = address('11111111111111111111111111111111');
@@ -197,7 +197,6 @@ describe('prediction market independent regression review', () => {
       outcomeId: ids[0],
       launch: {
         config: ZERO,
-        launchId: ids[1],
         launchAccounts: {
           baseMint: createNoopSigner(BASE),
           quoteMint: QUOTE,
@@ -216,7 +215,7 @@ describe('prediction market independent regression review', () => {
         },
       },
     });
-    const data = getInitializeLaunchInstructionDataDecoder().decode(
+    const data = getInitializeLaunchV2InstructionDataDecoder().decode(
       result.instruction.data!,
     );
     const [entry] = await prediction.getPredictionEntryAddress(
