@@ -1738,3 +1738,5 @@ Contributions are welcome! Please see our [Contributing Guide](./CONTRIBUTING.md
 ## License
 
 MIT License - see [LICENSE](../../LICENSE) for details.
+
+For Initializer launches with deterministic curve vaults, see [the V2 vault guide](docs/solana-deterministic-vaults.md). Launch helpers now default to V2 and derive both vault PDAs; the target program must support `initialize_launch_v2`. The guide covers returned vault addresses and explicit legacy compatibility.

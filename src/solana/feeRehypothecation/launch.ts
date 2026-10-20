@@ -30,7 +30,7 @@ import {
 import {
   createLaunchId,
   createLaunchWithResolvedHook,
-  deriveCreateLaunchAddresses,
+  resolveCreateLaunchAddresses,
   type CreateLaunchAccountSigners,
   type CreateLaunchAddresses,
   type CreateLaunchInput,
@@ -130,14 +130,15 @@ export async function prepareLaunch(
     ));
   const launchId = input.launchId ?? createLaunchId();
   const namespace = input.namespace ?? deployment.dopplerRehypeRouterV1Program;
-  const launchAddresses = await deriveCreateLaunchAddresses({
+  const launchAddresses = await resolveCreateLaunchAddresses({
     deployment: {
       initializerProgram: deployment.initializerProgram,
       initializerConfig: deployment.initializerConfig,
     },
     namespace,
     launchId,
-    baseMint: input.launchAccounts.baseMint,
+    launchAccounts: input.launchAccounts,
+    vaultMode: input.vaultMode,
     metadata: input.metadata,
   });
   const routingAddresses = await deriveFeeRehypothecationAddresses(
@@ -150,7 +151,7 @@ export async function prepareLaunch(
         launch: launchAddresses.launch,
         launchAuthority: launchAddresses.launchAuthority,
         baseMint: input.launchAccounts.baseMint,
-        baseVault: input.launchAccounts.baseVault,
+        baseVault: launchAddresses.baseVault,
         baseTokenProgram:
           input.tokenPrograms?.baseTokenProgram ?? TOKEN_PROGRAM_ADDRESS,
         initialSupply: input.supply.baseTotalSupply,
@@ -238,6 +239,7 @@ export async function prepareLaunch(
     launchId,
     addresses: launchAddresses,
     launchAccounts: input.launchAccounts,
+    vaultMode: input.vaultMode,
     payer: input.payer,
     authority: input.authority,
     supply: {

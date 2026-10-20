@@ -84,8 +84,6 @@ async function main() {
 
   // ── Generate keypairs and derive PDAs ───────────────────────────────────
   const baseMint = await generateKeyPairSigner();
-  const baseVault = await generateKeyPairSigner();
-  const quoteVault = await generateKeyPairSigner();
   const metadata = DEFAULT_TEST_METADATA;
 
   const namespace = SYSTEM_PROGRAM_ADDRESS;
@@ -115,8 +113,6 @@ async function main() {
       launchAccounts: {
         baseMint,
         quoteMint: WSOL_MINT,
-        baseVault,
-        quoteVault,
       },
       payer,
       authority: payer,

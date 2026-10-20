@@ -38,6 +38,7 @@ async function prepareVestingLaunch({
   const quoteVault = await generateKeyPairSigner();
 
   const prepared = await vesting.prepareLaunch({
+    vaultMode: 'legacy',
     launchAccounts: {
       baseMint,
       quoteMint: address('So11111111111111111111111111111111111111112'),

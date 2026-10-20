@@ -46,11 +46,7 @@ async function main(): Promise<void> {
   });
 
   for (const [index, outcomeId] of outcomeIds.entries()) {
-    const [baseMint, baseVault, quoteVault] = await Promise.all([
-      generateKeyPairSigner(),
-      generateKeyPairSigner(),
-      generateKeyPairSigner(),
-    ]);
+    const baseMint = await generateKeyPairSigner();
     const launch = await predictionMarkets.prepareOutcomeLaunch({
       creator: payer,
       oracle: oracle.oracle,
@@ -60,8 +56,6 @@ async function main(): Promise<void> {
         launchId: outcomeId,
         launchAccounts: {
           baseMint,
-          baseVault,
-          quoteVault,
           quoteMint: WSOL_MINT,
         },
         supply: {

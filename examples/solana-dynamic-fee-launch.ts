@@ -105,8 +105,6 @@ async function main(): Promise<void> {
   const deployment = await getSolanaCpmmDeploymentFromEnv(network);
 
   const baseMint = await generateKeyPairSigner();
-  const baseVault = await generateKeyPairSigner();
-  const quoteVault = await generateKeyPairSigner();
   const namespace = SYSTEM_PROGRAM_ADDRESS;
   const launchId = initializer.launchIdFromU64(BigInt(Date.now()));
   const launchAddresses = await initializer.deriveCreateLaunchAddresses({
@@ -134,8 +132,6 @@ async function main(): Promise<void> {
     launchAccounts: {
       baseMint,
       quoteMint: WSOL_MINT,
-      baseVault,
-      quoteVault,
     },
     payer,
     authority: payer,

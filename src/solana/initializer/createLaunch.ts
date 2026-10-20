@@ -43,6 +43,7 @@ import {
 } from './constants.js';
 import {
   createInitializeLaunchInstruction,
+  createInitializeLaunchLegacyInstruction,
   getTokenMetadataAddress,
   type InitializeLaunchAccounts,
   type InitializeLaunchParams,
@@ -52,7 +53,10 @@ import {
   getLaunchAddress,
   getLaunchAuthorityAddress,
   getLaunchFeeStateAddress,
+  getBaseVaultAddress,
+  getQuoteVaultAddress,
 } from './pda.js';
+import { resolveLaunchVaults } from './vaults.js';
 import { computeRemainingAccountsHash } from './helpers.js';
 import {
   createReadonlyRemainingAccountMeta,
@@ -92,8 +96,9 @@ export type LaunchMetadata = {
 export type CreateLaunchAccountSigners = {
   baseMint: AddressOrSigner;
   quoteMint: Address;
-  baseVault: AddressOrSigner;
-  quoteVault: AddressOrSigner;
+  /** Optional canonical PDA overrides. Only legacy mode needs vault signers. */
+  baseVault?: AddressOrSigner;
+  quoteVault?: AddressOrSigner;
 };
 
 export type CreateLaunchCpmmMigrationConfig = {
@@ -137,6 +142,8 @@ export type CreateLaunchAddresses = {
   launch: Address;
   launchAuthority: Address;
   launchFeeState: Address;
+  baseVault: Address;
+  quoteVault: Address;
   metadataAccount?: Address;
 };
 
@@ -169,8 +176,10 @@ export type CreateLaunchInput = {
   config?: Address;
   namespace?: Address;
   launchId?: Uint8Array;
-  addresses?: CreateLaunchAddresses;
+  addresses?: Omit<CreateLaunchAddresses, 'baseVault' | 'quoteVault'>;
   launchAccounts: CreateLaunchAccountSigners;
+  /** Defaults to deterministic V2 vaults. Use legacy only for older deployments. */
+  vaultMode?: 'legacy' | 'deterministic';
   payer: AddressOrSigner;
   authority?: AddressOrSigner;
   supply: LaunchSupply;
@@ -495,6 +504,10 @@ export async function deriveCreateLaunchAddresses(
   );
   const [launchAuthority] = await getLaunchAuthorityAddress(launch, programId);
   const [launchFeeState] = await getLaunchFeeStateAddress(launch, programId);
+  const [[baseVault], [quoteVault]] = await Promise.all([
+    getBaseVaultAddress(launch, programId),
+    getQuoteVaultAddress(launch, programId),
+  ]);
   const metadataAccount = hasMetadata(input.metadata)
     ? (input.metadataAccount ??
       (await getTokenMetadataAddress(getSignerAddress(input.baseMint))))
@@ -505,8 +518,45 @@ export async function deriveCreateLaunchAddresses(
     launch,
     launchAuthority,
     launchFeeState,
+    baseVault,
+    quoteVault,
     metadataAccount,
   };
+}
+
+/** @internal Resolve the actual vaults before composing launch and vesting instructions. */
+export async function resolveCreateLaunchAddresses(
+  input: Pick<
+    CreateLaunchInput,
+    | 'deployment'
+    | 'programId'
+    | 'config'
+    | 'addresses'
+    | 'launchAccounts'
+    | 'metadata'
+    | 'vaultMode'
+  > & {
+    namespace: Address;
+    launchId: Uint8Array;
+  },
+): Promise<CreateLaunchAddresses> {
+  const programId = getInitializerProgramId(input);
+  const addresses =
+    input.addresses ??
+    (await deriveCreateLaunchAddresses({
+      ...input,
+      programId,
+      config: getInitializerConfig(input),
+      baseMint: input.launchAccounts.baseMint,
+    }));
+  const vaults = await resolveLaunchVaults({
+    launch: addresses.launch,
+    programId,
+    baseVault: input.launchAccounts.baseVault,
+    quoteVault: input.launchAccounts.quoteVault,
+    vaultMode: input.vaultMode,
+  });
+  return { ...addresses, ...vaults };
 }
 
 async function getMigrationInitRemainingAccountsHash({
@@ -567,17 +617,11 @@ export async function createLaunchWithResolvedHook(
     ...launchTokenPrograms.splToken(),
     ...input.tokenPrograms,
   };
-  const addresses =
-    input.addresses ??
-    (await deriveCreateLaunchAddresses({
-      deployment: input.deployment,
-      programId,
-      config: getInitializerConfig(input),
-      namespace,
-      launchId,
-      baseMint: input.launchAccounts.baseMint,
-      metadata: input.metadata,
-    }));
+  const addresses = await resolveCreateLaunchAddresses({
+    ...input,
+    namespace,
+    launchId,
+  });
   const migration = await resolveCreateLaunchMigration({
     addresses,
     input,
@@ -593,15 +637,25 @@ export async function createLaunchWithResolvedHook(
     hashRemainingAccounts(migration?.remainingAccounts) ??
     EMPTY_REMAINING_ACCOUNTS_HASH;
 
-  const instruction = await createInitializeLaunchInstruction(
+  const createInstruction =
+    input.vaultMode === 'legacy'
+      ? createInitializeLaunchLegacyInstruction
+      : createInitializeLaunchInstruction;
+  const instruction = await createInstruction(
     {
       config: addresses.config,
       launch: addresses.launch,
       launchAuthority: addresses.launchAuthority,
       baseMint: input.launchAccounts.baseMint,
       quoteMint: input.launchAccounts.quoteMint,
-      baseVault: input.launchAccounts.baseVault,
-      quoteVault: input.launchAccounts.quoteVault,
+      baseVault:
+        input.vaultMode === 'legacy'
+          ? input.launchAccounts.baseVault
+          : addresses.baseVault,
+      quoteVault:
+        input.vaultMode === 'legacy'
+          ? input.launchAccounts.quoteVault
+          : addresses.quoteVault,
       launchFeeState: addresses.launchFeeState,
       payer: input.payer,
       authority: input.authority,

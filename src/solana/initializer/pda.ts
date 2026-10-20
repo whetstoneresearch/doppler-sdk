@@ -8,6 +8,8 @@ import {
   BPF_LOADER_UPGRADEABLE_PROGRAM_ID,
   INITIALIZER_PROGRAM_ID,
   SEED_CONFIG,
+  SEED_BASE_VAULT,
+  SEED_QUOTE_VAULT,
   SEED_LAUNCH,
   SEED_LAUNCH_AUTHORITY,
   SEED_LAUNCH_FEE_STATE,
@@ -112,4 +114,26 @@ export function launchIdFromU64(launchId: bigint): Uint8Array {
   const out = new Uint8Array(32);
   out.set(encodeU64LE(launchId), 0);
   return out;
+}
+
+/** Derive a new V2 launch's base vault. Existing launches use their recorded vaults. */
+export async function getBaseVaultAddress(
+  launch: Address,
+  programId: Address = INITIALIZER_PROGRAM_ID,
+): Promise<ProgramDerivedAddress> {
+  return getProgramDerivedAddress({
+    programAddress: programId,
+    seeds: [textEncoder.encode(SEED_BASE_VAULT), addressCodec.encode(launch)],
+  });
+}
+
+/** Derive a new V2 launch's quote vault. Existing launches use their recorded vaults. */
+export async function getQuoteVaultAddress(
+  launch: Address,
+  programId: Address = INITIALIZER_PROGRAM_ID,
+): Promise<ProgramDerivedAddress> {
+  return getProgramDerivedAddress({
+    programAddress: programId,
+    seeds: [textEncoder.encode(SEED_QUOTE_VAULT), addressCodec.encode(launch)],
+  });
 }

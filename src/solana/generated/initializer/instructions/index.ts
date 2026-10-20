@@ -13,6 +13,7 @@ export * from './fundVesting';
 export * from './harvestMigratedFees';
 export * from './initializeConfig';
 export * from './initializeLaunch';
+export * from './initializeLaunchV2';
 export * from './migrateLaunch';
 export * from './migratorInit';
 export * from './previewMigration';

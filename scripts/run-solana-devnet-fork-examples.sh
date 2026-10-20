@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DEVNET_RPC_URL="${SOLANA_DEVNET_RPC_URL:-https://api.devnet.solana.com}"
-RPC_PORT="${DOPPLER_LOCAL_DEVNET_RPC_PORT:-18909}"
+RPC_PORT="${DOPPLER_LOCAL_DEVNET_RPC_PORT:-19009}"
 RPC_URL="http://127.0.0.1:${RPC_PORT}"
 WS_URL="ws://127.0.0.1:$((RPC_PORT + 1))"
 RUN_DIR="$(mktemp -d "${TMPDIR:-/tmp}/doppler-sdk-devnet-fork.XXXXXX")"
@@ -91,6 +91,9 @@ validator_args=(
   --clone-feature-set
   --mint "$PAYER_ADDRESS"
   --rpc-port "$RPC_PORT"
+  --faucet-port "$((RPC_PORT + 2))"
+  --gossip-port "$((RPC_PORT + 3))"
+  --dynamic-port-range "$((RPC_PORT + 4))-$((RPC_PORT + 40))"
   --log-messages-bytes-limit 100000000
   --clone-upgradeable-program "$CPMM_PROGRAM"
   --clone-upgradeable-program "$INITIALIZER_PROGRAM"

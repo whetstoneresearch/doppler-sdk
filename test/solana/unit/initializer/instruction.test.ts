@@ -134,7 +134,7 @@ describe('initializer instructions', () => {
       baseForLiquidity: 300_000n,
     });
 
-    const ix = await initializer.createInitializeLaunchInstruction(
+    const ix = await initializer.createInitializeLaunchLegacyInstruction(
       {
         config,
         launch,
@@ -243,7 +243,7 @@ describe('initializer instructions', () => {
     const [expectedCpmmMigratorState] =
       await cpmmMigrator.getCpmmMigratorStateAddress(launch);
 
-    const ix = await initializer.createInitializeLaunchInstruction(
+    const ix = await initializer.createInitializeLaunchLegacyInstruction(
       {
         config,
         launch,
@@ -336,6 +336,7 @@ describe('initializer instructions', () => {
       await cpmmMigrator.getCpmmMigratorStateAddress(expectedLaunch);
 
     const prepared = await createLaunch({
+      vaultMode: 'legacy',
       deployment: {
         initializerConfig: config,
         initializerProgram: initializer.INITIALIZER_PROGRAM_ID,
@@ -378,6 +379,8 @@ describe('initializer instructions', () => {
       launchAuthority: expectedLaunchAuthority,
       launchFeeState: expectedLaunchFeeState,
       metadataAccount: expectedMetadataAccount,
+      baseVault: baseVault.address,
+      quoteVault: quoteVault.address,
     });
     expect(prepared.cpmmMigration).toBeDefined();
 
@@ -424,8 +427,6 @@ describe('initializer instructions', () => {
 
   it('enables cosigning with the managed Doppler launch hook v1 config', async () => {
     const baseMint = await generateKeyPairSigner();
-    const baseVault = await generateKeyPairSigner();
-    const quoteVault = await generateKeyPairSigner();
     const admin = await generateKeyPairSigner();
     const cosigner = await generateKeyPairSigner();
     const rpc = await createManagedCosignerRpc([cosigner.address]);
@@ -451,8 +452,6 @@ describe('initializer instructions', () => {
       launchAccounts: {
         baseMint,
         quoteMint,
-        baseVault,
-        quoteVault,
       },
       payer: admin,
       authority: admin,
@@ -553,6 +552,7 @@ describe('initializer instructions', () => {
     const launchId = initializer.launchIdFromU64(7n);
 
     const prepared = await createLaunch({
+      vaultMode: 'legacy',
       namespace: admin.address,
       launchId,
       launchAccounts: {
@@ -631,6 +631,7 @@ describe('initializer instructions', () => {
       await dopplerLaunchHookV1.getDopplerLaunchHookV1ConfigAddress();
 
     const prepared = await createLaunch({
+      vaultMode: 'legacy',
       launchId,
       launchAccounts: {
         baseMint,
@@ -718,6 +719,7 @@ describe('initializer instructions', () => {
     const launchId = initializer.launchIdFromU64(5n);
 
     const prepared = await createLaunch({
+      vaultMode: 'legacy',
       namespace: admin.address,
       launchId,
       launchAccounts: {
@@ -754,6 +756,7 @@ describe('initializer instructions', () => {
       DOPPLER_SOLANA_MAINNET_PROGRAM_ADDRESSES,
     );
     const mainnetPrepared = await createLaunch({
+      vaultMode: 'legacy',
       deployment: mainnetDeployment,
       namespace: admin.address,
       launchId: initializer.launchIdFromU64(6n),
@@ -802,7 +805,7 @@ describe('initializer instructions', () => {
       await initializer.getLaunchAuthorityAddress(launch);
 
     await expect(
-      initializer.createInitializeLaunchInstruction(
+      initializer.createInitializeLaunchLegacyInstruction(
         {
           config,
           launch,

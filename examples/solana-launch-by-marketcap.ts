@@ -85,8 +85,6 @@ async function main() {
 
   // ── Generate new keypairs for base token accounts ──────────────────────────
   const baseMint = await generateKeyPairSigner();
-  const baseVault = await generateKeyPairSigner();
-  const quoteVault = await generateKeyPairSigner();
   const metadata = DEFAULT_TEST_METADATA;
 
   // ── Derive launch addresses ─────────────────────────────────────────────────
@@ -114,8 +112,6 @@ async function main() {
       launchAccounts: {
         baseMint,
         quoteMint: WSOL_MINT,
-        baseVault,
-        quoteVault,
       },
       payer,
       authority: payer,

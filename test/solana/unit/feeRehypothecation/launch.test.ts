@@ -70,6 +70,7 @@ describe('fee rehypothecation launch preparation', () => {
     const quoteVault = await generateKeyPairSigner();
     const quoteMint = address('So11111111111111111111111111111111111111112');
     const prepared = await feeRehypothecation.prepareLaunch({
+      vaultMode: 'legacy',
       launchAccounts: { baseMint, quoteMint, baseVault, quoteVault },
       payer,
       authority: payer,
@@ -144,6 +145,7 @@ describe('fee rehypothecation launch preparation', () => {
 
     await expect(
       feeRehypothecation.prepareLaunch({
+        vaultMode: 'legacy',
         launchAccounts: {
           baseMint,
           quoteMint: address('So11111111111111111111111111111111111111112'),
@@ -173,6 +175,7 @@ describe('fee rehypothecation launch preparation', () => {
   it('prepares direct in-kind buybacks without beneficiaries', async () => {
     const payer = await generateKeyPairSigner();
     const prepared = await feeRehypothecation.prepareLaunch({
+      vaultMode: 'legacy',
       launchAccounts: {
         baseMint: await generateKeyPairSigner(),
         quoteMint: address('So11111111111111111111111111111111111111112'),
@@ -224,6 +227,7 @@ describe('fee rehypothecation launch preparation', () => {
   it('composes fee rehypothecation with immutable vesting', async () => {
     const payer = await generateKeyPairSigner();
     const prepared = await feeRehypothecation.prepareLaunch({
+      vaultMode: 'legacy',
       launchAccounts: {
         baseMint: await generateKeyPairSigner(),
         quoteMint: address('So11111111111111111111111111111111111111112'),
@@ -286,6 +290,7 @@ describe('fee rehypothecation launch preparation', () => {
     const wrongCosigner = await generateKeyPairSigner();
     const gate = await resolveCosignerGate(cosigner.address);
     const prepared = await feeRehypothecation.prepareLaunch({
+      vaultMode: 'legacy',
       launchAccounts: {
         baseMint: await generateKeyPairSigner(),
         quoteMint: address('So11111111111111111111111111111111111111112'),

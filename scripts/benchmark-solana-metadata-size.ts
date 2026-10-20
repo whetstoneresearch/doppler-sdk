@@ -52,8 +52,8 @@ interface BenchmarkContext {
   migratedPoolHookConfig: boolean;
   payer: Awaited<ReturnType<typeof generateKeyPairSigner>>;
   baseMint: Awaited<ReturnType<typeof generateKeyPairSigner>>;
-  baseVault: Awaited<ReturnType<typeof generateKeyPairSigner>>;
-  quoteVault: Awaited<ReturnType<typeof generateKeyPairSigner>>;
+  baseVault: Address;
+  quoteVault: Address;
   launch: Address;
   launchAuthority: Address;
   initializerConfig: Address;
@@ -88,12 +88,12 @@ async function setupContext(
 ): Promise<BenchmarkContext> {
   const payer = await generateKeyPairSigner();
   const baseMint = await generateKeyPairSigner();
-  const baseVault = await generateKeyPairSigner();
-  const quoteVault = await generateKeyPairSigner();
 
   const namespace = payer.address;
   const launchId = initializer.launchIdFromU64(shape === 'simple' ? 1n : 2n);
   const [launch] = await initializer.getLaunchAddress(namespace, launchId);
+  const [baseVault] = await initializer.getBaseVaultAddress(launch);
+  const [quoteVault] = await initializer.getQuoteVaultAddress(launch);
   const [launchAuthority] = await initializer.getLaunchAuthorityAddress(launch);
   const [initializerConfig] = await initializer.getConfigAddress();
   const metadataAccount = await initializer.getTokenMetadataAddress(
@@ -290,8 +290,6 @@ async function buildPredictionMessage(metadata: {
 }) {
   const payer = await generateKeyPairSigner();
   const baseMint = await generateKeyPairSigner();
-  const baseVault = await generateKeyPairSigner();
-  const quoteVault = await generateKeyPairSigner();
   const oracleNonce = 1n;
   const [oracleStateAddress] = await trustedOracle.getOracleStateAddress(
     payer.address,
@@ -305,7 +303,7 @@ async function buildPredictionMessage(metadata: {
     launch: {
       config: (await initializer.getConfigAddress())[0],
       launchId: predictionMarkets.outcomeIdFromLabel('YES'),
-      launchAccounts: { baseMint, quoteMint: WSOL_MINT, baseVault, quoteVault },
+      launchAccounts: { baseMint, quoteMint: WSOL_MINT },
       payer,
       supply: {
         baseDecimals: 6,

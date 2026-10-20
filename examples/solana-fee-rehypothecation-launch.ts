@@ -75,8 +75,6 @@ async function main(): Promise<void> {
   const deployment =
     await getSolanaFeeRehypothecationDeploymentFromEnv(network);
   const baseMint = await generateKeyPairSigner();
-  const baseVault = await generateKeyPairSigner();
-  const quoteVault = await generateKeyPairSigner();
   const strategyName = getStrategyName();
 
   const prepared = await feeRehypothecation.prepareLaunch({
@@ -84,8 +82,6 @@ async function main(): Promise<void> {
     launchAccounts: {
       baseMint,
       quoteMint: WSOL_MINT,
-      baseVault,
-      quoteVault,
     },
     payer,
     authority: payer,
@@ -130,8 +126,8 @@ async function main(): Promise<void> {
     launchFeeState: prepared.launchAddresses.launchFeeState,
     baseMint: baseMint.address,
     quoteMint: WSOL_MINT,
-    baseVault: baseVault.address,
-    quoteVault: quoteVault.address,
+    baseVault: prepared.launchAddresses.baseVault,
+    quoteVault: prepared.launchAddresses.quoteVault,
     payer,
     amountIn: BUY_AMOUNT,
     minAmountOut: 1n,

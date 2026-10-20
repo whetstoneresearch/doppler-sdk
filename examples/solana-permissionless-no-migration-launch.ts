@@ -33,8 +33,6 @@ async function main(): Promise<void> {
   const namespace = SYSTEM_PROGRAM_ADDRESS;
 
   const baseMint = await generateKeyPairSigner();
-  const baseVault = await generateKeyPairSigner();
-  const quoteVault = await generateKeyPairSigner();
 
   const prepared = await createLaunch({
     deployment,
@@ -42,8 +40,6 @@ async function main(): Promise<void> {
     launchAccounts: {
       baseMint,
       quoteMint: WSOL_MINT,
-      baseVault,
-      quoteVault,
     },
     payer,
     supply: {
@@ -102,8 +98,8 @@ async function main(): Promise<void> {
     launchFeeState: prepared.addresses.launchFeeState,
     baseMint: baseMint.address,
     quoteMint: WSOL_MINT,
-    baseVault: baseVault.address,
-    quoteVault: quoteVault.address,
+    baseVault: prepared.addresses.baseVault,
+    quoteVault: prepared.addresses.quoteVault,
     payer,
     amountIn: BUY_AMOUNT,
     minAmountOut: 1n,

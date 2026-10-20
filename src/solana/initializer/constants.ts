@@ -35,6 +35,8 @@ export const SEED_CONFIG = 'config';
 export const SEED_LAUNCH = 'launch';
 export const SEED_LAUNCH_AUTHORITY = 'launch_authority';
 export const SEED_LAUNCH_FEE_STATE = 'launch_fee_state';
+export const SEED_BASE_VAULT = 'base_vault';
+export const SEED_QUOTE_VAULT = 'quote_vault';
 
 // ============================================================================
 // Remaining Accounts Hash
@@ -105,6 +107,8 @@ export const INITIALIZER_INSTRUCTION_DISCRIMINATORS = {
   initializeLaunch: new Uint8Array([
     0x5a, 0xc9, 0xdc, 0x8e, 0x70, 0xfd, 0x64, 0x0d,
   ]),
+  // SHA256("global:initialize_launch_v2")[0:8]
+  initializeLaunchV2: new Uint8Array([176, 21, 196, 90, 68, 112, 226, 143]),
   // SHA256("global:curve_swap_exact_in")[0:8]
   curveSwapExactIn: new Uint8Array([
     0xc4, 0xf7, 0xc3, 0x7e, 0xe3, 0x1b, 0xa6, 0x5d,

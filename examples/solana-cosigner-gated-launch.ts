@@ -98,8 +98,6 @@ async function main() {
   console.log('Step 1: Creating XYK token launch...');
 
   const baseMint = await generateKeyPairSigner();
-  const baseVault = await generateKeyPairSigner();
-  const quoteVault = await generateKeyPairSigner();
   const metadata = DEFAULT_TEST_METADATA;
 
   const cosignGateExpiresAt = BigInt(
@@ -144,8 +142,6 @@ async function main() {
       launchAccounts: {
         baseMint,
         quoteMint: WSOL_MINT,
-        baseVault,
-        quoteVault,
       },
       payer,
       authority: payer,
@@ -229,8 +225,8 @@ async function main() {
       {
         launch,
         launchFeeState,
-        baseVault: baseVault.address,
-        quoteVault: quoteVault.address,
+        baseVault: launchAddresses.baseVault,
+        quoteVault: launchAddresses.quoteVault,
         hookProgram: deployment.dopplerLaunchHookV1Program,
         remainingAccounts: signedHookRemainingAccounts,
       },
@@ -278,8 +274,8 @@ async function main() {
       deployment,
       launch,
       launchAuthority,
-      baseVault: baseVault.address,
-      quoteVault: quoteVault.address,
+      baseVault: launchAddresses.baseVault,
+      quoteVault: launchAddresses.quoteVault,
       launchFeeState,
       baseMint: baseMint.address,
       quoteMint: WSOL_MINT,
@@ -337,8 +333,8 @@ async function main() {
       launchAuthority,
       baseMint: baseMint.address,
       quoteMint: WSOL_MINT,
-      baseVault: baseVault.address,
-      quoteVault: quoteVault.address,
+      baseVault: launchAddresses.baseVault,
+      quoteVault: launchAddresses.quoteVault,
       launchFeeState,
       payer,
       cpmmMigration: migrationAccounts,

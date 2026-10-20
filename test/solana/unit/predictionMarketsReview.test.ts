@@ -201,8 +201,6 @@ describe('prediction market independent regression review', () => {
         launchAccounts: {
           baseMint: createNoopSigner(BASE),
           quoteMint: QUOTE,
-          baseVault: createNoopSigner(fixtureAddress(67)),
-          quoteVault: createNoopSigner(fixtureAddress(68)),
         },
         payer,
         supply: {
