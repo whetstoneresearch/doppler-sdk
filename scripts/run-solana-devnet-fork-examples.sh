@@ -98,6 +98,7 @@ validator_args=(
   --clone-upgradeable-program "$CPMM_PROGRAM"
   --clone-upgradeable-program "$INITIALIZER_PROGRAM"
   --clone-upgradeable-program "$CPMM_MIGRATOR_PROGRAM"
+  --clone-upgradeable-program "$LAUNCH_HOOK_V1_PROGRAM"
   --clone-upgradeable-program "$LAUNCH_HOOK_V2_PROGRAM"
   --clone-upgradeable-program "$REHYPE_ROUTER_PROGRAM"
   --clone-upgradeable-program "$VESTING_PROGRAM"
@@ -140,40 +141,53 @@ export SOLANA_DOPPLER_REHYPE_ROUTER_V1_PROGRAM_ID="$REHYPE_ROUTER_PROGRAM"
 export SOLANA_VESTING_PROGRAM_ID="$VESTING_PROGRAM"
 
 echo
-echo "Running examples/solana-vesting-launch.ts"
+echo "Running examples/solana-advanced-launch.ts create"
+# Use deterministic pricing and no external cosigner on this disposable ledger.
+unset COSIGNER_KEYPAIR_PATH COSIGNER_KEYPAIR
+export SOLANA_QUOTE=sol
+export SOLANA_BASE_TOKEN_PROGRAM=spl
+export SOL_PRICE_USD=150
 export SOLANA_VESTING_CLIFF_SECONDS=0
 export SOLANA_VESTING_DURATION_SECONDS=0
 export SOLANA_VESTING_STATE_OUTPUT="$VESTING_STATE"
-pnpm exec tsx examples/solana-vesting-launch.ts
+pnpm exec tsx examples/solana-advanced-launch.ts create
 
 export SOLANA_VESTING_LAUNCH="$(read_json "$VESTING_STATE" launch)"
 export SOLANA_VESTING_BASE_MINT="$(read_json "$VESTING_STATE" baseMint)"
 
 echo
-echo "Running examples/solana-vesting-claim.ts"
-pnpm exec tsx examples/solana-vesting-claim.ts
+echo "Running examples/solana-advanced-launch.ts claim"
+pnpm exec tsx examples/solana-advanced-launch.ts claim
 
 echo
-echo "Running examples/solana-create-spot-pool.ts"
+echo "Running examples/solana-spot-pool.ts"
 export SPOT_POOL_BASE_MINT="$SOLANA_VESTING_BASE_MINT"
 export SPOT_POOL_BASE_AMOUNT="${SPOT_POOL_BASE_AMOUNT:-1000000}"
 export SPOT_POOL_QUOTE_AMOUNT_LAMPORTS="${SPOT_POOL_QUOTE_AMOUNT_LAMPORTS:-10000000}"
-pnpm exec tsx examples/solana-create-spot-pool.ts
+pnpm exec tsx examples/solana-spot-pool.ts
+
+# Repeat the composed vesting + dynamic-fee path with Token-2022.
+export SOLANA_BASE_TOKEN_PROGRAM=token2022
+pnpm exec tsx examples/solana-advanced-launch.ts create
+export SOLANA_VESTING_LAUNCH="$(read_json "$VESTING_STATE" launch)"
+export SOLANA_VESTING_BASE_MINT="$(read_json "$VESTING_STATE" baseMint)"
+pnpm exec tsx examples/solana-advanced-launch.ts claim
+unset SOLANA_BASE_TOKEN_PROGRAM
 
 if [[ "$RUN_REHYPOTHECATION_EXAMPLES" == "true" ]]; then
   echo
-  echo "Running examples/solana-fee-rehypothecation-launch.ts"
+  echo "Running examples/solana-fee-routing.ts create"
   export SOLANA_FEE_REHYPOTHECATION_STRATEGY="${SOLANA_FEE_REHYPOTHECATION_STRATEGY:-numeraire}"
   export SOLANA_FEE_REHYPOTHECATION_SETTLE_AND_CLAIM=false
   export SOLANA_FEE_REHYPOTHECATION_STATE_OUTPUT="$FEE_STATE"
-  pnpm exec tsx examples/solana-fee-rehypothecation-launch.ts
+  pnpm exec tsx examples/solana-fee-routing.ts create
 
   export SOLANA_LAUNCH="$(read_json "$FEE_STATE" launch)"
   export SOLANA_BASE_MINT="$(read_json "$FEE_STATE" baseMint)"
 
   echo
-  echo "Running examples/solana-fee-rehypothecation-settle-and-claim.ts"
-  pnpm exec tsx examples/solana-fee-rehypothecation-settle-and-claim.ts
+  echo "Running examples/solana-fee-routing.ts settle"
+  pnpm exec tsx examples/solana-fee-routing.ts settle
 else
   echo
   echo "Skipping fee-rehypothecation examples until the current router ABI is deployed to devnet"

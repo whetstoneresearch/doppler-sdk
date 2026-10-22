@@ -14,7 +14,7 @@ import {
 } from '@solana-program/token';
 import { address, type Address } from '@solana/kit';
 
-import { cpmm, cpmmMigrator } from '../src/solana/index.js';
+import { cpmm, cpmmMigrator, swapExactIn } from '../src/solana/index.js';
 import {
   WSOL_MINT,
   assertSolanaExampleNetwork,
@@ -71,6 +71,8 @@ async function main(): Promise<void> {
   const baseAmount = positiveBigIntEnv('SPOT_POOL_BASE_AMOUNT');
   const quoteAmount = positiveBigIntEnv('SPOT_POOL_QUOTE_AMOUNT_LAMPORTS');
   const swapFeeBps = Number(process.env.SPOT_POOL_SWAP_FEE_BPS ?? '30');
+  if (quoteAmount < 10n)
+    throw new Error('Quote liquidity must be at least 10 lamports');
   const hook = parseHookConfig();
   const hookInput = hook ?? {};
 
@@ -154,6 +156,46 @@ async function main(): Promise<void> {
   console.log('  Reserve 0:   ', pool.reserve0.toString());
   console.log('  Reserve 1:   ', pool.reserve1.toString());
   console.log('  Hook program:', pool.hookProgram);
+
+  // Buy with 10% of the initial quote liquidity; the SDK applies 0.5% slippage.
+  // Hooked pools may require additional swap accounts supplied by their integrator.
+  if (hook) {
+    console.log(
+      'Supply your hook remainingAccounts to swapExactIn before trading this pool.',
+    );
+    return;
+  }
+  const swapAmount = quoteAmount / 10n;
+  if (swapAmount === 0n)
+    throw new Error('Quote liquidity must be at least 10 lamports');
+  const swap = await swapExactIn({
+    deployment,
+    pool: { address: accounts.pool, account: pool },
+    payer,
+    amountIn: swapAmount,
+    slippageBps: 50n,
+    tradeDirection: pool.token0Mint === WSOL_MINT ? 0 : 1,
+  });
+  console.log('Swap quote:', swap.quote);
+  console.log('Minimum received:', swap.minAmountOut.toString());
+  console.log(
+    'Swap:',
+    await sendInstructions({
+      rpc,
+      rpcSubscriptions,
+      payer,
+      instructions: [
+        ...swap.setupInstructions,
+        getTransferSolInstruction({
+          source: payer,
+          destination: swap.userIn,
+          amount: swapAmount,
+        }),
+        getSyncNativeInstruction({ account: swap.userIn }),
+        swap.swapInstruction,
+      ],
+    }),
+  );
 }
 
 main().catch((error: unknown) => {

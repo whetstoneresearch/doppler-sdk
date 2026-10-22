@@ -134,99 +134,88 @@ Minimal builder examples for `uniswapV2Split` / `uniswapV4Split` migrations and 
 
 ## Solana Examples
 
-The Solana examples use `@whetstone-research/doppler-sdk/solana`. Set `SOLANA_NETWORK=devnet` for the checked-in Doppler Solana deployment defaults, or `SOLANA_NETWORK=custom` with explicit RPC URLs and deployment program IDs.
+There are five runnable Solana workflows. They import repository source during development; applications use `@whetstone-research/doppler-sdk/solana`.
 
-- [`solana-minimal-launch.ts`](./solana-minimal-launch.ts): smallest practical WSOL XYK launch using `createLaunch` defaults.
-- [`solana-launch-by-marketcap.ts`](./solana-launch-by-marketcap.ts): WSOL XYK launch with CPMM migration configured from market cap inputs.
-- [`solana-dynamic-fee-launch.ts`](./solana-dynamic-fee-launch.ts): WSOL XYK launch using the Doppler launch hook v1 with a decaying fee schedule.
-- [`solana-adv-launch.ts`](./solana-adv-launch.ts): WSOL launch with custom allocations, recipients, fees, and migration price floor.
-- [`solana-adv-e2e-launch.ts`](./solana-adv-e2e-launch.ts): create, buy, migrate, and inspect a graduated WSOL CPMM pool.
-- [`solana-usdc-e2e-launch.ts`](./solana-usdc-e2e-launch.ts): same lifecycle with devnet USDC and fee arithmetic checks.
-- [`solana-cosigner-gated-launch.ts`](./solana-cosigner-gated-launch.ts): E2E launch with bonding-curve swaps gated through the configured Doppler launch hook v1.
-- [`solana-cosigner-gated-buy.ts`](./solana-cosigner-gated-buy.ts): cosigner-gated WSOL buy flow with env-configured fee beneficiaries.
-- [`solana-cosigner-gated-buy-token-2022.ts`](./solana-cosigner-gated-buy-token-2022.ts): same cosigner-gated WSOL flow with a Token-2022 base mint and Metaplex metadata.
-- [`solana-usdc-cosigner-gated-buy.ts`](./solana-usdc-cosigner-gated-buy.ts): cosigner-gated devnet USDC buy flow.
-- Concise prediction SDK examples: [create](./solana-prediction-create.ts), [buy](./solana-prediction-buy.ts), [resolve and settle](./solana-prediction-resolve.ts), and [claim or refund](./solana-prediction-claim.ts). Start here; see [inputs and run instructions](../docs/solana-prediction-markets.md#start-with-concise-sdk-examples).
-- [`solana-create-spot-pool.ts`](./solana-create-spot-pool.ts): create a permissionless base-token/WSOL spot pool with an immutable fee tier and an optional allowlisted swap-phase hook.
-- [`solana-fee-rehypothecation-launch.ts`](./solana-fee-rehypothecation-launch.ts): create a non-migrating launch with selectable asset-only, numeraire-only, in-kind, or balanced fee routing.
-- [`solana-fee-rehypothecation-settle-and-claim.ts`](./solana-fee-rehypothecation-settle-and-claim.ts): settle routed fees with protected conversion quotes, then claim one beneficiary's proceeds.
-- [`solana-vesting-launch.ts`](./solana-vesting-launch.ts): create and fund a non-migrating launch with an immutable token vesting allocation.
-- [`solana-vesting-claim.ts`](./solana-vesting-claim.ts): permissionlessly claim the tokens currently available to a vesting beneficiary.
-- [`solana-swap.ts`](./solana-swap.ts): quote and submit an exact-in CPMM swap.
-- [`solana-custom-hook/`](./solana-custom-hook/): minimal Anchor implementation of the Solana hook callback ABI. See the [custom hook guide](../docs/solana-custom-hooks.md) for deployment and SDK wiring.
+| Example | Level | Flow |
+| --- | --- | --- |
+| [`solana-minimal-launch.ts`](./solana-minimal-launch.ts) | Simple | Create a permanent WSOL launch with canonical PDA vaults and buy 0.01 SOL of tokens. No launch authority or migration. |
+| [`solana-spot-pool.ts`](./solana-spot-pool.ts) | Simple | Deposit an existing SPL token and SOL, create a permissionless pool, quote and buy with 0.5% slippage. |
+| [`solana-advanced-launch.ts`](./solana-advanced-launch.ts) | Advanced | Combine market-cap pricing, metadata, 20% vested supply, a decaying fee schedule, and optional managed cosigning. Select SOL/USDC and SPL Token/Token-2022 without separate scripts. Claim vesting later. |
+| [`solana-fee-routing.ts`](./solana-fee-routing.ts) | Advanced | Create a permanent launch with configurable fee routing, trade, settle, and claim. Also settle and claim an existing launch. |
+| [`solana-prediction-market.ts`](./solana-prediction-market.ts) | Advanced | Create a binary market, buy an outcome, resolve and settle, then claim winnings or refund a void outcome. Each action is explicit. |
 
-Quick run:
+### Run an example
+
+Copy `examples/.env.example` to the repository-root `.env` or export variables in your shell. Use a funded tester wallet. These examples submit transactions on the selected devnet or custom deployment. Creation starts a new launch or market each time.
 
 ```bash
-export SOLANA_KEYPAIR_PATH=~/.config/solana/id.json
+export SOLANA_KEYPAIR_PATH=~/.config/solana/doppler-tester.json
 export SOLANA_NETWORK=devnet
-export SOLANA_RPC_URL=https://api.devnet.solana.com
-export SOLANA_WS_URL=wss://api.devnet.solana.com
-pnpm tsx examples/solana-minimal-launch.ts
+pnpm exec tsx examples/solana-minimal-launch.ts
 ```
 
-For a custom deployment, also set:
+Devnet uses the SDK's deployment defaults. Custom deployments require `SOLANA_RPC_URL`, `SOLANA_WS_URL`, and the program overrides in [`.env.example`](./.env.example). Launch examples use a shared transaction/ALT helper; instruction data still needs to fit Solana's 1232-byte transaction limit. Keep metadata short. The curve demonstration buys use `minAmountOut: 1n`; applications should supply a quoted minimum appropriate to their slippage tolerance.
+
+### Spot pool
+
+Set `SPOT_POOL_BASE_MINT`, `SPOT_POOL_BASE_AMOUNT` (raw token units), and `SPOT_POOL_QUOTE_AMOUNT_LAMPORTS`. The payer must already hold the base tokens and enough SOL for liquidity, the subsequent buy (10% of quote liquidity), and rent. The default fee is 30 bps; override it with `SPOT_POOL_SWAP_FEE_BPS`.
 
 ```bash
-export SOLANA_CPMM_PROGRAM_ID=...
-export SOLANA_INITIALIZER_PROGRAM_ID=...
-export SOLANA_CPMM_MIGRATOR_PROGRAM_ID=...
-export SOLANA_DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ID=...
-export SOLANA_DOPPLER_LAUNCH_HOOK_V2_PROGRAM_ID=...
-export SOLANA_DOPPLER_REHYPE_ROUTER_V1_PROGRAM_ID=...
-export SOLANA_VESTING_PROGRAM_ID=...
+pnpm exec tsx examples/solana-spot-pool.ts
 ```
 
-Fee rehypothecation launches initialize their routing state and launch in two
-transactions. The launch helper configures the router as the Initializer fee
-beneficiary; the router's beneficiary list and routing strategy control the
-eventual payouts. Settlement conversions use a 50 bps slippage tolerance by
-default. Settlement is permissionless: any signer can submit and pay for the
-transaction, and no keeper authority is configured at launch creation.
+Optional `SPOT_POOL_HOOK_PROGRAM` and `SPOT_POOL_HOOK_FLAGS` bind an allowlisted swap-phase hook. When supplied, the example creates the pool and stops: wire the integrator's required hook accounts into `swapExactIn` before trading it. To trade an existing pool, reuse the final `swapExactIn` call with `rpc`, `mintA`, and `mintB` in place of `pool`.
 
-The high-level launch helper uses the deployment's Doppler launch hook v1 automatically. Set `dynamicFee`, a gate returned by `dopplerLaunchHookV1.resolveManagedCosignerGate`, or both in the helper params to enable those features; omit both for static fees without cosigning. The resolver fetches the hook's singleton on-chain config and selects its first active Doppler-managed signer, while `createLaunch` remains an offline instruction builder that pins the resolved signer. Launch creators cannot register or select a cosigner through this flow. Integrators that require their own cosigner must use a separate hook program approved by the protocol; passing a key to the low-level hook helpers does not authorize or register it with the Doppler-managed hook. The gated swap examples require `COSIGNER_KEYPAIR_PATH` or `COSIGNER_KEYPAIR` to match that selected signer because they execute the managed cosigned swap themselves.
-
-The launch examples use ALTs where possible. ALTs reduce account-key bytes, but they do not compress instruction data, so long `metadataName`, `metadataSymbol`, or `metadataUri` values can still exceed Solana's 1232-byte transaction limit.
-
-Run the mainnet-compatible Solana examples against a disposable local fork of
-the current mainnet deployment:
+### Advanced launch
 
 ```bash
+pnpm exec tsx examples/solana-advanced-launch.ts create
+SOLANA_QUOTE=usdc SOLANA_BASE_TOKEN_PROGRAM=token2022 pnpm exec tsx examples/solana-advanced-launch.ts create
+```
+
+Defaults are `SOLANA_QUOTE=sol` and `SOLANA_BASE_TOKEN_PROGRAM=spl`. The example buys 0.01 SOL or 1 USDC; fund the USDC ATA first when selecting USDC. For a custom deployment, set `SOLANA_USDC_MINT`. `SOL_PRICE_USD` supplies a pricing input without a CoinGecko lookup; the USDC example assumes $1. Market-cap inputs set the initial curve, not a migration trigger.
+
+The fee decays from 1,000 to 200 bps over ten minutes. The vested allocation defaults to a seven-day cliff and thirty-day duration. Override `SOLANA_VESTING_CLIFF_SECONDS` and `SOLANA_VESTING_DURATION_SECONDS` if needed. To claim later, set the printed `SOLANA_VESTING_LAUNCH` and `SOLANA_VESTING_BASE_MINT`, retain the same base token-program setting, and run:
+
+```bash
+pnpm exec tsx examples/solana-advanced-launch.ts claim
+```
+
+`SOLANA_VESTING_BENEFICIARY` defaults to the payer; anyone can pay for a beneficiary's claim. `SOLANA_VESTING_STATE_OUTPUT` optionally writes the launch and mint addresses to a JSON file for automation.
+
+Supplying `COSIGNER_KEYPAIR_PATH` or `COSIGNER_KEYPAIR` opts into managed cosigning. The example resolves the hook's first active signer, checks the supplied key matches, proves an unsigned buy is rejected, and executes the signed buy. Launch creators cannot register or select an arbitrary signer through this flow. Integrators needing their own signer use a separately approved hook program. See the [custom hook guide](../docs/solana-custom-hooks.md) and [Anchor hook reference](./solana-custom-hook/) for the callback ABI.
+
+### Fee routing
+
+```bash
+pnpm exec tsx examples/solana-fee-routing.ts create
+pnpm exec tsx examples/solana-fee-routing.ts settle
+```
+
+`create` initializes routing and the launch in separate transactions, buys 0.1 SOL, then settles and claims. Set `SOLANA_FEE_REHYPOTHECATION_STRATEGY` to `asset`, `numeraire` (default), `inKind`, or `balanced`. The router's beneficiary list controls payouts; the router itself is the Initializer's fee beneficiary. Settlement is permissionless and conversion quotes default to 50 bps slippage.
+
+`settle` operates on an existing launch: set `SOLANA_LAUNCH` and `SOLANA_BASE_MINT`; `SOLANA_FEE_BENEFICIARY` defaults to the payer. Set `SOLANA_FEE_REHYPOTHECATION_SETTLE_AND_CLAIM=false` to stop creation after the buy. `SOLANA_FEE_REHYPOTHECATION_STATE_OUTPUT` optionally records launch/mint addresses. This flow requires matching hook v2 and router deployments; the fork runner keeps it opt-in until its router ABI is available.
+
+### Prediction lifecycle
+
+```bash
+pnpm exec tsx examples/solana-prediction-market.ts create
+pnpm exec tsx examples/solana-prediction-market.ts buy
+pnpm exec tsx examples/solana-prediction-market.ts resolve
+pnpm exec tsx examples/solana-prediction-market.ts claim
+```
+
+Set each action's inputs before running it; see the [prediction guide](../docs/solana-prediction-markets.md#start-with-concise-sdk-examples). Creation does not automatically buy or resolve a market. Resolution requires the oracle authority until it is finalized; settlement is permissionless afterward. The current SDK's prediction lifecycle has its own deployment requirements and settlement path.
+
+### Local fork coverage
+
+```bash
+pnpm typecheck:solana-examples
 pnpm test:solana:fork:examples
-```
-
-The command clones the deployed programs and protocol configs, then uses
-ephemeral payer and cosigner keys. The forked hook config is rewritten to
-authorize only the ephemeral cosigner; no production key or mainnet write is
-required. Set `SOLANA_MAINNET_RPC_URL` to override the public RPC used for
-cloning. Prediction scenarios execute in their own matching-program local validator harness (`scripts/run-solana-prediction-validator.sh`), not this mainnet fork suite. Check the [prediction deployment boundary](../docs/solana-prediction-markets.md) before using devnet.
-
-Run examples whose required programs are currently deployed only on devnet
-against a disposable local devnet fork:
-
-```bash
 pnpm test:solana:fork:devnet-examples
 ```
 
-This suite executes spot-pool creation and vesting launch and claim. It uses an
-immediately vested schedule so both vesting examples execute in one CI run
-without waiting for wall-clock time. Set
-`SOLANA_RUN_DEVNET_REHYPOTHECATION_EXAMPLES=true` to also run the
-fee-rehypothecation launch and settlement/claim after the current router ABI is
-deployed to devnet. Set `SOLANA_DEVNET_RPC_URL` to override the public RPC used
-for cloning.
-
-For larger CPMM launch metadata, use a launch-specific ALT:
-
-1. Build the `initialize_launch` instruction.
-2. Collect non-signer lookup addresses with `initializer.getInstructionLookupTableAddresses(ix)`.
-3. Build and send setup instructions with `initializer.buildAddressLookupTableSetupInstructions(...)`.
-4. Wait for the ALT to be usable in a later slot.
-5. Rebuild the transaction and call `initializer.compressTransactionMessageWithLookupTable(...)`.
-
-The shared example helper performs this flow and checks transaction size before signing so metadata and account-pressure failures surface before broadcast.
-
-`SOL_PRICE_USD` can be set to bypass the CoinGecko price lookup in launch examples. `SOLANA_KEYPAIR_PATH` is preferred for local development; `SOLANA_KEYPAIR` also works with a 64-byte JSON secret key array.
+The existing fork runners use disposable wallets and local ledgers. The first runs the minimal launch and one [legacy migration scenario](../test/solana/integration/legacy-migration.ts) across SOL/USDC and SPL Token/Token-2022. The devnet fork runs advanced creation, a buy and an immediate vesting claim for both token programs, plus spot creation and swap. Its zero-duration vesting schedule avoids waiting for wall-clock time. Set `SOLANA_RUN_DEVNET_REHYPOTHECATION_EXAMPLES=true` to include fee routing once the required router ABI is deployed. Prediction retains its separate [integration scenarios](../docs/solana-prediction-markets.md#run-the-integration-scenarios).
 
 ## Prerequisites
 
