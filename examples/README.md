@@ -136,13 +136,13 @@ Minimal builder examples for `uniswapV2Split` / `uniswapV4Split` migrations and 
 
 There are five runnable Solana workflows. They import repository source during development; applications use `@whetstone-research/doppler-sdk/solana`.
 
-| Example | Level | Flow |
-| --- | --- | --- |
-| [`solana-minimal-launch.ts`](./solana-minimal-launch.ts) | Simple | Create a permanent WSOL launch with canonical PDA vaults and buy 0.01 SOL of tokens. No launch authority or migration. |
-| [`solana-spot-pool.ts`](./solana-spot-pool.ts) | Simple | Deposit an existing SPL token and SOL, create a permissionless pool, quote and buy with 0.5% slippage. |
-| [`solana-advanced-launch.ts`](./solana-advanced-launch.ts) | Advanced | Combine market-cap pricing, metadata, 20% vested supply, a decaying fee schedule, and optional managed cosigning. Select SOL/USDC and SPL Token/Token-2022 without separate scripts. Claim vesting later. |
-| [`solana-fee-routing.ts`](./solana-fee-routing.ts) | Advanced | Create a permanent launch with configurable fee routing, trade, settle, and claim. Also settle and claim an existing launch. |
-| [`solana-prediction-market.ts`](./solana-prediction-market.ts) | Advanced | Create a binary market, buy an outcome, resolve and settle, then claim winnings or refund a void outcome. Each action is explicit. |
+| Example                                                        | Level    | Flow                                                                                                                                                                                                      |
+| -------------------------------------------------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`solana-minimal-launch.ts`](./solana-minimal-launch.ts)       | Simple   | Create a permanent WSOL launch with canonical PDA vaults and buy 0.01 SOL of tokens. No launch authority or migration.                                                                                    |
+| [`solana-spot-pool.ts`](./solana-spot-pool.ts)                 | Simple   | Deposit an existing SPL token and SOL, create a permissionless pool, quote and buy with 0.5% slippage.                                                                                                    |
+| [`solana-advanced-launch.ts`](./solana-advanced-launch.ts)     | Advanced | Combine market-cap pricing, metadata, 20% vested supply, a decaying fee schedule, and optional managed cosigning. Select SOL/USDC and SPL Token/Token-2022 without separate scripts. Claim vesting later. |
+| [`solana-fee-routing.ts`](./solana-fee-routing.ts)             | Advanced | Create a permanent launch with configurable fee routing, trade, settle, and claim. Also settle and claim an existing launch.                                                                              |
+| [`solana-prediction-market.ts`](./solana-prediction-market.ts) | Advanced | Create a binary market, buy an outcome, resolve and settle, then claim winnings or refund a void outcome. Each action is explicit.                                                                        |
 
 ### Run an example
 

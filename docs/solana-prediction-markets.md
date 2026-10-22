@@ -68,8 +68,8 @@ release. No protocol checkout or build is needed in this mode, and no transactio
 is submitted to public devnet.
 
 ```bash
-PATH="$HOME/.local/share/solana/install/releases/4.3.0-rc.0/solana-release/bin:$PATH" \
-DOPPLER_PREDICTION_FORK_VALIDATOR="$HOME/.local/share/solana/install/releases/4.3.0-rc.0/solana-release/bin/solana-test-validator" \
+PATH="$HOME/.local/share/solana/install/releases/4.4.0-beta.1/solana-release/bin:$PATH" \
+DOPPLER_PREDICTION_FORK_VALIDATOR="$HOME/.local/share/solana/install/releases/4.4.0-beta.1/solana-release/bin/solana-test-validator" \
 bash scripts/run-solana-prediction-devnet-fork.sh
 ```
 
@@ -93,7 +93,7 @@ and the explicit Solana 4.1.0 / SBPF v3 compiler:
 ```bash
 PATH="$HOME/.local/share/solana/install/releases/4.1.0/solana-release/bin:$PATH" \
 DOPPLER_PREDICTION_FORK_MODE=candidate \
-DOPPLER_PREDICTION_FORK_VALIDATOR="$HOME/.local/share/solana/install/releases/4.3.0-rc.0/solana-release/bin/solana-test-validator" \
+DOPPLER_PREDICTION_FORK_VALIDATOR="$HOME/.local/share/solana/install/releases/4.4.0-beta.1/solana-release/bin/solana-test-validator" \
 DOPPLER_SOL_SOURCE_DIR=/path/to/clean/doppler-sol \
 bash scripts/run-solana-prediction-devnet-fork.sh
 ```
