@@ -104,14 +104,45 @@ async function main() {
   const metadata = DEFAULT_TEST_METADATA;
 
   const namespace = dopplerLaunchHookV1Config;
-  const launchId = initializer.launchIdFromU64(BigInt(Date.now()));
-  const launchAddresses = await initializer.deriveCreateLaunchAddresses({
+  const {
+    instruction: initializeLaunchIx,
+    cpmmMigration,
+    addresses: launchAddresses,
+  } = await createLaunch({
     deployment,
     namespace,
-    launchId,
-    baseMint,
+    launchAccounts: {
+      baseMint,
+      quoteMint,
+    },
+    payer,
+    authority: payer,
+    supply: {
+      baseDecimals: BASE_DECIMALS,
+      baseTotalSupply: BASE_TOTAL_SUPPLY,
+      baseForDistribution: BASE_FOR_DISTRIBUTION,
+      baseForLiquidity: BASE_FOR_LIQUIDITY,
+    },
+    curve: {
+      curveVirtualBase: start.curveVirtualBase,
+      curveVirtualQuote: start.curveVirtualQuote,
+      swapFeeBps: SWAP_FEE_BPS,
+    },
+    tokenPrograms: {
+      baseTokenProgram,
+      quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
+    },
+    cosignerGate: managedCosignerGate,
+    migration: {
+      recipients: launchBeneficiaries.recipients,
+      minRaiseQuote,
+    },
     metadata,
+    feeBeneficiaries: launchBeneficiaries.feeBeneficiaries,
   });
+  if (!cpmmMigration) {
+    throw new Error('CPMM migration accounts were not prepared');
+  }
   const { launch, launchAuthority, launchFeeState } = launchAddresses;
 
   console.log('Creating legacy cosigner-gated launch...');
@@ -135,45 +166,6 @@ async function main() {
     );
   }
 
-  const { instruction: initializeLaunchIx, cpmmMigration } = await createLaunch(
-    {
-      deployment,
-      namespace,
-      launchId,
-      addresses: launchAddresses,
-      launchAccounts: {
-        baseMint,
-        quoteMint,
-      },
-      payer,
-      authority: payer,
-      supply: {
-        baseDecimals: BASE_DECIMALS,
-        baseTotalSupply: BASE_TOTAL_SUPPLY,
-        baseForDistribution: BASE_FOR_DISTRIBUTION,
-        baseForLiquidity: BASE_FOR_LIQUIDITY,
-      },
-      curve: {
-        curveVirtualBase: start.curveVirtualBase,
-        curveVirtualQuote: start.curveVirtualQuote,
-        swapFeeBps: SWAP_FEE_BPS,
-      },
-      tokenPrograms: {
-        baseTokenProgram,
-        quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
-      },
-      cosignerGate: managedCosignerGate,
-      migration: {
-        recipients: launchBeneficiaries.recipients,
-        minRaiseQuote,
-      },
-      metadata,
-      feeBeneficiaries: launchBeneficiaries.feeBeneficiaries,
-    },
-  );
-  if (!cpmmMigration) {
-    throw new Error('CPMM migration accounts were not prepared');
-  }
   const { signedHookRemainingAccounts, unsignedHookRemainingAccounts } =
     dopplerLaunchHookV1.getDopplerLaunchHookV1RemainingAccounts({
       namespace,

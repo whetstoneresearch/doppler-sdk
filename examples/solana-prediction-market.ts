@@ -60,7 +60,6 @@ async function create({ payer, clients }: Context): Promise<void> {
       outcomeId,
       launch: {
         payer,
-        launchId: outcomeId,
         launchAccounts: {
           baseMint,
           quoteMint: WSOL_MINT,

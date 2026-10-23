@@ -10,6 +10,7 @@ RUN_DIR="$(mktemp -d "${TMPDIR:-/tmp}/doppler-sdk-devnet-fork.XXXXXX")"
 LEDGER_DIR="$RUN_DIR/ledger"
 VALIDATOR_LOG="$RUN_DIR/validator.log"
 PAYER_KEYPAIR="$RUN_DIR/payer.json"
+PAYER_USDC_FIXTURE="$RUN_DIR/payer-usdc.json"
 FORK_MANIFEST="$RUN_DIR/fork-manifest.json"
 FEE_STATE="$RUN_DIR/fee-state.json"
 VESTING_STATE="$RUN_DIR/vesting-state.json"
@@ -58,6 +59,8 @@ PAYER_ADDRESS="$(solana-keygen pubkey "$PAYER_KEYPAIR")"
 
 cd "$ROOT_DIR"
 pnpm exec tsx scripts/prepare-solana-devnet-fork.ts \
+  --payer "$PAYER_ADDRESS" \
+  --payer-usdc-output "$PAYER_USDC_FIXTURE" \
   --manifest-output "$FORK_MANIFEST"
 
 read_json() {
@@ -82,6 +85,8 @@ TOKEN_METADATA_PROGRAM="$(read_json "$FORK_MANIFEST" programs.tokenMetadataProgr
 CPMM_CONFIG="$(read_json "$FORK_MANIFEST" accounts.cpmmConfig)"
 INITIALIZER_CONFIG="$(read_json "$FORK_MANIFEST" accounts.initializerConfig)"
 HOOK_CONFIG="$(read_json "$FORK_MANIFEST" accounts.dopplerLaunchHookV2Config)"
+DEVNET_USDC_MINT="$(read_json "$FORK_MANIFEST" accounts.devnetUsdcMint)"
+PAYER_USDC_ACCOUNT="$(read_json "$FORK_MANIFEST" accounts.payerUsdcAccount)"
 
 validator_args=(
   --ledger "$LEDGER_DIR"
@@ -106,6 +111,8 @@ validator_args=(
   --clone "$CPMM_CONFIG"
   --clone "$INITIALIZER_CONFIG"
   --clone "$HOOK_CONFIG"
+  --clone "$DEVNET_USDC_MINT"
+  --account "$PAYER_USDC_ACCOUNT" "$PAYER_USDC_FIXTURE"
 )
 
 echo "Starting disposable devnet fork at $RPC_URL"
@@ -139,40 +146,36 @@ export SOLANA_DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ID="$LAUNCH_HOOK_V1_PROGRAM"
 export SOLANA_DOPPLER_LAUNCH_HOOK_V2_PROGRAM_ID="$LAUNCH_HOOK_V2_PROGRAM"
 export SOLANA_DOPPLER_REHYPE_ROUTER_V1_PROGRAM_ID="$REHYPE_ROUTER_PROGRAM"
 export SOLANA_VESTING_PROGRAM_ID="$VESTING_PROGRAM"
+export SOLANA_USDC_MINT="$DEVNET_USDC_MINT"
 
-echo
-echo "Running examples/solana-advanced-launch.ts create"
 # Use deterministic pricing and no external cosigner on this disposable ledger.
 unset COSIGNER_KEYPAIR_PATH COSIGNER_KEYPAIR
-export SOLANA_QUOTE=sol
-export SOLANA_BASE_TOKEN_PROGRAM=spl
 export SOL_PRICE_USD=150
 export SOLANA_VESTING_CLIFF_SECONDS=0
 export SOLANA_VESTING_DURATION_SECONDS=0
 export SOLANA_VESTING_STATE_OUTPUT="$VESTING_STATE"
-pnpm exec tsx examples/solana-advanced-launch.ts create
+for quote in sol usdc; do
+  for token_program in spl token2022; do
+    export SOLANA_QUOTE="$quote"
+    export SOLANA_BASE_TOKEN_PROGRAM="$token_program"
+    echo
+    echo "Running advanced launch create/buy/claim: quote=$quote base=$token_program"
+    pnpm exec tsx examples/solana-advanced-launch.ts create
+    export SOLANA_VESTING_LAUNCH="$(read_json "$VESTING_STATE" launch)"
+    export SOLANA_VESTING_BASE_MINT="$(read_json "$VESTING_STATE" baseMint)"
+    pnpm exec tsx examples/solana-advanced-launch.ts claim
 
-export SOLANA_VESTING_LAUNCH="$(read_json "$VESTING_STATE" launch)"
-export SOLANA_VESTING_BASE_MINT="$(read_json "$VESTING_STATE" baseMint)"
-
-echo
-echo "Running examples/solana-advanced-launch.ts claim"
-pnpm exec tsx examples/solana-advanced-launch.ts claim
-
-echo
-echo "Running examples/solana-spot-pool.ts"
-export SPOT_POOL_BASE_MINT="$SOLANA_VESTING_BASE_MINT"
-export SPOT_POOL_BASE_AMOUNT="${SPOT_POOL_BASE_AMOUNT:-1000000}"
-export SPOT_POOL_QUOTE_AMOUNT_LAMPORTS="${SPOT_POOL_QUOTE_AMOUNT_LAMPORTS:-10000000}"
-pnpm exec tsx examples/solana-spot-pool.ts
-
-# Repeat the composed vesting + dynamic-fee path with Token-2022.
-export SOLANA_BASE_TOKEN_PROGRAM=token2022
-pnpm exec tsx examples/solana-advanced-launch.ts create
-export SOLANA_VESTING_LAUNCH="$(read_json "$VESTING_STATE" launch)"
-export SOLANA_VESTING_BASE_MINT="$(read_json "$VESTING_STATE" baseMint)"
-pnpm exec tsx examples/solana-advanced-launch.ts claim
-unset SOLANA_BASE_TOKEN_PROGRAM
+    if [[ "$quote" == sol && "$token_program" == spl ]]; then
+      echo
+      echo "Running examples/solana-spot-pool.ts"
+      export SPOT_POOL_BASE_MINT="$SOLANA_VESTING_BASE_MINT"
+      export SPOT_POOL_BASE_AMOUNT="${SPOT_POOL_BASE_AMOUNT:-1000000}"
+      export SPOT_POOL_QUOTE_AMOUNT_LAMPORTS="${SPOT_POOL_QUOTE_AMOUNT_LAMPORTS:-10000000}"
+      pnpm exec tsx examples/solana-spot-pool.ts
+    fi
+  done
+done
+unset SOLANA_QUOTE SOLANA_BASE_TOKEN_PROGRAM
 
 if [[ "$RUN_REHYPOTHECATION_EXAMPLES" == "true" ]]; then
   echo
