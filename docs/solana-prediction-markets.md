@@ -6,29 +6,29 @@ The `predictionMarkets` namespace prepares the complete lifecycle: create an ora
 
 ## Start with concise SDK examples
 
-These standalone examples use the public `predictionMarkets` helpers for each
-step, following the same connection/signing pattern as `solana-minimal-launch.ts`.
-They import the repository source for development; installed applications import
+The [prediction lifecycle example](../examples/solana-prediction-market.ts) uses
+the public `predictionMarkets` helpers in four separately invoked actions.
+It imports repository source for development; installed applications import
 `predictionMarkets` from `@whetstone-research/doppler-sdk/solana`.
 
-| Example | SDK helpers | Required action inputs |
+| Action | SDK helpers | Required action inputs |
 | --- | --- | --- |
-| [Create](../examples/solana-prediction-create.ts) | `prepareOracle`, `prepareMarket`, `prepareOutcomeLaunch` | None; prints market and YES/NO mint addresses |
-| [Buy](../examples/solana-prediction-buy.ts) | `fetchPredictionBuyQuote`, `prepareBuy` | `SOLANA_PREDICTION_MARKET`, `SOLANA_PREDICTION_BASE_MINT`, `SOLANA_PREDICTION_AMOUNT_IN` |
-| [Resolve and settle](../examples/solana-prediction-resolve.ts) | `prepareFinalize`, `prepareRemainingSettlements` | `SOLANA_PREDICTION_MARKET`, `SOLANA_PREDICTION_WINNER_INDEX` (0 = YES, 1 = NO) |
-| [Claim or refund](../examples/solana-prediction-claim.ts) | `fetchPredictionMarket`, `prepareClaim`, `prepareRefund` | `SOLANA_PREDICTION_MARKET`, `SOLANA_PREDICTION_BURN_AMOUNT`; void refunds also need `SOLANA_PREDICTION_BASE_MINT` |
+| `create` | `prepareOracle`, `prepareMarket`, `prepareOutcomeLaunch` | None; prints market and YES/NO mint addresses |
+| `buy` | `fetchPredictionBuyQuote`, `prepareBuy` | `SOLANA_PREDICTION_MARKET`, `SOLANA_PREDICTION_BASE_MINT`, `SOLANA_PREDICTION_AMOUNT_IN` |
+| `resolve` | `prepareFinalize`, `prepareRemainingSettlements` | `SOLANA_PREDICTION_MARKET`, `SOLANA_PREDICTION_WINNER_INDEX` (0 = YES, 1 = NO) |
+| `claim` | `fetchPredictionMarket`, `prepareClaim`, `prepareRefund` | `SOLANA_PREDICTION_MARKET`, `SOLANA_PREDICTION_BURN_AMOUNT`; void refunds also need `SOLANA_PREDICTION_BASE_MINT` |
 
 Set `SOLANA_NETWORK=devnet` (or `custom` with `SOLANA_RPC_URL` and
 `SOLANA_WS_URL`) and `SOLANA_KEYPAIR_PATH` to a funded tester signer. Use the
 matching prediction deployments and allowlists described below. The creator must
-differ from the protocol fee beneficiary. Run a file with:
+differ from the protocol fee beneficiary. Run an action with:
 
 ```bash
-pnpm exec tsx examples/solana-prediction-create.ts
+pnpm exec tsx examples/solana-prediction-market.ts create
 ```
 
 Then use its printed addresses to run buy, resolve, and claim in order with the
-inputs above. Each file submits transactions. Creation starts a new market on
+inputs above. Each action submits transactions. Creation starts a new market on
 each run; use the resumable scenario runner below when you need persisted recovery.
 Buy amounts are raw quote units (10,000,000 = 0.01 SOL for these WSOL markets);
 burn amounts are raw outcome units (1,000,000 = one token at six decimals).
@@ -40,7 +40,7 @@ settled entry. Buy a winning outcome before resolution for the normal payout
 flow; resolving an outcome with no circulating supply produces a void market.
 
 The larger runner below provides scenario assertions, manifests, and replay
-verification; these focused examples show the SDK calls needed by an integrator.
+verification; the example shows the SDK calls needed by an integrator.
 
 ## Run the integration scenarios
 
@@ -68,8 +68,8 @@ release. No protocol checkout or build is needed in this mode, and no transactio
 is submitted to public devnet.
 
 ```bash
-PATH="$HOME/.local/share/solana/install/releases/4.3.0-rc.0/solana-release/bin:$PATH" \
-DOPPLER_PREDICTION_FORK_VALIDATOR="$HOME/.local/share/solana/install/releases/4.3.0-rc.0/solana-release/bin/solana-test-validator" \
+PATH="$HOME/.local/share/solana/install/releases/4.4.0-beta.1/solana-release/bin:$PATH" \
+DOPPLER_PREDICTION_FORK_VALIDATOR="$HOME/.local/share/solana/install/releases/4.4.0-beta.1/solana-release/bin/solana-test-validator" \
 bash scripts/run-solana-prediction-devnet-fork.sh
 ```
 
@@ -93,7 +93,7 @@ and the explicit Solana 4.1.0 / SBPF v3 compiler:
 ```bash
 PATH="$HOME/.local/share/solana/install/releases/4.1.0/solana-release/bin:$PATH" \
 DOPPLER_PREDICTION_FORK_MODE=candidate \
-DOPPLER_PREDICTION_FORK_VALIDATOR="$HOME/.local/share/solana/install/releases/4.3.0-rc.0/solana-release/bin/solana-test-validator" \
+DOPPLER_PREDICTION_FORK_VALIDATOR="$HOME/.local/share/solana/install/releases/4.4.0-beta.1/solana-release/bin/solana-test-validator" \
 DOPPLER_SOL_SOURCE_DIR=/path/to/clean/doppler-sol \
 bash scripts/run-solana-prediction-devnet-fork.sh
 ```

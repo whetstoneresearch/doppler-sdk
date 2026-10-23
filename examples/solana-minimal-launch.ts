@@ -1,16 +1,14 @@
-/**
- * Example: Minimal XYK Token Launch (Solana)
- *
- * Demonstrates the smallest practical createLaunch flow: fixed curve numbers,
- * default Doppler launch hook v1, default CPMM migrator, derived launch addresses, and no
- * token metadata.
- */
+/** Creates and trades a launch with neither an authority nor a migrator. */
 import './env.js';
 
 import { SYSTEM_PROGRAM_ADDRESS } from '@solana-program/system';
 import { generateKeyPairSigner } from '@solana/kit';
 
-import { createLaunch, initializer } from '../src/solana/index.js';
+import {
+  createLaunch,
+  curveSwapExactIn,
+  initializer,
+} from '../src/solana/index.js';
 import {
   DEFAULT_SWAP_FEE_BPS,
   WSOL_MINT,
@@ -19,11 +17,13 @@ import {
   getSolanaCpmmDeploymentFromEnv,
   loadKeypairSignerFromEnv,
   sendInitializeLaunchWithLookupTable,
+  sendInstructions,
 } from './solanaExampleHelpers.js';
 
 const BASE_DECIMALS = 6;
 const BASE_TOTAL_SUPPLY = 1_000_000_000n * 10n ** BigInt(BASE_DECIMALS);
 const LAMPORTS_PER_SOL = 1_000_000_000n;
+const BUY_AMOUNT = LAMPORTS_PER_SOL / 100n;
 
 async function main(): Promise<void> {
   const payer = await loadKeypairSignerFromEnv();
@@ -34,7 +34,7 @@ async function main(): Promise<void> {
 
   const baseMint = await generateKeyPairSigner();
 
-  const { instruction, addresses, cpmmMigration } = await createLaunch({
+  const prepared = await createLaunch({
     deployment,
     namespace,
     launchAccounts: {
@@ -53,60 +53,75 @@ async function main(): Promise<void> {
       curveVirtualQuote: 10n * LAMPORTS_PER_SOL,
       swapFeeBps: DEFAULT_SWAP_FEE_BPS,
     },
-    migration: {
-      minRaiseQuote: LAMPORTS_PER_SOL,
-    },
+    migration: false,
+    metadata: null,
     feeBeneficiaries: [{ wallet: payer.address, shareBps: 10_000 }],
   });
 
-  if (!cpmmMigration) {
-    throw new Error('CPMM migration accounts were not prepared');
+  if (prepared.cpmmMigration) {
+    throw new Error('Permissionless launch unexpectedly configured migration');
   }
 
-  console.log('Creating minimal XYK token launch...');
-  console.log('  Launch:              ', addresses.launch);
-  console.log('  Base mint:           ', baseMint.address);
-  console.log('  Launch authority:    ', addresses.launchAuthority);
-  console.log('  CPMM migrator state: ', cpmmMigration.cpmmMigrationState);
-
-  const signature = await sendInitializeLaunchWithLookupTable({
+  const launchSignature = await sendInitializeLaunchWithLookupTable({
     rpc,
     rpcSubscriptions,
     payer,
-    instruction,
+    instruction: prepared.instruction,
   });
 
-  console.log('');
-  console.log('Token launch created successfully!');
-  console.log('  Transaction:', signature);
-
-  const launchAccount = await initializer.fetchLaunch(rpc, addresses.launch, {
-    commitment: 'confirmed',
-    programId: deployment.initializerProgram,
-  });
-
+  const launchAccount = await initializer.fetchLaunch(
+    rpc,
+    prepared.addresses.launch,
+    {
+      commitment: 'confirmed',
+      programId: deployment.initializerProgram,
+    },
+  );
   if (!launchAccount) {
     throw new Error('Launch account was not found after initialization');
   }
+  if (launchAccount.authority !== SYSTEM_PROGRAM_ADDRESS) {
+    throw new Error(
+      `Launch stored unexpected authority ${launchAccount.authority}`,
+    );
+  }
+  if (launchAccount.migratorProgram !== SYSTEM_PROGRAM_ADDRESS) {
+    throw new Error(
+      `Launch stored unexpected migrator ${launchAccount.migratorProgram}`,
+    );
+  }
 
-  console.log('');
-  console.log('Launch account verified:');
-  console.log(
-    '  Phase:              ',
-    initializer.phaseLabel(launchAccount.phase),
-  );
-  console.log('  Created at:          ', launchAccount.createdAt.toString());
-  console.log(
-    '  Curve virtual base: ',
-    launchAccount.curveVirtualBase.toString(),
-  );
-  console.log(
-    '  Curve virtual quote:',
-    launchAccount.curveVirtualQuote.toString(),
-  );
+  const buy = await curveSwapExactIn({
+    deployment,
+    launch: prepared.addresses.launch,
+    launchAuthority: prepared.addresses.launchAuthority,
+    launchFeeState: prepared.addresses.launchFeeState,
+    baseMint: baseMint.address,
+    quoteMint: WSOL_MINT,
+    baseVault: prepared.addresses.baseVault,
+    quoteVault: prepared.addresses.quoteVault,
+    payer,
+    amountIn: BUY_AMOUNT,
+    minAmountOut: 1n,
+    tradeDirection: initializer.TRADE_DIRECTION_BUY,
+    remainingAccounts: [namespace],
+  });
+  const buySignature = await sendInstructions({
+    rpc,
+    rpcSubscriptions,
+    payer,
+    instructions: buy.instructions,
+  });
+
+  console.log('Permissionless no-migration launch verified:');
+  console.log('  Launch:    ', prepared.addresses.launch);
+  console.log('  Authority: ', launchAccount.authority);
+  console.log('  Migrator:  ', launchAccount.migratorProgram);
+  console.log('  Launch tx: ', launchSignature);
+  console.log('  Buy tx:    ', buySignature);
 }
 
 main().catch((error: unknown) => {
-  console.error('Error creating minimal launch:', error);
+  console.error('Permissionless no-migration launch failed:', error);
   process.exit(1);
 });

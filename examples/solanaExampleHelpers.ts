@@ -57,7 +57,6 @@ export const DEFAULT_TEST_METADATA = {
   metadataUri: 'https://example.com/metadata/test-token.json',
 } as const;
 export const DEFAULT_SWAP_FEE_BPS = 200;
-export const DEFAULT_CPMM_FEE_SPLIT_BPS = 10_000;
 
 export function createSolanaClientsFromEnv() {
   const network = parseSolanaNetwork(
@@ -533,16 +532,6 @@ export function loadLaunchBeneficiaries({
   }
 
   return { recipients, feeBeneficiaries };
-}
-
-export function assertBigintEqual(
-  label: string,
-  actual: bigint,
-  expected: bigint,
-): void {
-  if (actual !== expected) {
-    throw new Error(label + ': expected ' + expected + ', got ' + actual);
-  }
 }
 
 export async function loadCosigner(): Promise<TransactionSigner> {

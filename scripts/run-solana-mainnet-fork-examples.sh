@@ -11,7 +11,6 @@ LEDGER_DIR="$RUN_DIR/ledger"
 VALIDATOR_LOG="$RUN_DIR/validator.log"
 PAYER_KEYPAIR="$RUN_DIR/payer.json"
 COSIGNER_KEYPAIR="$RUN_DIR/cosigner.json"
-SWAP_BASE_MINT_KEYPAIR="$RUN_DIR/swap-base-mint.json"
 HOOK_CONFIG_FIXTURE="$RUN_DIR/hook-config.json"
 PAYER_USDC_FIXTURE="$RUN_DIR/payer-usdc.json"
 FORK_MANIFEST="$RUN_DIR/fork-manifest.json"
@@ -54,14 +53,9 @@ solana-keygen new \
   --no-bip39-passphrase \
   --silent \
   --outfile "$COSIGNER_KEYPAIR"
-solana-keygen new \
-  --no-bip39-passphrase \
-  --silent \
-  --outfile "$SWAP_BASE_MINT_KEYPAIR"
 
 PAYER_ADDRESS="$(solana-keygen pubkey "$PAYER_KEYPAIR")"
 COSIGNER_ADDRESS="$(solana-keygen pubkey "$COSIGNER_KEYPAIR")"
-SWAP_BASE_MINT_ADDRESS="$(solana-keygen pubkey "$SWAP_BASE_MINT_KEYPAIR")"
 
 cd "$ROOT_DIR"
 pnpm exec tsx scripts/prepare-solana-mainnet-fork.ts \
@@ -145,7 +139,6 @@ export SOLANA_RPC_URL="$RPC_URL"
 export SOLANA_WS_URL="$WS_URL"
 export SOLANA_KEYPAIR_PATH="$PAYER_KEYPAIR"
 export COSIGNER_KEYPAIR_PATH="$COSIGNER_KEYPAIR"
-export SOLANA_BASE_MINT_KEYPAIR_PATH="$SWAP_BASE_MINT_KEYPAIR"
 export SOLANA_CPMM_PROGRAM_ID="$CPMM_PROGRAM"
 export SOLANA_INITIALIZER_PROGRAM_ID="$INITIALIZER_PROGRAM"
 export SOLANA_CPMM_MIGRATOR_PROGRAM_ID="$CPMM_MIGRATOR_PROGRAM"
@@ -160,41 +153,14 @@ export SOLANA_FEE_BENEFICIARY_1_SHARE_BPS="${SOLANA_FEE_BENEFICIARY_1_SHARE_BPS:
 export SOLANA_FEE_BENEFICIARY_2_WALLET="${SOLANA_FEE_BENEFICIARY_2_WALLET:-$COSIGNER_ADDRESS}"
 export SOLANA_FEE_BENEFICIARY_2_BASE_AMOUNT="${SOLANA_FEE_BENEFICIARY_2_BASE_AMOUNT:-60000000}"
 export SOLANA_FEE_BENEFICIARY_2_SHARE_BPS="${SOLANA_FEE_BENEFICIARY_2_SHARE_BPS:-3000}"
-export MINT_0="$SWAP_BASE_MINT_ADDRESS"
-export MINT_1="So11111111111111111111111111111111111111112"
-export SWAP_INPUT_MINT="$SWAP_BASE_MINT_ADDRESS"
-
-runtime_examples=(
-  examples/solana-minimal-launch.ts
-  examples/solana-permissionless-no-migration-launch.ts
-  examples/solana-launch-by-marketcap.ts
-  examples/solana-dynamic-fee-launch.ts
-  examples/solana-adv-launch.ts
-  examples/solana-adv-e2e-launch.ts
-  examples/solana-swap.ts
-  examples/solana-cosigner-gated-launch.ts
-  examples/solana-cosigner-gated-buy.ts
-  examples/solana-cosigner-gated-buy-token-2022.ts
-  examples/solana-usdc-e2e-launch.ts
-  examples/solana-usdc-cosigner-gated-buy.ts
-)
+runtime_examples=(examples/solana-minimal-launch.ts)
 devnet_runtime_examples=(
-  examples/solana-create-spot-pool.ts
-  examples/solana-vesting-launch.ts
-  examples/solana-vesting-claim.ts
+  examples/solana-advanced-launch.ts
+  examples/solana-spot-pool.ts
 )
-devnet_pending_examples=(
-  examples/solana-fee-rehypothecation-launch.ts
-  examples/solana-fee-rehypothecation-settle-and-claim.ts
-)
-compile_only_examples=(
-  # Prediction examples require devnet/custom market state and are typechecked
-  # by the Solana Prediction SDK workflow.
-  examples/solana-prediction-create.ts
-  examples/solana-prediction-buy.ts
-  examples/solana-prediction-resolve.ts
-  examples/solana-prediction-claim.ts
-)
+devnet_pending_examples=(examples/solana-fee-routing.ts)
+# The prediction workflow typechecks this entry point and executes its own lifecycle scenarios.
+compile_only_examples=(examples/solana-prediction-market.ts)
 
 declare -A classified_examples=()
 for example in \
@@ -216,6 +182,16 @@ for example in "${runtime_examples[@]}"; do
   echo
   echo "Running $example"
   pnpm exec tsx "$example"
+done
+
+echo
+# Preserve legacy migration coverage without duplicating public examples.
+for quote in sol usdc; do
+  for token_program in spl token2022; do
+    echo "Running legacy migration: $quote / $token_program"
+    SOLANA_QUOTE="$quote" SOLANA_BASE_TOKEN_PROGRAM="$token_program" \
+      pnpm exec tsx test/solana/integration/legacy-migration.ts
+  done
 done
 
 echo
