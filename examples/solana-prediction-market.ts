@@ -1,6 +1,7 @@
 /** Prediction lifecycle. Run create, buy, resolve, or claim separately. */
 import './env.js';
 import { createHash } from 'node:crypto';
+import { writeFileSync } from 'node:fs';
 import {
   address,
   generateKeyPairSigner,
@@ -52,6 +53,7 @@ async function create({ payer, clients }: Context): Promise<void> {
     instructions: market.instructions,
   });
 
+  const outcomes = [];
   for (const [index, outcomeId] of outcomeIds.entries()) {
     const baseMint = await generateKeyPairSigner();
     const launch = await predictionMarkets.prepareOutcomeLaunch({
@@ -79,6 +81,10 @@ async function create({ payer, clients }: Context): Promise<void> {
       },
     });
     console.log('Outcome index / mint:', index, baseMint.address);
+    outcomes.push({
+      baseMint: baseMint.address,
+      launch: launch.addresses.launch,
+    });
     console.log(
       'Register:',
       await sendInitializeLaunchWithLookupTable({
@@ -86,6 +92,13 @@ async function create({ payer, clients }: Context): Promise<void> {
         payer,
         instruction: launch.instruction,
       }),
+    );
+  }
+  const outputPath = process.env.SOLANA_PREDICTION_STATE_OUTPUT?.trim();
+  if (outputPath) {
+    writeFileSync(
+      outputPath,
+      `${JSON.stringify({ market: market.market, outcomes }, null, 2)}\n`,
     );
   }
 }

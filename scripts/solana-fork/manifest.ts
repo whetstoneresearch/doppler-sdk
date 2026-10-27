@@ -170,7 +170,7 @@ export const FORK_CASES: readonly ForkCase[] = [
         devnet: {
           status: 'delegated',
           reason:
-            'Runs in the prediction devnet fork job with the prediction programs and policy',
+            'The prediction devnet fork job runs create, buy, resolve and claim after its scenarios',
         },
         mainnet: {
           status: 'skip-until-mainnet',

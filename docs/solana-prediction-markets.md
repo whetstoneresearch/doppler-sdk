@@ -13,7 +13,7 @@ It imports repository source for development; installed applications import
 
 | Action | SDK helpers | Required action inputs |
 | --- | --- | --- |
-| `create` | `prepareOracle`, `prepareMarket`, `prepareOutcomeLaunch` | None; prints market and YES/NO mint addresses |
+| `create` | `prepareOracle`, `prepareMarket`, `prepareOutcomeLaunch` | None; prints market and YES/NO mint addresses, and writes them with the launches to `SOLANA_PREDICTION_STATE_OUTPUT` if set |
 | `buy` | `fetchPredictionBuyQuote`, `prepareBuy` | `SOLANA_PREDICTION_MARKET`, `SOLANA_PREDICTION_BASE_MINT`, `SOLANA_PREDICTION_AMOUNT_IN` |
 | `resolve` | `prepareFinalize`, `prepareRemainingSettlements` | `SOLANA_PREDICTION_MARKET`, `SOLANA_PREDICTION_WINNER_INDEX` (0 = YES, 1 = NO) |
 | `claim` | `fetchPredictionMarket`, `prepareClaim`, `prepareRefund` | `SOLANA_PREDICTION_MARKET`, `SOLANA_PREDICTION_BURN_AMOUNT`; void refunds also need `SOLANA_PREDICTION_BASE_MINT` |
