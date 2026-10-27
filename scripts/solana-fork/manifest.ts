@@ -46,13 +46,6 @@ const devnetOnly: Record<Network, Support> = {
     reason: 'Not yet enabled on the mainnet fork',
   },
 };
-const mainnetOnly: Record<Network, Support> = {
-  devnet: {
-    status: 'skip-until-devnet',
-    reason: 'Not yet enabled on the devnet fork',
-  },
-  mainnet: 'run',
-};
 const routerPending: Skip = {
   status: 'needs-example-change',
   reason: 'Pending verification of the deployed router ABI',
@@ -76,7 +69,7 @@ const advancedState = (quote: string, token: string) =>
   `advanced-${quote}-${token}.json`;
 
 export const FORK_CASES: readonly ForkCase[] = [
-  { script: 'examples/solana-minimal-launch.ts', support: mainnetOnly },
+  { script: 'examples/solana-minimal-launch.ts', support: both('run') },
   ...combos.flatMap(([quote, token]): ForkCase[] => [
     {
       script: 'examples/solana-advanced-launch.ts',
@@ -106,6 +99,15 @@ export const FORK_CASES: readonly ForkCase[] = [
     },
   ]),
   {
+    script: 'examples/solana-advanced-launch.ts',
+    action: 'create',
+    quote: 'sol',
+    token: 'spl',
+    label: 'cosigned',
+    support: both('run'),
+    env: ({ cosignerPath }) => ({ COSIGNER_KEYPAIR_PATH: cosignerPath }),
+  },
+  {
     script: 'examples/solana-spot-pool.ts',
     quote: 'sol',
     token: 'spl',
@@ -121,7 +123,7 @@ export const FORK_CASES: readonly ForkCase[] = [
       script: 'test/solana/integration/legacy-migration.ts',
       quote,
       token,
-      support: mainnetOnly,
+      support: both('run'),
       env: ({ payer, cosigner, cosignerPath }) => ({
         COSIGNER_KEYPAIR_PATH: cosignerPath,
         SOLANA_COSIGNER_BUY_AMOUNT_SOL: '0.2',

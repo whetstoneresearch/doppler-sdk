@@ -342,11 +342,9 @@ function formatSimulationError(err: unknown): string {
   if (typeof err === 'string') {
     return err;
   }
-  try {
-    return JSON.stringify(err);
-  } catch {
-    return String(err);
-  }
+  return JSON.stringify(err, (_, value: unknown) =>
+    typeof value === 'bigint' ? value.toString() : value,
+  );
 }
 
 export function assertSimulationRejected(label: string, err: unknown): void {
