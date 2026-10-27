@@ -1,9 +1,9 @@
 /**
  * Example: Create a permissionless CPMM spot pool (Solana)
  *
- * Creates the payer's token accounts, wraps the configured SOL liquidity, and
- * initializes a base-token/WSOL pool with an immutable fee tier. Set both hook
- * variables to bind the pool to an allowlisted swap-phase hook.
+ * Creates the payer's token accounts, wraps SOL liquidity when the quote is
+ * WSOL, and initializes a base/quote pool with an immutable fee tier. Set both
+ * hook variables to bind the pool to an allowlisted swap-phase hook.
  */
 import './env.js';
 
@@ -14,7 +14,12 @@ import {
 } from '@solana-program/token';
 import { address, type Address } from '@solana/kit';
 
-import { cpmm, cpmmMigrator, swapExactIn } from '../src/solana/index.js';
+import {
+  cpmm,
+  cpmmMigrator,
+  initializer,
+  swapExactIn,
+} from '../src/solana/index.js';
 import {
   WSOL_MINT,
   assertSolanaExampleNetwork,
@@ -69,17 +74,28 @@ async function main(): Promise<void> {
 
   const baseMint = address(requiredEnv('SPOT_POOL_BASE_MINT'));
   const baseAmount = positiveBigIntEnv('SPOT_POOL_BASE_AMOUNT');
-  const quoteAmount = positiveBigIntEnv('SPOT_POOL_QUOTE_AMOUNT_LAMPORTS');
+  const quoteAmount = positiveBigIntEnv('SPOT_POOL_QUOTE_AMOUNT');
+  const quoteMint = address(process.env.SPOT_POOL_QUOTE_MINT ?? WSOL_MINT);
+  const wrapSol = quoteMint === WSOL_MINT;
+  const tokenKind = process.env.SPOT_POOL_BASE_TOKEN_PROGRAM ?? 'spl';
+  if (tokenKind !== 'spl' && tokenKind !== 'token2022') {
+    throw new Error('SPOT_POOL_BASE_TOKEN_PROGRAM must be spl or token2022');
+  }
+  const { baseTokenProgram } =
+    tokenKind === 'token2022'
+      ? initializer.launchTokenPrograms.token2022Base()
+      : initializer.launchTokenPrograms.splToken();
   const swapFeeBps = Number(process.env.SPOT_POOL_SWAP_FEE_BPS ?? '30');
   if (quoteAmount < 10n)
-    throw new Error('Quote liquidity must be at least 10 lamports');
+    throw new Error('Quote liquidity must be at least 10 raw units');
   const hook = parseHookConfig();
   const hookInput = hook ?? {};
 
   const spotPoolInput = {
     payer,
     tokenAMint: baseMint,
-    tokenBMint: WSOL_MINT,
+    tokenBMint: quoteMint,
+    tokenAProgram: baseTokenProgram,
     tokenAAmount: baseAmount,
     tokenBAmount: quoteAmount,
     swapFeeBps,
@@ -91,8 +107,19 @@ async function main(): Promise<void> {
     ...spotPoolInput,
     liquidityOwner: payer.address,
   });
-  const wrappedSolAccount =
-    accounts.token0Mint === WSOL_MINT ? accounts.user0 : accounts.user1;
+  const quoteAccount =
+    accounts.token0Mint === quoteMint ? accounts.user0 : accounts.user1;
+  const wrap = (amount: bigint) =>
+    wrapSol
+      ? [
+          getTransferSolInstruction({
+            source: payer,
+            destination: quoteAccount,
+            amount,
+          }),
+          getSyncNativeInstruction({ account: quoteAccount }),
+        ]
+      : [];
 
   console.log('Preparing spot-pool token accounts...');
   await sendInstructions({
@@ -114,12 +141,7 @@ async function main(): Promise<void> {
         mint: accounts.token1Mint,
         tokenProgram: accounts.token1Program,
       }),
-      getTransferSolInstruction({
-        source: payer,
-        destination: wrappedSolAccount,
-        amount: quoteAmount,
-      }),
-      getSyncNativeInstruction({ account: wrappedSolAccount }),
+      ...wrap(quoteAmount),
     ],
   });
 
@@ -129,7 +151,7 @@ async function main(): Promise<void> {
   console.log('Creating spot pool...');
   console.log('  Pool:       ', accounts.pool);
   console.log('  Base mint:  ', baseMint);
-  console.log('  Quote mint: ', WSOL_MINT);
+  console.log('  Quote mint: ', quoteMint);
   console.log('  Swap fee:   ', `${swapFeeBps} bps`);
   if (hook) {
     console.log('  Hook:       ', hook.hookProgram);
@@ -172,7 +194,9 @@ async function main(): Promise<void> {
     payer,
     amountIn: swapAmount,
     slippageBps: 50n,
-    tradeDirection: pool.token0Mint === WSOL_MINT ? 0 : 1,
+    tradeDirection: pool.token0Mint === quoteMint ? 0 : 1,
+    token0Program: accounts.token0Program,
+    token1Program: accounts.token1Program,
   });
   console.log('Swap quote:', swap.quote);
   console.log('Minimum received:', swap.minAmountOut.toString());
@@ -184,12 +208,7 @@ async function main(): Promise<void> {
       payer,
       instructions: [
         ...swap.setupInstructions,
-        getTransferSolInstruction({
-          source: payer,
-          destination: swap.userIn,
-          amount: swapAmount,
-        }),
-        getSyncNativeInstruction({ account: swap.userIn }),
+        ...wrap(swapAmount),
         swap.swapInstruction,
       ],
     }),

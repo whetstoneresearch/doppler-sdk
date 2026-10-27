@@ -21,6 +21,7 @@ export type CaseContext = {
   payer: string;
   cosigner: string;
   cosignerPath: string;
+  usdcMint: string;
   /** Reads a JSON state file written by an earlier case. */
   state: (name: string) => Record<string, string>;
 };
@@ -53,6 +54,7 @@ export function caseId({ script, action, quote, token, label }: ForkCase) {
     .join(' ');
 }
 
+const WSOL = 'So11111111111111111111111111111111111111112';
 const advancedState = (quote: string, token: string) =>
   `advanced-${quote}-${token}.json`;
 
@@ -100,25 +102,29 @@ export const FORK_CASES: readonly ForkCase[] = [
     support: both('run'),
     env: ({ cosignerPath }) => ({ COSIGNER_KEYPAIR_PATH: cosignerPath }),
   },
-  {
-    script: 'examples/solana-spot-pool.ts',
-    quote: 'sol',
-    token: 'spl',
-    support: {
-      devnet: 'run',
-      mainnet: {
-        status: 'skip-until-mainnet',
-        reason:
-          'The mainnet CPMM migrator predates create_spot_pool (InstructionFallbackNotFound)',
-        until: ['cpmmMigrator'],
+  ...combos.map(
+    ([quote, token]): ForkCase => ({
+      script: 'examples/solana-spot-pool.ts',
+      quote,
+      token,
+      support: {
+        devnet: 'run',
+        mainnet: {
+          status: 'skip-until-mainnet',
+          reason:
+            'The mainnet CPMM migrator predates create_spot_pool (InstructionFallbackNotFound)',
+          until: ['cpmmMigrator'],
+        },
       },
-    },
-    env: ({ state }) => ({
-      SPOT_POOL_BASE_MINT: state(advancedState('sol', 'spl')).baseMint,
-      SPOT_POOL_BASE_AMOUNT: '1000000',
-      SPOT_POOL_QUOTE_AMOUNT_LAMPORTS: '10000000',
+      env: ({ state, usdcMint }) => ({
+        SPOT_POOL_BASE_MINT: state(advancedState(quote, token)).baseMint,
+        SPOT_POOL_BASE_TOKEN_PROGRAM: token,
+        SPOT_POOL_BASE_AMOUNT: '1000000',
+        SPOT_POOL_QUOTE_MINT: quote === 'usdc' ? usdcMint : WSOL,
+        SPOT_POOL_QUOTE_AMOUNT: quote === 'usdc' ? '100000' : '10000000',
+      }),
     }),
-  },
+  ),
   ...combos.map(
     ([quote, token]): ForkCase => ({
       script: 'test/solana/integration/legacy-migration.ts',

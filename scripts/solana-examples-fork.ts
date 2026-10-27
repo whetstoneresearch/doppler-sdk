@@ -234,6 +234,7 @@ async function main(): Promise<boolean> {
     payer: payer.address,
     cosigner: cosigner.address,
     cosignerPath: cosigner.path,
+    usdcMint: config.usdcMint,
     state: (name) => readJson(join(runDir, name)),
   };
 

@@ -158,7 +158,7 @@ Devnet uses the SDK's deployment defaults. Custom deployments require `SOLANA_RP
 
 ### Spot pool
 
-Set `SPOT_POOL_BASE_MINT`, `SPOT_POOL_BASE_AMOUNT` (raw token units), and `SPOT_POOL_QUOTE_AMOUNT_LAMPORTS`. The payer must already hold the base tokens and enough SOL for liquidity, the subsequent buy (10% of quote liquidity), and rent. The default fee is 30 bps; override it with `SPOT_POOL_SWAP_FEE_BPS`.
+Set `SPOT_POOL_BASE_MINT`, `SPOT_POOL_BASE_AMOUNT`, and `SPOT_POOL_QUOTE_AMOUNT` in raw units. The quote defaults to WSOL, which the example wraps; set `SPOT_POOL_QUOTE_MINT` to use an SPL Token quote such as USDC, and `SPOT_POOL_BASE_TOKEN_PROGRAM=token2022` for a Token-2022 base. The payer must already hold the base tokens and enough quote for liquidity, the subsequent buy (10% of quote liquidity), and rent. The default fee is 30 bps; override it with `SPOT_POOL_SWAP_FEE_BPS`.
 
 ```bash
 pnpm exec tsx examples/solana-spot-pool.ts
