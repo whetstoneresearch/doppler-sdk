@@ -39,18 +39,6 @@ const both = (support: Support): Record<Network, Support> => ({
   devnet: support,
   mainnet: support,
 });
-const devnetOnly: Record<Network, Support> = {
-  devnet: 'run',
-  mainnet: {
-    status: 'skip-until-mainnet',
-    reason: 'Not yet enabled on the mainnet fork',
-  },
-};
-const routerPending: Skip = {
-  status: 'needs-example-change',
-  reason: 'Pending verification of the deployed router ABI',
-  until: ['launchHookV2', 'rehypeRouter'],
-};
 const combos = [
   ['sol', 'spl'],
   ['sol', 'token2022'],
@@ -76,7 +64,7 @@ export const FORK_CASES: readonly ForkCase[] = [
       action: 'create',
       quote,
       token,
-      support: devnetOnly,
+      support: both('run'),
       env: ({ runDir }) => ({
         SOLANA_VESTING_CLIFF_SECONDS: '0',
         SOLANA_VESTING_DURATION_SECONDS: '0',
@@ -88,7 +76,7 @@ export const FORK_CASES: readonly ForkCase[] = [
       action: 'claim',
       quote,
       token,
-      support: devnetOnly,
+      support: both('run'),
       env: ({ state }) => {
         const { launch, baseMint } = state(advancedState(quote, token));
         return {
@@ -111,7 +99,15 @@ export const FORK_CASES: readonly ForkCase[] = [
     script: 'examples/solana-spot-pool.ts',
     quote: 'sol',
     token: 'spl',
-    support: devnetOnly,
+    support: {
+      devnet: 'run',
+      mainnet: {
+        status: 'skip-until-mainnet',
+        reason:
+          'The mainnet CPMM migrator predates create_spot_pool (InstructionFallbackNotFound)',
+        until: ['cpmmMigrator'],
+      },
+    },
     env: ({ state }) => ({
       SPOT_POOL_BASE_MINT: state(advancedState('sol', 'spl')).baseMint,
       SPOT_POOL_BASE_AMOUNT: '1000000',
@@ -140,7 +136,7 @@ export const FORK_CASES: readonly ForkCase[] = [
   {
     script: 'examples/solana-fee-routing.ts',
     action: 'create',
-    support: both(routerPending),
+    support: both('run'),
     env: ({ runDir }) => ({
       SOLANA_FEE_REHYPOTHECATION_SETTLE_AND_CLAIM: 'false',
       SOLANA_FEE_REHYPOTHECATION_STATE_OUTPUT: join(runDir, 'fee-routing.json'),
@@ -149,7 +145,7 @@ export const FORK_CASES: readonly ForkCase[] = [
   {
     script: 'examples/solana-fee-routing.ts',
     action: 'settle',
-    support: both(routerPending),
+    support: both('run'),
     env: ({ state }) => {
       const { launch, baseMint } = state('fee-routing.json');
       return { SOLANA_LAUNCH: launch, SOLANA_BASE_MINT: baseMint };
