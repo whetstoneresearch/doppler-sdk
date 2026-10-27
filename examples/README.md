@@ -175,7 +175,7 @@ SOLANA_QUOTE=usdc SOLANA_BASE_TOKEN_PROGRAM=token2022 pnpm exec tsx examples/sol
 
 Defaults are `SOLANA_QUOTE=sol` and `SOLANA_BASE_TOKEN_PROGRAM=spl`. The example buys 0.01 SOL or 1 USDC; fund the USDC ATA first when selecting USDC. For a custom deployment, set `SOLANA_USDC_MINT`. `SOL_PRICE_USD` supplies a pricing input without a CoinGecko lookup; the USDC example assumes $1. Market-cap inputs set the initial curve, not a migration trigger.
 
-The fee decays from 1,000 to 200 bps over ten minutes. The vested allocation defaults to a seven-day cliff and thirty-day duration. Override `SOLANA_VESTING_CLIFF_SECONDS` and `SOLANA_VESTING_DURATION_SECONDS` if needed. To claim later, set the printed `SOLANA_VESTING_LAUNCH` and `SOLANA_VESTING_BASE_MINT`, retain the same base token-program setting, and run:
+The fee decays from 1,000 to 200 bps over ten minutes; override `SOLANA_DYNAMIC_FEE_DURATION_SECONDS` to change that. The vested allocation defaults to a seven-day cliff and thirty-day duration. Override `SOLANA_VESTING_CLIFF_SECONDS` and `SOLANA_VESTING_DURATION_SECONDS` if needed; a nonzero duration must be at least one day. To claim later, set the printed `SOLANA_VESTING_LAUNCH` and `SOLANA_VESTING_BASE_MINT`, retain the same base token-program setting, and run:
 
 ```bash
 pnpm exec tsx examples/solana-advanced-launch.ts claim

@@ -166,7 +166,10 @@ async function main(): Promise<void> {
       startingTime: 0n,
       startFeeBps: 1_000,
       endFeeBps: 200,
-      durationSeconds: 600n,
+      durationSeconds: nonnegativeBigIntEnv(
+        'SOLANA_DYNAMIC_FEE_DURATION_SECONDS',
+        600n,
+      ),
     },
     cosignerGate: gate,
     tokenPrograms,

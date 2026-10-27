@@ -96,6 +96,11 @@ export const FORK_CASES: readonly ForkCase[] = [
     env: ({ cosignerPath }) => ({ COSIGNER_KEYPAIR_PATH: cosignerPath }),
   },
   {
+    script: 'test/solana/integration/launch-timing.ts',
+    support: both('run'),
+    env: ({ cosignerPath }) => ({ COSIGNER_KEYPAIR_PATH: cosignerPath }),
+  },
+  {
     script: 'examples/solana-spot-pool.ts',
     quote: 'sol',
     token: 'spl',
