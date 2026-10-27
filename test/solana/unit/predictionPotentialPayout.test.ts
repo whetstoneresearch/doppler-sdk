@@ -56,16 +56,16 @@ describe('hypothetical prediction payout', () => {
       calculatePotentialPayoutIfWinner({
         ...snapshot,
         candidateUnsoldBase: 1000n,
-      })
+      }),
     ).toThrow('zero');
     expect(() =>
-      calculatePotentialPayoutIfWinner({ ...snapshot, isVoid: true })
+      calculatePotentialPayoutIfWinner({ ...snapshot, isVoid: true }),
     ).toThrow('void');
     expect(() =>
       calculatePotentialPayoutIfWinner({
         ...snapshot,
         unsettledQuoteVaults: [{ amount: 1n, pendingFees: 2n }],
-      })
+      }),
     ).toThrow('fees');
   });
 });
@@ -84,19 +84,19 @@ describe('finalized candidate eligibility', () => {
   const market = { outcomeMints: [yesMint, noMint] };
   it('rejects the known loser before the market settlement resolves it', () => {
     expect(() =>
-      assertPotentialPayoutCandidate(oracle, market, noMint)
+      assertPotentialPayoutCandidate(oracle, market, noMint),
     ).toThrow('losing outcome');
   });
   it('permits the actual winner and unresolved hypothetical candidates', () => {
     expect(() =>
-      assertPotentialPayoutCandidate(oracle, market, yesMint)
+      assertPotentialPayoutCandidate(oracle, market, yesMint),
     ).not.toThrow();
     expect(() =>
       assertPotentialPayoutCandidate(
         { ...oracle, isFinalized: false },
         market,
-        noMint
-      )
+        noMint,
+      ),
     ).not.toThrow();
   });
 });

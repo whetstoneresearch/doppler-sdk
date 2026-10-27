@@ -36,17 +36,15 @@ import {
   type SolanaFeeRehypothecationProgramAddresses,
 } from '../src/solana/index.js';
 
-export const SOLANA_NETWORK_ENDPOINTS = {
+const SOLANA_NETWORK_ENDPOINTS = {
   devnet: {
     rpcUrl: 'https://api.devnet.solana.com',
     wsUrl: 'wss://api.devnet.solana.com',
   },
 } as const;
-export type SolanaExampleNetwork =
-  | keyof typeof SOLANA_NETWORK_ENDPOINTS
-  | 'custom';
-export const DEFAULT_SOLANA_EXAMPLE_NETWORK: SolanaExampleNetwork = 'devnet';
-export const SOLANA_TRANSACTION_SIZE_LIMIT = 1232;
+type SolanaExampleNetwork = keyof typeof SOLANA_NETWORK_ENDPOINTS | 'custom';
+const DEFAULT_SOLANA_EXAMPLE_NETWORK: SolanaExampleNetwork = 'devnet';
+const SOLANA_TRANSACTION_SIZE_LIMIT = 1232;
 export const WSOL_MINT = address('So11111111111111111111111111111111111111112');
 export const DEVNET_USDC_MINT = address(
   '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU',
@@ -57,7 +55,6 @@ export const DEFAULT_TEST_METADATA = {
   metadataUri: 'https://example.com/metadata/test-token.json',
 } as const;
 export const DEFAULT_SWAP_FEE_BPS = 200;
-export const DEFAULT_CPMM_FEE_SPLIT_BPS = 10_000;
 
 export function createSolanaClientsFromEnv() {
   const network = parseSolanaNetwork(
@@ -130,7 +127,7 @@ function requiredAddressFromEnv(name: string): Address {
   return address(value);
 }
 
-export function getSolanaCpmmProgramAddressesFromEnv(): SolanaCpmmProgramAddresses {
+function getSolanaCpmmProgramAddressesFromEnv(): SolanaCpmmProgramAddresses {
   return {
     cpmmProgram: requiredAddressFromEnv(CUSTOM_CPMM_PROGRAM_ENV.cpmmProgram),
     initializerProgram: requiredAddressFromEnv(
@@ -157,7 +154,7 @@ export async function getSolanaCpmmDeploymentFromEnv(
   return deriveSolanaCpmmDeployment(programs);
 }
 
-export function getSolanaFeeRehypothecationProgramAddressesFromEnv(): SolanaFeeRehypothecationProgramAddresses {
+function getSolanaFeeRehypothecationProgramAddressesFromEnv(): SolanaFeeRehypothecationProgramAddresses {
   return {
     initializerProgram: requiredAddressFromEnv(
       CUSTOM_FEE_REHYPOTHECATION_PROGRAM_ENV.initializerProgram,
@@ -223,7 +220,7 @@ export async function loadKeypairSignerFromEnv({
   );
 }
 
-export function getMetadataByteLength(params: {
+function getMetadataByteLength(params: {
   metadataName?: string;
   metadataSymbol?: string;
   metadataUri?: string;
@@ -236,7 +233,7 @@ export function getMetadataByteLength(params: {
   );
 }
 
-export function assertTransactionFits(
+function assertTransactionFits(
   transactionMessage: TransactionMessage & TransactionMessageWithFeePayer,
   {
     label = 'Transaction',
@@ -264,7 +261,7 @@ export function assertTransactionFits(
 
 type SolanaClients = ReturnType<typeof createSolanaClientsFromEnv>;
 
-export async function signInstructions({
+async function signInstructions({
   rpc,
   payer,
   instructions,
@@ -345,11 +342,9 @@ function formatSimulationError(err: unknown): string {
   if (typeof err === 'string') {
     return err;
   }
-  try {
-    return JSON.stringify(err);
-  } catch {
-    return String(err);
-  }
+  return JSON.stringify(err, (_, value: unknown) =>
+    typeof value === 'bigint' ? value.toString() : value,
+  );
 }
 
 export function assertSimulationRejected(label: string, err: unknown): void {
@@ -375,7 +370,7 @@ async function waitForSlotAfter(
   throw new Error('Timed out waiting for a later confirmed slot');
 }
 
-export async function createLookupTableForInstruction({
+async function createLookupTableForInstruction({
   rpc,
   rpcSubscriptions,
   payer,
@@ -435,7 +430,7 @@ export async function createLookupTableForInstruction({
   return lookupTable;
 }
 
-export type LaunchBeneficiaryConfig = {
+type LaunchBeneficiaryConfig = {
   recipients: { wallet: Address; amount: bigint }[];
   feeBeneficiaries: { wallet: Address; shareBps: number }[];
 };
@@ -448,7 +443,7 @@ export function requiredEnv(name: string): string {
   return value;
 }
 
-export function parseShareBps(name: string): number {
+function parseShareBps(name: string): number {
   const value = Number(requiredEnv(name));
   if (!Number.isInteger(value) || value <= 0 || value > 10_000) {
     throw new Error(name + ' must be an integer from 1 to 10000');
@@ -533,16 +528,6 @@ export function loadLaunchBeneficiaries({
   }
 
   return { recipients, feeBeneficiaries };
-}
-
-export function assertBigintEqual(
-  label: string,
-  actual: bigint,
-  expected: bigint,
-): void {
-  if (actual !== expected) {
-    throw new Error(label + ': expected ' + expected + ', got ' + actual);
-  }
 }
 
 export async function loadCosigner(): Promise<TransactionSigner> {

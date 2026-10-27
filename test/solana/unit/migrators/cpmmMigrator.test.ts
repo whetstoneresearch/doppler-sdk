@@ -26,8 +26,7 @@ const TEST_MINT_A = address('So11111111111111111111111111111111111111112');
 const TEST_MINT_B = address('E45nSdnfANtYhCy6qZXo2a7qAWCU6pYjpqsby1bbkaiL');
 const TEST_USDC_MINT = address('4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU');
 const TEST_VAULT = address('5B6PDEnK92XgKdTec5NJtoAeFqfAZQfuyxiuF4nGK5KQ');
-const TEST_HOOK_PROGRAM =
-  dopplerLaunchHookV1.DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ID;
+const TEST_HOOK_PROGRAM = dopplerLaunchHookV1.DOPPLER_LAUNCH_HOOK_V1_PROGRAM_ID;
 const TEST_SIGNER = { address: TEST_WALLET } as TransactionSigner;
 
 describe('cpmmMigrator payload encoders', () => {

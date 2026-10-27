@@ -3,7 +3,7 @@ import './env.js';
 
 import { writeFileSync } from 'node:fs';
 
-import { generateKeyPairSigner } from '@solana/kit';
+import { address, generateKeyPairSigner, type Address } from '@solana/kit';
 
 import {
   curveSwapExactIn,
@@ -18,6 +18,7 @@ import {
   createSolanaClientsFromEnv,
   getSolanaFeeRehypothecationDeploymentFromEnv,
   loadKeypairSignerFromEnv,
+  requiredEnv,
   sendInitializeLaunchWithLookupTable,
   sendInstructions,
 } from './solanaExampleHelpers.js';
@@ -34,16 +35,14 @@ const strategies = {
   balanced: feeRehypothecation.balancedFourBucket,
 } as const;
 
-type StrategyName = keyof typeof strategies;
-
-function getStrategyName(): StrategyName {
-  const value = process.env.SOLANA_FEE_REHYPOTHECATION_STRATEGY ?? 'numeraire';
-  if (!(value in strategies)) {
+function getStrategy() {
+  const name = process.env.SOLANA_FEE_REHYPOTHECATION_STRATEGY ?? 'numeraire';
+  if (!Object.hasOwn(strategies, name)) {
     throw new Error(
-      `SOLANA_FEE_REHYPOTHECATION_STRATEGY must be one of ${Object.keys(strategies).join(', ')}`,
+      `Strategy must be one of: ${Object.keys(strategies).join(', ')}`,
     );
   }
-  return value as StrategyName;
+  return { name, strategy: strategies[name as keyof typeof strategies]() };
 }
 
 function shouldSettleAndClaim(): boolean {
@@ -69,13 +68,70 @@ function writeStateOutput(state: { launch: string; baseMint: string }): void {
 }
 
 async function main(): Promise<void> {
+  const action = process.argv[2] ?? 'create';
+  if (action !== 'create' && action !== 'settle') {
+    throw new Error('Usage: solana-fee-routing.ts [create|settle]');
+  }
   const payer = await loadKeypairSignerFromEnv();
   const { rpc, rpcSubscriptions, network } = createSolanaClientsFromEnv();
   assertSolanaExampleNetwork(network, ['devnet', 'custom']);
   const deployment =
     await getSolanaFeeRehypothecationDeploymentFromEnv(network);
+  const settleAndClaim = async (
+    launch: Address,
+    baseMint: Address,
+    beneficiary = payer.address,
+  ): Promise<void> => {
+    const settlement = await feeRehypothecation.prepareSettlement({
+      rpc,
+      deployment,
+      launch,
+      payer,
+    });
+    console.log('Settlement quote:', settlement.quote);
+    console.log(
+      'Settlement:',
+      await sendInstructions({
+        rpc,
+        rpcSubscriptions,
+        payer,
+        instructions: [settlement.instruction],
+      }),
+    );
+    const claim = await feeRehypothecation.prepareClaim({
+      rpc,
+      deployment,
+      baseMint,
+      payer,
+      beneficiary,
+    });
+    console.log(
+      'Claim:',
+      await sendInstructions({
+        rpc,
+        rpcSubscriptions,
+        payer,
+        instructions: [claim.instruction],
+      }),
+    );
+    console.log(
+      'Base / quote claimed:',
+      claim.pendingBaseFees.toString(),
+      claim.pendingQuoteFees.toString(),
+    );
+  };
+  if (action === 'settle') {
+    await settleAndClaim(
+      address(requiredEnv('SOLANA_LAUNCH')),
+      address(requiredEnv('SOLANA_BASE_MINT')),
+      process.env.SOLANA_FEE_BENEFICIARY
+        ? address(process.env.SOLANA_FEE_BENEFICIARY)
+        : undefined,
+    );
+    return;
+  }
   const baseMint = await generateKeyPairSigner();
-  const strategyName = getStrategyName();
+  const { name: strategyName, strategy } = getStrategy();
 
   const prepared = await feeRehypothecation.prepareLaunch({
     deployment,
@@ -99,7 +155,7 @@ async function main(): Promise<void> {
     metadata: DEFAULT_TEST_METADATA,
     buybackDestination: payer.address,
     beneficiaries: [{ wallet: payer.address, shareBps: 10_000 }],
-    strategy: strategies[strategyName](),
+    strategy,
   });
 
   console.log(`Initializing ${strategyName} fee routing...`);
@@ -146,56 +202,21 @@ async function main(): Promise<void> {
     baseMint: baseMint.address,
   });
 
-  if (!shouldSettleAndClaim()) {
-    console.log('Fee rehypothecation launch and swap complete:');
-    console.log('  Launch:       ', prepared.launchAddresses.launch);
-    console.log('  Base mint:    ', baseMint.address);
-    console.log('  Router state: ', prepared.routingAddresses.state);
-    console.log('  Routing tx:   ', routingSignature);
-    console.log('  Launch tx:    ', launchSignature);
-    console.log('  Swap tx:      ', swapSignature);
-    return;
-  }
+  console.log('Launch:', prepared.launchAddresses.launch);
+  console.log('Base mint:', baseMint.address);
+  console.log('Router state:', prepared.routingAddresses.state);
+  console.log(
+    'Routing / launch / swap transactions:',
+    routingSignature,
+    launchSignature,
+    swapSignature,
+  );
+  if (!shouldSettleAndClaim()) return;
 
-  const settlement = await feeRehypothecation.prepareSettlement({
-    rpc,
-    deployment,
-    launch: prepared.launchAddresses.launch,
-    payer,
-  });
-  const settlementSignature = await sendInstructions({
-    rpc,
-    rpcSubscriptions,
-    payer,
-    instructions: [settlement.instruction],
-  });
-
-  const claim = await feeRehypothecation.prepareClaim({
-    rpc,
-    deployment,
-    baseMint: baseMint.address,
-    beneficiary: payer.address,
-    payer,
-  });
-  const claimSignature = await sendInstructions({
-    rpc,
-    rpcSubscriptions,
-    payer,
-    instructions: [claim.instruction],
-  });
-
-  console.log('Fee rehypothecation flow complete:');
-  console.log('  Launch:       ', prepared.launchAddresses.launch);
-  console.log('  Base mint:    ', baseMint.address);
-  console.log('  Router state: ', prepared.routingAddresses.state);
-  console.log('  Routing tx:   ', routingSignature);
-  console.log('  Launch tx:    ', launchSignature);
-  console.log('  Swap tx:      ', swapSignature);
-  console.log('  Settlement tx:', settlementSignature);
-  console.log('  Claim tx:     ', claimSignature);
+  await settleAndClaim(prepared.launchAddresses.launch, baseMint.address);
 }
 
 main().catch((error: unknown) => {
-  console.error('Error creating fee rehypothecation launch:', error);
-  process.exit(1);
+  console.error(error);
+  process.exitCode = 1;
 });

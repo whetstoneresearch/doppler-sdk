@@ -1,17 +1,5 @@
-/**
- * Example: Cosigner-Gated Bonding Curve Buy With Token-2022 Base (Solana)
- *
- * Creates a CPMM-migratable Token-2022 base launch with Doppler launch hook v1 cosigning
- * enabled for pre-migration swaps, proves an unsigned buy fails, executes one cosigned
- * bonding-curve buy, migrates, then performs an ungated CPMM swap.
- *
- * Configure two launch beneficiaries with:
- *   SOLANA_FEE_BENEFICIARY_1_WALLET / _BASE_AMOUNT / _SHARE_BPS
- *   SOLANA_FEE_BENEFICIARY_2_WALLET / _BASE_AMOUNT / _SHARE_BPS
- * The *_BASE_AMOUNT values are human token amounts and must sum to the launch
- * distribution allocation. The *_SHARE_BPS values must sum to 10000.
- */
-import './env.js';
+/** Legacy compatibility scenario: gated buy, migration, and ungated pool swap. */
+import '../../../examples/env.js';
 
 import { TOKEN_PROGRAM_ADDRESS } from '@solana-program/token';
 import { SYSTEM_PROGRAM_ADDRESS } from '@solana-program/system';
@@ -26,8 +14,9 @@ import {
   initializer,
   migrateLaunch,
   swapExactIn,
-} from '../src/solana/index.js';
-import { TOKEN_2022_PROGRAM_ADDRESS } from '../src/solana/core/constants.js';
+} from '../../../src/solana/index.js';
+import { TOKEN_2022_PROGRAM_ADDRESS } from '../../../src/solana/core/constants.js';
+import { fetchLaunchFeeState } from '../../../src/solana/generated/initializer/accounts/launchFeeState.js';
 
 import {
   DEFAULT_SWAP_FEE_BPS,
@@ -37,6 +26,7 @@ import {
   assertSolanaExampleNetwork,
   createSolanaClientsFromEnv,
   getSolPriceUsd,
+  getSolanaUsdcMintFromEnv,
   getSolanaCpmmDeploymentFromEnv,
   loadCosigner,
   loadKeypairSignerFromEnv,
@@ -45,7 +35,7 @@ import {
   sendInitializeLaunchWithLookupTable,
   sendInstructions,
   simulateInstructions,
-} from './solanaExampleHelpers.js';
+} from '../../../examples/solanaExampleHelpers.js';
 
 async function main() {
   const payer = await loadKeypairSignerFromEnv();
@@ -70,14 +60,27 @@ async function main() {
   const BASE_FOR_LIQUIDITY = 50_000_000n * 10n ** BigInt(BASE_DECIMALS);
   const BASE_FOR_CURVE =
     BASE_TOTAL_SUPPLY - BASE_FOR_DISTRIBUTION - BASE_FOR_LIQUIDITY;
-  const QUOTE_DECIMALS = 9;
+  const quote = process.env.SOLANA_QUOTE ?? 'sol';
+  const tokenKind = process.env.SOLANA_BASE_TOKEN_PROGRAM ?? 'spl';
+  if (quote !== 'sol' && quote !== 'usdc')
+    throw new Error('Invalid SOLANA_QUOTE');
+  if (tokenKind !== 'spl' && tokenKind !== 'token2022')
+    throw new Error('Invalid SOLANA_BASE_TOKEN_PROGRAM');
+  const quoteMint =
+    quote === 'sol' ? WSOL_MINT : getSolanaUsdcMintFromEnv(network);
+  const baseTokenProgram =
+    tokenKind === 'token2022'
+      ? TOKEN_2022_PROGRAM_ADDRESS
+      : TOKEN_PROGRAM_ADDRESS;
+  const QUOTE_DECIMALS = quote === 'sol' ? 9 : 6;
   const SWAP_FEE_BPS = DEFAULT_SWAP_FEE_BPS;
-  const BUY_AMOUNT_IN = parseDecimalTokenAmount(
-    'SOLANA_COSIGNER_BUY_AMOUNT_SOL',
-    QUOTE_DECIMALS,
-  );
+  const buyAmountEnv =
+    quote === 'sol'
+      ? 'SOLANA_COSIGNER_BUY_AMOUNT_SOL'
+      : 'SOLANA_COSIGNER_BUY_AMOUNT_USDC';
+  const BUY_AMOUNT_IN = parseDecimalTokenAmount(buyAmountEnv, QUOTE_DECIMALS);
   if (BUY_AMOUNT_IN === 0n) {
-    throw new Error('SOLANA_COSIGNER_BUY_AMOUNT_SOL must be greater than zero');
+    throw new Error(`${buyAmountEnv} must be greater than zero`);
   }
   const minRaiseQuote = BUY_AMOUNT_IN > 1_000n ? BUY_AMOUNT_IN / 2n : 1n;
   const launchBeneficiaries = loadLaunchBeneficiaries({
@@ -85,7 +88,7 @@ async function main() {
     expectedDistributionAmount: BASE_FOR_DISTRIBUTION,
   });
 
-  const solPriceUsd = await getSolPriceUsd();
+  const solPriceUsd = quote === 'sol' ? await getSolPriceUsd() : 1;
   const { start } = cpmm.marketCapToCurveParams({
     startMarketCapUSD: 100_000,
     endMarketCapUSD: 10_000_000,
@@ -100,17 +103,48 @@ async function main() {
   const metadata = DEFAULT_TEST_METADATA;
 
   const namespace = dopplerLaunchHookV1Config;
-  const launchId = initializer.launchIdFromU64(BigInt(Date.now()));
-  const launchAddresses = await initializer.deriveCreateLaunchAddresses({
+  const {
+    instruction: initializeLaunchIx,
+    cpmmMigration,
+    addresses: launchAddresses,
+  } = await createLaunch({
     deployment,
     namespace,
-    launchId,
-    baseMint,
+    launchAccounts: {
+      baseMint,
+      quoteMint,
+    },
+    payer,
+    authority: payer,
+    supply: {
+      baseDecimals: BASE_DECIMALS,
+      baseTotalSupply: BASE_TOTAL_SUPPLY,
+      baseForDistribution: BASE_FOR_DISTRIBUTION,
+      baseForLiquidity: BASE_FOR_LIQUIDITY,
+    },
+    curve: {
+      curveVirtualBase: start.curveVirtualBase,
+      curveVirtualQuote: start.curveVirtualQuote,
+      swapFeeBps: SWAP_FEE_BPS,
+    },
+    tokenPrograms: {
+      baseTokenProgram,
+      quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
+    },
+    cosignerGate: managedCosignerGate,
+    migration: {
+      recipients: launchBeneficiaries.recipients,
+      minRaiseQuote,
+    },
     metadata,
+    feeBeneficiaries: launchBeneficiaries.feeBeneficiaries,
   });
+  if (!cpmmMigration) {
+    throw new Error('CPMM migration accounts were not prepared');
+  }
   const { launch, launchAuthority, launchFeeState } = launchAddresses;
 
-  console.log('Creating Token-2022 cosigner-gated launch...');
+  console.log('Creating legacy cosigner-gated launch...');
   console.log('  Launch:            ', launch);
   console.log('  Base mint:         ', baseMint.address);
   console.log(
@@ -131,42 +165,6 @@ async function main() {
     );
   }
 
-  const { instruction: initializeLaunchIx, cpmmMigration } = await createLaunch(
-    {
-      deployment,
-      namespace,
-      launchId,
-      addresses: launchAddresses,
-      launchAccounts: {
-        baseMint,
-        quoteMint: WSOL_MINT,
-      },
-      payer,
-      authority: payer,
-      supply: {
-        baseDecimals: BASE_DECIMALS,
-        baseTotalSupply: BASE_TOTAL_SUPPLY,
-        baseForDistribution: BASE_FOR_DISTRIBUTION,
-        baseForLiquidity: BASE_FOR_LIQUIDITY,
-      },
-      curve: {
-        curveVirtualBase: start.curveVirtualBase,
-        curveVirtualQuote: start.curveVirtualQuote,
-        swapFeeBps: SWAP_FEE_BPS,
-      },
-      tokenPrograms: initializer.launchTokenPrograms.token2022Base(),
-      cosignerGate: managedCosignerGate,
-      migration: {
-        recipients: launchBeneficiaries.recipients,
-        minRaiseQuote,
-      },
-      metadata,
-      feeBeneficiaries: launchBeneficiaries.feeBeneficiaries,
-    },
-  );
-  if (!cpmmMigration) {
-    throw new Error('CPMM migration accounts were not prepared');
-  }
   const { signedHookRemainingAccounts, unsignedHookRemainingAccounts } =
     dopplerLaunchHookV1.getDopplerLaunchHookV1RemainingAccounts({
       namespace,
@@ -192,12 +190,12 @@ async function main() {
     quoteVault: launchAddresses.quoteVault,
     launchFeeState,
     baseMint: baseMint.address,
-    quoteMint: WSOL_MINT,
+    quoteMint,
     payer,
     amountIn: BUY_AMOUNT_IN,
     minAmountOut: 1n,
     tradeDirection: initializer.TRADE_DIRECTION_BUY,
-    baseTokenProgram: TOKEN_2022_PROGRAM_ADDRESS,
+    baseTokenProgram,
     quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
   } as const;
 
@@ -236,6 +234,20 @@ async function main() {
     initializer.phaseLabel(launchAccount.phase),
   );
 
+  const expectedQuoteFee = initializer.getCurveSwapFeeAmount(
+    BUY_AMOUNT_IN,
+    SWAP_FEE_BPS,
+  );
+  const { data: feeState } = await fetchLaunchFeeState(rpc, launchFeeState, {
+    commitment: 'confirmed',
+  });
+  if (
+    feeState.cumulatedQuoteFees !== expectedQuoteFee ||
+    feeState.cumulatedBaseFees !== 0n
+  ) {
+    throw new Error('Curve fee accounting does not match the executed buy');
+  }
+
   const { quoteVaultAmount, pendingQuoteFees } =
     await assertMigrationQuoteThreshold({
       rpc,
@@ -255,14 +267,14 @@ async function main() {
     launch,
     launchAuthority,
     baseMint: baseMint.address,
-    quoteMint: WSOL_MINT,
+    quoteMint,
     baseVault: launchAddresses.baseVault,
     quoteVault: launchAddresses.quoteVault,
     launchFeeState,
     payer,
     cpmmMigration: migrationAccounts,
     recipients: launchBeneficiaries.recipients,
-    baseTokenProgram: TOKEN_2022_PROGRAM_ADDRESS,
+    baseTokenProgram,
     quoteTokenProgram: TOKEN_PROGRAM_ADDRESS,
   });
   const migrationSignature = await sendInstructions({
@@ -288,7 +300,7 @@ async function main() {
   const poolResult = await cpmm.getPoolByMints(
     rpc,
     baseMint.address,
-    WSOL_MINT,
+    quoteMint,
     {
       commitment: 'confirmed',
       programId: deployment.cpmmProgram,
@@ -316,11 +328,11 @@ async function main() {
     tradeDirection,
     token0Program:
       pool.token0Mint === baseMint.address
-        ? TOKEN_2022_PROGRAM_ADDRESS
+        ? baseTokenProgram
         : TOKEN_PROGRAM_ADDRESS,
     token1Program:
       pool.token1Mint === baseMint.address
-        ? TOKEN_2022_PROGRAM_ADDRESS
+        ? baseTokenProgram
         : TOKEN_PROGRAM_ADDRESS,
   });
   const cpmmSwapSignature = await sendInstructions({
@@ -331,9 +343,7 @@ async function main() {
   });
   console.log('  Ungated CPMM swap tx:', cpmmSwapSignature);
   console.log('');
-  console.log(
-    'Token-2022 cosigner-gated buy and ungated CPMM migration flow complete.',
-  );
+  console.log('Legacy migration scenario complete.');
 }
 
 main().catch((error) => {

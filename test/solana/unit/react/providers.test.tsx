@@ -3,7 +3,11 @@
  */
 import { describe, it, expect } from 'vitest';
 import { address } from '@solana/addresses';
-import { createAmmContextValue, useAmm, AmmContext } from '@/solana/react/providers/AmmProvider.js';
+import {
+  createAmmContextValue,
+  useAmm,
+  AmmContext,
+} from '@/solana/react/providers/AmmProvider.js';
 import { createWalletContextValue } from '@/solana/react/providers/WalletProvider.js';
 import {
   AmmProvider,
@@ -45,7 +49,9 @@ describe('AmmProvider', () => {
 
     it('should use custom program ID when provided', () => {
       // Use a valid base58 address (32 bytes)
-      const customProgramId = address('Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS');
+      const customProgramId = address(
+        'Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS',
+      );
       const value = createAmmContextValue({
         endpoint: 'https://api.mainnet-beta.solana.com',
         programId: customProgramId,

@@ -21,11 +21,11 @@ describe('prediction lifecycle planners', () => {
     expect(() => pm.outcomeIdFromLabel('x'.repeat(33))).toThrow();
     expect(() =>
       pm.assertOutcomeIds(
-        Array.from({ length: 9 }, (_, i) => pm.outcomeIdFromLabel(String(i)))
-      )
+        Array.from({ length: 9 }, (_, i) => pm.outcomeIdFromLabel(String(i))),
+      ),
     ).toThrow();
     pm.assertOutcomeIds(
-      Array.from({ length: 8 }, (_, i) => pm.outcomeIdFromLabel(String(i)))
+      Array.from({ length: 8 }, (_, i) => pm.outcomeIdFromLabel(String(i))),
     );
   });
   it('prepares explicit oracle and creator-scoped market separately', async () => {
@@ -41,7 +41,7 @@ describe('prediction lifecycle planners', () => {
       quoteMint: mint,
     });
     expect(market.instructions[0].accounts?.map((a) => a.address)).toContain(
-      market.potVault
+      market.potVault,
     );
   });
   it('commits and appends distinct register, swap, settlement account lists', async () => {
@@ -71,7 +71,7 @@ describe('prediction lifecycle planners', () => {
       },
     });
     const data = getInitializeLaunchInstructionDataDecoder().decode(
-      result.instruction.data!
+      result.instruction.data!,
     );
     expect(data.feeBeneficiaries).toEqual([
       { wallet: signer.address, shareBps: 10000 },
@@ -86,13 +86,13 @@ describe('prediction lifecycle planners', () => {
     ]);
     expect(
       getRegisterEntryInstructionDataDecoder().decode(data.migratorInitPayload)
-        .outcomeId
+        .outcomeId,
     ).toEqual(id);
     expect(data.migratorMigratePayload).toHaveLength(8);
     expect(
       getMigrateEntryInstructionDataDecoder().decode(
-        data.migratorMigratePayload
-      )
+        data.migratorMigratePayload,
+      ),
     ).toBeDefined();
   });
   it('rejects an explicitly empty beneficiary list before transaction construction', async () => {
@@ -102,7 +102,7 @@ describe('prediction lifecycle planners', () => {
         creator: signer,
         outcomeId: id,
         launch: { feeBeneficiaries: [] } as any,
-      })
+      }),
     ).rejects.toThrow('feeBeneficiaries must be nonempty');
   });
   it('harvest recreates the outcome ATA and encodes claim(0)', async () => {
@@ -117,12 +117,12 @@ describe('prediction lifecycle planners', () => {
     expect(plan.instructions).toHaveLength(3);
     expect(
       getClaimInstructionDataDecoder().decode(plan.claimInstruction.data!)
-        .burnAmount
+        .burnAmount,
     ).toBe(0n);
   });
   it('rejects unverified Token-2022 settlement configurations', () => {
     expect(() =>
-      pm.assertPredictionTokenProgram(TOKEN_2022_PROGRAM_ADDRESS)
+      pm.assertPredictionTokenProgram(TOKEN_2022_PROGRAM_ADDRESS),
     ).toThrow('SPL Token');
     pm.assertPredictionTokenProgram(TOKEN_PROGRAM_ADDRESS);
   });
@@ -139,11 +139,11 @@ describe('prediction lifecycle planners', () => {
         market: { ...market, totalPot: 6n },
         receipt: { burnedAmount: 1n, rewardDebt: 1n },
         burnAmount: 0n,
-      }).claimableNow
+      }).claimableNow,
     ).toBe(1n);
     expect(
       pm.previewClaim({ market: { ...market, totalPot: 1n }, burnAmount: 1n })
-        .canExecute
+        .canExecute,
     ).toBe(false);
   });
   it('releases refund dust only on final circulating-supply burn', () => {
@@ -159,7 +159,7 @@ describe('prediction lifecycle planners', () => {
         isVoid: true,
         burnAmount: 1n,
         currentMintSupply: 2n,
-      }).refundAmount
+      }).refundAmount,
     ).toBe(0n);
     expect(
       pm.previewRefund({
@@ -167,7 +167,7 @@ describe('prediction lifecycle planners', () => {
         isVoid: true,
         burnAmount: 1n,
         currentMintSupply: 1n,
-      }).refundAmount
+      }).refundAmount,
     ).toBe(1n);
     expect(() =>
       pm.previewRefund({
@@ -175,7 +175,7 @@ describe('prediction lifecycle planners', () => {
         isVoid: false,
         burnAmount: 1n,
         currentMintSupply: 1n,
-      })
+      }),
     ).toThrow();
   });
   it('quotes with rounded-up fees and enforces available real reserve', () => {
@@ -188,7 +188,7 @@ describe('prediction lifecycle planners', () => {
         virtualQuote: 1000n,
         swapFeeBps: 100,
         slippageBps: 100,
-      })
+      }),
     ).toEqual({ amountOut: 180n, feeAmount: 1n, minAmountOut: 178n });
     expect(() =>
       pm.quoteBuy({
@@ -198,7 +198,7 @@ describe('prediction lifecycle planners', () => {
         virtualBase: 1000n,
         virtualQuote: 1000n,
         swapFeeBps: 100,
-      })
+      }),
     ).toThrow();
   });
 });

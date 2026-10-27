@@ -34,7 +34,11 @@ describe('marketCapToTokenPrice', () => {
 
 describe('validateMarketCapParameters', () => {
   it('returns valid for reasonable parameters', () => {
-    const result = validateMarketCapParameters(1_000_000, SUPPLY, BASE_DECIMALS);
+    const result = validateMarketCapParameters(
+      1_000_000,
+      SUPPLY,
+      BASE_DECIMALS,
+    );
     expect(result.valid).toBe(true);
     expect(result.warnings).toHaveLength(0);
   });
@@ -42,20 +46,28 @@ describe('validateMarketCapParameters', () => {
   it('warns on very small market cap', () => {
     const result = validateMarketCapParameters(500, SUPPLY, BASE_DECIMALS);
     expect(result.valid).toBe(false);
-    expect(result.warnings.some(w => w.includes('very small'))).toBe(true);
+    expect(result.warnings.some((w) => w.includes('very small'))).toBe(true);
   });
 
   it('warns on market cap above $1T', () => {
-    const result = validateMarketCapParameters(2_000_000_000_000, SUPPLY, BASE_DECIMALS);
+    const result = validateMarketCapParameters(
+      2_000_000_000_000,
+      SUPPLY,
+      BASE_DECIMALS,
+    );
     expect(result.valid).toBe(false);
-    expect(result.warnings.some(w => w.includes('$1T'))).toBe(true);
+    expect(result.warnings.some((w) => w.includes('$1T'))).toBe(true);
   });
 
   it('warns when implied token price is dust', () => {
     // Tiny mcap against huge supply → price below $0.000001
     const hugeSupply = 1_000_000_000_000_000n * 10n ** 6n;
-    const result = validateMarketCapParameters(1_000, hugeSupply, BASE_DECIMALS);
-    expect(result.warnings.some(w => w.includes('very small'))).toBe(true);
+    const result = validateMarketCapParameters(
+      1_000,
+      hugeSupply,
+      BASE_DECIMALS,
+    );
+    expect(result.warnings.some((w) => w.includes('very small'))).toBe(true);
   });
 });
 
@@ -226,8 +238,16 @@ describe('curveParamsToMarketCap', () => {
       numerairePriceUSD: SOL_PRICE,
     };
 
-    const atOpen = curveParamsToMarketCap({ ...base, baseReserve: BASE_FOR_CURVE, quoteReserve: 0n });
-    const afterBuys = curveParamsToMarketCap({ ...base, baseReserve: BASE_FOR_CURVE / 2n, quoteReserve: 500_000_000n });
+    const atOpen = curveParamsToMarketCap({
+      ...base,
+      baseReserve: BASE_FOR_CURVE,
+      quoteReserve: 0n,
+    });
+    const afterBuys = curveParamsToMarketCap({
+      ...base,
+      baseReserve: BASE_FOR_CURVE / 2n,
+      quoteReserve: 500_000_000n,
+    });
 
     expect(afterBuys).toBeGreaterThan(atOpen);
   });

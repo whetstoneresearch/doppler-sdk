@@ -92,21 +92,17 @@ console.log('CPMM config:', cpmmConfig);
 console.log('Pool:', pool?.address ?? 'not found');
 ```
 
-For runnable Solana flows, configure `examples/.env` and run with `pnpm tsx`, for example `pnpm tsx examples/solana-launch-by-marketcap.ts`:
+Start with the [five Solana examples](./examples/README.md#solana-examples). Copy `examples/.env.example` to the repository-root `.env`, then run `pnpm exec tsx examples/solana-minimal-launch.ts`.
 
-- [examples/solana-launch-by-marketcap.ts](./examples/solana-launch-by-marketcap.ts)
-- [examples/solana-adv-launch.ts](./examples/solana-adv-launch.ts)
-- [examples/solana-adv-e2e-launch.ts](./examples/solana-adv-e2e-launch.ts)
-- [examples/solana-cosigner-gated-launch.ts](./examples/solana-cosigner-gated-launch.ts)
-- [examples/solana-cosigner-gated-buy.ts](./examples/solana-cosigner-gated-buy.ts)
-- [examples/solana-usdc-e2e-launch.ts](./examples/solana-usdc-e2e-launch.ts)
-- [examples/solana-usdc-cosigner-gated-buy.ts](./examples/solana-usdc-cosigner-gated-buy.ts)
-- [Prediction markets guide](./docs/solana-prediction-markets.md): complete lifecycle helpers, six executable scenarios, payout accounting, and [ABI migration](./docs/solana-prediction-migration.md).
-- Concise prediction examples: [create](./examples/solana-prediction-create.ts), [buy](./examples/solana-prediction-buy.ts), [resolve and settle](./examples/solana-prediction-resolve.ts), [claim or refund](./examples/solana-prediction-claim.ts).
-- [Full prediction scenario runner](./test/solana/integration/prediction/run.ts)
-- [examples/solana-swap.ts](./examples/solana-swap.ts)
-- [examples/solana-vesting-launch.ts](./examples/solana-vesting-launch.ts)
-- [examples/solana-vesting-claim.ts](./examples/solana-vesting-claim.ts)
+| Example | What it covers |
+| --- | --- |
+| [Minimal launch](./examples/solana-minimal-launch.ts) | Create a permanent WSOL launch and buy tokens |
+| [Spot pool](./examples/solana-spot-pool.ts) | Create a pool, quote, and swap |
+| [Advanced launch](./examples/solana-advanced-launch.ts) | Market-cap pricing, metadata, vesting, dynamic fees, optional cosigning, SOL/USDC, and SPL Token/Token-2022 |
+| [Fee routing](./examples/solana-fee-routing.ts) | Create, trade, settle routed fees, and claim |
+| [Prediction market](./examples/solana-prediction-market.ts) | Create outcomes, buy, resolve, settle, and claim or refund |
+
+The [prediction guide](./docs/solana-prediction-markets.md) also covers deployment requirements, payout accounting, and the [integration scenario runner](./test/solana/integration/prediction/run.ts).
 
 To implement an independently deployed callback program, see
 [Building a custom Solana hook](./docs/solana-custom-hooks.md) and the

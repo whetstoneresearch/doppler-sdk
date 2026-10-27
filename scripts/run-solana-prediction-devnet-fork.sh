@@ -126,5 +126,26 @@ for action in setup all; do
 done
 COUNT_AFTER="$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).signatures.length)' "$RUN_DIR/binary.json")"
 [[ "$COUNT_BEFORE" == "$COUNT_AFTER" ]] || { echo 'Completed replay submitted additional transactions' >&2; exit 1; }
+# Chain the public example's explicit actions through its state output.
+EXAMPLE_STATE="$RUN_DIR/prediction-example.json"
+example() {
+  SOLANA_PREDICTION_STATE_OUTPUT="$EXAMPLE_STATE" npx --yes pnpm@10.11.0 exec tsx examples/solana-prediction-market.ts "$1" \
+    2>&1 | tee -a "$RUN_DIR/prediction-example.log"
+}
+example create
+state() { node -p "const s=require(process.argv[1]); $1" "$EXAMPLE_STATE"; }
+export SOLANA_PREDICTION_MARKET="$(state s.market)"
+export SOLANA_PREDICTION_BASE_MINT="$(state 's.outcomes[0].baseMint')"
+export SOLANA_PREDICTION_LAUNCH="$(state 's.outcomes[0].launch')"
+SOLANA_PREDICTION_AMOUNT_IN=100000000 example buy
+SOLANA_PREDICTION_WINNER_INDEX=0 example resolve
+SOLANA_PREDICTION_BURN_AMOUNT="$(node -e '
+  const [url, owner, mint] = process.argv.slice(1);
+  fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({
+    jsonrpc: "2.0", id: 1, method: "getTokenAccountsByOwner",
+    params: [owner, { mint }, { encoding: "jsonParsed", commitment: "confirmed" }] }) })
+    .then((r) => r.json())
+    .then((j) => console.log(j.result.value[0].account.data.parsed.info.tokenAmount.amount));
+' "$LOCAL_RPC_URL" "$SOLANA_FORK_CREATOR" "$SOLANA_PREDICTION_BASE_MINT")" example claim
 npx --yes pnpm@10.11.0 exec tsx scripts/prepare-solana-prediction-devnet-fork.ts --verify
-printf 'All six devnet-fork scenarios, exact payouts, replay and unchanged upstream config assertions passed.\n'
+printf 'All six devnet-fork scenarios, exact payouts, replay, the public example lifecycle and unchanged upstream config assertions passed.\n'
