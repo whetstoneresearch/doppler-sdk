@@ -167,8 +167,8 @@ export type InitializeLaunchV2Instruction<
 
 export type InitializeLaunchV2InstructionData = {
   discriminator: ReadonlyUint8Array;
+  /** Optional integration grouping; not part of the launch address. */
   namespace: Address;
-  launchId: ReadonlyUint8Array;
   baseDecimals: number;
   baseTotalSupply: bigint;
   baseForDistribution: bigint;
@@ -215,8 +215,8 @@ export type InitializeLaunchV2InstructionData = {
 };
 
 export type InitializeLaunchV2InstructionDataArgs = {
+  /** Optional integration grouping; not part of the launch address. */
   namespace: Address;
-  launchId: ReadonlyUint8Array;
   baseDecimals: number;
   baseTotalSupply: number | bigint;
   baseForDistribution: number | bigint;
@@ -267,7 +267,6 @@ export function getInitializeLaunchV2InstructionDataEncoder(): Encoder<Initializ
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       ['namespace', getAddressEncoder()],
-      ['launchId', fixEncoderSize(getBytesEncoder(), 32)],
       ['baseDecimals', getU8Encoder()],
       ['baseTotalSupply', getU64Encoder()],
       ['baseForDistribution', getU64Encoder()],
@@ -319,7 +318,6 @@ export function getInitializeLaunchV2InstructionDataDecoder(): Decoder<Initializ
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['namespace', getAddressDecoder()],
-    ['launchId', fixDecoderSize(getBytesDecoder(), 32)],
     ['baseDecimals', getU8Decoder()],
     ['baseTotalSupply', getU64Decoder()],
     ['baseForDistribution', getU64Decoder()],
@@ -388,7 +386,7 @@ export type InitializeLaunchV2AsyncInput<
   TAccountVestingConfig extends string = string,
 > = {
   config?: Address<TAccountConfig>;
-  launch: Address<TAccountLaunch>;
+  launch?: Address<TAccountLaunch>;
   /** System-owned PDA authority for launch vaults. */
   launchAuthority?: Address<TAccountLaunchAuthority>;
   baseMint: TransactionSigner<TAccountBaseMint>;
@@ -414,7 +412,6 @@ export type InitializeLaunchV2AsyncInput<
   /** Optional immutable vesting configuration for the reserved base allocation. */
   vestingConfig?: Address<TAccountVestingConfig>;
   namespace: InitializeLaunchV2InstructionDataArgs['namespace'];
-  launchId: InitializeLaunchV2InstructionDataArgs['launchId'];
   baseDecimals: InitializeLaunchV2InstructionDataArgs['baseDecimals'];
   baseTotalSupply: InitializeLaunchV2InstructionDataArgs['baseTotalSupply'];
   baseForDistribution: InitializeLaunchV2InstructionDataArgs['baseForDistribution'];
@@ -563,6 +560,20 @@ export async function getInitializeLaunchV2InstructionAsync<
       programAddress,
       seeds: [
         getBytesEncoder().encode(new Uint8Array([99, 111, 110, 102, 105, 103])),
+      ],
+    });
+  }
+  if (!accounts.launch.value) {
+    accounts.launch.value = await getProgramDerivedAddress({
+      programAddress,
+      seeds: [
+        getBytesEncoder().encode(new Uint8Array([108, 97, 117, 110, 99, 104])),
+        getAddressEncoder().encode(
+          getAddressFromResolvedInstructionAccount(
+            'baseMint',
+            accounts.baseMint.value,
+          ),
+        ),
       ],
     });
   }
@@ -744,7 +755,6 @@ export type InitializeLaunchV2Input<
   /** Optional immutable vesting configuration for the reserved base allocation. */
   vestingConfig?: Address<TAccountVestingConfig>;
   namespace: InitializeLaunchV2InstructionDataArgs['namespace'];
-  launchId: InitializeLaunchV2InstructionDataArgs['launchId'];
   baseDecimals: InitializeLaunchV2InstructionDataArgs['baseDecimals'];
   baseTotalSupply: InitializeLaunchV2InstructionDataArgs['baseTotalSupply'];
   baseForDistribution: InitializeLaunchV2InstructionDataArgs['baseForDistribution'];

@@ -197,7 +197,7 @@ async function buildMessage(
       ? 50_000_000n * 10n ** BigInt(baseDecimals)
       : 0n;
 
-  const ix = await initializer.createInitializeLaunchInstruction(
+  const ix = await initializer.createInitializeLaunchLegacyInstruction(
     {
       config: context.initializerConfig,
       launch: context.launch,
@@ -302,7 +302,6 @@ async function buildPredictionMessage(metadata: {
     outcomeId: predictionMarkets.outcomeIdFromLabel('YES'),
     launch: {
       config: (await initializer.getConfigAddress())[0],
-      launchId: predictionMarkets.outcomeIdFromLabel('YES'),
       launchAccounts: { baseMint, quoteMint: WSOL_MINT },
       payer,
       supply: {

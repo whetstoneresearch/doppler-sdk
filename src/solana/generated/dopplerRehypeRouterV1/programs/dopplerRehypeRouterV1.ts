@@ -58,18 +58,22 @@ import {
 import {
   getClaimFeesInstructionAsync,
   getInitializeRehypeInstructionAsync,
+  getInitializeRehypeV2InstructionAsync,
   getReplaceBeneficiaryInstructionAsync,
   getSettleFeesInstructionAsync,
   getSettleMigratedFeesInstructionAsync,
   parseClaimFeesInstruction,
   parseInitializeRehypeInstruction,
+  parseInitializeRehypeV2Instruction,
   parseReplaceBeneficiaryInstruction,
   parseSettleFeesInstruction,
   parseSettleMigratedFeesInstruction,
   type ClaimFeesAsyncInput,
   type InitializeRehypeAsyncInput,
+  type InitializeRehypeV2AsyncInput,
   type ParsedClaimFeesInstruction,
   type ParsedInitializeRehypeInstruction,
+  type ParsedInitializeRehypeV2Instruction,
   type ParsedReplaceBeneficiaryInstruction,
   type ParsedSettleFeesInstruction,
   type ParsedSettleMigratedFeesInstruction,
@@ -181,6 +185,7 @@ export function identifyDopplerRehypeRouterV1Account(
 export enum DopplerRehypeRouterV1Instruction {
   ClaimFees,
   InitializeRehype,
+  InitializeRehypeV2,
   ReplaceBeneficiary,
   SettleFees,
   SettleMigratedFees,
@@ -211,6 +216,17 @@ export function identifyDopplerRehypeRouterV1Instruction(
     )
   ) {
     return DopplerRehypeRouterV1Instruction.InitializeRehype;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([110, 197, 188, 200, 149, 37, 37, 62]),
+      ),
+      0,
+    )
+  ) {
+    return DopplerRehypeRouterV1Instruction.InitializeRehypeV2;
   }
   if (
     containsBytes(
@@ -261,6 +277,9 @@ export type ParsedDopplerRehypeRouterV1Instruction<
       instructionType: DopplerRehypeRouterV1Instruction.InitializeRehype;
     } & ParsedInitializeRehypeInstruction<TProgram>)
   | ({
+      instructionType: DopplerRehypeRouterV1Instruction.InitializeRehypeV2;
+    } & ParsedInitializeRehypeV2Instruction<TProgram>)
+  | ({
       instructionType: DopplerRehypeRouterV1Instruction.ReplaceBeneficiary;
     } & ParsedReplaceBeneficiaryInstruction<TProgram>)
   | ({
@@ -287,6 +306,13 @@ export function parseDopplerRehypeRouterV1Instruction<TProgram extends string>(
       return {
         instructionType: DopplerRehypeRouterV1Instruction.InitializeRehype,
         ...parseInitializeRehypeInstruction(instruction),
+      };
+    }
+    case DopplerRehypeRouterV1Instruction.InitializeRehypeV2: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: DopplerRehypeRouterV1Instruction.InitializeRehypeV2,
+        ...parseInitializeRehypeV2Instruction(instruction),
       };
     }
     case DopplerRehypeRouterV1Instruction.ReplaceBeneficiary: {
@@ -351,6 +377,10 @@ export type DopplerRehypeRouterV1PluginInstructions = {
     input: MakeOptional<InitializeRehypeAsyncInput, 'payer'>,
   ) => ReturnType<typeof getInitializeRehypeInstructionAsync> &
     SelfPlanAndSendFunctions;
+  initializeRehypeV2: (
+    input: MakeOptional<InitializeRehypeV2AsyncInput, 'payer'>,
+  ) => ReturnType<typeof getInitializeRehypeV2InstructionAsync> &
+    SelfPlanAndSendFunctions;
   replaceBeneficiary: (
     input: ReplaceBeneficiaryAsyncInput,
   ) => ReturnType<typeof getReplaceBeneficiaryInstructionAsync> &
@@ -402,6 +432,14 @@ export function dopplerRehypeRouterV1Program() {
             addSelfPlanAndSendFunctions(
               client,
               getInitializeRehypeInstructionAsync({
+                ...input,
+                payer: input.payer ?? client.payer,
+              }),
+            ),
+          initializeRehypeV2: (input) =>
+            addSelfPlanAndSendFunctions(
+              client,
+              getInitializeRehypeV2InstructionAsync({
                 ...input,
                 payer: input.payer ?? client.payer,
               }),

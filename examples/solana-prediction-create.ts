@@ -53,7 +53,6 @@ async function main(): Promise<void> {
       outcomeId,
       launch: {
         payer,
-        launchId: outcomeId,
         launchAccounts: {
           baseMint,
           quoteMint: WSOL_MINT,

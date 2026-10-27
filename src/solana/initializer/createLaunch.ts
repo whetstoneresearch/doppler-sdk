@@ -1,4 +1,5 @@
 import {
+  getAddressEncoder,
   type Address,
   type Instruction,
   type ReadonlyUint8Array,
@@ -51,6 +52,7 @@ import {
 import {
   getConfigAddress,
   getLaunchAddress,
+  getLaunchV2Address,
   getLaunchAuthorityAddress,
   getLaunchFeeStateAddress,
   getBaseVaultAddress,
@@ -154,12 +156,14 @@ export type DeriveCreateLaunchAddressesInput = {
   >;
   programId?: Address;
   config?: Address;
-  namespace: Address;
-  launchId: Uint8Array;
+  namespace?: Address;
   baseMint: AddressOrSigner;
   metadata?: LaunchMetadata | null;
   metadataAccount?: Address;
-};
+} & (
+  | { vaultMode: 'legacy'; launchId: Uint8Array }
+  | { vaultMode?: 'deterministic'; launchId?: never }
+);
 
 export type CreateLaunchInput = {
   deployment?: Pick<
@@ -175,6 +179,7 @@ export type CreateLaunchInput = {
   programId?: Address;
   config?: Address;
   namespace?: Address;
+  /** Only accepted in legacy mode; V2 identity is derived from the base mint. */
   launchId?: Uint8Array;
   addresses?: Omit<CreateLaunchAddresses, 'baseVault' | 'quoteVault'>;
   launchAccounts: CreateLaunchAccountSigners;
@@ -486,6 +491,21 @@ async function resolveCreateLaunchMigration({
   };
 }
 
+/** @internal The persisted ID is the mint bytes for V2; only legacy launches generate IDs. */
+export function resolveCreateLaunchId(
+  input: Pick<CreateLaunchInput, 'vaultMode' | 'launchId' | 'launchAccounts'>,
+): Uint8Array {
+  if (input.vaultMode === 'legacy') return input.launchId ?? createLaunchId();
+  if (input.launchId !== undefined) {
+    throw new Error(
+      'launchId is only supported in legacy mode; V2 identity comes from the base mint',
+    );
+  }
+  return new Uint8Array(
+    getAddressEncoder().encode(getSignerAddress(input.launchAccounts.baseMint)),
+  );
+}
+
 export async function deriveCreateLaunchAddresses(
   input: DeriveCreateLaunchAddressesInput,
 ): Promise<CreateLaunchAddresses> {
@@ -497,11 +517,20 @@ export async function deriveCreateLaunchAddresses(
     input.config ??
     input.deployment?.initializerConfig ??
     (await getConfigAddress(programId))[0];
-  const [launch] = await getLaunchAddress(
-    input.namespace,
-    input.launchId,
-    programId,
-  );
+  if (input.vaultMode === 'legacy' && !input.launchId) {
+    throw new Error('Legacy launch derivation requires launchId');
+  }
+  if (input.vaultMode !== 'legacy' && input.launchId !== undefined) {
+    throw new Error('V2 launch derivation does not accept launchId');
+  }
+  const [launch] =
+    input.vaultMode === 'legacy'
+      ? await getLaunchAddress(
+          input.namespace ?? SYSTEM_PROGRAM_ADDRESS,
+          input.launchId,
+          programId,
+        )
+      : await getLaunchV2Address(getSignerAddress(input.baseMint), programId);
   const [launchAuthority] = await getLaunchAuthorityAddress(launch, programId);
   const [launchFeeState] = await getLaunchFeeStateAddress(launch, programId);
   const [[baseVault], [quoteVault]] = await Promise.all([
@@ -541,10 +570,12 @@ export async function resolveCreateLaunchAddresses(
   },
 ): Promise<CreateLaunchAddresses> {
   const programId = getInitializerProgramId(input);
+  const { launchId, vaultMode, ...derivationInput } = input;
   const addresses =
     input.addresses ??
     (await deriveCreateLaunchAddresses({
-      ...input,
+      ...derivationInput,
+      ...(vaultMode === 'legacy' ? { vaultMode, launchId } : { vaultMode }),
       programId,
       config: getInitializerConfig(input),
       baseMint: input.launchAccounts.baseMint,
@@ -611,7 +642,7 @@ export async function createLaunchWithResolvedHook(
   cosignerGate?: ResolvedManagedCosignerGate,
 ): Promise<CreateLaunchResult> {
   const programId = getInitializerProgramId(input);
-  const launchId = input.launchId ?? createLaunchId();
+  const launchId = resolveCreateLaunchId(input);
   const namespace = input.namespace ?? SYSTEM_PROGRAM_ADDRESS;
   const tokenPrograms = {
     ...launchTokenPrograms.splToken(),

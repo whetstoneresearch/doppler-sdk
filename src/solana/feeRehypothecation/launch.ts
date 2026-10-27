@@ -13,7 +13,10 @@ import {
   isResolvedManagedCosignerGateV2,
   type ResolvedManagedCosignerGateV2,
 } from '../dopplerLaunchHookV2/index.js';
-import { getInitializeRehypeInstructionAsync } from '../dopplerRehypeRouterV1/index.js';
+import {
+  getInitializeRehypeInstructionAsync,
+  getInitializeRehypeV2InstructionAsync,
+} from '../dopplerRehypeRouterV1/index.js';
 import { TOKEN_PROGRAM_ADDRESS } from '../core/constants.js';
 import {
   DOPPLER_SOLANA_DEVNET_FEE_REHYPOTHECATION_PROGRAM_ADDRESSES,
@@ -28,7 +31,7 @@ import {
   HF_LAUNCH_CONTEXT_V2,
 } from '../initializer/constants.js';
 import {
-  createLaunchId,
+  resolveCreateLaunchId,
   createLaunchWithResolvedHook,
   resolveCreateLaunchAddresses,
   type CreateLaunchAccountSigners,
@@ -128,7 +131,7 @@ export async function prepareLaunch(
     (await deriveSolanaFeeRehypothecationDeployment(
       DOPPLER_SOLANA_DEVNET_FEE_REHYPOTHECATION_PROGRAM_ADDRESSES,
     ));
-  const launchId = input.launchId ?? createLaunchId();
+  const launchId = resolveCreateLaunchId(input);
   const namespace = input.namespace ?? deployment.dopplerRehypeRouterV1Program;
   const launchAddresses = await resolveCreateLaunchAddresses({
     deployment: {
@@ -210,33 +213,36 @@ export async function prepareLaunch(
       : null,
     feeRehypothecationState: routingAddresses.state,
   });
-  const initializeRoutingInstruction =
-    await getInitializeRehypeInstructionAsync(
-      {
-        payer: input.payer,
-        baseMint: input.launchAccounts.baseMint,
-        quoteMint: input.launchAccounts.quoteMint,
-        hookProgram: deployment.dopplerLaunchHookV2Program,
-        initializerProgram: deployment.initializerProgram,
-        rehypeState: routingAddresses.state,
-        rehypeAuthority: routingAddresses.authority,
-        settlementSigner: routingAddresses.settlementSigner,
-        namespace,
-        launchId,
-        buybackDestination: input.buybackDestination,
-        routingMode: input.strategy.routingMode,
-        feeRouting: input.strategy.feeRouting,
-        beneficiaries,
-      },
-      { programAddress: deployment.dopplerRehypeRouterV1Program },
-    );
+  const initializeRouting =
+    input.vaultMode === 'legacy'
+      ? getInitializeRehypeInstructionAsync
+      : getInitializeRehypeV2InstructionAsync;
+  const initializeRoutingInstruction = await initializeRouting(
+    {
+      payer: input.payer,
+      baseMint: input.launchAccounts.baseMint,
+      quoteMint: input.launchAccounts.quoteMint,
+      hookProgram: deployment.dopplerLaunchHookV2Program,
+      initializerProgram: deployment.initializerProgram,
+      rehypeState: routingAddresses.state,
+      rehypeAuthority: routingAddresses.authority,
+      settlementSigner: routingAddresses.settlementSigner,
+      namespace,
+      launchId,
+      buybackDestination: input.buybackDestination,
+      routingMode: input.strategy.routingMode,
+      feeRouting: input.strategy.feeRouting,
+      beneficiaries,
+    },
+    { programAddress: deployment.dopplerRehypeRouterV1Program },
+  );
   const launchInput: CreateLaunchInput = {
     deployment: {
       initializerProgram: deployment.initializerProgram,
       initializerConfig: deployment.initializerConfig,
     },
     namespace,
-    launchId,
+    launchId: input.vaultMode === 'legacy' ? launchId : undefined,
     addresses: launchAddresses,
     launchAccounts: input.launchAccounts,
     vaultMode: input.vaultMode,

@@ -63,6 +63,7 @@ export type Launch = {
   discriminator: ReadonlyUint8Array;
   authority: Address;
   namespace: Address;
+  /** Caller-selected ID for legacy launches; base-mint bytes for mint-derived V2 launches. */
   launchId: ReadonlyUint8Array;
   phase: number;
   bump: number;
@@ -102,6 +103,7 @@ export type Launch = {
 export type LaunchArgs = {
   authority: Address;
   namespace: Address;
+  /** Caller-selected ID for legacy launches; base-mint bytes for mint-derived V2 launches. */
   launchId: ReadonlyUint8Array;
   phase: number;
   bump: number;
