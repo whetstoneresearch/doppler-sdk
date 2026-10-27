@@ -37,8 +37,10 @@ const VESTED_SUPPLY = BASE_TOTAL_SUPPLY / 5n;
 const BUY_AMOUNT = 10_000_000n;
 const START_FEE_BPS = 1_000;
 const END_FEE_BPS = 200;
-// Launch creation waits for a finalized slot, which can take ~20s on CI.
-const SCHEDULE_SECONDS = 40n;
+// Launch creation waits for a finalized slot, which can take ~20s on CI, and
+// the gate expiry is fixed before it starts. The fee decay starts at creation.
+const GATE_SECONDS = 40n;
+const FEE_DECAY_SECONDS = 10n;
 
 async function main(): Promise<void> {
   const payer = await loadKeypairSignerFromEnv();
@@ -48,11 +50,11 @@ async function main(): Promise<void> {
   const deployment = await getSolanaCpmmDeploymentFromEnv(clients.network);
   const vestingProgram = address(process.env.SOLANA_VESTING_PROGRAM_ID!);
   const now = async () => (await fetchSysvarClock(rpc)).unixTimestamp;
-  const ends = (await now()) + SCHEDULE_SECONDS;
+  const gateEnds = (await now()) + GATE_SECONDS;
 
   const gate = await dopplerLaunchHookV1.resolveManagedCosignerGate(rpc, {
     programId: deployment.dopplerLaunchHookV1Program,
-    expiresAt: ends,
+    expiresAt: gateEnds,
   });
   const baseMint = await generateKeyPairSigner();
   const prepared = await vesting.prepareLaunch({
@@ -75,7 +77,7 @@ async function main(): Promise<void> {
       startingTime: 0n,
       startFeeBps: START_FEE_BPS,
       endFeeBps: END_FEE_BPS,
-      durationSeconds: SCHEDULE_SECONDS,
+      durationSeconds: FEE_DECAY_SECONDS,
     },
     cosignerGate: gate,
     migration: false,
@@ -99,6 +101,7 @@ async function main(): Promise<void> {
     instruction: prepared.initializeLaunchInstruction,
     metadata: DEFAULT_TEST_METADATA,
   });
+  const feeDecayEnds = (await now()) + FEE_DECAY_SECONDS;
   await send([prepared.fundVestingInstruction]);
 
   const { signedHookRemainingAccounts, unsignedHookRemainingAccounts } =
@@ -129,10 +132,8 @@ async function main(): Promise<void> {
     ).data.cumulatedQuoteFees;
   const endFee = initializer.getCurveSwapFeeAmount(BUY_AMOUNT, END_FEE_BPS);
 
-  if ((await now()) >= ends - 5n) {
-    throw new Error(
-      'Launch creation outlasted the schedules; raise SCHEDULE_SECONDS',
-    );
+  if ((await now()) >= gateEnds - 5n) {
+    throw new Error('Launch creation outlasted the gate; raise GATE_SECONDS');
   }
   const unsigned = await buy(unsignedHookRemainingAccounts);
   assertSimulationRejected(
@@ -154,6 +155,7 @@ async function main(): Promise<void> {
   }
   console.log(`Early buy fee: ${earlyFee} (end fee ${endFee})`);
 
+  const ends = gateEnds > feeDecayEnds ? gateEnds : feeDecayEnds;
   while ((await now()) <= ends + 1n) {
     await new Promise((resolve) => setTimeout(resolve, 1_000));
   }
