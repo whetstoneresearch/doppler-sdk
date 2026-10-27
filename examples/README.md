@@ -211,11 +211,15 @@ Set each action's inputs before running it; see the [prediction guide](../docs/s
 
 ```bash
 pnpm typecheck:solana-examples
-pnpm test:solana:fork:examples
-pnpm test:solana:fork:devnet-examples
+pnpm test:solana:fork:examples          # mainnet fork
+pnpm test:solana:fork:devnet-examples   # devnet fork
 ```
 
-Both commands run [`scripts/solana-examples-fork.ts`](../scripts/solana-examples-fork.ts) against a disposable local validator that copies the deployed programs and protocol configuration from mainnet or devnet. Wallets, the hook cosigner and USDC balances are synthetic and exist only in the local ledger. The mainnet fork runs the minimal launch and the [legacy migration scenario](../test/solana/integration/legacy-migration.ts) across SOL/USDC and SPL Token/Token-2022. The devnet fork runs advanced creation, a buy and an immediate vesting claim across the same four combinations, plus spot creation and swap. Use `--only '<glob>'` to select cases and `--keep` to retain the run directory. Prediction retains its separate [integration scenarios](../docs/solana-prediction-markets.md#run-the-integration-scenarios).
+Both commands run [`scripts/solana-examples-fork.ts`](../scripts/solana-examples-fork.ts) against a disposable local validator. It copies the deployed programs, protocol configuration and USDC mint from one slot of the chosen network; wallets, the hook cosigner and USDC balances are synthetic and exist only in the local ledger. Add `--only '<glob>'` to select cases or `--keep` to retain the run directory and per-case logs.
+
+[`scripts/solana-fork/manifest.ts`](../scripts/solana-fork/manifest.ts) lists every example action for each network as `run`, `skip-until-mainnet`, `skip-until-devnet`, `delegated` or `needs-example-change`, with a reason. The runner fails if an example or an action in its usage string has no entry. Alongside the examples it runs the [legacy migration scenario](../test/solana/integration/legacy-migration.ts) and a [timing scenario](../test/solana/integration/launch-timing.ts) that waits for a short fee decay, gate expiry and vesting cliff. The prediction lifecycle runs in its own [fork job](../docs/solana-prediction-markets.md#verify-against-a-devnet-fork).
+
+Before starting the validator, the runner probes the source network: each program's deployed ELF hash is compared with the pin in [`networks.ts`](../scripts/solana-fork/networks.ts), and a skipped entry whose blocking program changed is reported as ready to enable. These findings are warnings by default; `--strict`, used on `main` and nightly in CI, makes them fail the run. After verifying a change, update the pin or the manifest entry.
 
 ## Prerequisites
 
