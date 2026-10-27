@@ -37,15 +37,12 @@ const strategies = {
 
 function getStrategy() {
   const name = process.env.SOLANA_FEE_REHYPOTHECATION_STRATEGY ?? 'numeraire';
-  switch (name) {
-    case 'asset':
-    case 'numeraire':
-    case 'inKind':
-    case 'balanced':
-      return { name, strategy: strategies[name]() };
-    default:
-      throw new Error('Strategy must be asset, numeraire, inKind, or balanced');
+  if (!Object.hasOwn(strategies, name)) {
+    throw new Error(
+      `Strategy must be one of: ${Object.keys(strategies).join(', ')}`,
+    );
   }
+  return { name, strategy: strategies[name as keyof typeof strategies]() };
 }
 
 function shouldSettleAndClaim(): boolean {
@@ -83,6 +80,7 @@ async function main(): Promise<void> {
   const settleAndClaim = async (
     launch: Address,
     baseMint: Address,
+    beneficiary = payer.address,
   ): Promise<void> => {
     const settlement = await feeRehypothecation.prepareSettlement({
       rpc,
@@ -105,9 +103,7 @@ async function main(): Promise<void> {
       deployment,
       baseMint,
       payer,
-      beneficiary: process.env.SOLANA_FEE_BENEFICIARY
-        ? address(process.env.SOLANA_FEE_BENEFICIARY)
-        : payer.address,
+      beneficiary,
     });
     console.log(
       'Claim:',
@@ -128,6 +124,9 @@ async function main(): Promise<void> {
     await settleAndClaim(
       address(requiredEnv('SOLANA_LAUNCH')),
       address(requiredEnv('SOLANA_BASE_MINT')),
+      process.env.SOLANA_FEE_BENEFICIARY
+        ? address(process.env.SOLANA_FEE_BENEFICIARY)
+        : undefined,
     );
     return;
   }

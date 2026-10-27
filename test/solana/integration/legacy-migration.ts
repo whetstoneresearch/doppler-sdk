@@ -74,14 +74,13 @@ async function main() {
       : TOKEN_PROGRAM_ADDRESS;
   const QUOTE_DECIMALS = quote === 'sol' ? 9 : 6;
   const SWAP_FEE_BPS = DEFAULT_SWAP_FEE_BPS;
-  const BUY_AMOUNT_IN = parseDecimalTokenAmount(
+  const buyAmountEnv =
     quote === 'sol'
       ? 'SOLANA_COSIGNER_BUY_AMOUNT_SOL'
-      : 'SOLANA_COSIGNER_BUY_AMOUNT_USDC',
-    QUOTE_DECIMALS,
-  );
+      : 'SOLANA_COSIGNER_BUY_AMOUNT_USDC';
+  const BUY_AMOUNT_IN = parseDecimalTokenAmount(buyAmountEnv, QUOTE_DECIMALS);
   if (BUY_AMOUNT_IN === 0n) {
-    throw new Error('SOLANA_COSIGNER_BUY_AMOUNT_SOL must be greater than zero');
+    throw new Error(`${buyAmountEnv} must be greater than zero`);
   }
   const minRaiseQuote = BUY_AMOUNT_IN > 1_000n ? BUY_AMOUNT_IN / 2n : 1n;
   const launchBeneficiaries = loadLaunchBeneficiaries({

@@ -166,8 +166,6 @@ async function main(): Promise<void> {
     return;
   }
   const swapAmount = quoteAmount / 10n;
-  if (swapAmount === 0n)
-    throw new Error('Quote liquidity must be at least 10 lamports');
   const swap = await swapExactIn({
     deployment,
     pool: { address: accounts.pool, account: pool },
