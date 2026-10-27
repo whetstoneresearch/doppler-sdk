@@ -215,7 +215,7 @@ pnpm test:solana:fork:examples
 pnpm test:solana:fork:devnet-examples
 ```
 
-The existing fork runners use disposable wallets and local ledgers. The first runs the minimal launch and one [legacy migration scenario](../test/solana/integration/legacy-migration.ts) across SOL/USDC and SPL Token/Token-2022. The devnet fork runs advanced creation, a buy and an immediate vesting claim across all four SOL/USDC × SPL Token/Token-2022 combinations, plus spot creation and swap. USDC test funds are supplied only in the local ledger; its zero-duration vesting schedule avoids waiting for wall-clock time. Set `SOLANA_RUN_DEVNET_REHYPOTHECATION_EXAMPLES=true` to include fee routing once the required router ABI is deployed. Prediction retains its separate [integration scenarios](../docs/solana-prediction-markets.md#run-the-integration-scenarios).
+Both commands run [`scripts/solana-examples-fork.ts`](../scripts/solana-examples-fork.ts) against a disposable local validator that copies the deployed programs and protocol configuration from mainnet or devnet. Wallets, the hook cosigner and USDC balances are synthetic and exist only in the local ledger. The mainnet fork runs the minimal launch and the [legacy migration scenario](../test/solana/integration/legacy-migration.ts) across SOL/USDC and SPL Token/Token-2022. The devnet fork runs advanced creation, a buy and an immediate vesting claim across the same four combinations, plus spot creation and swap. Use `--only '<glob>'` to select cases and `--keep` to retain the run directory. Prediction retains its separate [integration scenarios](../docs/solana-prediction-markets.md#run-the-integration-scenarios).
 
 ## Prerequisites
 
