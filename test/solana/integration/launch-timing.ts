@@ -37,8 +37,8 @@ const VESTED_SUPPLY = BASE_TOTAL_SUPPLY / 5n;
 const BUY_AMOUNT = 10_000_000n;
 const START_FEE_BPS = 1_000;
 const END_FEE_BPS = 200;
-// Long enough for creation and the first buy to finish before either ends.
-const SCHEDULE_SECONDS = 15n;
+// Launch creation waits for a finalized slot, which can take ~20s on CI.
+const SCHEDULE_SECONDS = 40n;
 
 async function main(): Promise<void> {
   const payer = await loadKeypairSignerFromEnv();
@@ -129,6 +129,11 @@ async function main(): Promise<void> {
     ).data.cumulatedQuoteFees;
   const endFee = initializer.getCurveSwapFeeAmount(BUY_AMOUNT, END_FEE_BPS);
 
+  if ((await now()) >= ends - 5n) {
+    throw new Error(
+      'Launch creation outlasted the schedules; raise SCHEDULE_SECONDS',
+    );
+  }
   const unsigned = await buy(unsignedHookRemainingAccounts);
   assertSimulationRejected(
     'Unsigned buy before gate expiry',
