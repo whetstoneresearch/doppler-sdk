@@ -14,7 +14,7 @@ Use pnpm with Node.js `>=18`.
 - `pnpm test:unit` runs unit tests; `pnpm test:solana` runs Solana tests.
 - `pnpm test:fork` and `pnpm test:live` enable environment-sensitive fork/live tests.
 - `pnpm typecheck` and `pnpm typecheck:test` validate source and test TypeScript.
-- `pnpm lint`, `pnpm lint:fix`, `pnpm format`, and `pnpm format:check` use Oxlint/Oxfmt on `src/` and `examples/`.
+- `pnpm lint`, `pnpm lint:fix`, `pnpm format`, and `pnpm format:check` use Oxlint/Oxfmt on `src/`, `examples/`, and `test/solana/`.
 - `pnpm generate:codecs` regenerates `src/solana/generated/`; `pnpm generate:addresses` refreshes `src/evm/deployments.generated.ts`.
 
 ## Coding Style & Naming Conventions

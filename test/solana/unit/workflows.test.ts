@@ -157,15 +157,9 @@ describe('Solana workflow helpers', () => {
         launchAuthority: address(
           '5hX6e1cyWUFHMzLM5VGuxFHXU8Gykqa5R2rsJqnyqkyU',
         ),
-        baseVault: address(
-          '5M6Ko42FUVA4ovM7EMERuhRdT49yYRaYtLuQ7jnhkBhC',
-        ),
-        quoteVault: address(
-          '7ZAv1WfVd2k9TtPGC82ZxPwpE2L8YB4Y3dByQNCXc9NL',
-        ),
-        launchFeeState: address(
-          '3x13Y2NkqGGLNxbh3Pcz9F4SNgtVtFU6fqfmbs36FxgY',
-        ),
+        baseVault: address('5M6Ko42FUVA4ovM7EMERuhRdT49yYRaYtLuQ7jnhkBhC'),
+        quoteVault: address('7ZAv1WfVd2k9TtPGC82ZxPwpE2L8YB4Y3dByQNCXc9NL'),
+        launchFeeState: address('3x13Y2NkqGGLNxbh3Pcz9F4SNgtVtFU6fqfmbs36FxgY'),
         baseMint: address('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'),
         quoteMint: WSOL_MINT,
         payer,

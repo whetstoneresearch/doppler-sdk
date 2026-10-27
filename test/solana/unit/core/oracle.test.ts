@@ -10,7 +10,9 @@ function makeOracle(overrides: Partial<OracleState> = {}): OracleState {
     price0Cumulative: 0n,
     price1Cumulative: 0n,
   };
-  const observations = Array.from({ length: MAX_ORACLE_OBSERVATIONS }, () => ({ ...emptyObs }));
+  const observations = Array.from({ length: MAX_ORACLE_OBSERVATIONS }, () => ({
+    ...emptyObs,
+  }));
 
   return {
     pool: address('11111111111111111111111111111111'),
@@ -44,11 +46,14 @@ describe('consultTwap', () => {
   });
 
   it('matches on-chain cumulative math when sampling observations', () => {
-    const observations: Observation[] = Array.from({ length: MAX_ORACLE_OBSERVATIONS }, () => ({
-      timestamp: 0,
-      price0Cumulative: 0n,
-      price1Cumulative: 0n,
-    }));
+    const observations: Observation[] = Array.from(
+      { length: MAX_ORACLE_OBSERVATIONS },
+      () => ({
+        timestamp: 0,
+        price0Cumulative: 0n,
+        price1Cumulative: 0n,
+      }),
+    );
     observations[0] = {
       timestamp: 60,
       price0Cumulative: 2n * Q64_ONE,
@@ -68,8 +73,10 @@ describe('consultTwap', () => {
     expect(result).not.toBeNull();
 
     const dtSinceLast = nowTs - oracle.lastTimestamp;
-    const cum0Now = oracle.price0Cumulative + (oracle.truncPrice0Q64 * BigInt(dtSinceLast));
-    const cum1Now = oracle.price1Cumulative + (oracle.truncPrice1Q64 * BigInt(dtSinceLast));
+    const cum0Now =
+      oracle.price0Cumulative + oracle.truncPrice0Q64 * BigInt(dtSinceLast);
+    const cum1Now =
+      oracle.price1Cumulative + oracle.truncPrice1Q64 * BigInt(dtSinceLast);
     const sample = observations[0];
     const dt = nowTs - sample.timestamp;
     const expected0 = (cum0Now - sample.price0Cumulative) / BigInt(dt);

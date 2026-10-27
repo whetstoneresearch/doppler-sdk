@@ -32,7 +32,11 @@ describe('initializer PDA derivation', () => {
       ],
     });
 
-    const [launchAddress] = await getLaunchAddress(admin, launchIdBytes32, INITIALIZER_PROGRAM_ID);
+    const [launchAddress] = await getLaunchAddress(
+      admin,
+      launchIdBytes32,
+      INITIALIZER_PROGRAM_ID,
+    );
     expect(launchAddress).toBe(expectedLaunch[0]);
 
     const expectedLaunchAuthority = await getProgramDerivedAddress({
@@ -43,7 +47,10 @@ describe('initializer PDA derivation', () => {
       ],
     });
 
-    const [launchAuthority] = await getLaunchAuthorityAddress(launchAddress, INITIALIZER_PROGRAM_ID);
+    const [launchAuthority] = await getLaunchAuthorityAddress(
+      launchAddress,
+      INITIALIZER_PROGRAM_ID,
+    );
     expect(launchAuthority).toBe(expectedLaunchAuthority[0]);
   });
 });
