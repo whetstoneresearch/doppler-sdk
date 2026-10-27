@@ -11,8 +11,8 @@ export type Skip = {
     | 'delegated'
     | 'needs-example-change';
   reason: string;
-  /** Programs whose presence on the fork source would let this entry run. */
-  requires?: readonly ProgramName[];
+  /** Programs whose deployment or upgrade may let this entry run. */
+  until?: readonly ProgramName[];
 };
 export type Support = 'run' | Skip;
 
@@ -56,6 +56,7 @@ const mainnetOnly: Record<Network, Support> = {
 const routerPending: Skip = {
   status: 'needs-example-change',
   reason: 'Pending verification of the deployed router ABI',
+  until: ['launchHookV2', 'rehypeRouter'],
 };
 const combos = [
   ['sol', 'spl'],

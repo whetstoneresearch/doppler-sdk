@@ -1,7 +1,9 @@
 /**
  * Runs the Solana examples against a disposable local fork of devnet or
  * mainnet. Usage:
- *   tsx scripts/solana-examples-fork.ts --network devnet|mainnet [--only <glob>] [--keep]
+ *   tsx scripts/solana-examples-fork.ts --network devnet|mainnet [--strict] [--only <glob>] [--keep]
+ * Probe findings (changed programs, skipped entries that may now run) only
+ * warn unless --strict.
  */
 import { spawn, type ChildProcess } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
@@ -37,6 +39,7 @@ import {
   NETWORKS,
   type Network,
 } from './solana-fork/networks.js';
+import { checkManifestCompleteness, probe } from './solana-fork/probe.js';
 import { snapshotNetwork } from './solana-fork/snapshot.js';
 
 const ROOT = join(import.meta.dirname, '..');
@@ -45,6 +48,7 @@ const { values: options } = parseArgs({
     network: { type: 'string' },
     only: { type: 'string' },
     keep: { type: 'boolean', default: false },
+    strict: { type: 'boolean', default: false },
   },
 });
 const network = options.network as Network;
@@ -186,6 +190,7 @@ function runCase(forkCase: ForkCase, env: NodeJS.ProcessEnv): Promise<boolean> {
 }
 
 async function main(): Promise<boolean> {
+  checkManifestCompleteness(ROOT);
   const only = options.only ? globToRegExp(options.only) : undefined;
   const payer = await writeKeypair('payer');
   const cosigner = await writeKeypair('cosigner');
@@ -197,6 +202,10 @@ async function main(): Promise<boolean> {
     accountDir,
   });
   console.log(`Snapshotted ${network} at slot ${snapshot.slot}`);
+  const findings = probe(network, snapshot);
+  for (const finding of findings) {
+    console.log(process.env.GITHUB_ACTIONS ? `::warning::${finding}` : finding);
+  }
   const rpcUrl = await startValidator(payer.address, accountDir);
   console.log(`Disposable ${network} fork running at ${rpcUrl}`);
 
@@ -228,7 +237,11 @@ async function main(): Promise<boolean> {
     state: (name) => readJson(join(runDir, name)),
   };
 
-  const rows: string[][] = [];
+  const rows = findings.map((finding) => [
+    'probe',
+    options.strict ? 'FAILED' : 'warning',
+    finding,
+  ]);
   let failed = false;
   for (const forkCase of FORK_CASES) {
     const id = caseId(forkCase);
@@ -269,7 +282,7 @@ async function main(): Promise<boolean> {
   if (process.env.GITHUB_STEP_SUMMARY) {
     appendFileSync(process.env.GITHUB_STEP_SUMMARY, table);
   }
-  return !failed;
+  return !failed && !(options.strict && findings.length);
 }
 
 main().then(
