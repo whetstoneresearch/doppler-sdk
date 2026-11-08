@@ -95,8 +95,8 @@ export function getSqrtRatioAtTick(tick: number): bigint {
 
   if (tick > 0) ratio = (2n ** 256n - 1n) / ratio;
 
-  // Shift to get Q64.96
-  return ratio >> 32n;
+  // Round up to Q64.96, matching onchain TickMath at tick boundaries.
+  return (ratio >> 32n) + (ratio % (1n << 32n) === 0n ? 0n : 1n);
 }
 
 /**

@@ -9,11 +9,24 @@ import {
   getNearestUsableTick,
   MIN_TICK,
   MAX_TICK,
+  MIN_SQRT_RATIO,
+  MAX_SQRT_RATIO,
   Q96,
 } from '../../../../src/evm/utils/tickMath';
 
 describe('tickMath', () => {
   describe('getSqrtRatioAtTick', () => {
+    // Exact Q64.96 boundary values from Uniswap's TickMath implementation.
+    it.each([
+      [MIN_TICK, MIN_SQRT_RATIO],
+      [-1, 79224201403219477170569942574n],
+      [0, Q96],
+      [1, 79232123823359799118286999568n],
+      [MAX_TICK, MAX_SQRT_RATIO],
+    ] as const)('matches the onchain boundary for tick %i', (tick, expected) => {
+      expect(getSqrtRatioAtTick(tick)).toBe(expected);
+    });
+
     it('should return correct sqrt ratio for tick 0', () => {
       const sqrtRatio = getSqrtRatioAtTick(0);
       expect(sqrtRatio).toBe(Q96); // At tick 0, price is 1
@@ -40,6 +53,19 @@ describe('tickMath', () => {
   });
 
   describe('getTickAtSqrtRatio', () => {
+    it('accepts the sqrt ratio returned for the minimum tick', () => {
+      expect(getTickAtSqrtRatio(getSqrtRatioAtTick(MIN_TICK))).toBe(MIN_TICK);
+    });
+
+    it.each([
+      [-1, 79224201403219477170569942574n],
+      [0, Q96],
+      [1, 79232123823359799118286999568n],
+    ] as const)('classifies prices on both sides of tick %i', (tick, boundary) => {
+      expect(getTickAtSqrtRatio(boundary - 1n)).toBe(tick - 1);
+      expect(getTickAtSqrtRatio(boundary)).toBe(tick);
+    });
+
     it('should return 0 for sqrt ratio at price 1', () => {
       const tick = getTickAtSqrtRatio(Q96);
       expect(tick).toBe(0);
