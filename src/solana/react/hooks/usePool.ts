@@ -86,14 +86,20 @@ export function usePool(
   const [error, setError] = useState<Error | null>(null);
   const [refetching, setRefetching] = useState(false);
 
-  // Track if component is mounted to avoid state updates after unmount
+  // A new effect can mount before an earlier request completes.
   const mountedRef = useRef(true);
+  const generationRef = useRef(0);
 
   const fetchPoolData = useCallback(
     async (isRefetch = false) => {
+      if (!mountedRef.current) return;
+      const generation = generationRef.current;
+
       if (!poolAddress) {
         setPool(null);
         setLoading(false);
+        setError(null);
+        setRefetching(false);
         return;
       }
 
@@ -110,15 +116,15 @@ export function usePool(
           commitment,
         });
 
-        if (mountedRef.current) {
+        if (mountedRef.current && generation === generationRef.current) {
           setPool(poolData);
         }
       } catch (err) {
-        if (mountedRef.current) {
+        if (mountedRef.current && generation === generationRef.current) {
           setError(err instanceof Error ? err : new Error(String(err)));
         }
       } finally {
-        if (mountedRef.current) {
+        if (mountedRef.current && generation === generationRef.current) {
           setLoading(false);
           setRefetching(false);
         }
@@ -141,6 +147,7 @@ export function usePool(
 
     return () => {
       mountedRef.current = false;
+      generationRef.current += 1;
     };
   }, [fetchPoolData, fetchOnMount]);
 
@@ -202,11 +209,16 @@ export function usePools(
   const [error, setError] = useState<Error | null>(null);
 
   const mountedRef = useRef(true);
+  const generationRef = useRef(0);
 
   const fetchPools = useCallback(async () => {
+    if (!mountedRef.current) return;
+    const generation = generationRef.current;
+
     if (poolAddresses.length === 0) {
       setPools(new Map());
       setLoading(false);
+      setError(null);
       return;
     }
 
@@ -222,7 +234,7 @@ export function usePools(
         ),
       );
 
-      if (mountedRef.current) {
+      if (mountedRef.current && generation === generationRef.current) {
         const poolMap = new Map<Address, Pool>();
         for (const [addr, pool] of results) {
           if (pool) {
@@ -232,11 +244,11 @@ export function usePools(
         setPools(poolMap);
       }
     } catch (err) {
-      if (mountedRef.current) {
+      if (mountedRef.current && generation === generationRef.current) {
         setError(err instanceof Error ? err : new Error(String(err)));
       }
     } finally {
-      if (mountedRef.current) {
+      if (mountedRef.current && generation === generationRef.current) {
         setLoading(false);
       }
     }
@@ -251,6 +263,7 @@ export function usePools(
 
     return () => {
       mountedRef.current = false;
+      generationRef.current += 1;
     };
   }, [fetchPools, fetchOnMount]);
 

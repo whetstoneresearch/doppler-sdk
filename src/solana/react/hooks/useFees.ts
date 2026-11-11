@@ -177,6 +177,7 @@ export function useFees(
   const [txSignature, setTxSignature] = useState<string | null>(null);
 
   const mountedRef = useRef(true);
+  const generationRef = useRef(0);
 
   // Update from provided data
   useEffect(() => {
@@ -199,14 +200,21 @@ export function useFees(
 
   const fetchFeesData = useCallback(
     async (isRefetch = false) => {
+      const generation = generationRef.current;
+      if (!mountedRef.current) return;
+
       // If both pool and position are provided, no need to fetch
       if (providedPool && providedPosition) {
         setLoading(false);
+        setRefetching(false);
+        setError(null);
         return;
       }
 
       if (!positionAddress && !providedPosition) {
         setLoading(false);
+        setRefetching(false);
+        setError(null);
         return;
       }
 
@@ -237,16 +245,16 @@ export function useFees(
 
         const [posData, poolData] = await Promise.all(promises);
 
-        if (mountedRef.current) {
+        if (mountedRef.current && generationRef.current === generation) {
           if (posData && !providedPosition) setPosition(posData);
           if (poolData && !providedPool) setPool(poolData);
         }
       } catch (err) {
-        if (mountedRef.current) {
+        if (mountedRef.current && generationRef.current === generation) {
           setError(err instanceof Error ? err : new Error(String(err)));
         }
       } finally {
-        if (mountedRef.current) {
+        if (mountedRef.current && generationRef.current === generation) {
           setLoading(false);
           setRefetching(false);
         }
@@ -405,6 +413,7 @@ export function useFees(
 
     return () => {
       mountedRef.current = false;
+      generationRef.current += 1;
     };
   }, [fetchFeesData, fetchOnMount]);
 
