@@ -104,6 +104,12 @@ Start with the [five Solana examples](./examples/README.md#solana-examples). Cop
 
 The [prediction guide](./docs/solana-prediction-markets.md) also covers deployment requirements, payout accounting, and the [integration scenario runner](./test/solana/integration/prediction/run.ts).
 
+The optional `/solana/react` query hooks ignore results and errors from requests
+started before their query inputs, RPC client, program, or commitment changed,
+or before unmount. This also prevents an old request from clearing the current
+query's loading or refetching state. Explicit `refetch()` calls and configured
+polling continue to work within the current query lifecycle.
+
 To implement an independently deployed callback program, see
 [Building a custom Solana hook](./docs/solana-custom-hooks.md) and the
 [minimal Anchor example](./examples/solana-custom-hook/).

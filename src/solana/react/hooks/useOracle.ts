@@ -129,11 +129,16 @@ export function useOracle(
   const [error, setError] = useState<Error | null>(null);
 
   const mountedRef = useRef(true);
+  const generationRef = useRef(0);
 
   const fetchOracleData = useCallback(async () => {
+    if (!mountedRef.current) return;
+    const generation = generationRef.current;
+
     if (!poolAddress) {
       setOracle(null);
       setOracleAddress(null);
+      setError(null);
       setLoading(false);
       return;
     }
@@ -144,6 +149,7 @@ export function useOracle(
     try {
       // Derive oracle address from pool
       const [oracleAddr] = await getOracleAddress(poolAddress, programId);
+      if (!mountedRef.current || generationRef.current !== generation) return;
       setOracleAddress(oracleAddr);
 
       const oracleData = await fetchOracle(rpc, oracleAddr, {
@@ -151,15 +157,15 @@ export function useOracle(
         commitment,
       });
 
-      if (mountedRef.current) {
+      if (mountedRef.current && generationRef.current === generation) {
         setOracle(oracleData);
       }
     } catch (err) {
-      if (mountedRef.current) {
+      if (mountedRef.current && generationRef.current === generation) {
         setError(err instanceof Error ? err : new Error(String(err)));
       }
     } finally {
-      if (mountedRef.current) {
+      if (mountedRef.current && generationRef.current === generation) {
         setLoading(false);
       }
     }
@@ -238,6 +244,7 @@ export function useOracle(
 
     return () => {
       mountedRef.current = false;
+      generationRef.current += 1;
     };
   }, [fetchOracleData, fetchOnMount]);
 
@@ -331,10 +338,15 @@ export function useOracles(
   const [error, setError] = useState<Error | null>(null);
 
   const mountedRef = useRef(true);
+  const generationRef = useRef(0);
 
   const fetchOracles = useCallback(async () => {
+    if (!mountedRef.current) return;
+    const generation = generationRef.current;
+
     if (poolAddresses.length === 0) {
       setOracles(new Map());
+      setError(null);
       setLoading(false);
       return;
     }
@@ -357,7 +369,7 @@ export function useOracles(
         }),
       );
 
-      if (mountedRef.current) {
+      if (mountedRef.current && generationRef.current === generation) {
         const oracleMap = new Map<Address, OracleWithAddress>();
         for (const [poolAddr, oracleData] of results) {
           if (oracleData) {
@@ -367,11 +379,11 @@ export function useOracles(
         setOracles(oracleMap);
       }
     } catch (err) {
-      if (mountedRef.current) {
+      if (mountedRef.current && generationRef.current === generation) {
         setError(err instanceof Error ? err : new Error(String(err)));
       }
     } finally {
-      if (mountedRef.current) {
+      if (mountedRef.current && generationRef.current === generation) {
         setLoading(false);
       }
     }
@@ -386,6 +398,7 @@ export function useOracles(
 
     return () => {
       mountedRef.current = false;
+      generationRef.current += 1;
     };
   }, [fetchOracles, fetchOnMount]);
 

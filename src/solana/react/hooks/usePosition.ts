@@ -107,13 +107,18 @@ export function usePosition(
   const [error, setError] = useState<Error | null>(null);
 
   const mountedRef = useRef(true);
+  const generationRef = useRef(0);
 
   const ownerAddress = wallet?.address;
 
   const fetchPositionData = useCallback(async () => {
+    const generation = generationRef.current;
+    if (!mountedRef.current) return;
+
     if (!poolAddress || !ownerAddress) {
       setPosition(null);
       setPositionAddress(undefined);
+      setError(null);
       setLoading(false);
       return;
     }
@@ -130,6 +135,7 @@ export function usePosition(
         positionId,
         programId,
       );
+      if (!mountedRef.current || generationRef.current !== generation) return;
       setPositionAddress(posAddr);
 
       // Fetch position and pool in parallel
@@ -140,16 +146,16 @@ export function usePosition(
           : fetchPool(rpc, poolAddress, { programId, commitment }),
       ]);
 
-      if (mountedRef.current) {
+      if (mountedRef.current && generationRef.current === generation) {
         setPosition(positionData);
         setPool(poolData);
       }
     } catch (err) {
-      if (mountedRef.current) {
+      if (mountedRef.current && generationRef.current === generation) {
         setError(err instanceof Error ? err : new Error(String(err)));
       }
     } finally {
-      if (mountedRef.current) {
+      if (mountedRef.current && generationRef.current === generation) {
         setLoading(false);
       }
     }
@@ -189,6 +195,7 @@ export function usePosition(
 
     return () => {
       mountedRef.current = false;
+      generationRef.current += 1;
     };
   }, [fetchPositionData, fetchOnMount]);
 
@@ -276,11 +283,16 @@ export function useUserPositions(
   const [error, setError] = useState<Error | null>(null);
 
   const mountedRef = useRef(true);
+  const generationRef = useRef(0);
   const ownerAddress = wallet?.address;
 
   const fetchPositions = useCallback(async () => {
+    const generation = generationRef.current;
+    if (!mountedRef.current) return;
+
     if (!ownerAddress) {
       setPositions([]);
+      setError(null);
       setLoading(false);
       return;
     }
@@ -299,16 +311,16 @@ export function useUserPositions(
         },
       );
 
-      if (mountedRef.current) {
+      if (mountedRef.current && generationRef.current === generation) {
         // Filter out positions with zero shares by default
         setPositions(positionsData.filter((p) => p.account.shares > 0n));
       }
     } catch (err) {
-      if (mountedRef.current) {
+      if (mountedRef.current && generationRef.current === generation) {
         setError(err instanceof Error ? err : new Error(String(err)));
       }
     } finally {
-      if (mountedRef.current) {
+      if (mountedRef.current && generationRef.current === generation) {
         setLoading(false);
       }
     }
@@ -323,6 +335,7 @@ export function useUserPositions(
 
     return () => {
       mountedRef.current = false;
+      generationRef.current += 1;
     };
   }, [fetchPositions, fetchOnMount]);
 
